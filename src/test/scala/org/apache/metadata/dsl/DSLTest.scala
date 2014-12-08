@@ -2,7 +2,7 @@ package org.apache.metadata.dsl
 
 import org.apache.metadata.hive.HiveMockMetadataService
 import org.apache.metadata.json.{BigIntegerSerializer, BigDecimalSerializer, TypedStructSerializer}
-import org.apache.metadata.storage.TypedStruct
+import org.apache.metadata.storage.StructInstance
 import org.apache.metadata.{Struct, BaseTest}
 import org.apache.metadata.types.{IDataType, Multiplicity, StructType}
 import org.json4s.NoTypeHints

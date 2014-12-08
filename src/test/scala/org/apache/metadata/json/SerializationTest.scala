@@ -1,8 +1,8 @@
 package org.apache.metadata.json
 
 import org.apache.metadata.Struct
-import org.apache.metadata.storage.TypedStruct
-import org.apache.metadata.storage.TypedStruct
+import org.apache.metadata.storage.StructInstance
+import org.apache.metadata.storage.StructInstance
 import org.apache.metadata.types.Multiplicity
 import org.apache.metadata.types.StructType
 import org.apache.metadata.{Struct, BaseTest}
@@ -29,7 +29,7 @@ class SerializationTest extends BaseTest {
 
   @Test def test1 {
     val s: Struct = BaseTest.createStruct(ms)
-    val ts: TypedStruct = structType.convert(s, Multiplicity.REQUIRED)
+    val ts: StructInstance = structType.convert(s, Multiplicity.REQUIRED)
 
     println("Typed Struct :")
     println(ts)
@@ -41,19 +41,19 @@ class SerializationTest extends BaseTest {
     println("Json representation :")
     println(ser)
 
-    val ts1 = read[TypedStruct](ser)
+    val ts1 = read[StructInstance](ser)
     println("Typed Struct read back:")
     println(ts1)
   }
 
   @Test def test2 {
     val s: Struct = BaseTest.createStruct(ms)
-    val ts: TypedStruct = structType.convert(s, Multiplicity.REQUIRED)
+    val ts: StructInstance = structType.convert(s, Multiplicity.REQUIRED)
 
     implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new TypedStructSerializer +
       new BigDecimalSerializer + new BigIntegerSerializer
 
-    val ts1 = read[TypedStruct](
+    val ts1 = read[StructInstance](
       """
         {"$typeName$":"t1","e":1,"n":[1.1,1.1],"h":1.0,"b":true,"k":1,"j":1,"d":2,"m":[1,1],"g":1,"a":1,"i":1.0,
         "c":1,"l":"2014-12-03T19:38:55.053Z","f":1,"o":{"b":2.0,"a":1.0}}""")

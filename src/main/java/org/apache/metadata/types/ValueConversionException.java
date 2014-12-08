@@ -17,6 +17,11 @@ public class ValueConversionException  extends MetadataException {
                 val.toString(), typ.getName(), msg));
     }
 
+    public ValueConversionException(String typeName, Object val, String msg) {
+        super(String.format("Cannot convert value '%s' to datatype %s because: %s",
+                val.toString(), typeName, msg));
+    }
+
     protected ValueConversionException(String msg) {
         super(msg);
     }

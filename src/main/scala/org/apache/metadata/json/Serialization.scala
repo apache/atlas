@@ -9,7 +9,7 @@ import org.json4s.native.Serialization.{read, write => swrite}
 import org.json4s.reflect.{ScalaType, Reflector}
 import java.util.regex.Pattern
 import java.util.Date
-import org.apache.metadata.storage.TypedStruct
+import org.apache.metadata.storage.StructInstance
 import collection.JavaConversions._
 import scala.collection.JavaConverters._
 
@@ -27,7 +27,7 @@ class BigIntegerSerializer extends CustomSerializer[java.math.BigInteger](format
 }
   ))
 
-class TypedStructSerializer extends Serializer[TypedStruct] {
+class TypedStructSerializer extends Serializer[StructInstance] {
 
   def extractList(lT : ArrayType, value : JArray)(implicit format: Formats) : Any = {
     val dT = lT.getElemType
@@ -51,11 +51,11 @@ class TypedStructSerializer extends Serializer[TypedStruct] {
     case value : JObject if dT.getTypeCategory eq TypeCategory.MAP =>
       extractMap(dT.asInstanceOf[MapType], value.asInstanceOf[JObject])
     case value : JObject  =>
-      Extraction.extract[TypedStruct](value)
+      Extraction.extract[StructInstance](value)
   }
 
   def deserialize(implicit format: Formats) = {
-    case (TypeInfo(clazz, ptype), json) if classOf[TypedStruct].isAssignableFrom(clazz) => json match {
+    case (TypeInfo(clazz, ptype), json) if classOf[StructInstance].isAssignableFrom(clazz) => json match {
       case JObject(fs) =>
         val(typ, fields) = fs.partition(f => f._1 == Serialization.STRUCT_TYPE_FIELD_NAME)
         val typName = typ(0)._2.asInstanceOf[JString].s
@@ -63,7 +63,7 @@ class TypedStructSerializer extends Serializer[TypedStruct] {
         val s = sT.createInstance()
         fields.foreach { f =>
           val fName = f._1
-          val fInfo = sT.fields(fName)
+          val fInfo = sT.fieldMapping.fields(fName)
           if ( fInfo != null ) {
             //println(fName)
             var v = f._2
@@ -91,8 +91,8 @@ class TypedStructSerializer extends Serializer[TypedStruct] {
   //implicit def javaBigInteger2bigInt(x: java.math.BigInteger): BigInt = new BigInt(x)
 
   def serialize(implicit format: Formats) = {
-    case e: TypedStruct =>
-      val fields  = e.dataType.fields.map {
+    case e: StructInstance =>
+      val fields  = e.fieldMapping.fields.map {
         case (fName, info) => {
           var v = e.get(fName)
           if ( v != null && (info.dataType().getTypeCategory eq TypeCategory.MAP) ) {
@@ -101,7 +101,7 @@ class TypedStructSerializer extends Serializer[TypedStruct] {
           JField(fName, Extraction.decompose(v))
         }
       }.toList.map(_.asInstanceOf[JField])
-      JObject(JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(e.dataType.getName)) :: fields)
+      JObject(JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(e.dataTypeName)) :: fields)
   }
 }
 

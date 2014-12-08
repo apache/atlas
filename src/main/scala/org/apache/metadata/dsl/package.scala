@@ -1,7 +1,7 @@
 package org.apache.metadata
 
 import org.apache.metadata.json.{BigIntegerSerializer, BigDecimalSerializer, TypedStructSerializer, Serialization}
-import org.apache.metadata.storage.TypedStruct
+import org.apache.metadata.storage.StructInstance
 import org.apache.metadata.types._
 
 import scala.collection.JavaConverters._
@@ -59,7 +59,7 @@ package object dsl {
     assert(j.isInstanceOf[JObject])
     var j1 = j.asInstanceOf[JObject]
     j1 = JObject(JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(typeName)) :: j1.obj)
-    new DynamicTypedStruct(Extraction.extract[TypedStruct](j1))
+    new DynamicTypedStruct(Extraction.extract[StructInstance](j1))
   }
 
   def createInstance(typeName : String) = {
