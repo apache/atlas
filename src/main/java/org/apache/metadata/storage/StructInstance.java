@@ -28,6 +28,7 @@ import org.apache.metadata.types.TypeUtils;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
+import java.util.Map;
 
 public class StructInstance implements IStruct {
     public final String dataTypeName;
@@ -100,9 +101,11 @@ public class StructInstance implements IStruct {
         }
         TypeUtils.outputVal("\n", buf, "");
         String fieldPrefix = prefix + "\t";
-        for(AttributeInfo i : fieldMapping.fields.values()) {
-            Object aVal = s.get(i.name);
-            TypeUtils.outputVal(i.name + " : ", buf, fieldPrefix);
+        for(Map.Entry<String,AttributeInfo> e : fieldMapping.fields.entrySet()) {
+            String attrName = e.getKey();
+            AttributeInfo i = e.getValue();
+            Object aVal = s.get(attrName);
+            TypeUtils.outputVal(attrName + " : ", buf, fieldPrefix);
             i.dataType().output(aVal, buf, "");
             TypeUtils.outputVal("\n", buf, "");
         }
@@ -118,9 +121,11 @@ public class StructInstance implements IStruct {
             TypeUtils.outputVal("{", buf, prefix);
             TypeUtils.outputVal("\n", buf, "");
             String fieldPrefix = prefix + "\t";
-            for(AttributeInfo i : fieldMapping.fields.values()) {
-                Object aVal = get(i.name);
-                TypeUtils.outputVal(i.name + " : ", buf, fieldPrefix);
+            for(Map.Entry<String,AttributeInfo> e : fieldMapping.fields.entrySet()) {
+                String attrName = e.getKey();
+                AttributeInfo i = e.getValue();
+                Object aVal = get(attrName);
+                TypeUtils.outputVal(attrName + " : ", buf, fieldPrefix);
                 i.dataType().output(aVal, buf, "");
                 TypeUtils.outputVal("\n", buf, "");
             }

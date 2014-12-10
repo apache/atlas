@@ -18,6 +18,7 @@
 
 package org.apache.metadata;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import junit.framework.TestCase;
@@ -40,11 +41,13 @@ public abstract class BaseTest {
     public static final String STRUCT_TYPE_1 = "t1";
     public static final String STRUCT_TYPE_2 = "t2";
 
-    @BeforeClass
-    public static void setupClass() throws MetadataException {
+    @Before
+    public void setup() throws MetadataException {
+
         TypeSystem ts = new TypeSystem();
         MemRepository mr = new MemRepository();
-        MetadataService.setCurrentService(new MetadataService(mr, ts));
+        ms = new MetadataService(mr, ts);
+        MetadataService.setCurrentService(ms);
 
         StructType structType = ts.defineStructType(STRUCT_TYPE_1,
                 true,
@@ -95,11 +98,6 @@ public abstract class BaseTest {
         return s;
     }
 
-    @Before
-    public void setup() throws MetadataException {
-        ms = MetadataService.getCurrentService();
-    }
-
     public static AttributeDefinition createOptionalAttrDef(String name,
                                                             IDataType dataType
     ) {
@@ -127,5 +125,16 @@ public abstract class BaseTest {
 
         return new AttributeDefinition(name, dataType, Multiplicity.REQUIRED, false, null);
     }
+
+    protected Map<String, TraitType> defineTraits(TraitTypeDefinition... tDefs) throws MetadataException {
+        return ms.getTypeSystem().defineTraitTypes(true, tDefs);
+    }
+
+    protected TraitTypeDefinition createTraitTypeDef(String name, ImmutableList<String> superTypes,
+                                        AttributeDefinition... attrDefs) {
+        return new TraitTypeDefinition(name, superTypes, attrDefs);
+    }
+
+
 
 }

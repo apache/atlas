@@ -15,15 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.metadata.types;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.metadata.MetadataException;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
-public class TypeSystem {
+public class TypeSystem implements ITypeBrowser {
 
     private Map<String, IDataType> types;
 
@@ -50,6 +50,10 @@ public class TypeSystem {
         types.put(DataTypes.STRING_TYPE.getName(), DataTypes.STRING_TYPE);
     }
 
+    public IDataType dataType(String name) {
+        return types.get(name);
+    }
+
     public IDataType getDataType(String name) throws MetadataException {
         if ( types.containsKey(name) ) {
             return types.get(name);
@@ -67,7 +71,7 @@ public class TypeSystem {
         AttributeInfo[] infos = new AttributeInfo[attrDefs.length];
         Map<Integer, AttributeDefinition> recursiveRefs = new HashMap<Integer, AttributeDefinition>();
         try {
-            types.put(name, new StructType(name));
+            types.put(name, new StructType(this, name, attrDefs.length));
             for (int i = 0; i < attrDefs.length; i++) {
                 infos[i] = new AttributeInfo(this, attrDefs[i]);
                 if ( attrDefs[i].dataTypeName == name ) {
@@ -81,13 +85,116 @@ public class TypeSystem {
             types.remove(name);
             throw re;
         }
-        StructType sT = new StructType(name, infos);
+        StructType sT = new StructType(this, name, null, infos);
         types.put(name, sT);
         for(Map.Entry<Integer, AttributeDefinition> e : recursiveRefs.entrySet()) {
             infos[e.getKey()].setDataType(sT);
         }
         return sT;
     }
+
+    public TraitType defineTraitType(boolean errorIfExists,
+                                     TraitTypeDefinition traitDef
+                                       ) throws MetadataException {
+        Map<String, TraitType> m = defineTraitTypes(errorIfExists, traitDef);
+        return m.values().iterator().next();
+    }
+
+    public Map<String, TraitType> defineTraitTypes(boolean errorIfExists,
+                                                   TraitTypeDefinition... traitDefs
+                                      ) throws MetadataException {
+        TransientTypeSystem transientTypes = new TransientTypeSystem();
+        Map<String,TraitTypeDefinition> traitDefMap = new HashMap<String, TraitTypeDefinition>();
+
+
+        /*
+         * Step 1:
+         * - validate cannot redefine types
+         * - setup an empty TraitType to allow for recursive type graphs.
+         */
+        for(TraitTypeDefinition traitDef : traitDefs) {
+            assert traitDef.typeName != null;
+            if ( types.containsKey(traitDef.typeName) ) {
+                throw new MetadataException(String.format("Cannot redefine type %s", traitDef.typeName));
+            }
+
+            transientTypes.traitTypes.put(traitDef.typeName,
+                    new TraitType(transientTypes, traitDef.typeName, traitDef.superTraits,
+                    traitDef.attributeDefinitions.length));
+            traitDefMap.put(traitDef.typeName, traitDef);
+        }
+
+        /*
+         * Step 2:
+         * - validate SuperTypes.
+         */
+        for(TraitTypeDefinition traitDef : traitDefs) {
+            Set<String> s = new HashSet<String>();
+            for(String superTraitName : traitDef.superTraits ) {
+
+                if (s.contains(superTraitName) ) {
+                    throw new MetadataException(String.format("Trait %s extends superTrait %s multiple times",
+                            traitDef.typeName, superTraitName));
+                }
+
+                IDataType dT = types.get(superTraitName);
+                dT = dT == null ? transientTypes.traitTypes.get(superTraitName) : dT;
+
+                if ( dT == null ) {
+                    throw new MetadataException(String.format("Unknown superType %s in definition of type %s",
+                            superTraitName, traitDef.typeName));
+                }
+
+                if ( dT.getTypeCategory() != DataTypes.TypeCategory.TRAIT ) {
+                    throw new MetadataException(String.format("SuperType %s must be a Trait, in definition of type %s",
+                            superTraitName, traitDef.typeName));
+                }
+                s.add(superTraitName);
+            }
+        }
+
+        /*
+         * Step 3:
+         * - Construct TraitTypes in order of SuperType before SubType.
+         */
+        List<TraitType> l = new ArrayList<TraitType>(transientTypes.traitTypes.values());
+        Collections.sort(l);
+        List<AttributeInfo> recursiveRefs = new ArrayList<AttributeInfo>();
+
+        try {
+            for (TraitType ttO : l) {
+                TraitTypeDefinition traitDef = traitDefMap.get(ttO.getName());
+                AttributeInfo[] infos = new AttributeInfo[traitDef.attributeDefinitions.length];
+                for (int i = 0; i < traitDef.attributeDefinitions.length; i++) {
+                    infos[i] = new AttributeInfo(this, traitDef.attributeDefinitions[i]);
+                    if (transientTypes.traitTypes.containsKey(traitDef.attributeDefinitions[i].dataTypeName)) {
+                        recursiveRefs.add(infos[i]);
+                    }
+                }
+
+                TraitType tt = new TraitType(this, traitDef.typeName, traitDef.superTraits, infos);
+                ;
+                types.put(tt.getName(), tt);
+            }
+
+            /*
+             * Step 4:
+             * - fix up references in recursive AttrInfo
+             */
+            for (AttributeInfo info : recursiveRefs) {
+                info.setDataType(dataType(info.dataType().getName()));
+            }
+        } catch(MetadataException me) {
+            for(String sT : transientTypes.traitTypes.keySet()) {
+                types.remove(sT);
+            }
+            throw me;
+        }
+
+        return transientTypes.traitTypes;
+    }
+
+
 
     public DataTypes.ArrayType defineArrayType(IDataType elemType) throws MetadataException {
         assert elemType != null;
@@ -102,5 +209,15 @@ public class TypeSystem {
         DataTypes.MapType dT =  new DataTypes.MapType(keyType, valueType);
         types.put(dT.getName(), dT);
         return dT;
+    }
+
+    class TransientTypeSystem implements ITypeBrowser {
+        Map<String, TraitType> traitTypes = new HashMap<String, TraitType>();
+
+        public IDataType dataType(String name) {
+            IDataType dT = TypeSystem.this.dataType(name);
+            dT = dT == null ? traitTypes.get(name) : dT;
+            return dT;
+        }
     }
 }

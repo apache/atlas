@@ -30,20 +30,28 @@ import java.util.*;
 
 public class StructType  extends AbstractDataType<IStruct> {
 
+    public final ITypeBrowser typeSystem;
     public final String name;
     public final FieldMapping fieldMapping;
+    public final int numFields;
 
     /**
      * Used when creating a StructType, to support recursive Structs.
      */
-    StructType(String name) {
+    protected StructType(ITypeBrowser typeSystem, String name, int numFields) {
+        this.typeSystem = typeSystem;
         this.name = name;
         this.fieldMapping = null;
+        this.numFields = numFields;
     }
 
-    StructType(String name, AttributeInfo... fields) throws MetadataException {
+    protected StructType(ITypeBrowser typeSystem, String name,
+                         ImmutableList<String> superTypes, AttributeInfo... fields) throws MetadataException {
+        this.typeSystem = typeSystem;
         this.name = name;
-        this.fieldMapping = constructFieldMapping(fields);
+        this.fieldMapping = constructFieldMapping(superTypes,
+                fields);
+        this.numFields = this.fieldMapping.fields.size();
     }
 
     @Override
@@ -51,7 +59,8 @@ public class StructType  extends AbstractDataType<IStruct> {
         return name;
     }
 
-    protected FieldMapping constructFieldMapping(AttributeInfo... fields)
+    protected FieldMapping constructFieldMapping(ImmutableList<String> superTypes,
+                                                 AttributeInfo... fields)
             throws MetadataException {
 
         Map<String,AttributeInfo> fieldsMap = new LinkedHashMap<String, AttributeInfo>();
@@ -155,10 +164,12 @@ public class StructType  extends AbstractDataType<IStruct> {
                     throw new ValueConversionException(this, val);
                 }
                 StructInstance ts = createInstance();
-                for(AttributeInfo i : fieldMapping.fields.values()) {
-                    Object aVal = s.get(i.name);
+                for(Map.Entry<String,AttributeInfo> e : fieldMapping.fields.entrySet() ) {
+                    String attrKey = e.getKey();
+                    AttributeInfo i = e.getValue();
+                    Object aVal = s.get(attrKey);
                     try {
-                        ts.set(i.name, aVal);
+                        ts.set(attrKey, aVal);
                     } catch(ValueConversionException ve) {
                         throw new ValueConversionException(this, val, ve);
                     }
