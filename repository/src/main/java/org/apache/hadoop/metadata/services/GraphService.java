@@ -35,7 +35,7 @@ public interface GraphService extends Service {
      *
      * @return an handle to the graph db
      */
-    Graph getGraph();
+    Graph getBlueprintsGraph();
 
     KeyIndexableGraph getIndexableGraph();
 

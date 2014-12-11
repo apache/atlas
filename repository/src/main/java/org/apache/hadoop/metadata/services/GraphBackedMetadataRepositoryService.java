@@ -19,16 +19,18 @@
 package org.apache.hadoop.metadata.services;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanGraph;
+import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.GraphQuery;
+import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.metadata.service.Services;
+import org.apache.hadoop.metadata.util.GraphUtils;
 import org.json.simple.JSONValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -74,6 +76,7 @@ public class GraphBackedMetadataRepositoryService implements MetadataRepositoryS
     @Override
     public void stop() {
         // do nothing
+        graphService = null;
     }
 
     /**
@@ -89,8 +92,12 @@ public class GraphBackedMetadataRepositoryService implements MetadataRepositoryS
         stop();
     }
 
-    private TitanGraph getGraph() {
-        return ((TitanGraphService) graphService).getTitanGraph();
+    private Graph getBlueprintsGraph() {
+        return graphService.getBlueprintsGraph();
+    }
+
+    private TransactionalGraph getTransactionalGraph() {
+        return graphService.getTransactionalGraph();
     }
 
     @Override
@@ -103,18 +110,21 @@ public class GraphBackedMetadataRepositoryService implements MetadataRepositoryS
         // todo check if this is a duplicate
 
         final String guid = UUID.randomUUID().toString();
+        final TransactionalGraph transactionalGraph = getTransactionalGraph();
         try {
-            getGraph().newTransaction();
+            transactionalGraph.rollback();
 
-            Vertex entityVertex = getGraph().addVertex(null);
+            Vertex entityVertex = transactionalGraph.addVertex(null);
             entityVertex.setProperty("guid", guid);
             entityVertex.setProperty("entityName", entityName);
             entityVertex.setProperty("entityType", entityType);
             for (Map.Entry<String, String> entry : properties.entrySet()) {
                 entityVertex.setProperty(entry.getKey(), entry.getValue());
             }
+        } catch (Exception e) {
+            transactionalGraph.rollback();
         } finally {
-            getGraph().commit();
+            transactionalGraph.commit();
         }
 
         return guid;
@@ -122,36 +132,63 @@ public class GraphBackedMetadataRepositoryService implements MetadataRepositoryS
 
     @Override
     public String getEntityDefinition(String entityName, String entityType) {
-        Vertex entityVertex = findVertex(entityName, entityType);
+        Vertex entityVertex = GraphUtils.findVertex(getBlueprintsGraph(), entityName, entityType);
         if (entityVertex == null) {
             return null;
         }
 
-        Map<String, String> properties = extractProperties(entityVertex);
+        Map<String, String> properties = GraphUtils.extractProperties(entityVertex);
         return JSONValue.toJSONString(properties);
-    }
-
-    protected Vertex findVertex(String entityName, String entityType) {
-        LOG.debug("Finding vertex for: name={}, type={}", entityName, entityType);
-
-        GraphQuery query = getGraph().query()
-                .has("entityName", entityName)
-                .has("entityType", entityType);
-        Iterator<Vertex> results = query.vertices().iterator();
-        return results.hasNext() ? results.next() : null;  // returning one since name/type is unique
-    }
-
-    private Map<String, String> extractProperties(Vertex entityVertex) {
-        Map<String, String> properties = new HashMap<>();
-        for (String key : entityVertex.getPropertyKeys()) {
-            properties.put(key, String.valueOf(entityVertex.getProperty(key)));
-        }
-
-        return properties;
     }
 
     @Override
     public List<String> getEntityList(String entityType) {
-        return null;
+        return Collections.emptyList();
+    }
+
+    public static void main(String[] args) throws Exception {
+        TitanGraphService titanGraphService = new TitanGraphService();
+        titanGraphService.start();
+        Services.get().register(titanGraphService);
+
+        GraphBackedMetadataRepositoryService service = new GraphBackedMetadataRepositoryService();
+        try {
+            service.start();
+            String guid = UUID.randomUUID().toString();
+
+            final TransactionalGraph graph = service.getTransactionalGraph();
+            System.out.println("graph = " + graph);
+            System.out.println("graph.getVertices() = " + graph.getVertices());
+
+
+            Vertex entityVertex = null;
+            try {
+                graph.rollback();
+                entityVertex = graph.addVertex(null);
+                entityVertex.setProperty("guid", guid);
+                entityVertex.setProperty("entityName", "entityName");
+                entityVertex.setProperty("entityType", "entityType");
+            } catch (Exception e) {
+                graph.rollback();
+                e.printStackTrace();
+            } finally {
+                graph.commit();
+            }
+
+            System.out.println("vertex = " + GraphUtils.vertexString(entityVertex));
+
+            GraphQuery query = graph.query()
+                    .has("entityName", "entityName")
+                    .has("entityType", "entityType");
+
+            Iterator<Vertex> results = query.vertices().iterator();
+            if (results.hasNext()) {
+                Vertex vertexFromQuery = results.next();
+                System.out.println("vertex = " + GraphUtils.vertexString(vertexFromQuery));
+            }
+        } finally {
+            service.stop();
+            titanGraphService.stop();
+        }
     }
 }

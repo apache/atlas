@@ -75,7 +75,7 @@ public class GraphResource {
     }
 
     protected Graph getGraph() {
-        return graphService.getGraph();
+        return graphService.getBlueprintsGraph();
     }
 
     protected Set<String> getVertexIndexedKeys() {

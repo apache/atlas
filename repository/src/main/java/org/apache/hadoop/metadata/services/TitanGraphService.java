@@ -23,7 +23,6 @@ import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Graph;
@@ -51,11 +50,11 @@ public class TitanGraphService implements GraphService {
     /**
      * Constant for the configuration property that indicates the prefix.
      */
-    private static final String METADATA_PREFIX = "metadata.graph.";
+    private static final String METADATA_PREFIX = "metadata.titanGraph.";
     private static final String METADATA_INDEX_KEY = "index.name";
 
     private Configuration graphConfig;
-    private Graph graph;
+    private TitanGraph titanGraph;
     private Set<String> vertexIndexedKeys;
     private Set<String> edgeIndexedKeys;
 
@@ -76,13 +75,13 @@ public class TitanGraphService implements GraphService {
      */
     @Override
     public void start() throws Exception {
-        graphConfig = getConfiguration();
+//        graphConfig = getConfiguration();
 
-        graph = initializeGraphDB();
+        titanGraph = initializeGraphDB();
 
 //        createIndicesForVertexKeys();
         // todo - create Edge Cardinality Constraints
-        LOG.info("Initialized graph db: {}", graph);
+        LOG.info("Initialized titanGraph db: {}", titanGraph);
 
         vertexIndexedKeys = getIndexableGraph().getIndexedKeys(Vertex.class);
         LOG.info("Init vertex property keys: {}", vertexIndexedKeys);
@@ -91,12 +90,14 @@ public class TitanGraphService implements GraphService {
         LOG.info("Init edge property keys: {}", edgeIndexedKeys);
     }
 
-    protected Graph initializeGraphDB() {
-        LOG.info("Initializing graph db");
-//        return GraphFactory.open(graphConfig);
+    protected TitanGraph initializeGraphDB() {
+        LOG.info("Initializing titanGraph db");
+
+        // todo: externalize this
         Configuration graphConfig = new PropertiesConfiguration();
         graphConfig.setProperty("storage.backend", "berkeleyje");
         graphConfig.setProperty("storage.directory", "target/data/graphdb");
+
         return TitanFactory.open(graphConfig);
     }
 
@@ -124,12 +125,12 @@ public class TitanGraphService implements GraphService {
      * com.tinkerpop.blueprints.KeyIndexableGraph#createKeyIndex does not create an index.
      */
     protected void createIndicesForVertexKeys() {
-        if (!((KeyIndexableGraph) graph).getIndexedKeys(Vertex.class).isEmpty()) {
-            LOG.info("Indexes already exist for graph");
+        if (!((KeyIndexableGraph) titanGraph).getIndexedKeys(Vertex.class).isEmpty()) {
+            LOG.info("Indexes already exist for titanGraph");
             return;
         }
 
-        LOG.info("Indexes does not exist, Creating indexes for graph");
+        LOG.info("Indexes does not exist, Creating indexes for titanGraph");
         // todo - externalize this
         String indexName = graphConfig.getString(METADATA_INDEX_KEY);
         PropertyKey guid = createPropertyKey("guid", String.class, Cardinality.SINGLE);
@@ -169,7 +170,9 @@ public class TitanGraphService implements GraphService {
      */
     @Override
     public void stop() {
-
+        if (titanGraph != null) {
+            titanGraph.shutdown();
+        }
     }
 
     /**
@@ -186,26 +189,22 @@ public class TitanGraphService implements GraphService {
     }
 
     @Override
-    public Graph getGraph() {
-        return graph;
+    public Graph getBlueprintsGraph() {
+        return titanGraph;
     }
 
     @Override
     public KeyIndexableGraph getIndexableGraph() {
-        return (KeyIndexableGraph) graph;
+        return titanGraph;
     }
 
     @Override
     public TransactionalGraph getTransactionalGraph() {
-        return (TransactionalGraph) graph;
-    }
-
-    protected TitanBlueprintsGraph getTitanBlueprintsGraph() {
-        return (TitanBlueprintsGraph) graph;
+        return titanGraph;
     }
 
     public TitanGraph getTitanGraph() {
-        return (TitanGraph) graph;
+        return titanGraph;
     }
 
     @Override
