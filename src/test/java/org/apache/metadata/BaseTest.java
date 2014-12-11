@@ -88,7 +88,7 @@ public abstract class BaseTest {
         s.set("i", 1.0);
         s.set("j", BigInteger.valueOf(1L));
         s.set("k", new BigDecimal(1));
-        s.set("l", new Date(System.currentTimeMillis()));
+        s.set("l", new Date(1418265358440L));
         s.set("m", Lists.<Integer>asList(Integer.valueOf(1), new Integer[]{Integer.valueOf(1)}));
         s.set("n", Lists.<BigDecimal>asList(BigDecimal.valueOf(1.1), new BigDecimal[] {BigDecimal.valueOf(1.1)}));
         Map<String, Double> hm = Maps.<String, Double>newHashMap();

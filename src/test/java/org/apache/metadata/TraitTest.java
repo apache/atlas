@@ -1,6 +1,7 @@
 package org.apache.metadata;
 
 import com.google.common.collect.ImmutableList;
+import org.junit.Assert;
 import org.apache.metadata.storage.StructInstance;
 import org.apache.metadata.types.*;
 import org.junit.Before;
@@ -65,7 +66,20 @@ public class TraitTest extends BaseTest {
 
 
         ITypedStruct ts = DType.convert(s1, Multiplicity.REQUIRED);
-        System.out.println(ts);
+        Assert.assertEquals(ts.toString(), "{\n" +
+                "\td : 1\n" +
+                "\tb : true\n" +
+                "\tc : 1\n" +
+                "\ta : 1\n" +
+                "\tA.B.D.b : true\n" +
+                "\tA.B.D.c : 2\n" +
+                "\tA.B.D.d : 2\n" +
+                "\tA.C.D.a : 3\n" +
+                "\tA.C.D.b : false\n" +
+                "\tA.C.D.c : 3\n" +
+                "\tA.C.D.d : 3\n" +
+                "\n" +
+                "}\n");
 
         /*
          * cast to B and set the 'b' attribute on A.
@@ -74,7 +88,20 @@ public class TraitTest extends BaseTest {
         IStruct s2 = DType.castAs(ts, "B");
         s2.set("A.B.b", false);
 
-        System.out.println(ts);
+        Assert.assertEquals(ts.toString(), "{\n" +
+                "\td : 1\n" +
+                "\tb : true\n" +
+                "\tc : 1\n" +
+                "\ta : 1\n" +
+                "\tA.B.D.b : false\n" +
+                "\tA.B.D.c : 2\n" +
+                "\tA.B.D.d : 2\n" +
+                "\tA.C.D.a : 3\n" +
+                "\tA.C.D.b : false\n" +
+                "\tA.C.D.c : 3\n" +
+                "\tA.C.D.d : 3\n" +
+                "\n" +
+                "}\n");
 
         /*
          * cast again to A and set the 'b' attribute on A.
@@ -82,7 +109,20 @@ public class TraitTest extends BaseTest {
         TraitType AType = (TraitType) ms.getTypeSystem().getDataType("A");
         IStruct s3 = BType.castAs(s2, "A");
         s3.set("b", true);
-        System.out.println(ts);
+        Assert.assertEquals(ts.toString(), "{\n" +
+                "\td : 1\n" +
+                "\tb : true\n" +
+                "\tc : 1\n" +
+                "\ta : 1\n" +
+                "\tA.B.D.b : true\n" +
+                "\tA.B.D.c : 2\n" +
+                "\tA.B.D.d : 2\n" +
+                "\tA.C.D.a : 3\n" +
+                "\tA.C.D.b : false\n" +
+                "\tA.C.D.c : 3\n" +
+                "\tA.C.D.d : 3\n" +
+                "\n" +
+                "}\n");
     }
 }
 

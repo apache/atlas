@@ -20,6 +20,7 @@ package org.apache.metadata;
 
 import org.apache.metadata.storage.StructInstance;
 import org.apache.metadata.types.*;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -39,7 +40,24 @@ public class StructTest extends BaseTest {
     public void test1() throws MetadataException {
         Struct s = createStruct(ms);
         ITypedStruct ts = structType.convert(s, Multiplicity.REQUIRED);
-        System.out.println(ts);
+        Assert.assertEquals(ts.toString(), "{\n" +
+                "\ta : 1\n" +
+                "\tb : true\n" +
+                "\tc : 1\n" +
+                "\td : 2\n" +
+                "\te : 1\n" +
+                "\tf : 1\n" +
+                "\tg : 1\n" +
+                "\th : 1.0\n" +
+                "\ti : 1.0\n" +
+                "\tj : 1\n" +
+                "\tk : 1\n" +
+                "\tl : Wed Dec 10 18:35:58 PST 2014\n" +
+                "\tm : [1, 1]\n" +
+                "\tn : [1.1, 1.1]\n" +
+                "\to : {b=2.0, a=1.0}\n" +
+                "\n" +
+                "}\n");
     }
 
     @Test
@@ -50,7 +68,17 @@ public class StructTest extends BaseTest {
         s2.set("a", 1);
         s2.set("s", s1);
         ITypedStruct ts = recursiveStructType.convert(s2, Multiplicity.REQUIRED);
-        System.out.println(ts);
+        Assert.assertEquals(ts.toString(), "{\n" +
+                "\ta : 1\n" +
+                "\ts : {\n" +
+                "\ta : 1\n" +
+                "\ts : {<null>\n" +
+                "\n" +
+                "\n" +
+                "}\n" +
+                "\n" +
+                "\n" +
+                "}\n");
     }
 
 }

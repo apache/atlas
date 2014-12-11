@@ -28,6 +28,7 @@ import org.json4s.native.Serialization._
 import org.junit.{Test, Before}
 import org.apache.metadata.dsl._
 import org.json4s.native.JsonMethods._
+import org.junit.Assert
 
 class DSLTest extends BaseTest {
 
@@ -39,7 +40,7 @@ class DSLTest extends BaseTest {
   @Test def test1 {
 
     // 1. Existing Types in System
-    println(s"Existing Types:\n\t ${listTypes}\n")
+    Assert.assertEquals(s"${listTypes}", "[t2, t1, int, array<bigdecimal>, long, double, date, float, short, biginteger, byte, string, boolean, bigdecimal, map<string,double>, array<int>]")
 
     defineStructType("mytype",
       attrDef("a", INT_TYPE, ATTR_REQUIRED),
@@ -59,7 +60,7 @@ class DSLTest extends BaseTest {
       attrDef("o", mapType(STRING_TYPE, DOUBLE_TYPE)))
 
     // 2. 'mytype' available as a a Type
-    println(s"Added Type:\n\t ${listTypes}\n")
+    Assert.assertEquals(s"${listTypes}", "[t2, t1, int, mytype, array<bigdecimal>, long, double, date, float, short, biginteger, byte, string, boolean, bigdecimal, map<string,double>, array<int>]")
 
     // 3. Create a 'mytype' instance from Json
     val i = createInstance("mytype", """
@@ -87,19 +88,19 @@ class DSLTest extends BaseTest {
                                        """)
 
     // 4. Navigate mytype instance in code
-    println("Examples of Navigate mytype instance in code:\n")
-    println(s"i.a -> ${i.a}")
-    println(s"i.o -> ${i.o}")
-    println(s"i.o.keys -> ${i.o.asInstanceOf[java.util.Map[_,_]].keySet}")
+    // Examples of Navigate mytype instance in code
+    Assert.assertEquals(s"${i.a}", "1")
+    Assert.assertEquals(s"${i.o}", "{b=2.0, a=1.0}")
+    Assert.assertEquals(s"${i.o.asInstanceOf[java.util.Map[_,_]].keySet}", "[b, a]")
 
     // 5. Serialize mytype instance to Json
-    println(s"\nJSON:\n ${pretty(render(i))}")
+    Assert.assertEquals(s"${pretty(render(i))}", "{\n  \"$typeName$\":\"mytype\",\n  \"e\":1,\n  \"n\":[1,1.100000000000000088817841970012523233890533447265625],\n  \"h\":1.0,\n  \"b\":true,\n  \"k\":1,\n  \"j\":1,\n  \"d\":2,\n  \"m\":[1,1],\n  \"g\":1,\n  \"a\":1,\n  \"i\":1.0,\n  \"c\":1,\n  \"l\":\"2014-12-03T08:00:00.000Z\",\n  \"f\":1,\n  \"o\":{\n    \"b\":2.0,\n    \"a\":1.0\n  }\n}")
   }
 
   @Test def test2 {
 
     // 1. Existing Types in System
-    println(s"Existing Types:\n\t ${listTypes}\n")
+    Assert.assertEquals(s"${listTypes}", "[t2, t1, int, array<bigdecimal>, long, double, date, float, short, biginteger, byte, string, boolean, bigdecimal, map<string,double>, array<int>]")
 
     val addrType = defineStructType("addressType",
       attrDef("houseNum", INT_TYPE, ATTR_REQUIRED),
@@ -117,7 +118,8 @@ class DSLTest extends BaseTest {
     )
 
     // 2. updated Types in System
-    println(s"Updated Types:\n\t ${listTypes}")
+    Assert.assertEquals(s"${listTypes}", "[t2, t1, int, addressType, array<bigdecimal>, long, double, date, float, short, biginteger, byte, string, boolean, bigdecimal, personType, map<string,double>, array<int>]")
+
 
     // 3. Construct a Person in Code
     val person = createInstance("personType")
@@ -136,7 +138,7 @@ class DSLTest extends BaseTest {
     person.address = address
 
     // 4. Convert to Json
-    println(s"\nJSON:\n ${pretty(render(person))}")
+    Assert.assertEquals(s"${pretty(render(person))}", "{\n  \"$typeName$\":\"personType\",\n  \"first_name\":\"Meta\",\n  \"address\":{\n    \"$typeName$\":\"addressType\",\n    \"houseNum\":3460,\n    \"city\":\"Palo Alto\",\n    \"country\":\"USA\",\n    \"state\":\"CA\",\n    \"zip\":94303,\n    \"street\":\"W Bayshore Rd\"\n  },\n  \"last_name\":\"Hadoop\"\n}");
 
     val p2 = createInstance("personType", """{
                                               "first_name":"Meta",
@@ -155,7 +157,7 @@ class DSLTest extends BaseTest {
 
   @Test def testHive(): Unit = {
     val hiveTable = HiveMockMetadataService.getTable("tpcds", "date_dim")
-    println(hiveTable)
+    //println(hiveTable)
 
     //name : String, typeName : String, comment : String
     val fieldType = defineStructType("FieldSchema",
