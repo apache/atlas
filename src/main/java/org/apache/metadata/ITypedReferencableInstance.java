@@ -18,9 +18,5 @@
 
 package org.apache.metadata;
 
-/**
- * A marker interface for StructType and TraitType instances.
- */
-public interface IStruct extends IInstance {
-
+public interface ITypedReferencableInstance extends ITypedInstance, IReferencableInstance {
 }

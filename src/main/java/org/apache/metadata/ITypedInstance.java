@@ -18,9 +18,17 @@
 
 package org.apache.metadata;
 
-/**
- * A marker interface for StructType and TraitType instances.
- */
-public interface IStruct extends IInstance {
+import org.apache.metadata.types.FieldMapping;
 
+/**
+ * An instance whose structure is associated with a IDataType.
+ * This is obtained by a call to 'createInstance' or the result of a Query.
+ * A ITypedInstance can only contain information on attributes of the associated Type.
+ * Instance can still be invalid because of missing required fields or incorrect multiplicity.
+ * But user can only get/set on a known field of the associated type. Type values have to match
+ * the IDataType of the associated attribute.
+ */
+public interface ITypedInstance extends IInstance {
+
+    FieldMapping fieldMapping();
 }

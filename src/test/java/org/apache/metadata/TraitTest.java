@@ -64,7 +64,7 @@ public class TraitTest extends BaseTest {
         s1.set("A.C.D.d", 3);
 
 
-        StructInstance ts = DType.convert(s1, Multiplicity.REQUIRED);
+        ITypedStruct ts = DType.convert(s1, Multiplicity.REQUIRED);
         System.out.println(ts);
 
         /*

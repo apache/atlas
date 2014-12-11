@@ -18,9 +18,17 @@
 
 package org.apache.metadata;
 
-/**
- * A marker interface for StructType and TraitType instances.
- */
-public interface IStruct extends IInstance {
+import com.google.common.collect.ImmutableList;
+import org.apache.metadata.storage.Id;
 
+/**
+ * Represents and instance of a ClassType. These have identity.
+ * Transient instances will have a UNASSIGNED identity.
+ */
+public interface IReferencableInstance extends IStruct {
+
+    ImmutableList<String> getTraits();
+    Id getId();
+
+    IStruct getTrait(String typeName);
 }

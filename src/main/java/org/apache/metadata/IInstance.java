@@ -19,8 +19,12 @@
 package org.apache.metadata;
 
 /**
- * A marker interface for StructType and TraitType instances.
+ * Represents a Struct or Trait or Object.
  */
-public interface IStruct extends IInstance {
+public interface IInstance {
+
+    String getTypeName();
+    Object get(String attrName) throws MetadataException;
+    void set(String attrName, Object val) throws MetadataException;
 
 }

@@ -18,12 +18,12 @@
 
 package org.apache.metadata.dsl
 
-import org.apache.metadata.MetadataService
+import org.apache.metadata.{ITypedStruct, MetadataService}
 import org.apache.metadata.storage.StructInstance
 import org.apache.metadata.types.TypeSystem
 import scala.language.dynamics
 
-class DynamicTypedStruct(val ts : StructInstance) extends Dynamic {
+class DynamicTypedStruct(val ts : ITypedStruct) extends Dynamic {
   def selectDynamic(name: String) = ts.get(name)
   def updateDynamic(name: String)(value: Any) {
     var value1 = value

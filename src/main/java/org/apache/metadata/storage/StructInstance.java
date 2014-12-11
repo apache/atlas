@@ -20,6 +20,7 @@ package org.apache.metadata.storage;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.metadata.IStruct;
+import org.apache.metadata.ITypedStruct;
 import org.apache.metadata.MetadataException;
 import org.apache.metadata.types.AttributeInfo;
 import org.apache.metadata.types.FieldMapping;
@@ -30,7 +31,7 @@ import java.math.BigInteger;
 import java.util.Date;
 import java.util.Map;
 
-public class StructInstance implements IStruct {
+public class StructInstance implements ITypedStruct {
     public final String dataTypeName;
     public final FieldMapping fieldMapping;
     public final boolean nullFlags[];
@@ -81,6 +82,11 @@ public class StructInstance implements IStruct {
     @Override
     public String getTypeName() {
         return dataTypeName;
+    }
+
+    @Override
+    public FieldMapping fieldMapping() {
+        return fieldMapping;
     }
 
     @Override

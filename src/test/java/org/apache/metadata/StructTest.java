@@ -38,7 +38,7 @@ public class StructTest extends BaseTest {
     @Test
     public void test1() throws MetadataException {
         Struct s = createStruct(ms);
-        StructInstance ts = structType.convert(s, Multiplicity.REQUIRED);
+        ITypedStruct ts = structType.convert(s, Multiplicity.REQUIRED);
         System.out.println(ts);
     }
 
@@ -49,7 +49,7 @@ public class StructTest extends BaseTest {
         Struct s2 = new Struct(recursiveStructType.getName());
         s2.set("a", 1);
         s2.set("s", s1);
-        StructInstance ts = recursiveStructType.convert(s2, Multiplicity.REQUIRED);
+        ITypedStruct ts = recursiveStructType.convert(s2, Multiplicity.REQUIRED);
         System.out.println(ts);
     }
 

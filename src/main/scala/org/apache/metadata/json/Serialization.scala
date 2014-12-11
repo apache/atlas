@@ -19,7 +19,7 @@
 package org.apache.metadata.json
 
 import org.apache.metadata.types.DataTypes.{MapType, TypeCategory, ArrayType}
-import org.apache.metadata.{MetadataException, MetadataService}
+import org.apache.metadata.{ITypedStruct, IStruct, MetadataException, MetadataService}
 import org.apache.metadata.types._
 import org.json4s.JsonAST.JInt
 import org.json4s._
@@ -27,7 +27,6 @@ import org.json4s.native.Serialization.{read, write => swrite}
 import org.json4s.reflect.{ScalaType, Reflector}
 import java.util.regex.Pattern
 import java.util.Date
-import org.apache.metadata.storage.StructInstance
 import collection.JavaConversions._
 import scala.collection.JavaConverters._
 
@@ -45,7 +44,7 @@ class BigIntegerSerializer extends CustomSerializer[java.math.BigInteger](format
 }
   ))
 
-class TypedStructSerializer extends Serializer[StructInstance] {
+class TypedStructSerializer extends Serializer[ITypedStruct] {
 
   def extractList(lT : ArrayType, value : JArray)(implicit format: Formats) : Any = {
     val dT = lT.getElemType
@@ -69,15 +68,15 @@ class TypedStructSerializer extends Serializer[StructInstance] {
     case value : JObject if dT.getTypeCategory eq TypeCategory.MAP =>
       extractMap(dT.asInstanceOf[MapType], value.asInstanceOf[JObject])
     case value : JObject  =>
-      Extraction.extract[StructInstance](value)
+      Extraction.extract[ITypedStruct](value)
   }
 
   def deserialize(implicit format: Formats) = {
-    case (TypeInfo(clazz, ptype), json) if classOf[StructInstance].isAssignableFrom(clazz) => json match {
+    case (TypeInfo(clazz, ptype), json) if classOf[ITypedStruct].isAssignableFrom(clazz) => json match {
       case JObject(fs) =>
         val(typ, fields) = fs.partition(f => f._1 == Serialization.STRUCT_TYPE_FIELD_NAME)
         val typName = typ(0)._2.asInstanceOf[JString].s
-        val sT = MetadataService.getCurrentTypeSystem().getDataType(typName).asInstanceOf[StructType]
+        val sT = MetadataService.getCurrentTypeSystem().getDataType(typName).asInstanceOf[IConstructableType[IStruct, ITypedStruct]]
         val s = sT.createInstance()
         fields.foreach { f =>
           val fName = f._1
@@ -85,7 +84,8 @@ class TypedStructSerializer extends Serializer[StructInstance] {
           if ( fInfo != null ) {
             //println(fName)
             var v = f._2
-            if ( fInfo.dataType().isInstanceOf[StructType] ) {
+            if ( fInfo.dataType().getTypeCategory == TypeCategory.TRAIT ||
+              fInfo.dataType().getTypeCategory == TypeCategory.STRUCT) {
               v = v match {
                 case JObject(sFields) =>
                   JObject(JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(fInfo.dataType.getName)) :: sFields)
@@ -109,7 +109,7 @@ class TypedStructSerializer extends Serializer[StructInstance] {
   //implicit def javaBigInteger2bigInt(x: java.math.BigInteger): BigInt = new BigInt(x)
 
   def serialize(implicit format: Formats) = {
-    case e: StructInstance =>
+    case e: ITypedStruct =>
       val fields  = e.fieldMapping.fields.map {
         case (fName, info) => {
           var v = e.get(fName)
@@ -119,7 +119,7 @@ class TypedStructSerializer extends Serializer[StructInstance] {
           JField(fName, Extraction.decompose(v))
         }
       }.toList.map(_.asInstanceOf[JField])
-      JObject(JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(e.dataTypeName)) :: fields)
+      JObject(JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(e.getTypeName)) :: fields)
   }
 }
 

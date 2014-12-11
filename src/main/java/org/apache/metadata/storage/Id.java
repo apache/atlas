@@ -24,14 +24,16 @@ public class Id {
 
     public final int id;
     public final String className;
+    public final int version;
 
-    public Id(int id, String className) {
+    public Id(int id, int version, String className) {
         this.id = id;
         this.className = className;
+        this.version = version;
     }
 
     public Id(String className) {
-        this(UNASSIGNED, className);
+        this(UNASSIGNED, 0, className);
     }
 
     public boolean isUnassigned() {

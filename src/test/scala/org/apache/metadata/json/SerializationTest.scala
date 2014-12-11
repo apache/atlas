@@ -19,11 +19,10 @@
 package org.apache.metadata.json
 
 import com.google.common.collect.ImmutableList
-import org.apache.metadata.Struct
+import org.apache.metadata.{ITypedStruct, Struct, BaseTest}
 import org.apache.metadata.storage.StructInstance
 import org.apache.metadata.storage.StructInstance
 import org.apache.metadata.types._
-import org.apache.metadata.{Struct, BaseTest}
 import org.json4s.NoTypeHints
 import org.junit.Before
 import org.junit.Test
@@ -46,7 +45,7 @@ class SerializationTest extends BaseTest {
 
   @Test def test1 {
     val s: Struct = BaseTest.createStruct(ms)
-    val ts: StructInstance = structType.convert(s, Multiplicity.REQUIRED)
+    val ts: ITypedStruct = structType.convert(s, Multiplicity.REQUIRED)
 
     println("Typed Struct :")
     println(ts)
@@ -65,7 +64,7 @@ class SerializationTest extends BaseTest {
 
   @Test def test2 {
     val s: Struct = BaseTest.createStruct(ms)
-    val ts: StructInstance = structType.convert(s, Multiplicity.REQUIRED)
+    val ts: ITypedStruct = structType.convert(s, Multiplicity.REQUIRED)
 
     implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new TypedStructSerializer +
       new BigDecimalSerializer + new BigIntegerSerializer
@@ -108,7 +107,7 @@ class SerializationTest extends BaseTest {
     s1.set("A.C.D.d", 3)
 
     val s: Struct = BaseTest.createStruct(ms)
-    val ts: StructInstance = DType.convert(s1, Multiplicity.REQUIRED)
+    val ts: ITypedStruct = DType.convert(s1, Multiplicity.REQUIRED)
 
     implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new TypedStructSerializer +
       new BigDecimalSerializer + new BigIntegerSerializer
