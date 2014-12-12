@@ -121,5 +121,57 @@ public class TraitTest extends BaseTest {
                 "\n" +
                 "}\n");
     }
+
+    @Test
+    public void testRandomOrder() throws MetadataException {
+        HierarchicalTypeDefinition A = createTraitTypeDef("A", null,
+                createRequiredAttrDef("a", DataTypes.INT_TYPE),
+                createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE),
+                createOptionalAttrDef("c", DataTypes.BYTE_TYPE),
+                createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
+        HierarchicalTypeDefinition B = createTraitTypeDef("B", ImmutableList.<String>of("A"),
+                createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE));
+        HierarchicalTypeDefinition C = createTraitTypeDef("C", ImmutableList.<String>of("A"),
+                createOptionalAttrDef("c", DataTypes.BYTE_TYPE));
+        HierarchicalTypeDefinition D = createTraitTypeDef("D", ImmutableList.<String>of("B", "C"),
+                createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
+
+        defineTraits(B, D, A, C);
+
+        TraitType DType = (TraitType) ms.getTypeSystem().getDataType(TraitType.class, "D");
+
+        Struct s1 = new Struct("D");
+        s1.set("d", 1);
+        s1.set("c", 1);
+        s1.set("b", true);
+        s1.set("a", 1);
+        s1.set("A.B.D.b", true);
+        s1.set("A.B.D.c", 2);
+        s1.set("A.B.D.d", 2);
+
+        s1.set("A.C.D.a", 3);
+        s1.set("A.C.D.b", false);
+        s1.set("A.C.D.c", 3);
+        s1.set("A.C.D.d", 3);
+
+
+        ITypedStruct ts = DType.convert(s1, Multiplicity.REQUIRED);
+        Assert.assertEquals(ts.toString(), "{\n" +
+                "\td : 1\n" +
+                "\tb : true\n" +
+                "\tc : 1\n" +
+                "\ta : 1\n" +
+                "\tA.B.D.b : true\n" +
+                "\tA.B.D.c : 2\n" +
+                "\tA.B.D.d : 2\n" +
+                "\tA.C.D.a : 3\n" +
+                "\tA.C.D.b : false\n" +
+                "\tA.C.D.c : 3\n" +
+                "\tA.C.D.d : 3\n" +
+                "\n" +
+                "}\n");
+
+    }
+
 }
 

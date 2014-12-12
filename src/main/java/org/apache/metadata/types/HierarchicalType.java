@@ -91,7 +91,48 @@ public abstract class HierarchicalType<ST extends HierarchicalType,T> extends Ab
         return  ( cType == this || cType.superTypePaths.containsKey(getName()) );
     }
 
-    protected FieldMapping constructFieldMapping(ImmutableList<String> superTraits,
+    protected void setupSuperTypesGraph()
+            throws MetadataException {
+        setupSuperTypesGraph(superTypes);
+    }
+
+    private void setupSuperTypesGraph(ImmutableList<String> superTypes)
+            throws MetadataException {
+        Map<String, List<Path>> superTypePaths = new HashMap<String, List<Path>>();
+        Map<String, Path> pathNameToPathMap = new HashMap<String, Path>();
+        Queue<Path> queue = new LinkedList<Path>();
+        queue.add(new Node(getName()));
+        while(!queue.isEmpty()) {
+            Path currentPath = queue.poll();
+
+            ST superType = currentPath.typeName == getName() ? (ST) this :
+                    (ST) typeSystem.getDataType(superTypeClass, currentPath.typeName);
+
+            pathNameToPathMap.put(currentPath.pathName, currentPath);
+            if ( superType != this ) {
+                List<Path> typePaths = superTypePaths.get(superType.getName());
+                if ( typePaths == null ) {
+                    typePaths = new ArrayList<Path>();
+                    superTypePaths.put(superType.getName(), typePaths);
+                }
+                typePaths.add(currentPath);
+            }
+
+            ImmutableList<String> sTs = superType == this ? superTypes : superType.superTypes;
+
+            if ( sTs != null ) {
+                for (String sT : sTs) {
+                    queue.add(new Path(sT, currentPath));
+                }
+            }
+        }
+
+        this.superTypePaths = ImmutableMap.copyOf(superTypePaths);
+        this.pathNameToPathMap = ImmutableMap.copyOf(pathNameToPathMap);
+
+    }
+
+    protected FieldMapping constructFieldMapping(ImmutableList<String> superTypes,
                                                  AttributeInfo... fields)
             throws MetadataException {
 
@@ -114,25 +155,14 @@ public abstract class HierarchicalType<ST extends HierarchicalType,T> extends Ab
         int numStructs = 0;
         int numReferenceables = 0;
 
-        Map<String, List<Path>> superTypePaths = new HashMap<String, List<Path>>();
-        Map<String, Path> pathNameToPathMap = new HashMap<String, Path>();
-        Queue<Path> queue = new LinkedList<Path>();
-        queue.add(new Node(getName()));
-        while(!queue.isEmpty()) {
-            Path currentPath = queue.poll();
+        setupSuperTypesGraph(superTypes);
+
+        Iterator<Path> pathItr = pathIterator();
+        while(pathItr.hasNext()) {
+            Path currentPath = pathItr.next();
 
             ST superType = currentPath.typeName == getName() ? (ST) this :
                     (ST) typeSystem.getDataType(superTypeClass, currentPath.typeName);
-
-            pathNameToPathMap.put(currentPath.pathName, currentPath);
-            if ( superType != this ) {
-                List<Path> typePaths = superTypePaths.get(superType.getName());
-                if ( typePaths == null ) {
-                    typePaths = new ArrayList<Path>();
-                    superTypePaths.put(superType.getName(), typePaths);
-                }
-                typePaths.add(currentPath);
-            }
 
             ImmutableList<AttributeInfo> superTypeFields = superType == this ?
                     ImmutableList.<AttributeInfo>copyOf(fields) : superType.immediateAttrs;
@@ -140,10 +170,13 @@ public abstract class HierarchicalType<ST extends HierarchicalType,T> extends Ab
             Set<String> immediateFields = new HashSet<String>();
 
             for(AttributeInfo i : superTypeFields) {
-                if ( superType == this && immediateFields.contains(i.name) ) {
-                    throw new MetadataException(
-                            String.format("Struct defintion cannot contain multiple fields with the same name %s",
-                                    i.name));
+                if ( superType == this ) {
+                    if ( immediateFields.contains(i.name) ) {
+                        throw new MetadataException(
+                                String.format("Struct defintion cannot contain multiple fields with the same name %s",
+                                        i.name));
+                    }
+                    immediateFields.add(i.name);
                 }
 
                 String attrName = i.name;
@@ -202,12 +235,6 @@ public abstract class HierarchicalType<ST extends HierarchicalType,T> extends Ab
                 } else {
                     throw new MetadataException(String.format("Unknown datatype %s", i.dataType()));
                 }
-            }
-
-            ImmutableList<String> sTs = superType == this ? superTraits : superType.superTypes;
-
-            for(String sT : sTs) {
-                queue.add(new Path(sT, currentPath));
             }
         }
 

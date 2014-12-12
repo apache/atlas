@@ -18,14 +18,9 @@
 
 package org.apache.metadata.types;
 
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import org.apache.metadata.MetadataException;
 
-import javax.annotation.Nullable;
 import java.lang.reflect.Constructor;
 import java.util.*;
 
@@ -193,7 +188,7 @@ public class TypeSystem {
         /*
          * Step 1:
          * - validate cannot redefine types
-         * - for Hierarchical Types setup an empty TraitType to allow for recursive type graphs.
+         * - setup shallow Type instances to facilitate recursive type graphs
          */
         private void step1() throws MetadataException {
             for (StructTypeDefinition sDef : structDefs) {
@@ -266,14 +261,19 @@ public class TypeSystem {
         /*
          * Step 2:
          * - for Hierarchical Types, validate SuperTypes.
+         * - for each Hierarchical Type setup their SuperTypes Graph
          */
         private void step2() throws MetadataException {
             for (HierarchicalTypeDefinition<TraitType> traitDef : traitDefs) {
                 validateSuperTypes(TraitType.class, traitDef);
+                TraitType traitType = getDataType(TraitType.class, traitDef.typeName);
+                traitType.setupSuperTypesGraph();
             }
 
             for (HierarchicalTypeDefinition<ClassType> classDef : classDefs) {
                 validateSuperTypes(ClassType.class, classDef);
+                ClassType classType = getDataType(ClassType.class, classDef.typeName);
+                classType.setupSuperTypesGraph();
             }
         }
 
