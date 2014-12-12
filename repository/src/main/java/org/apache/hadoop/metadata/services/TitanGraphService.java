@@ -18,13 +18,9 @@
 
 package org.apache.hadoop.metadata.services;
 
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
@@ -50,10 +46,8 @@ public class TitanGraphService implements GraphService {
     /**
      * Constant for the configuration property that indicates the prefix.
      */
-    private static final String METADATA_PREFIX = "metadata.titanGraph.";
-    private static final String METADATA_INDEX_KEY = "index.name";
+    private static final String METADATA_PREFIX = "metadata.graph.";
 
-    private Configuration graphConfig;
     private TitanGraph titanGraph;
     private Set<String> vertexIndexedKeys;
     private Set<String> edgeIndexedKeys;
@@ -75,11 +69,10 @@ public class TitanGraphService implements GraphService {
      */
     @Override
     public void start() throws Exception {
-//        graphConfig = getConfiguration();
+        Configuration graphConfig = getConfiguration();
+        titanGraph = initializeGraphDB(graphConfig);
 
-        titanGraph = initializeGraphDB();
-
-//        createIndicesForVertexKeys();
+        createIndicesForVertexKeys();
         // todo - create Edge Cardinality Constraints
         LOG.info("Initialized titanGraph db: {}", titanGraph);
 
@@ -90,29 +83,17 @@ public class TitanGraphService implements GraphService {
         LOG.info("Init edge property keys: {}", edgeIndexedKeys);
     }
 
-    protected TitanGraph initializeGraphDB() {
-        LOG.info("Initializing titanGraph db");
-
-        // todo: externalize this
-        Configuration graphConfig = new PropertiesConfiguration();
-        graphConfig.setProperty("storage.backend", "berkeleyje");
-        graphConfig.setProperty("storage.directory", "target/data/graphdb");
-
-        return TitanFactory.open(graphConfig);
-    }
-
     private static Configuration getConfiguration() throws ConfigurationException {
-        PropertiesConfiguration configProperties = new PropertiesConfiguration("application.properties");
+        PropertiesConfiguration configProperties =
+                new PropertiesConfiguration("application.properties");
 
         Configuration graphConfig = new PropertiesConfiguration();
         final Iterator<String> iterator = configProperties.getKeys();
         while (iterator.hasNext()) {
             String key = iterator.next();
-            System.out.println("key = " + key);
             if (key.startsWith(METADATA_PREFIX)) {
                 String value = (String) configProperties.getProperty(key);
                 key = key.substring(METADATA_PREFIX.length());
-                System.out.println("**** key = " + key + ", value = " + value);
                 graphConfig.setProperty(key, value);
             }
         }
@@ -120,49 +101,19 @@ public class TitanGraphService implements GraphService {
         return graphConfig;
     }
 
-    /**
-     * This unfortunately requires a handle to Titan implementation since
-     * com.tinkerpop.blueprints.KeyIndexableGraph#createKeyIndex does not create an index.
-     */
+    protected TitanGraph initializeGraphDB(Configuration graphConfig) {
+        LOG.info("Initializing titanGraph db");
+        return TitanFactory.open(graphConfig);
+    }
+
     protected void createIndicesForVertexKeys() {
-        if (!((KeyIndexableGraph) titanGraph).getIndexedKeys(Vertex.class).isEmpty()) {
+        if (!titanGraph.getIndexedKeys(Vertex.class).isEmpty()) {
             LOG.info("Indexes already exist for titanGraph");
             return;
         }
 
         LOG.info("Indexes does not exist, Creating indexes for titanGraph");
-        // todo - externalize this
-        String indexName = graphConfig.getString(METADATA_INDEX_KEY);
-        PropertyKey guid = createPropertyKey("guid", String.class, Cardinality.SINGLE);
-        createIndex(indexName, guid, Vertex.class, true);
-
-        getTitanGraph().commit();
-    }
-
-    private PropertyKey createPropertyKey(String propertyKeyName, Class<String> dataType,
-                                          Cardinality cardinality) {
-        PropertyKey propertyKey = getTitanGraph().getManagementSystem()
-                .makePropertyKey(propertyKeyName)
-                .dataType(dataType)
-                .cardinality(cardinality)
-                .make();
-        LOG.info("Created property key {}", propertyKey);
-        return propertyKey;
-    }
-
-    private void createIndex(String indexName, PropertyKey propertyKey,
-                             Class<? extends Element> clazz, boolean isUnique) {
-        TitanManagement managementSystem = getTitanGraph().getManagementSystem();
-        managementSystem.buildPropertyIndex(propertyKey, indexName);
-
-        TitanManagement.IndexBuilder indexBuilder = managementSystem
-                .buildIndex(indexName, clazz)
-                .addKey(propertyKey);
-        if (isUnique) {
-            indexBuilder.unique();
-        }
-
-        indexBuilder.buildCompositeIndex();
+        // todo - add index for vertex and edge property keys
     }
 
     /**

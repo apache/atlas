@@ -59,7 +59,8 @@ public final class Services implements Iterable<Service> {
         if (services.containsKey(serviceName)) {
             return (T) services.get(serviceName);
         } else {
-            throw new NoSuchElementException("Service " + serviceName + " not registered with registry");
+            throw new NoSuchElementException(
+                    "Service " + serviceName + " not registered with registry");
         }
     }
 
@@ -79,7 +80,8 @@ public final class Services implements Iterable<Service> {
 
         String serviceClassName;
         try {
-            PropertiesConfiguration configuration = new PropertiesConfiguration("application.properties");
+            PropertiesConfiguration configuration =
+                    new PropertiesConfiguration("application.properties");
             serviceClassName = configuration.getString(serviceName + ".impl");
         } catch (ConfigurationException e) {
             throw new MetadataException("unable to get server properties");

@@ -36,14 +36,12 @@ public class ServiceInitializer {
     public void initialize() throws MetadataException {
         String serviceClassNames;
         try {
-            PropertiesConfiguration configuration = new PropertiesConfiguration("application.properties");
+            PropertiesConfiguration configuration =
+                    new PropertiesConfiguration("application.properties");
             serviceClassNames = configuration.getString("application.services");
         } catch (ConfigurationException e) {
-            throw new MetadataException("unable to get server properties");
+            throw new RuntimeException("unable to get server properties");
         }
-
-        serviceClassNames
-                = "org.apache.hadoop.metadata.services.TitanGraphService,org.apache.hadoop.metadata.services.GraphBackedMetadataRepositoryService";
 
         for (String serviceClassName : serviceClassNames.split(",")) {
             serviceClassName = serviceClassName.trim();
