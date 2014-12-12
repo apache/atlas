@@ -31,24 +31,15 @@ public class TraitType extends HierarchicalType<TraitType, IStruct>
     /**
      * Used when creating a TraitType, to support recursive Structs.
      */
-    TraitType(ITypeBrowser typeSystem, String name, ImmutableList<String> superTraits, int numFields) {
+    TraitType(TypeSystem typeSystem, String name, ImmutableList<String> superTraits, int numFields) {
         super(typeSystem, name, superTraits, numFields);
         handler = null;
     }
 
-    TraitType(ITypeBrowser typeSystem, String name, ImmutableList<String> superTraits, AttributeInfo... fields)
+    TraitType(TypeSystem typeSystem, String name, ImmutableList<String> superTraits, AttributeInfo... fields)
             throws MetadataException {
         super(typeSystem, name, superTraits, fields);
         handler = new TypedStructHandler(this);
-    }
-
-    @Override
-    public String getName() {
-        return name;
-    }
-
-    public FieldMapping fieldMapping() {
-        return fieldMapping;
     }
 
     @Override

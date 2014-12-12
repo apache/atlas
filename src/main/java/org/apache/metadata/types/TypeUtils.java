@@ -20,6 +20,8 @@ package org.apache.metadata.types;
 import org.apache.metadata.MetadataException;
 
 import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class TypeUtils {
 
@@ -30,4 +32,28 @@ public class TypeUtils {
             throw new MetadataException(ie);
         }
     }
+
+    public static final String NAME_REGEX = "[a-zA-z][a-zA-Z0-9_]*";
+    public static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
+
+    public static void validateName(String name) throws MetadataException {
+        if ( !NAME_PATTERN.matcher(name).matches() ) {
+            throw new MetadataException(String.format("Unsupported name for an attribute '%s'", name));
+        }
+    }
+
+    public static final Pattern ARRAY_TYPE_NAME_PATTERN = Pattern.compile(String.format("array<(%s)>", NAME_REGEX));
+    public static final Pattern MAP_TYPE_NAME_PATTERN =
+            Pattern.compile(String.format("map<(%s),(%s)>", NAME_REGEX, NAME_REGEX));
+
+    public static String parseAsArrayType(String typeName) {
+        Matcher m = ARRAY_TYPE_NAME_PATTERN.matcher(typeName);
+        return m.matches() ?  m.group(1) : null;
+    }
+
+    public static String[] parseAsMapType(String typeName) {
+        Matcher m = MAP_TYPE_NAME_PATTERN.matcher(typeName);
+        return m.matches() ?  new String[] {m.group(1), m.group(2)} : null;
+    }
+
 }

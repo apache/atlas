@@ -20,7 +20,7 @@ package org.apache.metadata.dsl
 
 import org.apache.metadata.{ITypedStruct, MetadataService}
 import org.apache.metadata.storage.StructInstance
-import org.apache.metadata.types.TypeSystem
+import org.apache.metadata.types.{StructType, TypeSystem}
 import scala.language.dynamics
 
 class DynamicTypedStruct(val ts : ITypedStruct) extends Dynamic {
@@ -32,5 +32,5 @@ class DynamicTypedStruct(val ts : ITypedStruct) extends Dynamic {
     }
     ts.set(name, value1)
   }
-  def dataType = MetadataService.getCurrentTypeSystem.getDataType(ts.getTypeName)
+  def dataType = MetadataService.getCurrentTypeSystem.getDataType(classOf[StructType], ts.getTypeName)
 }

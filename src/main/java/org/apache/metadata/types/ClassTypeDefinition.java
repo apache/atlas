@@ -16,19 +16,20 @@
  * limitations under the License.
  */
 
-package org.apache.metadata;
+package org.apache.metadata.types;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.metadata.storage.Id;
 
-/**
- * Represents and instance of a ClassType. These have identity.
- * Transient instances will have a UNASSIGNED identity.
- */
-public interface IReferencableInstance extends IStruct {
+public class ClassTypeDefinition {
 
-    ImmutableList<String> getTraits();
-    Id getId();
+    public final String typeName;
+    public final ImmutableList<String> superTraits;
+    public final AttributeDefinition[] attributeDefinitions;
 
-    IStruct getTrait(String typeName);
+    public ClassTypeDefinition(String typeName, ImmutableList<String> superTraits,
+                               AttributeDefinition[] attributeDefinitions) {
+        this.typeName = typeName;
+        this.superTraits = superTraits == null ? ImmutableList.<String>of() : superTraits;
+        this.attributeDefinitions = attributeDefinitions;
+    }
 }

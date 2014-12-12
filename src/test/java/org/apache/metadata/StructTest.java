@@ -32,8 +32,8 @@ public class StructTest extends BaseTest {
     @Before
     public void setup() throws MetadataException {
         super.setup();
-        structType = (StructType) ms.getTypeSystem().getDataType(STRUCT_TYPE_1);
-        recursiveStructType = (StructType) ms.getTypeSystem().getDataType(STRUCT_TYPE_2);
+        structType = (StructType) ms.getTypeSystem().getDataType(StructType.class, STRUCT_TYPE_1);
+        recursiveStructType = (StructType) ms.getTypeSystem().getDataType(StructType.class, STRUCT_TYPE_2);
     }
 
     @Test

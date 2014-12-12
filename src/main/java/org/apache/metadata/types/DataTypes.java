@@ -382,7 +382,7 @@ public class DataTypes {
     static String ARRAY_TYPE_SUFFIX = ">";
     public static class ArrayType extends AbstractDataType<ImmutableCollection<?>> {
 
-        private final IDataType elemType;
+        private IDataType elemType;
         private final String nm;
 
         public ArrayType(IDataType elemType) {
@@ -393,6 +393,10 @@ public class DataTypes {
 
         public IDataType getElemType() {
             return elemType;
+        }
+
+        protected void setElemType(IDataType elemType) {
+            this.elemType = elemType;
         }
 
         @Override
@@ -445,8 +449,8 @@ public class DataTypes {
     static String MAP_TYPE_SUFFIX = ">";
     public static class MapType extends AbstractDataType<ImmutableMap<?, ?>> {
 
-        private final IDataType keyType;
-        private final IDataType valueType;
+        private IDataType keyType;
+        private IDataType valueType;
         private final String nm;
 
         public MapType(IDataType keyType, IDataType valueType) {
@@ -464,6 +468,14 @@ public class DataTypes {
 
         public IDataType getValueType() {
             return valueType;
+        }
+
+        protected void setKeyType(IDataType keyType) {
+            this.keyType = keyType;
+        }
+
+        protected void setValueType(IDataType valueType) {
+            this.keyType = valueType;
         }
 
         @Override

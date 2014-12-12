@@ -20,23 +20,25 @@ package org.apache.metadata.storage;
 
 public class Id {
 
-    public static final int UNASSIGNED = -1;
-
-    public final int id;
+    public final long id;
     public final String className;
     public final int version;
 
-    public Id(int id, int version, String className) {
+    public Id(long id, int version, String className) {
         this.id = id;
         this.className = className;
         this.version = version;
     }
 
     public Id(String className) {
-        this(UNASSIGNED, 0, className);
+        this(- System.currentTimeMillis(), 0, className);
     }
 
     public boolean isUnassigned() {
-        return id == UNASSIGNED;
+        return id < 0;
+    }
+
+    public String toString() {
+        return String.format("(type: %s, id: %s)", className, isUnassigned() ? "<unassigned>" : "" + id);
     }
 }

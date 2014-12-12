@@ -76,7 +76,8 @@ class TypedStructSerializer extends Serializer[ITypedStruct] {
       case JObject(fs) =>
         val(typ, fields) = fs.partition(f => f._1 == Serialization.STRUCT_TYPE_FIELD_NAME)
         val typName = typ(0)._2.asInstanceOf[JString].s
-        val sT = MetadataService.getCurrentTypeSystem().getDataType(typName).asInstanceOf[IConstructableType[IStruct, ITypedStruct]]
+        val sT = MetadataService.getCurrentTypeSystem().getDataType(
+          classOf[IConstructableType[IStruct, ITypedStruct]], typName).asInstanceOf[IConstructableType[IStruct, ITypedStruct]]
         val s = sT.createInstance()
         fields.foreach { f =>
           val fName = f._1

@@ -40,8 +40,8 @@ class SerializationTest extends BaseTest {
   @Before
   override def setup {
     super.setup
-    structType = ms.getTypeSystem.getDataType(BaseTest.STRUCT_TYPE_1).asInstanceOf[StructType]
-    recursiveStructType = ms.getTypeSystem.getDataType(BaseTest.STRUCT_TYPE_2).asInstanceOf[StructType]
+    structType = ms.getTypeSystem.getDataType(classOf[StructType], BaseTest.STRUCT_TYPE_1).asInstanceOf[StructType]
+    recursiveStructType = ms.getTypeSystem.getDataType(classOf[StructType], BaseTest.STRUCT_TYPE_2).asInstanceOf[StructType]
   }
 
   @Test def test1 {
@@ -92,7 +92,7 @@ class SerializationTest extends BaseTest {
 
     defineTraits(A, B, C, D)
 
-    val DType: TraitType = ms.getTypeSystem.getDataType("D").asInstanceOf[TraitType]
+    val DType: TraitType = ms.getTypeSystem.getDataType(classOf[TraitType], "D").asInstanceOf[TraitType]
     val s1: Struct = new Struct("D")
     s1.set("d", 1)
     s1.set("c", 1)

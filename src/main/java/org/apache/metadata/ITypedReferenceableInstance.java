@@ -16,12 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.metadata.types;
+package org.apache.metadata;
 
-/**
- * @nopublic
- */
-public interface ITypeBrowser {
-
-    IDataType dataType(String name);
+public interface ITypedReferenceableInstance extends ITypedInstance, IReferenceableInstance {
 }

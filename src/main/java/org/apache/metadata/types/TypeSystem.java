@@ -23,7 +23,7 @@ import org.apache.metadata.MetadataException;
 
 import java.util.*;
 
-public class TypeSystem implements ITypeBrowser {
+public class TypeSystem {
 
     private Map<String, IDataType> types;
 
@@ -31,6 +31,8 @@ public class TypeSystem implements ITypeBrowser {
         types = new HashMap<String, IDataType>();
         registerPrimitiveTypes();
     }
+
+    private TypeSystem(TypeSystem ts) {}
 
     public ImmutableList<String> getTypeNames() {
         return ImmutableList.copyOf(types.keySet());
@@ -54,10 +56,30 @@ public class TypeSystem implements ITypeBrowser {
         return types.get(name);
     }
 
-    public IDataType getDataType(String name) throws MetadataException {
+    public <T> T getDataType(Class<T> cls, String name) throws MetadataException {
         if ( types.containsKey(name) ) {
-            return types.get(name);
+            return cls.cast(types.get(name));
         }
+
+        /*
+         * is this an Array Type?
+         */
+        String arrElemType = TypeUtils.parseAsArrayType(name);
+        if ( arrElemType != null ) {
+            IDataType dT = defineArrayType(getDataType(IDataType.class, arrElemType));
+            return cls.cast(dT);
+        }
+
+        /*
+         * is this a Map Type?
+         */
+        String[] mapType = TypeUtils.parseAsMapType(name);
+        if ( mapType != null ) {
+            IDataType dT = defineMapType(getDataType(IDataType.class, mapType[0]),
+                    getDataType(IDataType.class, mapType[1]));
+            return cls.cast(dT);
+        }
+
         throw new MetadataException(String.format("Unknown datatype: %s", name));
     }
 
@@ -160,6 +182,9 @@ public class TypeSystem implements ITypeBrowser {
         List<TraitType> l = new ArrayList<TraitType>(transientTypes.traitTypes.values());
         Collections.sort(l);
         List<AttributeInfo> recursiveRefs = new ArrayList<AttributeInfo>();
+        List<DataTypes.ArrayType> recursiveArrayTypes = new ArrayList<DataTypes.ArrayType>();
+        List<DataTypes.MapType> recursiveMapTypes = new ArrayList<DataTypes.MapType>();
+
 
         try {
             for (TraitType ttO : l) {
@@ -170,19 +195,39 @@ public class TypeSystem implements ITypeBrowser {
                     if (transientTypes.traitTypes.containsKey(traitDef.attributeDefinitions[i].dataTypeName)) {
                         recursiveRefs.add(infos[i]);
                     }
+                    if ( infos[i].dataType().getTypeCategory() == DataTypes.TypeCategory.ARRAY ) {
+                        DataTypes.ArrayType arrType = (DataTypes.ArrayType) infos[i].dataType();
+                        if (transientTypes.traitTypes.containsKey(arrType.getElemType().getName())) {
+                            recursiveArrayTypes.add(arrType);
+                        }
+                    }
+                    if ( infos[i].dataType().getTypeCategory() == DataTypes.TypeCategory.MAP ) {
+                        DataTypes.MapType mapType = (DataTypes.MapType) infos[i].dataType();
+                        if (transientTypes.traitTypes.containsKey(mapType.getKeyType().getName())) {
+                            recursiveMapTypes.add(mapType);
+                        } else if (transientTypes.traitTypes.containsKey(mapType.getValueType().getName())) {
+                            recursiveMapTypes.add(mapType);
+                        }
+                    }
                 }
 
                 TraitType tt = new TraitType(this, traitDef.typeName, traitDef.superTraits, infos);
-                ;
                 types.put(tt.getName(), tt);
             }
 
             /*
              * Step 4:
-             * - fix up references in recursive AttrInfo
+             * - fix up references in recursive AttrInfo and recursive Collection Types.
              */
             for (AttributeInfo info : recursiveRefs) {
                 info.setDataType(dataType(info.dataType().getName()));
+            }
+            for(DataTypes.ArrayType arrType : recursiveArrayTypes ) {
+                arrType.setElemType(dataType(arrType.getElemType().getName()));
+            }
+            for(DataTypes.MapType mapType : recursiveMapTypes ) {
+                mapType.setKeyType(dataType(mapType.getKeyType().getName()));
+                mapType.setValueType(dataType(mapType.getValueType().getName()));
             }
         } catch(MetadataException me) {
             for(String sT : transientTypes.traitTypes.keySet()) {
@@ -211,13 +256,54 @@ public class TypeSystem implements ITypeBrowser {
         return dT;
     }
 
-    class TransientTypeSystem implements ITypeBrowser {
+    class TransientTypeSystem extends TypeSystem {
         Map<String, TraitType> traitTypes = new HashMap<String, TraitType>();
+
+        TransientTypeSystem() {
+            super(TypeSystem.this);
+        }
 
         public IDataType dataType(String name) {
             IDataType dT = TypeSystem.this.dataType(name);
             dT = dT == null ? traitTypes.get(name) : dT;
             return dT;
+        }
+
+        @Override
+        public ImmutableList<String> getTypeNames() {
+            return TypeSystem.this.getTypeNames();
+        }
+
+        @Override
+        public <T> T getDataType(Class<T> cls, String name) throws MetadataException  {
+            return TypeSystem.this.getDataType(cls, name);
+        }
+
+        @Override
+        public StructType defineStructType(String name, boolean errorIfExists, AttributeDefinition... attrDefs)
+                throws MetadataException {
+            return TypeSystem.this.defineStructType(name, errorIfExists, attrDefs);
+        }
+
+        @Override
+        public TraitType defineTraitType(boolean errorIfExists, TraitTypeDefinition traitDef) throws MetadataException {
+            return TypeSystem.this.defineTraitType(errorIfExists, traitDef);
+        }
+
+        @Override
+        public Map<String, TraitType> defineTraitTypes(boolean errorIfExists, TraitTypeDefinition... traitDefs)
+                throws MetadataException {
+            return TypeSystem.this.defineTraitTypes(errorIfExists, traitDefs);
+        }
+
+        @Override
+        public DataTypes.ArrayType defineArrayType(IDataType elemType) throws MetadataException {
+            return TypeSystem.this.defineArrayType(elemType);
+        }
+
+        @Override
+        public DataTypes.MapType defineMapType(IDataType keyType, IDataType valueType) throws MetadataException {
+            return TypeSystem.this.defineMapType(keyType, valueType);
         }
     }
 }

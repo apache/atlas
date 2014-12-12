@@ -32,7 +32,7 @@ import java.util.*;
 public class StructType  extends AbstractDataType<IStruct>
         implements IConstructableType<IStruct, ITypedStruct> {
 
-    public final ITypeBrowser typeSystem;
+    public final TypeSystem typeSystem;
     public final String name;
     public final FieldMapping fieldMapping;
     public final int numFields;
@@ -41,7 +41,7 @@ public class StructType  extends AbstractDataType<IStruct>
     /**
      * Used when creating a StructType, to support recursive Structs.
      */
-    protected StructType(ITypeBrowser typeSystem, String name, int numFields) {
+    protected StructType(TypeSystem typeSystem, String name, int numFields) {
         this.typeSystem = typeSystem;
         this.name = name;
         this.fieldMapping = null;
@@ -49,7 +49,7 @@ public class StructType  extends AbstractDataType<IStruct>
         this.handler = null;
     }
 
-    protected StructType(ITypeBrowser typeSystem, String name,
+    protected StructType(TypeSystem typeSystem, String name,
                          ImmutableList<String> superTypes, AttributeInfo... fields) throws MetadataException {
         this.typeSystem = typeSystem;
         this.name = name;
@@ -89,6 +89,7 @@ public class StructType  extends AbstractDataType<IStruct>
         int numArrays = 0;
         int numMaps = 0;
         int numStructs = 0;
+        int numReferenceables = 0;
 
         for(AttributeInfo i : fields) {
             if ( fieldsMap.containsKey(i.name) ) {
@@ -136,10 +137,14 @@ public class StructType  extends AbstractDataType<IStruct>
             } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.MAP ) {
                 fieldPos.put(i.name, numMaps);
                 numMaps++;
-            } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.STRUCT ) {
+            } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.STRUCT  ||
+                    i.dataType().getTypeCategory() == DataTypes.TypeCategory.TRAIT ) {
                 fieldPos.put(i.name, numStructs);
                 numStructs++;
-            } else {
+            } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.CLASS ) {
+                fieldPos.put(i.name, numReferenceables);
+                numReferenceables++;
+            }  else {
                 throw new MetadataException(String.format("Unknown datatype %s", i.dataType()));
             }
         }
@@ -160,7 +165,8 @@ public class StructType  extends AbstractDataType<IStruct>
                 numStrings,
                 numArrays,
                 numMaps,
-                numStructs);
+                numStructs,
+                numReferenceables);
     }
 
 

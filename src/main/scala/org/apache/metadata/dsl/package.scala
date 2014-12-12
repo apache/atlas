@@ -82,7 +82,7 @@ package object dsl {
 
   def createInstance(typeName : String) = {
     new DynamicTypedStruct(
-      ts.getDataType(typeName).asInstanceOf[IConstructableType[IStruct, ITypedStruct]].createInstance())
+      ts.getDataType(classOf[StructType],typeName).asInstanceOf[IConstructableType[IStruct, ITypedStruct]].createInstance())
   }
 
   implicit def dynTypedStructToTypedStruct(s : DynamicTypedStruct) = s.ts

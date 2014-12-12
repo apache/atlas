@@ -18,5 +18,17 @@
 
 package org.apache.metadata;
 
-public interface ITypedReferencableInstance extends ITypedInstance, IReferencableInstance {
+import com.google.common.collect.ImmutableList;
+import org.apache.metadata.storage.Id;
+
+/**
+ * Represents and instance of a ClassType. These have identity.
+ * Transient instances will have a UNASSIGNED identity.
+ */
+public interface IReferenceableInstance extends IStruct {
+
+    ImmutableList<String> getTraits();
+    Id getId();
+
+    IStruct getTrait(String typeName);
 }

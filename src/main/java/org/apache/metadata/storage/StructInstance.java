@@ -49,12 +49,15 @@ public class StructInstance implements ITypedStruct {
     public final ImmutableList<Object>[] arrays;
     public final ImmutableMap<Object,Object>[] maps;
     public final StructInstance[] structs;
+    public final ReferenceableInstance[] referenceables;
+    public final Id[] ids;
 
     public StructInstance(String dataTypeName, FieldMapping fieldMapping,
                           boolean[] nullFlags, boolean[] bools, byte[] bytes, short[] shorts, int[] ints,
                           long[] longs, float[] floats, double[] doubles,
                           BigDecimal[] bigDecimals, BigInteger[] bigIntegers, Date[] dates, String[] strings,
-                          ImmutableList<Object>[] arrays, ImmutableMap<Object, Object>[] maps, StructInstance[] structs) {
+                          ImmutableList<Object>[] arrays, ImmutableMap<Object, Object>[] maps,
+                          StructInstance[] structs, ReferenceableInstance[] referenceables, Id[] ids) {
         assert dataTypeName != null;
         this.dataTypeName = dataTypeName;
         this.fieldMapping = fieldMapping;
@@ -73,6 +76,8 @@ public class StructInstance implements ITypedStruct {
         this.arrays = arrays;
         this.maps = maps;
         this.structs = structs;
+        this.referenceables = referenceables;
+        this.ids = ids;
 
         for(int i=0; i<nullFlags.length; i++) {
             nullFlags[i] = true;

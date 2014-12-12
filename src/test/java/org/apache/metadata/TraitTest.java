@@ -48,7 +48,7 @@ public class TraitTest extends BaseTest {
 
         defineTraits(A, B, C, D);
 
-        TraitType DType = (TraitType) ms.getTypeSystem().getDataType("D");
+        TraitType DType = (TraitType) ms.getTypeSystem().getDataType(TraitType.class, "D");
 
         Struct s1 = new Struct("D");
         s1.set("d", 1);
@@ -84,7 +84,7 @@ public class TraitTest extends BaseTest {
         /*
          * cast to B and set the 'b' attribute on A.
          */
-        TraitType BType = (TraitType) ms.getTypeSystem().getDataType("B");
+        TraitType BType = (TraitType) ms.getTypeSystem().getDataType(TraitType.class, "B");
         IStruct s2 = DType.castAs(ts, "B");
         s2.set("A.B.b", false);
 
@@ -106,7 +106,7 @@ public class TraitTest extends BaseTest {
         /*
          * cast again to A and set the 'b' attribute on A.
          */
-        TraitType AType = (TraitType) ms.getTypeSystem().getDataType("A");
+        TraitType AType = (TraitType) ms.getTypeSystem().getDataType(TraitType.class, "A");
         IStruct s3 = BType.castAs(s2, "A");
         s3.set("b", true);
         Assert.assertEquals(ts.toString(), "{\n" +

@@ -33,8 +33,9 @@ public class AttributeInfo {
     public final String reverseAttributeName;
 
     AttributeInfo(TypeSystem t, AttributeDefinition def) throws MetadataException {
+        TypeUtils.validateName(def.name);
         this.name = def.name;
-        this.dataType = t.getDataType(def.dataTypeName);
+        this.dataType = t.getDataType(IDataType.class, def.dataTypeName);
         this.multiplicity = def.multiplicity;
         this.isComposite = def.isComposite;
         this.reverseAttributeName = def.reverseAttributeName;

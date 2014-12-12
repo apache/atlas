@@ -35,7 +35,7 @@ import java.util.*;
 public abstract class HierarchicalType<ST extends HierarchicalType,T> extends AbstractDataType<T>
         implements Comparable<ST> {
 
-    public final ITypeBrowser typeSystem;
+    public final TypeSystem typeSystem;
     public final String name;
     public final FieldMapping fieldMapping;
     public final int numFields;
@@ -47,7 +47,7 @@ public abstract class HierarchicalType<ST extends HierarchicalType,T> extends Ab
     /**
      * Used when creating a Type, to support recursive Structs.
      */
-    HierarchicalType(ITypeBrowser typeSystem, String name, ImmutableList<String> superTypes, int numFields) {
+    HierarchicalType(TypeSystem typeSystem, String name, ImmutableList<String> superTypes, int numFields) {
         this.typeSystem = typeSystem;
         this.name = name;
         this.fieldMapping = null;
@@ -56,7 +56,7 @@ public abstract class HierarchicalType<ST extends HierarchicalType,T> extends Ab
         this.immediateAttrs = null;
     }
 
-    HierarchicalType(ITypeBrowser typeSystem, String name, ImmutableList<String> superTypes, AttributeInfo... fields)
+    HierarchicalType(TypeSystem typeSystem, String name, ImmutableList<String> superTypes, AttributeInfo... fields)
             throws MetadataException {
         this.typeSystem = typeSystem;
         this.name = name;
@@ -67,6 +67,24 @@ public abstract class HierarchicalType<ST extends HierarchicalType,T> extends Ab
         this.immediateAttrs = ImmutableList.<AttributeInfo>copyOf(fields);
     }
 
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    public FieldMapping fieldMapping() {
+        return fieldMapping;
+    }
+
+    /**
+     * Given type must be a SubType of this type.
+     * @param typeName
+     * @throws MetadataException
+     */
+    public boolean isSubType(String typeName) throws MetadataException {
+        HierarchicalType cType = typeSystem.getDataType(HierarchicalType.class, typeName);
+        return  ( cType == this || cType.superTypePaths.containsKey(getName()) );
+    }
 
     protected FieldMapping constructFieldMapping(ImmutableList<String> superTraits,
                                                  AttributeInfo... fields)
@@ -89,6 +107,7 @@ public abstract class HierarchicalType<ST extends HierarchicalType,T> extends Ab
         int numArrays = 0;
         int numMaps = 0;
         int numStructs = 0;
+        int numReferenceables = 0;
 
         Map<String, List<Path>> superTypePaths = new HashMap<String, List<Path>>();
         Map<String, Path> pathNameToPathMap = new HashMap<String, Path>();
@@ -167,9 +186,13 @@ public abstract class HierarchicalType<ST extends HierarchicalType,T> extends Ab
                 } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.MAP ) {
                     fieldPos.put(attrName, numMaps);
                     numMaps++;
-                } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.STRUCT ) {
+                } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.STRUCT ||
+                        i.dataType().getTypeCategory() == DataTypes.TypeCategory.TRAIT ) {
                     fieldPos.put(attrName, numStructs);
                     numStructs++;
+                }  else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.CLASS ) {
+                    fieldPos.put(attrName, numReferenceables);
+                    numReferenceables++;
                 } else {
                     throw new MetadataException(String.format("Unknown datatype %s", i.dataType()));
                 }
@@ -201,7 +224,8 @@ public abstract class HierarchicalType<ST extends HierarchicalType,T> extends Ab
                 numStrings,
                 numArrays,
                 numMaps,
-                numStructs);
+                numStructs,
+                numReferenceables);
     }
 
     public IStruct castAs(IStruct s, String superTypeName) throws MetadataException {

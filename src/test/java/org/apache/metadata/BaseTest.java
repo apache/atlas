@@ -75,7 +75,7 @@ public abstract class BaseTest {
     }
 
     public static Struct createStruct(MetadataService ms) throws MetadataException {
-        StructType structType = (StructType) ms.getTypeSystem().getDataType(STRUCT_TYPE_1);
+        StructType structType = (StructType) ms.getTypeSystem().getDataType(StructType.class, STRUCT_TYPE_1);
         Struct s = new Struct(structType.getName());
         s.set("a", 1);
         s.set("b", true);
@@ -135,6 +135,9 @@ public abstract class BaseTest {
         return new TraitTypeDefinition(name, superTypes, attrDefs);
     }
 
-
+    protected ClassTypeDefinition createClassTypeDef(String name, ImmutableList<String> superTypes,
+                                                     AttributeDefinition... attrDefs) {
+        return new ClassTypeDefinition(name, superTypes, attrDefs);
+    }
 
 }

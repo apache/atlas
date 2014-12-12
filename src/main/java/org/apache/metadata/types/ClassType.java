@@ -18,12 +18,10 @@
 
 package org.apache.metadata.types;
 
+import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.apache.metadata.IStruct;
-import org.apache.metadata.ITypedStruct;
-import org.apache.metadata.MetadataException;
-import org.apache.metadata.Struct;
+import org.apache.metadata.*;
 import org.apache.metadata.storage.Id;
 import org.apache.metadata.storage.ReferenceableInstance;
 import org.apache.metadata.storage.StructInstance;
@@ -33,39 +31,74 @@ import java.math.BigInteger;
 import java.util.Date;
 import java.util.Map;
 
-public class TypedStructHandler {
+public class ClassType extends HierarchicalType<ClassType, IReferenceableInstance>
+        implements IConstructableType<IReferenceableInstance, ITypedReferenceableInstance> {
 
-    private final IConstructableType<IStruct, ITypedStruct> structType;
-    private final FieldMapping fieldMapping;
+    public static final String TRAIT_NAME_SEP = "::";
 
-    public TypedStructHandler(IConstructableType<IStruct, ITypedStruct> structType) {
-        this.structType = structType;
-        fieldMapping = structType.fieldMapping();
+    /**
+     * Used when creating a ClassType, to support recursive Structs.
+     */
+    ClassType(TypeSystem typeSystem, String name, ImmutableList<String> superTypes, int numFields) {
+        super(typeSystem, name, superTypes, numFields);
     }
 
-    public ITypedStruct convert(Object val, Multiplicity m) throws MetadataException {
+    ClassType(TypeSystem typeSystem, String name, ImmutableList<String> superTraits, AttributeInfo... fields)
+            throws MetadataException {
+        super(typeSystem, name, superTraits, fields);
+    }
+
+    @Override
+    public DataTypes.TypeCategory getTypeCategory() {
+        return DataTypes.TypeCategory.CLASS;
+    }
+
+    public void validateId(Id id) throws MetadataException {
+        if ( id != null ) {
+            ClassType cType = typeSystem.getDataType(ClassType.class, id.className);
+            if ( isSubType(cType.getName()) ) {
+                return;
+            }
+            throw new MetadataException(String.format("Id %s is not valid for class %s", id, getName()));
+        }
+    }
+
+    @Override
+    public ITypedReferenceableInstance convert(Object val, Multiplicity m) throws MetadataException {
+
         if ( val != null ) {
             if ( val instanceof Struct) {
                 Struct s = (Struct) val;
-                if ( s.typeName != structType.getName() ) {
-                    throw new ValueConversionException(structType, val);
+                Referenceable r = null;
+
+                if ( s.typeName != getName() ) {
+                    throw new ValueConversionException(this, val);
                 }
-                ITypedStruct ts = createInstance();
+
+                if ( val instanceof Referenceable ) {
+                     r = (Referenceable)val;
+                }
+
+                ITypedReferenceableInstance tr = r != null ?
+                        createInstanceWithTraits(r, r.getTraits().toArray(new String[0])) : createInstance();
+
                 for(Map.Entry<String,AttributeInfo> e : fieldMapping.fields.entrySet() ) {
                     String attrKey = e.getKey();
                     AttributeInfo i = e.getValue();
                     Object aVal = s.get(attrKey);
                     try {
-                        ts.set(attrKey, aVal);
+                        tr.set(attrKey, aVal);
                     } catch(ValueConversionException ve) {
-                        throw new ValueConversionException(structType, val, ve);
+                        throw new ValueConversionException(this, val, ve);
                     }
                 }
-                return ts;
-            } else if ( val instanceof StructInstance && ((StructInstance)val).getTypeName() == structType.getName() ) {
-                return (StructInstance) val;
+
+                return tr;
+            } else if ( val instanceof ReferenceableInstance ) {
+                validateId(((ReferenceableInstance)val).getId());
+                return (ReferenceableInstance) val;
             } else {
-                throw new ValueConversionException(structType, val);
+                throw new ValueConversionException(this, val);
             }
         }
         if (!m.nullAllowed() ) {
@@ -74,12 +107,25 @@ public class TypedStructHandler {
         return null;
     }
 
-    public DataTypes.TypeCategory getTypeCategory() {
-        return DataTypes.TypeCategory.STRUCT;
+    @Override
+    public ITypedReferenceableInstance createInstance() throws MetadataException {
+        return createInstanceWithTraits(null);
     }
 
-    public ITypedStruct createInstance() {
-        return new StructInstance(structType.getName(),
+    public ITypedReferenceableInstance createInstanceWithTraits(Referenceable r, String... traitNames)
+    throws MetadataException {
+
+        ImmutableMap.Builder<String, ITypedStruct> b = new ImmutableBiMap.Builder<String, ITypedStruct>();
+        for(String t : traitNames) {
+            TraitType tType = typeSystem.getDataType(TraitType.class, t);
+            IStruct iTraitObject = r == null ? null : r.getTrait(t);
+            ITypedStruct trait = iTraitObject == null ? tType.createInstance() :
+                    tType.convert(iTraitObject, Multiplicity.REQUIRED);
+            b.put(t, trait);
+        }
+
+        return new ReferenceableInstance(new Id(getName()),
+                getName(),
                 fieldMapping,
                 new boolean[fieldMapping.fields.size()],
                 fieldMapping.numBools == 0 ? null : new boolean[fieldMapping.numBools],
@@ -97,10 +143,12 @@ public class TypedStructHandler {
                 fieldMapping.numMaps == 0 ? null : new ImmutableMap[fieldMapping.numMaps],
                 fieldMapping.numStructs == 0 ? null : new StructInstance[fieldMapping.numStructs],
                 fieldMapping.numReferenceables == 0 ? null : new ReferenceableInstance[fieldMapping.numReferenceables],
-                fieldMapping.numReferenceables == 0 ? null : new Id[fieldMapping.numReferenceables]);
+                fieldMapping.numReferenceables == 0 ? null : new Id[fieldMapping.numReferenceables],
+                b.build());
     }
 
-    public void output(IStruct s, Appendable buf, String prefix) throws MetadataException {
+    @Override
+    public void output(IReferenceableInstance s, Appendable buf, String prefix) throws MetadataException {
         TypeUtils.outputVal("{", buf, prefix);
         if ( s == null ) {
             TypeUtils.outputVal("<null>\n", buf, "");
@@ -108,13 +156,25 @@ public class TypedStructHandler {
         }
         TypeUtils.outputVal("\n", buf, "");
         String fieldPrefix = prefix + "\t";
+
+        TypeUtils.outputVal("id : ", buf, fieldPrefix);
+        TypeUtils.outputVal(s.getId().toString(), buf, "");
+        TypeUtils.outputVal("\n", buf, "");
+
         for(AttributeInfo i : fieldMapping.fields.values()) {
             Object aVal = s.get(i.name);
             TypeUtils.outputVal(i.name + " : ", buf, fieldPrefix);
             i.dataType().output(aVal, buf, "");
             TypeUtils.outputVal("\n", buf, "");
         }
-        TypeUtils.outputVal("\n}\n", buf, "");
+
+        for(String sT : s.getTraits() ) {
+            TraitType tt = typeSystem.getDataType(TraitType.class, sT);
+            TypeUtils.outputVal(sT + " : ", buf, fieldPrefix);
+            tt.output(s.getTrait(sT), buf, fieldPrefix);
+        }
+
+        TypeUtils.outputVal("}", buf, fieldPrefix);
     }
 
 }

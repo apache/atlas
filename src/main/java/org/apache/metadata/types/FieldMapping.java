@@ -20,6 +20,9 @@ package org.apache.metadata.types;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.metadata.MetadataException;
+import org.apache.metadata.MetadataService;
+import org.apache.metadata.storage.Id;
+import org.apache.metadata.storage.ReferenceableInstance;
 import org.apache.metadata.storage.StructInstance;
 
 import java.math.BigDecimal;
@@ -48,11 +51,13 @@ public class FieldMapping {
     public final int numArrays;
     public final int numMaps;
     public final int numStructs;
+    public final int numReferenceables;
 
     public FieldMapping(Map<String, AttributeInfo> fields, Map<String, Integer> fieldPos,
                         Map<String, Integer> fieldNullPos, int numBools, int numBytes, int numShorts,
                         int numInts, int numLongs, int numFloats, int numDoubles, int numBigInts, int numBigDecimals,
-                        int numDates, int numStrings, int numArrays, int numMaps, int numStructs) {
+                        int numDates, int numStrings, int numArrays, int numMaps, int numStructs,
+                        int numReferenceables) {
         this.fields = fields;
         this.fieldPos = fieldPos;
         this.fieldNullPos = fieldNullPos;
@@ -70,6 +75,7 @@ public class FieldMapping {
         this.numArrays = numArrays;
         this.numMaps = numMaps;
         this.numStructs = numStructs;
+        this.numReferenceables = numReferenceables;
     }
 
     public void set(StructInstance s, String attrName, Object val) throws MetadataException {
@@ -79,7 +85,16 @@ public class FieldMapping {
         }
         int pos = fieldPos.get(attrName);
         int nullPos = fieldNullPos.get(attrName);
-        Object cVal = i.dataType().convert(val, i.multiplicity);
+        Object cVal = null;
+
+        if (val != null && val instanceof Id) {
+            ClassType clsType =
+                    MetadataService.getCurrentTypeSystem().getDataType(ClassType.class, i.dataType().getName());
+            clsType.validateId((Id)cVal);
+            cVal = val;
+        } else {
+            cVal = i.dataType().convert(val, i.multiplicity);
+        }
         if ( cVal == null ) {
             s.nullFlags[nullPos] = true;
             return;
@@ -111,8 +126,15 @@ public class FieldMapping {
             s.arrays[pos] = (ImmutableList) cVal;
         } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.MAP ) {
             s.maps[pos] = (ImmutableMap) cVal;
-        } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.STRUCT ) {
+        } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.STRUCT ||
+                i.dataType().getTypeCategory() == DataTypes.TypeCategory.TRAIT ) {
             s.structs[pos] = (StructInstance) cVal;
+        } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.CLASS ) {
+            if ( cVal instanceof  Id ) {
+                s.ids[pos] = (Id) cVal;
+            } else {
+                s.referenceables[pos] = (ReferenceableInstance) cVal;
+            }
         } else {
             throw new MetadataException(String.format("Unknown datatype %s", i.dataType()));
         }
