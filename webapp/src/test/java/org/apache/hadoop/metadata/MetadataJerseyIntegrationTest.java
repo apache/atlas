@@ -23,6 +23,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import org.json.simple.JSONValue;
+import org.testng.annotations.Test;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MediaType;
@@ -30,9 +31,10 @@ import javax.ws.rs.core.UriBuilder;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TestDriver {
+public class MetadataJerseyIntegrationTest {
 
-    public static void main(String[] args) throws Exception {
+    @Test (enabled = false)
+    public void testMetadataRESTAPI() throws Exception {
         String baseUrl = "http://localhost:15000/";
 
         DefaultClientConfig config = new DefaultClientConfig();
@@ -73,13 +75,7 @@ public class TestDriver {
     }
 
     private static void submitEntity(WebResource service, String entityName, String entityType) {
-        Map<String, String> props = new HashMap<>();
-        props.put("entityName", entityName);
-        props.put("entityType", entityType);
-        props.put("database", "foo");
-        props.put("blah", "blah");
-        String entityStream = JSONValue.toJSONString(props);
-
+        String entityStream = getTestEntityJSON(entityName, entityType);
 
         WebResource resource = service
                 .path("api/metadata/entities/submit")
@@ -91,5 +87,14 @@ public class TestDriver {
                 .method(HttpMethod.POST, ClientResponse.class, entityStream);
         String response = clientResponse.getEntity(String.class);
         System.out.println("response = " + response);
+    }
+
+    private static String getTestEntityJSON(String entityName, String entityType) {
+        Map<String, String> props = new HashMap<>();
+        props.put("entityName", entityName);
+        props.put("entityType", entityType);
+        props.put("database", "foo");
+        props.put("blah", "blah");
+        return JSONValue.toJSONString(props);
     }
 }

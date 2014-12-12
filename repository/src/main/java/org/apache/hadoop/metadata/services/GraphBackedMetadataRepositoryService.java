@@ -62,8 +62,9 @@ public class GraphBackedMetadataRepositoryService implements MetadataRepositoryS
      */
     @Override
     public void start() throws Exception {
-        graphService = Services.get().getService(TitanGraphService.NAME);
-        if (graphService == null) {
+        if (Services.get().isRegistered(TitanGraphService.NAME)) {
+            graphService = Services.get().getService(TitanGraphService.NAME);
+        } else {
             throw new RuntimeException("graph service is not initialized");
         }
     }
