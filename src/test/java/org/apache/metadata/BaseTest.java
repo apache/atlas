@@ -21,13 +21,9 @@ package org.apache.metadata;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import junit.framework.TestCase;
-import org.apache.metadata.storage.IRepository;
 import org.apache.metadata.storage.memory.MemRepository;
 import org.apache.metadata.types.*;
 import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -126,18 +122,18 @@ public abstract class BaseTest {
         return new AttributeDefinition(name, dataType, Multiplicity.REQUIRED, false, null);
     }
 
-    protected Map<String, TraitType> defineTraits(TraitTypeDefinition... tDefs) throws MetadataException {
-        return ms.getTypeSystem().defineTraitTypes(true, tDefs);
+    protected Map<String, IDataType> defineTraits(HierarchicalTypeDefinition... tDefs) throws MetadataException {
+        return ms.getTypeSystem().defineTraitTypes(tDefs);
     }
 
-    protected TraitTypeDefinition createTraitTypeDef(String name, ImmutableList<String> superTypes,
+    protected HierarchicalTypeDefinition<TraitType> createTraitTypeDef(String name, ImmutableList<String> superTypes,
                                         AttributeDefinition... attrDefs) {
-        return new TraitTypeDefinition(name, superTypes, attrDefs);
+        return new HierarchicalTypeDefinition(TraitType.class, name, superTypes, attrDefs);
     }
 
-    protected ClassTypeDefinition createClassTypeDef(String name, ImmutableList<String> superTypes,
+    protected HierarchicalTypeDefinition<ClassType> createClassTypeDef(String name, ImmutableList<String> superTypes,
                                                      AttributeDefinition... attrDefs) {
-        return new ClassTypeDefinition(name, superTypes, attrDefs);
+        return new HierarchicalTypeDefinition(ClassType.class, name, superTypes, attrDefs);
     }
 
 }

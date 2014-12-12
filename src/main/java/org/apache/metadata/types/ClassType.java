@@ -40,12 +40,12 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
      * Used when creating a ClassType, to support recursive Structs.
      */
     ClassType(TypeSystem typeSystem, String name, ImmutableList<String> superTypes, int numFields) {
-        super(typeSystem, name, superTypes, numFields);
+        super(typeSystem, ClassType.class, name, superTypes, numFields);
     }
 
     ClassType(TypeSystem typeSystem, String name, ImmutableList<String> superTraits, AttributeInfo... fields)
             throws MetadataException {
-        super(typeSystem, name, superTraits, fields);
+        super(typeSystem, ClassType.class, name, superTraits, fields);
     }
 
     @Override

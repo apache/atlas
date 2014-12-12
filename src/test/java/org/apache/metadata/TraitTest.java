@@ -2,12 +2,9 @@ package org.apache.metadata;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.Assert;
-import org.apache.metadata.storage.StructInstance;
 import org.apache.metadata.types.*;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.Map;
 
 public class TraitTest extends BaseTest {
 
@@ -34,16 +31,16 @@ public class TraitTest extends BaseTest {
      */
     @Test
     public void test1() throws MetadataException {
-        TraitTypeDefinition A = createTraitTypeDef("A", null,
+        HierarchicalTypeDefinition A = createTraitTypeDef("A", null,
                 createRequiredAttrDef("a", DataTypes.INT_TYPE),
                 createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE),
                 createOptionalAttrDef("c", DataTypes.BYTE_TYPE),
                 createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
-        TraitTypeDefinition B = createTraitTypeDef("B", ImmutableList.<String>of("A"),
+        HierarchicalTypeDefinition B = createTraitTypeDef("B", ImmutableList.<String>of("A"),
                 createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE));
-        TraitTypeDefinition C = createTraitTypeDef("C", ImmutableList.<String>of("A"),
+        HierarchicalTypeDefinition C = createTraitTypeDef("C", ImmutableList.<String>of("A"),
                 createOptionalAttrDef("c", DataTypes.BYTE_TYPE));
-        TraitTypeDefinition D = createTraitTypeDef("D", ImmutableList.<String>of("B", "C"),
+        HierarchicalTypeDefinition D = createTraitTypeDef("D", ImmutableList.<String>of("B", "C"),
                 createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
 
         defineTraits(A, B, C, D);

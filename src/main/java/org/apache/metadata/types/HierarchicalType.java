@@ -36,6 +36,7 @@ public abstract class HierarchicalType<ST extends HierarchicalType,T> extends Ab
         implements Comparable<ST> {
 
     public final TypeSystem typeSystem;
+    public final Class<ST> superTypeClass;
     public final String name;
     public final FieldMapping fieldMapping;
     public final int numFields;
@@ -47,8 +48,10 @@ public abstract class HierarchicalType<ST extends HierarchicalType,T> extends Ab
     /**
      * Used when creating a Type, to support recursive Structs.
      */
-    HierarchicalType(TypeSystem typeSystem, String name, ImmutableList<String> superTypes, int numFields) {
+    HierarchicalType(TypeSystem typeSystem, Class<ST> superTypeClass,
+                     String name, ImmutableList<String> superTypes, int numFields) {
         this.typeSystem = typeSystem;
+        this.superTypeClass = superTypeClass;
         this.name = name;
         this.fieldMapping = null;
         this.numFields = numFields;
@@ -56,9 +59,11 @@ public abstract class HierarchicalType<ST extends HierarchicalType,T> extends Ab
         this.immediateAttrs = null;
     }
 
-    HierarchicalType(TypeSystem typeSystem, String name, ImmutableList<String> superTypes, AttributeInfo... fields)
+    HierarchicalType(TypeSystem typeSystem, Class<ST> superTypeClass,
+                     String name, ImmutableList<String> superTypes, AttributeInfo... fields)
             throws MetadataException {
         this.typeSystem = typeSystem;
+        this.superTypeClass = superTypeClass;
         this.name = name;
         this.fieldMapping = constructFieldMapping(superTypes,
                 fields);
@@ -115,8 +120,9 @@ public abstract class HierarchicalType<ST extends HierarchicalType,T> extends Ab
         queue.add(new Node(getName()));
         while(!queue.isEmpty()) {
             Path currentPath = queue.poll();
+
             ST superType = currentPath.typeName == getName() ? (ST) this :
-                    (ST) typeSystem.dataType(currentPath.typeName);
+                    (ST) typeSystem.getDataType(superTypeClass, currentPath.typeName);
 
             pathNameToPathMap.put(currentPath.pathName, currentPath);
             if ( superType != this ) {
@@ -248,7 +254,7 @@ public abstract class HierarchicalType<ST extends HierarchicalType,T> extends Ab
                                 superTypeName, getName()));
             }
 
-            ST superType = (ST) typeSystem.dataType(superTypeName);
+            ST superType = (ST) typeSystem.getDataType(superTypeClass, superTypeName);
             Map<String, String> downCastMap = superType.constructDowncastFieldMap(this, pathToSuper.get(0));
             return new DownCastStructInstance(superTypeName,
                     new DownCastFieldMapping(ImmutableMap.copyOf(downCastMap)),
@@ -318,7 +324,12 @@ public abstract class HierarchicalType<ST extends HierarchicalType,T> extends Ab
         @Override
         public Path next() {
             Path p = pathQueue.poll();
-            ST t = (ST) typeSystem.dataType(p.typeName);
+            ST t = null;
+            try {
+                t = (ST) typeSystem.getDataType(superTypeClass, p.typeName);
+            } catch(MetadataException me) {
+                throw new RuntimeException(me);
+            }
             if ( t.superTypes != null ) {
                 ImmutableList<String> sTs = t.superTypes;
                 for(String sT : sTs) {

@@ -78,16 +78,16 @@ class SerializationTest extends BaseTest {
   }
 
   @Test def testTrait {
-    val A: TraitTypeDefinition = createTraitTypeDef("A", null,
+    val A: HierarchicalTypeDefinition[TraitType] = createTraitTypeDef("A", null,
       BaseTest.createRequiredAttrDef("a", DataTypes.INT_TYPE),
       BaseTest.createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE),
       BaseTest.createOptionalAttrDef("c", DataTypes.BYTE_TYPE),
       BaseTest.createOptionalAttrDef("d", DataTypes.SHORT_TYPE))
-    val B: TraitTypeDefinition = createTraitTypeDef("B", ImmutableList.of[String]("A"),
+    val B: HierarchicalTypeDefinition[TraitType] = createTraitTypeDef("B", ImmutableList.of[String]("A"),
       BaseTest.createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE))
-    val C: TraitTypeDefinition = createTraitTypeDef("C", ImmutableList.of[String]("A"),
+    val C: HierarchicalTypeDefinition[TraitType] = createTraitTypeDef("C", ImmutableList.of[String]("A"),
       BaseTest.createOptionalAttrDef("c", DataTypes.BYTE_TYPE))
-    val D: TraitTypeDefinition = createTraitTypeDef("D", ImmutableList.of[String]("B", "C"),
+    val D: HierarchicalTypeDefinition[TraitType] = createTraitTypeDef("D", ImmutableList.of[String]("B", "C"),
       BaseTest.createOptionalAttrDef("d", DataTypes.SHORT_TYPE))
 
     defineTraits(A, B, C, D)

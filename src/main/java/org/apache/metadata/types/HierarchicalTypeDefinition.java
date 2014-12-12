@@ -20,16 +20,14 @@ package org.apache.metadata.types;
 
 import com.google.common.collect.ImmutableList;
 
-public class TraitTypeDefinition {
+public class HierarchicalTypeDefinition<T extends HierarchicalType>  extends StructTypeDefinition {
 
-    public final String typeName;
-    public final ImmutableList<String> superTraits;
-    public final AttributeDefinition[] attributeDefinitions;
+    public final ImmutableList<String> superTypes;
 
-    public TraitTypeDefinition(String typeName, ImmutableList<String> superTraits,
-                               AttributeDefinition[] attributeDefinitions) {
-        this.typeName = typeName;
-        this.superTraits = superTraits == null ? ImmutableList.<String>of() : superTraits;
-        this.attributeDefinitions = attributeDefinitions;
+    public HierarchicalTypeDefinition(Class<T> hierarchicalMetaType,
+                                      String typeName, ImmutableList<String> superTypes,
+                                      AttributeDefinition[] attributeDefinitions) {
+        super(typeName, attributeDefinitions);
+        this.superTypes = superTypes == null ? ImmutableList.<String>of() : superTypes;
     }
 }
