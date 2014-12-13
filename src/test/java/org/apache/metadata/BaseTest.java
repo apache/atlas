@@ -75,8 +75,8 @@ public abstract class BaseTest {
         Struct s = new Struct(structType.getName());
         s.set("a", 1);
         s.set("b", true);
-        s.set("c", (byte)1);
-        s.set("d", (short)2);
+        s.set("c", (byte) 1);
+        s.set("d", (short) 2);
         s.set("e", 1);
         s.set("f", 1);
         s.set("g", 1L);
@@ -86,10 +86,10 @@ public abstract class BaseTest {
         s.set("k", new BigDecimal(1));
         s.set("l", new Date(1418265358440L));
         s.set("m", Lists.<Integer>asList(Integer.valueOf(1), new Integer[]{Integer.valueOf(1)}));
-        s.set("n", Lists.<BigDecimal>asList(BigDecimal.valueOf(1.1), new BigDecimal[] {BigDecimal.valueOf(1.1)}));
+        s.set("n", Lists.<BigDecimal>asList(BigDecimal.valueOf(1.1), new BigDecimal[]{BigDecimal.valueOf(1.1)}));
         Map<String, Double> hm = Maps.<String, Double>newHashMap();
         hm.put("a", 1.0);
-        hm.put("b",2.0);
+        hm.put("b", 2.0);
         s.set("o", hm);
         return s;
     }
@@ -102,7 +102,7 @@ public abstract class BaseTest {
     }
 
     public static AttributeDefinition createOptionalAttrDef(String name,
-                                                     String dataType
+                                                            String dataType
     ) {
         return new AttributeDefinition(name, dataType, Multiplicity.OPTIONAL, false, null);
     }
@@ -116,7 +116,7 @@ public abstract class BaseTest {
     }
 
     public static AttributeDefinition createRequiredAttrDef(String name,
-                                                     String dataType
+                                                            String dataType
     ) {
 
         return new AttributeDefinition(name, dataType, Multiplicity.REQUIRED, false, null);
@@ -127,12 +127,12 @@ public abstract class BaseTest {
     }
 
     protected HierarchicalTypeDefinition<TraitType> createTraitTypeDef(String name, ImmutableList<String> superTypes,
-                                        AttributeDefinition... attrDefs) {
+                                                                       AttributeDefinition... attrDefs) {
         return new HierarchicalTypeDefinition(TraitType.class, name, superTypes, attrDefs);
     }
 
     protected HierarchicalTypeDefinition<ClassType> createClassTypeDef(String name, ImmutableList<String> superTypes,
-                                                     AttributeDefinition... attrDefs) {
+                                                                       AttributeDefinition... attrDefs) {
         return new HierarchicalTypeDefinition(ClassType.class, name, superTypes, attrDefs);
     }
 

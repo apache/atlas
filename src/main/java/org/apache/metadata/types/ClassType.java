@@ -63,6 +63,13 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
         }
     }
 
+    protected Id getId(Object val) throws MetadataException {
+        if ( val instanceof Referenceable ) {
+            return ((Referenceable)val).getId();
+        }
+        throw new MetadataException(String.format("Cannot get id from class %s", val.getClass()));
+    }
+
     @Override
     public ITypedReferenceableInstance convert(Object val, Multiplicity m) throws MetadataException {
 
@@ -72,6 +79,13 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
                 Referenceable r = null;
 
                 if ( s.typeName != getName() ) {
+                    /*
+                     * If val is a subType instance; invoke convert on it.
+                     */
+                    ClassType valType = typeSystem.getDataType(superTypeClass, s.typeName);
+                    if ( valType.superTypePaths.containsKey(name) ) {
+                        return valType.convert(s, m);
+                    }
                     throw new ValueConversionException(this, val);
                 }
 
@@ -86,6 +100,12 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
                     String attrKey = e.getKey();
                     AttributeInfo i = e.getValue();
                     Object aVal = s.get(attrKey);
+                    if ( aVal != null && i.dataType().getTypeCategory() == DataTypes.TypeCategory.CLASS ) {
+                        if ( !i.isComposite ) {
+                            aVal = ((IReferenceableInstance)aVal).getId();
+                        }
+                    }
+
                     try {
                         tr.set(attrKey, aVal);
                     } catch(ValueConversionException ve) {
@@ -149,32 +169,7 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
 
     @Override
     public void output(IReferenceableInstance s, Appendable buf, String prefix) throws MetadataException {
-        TypeUtils.outputVal("{", buf, prefix);
-        if ( s == null ) {
-            TypeUtils.outputVal("<null>\n", buf, "");
-            return;
-        }
-        TypeUtils.outputVal("\n", buf, "");
-        String fieldPrefix = prefix + "\t";
-
-        TypeUtils.outputVal("id : ", buf, fieldPrefix);
-        TypeUtils.outputVal(s.getId().toString(), buf, "");
-        TypeUtils.outputVal("\n", buf, "");
-
-        for(AttributeInfo i : fieldMapping.fields.values()) {
-            Object aVal = s.get(i.name);
-            TypeUtils.outputVal(i.name + " : ", buf, fieldPrefix);
-            i.dataType().output(aVal, buf, "");
-            TypeUtils.outputVal("\n", buf, "");
-        }
-
-        for(String sT : s.getTraits() ) {
-            TraitType tt = typeSystem.getDataType(TraitType.class, sT);
-            TypeUtils.outputVal(sT + " : ", buf, fieldPrefix);
-            tt.output(s.getTrait(sT), buf, fieldPrefix);
-        }
-
-        TypeUtils.outputVal("}", buf, fieldPrefix);
+        fieldMapping.output(s, buf, prefix);
     }
 
 }

@@ -19,8 +19,7 @@ package org.apache.metadata.types;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.apache.metadata.MetadataException;
-import org.apache.metadata.MetadataService;
+import org.apache.metadata.*;
 import org.apache.metadata.storage.Id;
 import org.apache.metadata.storage.ReferenceableInstance;
 import org.apache.metadata.storage.StructInstance;
@@ -178,11 +177,75 @@ public class FieldMapping {
             return s.arrays[pos];
         } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.MAP ) {
             return s.maps[pos];
-        } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.STRUCT ) {
+        } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.STRUCT  ||
+                i.dataType().getTypeCategory() == DataTypes.TypeCategory.TRAIT ) {
             return s.structs[pos];
+        } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.CLASS ) {
+            if ( s.ids[pos] != null ) {
+                return s.ids[pos];
+            } else {
+                return s.referenceables[pos];
+            }
         } else {
             throw new MetadataException(String.format("Unknown datatype %s", i.dataType()));
         }
+    }
+
+    protected void outputFields(IStruct s, Appendable buf, String fieldPrefix) throws MetadataException {
+        for(Map.Entry<String,AttributeInfo> e : fields.entrySet()) {
+            String attrName = e.getKey();
+            AttributeInfo i = e.getValue();
+            Object aVal = s.get(attrName);
+            TypeUtils.outputVal(attrName + " : ", buf, fieldPrefix);
+            if ( aVal != null && aVal instanceof Id ) {
+                TypeUtils.outputVal(aVal.toString(), buf, "");
+            } else {
+                i.dataType().output(aVal, buf, fieldPrefix);
+            }
+            TypeUtils.outputVal("\n", buf, "");
+        }
+    }
+
+    public void output(IStruct s, Appendable buf, String prefix) throws MetadataException {
+        if ( s == null ) {
+            TypeUtils.outputVal("<null>\n", buf, "");
+            return;
+        }
+        TypeUtils.outputVal("{", buf, prefix);
+
+        TypeUtils.outputVal("\n", buf, "");
+        String fieldPrefix = prefix + "\t";
+
+        outputFields(s, buf, fieldPrefix);
+
+        TypeUtils.outputVal("}", buf, prefix);
+    }
+
+    public void output(IReferenceableInstance s, Appendable buf, String prefix) throws MetadataException {
+        if ( s == null ) {
+            TypeUtils.outputVal("<null>\n", buf, "");
+            return;
+        }
+        TypeUtils.outputVal("{", buf, prefix);
+
+        TypeUtils.outputVal("\n", buf, "");
+        String fieldPrefix = prefix + "\t";
+
+        TypeUtils.outputVal("id : ", buf, fieldPrefix);
+        TypeUtils.outputVal(s.getId().toString(), buf, "");
+        TypeUtils.outputVal("\n", buf, "");
+
+        outputFields(s, buf, fieldPrefix);
+
+        TypeSystem ts = MetadataService.getCurrentTypeSystem();
+
+        for(String sT : s.getTraits() ) {
+            TraitType tt = ts.getDataType(TraitType.class, sT);
+            TypeUtils.outputVal(sT + " : ", buf, fieldPrefix);
+            tt.output(s.getTrait(sT), buf, fieldPrefix);
+        }
+
+        TypeUtils.outputVal("}", buf, prefix);
     }
 
 }

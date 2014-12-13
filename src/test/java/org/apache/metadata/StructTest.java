@@ -41,23 +41,22 @@ public class StructTest extends BaseTest {
         Struct s = createStruct(ms);
         ITypedStruct ts = structType.convert(s, Multiplicity.REQUIRED);
         Assert.assertEquals(ts.toString(), "{\n" +
-                "\ta : 1\n" +
-                "\tb : true\n" +
-                "\tc : 1\n" +
-                "\td : 2\n" +
-                "\te : 1\n" +
-                "\tf : 1\n" +
-                "\tg : 1\n" +
-                "\th : 1.0\n" +
-                "\ti : 1.0\n" +
-                "\tj : 1\n" +
-                "\tk : 1\n" +
-                "\tl : Wed Dec 10 18:35:58 PST 2014\n" +
-                "\tm : [1, 1]\n" +
-                "\tn : [1.1, 1.1]\n" +
-                "\to : {b=2.0, a=1.0}\n" +
-                "\n" +
-                "}\n");
+                "\ta : \t1\n" +
+                "\tb : \ttrue\n" +
+                "\tc : \t1\n" +
+                "\td : \t2\n" +
+                "\te : \t1\n" +
+                "\tf : \t1\n" +
+                "\tg : \t1\n" +
+                "\th : \t1.0\n" +
+                "\ti : \t1.0\n" +
+                "\tj : \t1\n" +
+                "\tk : \t1\n" +
+                "\tl : \tWed Dec 10 18:35:58 PST 2014\n" +
+                "\tm : \t[1, 1]\n" +
+                "\tn : \t[1.1, 1.1]\n" +
+                "\to : \t{b=2.0, a=1.0}\n" +
+                "}");
     }
 
     @Test
@@ -69,16 +68,13 @@ public class StructTest extends BaseTest {
         s2.set("s", s1);
         ITypedStruct ts = recursiveStructType.convert(s2, Multiplicity.REQUIRED);
         Assert.assertEquals(ts.toString(), "{\n" +
-                "\ta : 1\n" +
-                "\ts : {\n" +
-                "\ta : 1\n" +
-                "\ts : {<null>\n" +
+                "\ta : \t1\n" +
+                "\ts : \t{\n" +
+                "\t\ta : \t\t1\n" +
+                "\t\ts : <null>\n" +
                 "\n" +
-                "\n" +
-                "}\n" +
-                "\n" +
-                "\n" +
-                "}\n");
+                "\t}\n" +
+                "}");
     }
 
 }

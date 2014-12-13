@@ -64,19 +64,18 @@ public class TraitTest extends BaseTest {
 
         ITypedStruct ts = DType.convert(s1, Multiplicity.REQUIRED);
         Assert.assertEquals(ts.toString(), "{\n" +
-                "\td : 1\n" +
-                "\tb : true\n" +
-                "\tc : 1\n" +
-                "\ta : 1\n" +
-                "\tA.B.D.b : true\n" +
-                "\tA.B.D.c : 2\n" +
-                "\tA.B.D.d : 2\n" +
-                "\tA.C.D.a : 3\n" +
-                "\tA.C.D.b : false\n" +
-                "\tA.C.D.c : 3\n" +
-                "\tA.C.D.d : 3\n" +
-                "\n" +
-                "}\n");
+                "\td : \t1\n" +
+                "\tb : \ttrue\n" +
+                "\tc : \t1\n" +
+                "\ta : \t1\n" +
+                "\tA.B.D.b : \ttrue\n" +
+                "\tA.B.D.c : \t2\n" +
+                "\tA.B.D.d : \t2\n" +
+                "\tA.C.D.a : \t3\n" +
+                "\tA.C.D.b : \tfalse\n" +
+                "\tA.C.D.c : \t3\n" +
+                "\tA.C.D.d : \t3\n" +
+                "}");
 
         /*
          * cast to B and set the 'b' attribute on A.
@@ -86,19 +85,18 @@ public class TraitTest extends BaseTest {
         s2.set("A.B.b", false);
 
         Assert.assertEquals(ts.toString(), "{\n" +
-                "\td : 1\n" +
-                "\tb : true\n" +
-                "\tc : 1\n" +
-                "\ta : 1\n" +
-                "\tA.B.D.b : false\n" +
-                "\tA.B.D.c : 2\n" +
-                "\tA.B.D.d : 2\n" +
-                "\tA.C.D.a : 3\n" +
-                "\tA.C.D.b : false\n" +
-                "\tA.C.D.c : 3\n" +
-                "\tA.C.D.d : 3\n" +
-                "\n" +
-                "}\n");
+                "\td : \t1\n" +
+                "\tb : \ttrue\n" +
+                "\tc : \t1\n" +
+                "\ta : \t1\n" +
+                "\tA.B.D.b : \tfalse\n" +
+                "\tA.B.D.c : \t2\n" +
+                "\tA.B.D.d : \t2\n" +
+                "\tA.C.D.a : \t3\n" +
+                "\tA.C.D.b : \tfalse\n" +
+                "\tA.C.D.c : \t3\n" +
+                "\tA.C.D.d : \t3\n" +
+                "}");
 
         /*
          * cast again to A and set the 'b' attribute on A.
@@ -107,19 +105,18 @@ public class TraitTest extends BaseTest {
         IStruct s3 = BType.castAs(s2, "A");
         s3.set("b", true);
         Assert.assertEquals(ts.toString(), "{\n" +
-                "\td : 1\n" +
-                "\tb : true\n" +
-                "\tc : 1\n" +
-                "\ta : 1\n" +
-                "\tA.B.D.b : true\n" +
-                "\tA.B.D.c : 2\n" +
-                "\tA.B.D.d : 2\n" +
-                "\tA.C.D.a : 3\n" +
-                "\tA.C.D.b : false\n" +
-                "\tA.C.D.c : 3\n" +
-                "\tA.C.D.d : 3\n" +
-                "\n" +
-                "}\n");
+                "\td : \t1\n" +
+                "\tb : \ttrue\n" +
+                "\tc : \t1\n" +
+                "\ta : \t1\n" +
+                "\tA.B.D.b : \ttrue\n" +
+                "\tA.B.D.c : \t2\n" +
+                "\tA.B.D.d : \t2\n" +
+                "\tA.C.D.a : \t3\n" +
+                "\tA.C.D.b : \tfalse\n" +
+                "\tA.C.D.c : \t3\n" +
+                "\tA.C.D.d : \t3\n" +
+                "}");
     }
 
     @Test
@@ -157,19 +154,18 @@ public class TraitTest extends BaseTest {
 
         ITypedStruct ts = DType.convert(s1, Multiplicity.REQUIRED);
         Assert.assertEquals(ts.toString(), "{\n" +
-                "\td : 1\n" +
-                "\tb : true\n" +
-                "\tc : 1\n" +
-                "\ta : 1\n" +
-                "\tA.B.D.b : true\n" +
-                "\tA.B.D.c : 2\n" +
-                "\tA.B.D.d : 2\n" +
-                "\tA.C.D.a : 3\n" +
-                "\tA.C.D.b : false\n" +
-                "\tA.C.D.c : 3\n" +
-                "\tA.C.D.d : 3\n" +
-                "\n" +
-                "}\n");
+                "\td : \t1\n" +
+                "\tb : \ttrue\n" +
+                "\tc : \t1\n" +
+                "\ta : \t1\n" +
+                "\tA.B.D.b : \ttrue\n" +
+                "\tA.B.D.c : \t2\n" +
+                "\tA.B.D.d : \t2\n" +
+                "\tA.C.D.a : \t3\n" +
+                "\tA.C.D.b : \tfalse\n" +
+                "\tA.C.D.c : \t3\n" +
+                "\tA.C.D.d : \t3\n" +
+                "}");
 
     }
 

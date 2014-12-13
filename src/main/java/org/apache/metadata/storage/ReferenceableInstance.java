@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.metadata.IStruct;
 import org.apache.metadata.ITypedReferenceableInstance;
 import org.apache.metadata.ITypedStruct;
+import org.apache.metadata.MetadataException;
 import org.apache.metadata.types.FieldMapping;
 
 import java.math.BigDecimal;
@@ -72,5 +73,19 @@ public class ReferenceableInstance extends StructInstance implements ITypedRefer
     @Override
     public IStruct getTrait(String typeName) {
         return traits.get(typeName);
+    }
+
+    @Override
+    public String toString()  {
+        try {
+            StringBuilder buf = new StringBuilder();
+            String prefix = "";
+
+            fieldMapping.output(this, buf, prefix);
+            return buf.toString();
+
+        } catch(MetadataException me) {
+            throw new RuntimeException(me);
+        }
     }
 }

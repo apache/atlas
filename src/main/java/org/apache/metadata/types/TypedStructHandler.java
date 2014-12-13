@@ -101,20 +101,7 @@ public class TypedStructHandler {
     }
 
     public void output(IStruct s, Appendable buf, String prefix) throws MetadataException {
-        TypeUtils.outputVal("{", buf, prefix);
-        if ( s == null ) {
-            TypeUtils.outputVal("<null>\n", buf, "");
-            return;
-        }
-        TypeUtils.outputVal("\n", buf, "");
-        String fieldPrefix = prefix + "\t";
-        for(AttributeInfo i : fieldMapping.fields.values()) {
-            Object aVal = s.get(i.name);
-            TypeUtils.outputVal(i.name + " : ", buf, fieldPrefix);
-            i.dataType().output(aVal, buf, "");
-            TypeUtils.outputVal("\n", buf, "");
-        }
-        TypeUtils.outputVal("\n}\n", buf, "");
+        fieldMapping.output(s, buf, prefix);
     }
 
 }

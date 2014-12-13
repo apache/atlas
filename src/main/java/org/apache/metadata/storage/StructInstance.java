@@ -129,18 +129,7 @@ public class StructInstance implements ITypedStruct {
             StringBuilder buf = new StringBuilder();
             String prefix = "";
 
-            TypeUtils.outputVal("{", buf, prefix);
-            TypeUtils.outputVal("\n", buf, "");
-            String fieldPrefix = prefix + "\t";
-            for(Map.Entry<String,AttributeInfo> e : fieldMapping.fields.entrySet()) {
-                String attrName = e.getKey();
-                AttributeInfo i = e.getValue();
-                Object aVal = get(attrName);
-                TypeUtils.outputVal(attrName + " : ", buf, fieldPrefix);
-                i.dataType().output(aVal, buf, "");
-                TypeUtils.outputVal("\n", buf, "");
-            }
-            TypeUtils.outputVal("\n}\n", buf, "");
+            fieldMapping.output(this, buf, prefix);
             return buf.toString();
 
         } catch(MetadataException me) {

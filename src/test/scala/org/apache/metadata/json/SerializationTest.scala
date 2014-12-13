@@ -48,7 +48,7 @@ class SerializationTest extends BaseTest {
     val s: Struct = BaseTest.createStruct(ms)
     val ts: ITypedStruct = structType.convert(s, Multiplicity.REQUIRED)
 
-    Assert.assertEquals(ts.toString, "{\n\ta : 1\n\tb : true\n\tc : 1\n\td : 2\n\te : 1\n\tf : 1\n\tg : 1\n\th : 1.0\n\ti : 1.0\n\tj : 1\n\tk : 1\n\tl : Wed Dec 10 18:35:58 PST 2014\n\tm : [1, 1]\n\tn : [1.1, 1.1]\n\to : {b=2.0, a=1.0}\n\n}\n")
+    Assert.assertEquals(ts.toString, "{\n\ta : \t1\n\tb : \ttrue\n\tc : \t1\n\td : \t2\n\te : \t1\n\tf : \t1\n\tg : \t1\n\th : \t1.0\n\ti : \t1.0\n\tj : \t1\n\tk : \t1\n\tl : \tWed Dec 10 18:35:58 PST 2014\n\tm : \t[1, 1]\n\tn : \t[1.1, 1.1]\n\to : \t{b=2.0, a=1.0}\n}")
 
     implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new TypedStructSerializer +
         new BigDecimalSerializer + new BigIntegerSerializer
@@ -59,7 +59,7 @@ class SerializationTest extends BaseTest {
 
     // Typed Struct read back
     val ts1 = read[StructInstance](ser)
-    Assert.assertEquals(ts1.toString, "{\n\ta : 1\n\tb : true\n\tc : 1\n\td : 2\n\te : 1\n\tf : 1\n\tg : 1\n\th : 1.0\n\ti : 1.0\n\tj : 1\n\tk : 1\n\tl : Thu Dec 11 00:00:00 PST 2014\n\tm : [1, 1]\n\tn : [1.100000000000000088817841970012523233890533447265625, 1.100000000000000088817841970012523233890533447265625]\n\to : {b=2.0, a=1.0}\n\n}\n")
+    Assert.assertEquals(ts1.toString, "{\n\ta : \t1\n\tb : \ttrue\n\tc : \t1\n\td : \t2\n\te : \t1\n\tf : \t1\n\tg : \t1\n\th : \t1.0\n\ti : \t1.0\n\tj : \t1\n\tk : \t1\n\tl : \tThu Dec 11 00:00:00 PST 2014\n\tm : \t[1, 1]\n\tn : \t[1.100000000000000088817841970012523233890533447265625, 1.100000000000000088817841970012523233890533447265625]\n\to : \t{b=2.0, a=1.0}\n}")
   }
 
   @Test def test2 {
@@ -74,7 +74,7 @@ class SerializationTest extends BaseTest {
         {"$typeName$":"t1","e":1,"n":[1.1,1.1],"h":1.0,"b":true,"k":1,"j":1,"d":2,"m":[1,1],"g":1,"a":1,"i":1.0,
         "c":1,"l":"2014-12-03T19:38:55.053Z","f":1,"o":{"b":2.0,"a":1.0}}""")
     // Typed Struct read from string
-    Assert.assertEquals(ts1.toString, "{\n\ta : 1\n\tb : true\n\tc : 1\n\td : 2\n\te : 1\n\tf : 1\n\tg : 1\n\th : 1.0\n\ti : 1.0\n\tj : 1\n\tk : 1\n\tl : Wed Dec 03 00:00:00 PST 2014\n\tm : [1, 1]\n\tn : [1.100000000000000088817841970012523233890533447265625, 1.100000000000000088817841970012523233890533447265625]\n\to : {b=2.0, a=1.0}\n\n}\n")
+    Assert.assertEquals(ts1.toString, "{\n\ta : \t1\n\tb : \ttrue\n\tc : \t1\n\td : \t2\n\te : \t1\n\tf : \t1\n\tg : \t1\n\th : \t1.0\n\ti : \t1.0\n\tj : \t1\n\tk : \t1\n\tl : \tWed Dec 03 00:00:00 PST 2014\n\tm : \t[1, 1]\n\tn : \t[1.100000000000000088817841970012523233890533447265625, 1.100000000000000088817841970012523233890533447265625]\n\to : \t{b=2.0, a=1.0}\n}")
   }
 
   @Test def testTrait {
@@ -113,7 +113,7 @@ class SerializationTest extends BaseTest {
       new BigDecimalSerializer + new BigIntegerSerializer
 
     // Typed Struct :
-    Assert.assertEquals(ts.toString, "{\n\td : 1\n\tb : true\n\tc : 1\n\ta : 1\n\tA.B.D.b : true\n\tA.B.D.c : 2\n\tA.B.D.d : 2\n\tA.C.D.a : 3\n\tA.C.D.b : false\n\tA.C.D.c : 3\n\tA.C.D.d : 3\n\n}\n")
+    Assert.assertEquals(ts.toString, "{\n\td : \t1\n\tb : \ttrue\n\tc : \t1\n\ta : \t1\n\tA.B.D.b : \ttrue\n\tA.B.D.c : \t2\n\tA.B.D.d : \t2\n\tA.C.D.a : \t3\n\tA.C.D.b : \tfalse\n\tA.C.D.c : \t3\n\tA.C.D.d : \t3\n}")
 
     // Json representation :
     val ser = swrite(ts)
@@ -124,6 +124,6 @@ class SerializationTest extends BaseTest {
         {"$typeName$":"D","A.C.D.d":3,"A.B.D.c":2,"b":true,"A.C.D.c":3,"d":1,
         "A.B.D.b":true,"a":1,"A.C.D.b":false,"A.B.D.d":2,"c":1,"A.C.D.a":3}""")
     // Typed Struct read from string:
-    Assert.assertEquals(ts1.toString, "{\n\td : 1\n\tb : true\n\tc : 1\n\ta : 1\n\tA.B.D.b : true\n\tA.B.D.c : 2\n\tA.B.D.d : 2\n\tA.C.D.a : 3\n\tA.C.D.b : false\n\tA.C.D.c : 3\n\tA.C.D.d : 3\n\n}\n")
+    Assert.assertEquals(ts1.toString, "{\n\td : \t1\n\tb : \ttrue\n\tc : \t1\n\ta : \t1\n\tA.B.D.b : \ttrue\n\tA.B.D.c : \t2\n\tA.B.D.d : \t2\n\tA.C.D.a : \t3\n\tA.C.D.b : \tfalse\n\tA.C.D.c : \t3\n\tA.C.D.d : \t3\n}")
   }
 }
