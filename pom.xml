@@ -31,6 +31,7 @@
         <akka.version>2.3.7</akka.version>
         <spray.version>1.3.1</spray.version>
         <guava.version>11.0.2</guava.version>
+        <fastutil.version>6.5.16</fastutil.version>
 
         <PermGen>64m</PermGen>
         <MaxPermGen>512m</MaxPermGen>
@@ -235,6 +236,12 @@
         	<scope>runtime</scope>
         	<version>2.3.1</version>
         </dependency>
+            <groupId>it.unimi.dsi</groupId>
+            <artifactId>fastutil</artifactId>
+            <version>${fastutil.version}</version>
+        </dependency>
+
+>>>>>>> add fastutil dependency
     </dependencies>
 
     <build>
