@@ -35,6 +35,7 @@ public class StructType  extends AbstractDataType<IStruct>
     public final TypeSystem typeSystem;
     public final String name;
     public final FieldMapping fieldMapping;
+    public final Map<AttributeInfo, List<String>> infoToNameMap;
     public final int numFields;
     private final TypedStructHandler handler;
 
@@ -45,6 +46,7 @@ public class StructType  extends AbstractDataType<IStruct>
         this.typeSystem = typeSystem;
         this.name = name;
         this.fieldMapping = null;
+        infoToNameMap = null;
         this.numFields = numFields;
         this.handler = null;
     }
@@ -55,6 +57,7 @@ public class StructType  extends AbstractDataType<IStruct>
         this.name = name;
         this.fieldMapping = constructFieldMapping(superTypes,
                 fields);
+        infoToNameMap = TypeUtils.buildAttrInfoToNameMap(this.fieldMapping);
         this.numFields = this.fieldMapping.fields.size();
         this.handler = new TypedStructHandler(this);
     }
@@ -187,5 +190,9 @@ public class StructType  extends AbstractDataType<IStruct>
     @Override
     public void output(IStruct s, Appendable buf, String prefix) throws MetadataException {
         handler.output(s, buf, prefix);
+    }
+
+    public List<String> getNames(AttributeInfo info) {
+        return infoToNameMap.get(info);
     }
 }

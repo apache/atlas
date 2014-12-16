@@ -22,9 +22,8 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.metadata.IStruct;
 import org.apache.metadata.ITypedStruct;
 import org.apache.metadata.MetadataException;
-import org.apache.metadata.types.AttributeInfo;
-import org.apache.metadata.types.FieldMapping;
-import org.apache.metadata.types.TypeUtils;
+import org.apache.metadata.MetadataService;
+import org.apache.metadata.types.*;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -94,15 +93,120 @@ public class StructInstance implements ITypedStruct {
         return fieldMapping;
     }
 
-    @Override
-    public Object get(String attrName) throws MetadataException {
-        return fieldMapping.get(this, attrName);
+    public void set(String attrName, Object val) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new ValueConversionException(getTypeName(), val, "Unknown field " + attrName);
+        }
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+        Object cVal = null;
+
+        if (val != null && val instanceof Id) {
+            ClassType clsType =
+                    MetadataService.getCurrentTypeSystem().getDataType(ClassType.class, i.dataType().getName());
+            clsType.validateId((Id)cVal);
+            cVal = val;
+        } else {
+            cVal = i.dataType().convert(val, i.multiplicity);
+        }
+        if ( cVal == null ) {
+            nullFlags[nullPos] = true;
+            return;
+        }
+        nullFlags[nullPos] = false;
+        if ( i.dataType() == DataTypes.BOOLEAN_TYPE ) {
+            bools[pos] = ((Boolean)cVal).booleanValue();
+        } else if ( i.dataType() == DataTypes.BYTE_TYPE ) {
+            bytes[pos] = ((Byte)cVal).byteValue();
+        } else if ( i.dataType() == DataTypes.SHORT_TYPE ) {
+            shorts[pos] = ((Short)cVal).shortValue();
+        } else if ( i.dataType() == DataTypes.INT_TYPE ) {
+            ints[pos] = ((Integer)cVal).intValue();
+        } else if ( i.dataType() == DataTypes.LONG_TYPE ) {
+            longs[pos] = ((Long)cVal).longValue();
+        } else if ( i.dataType() == DataTypes.FLOAT_TYPE ) {
+            floats[pos] = ((Float)cVal).floatValue();
+        } else if ( i.dataType() == DataTypes.DOUBLE_TYPE ) {
+            doubles[pos] = ((Double)cVal).doubleValue();
+        } else if ( i.dataType() == DataTypes.BIGINTEGER_TYPE ) {
+            bigIntegers[pos] = (BigInteger) cVal;
+        } else if ( i.dataType() == DataTypes.BIGDECIMAL_TYPE ) {
+            bigDecimals[pos] = (BigDecimal) cVal;
+        } else if ( i.dataType() == DataTypes.DATE_TYPE ) {
+            dates[pos] = (Date) cVal;
+        } else if ( i.dataType() == DataTypes.STRING_TYPE ) {
+            strings[pos] = (String) cVal;
+        } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.ARRAY ) {
+            arrays[pos] = (ImmutableList) cVal;
+        } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.MAP ) {
+            maps[pos] = (ImmutableMap) cVal;
+        } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.STRUCT ||
+                i.dataType().getTypeCategory() == DataTypes.TypeCategory.TRAIT ) {
+            structs[pos] = (StructInstance) cVal;
+        } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.CLASS ) {
+            if ( cVal instanceof  Id ) {
+                ids[pos] = (Id) cVal;
+            } else {
+                referenceables[pos] = (ReferenceableInstance) cVal;
+            }
+        } else {
+            throw new MetadataException(String.format("Unknown datatype %s", i.dataType()));
+        }
     }
 
-    @Override
-    public void set(String attrName, Object val) throws MetadataException {
-        fieldMapping.set(this, attrName, val);
+    public Object get(String attrName) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+
+        if ( nullFlags[nullPos]) {
+            return null;
+        }
+
+        if ( i.dataType() == DataTypes.BOOLEAN_TYPE ) {
+            return bools[pos];
+        } else if ( i.dataType() == DataTypes.BYTE_TYPE ) {
+            return bytes[pos];
+        } else if ( i.dataType() == DataTypes.SHORT_TYPE ) {
+            return shorts[pos];
+        } else if ( i.dataType() == DataTypes.INT_TYPE ) {
+            return ints[pos];
+        } else if ( i.dataType() == DataTypes.LONG_TYPE ) {
+            return longs[pos];
+        } else if ( i.dataType() == DataTypes.FLOAT_TYPE ) {
+            return floats[pos];
+        } else if ( i.dataType() == DataTypes.DOUBLE_TYPE ) {
+            return doubles[pos];
+        } else if ( i.dataType() == DataTypes.BIGINTEGER_TYPE ) {
+            return bigIntegers[pos];
+        } else if ( i.dataType() == DataTypes.BIGDECIMAL_TYPE ) {
+            return bigDecimals[pos];
+        } else if ( i.dataType() == DataTypes.DATE_TYPE ) {
+            return dates[pos];
+        } else if ( i.dataType() == DataTypes.STRING_TYPE ) {
+            return strings[pos];
+        } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.ARRAY ) {
+            return arrays[pos];
+        } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.MAP ) {
+            return maps[pos];
+        } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.STRUCT  ||
+                i.dataType().getTypeCategory() == DataTypes.TypeCategory.TRAIT ) {
+            return structs[pos];
+        } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.CLASS ) {
+            if ( ids[pos] != null ) {
+                return ids[pos];
+            } else {
+                return referenceables[pos];
+            }
+        } else {
+            throw new MetadataException(String.format("Unknown datatype %s", i.dataType()));
+        }
     }
+
 
     public void output(IStruct s, Appendable buf, String prefix) throws MetadataException {
         TypeUtils.outputVal("{", buf, prefix);

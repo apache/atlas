@@ -17,6 +17,8 @@
  */
 package org.apache.metadata.storage;
 
+import org.apache.metadata.*;
+
 import java.text.DateFormat;
 
 public interface IRepository {
@@ -24,4 +26,12 @@ public interface IRepository {
     DateFormat getDateFormat();
     DateFormat getTimestampFormat();
     boolean allowNullsInCollections();
+
+    ITypedReferenceableInstance create(IReferenceableInstance i) throws RepositoryException;
+
+    ITypedReferenceableInstance update(ITypedReferenceableInstance i) throws RepositoryException;
+
+    void delete(ITypedReferenceableInstance i) throws RepositoryException;
+
+    ITypedInstance get(Id id) throws RepositoryException;
 }

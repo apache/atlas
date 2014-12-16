@@ -23,10 +23,14 @@ import org.apache.metadata.IStruct;
 import org.apache.metadata.ITypedStruct;
 import org.apache.metadata.MetadataException;
 
+import java.util.List;
+import java.util.Map;
+
 public class TraitType extends HierarchicalType<TraitType, IStruct>
         implements IConstructableType<IStruct, ITypedStruct> {
 
     private final TypedStructHandler handler;
+    public final Map<AttributeInfo, List<String>> infoToNameMap;
 
     /**
      * Used when creating a TraitType, to support recursive Structs.
@@ -34,12 +38,14 @@ public class TraitType extends HierarchicalType<TraitType, IStruct>
     TraitType(TypeSystem typeSystem, String name, ImmutableList<String> superTraits, int numFields) {
         super(typeSystem, TraitType.class, name, superTraits, numFields);
         handler = null;
+        infoToNameMap = null;
     }
 
     TraitType(TypeSystem typeSystem, String name, ImmutableList<String> superTraits, AttributeInfo... fields)
             throws MetadataException {
         super(typeSystem, TraitType.class, name, superTraits, fields);
         handler = new TypedStructHandler(this);
+        infoToNameMap = TypeUtils.buildAttrInfoToNameMap(fieldMapping);
     }
 
     @Override
@@ -59,6 +65,11 @@ public class TraitType extends HierarchicalType<TraitType, IStruct>
     @Override
     public void output(IStruct s, Appendable buf, String prefix) throws MetadataException {
         handler.output(s, buf, prefix);
+    }
+
+    @Override
+    public List<String> getNames(AttributeInfo info) {
+        return infoToNameMap.get(info);
     }
 
 }

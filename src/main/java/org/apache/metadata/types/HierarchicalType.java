@@ -41,7 +41,7 @@ public abstract class HierarchicalType<ST extends HierarchicalType,T> extends Ab
     public final FieldMapping fieldMapping;
     public final int numFields;
     public final ImmutableList<String> superTypes;
-    protected final ImmutableList<AttributeInfo> immediateAttrs;
+    public final ImmutableList<AttributeInfo> immediateAttrs;
     protected ImmutableMap<String, List<Path>> superTypePaths;
     protected ImmutableMap<String, Path> pathNameToPathMap;
 
@@ -328,6 +328,10 @@ public abstract class HierarchicalType<ST extends HierarchicalType,T> extends Ab
         } else {
             return getName().compareTo(oName);
         }
+    }
+
+    public Set<String> getAllSuperTypeNames() {
+        return superTypePaths.keySet();
     }
 
     public Iterator<Path> pathIterator() {

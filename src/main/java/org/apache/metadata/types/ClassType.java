@@ -29,6 +29,7 @@ import org.apache.metadata.storage.StructInstance;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 public class ClassType extends HierarchicalType<ClassType, IReferenceableInstance>
@@ -36,16 +37,20 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
 
     public static final String TRAIT_NAME_SEP = "::";
 
+    public final Map<AttributeInfo, List<String>> infoToNameMap;
+
     /**
      * Used when creating a ClassType, to support recursive Structs.
      */
     ClassType(TypeSystem typeSystem, String name, ImmutableList<String> superTypes, int numFields) {
         super(typeSystem, ClassType.class, name, superTypes, numFields);
+        infoToNameMap = null;
     }
 
     ClassType(TypeSystem typeSystem, String name, ImmutableList<String> superTraits, AttributeInfo... fields)
             throws MetadataException {
         super(typeSystem, ClassType.class, name, superTraits, fields);
+        infoToNameMap = TypeUtils.buildAttrInfoToNameMap(fieldMapping);
     }
 
     @Override
@@ -172,4 +177,8 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
         fieldMapping.output(s, buf, prefix);
     }
 
+    @Override
+    public List<String> getNames(AttributeInfo info) {
+        return infoToNameMap.get(info);
+    }
 }

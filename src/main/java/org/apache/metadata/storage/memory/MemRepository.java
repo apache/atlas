@@ -18,7 +18,13 @@
 
 package org.apache.metadata.storage.memory;
 
+import org.apache.metadata.IInstance;
+import org.apache.metadata.IReferenceableInstance;
+import org.apache.metadata.ITypedInstance;
+import org.apache.metadata.ITypedReferenceableInstance;
 import org.apache.metadata.storage.IRepository;
+import org.apache.metadata.storage.Id;
+import org.apache.metadata.storage.RepositoryException;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -41,5 +47,46 @@ public class MemRepository implements IRepository {
     @Override
     public boolean allowNullsInCollections() {
         return false;
+    }
+
+    /**
+     * 1. traverse the Object Graph from  i and create idToNewIdMap : Map[Id, Id],
+     *    also create old Id to Instance Map: oldIdToInstance : Map[Id, IInstance]
+     *   - traverse reference Attributes, List[ClassType], Maps where Key/value is ClassType
+     *   - traverse Structs
+     *   - traverse Traits.
+     * 2. Traverse oldIdToInstance map create newInstances : List[ITypedReferenceableInstance]
+     *    - create a ITypedReferenceableInstance.
+     *      replace any old References ( ids or object references) with new Ids.
+     * 3. Traverse over newInstances
+     *    - ask ClassStore to assign a position to the Id.
+     *      - for Instances with Traits, assign a position for each Trait
+     *    - invoke store on the nwInstance.
+     *
+     * Recovery:
+     * - on each newInstance, invoke releaseId and delete on its ClassStore and Traits' Stores.
+     *
+     * @param i
+     * @return
+     * @throws RepositoryException
+     */
+    public ITypedReferenceableInstance create(IReferenceableInstance i) throws RepositoryException {
+        throw new RepositoryException("not implemented");
+    }
+
+    public ITypedReferenceableInstance update(ITypedReferenceableInstance i) throws RepositoryException {
+        throw new RepositoryException("not implemented");
+    }
+
+    public void delete(ITypedReferenceableInstance i) throws RepositoryException {
+        throw new RepositoryException("not implemented");
+    }
+
+    public ITypedReferenceableInstance get(Id id) throws RepositoryException {
+        throw new RepositoryException("not implemented");
+    }
+
+    HierarchicalTypeStore getStore(String typeName) {
+        return null;
     }
 }

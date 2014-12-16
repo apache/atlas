@@ -17,9 +17,14 @@
  */
 package org.apache.metadata.types;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.metadata.MetadataException;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -54,6 +59,19 @@ public class TypeUtils {
     public static String[] parseAsMapType(String typeName) {
         Matcher m = MAP_TYPE_NAME_PATTERN.matcher(typeName);
         return m.matches() ?  new String[] {m.group(1), m.group(2)} : null;
+    }
+
+    public static Map<AttributeInfo, List<String>> buildAttrInfoToNameMap(FieldMapping f) {
+        Map<AttributeInfo, List<String>> b = new HashMap<AttributeInfo, List<String>>();
+        for(Map.Entry<String, AttributeInfo>  e : f.fields.entrySet()) {
+            List<String> names = b.get(e.getValue());
+            if ( names == null ) {
+                names = new ArrayList<String>();
+                b.put(e.getValue(), names);
+            }
+            names.add(e.getKey());
+        }
+        return ImmutableMap.copyOf(b);
     }
 
 }
