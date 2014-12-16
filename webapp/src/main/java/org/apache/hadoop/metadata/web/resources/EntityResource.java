@@ -108,9 +108,10 @@ public class EntityResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getEntityDefinition(@PathParam("entityType") String entityType,
                                         @PathParam("entityName") String entityName) {
-
         final String entityDefinition = repositoryService.getEntityDefinition(entityName, entityType);
-        return Response.ok(entityDefinition).build();
+        return (entityDefinition == null)
+                ? Response.status(Response.Status.NOT_FOUND).build()
+                : Response.ok(entityDefinition).build();
     }
 
     @POST

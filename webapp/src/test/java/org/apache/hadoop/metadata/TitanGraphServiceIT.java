@@ -13,7 +13,7 @@ import java.util.UUID;
 /**
  * End to end graph put/get test.
  */
-public class TitanGraphServiceIntegrationTest {
+public class TitanGraphServiceIT {
 
     @Test
     public void testTitanGraph() throws Exception {

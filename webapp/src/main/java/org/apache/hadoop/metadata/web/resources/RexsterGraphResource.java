@@ -56,15 +56,15 @@ import java.util.Set;
  * https://github.com/tinkerpop/rexster/wiki/Basic-REST-API
  */
 @Path("graph")
-public class GraphResource {
-    private static final Logger LOG = LoggerFactory.getLogger(GraphResource.class);
+public class RexsterGraphResource {
+    private static final Logger LOG = LoggerFactory.getLogger(RexsterGraphResource.class);
 
     public static final String RESULTS = "results";
     public static final String TOTAL_SIZE = "totalSize";
 
     private GraphService graphService;
 
-    public GraphResource() {
+    public RexsterGraphResource() {
         graphService = Services.get().getService(TitanGraphService.NAME);
         if (graphService == null) {
             throw new WebApplicationException(Response

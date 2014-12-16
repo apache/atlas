@@ -32,7 +32,7 @@ public class TypesResource {
 
     @POST
     @Path("submit/{type}")
-    @Consumes(MediaType.TEXT_XML)
+    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response submit(@Context HttpServletRequest request,
                            @PathParam("type") String type) {

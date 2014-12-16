@@ -102,6 +102,7 @@ public class GraphBackedMetadataRepositoryService implements MetadataRepositoryS
     @Override
     public String submitEntity(String entity, String entityType) {
         LOG.info("adding entity={} type={}", entity, entityType);
+        @SuppressWarnings("unchecked")
         Map<String, String> properties = (Map<String, String>) JSONValue.parse(entity);
 
         final String entityName = properties.get("entityName");

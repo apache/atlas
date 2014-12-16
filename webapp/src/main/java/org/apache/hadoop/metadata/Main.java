@@ -23,7 +23,6 @@ import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.metadata.web.service.EmbeddedServer;
@@ -61,7 +60,8 @@ public final class Main {
 
     public static void main(String[] args) throws Exception {
         CommandLine cmd = parseArgs(args);
-        String projectVersion = getProjectVersion();
+        // todo: enable version for webapp
+        // String projectVersion = getProjectVersion();
         // String appPath = "webapp/target/metadata-webapp-" + projectVersion;
         String appPath = "webapp/target/metadata-governance";
 
@@ -82,11 +82,13 @@ public final class Main {
         server.start();
     }
 
+/*
     private static String getProjectVersion() throws ConfigurationException {
         PropertiesConfiguration configuration =
                 new PropertiesConfiguration("metadata-buildinfo.properties");
         return configuration.getString("project.version");
     }
+*/
 
     private static int getApplicationPort(CommandLine cmd, String enableTLSFlag) {
         final int appPort;
@@ -95,7 +97,7 @@ public final class Main {
         } else {
             // default : metadata.enableTLS is true
             appPort = StringUtils.isEmpty(enableTLSFlag)
-                    || enableTLSFlag.equals("true") ? 15443 : 15000;
+                    || enableTLSFlag.equals("true") ? 21443 : 21000;
         }
 
         return appPort;

@@ -20,7 +20,6 @@ package org.apache.hadoop.metadata.web.resources;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.metadata.web.util.Servlets;
-import org.apache.hadoop.util.VersionInfo;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
@@ -69,7 +68,8 @@ public class AdminResource {
             try {
                 JSONObject response = new JSONObject();
                 response.put("Version", "v0.1"); // todo: get version
-                response.put("Hadoop", VersionInfo.getVersion() + "-r" + VersionInfo.getRevision());
+                // todo: add hadoop version?
+                // response.put("Hadoop", VersionInfo.getVersion() + "-r" + VersionInfo.getRevision());
                 version = Response.ok(response).build();
             } catch (JSONException e) {
                 throw new WebApplicationException(

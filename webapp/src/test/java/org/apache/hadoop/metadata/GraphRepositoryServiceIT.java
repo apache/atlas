@@ -12,7 +12,7 @@ import org.testng.annotations.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-public class GraphRepositoryServiceIntegrationTest {
+public class GraphRepositoryServiceIT {
 
     private static final String ENTITY_NAME = "clicks-table";
     private static final String ENTITY_TYPE = "hive-table";
@@ -48,6 +48,7 @@ public class GraphRepositoryServiceIntegrationTest {
         Assert.assertNotNull(guid);
 
         String entity = repositoryService.getEntityDefinition(ENTITY_NAME, ENTITY_TYPE);
+        @SuppressWarnings("unchecked")
         Map<String, String> entityProperties =
                 (Map<String, String>) JSONValue.parseWithException(entity);
         Assert.assertEquals(entityProperties.get("guid"), guid);

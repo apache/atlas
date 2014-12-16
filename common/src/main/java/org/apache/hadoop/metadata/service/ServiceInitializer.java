@@ -34,16 +34,16 @@ public class ServiceInitializer {
     private final Services services = Services.get();
 
     public void initialize() throws MetadataException {
-        String serviceClassNames;
+        String[] serviceClassNames;
         try {
             PropertiesConfiguration configuration =
                     new PropertiesConfiguration("application.properties");
-            serviceClassNames = configuration.getString("application.services");
+            serviceClassNames = configuration.getStringArray("application.services");
         } catch (ConfigurationException e) {
             throw new RuntimeException("unable to get server properties");
         }
 
-        for (String serviceClassName : serviceClassNames.split(",")) {
+        for (String serviceClassName : serviceClassNames) {
             serviceClassName = serviceClassName.trim();
             if (serviceClassName.isEmpty()) {
                 continue;
