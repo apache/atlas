@@ -82,6 +82,7 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
             if ( val instanceof Struct) {
                 Struct s = (Struct) val;
                 Referenceable r = null;
+                Id id = null;
 
                 if ( s.typeName != getName() ) {
                     /*
@@ -96,10 +97,11 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
 
                 if ( val instanceof Referenceable ) {
                      r = (Referenceable)val;
+                    id = r.getId();
                 }
 
                 ITypedReferenceableInstance tr = r != null ?
-                        createInstanceWithTraits(r, r.getTraits().toArray(new String[0])) : createInstance();
+                        createInstanceWithTraits(id, r, r.getTraits().toArray(new String[0])) : createInstance(id);
 
                 for(Map.Entry<String,AttributeInfo> e : fieldMapping.fields.entrySet() ) {
                     String attrKey = e.getKey();
@@ -134,10 +136,14 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
 
     @Override
     public ITypedReferenceableInstance createInstance() throws MetadataException {
-        return createInstanceWithTraits(null);
+        return createInstance(null);
     }
 
-    public ITypedReferenceableInstance createInstanceWithTraits(Referenceable r, String... traitNames)
+    public ITypedReferenceableInstance createInstance(Id id) throws MetadataException {
+        return createInstanceWithTraits(id, null);
+    }
+
+    public ITypedReferenceableInstance createInstanceWithTraits(Id id, Referenceable r, String... traitNames)
     throws MetadataException {
 
         ImmutableMap.Builder<String, ITypedStruct> b = new ImmutableBiMap.Builder<String, ITypedStruct>();
@@ -149,7 +155,7 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
             b.put(t, trait);
         }
 
-        return new ReferenceableInstance(new Id(getName()),
+        return new ReferenceableInstance(id == null ? new Id(getName()) : id,
                 getName(),
                 fieldMapping,
                 new boolean[fieldMapping.fields.size()],

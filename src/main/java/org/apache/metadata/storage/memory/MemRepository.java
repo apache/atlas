@@ -18,21 +18,31 @@
 
 package org.apache.metadata.storage.memory;
 
-import org.apache.metadata.IInstance;
-import org.apache.metadata.IReferenceableInstance;
-import org.apache.metadata.ITypedInstance;
-import org.apache.metadata.ITypedReferenceableInstance;
+import org.apache.metadata.*;
 import org.apache.metadata.storage.IRepository;
 import org.apache.metadata.storage.Id;
 import org.apache.metadata.storage.RepositoryException;
+import org.apache.metadata.types.ObjectGraphTraversal;
+import org.apache.metadata.types.ObjectGraphWalker;
+import org.apache.metadata.types.TypeSystem;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MemRepository implements IRepository {
 
     private static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
     private static SimpleDateFormat timestampFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+    final TypeSystem typeSystem;
+    final AtomicInteger ID_SEQ = new AtomicInteger(0);
+
+    public MemRepository(TypeSystem typeSystem) {
+        this.typeSystem = typeSystem;
+    }
 
     @Override
     public DateFormat getDateFormat() {
@@ -49,12 +59,17 @@ public class MemRepository implements IRepository {
         return false;
     }
 
+    Id newId(String typeName) {
+        return new Id(ID_SEQ.incrementAndGet(), 0, typeName);
+    }
+
     /**
      * 1. traverse the Object Graph from  i and create idToNewIdMap : Map[Id, Id],
      *    also create old Id to Instance Map: oldIdToInstance : Map[Id, IInstance]
      *   - traverse reference Attributes, List[ClassType], Maps where Key/value is ClassType
      *   - traverse Structs
      *   - traverse Traits.
+     * 1b. Ensure that every newId has an associated Instance.
      * 2. Traverse oldIdToInstance map create newInstances : List[ITypedReferenceableInstance]
      *    - create a ITypedReferenceableInstance.
      *      replace any old References ( ids or object references) with new Ids.
@@ -71,6 +86,16 @@ public class MemRepository implements IRepository {
      * @throws RepositoryException
      */
     public ITypedReferenceableInstance create(IReferenceableInstance i) throws RepositoryException {
+
+        DiscoverInstances discoverInstances = new DiscoverInstances(this);
+
+        try {
+            new ObjectGraphWalker(typeSystem, discoverInstances, i).walk();
+        } catch (MetadataException me) {
+            throw new RepositoryException("TypeSystem error when walking the ObjectGraph", me);
+        }
+
+
         throw new RepositoryException("not implemented");
     }
 

@@ -35,7 +35,7 @@ import java.util.Date;
  */
 public class ReferenceableInstance extends StructInstance implements ITypedReferenceableInstance {
 
-    private final Id id;
+    private Id id;
     private final ImmutableMap<String, ITypedStruct> traits;
     private final ImmutableList<String> traitNames;
 
@@ -73,6 +73,14 @@ public class ReferenceableInstance extends StructInstance implements ITypedRefer
     @Override
     public IStruct getTrait(String typeName) {
         return traits.get(typeName);
+    }
+
+    /**
+     * @nopub
+     * @param id
+     */
+    void replaceWithNewId(Id id) {
+        this.id = id;
     }
 
     @Override

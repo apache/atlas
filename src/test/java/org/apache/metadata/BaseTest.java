@@ -41,7 +41,7 @@ public abstract class BaseTest {
     public void setup() throws MetadataException {
 
         TypeSystem ts = new TypeSystem();
-        MemRepository mr = new MemRepository();
+        MemRepository mr = new MemRepository(ts);
         ms = new MetadataService(mr, ts);
         MetadataService.setCurrentService(ms);
 

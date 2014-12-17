@@ -46,7 +46,7 @@ class SampleILoop extends ILoop {
   //intp = Console.in
 
   val ts: TypeSystem = new TypeSystem
-  val mr: MemRepository = new MemRepository
+  val mr: MemRepository = new MemRepository(ts)
   val ms : MetadataService = new MetadataService(mr, ts)
   MetadataService.setCurrentService(ms)
 
