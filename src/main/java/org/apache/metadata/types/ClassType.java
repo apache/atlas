@@ -79,7 +79,21 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
     public ITypedReferenceableInstance convert(Object val, Multiplicity m) throws MetadataException {
 
         if ( val != null ) {
-            if ( val instanceof Struct) {
+            if ( val instanceof  ITypedReferenceableInstance) {
+                ITypedReferenceableInstance tr = (ITypedReferenceableInstance) val;
+                if ( tr.getTypeName() != getName() ) {
+                     /*
+                     * If val is a subType instance; invoke convert on it.
+                     */
+                    ClassType valType = typeSystem.getDataType(superTypeClass, tr.getTypeName());
+                    if ( valType.superTypePaths.containsKey(name) ) {
+                        return valType.convert(val, m);
+                    }
+                    throw new ValueConversionException(this, val);
+                }
+                return tr;
+            }
+            else if ( val instanceof Struct) {
                 Struct s = (Struct) val;
                 Referenceable r = null;
                 Id id = null;

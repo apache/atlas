@@ -33,5 +33,7 @@ public interface IRepository {
 
     void delete(ITypedReferenceableInstance i) throws RepositoryException;
 
+    Id newId(String typeName);
+
     ITypedInstance get(Id id) throws RepositoryException;
 }

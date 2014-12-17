@@ -23,9 +23,11 @@ import com.google.common.collect.ImmutableCollection.Builder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import org.apache.metadata.IReferenceableInstance;
 import org.apache.metadata.storage.IRepository;
 import org.apache.metadata.MetadataException;
 import org.apache.metadata.MetadataService;
+import org.apache.metadata.storage.Id;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -439,6 +441,27 @@ public class DataTypes {
             return null;
         }
 
+        public ImmutableCollection<?> mapIds(ImmutableCollection<?> val, Multiplicity m, Map<Id, Id> transientToNewIds)
+                throws MetadataException {
+
+            if ( val == null || elemType.getTypeCategory() != TypeCategory.CLASS ) {
+                return val;
+            }
+            ImmutableCollection.Builder<?> b = m.isUnique ? ImmutableSet.builder() : ImmutableList.builder();
+            Iterator it = val.iterator();
+            while(it.hasNext()) {
+                Object elem = it.next();
+                if ( elem instanceof IReferenceableInstance) {
+                    Id oldId = ((IReferenceableInstance)elem).getId();
+                    Id newId = transientToNewIds.get(oldId);
+                    b.add(newId == null ? oldId : newId);
+                } else {
+                    b.add(elem);
+                }
+            }
+            return b.build();
+        }
+
         @Override
         public TypeCategory getTypeCategory() {
             return TypeCategory.ARRAY;
@@ -508,6 +531,39 @@ public class DataTypes {
                 throw new ValueConversionException.NullConversionException(m);
             }
             return null;
+        }
+
+        public ImmutableMap<?, ?> mapIds(ImmutableMap val, Multiplicity m, Map<Id, Id> transientToNewIds)
+                throws MetadataException {
+
+            if ( val == null || (keyType.getTypeCategory() != TypeCategory.CLASS &&
+                    valueType.getTypeCategory() != TypeCategory.CLASS) ) {
+                return val;
+            }
+            ImmutableMap.Builder b = ImmutableMap.builder();
+            Iterator<Map.Entry> it = val.entrySet().iterator();
+            while(it.hasNext()) {
+                Map.Entry elem = it.next();
+                Object oldKey = elem.getKey();
+                Object oldValue = elem.getValue();
+                Object newKey = oldKey;
+                Object newValue = oldValue;
+
+                if ( oldKey instanceof IReferenceableInstance ) {
+                    Id oldId = ((IReferenceableInstance)oldKey).getId();
+                    Id newId = transientToNewIds.get(oldId);
+                    newKey = newId == null ? oldId : newId;
+                }
+
+                if ( oldValue instanceof IReferenceableInstance ) {
+                    Id oldId = ((IReferenceableInstance)oldValue).getId();
+                    Id newId = transientToNewIds.get(oldId);
+                    newValue = newId == null ? oldId : newId;
+                }
+
+                b.put(newKey, newValue);
+            }
+            return b.build();
         }
 
         @Override

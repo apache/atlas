@@ -19,16 +19,14 @@
 package org.apache.metadata.storage.memory;
 
 import org.apache.metadata.*;
-import org.apache.metadata.storage.IRepository;
-import org.apache.metadata.storage.Id;
-import org.apache.metadata.storage.RepositoryException;
-import org.apache.metadata.types.ObjectGraphTraversal;
-import org.apache.metadata.types.ObjectGraphWalker;
-import org.apache.metadata.types.TypeSystem;
+import org.apache.metadata.storage.*;
+import org.apache.metadata.types.*;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -38,10 +36,15 @@ public class MemRepository implements IRepository {
     private static SimpleDateFormat timestampFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     final TypeSystem typeSystem;
+    /*
+     * A Store for each Class and Trait.
+     */
+    final Map<String, HierarchicalTypeStore> typeStores;
     final AtomicInteger ID_SEQ = new AtomicInteger(0);
 
     public MemRepository(TypeSystem typeSystem) {
         this.typeSystem = typeSystem;
+        this.typeStores = new HashMap<String, HierarchicalTypeStore>();
     }
 
     @Override
@@ -59,7 +62,8 @@ public class MemRepository implements IRepository {
         return false;
     }
 
-    Id newId(String typeName) {
+    @Override
+    public Id newId(String typeName) {
         return new Id(ID_SEQ.incrementAndGet(), 0, typeName);
     }
 
@@ -89,14 +93,81 @@ public class MemRepository implements IRepository {
 
         DiscoverInstances discoverInstances = new DiscoverInstances(this);
 
+        /*
+         * Step 1: traverse the Object Graph from  i and create idToNewIdMap : Map[Id, Id],
+         *    also create old Id to Instance Map: oldIdToInstance : Map[Id, IInstance]
+         *   - traverse reference Attributes, List[ClassType], Maps where Key/value is ClassType
+         *   - traverse Structs
+         *   - traverse Traits.
+         */
         try {
             new ObjectGraphWalker(typeSystem, discoverInstances, i).walk();
         } catch (MetadataException me) {
             throw new RepositoryException("TypeSystem error when walking the ObjectGraph", me);
         }
 
+        /*
+         * Step 1b: Ensure that every newId has an associated Instance.
+         */
+        for(Id oldId : discoverInstances.idToNewIdMap.keySet()) {
+            if ( !discoverInstances.idToInstanceMap.containsKey(oldId)) {
+                throw new RepositoryException(String.format("Invalid Object Graph: " +
+                        "Encountered an unassignedId %s that is not associated with an Instance", oldId));
+            }
+        }
 
-        throw new RepositoryException("not implemented");
+        /* Step 2: Traverse oldIdToInstance map create newInstances : List[ITypedReferenceableInstance]
+         * - create a ITypedReferenceableInstance.
+         *   replace any old References ( ids or object references) with new Ids.
+        */
+        List<ITypedReferenceableInstance> newInstances = new ArrayList<ITypedReferenceableInstance>();
+        ITypedReferenceableInstance retInstance = null;
+        for(IReferenceableInstance transientInstance : discoverInstances.idToInstanceMap.values()) {
+            try {
+                ClassType cT = typeSystem.getDataType(ClassType.class, transientInstance.getTypeName());
+                ITypedReferenceableInstance newInstance = cT.convert(transientInstance, Multiplicity.REQUIRED);
+                newInstances.add(newInstance);
+                if (newInstance.getId() == i.getId()) {
+                    retInstance = newInstance;
+                }
+
+                /*
+                 * Now replace old references with new Ids
+                 */
+                MapIds mapIds = new MapIds(this, discoverInstances.idToNewIdMap);
+                new ObjectGraphWalker(typeSystem, mapIds, newInstances).walk();
+
+            } catch (MetadataException me) {
+                throw new RepositoryException(
+                        String.format("Failed to create Instance(id = %s", transientInstance.getId()), me);
+            }
+        }
+
+        /*
+         * 3. Traverse over newInstances
+         *    - ask ClassStore to assign a position to the Id.
+         *      - for Instances with Traits, assign a position for each Trait
+         *    - invoke store on the nwInstance.
+         */
+        try {
+            for (ITypedReferenceableInstance instance : newInstances) {
+                HierarchicalTypeStore st = typeStores.get(instance.getTypeName());
+                st.assignPosition(instance.getId());
+            }
+
+            for (ITypedReferenceableInstance instance : newInstances) {
+                HierarchicalTypeStore st = typeStores.get(instance.getTypeName());
+                st.store(instance);
+            }
+        } catch(RepositoryException re) {
+            for (ITypedReferenceableInstance instance : newInstances) {
+                HierarchicalTypeStore st = typeStores.get(instance.getTypeName());
+                st.releaseId(instance.getId());
+            }
+            throw re;
+        }
+
+        return retInstance;
     }
 
     public ITypedReferenceableInstance update(ITypedReferenceableInstance i) throws RepositoryException {

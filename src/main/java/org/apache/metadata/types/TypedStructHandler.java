@@ -45,7 +45,14 @@ public class TypedStructHandler {
 
     public ITypedStruct convert(Object val, Multiplicity m) throws MetadataException {
         if ( val != null ) {
-            if ( val instanceof Struct) {
+            if ( val instanceof  ITypedStruct ) {
+                ITypedStruct ts = (ITypedStruct) val;
+                if ( ts.getTypeName() != structType.getName() ) {
+                    throw new ValueConversionException(structType, val);
+                }
+                return ts;
+            }
+            else if ( val instanceof Struct) {
                 Struct s = (Struct) val;
                 if ( s.typeName != structType.getName() ) {
                     throw new ValueConversionException(structType, val);

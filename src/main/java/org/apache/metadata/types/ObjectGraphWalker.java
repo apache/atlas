@@ -31,6 +31,16 @@ public class ObjectGraphWalker {
         queue.add(start);
     }
 
+    public ObjectGraphWalker(TypeSystem typeSystem, NodeProcessor nodeProcessor,
+                             List<? extends IReferenceableInstance> roots)
+            throws MetadataException {
+        this.typeSystem = typeSystem;
+        this.nodeProcessor = nodeProcessor;
+        queue = new LinkedList<IReferenceableInstance>();
+        processedIds = new HashSet<Id>();
+        queue.addAll(roots);
+    }
+
     public void walk() throws MetadataException {
         while (!queue.isEmpty()) {
             IReferenceableInstance r = queue.poll();
@@ -116,7 +126,7 @@ public class ObjectGraphWalker {
             String attrName = e.getKey();
             if (aInfo.dataType().getTypeCategory() != DataTypes.TypeCategory.PRIMITIVE) {
                 Object aVal = i.get(attrName);
-                nodeProcessor.processNode(new Node(i, attrName, aInfo.dataType(), aVal));
+                nodeProcessor.processNode(new Node(i, attrName, aInfo, aVal));
                 traverseValue(aInfo.dataType(), aVal);
             }
         }
@@ -156,13 +166,13 @@ public class ObjectGraphWalker {
     public static class Node {
         public final IStruct instance;
         public final String attributeName;
-        public final IDataType dataType;
+        public final AttributeInfo aInfo;
         public final Object value;
 
-        public Node(IStruct instance, String attributeName, IDataType dataType, Object value) {
+        public Node(IStruct instance, String attributeName, AttributeInfo aInfo, Object value) {
             this.instance = instance;
             this.attributeName = attributeName;
-            this.dataType = dataType;
+            this.aInfo = aInfo;
             this.value = value;
         }
     }

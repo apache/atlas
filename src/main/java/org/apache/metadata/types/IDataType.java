@@ -17,8 +17,11 @@
  */
 package org.apache.metadata.types;
 
+import org.apache.metadata.storage.Id;
 import org.apache.metadata.types.DataTypes.TypeCategory;
 import org.apache.metadata.MetadataException;
+
+import java.util.Map;
 
 public interface IDataType<T> {
     String getName();

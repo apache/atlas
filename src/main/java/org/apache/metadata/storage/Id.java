@@ -18,7 +18,12 @@
 
 package org.apache.metadata.storage;
 
-public class Id {
+import com.google.common.collect.ImmutableList;
+import org.apache.metadata.IReferenceableInstance;
+import org.apache.metadata.IStruct;
+import org.apache.metadata.MetadataException;
+
+public class Id implements IReferenceableInstance {
 
     public final long id;
     public final String className;
@@ -40,5 +45,35 @@ public class Id {
 
     public String toString() {
         return String.format("(type: %s, id: %s)", className, isUnassigned() ? "<unassigned>" : "" + id);
+    }
+
+    @Override
+    public ImmutableList<String> getTraits() {
+        return null;
+    }
+
+    @Override
+    public Id getId() {
+        return this;
+    }
+
+    @Override
+    public IStruct getTrait(String typeName) {
+        return null;
+    }
+
+    @Override
+    public String getTypeName() {
+        return className;
+    }
+
+    @Override
+    public Object get(String attrName) throws MetadataException {
+        throw new MetadataException("Get/Set not supported on an Id object");
+    }
+
+    @Override
+    public void set(String attrName, Object val) throws MetadataException {
+        throw new MetadataException("Get/Set not supported on an Id object");
     }
 }
