@@ -153,8 +153,12 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
         return createInstance(null);
     }
 
-    public ITypedReferenceableInstance createInstance(Id id) throws MetadataException {
-        return createInstanceWithTraits(id, null);
+    public ITypedReferenceableInstance createInstance(String... traitNames) throws MetadataException {
+        return createInstance(null, traitNames);
+    }
+
+    public ITypedReferenceableInstance createInstance(Id id, String... traitNames) throws MetadataException {
+        return createInstanceWithTraits(id, null, traitNames);
     }
 
     public ITypedReferenceableInstance createInstanceWithTraits(Id id, Referenceable r, String... traitNames)

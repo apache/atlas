@@ -19,9 +19,8 @@
 package org.apache.metadata.json
 
 import com.google.common.collect.ImmutableList
-import org.apache.metadata.{ITypedStruct, Struct, BaseTest}
-import org.apache.metadata.storage.StructInstance
-import org.apache.metadata.storage.StructInstance
+import org.apache.metadata._
+import org.apache.metadata.storage.{ReferenceableInstance, StructInstance}
 import org.apache.metadata.types._
 import org.json4s.NoTypeHints
 import org.junit.Before
@@ -29,7 +28,7 @@ import org.junit.Test
 import org.junit.Assert
 
 import org.json4s._
-import org.json4s.native.Serialization.{read, write => swrite}
+import org.json4s.native.Serialization.{write => swrite, _}
 import org.json4s.native.JsonMethods._
 
 class SerializationTest extends BaseTest {
@@ -51,7 +50,7 @@ class SerializationTest extends BaseTest {
     Assert.assertEquals(ts.toString, "{\n\ta : \t1\n\tb : \ttrue\n\tc : \t1\n\td : \t2\n\te : \t1\n\tf : \t1\n\tg : \t1\n\th : \t1.0\n\ti : \t1.0\n\tj : \t1\n\tk : \t1\n\tl : \tWed Dec 10 18:35:58 PST 2014\n\tm : \t[1, 1]\n\tn : \t[1.1, 1.1]\n\to : \t{b=2.0, a=1.0}\n}")
 
     implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new TypedStructSerializer +
-        new BigDecimalSerializer + new BigIntegerSerializer
+      new BigDecimalSerializer + new BigIntegerSerializer
 
     //Json representation
     val ser = swrite(ts)
@@ -126,4 +125,59 @@ class SerializationTest extends BaseTest {
     // Typed Struct read from string:
     Assert.assertEquals(ts1.toString, "{\n\td : \t1\n\tb : \ttrue\n\tc : \t1\n\ta : \t1\n\tA.B.D.b : \ttrue\n\tA.B.D.c : \t2\n\tA.B.D.d : \t2\n\tA.C.D.a : \t3\n\tA.C.D.b : \tfalse\n\tA.C.D.c : \t3\n\tA.C.D.d : \t3\n}")
   }
+
+  @Test def testClass {
+
+    val ts: TypeSystem = ms.getTypeSystem
+
+    val deptTypeDef: HierarchicalTypeDefinition[ClassType] = createClassTypeDef("Department",
+      ImmutableList.of[String],
+      BaseTest.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+      new AttributeDefinition("employees", String.format("array<%s>", "Person"),
+        Multiplicity.COLLECTION, true, "department"))
+    val personTypeDef: HierarchicalTypeDefinition[ClassType] = createClassTypeDef("Person",
+      ImmutableList.of[String],
+      BaseTest.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+      new AttributeDefinition("department", "Department", Multiplicity.REQUIRED, false, "employees"),
+      new AttributeDefinition("manager", "Manager", Multiplicity.OPTIONAL, false, "subordinates"))
+    val managerTypeDef: HierarchicalTypeDefinition[ClassType] = createClassTypeDef("Manager",
+      ImmutableList.of[String]("Person"),
+      new AttributeDefinition("subordinates", String.format("array<%s>", "Person"),
+        Multiplicity.COLLECTION, false, "manager"))
+    val securityClearanceTypeDef: HierarchicalTypeDefinition[TraitType] = createTraitTypeDef("SecurityClearance",
+      ImmutableList.of[String],
+      BaseTest.createRequiredAttrDef("level", DataTypes.INT_TYPE))
+
+    ts.defineTypes(ImmutableList.of[StructTypeDefinition],
+      ImmutableList.of[HierarchicalTypeDefinition[TraitType]](securityClearanceTypeDef),
+      ImmutableList.of[HierarchicalTypeDefinition[ClassType]](deptTypeDef, personTypeDef, managerTypeDef)
+    )
+
+    val hrDept: Referenceable = new Referenceable("Department")
+    val john: Referenceable = new Referenceable("Person")
+    val jane: Referenceable = new Referenceable("Manager", "SecurityClearance")
+    hrDept.set("name", "hr")
+    john.set("name", "John")
+    john.set("department", hrDept)
+    jane.set("name", "Jane")
+    jane.set("department", hrDept)
+    john.set("manager", jane)
+    hrDept.set("employees", ImmutableList.of[Referenceable](john, jane))
+    jane.set("subordinates", ImmutableList.of[Referenceable](john))
+    jane.getTrait("SecurityClearance").set("level", 1)
+
+    val deptType: ClassType = ts.getDataType(classOf[ClassType], "Department")
+    val hrDept2: ITypedReferenceableInstance = deptType.convert(hrDept, Multiplicity.REQUIRED)
+
+    println(s"HR Dept Object Graph:\n${hrDept2}\n")
+
+    implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new TypedStructSerializer +
+      new TypedReferenceableInstanceSerializer +  new BigDecimalSerializer + new BigIntegerSerializer
+
+    val ser = swrite(hrDept2)
+    println(s"HR Dept JSON:\n${pretty(render(parse(ser)))}\n"  )
+
+    println(s"HR Dept Object Graph read from JSON:${read[ReferenceableInstance](ser)}\n")
+  }
+
 }

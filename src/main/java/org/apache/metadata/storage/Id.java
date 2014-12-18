@@ -21,9 +21,11 @@ package org.apache.metadata.storage;
 import com.google.common.collect.ImmutableList;
 import org.apache.metadata.IReferenceableInstance;
 import org.apache.metadata.IStruct;
+import org.apache.metadata.ITypedReferenceableInstance;
 import org.apache.metadata.MetadataException;
+import org.apache.metadata.types.FieldMapping;
 
-public class Id implements IReferenceableInstance {
+public class Id implements ITypedReferenceableInstance {
 
     public final long id;
     public final String className;
@@ -75,5 +77,10 @@ public class Id implements IReferenceableInstance {
     @Override
     public void set(String attrName, Object val) throws MetadataException {
         throw new MetadataException("Get/Set not supported on an Id object");
+    }
+
+    @Override
+    public FieldMapping fieldMapping() {
+        return null;
     }
 }
