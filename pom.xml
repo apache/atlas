@@ -310,6 +310,7 @@
     </profiles>
 
     <modules>
+        <module>typesystem</module>
         <module>common</module>
         <module>repository</module>
         <module>webapp</module>
