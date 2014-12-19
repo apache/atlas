@@ -22,10 +22,10 @@ import org.apache.jute.compiler.JLong
 import org.apache.hadoop.metadata.types.DataTypes.{MapType, TypeCategory, ArrayType}
 import org.apache.hadoop.metadata._
 import org.apache.hadoop.metadata.types._
-import org.apache.hadoop.metadata.storage.Id
+import org.apache.hadoop.metadata.storage.{ReferenceableInstance, Id}
 import org.json4s.JsonAST.JInt
 import org.json4s._
-import org.json4s.native.Serialization.{read, write => swrite}
+import org.json4s.native.Serialization.{write => swrite, _}
 import org.json4s.reflect.{ScalaType, Reflector}
 import java.util.regex.Pattern
 import java.util.Date
@@ -239,5 +239,17 @@ object Serialization {
       JField("version", JInt(version)) :: Nil) => new Id(id.toLong, version.toInt, className)
   }
 
+  def toJson(value : ITypedReferenceableInstance) : String = {
+    implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new TypedStructSerializer +
+      new TypedReferenceableInstanceSerializer +  new BigDecimalSerializer + new BigIntegerSerializer
 
+    writePretty(value)
+  }
+
+  def fromJson(jsonStr : String) : ITypedReferenceableInstance = {
+    implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new TypedStructSerializer +
+      new TypedReferenceableInstanceSerializer +  new BigDecimalSerializer + new BigIntegerSerializer
+
+    read[ReferenceableInstance](jsonStr)
+  }
 }
