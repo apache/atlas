@@ -54,6 +54,9 @@ import java.util.Set;
  * Jersey Resource for lineage metadata operations.
  * Implements most of the GET operations of Rexster API with out the indexes.
  * https://github.com/tinkerpop/rexster/wiki/Basic-REST-API
+ * 
+ * This is a subset of Rexster's REST API, designed to provide only read-only methods
+ * for accessing the backend graph.
  */
 @Path("graph")
 public class RexsterGraphResource {

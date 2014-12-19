@@ -47,6 +47,9 @@ import java.io.StringWriter;
 
 /**
  * Entity management operations as REST API.
+ * 
+ * An entity is an "instance" of a Type.  Entities conform to the definition
+ * of the Type they correspond with.
  */
 @Path("entities")
 public class EntityResource {

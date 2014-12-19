@@ -26,6 +26,9 @@ import javax.ws.rs.core.Response;
 
 /**
  * This class provides RESTful API for Types.
+ * 
+ * A type is the description of any representable item;
+ * e.g. a Hive table
  */
 @Path("types")
 public class TypesResource {
