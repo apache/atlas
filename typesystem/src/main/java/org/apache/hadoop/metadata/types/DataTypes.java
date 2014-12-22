@@ -49,11 +49,13 @@ public class DataTypes {
         CLASS;
     };
 
-    static abstract class PrimitiveType<T> extends AbstractDataType<T> {
+    public static abstract class PrimitiveType<T> extends AbstractDataType<T> {
         @Override
         public TypeCategory getTypeCategory() {
             return TypeCategory.PRIMITIVE;
         }
+
+        public abstract T nullValue();
 
     }
 
@@ -84,6 +86,10 @@ public class DataTypes {
             }
             return convertNull(m);
         }
+
+        public Boolean nullValue() {
+            return Boolean.FALSE;
+        }
     }
 
     public static ByteType BYTE_TYPE = new ByteType();
@@ -112,6 +118,10 @@ public class DataTypes {
                 }
             }
             return convertNull(m);
+        }
+
+        public Byte nullValue() {
+            return 0;
         }
     }
 
@@ -142,6 +152,10 @@ public class DataTypes {
             }
             return convertNull(m);
         }
+
+        public Short nullValue() {
+            return 0;
+        }
     }
 
     public static IntType INT_TYPE = new IntType();
@@ -170,6 +184,10 @@ public class DataTypes {
                 }
             }
             return convertNull(m);
+        }
+
+        public Integer nullValue() {
+            return 0;
         }
     }
 
@@ -200,6 +218,10 @@ public class DataTypes {
             }
             return convertNull(m);
         }
+
+        public Long nullValue() {
+            return 0l;
+        }
     }
 
     public static FloatType FLOAT_TYPE = new FloatType();
@@ -229,6 +251,10 @@ public class DataTypes {
             }
             return convertNull(m);
         }
+
+        public Float nullValue() {
+            return 0.0f;
+        }
     }
 
     public static DoubleType DOUBLE_TYPE = new DoubleType();
@@ -257,6 +283,10 @@ public class DataTypes {
                 }
             }
             return convertNull(m);
+        }
+
+        public Double nullValue() {
+            return 0.0;
         }
     }
 
@@ -293,6 +323,10 @@ public class DataTypes {
             }
             return convertNull(m);
         }
+
+        public BigInteger nullValue() {
+            return null;
+        }
     }
 
     public static BigDecimalType BIGDECIMAL_TYPE = new BigDecimalType();
@@ -328,6 +362,10 @@ public class DataTypes {
             }
             return convertNull(m);
         }
+
+        public BigDecimal nullValue() {
+            return null;
+        }
     }
 
     public static DateType DATE_TYPE = new DateType();
@@ -361,6 +399,10 @@ public class DataTypes {
             }
             return convertNull(m);
         }
+
+        public Date nullValue() {
+            return null;
+        }
     }
 
     public static StringType STRING_TYPE = new StringType();
@@ -381,6 +423,10 @@ public class DataTypes {
                 return val.toString();
             }
             return convertNull(m);
+        }
+
+        public String nullValue() {
+            return null;
         }
     }
 
@@ -423,7 +469,7 @@ public class DataTypes {
                     it = (Iterator)val;
                 }
                 if ( it != null ) {
-                    ImmutableCollection.Builder<?> b = m.isUnique ? ImmutableSet.builder() : ImmutableList.builder();
+                    ImmutableCollection.Builder b = m.isUnique ? ImmutableSet.builder() : ImmutableList.builder();
                     while (it.hasNext() ) {
                         b.add(elemType.convert(it.next(),
                                 r.allowNullsInCollections() ? Multiplicity.OPTIONAL : Multiplicity.REQUIRED));
@@ -451,7 +497,7 @@ public class DataTypes {
             if ( val == null || elemType.getTypeCategory() != TypeCategory.CLASS ) {
                 return val;
             }
-            ImmutableCollection.Builder<?> b = m.isUnique ? ImmutableSet.builder() : ImmutableList.builder();
+            ImmutableCollection.Builder b = m.isUnique ? ImmutableSet.builder() : ImmutableList.builder();
             Iterator it = val.iterator();
             while(it.hasNext()) {
                 Object elem = it.next();

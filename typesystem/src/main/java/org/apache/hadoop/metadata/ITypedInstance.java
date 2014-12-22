@@ -18,7 +18,13 @@
 
 package org.apache.hadoop.metadata;
 
+import org.apache.hadoop.metadata.types.AttributeInfo;
+import org.apache.hadoop.metadata.types.DataTypes;
 import org.apache.hadoop.metadata.types.FieldMapping;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.Date;
 
 /**
  * An instance whose structure is associated with a IDataType.
@@ -31,4 +37,30 @@ import org.apache.hadoop.metadata.types.FieldMapping;
 public interface ITypedInstance extends IInstance {
 
     FieldMapping fieldMapping();
+
+    public void setNull(String attrName) throws MetadataException;
+
+    public boolean getBoolean(String attrName) throws MetadataException;
+    public byte getByte(String attrName) throws MetadataException;
+    public short getShort(String attrName) throws MetadataException;
+    public int getInt(String attrName) throws MetadataException;
+    public long getLong(String attrName) throws MetadataException;
+    public float getFloat(String attrName) throws MetadataException;
+    public double getDouble(String attrName) throws MetadataException;
+    public BigInteger getBigInt(String attrName) throws MetadataException;
+    public BigDecimal getBigDecimal(String attrName) throws MetadataException ;
+    public Date getDate(String attrName) throws MetadataException;
+    public String getString(String attrName) throws MetadataException;
+
+    public void setBoolean(String attrName, boolean val) throws MetadataException;
+    public void setByte(String attrName, byte val) throws MetadataException;
+    public void setShort(String attrName, short val) throws MetadataException;
+    public void setInt(String attrName, int val) throws MetadataException;
+    public void setLong(String attrName, long val) throws MetadataException;
+    public void setFloat(String attrName, float val) throws MetadataException;
+    public void setDouble(String attrName, double val) throws MetadataException;
+    public void setBigInt(String attrName, BigInteger val) throws MetadataException;
+    public void setBigDecimal(String attrName, BigDecimal val) throws MetadataException;
+    public void setDate(String attrName, Date val) throws MetadataException;
+    public void setString(String attrName, String val) throws MetadataException;
 }

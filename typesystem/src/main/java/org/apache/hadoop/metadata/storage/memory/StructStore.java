@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class StructStore extends AttributeStores.AbstractAttributeStore implements IAttributeStore {
+public abstract class StructStore extends AttributeStores.AbstractAttributeStore implements IAttributeStore {
 
     final StructType structType;
     final ImmutableMap<AttributeInfo, IAttributeStore> attrStores;

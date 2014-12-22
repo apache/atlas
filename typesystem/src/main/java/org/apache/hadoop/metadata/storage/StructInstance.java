@@ -208,6 +208,443 @@ public class StructInstance implements ITypedStruct {
         }
     }
 
+    public void setNull(String attrName) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+        nullFlags[nullPos] = true;
+    }
+
+    public boolean getBoolean(String attrName) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+
+        if ( i.dataType() != DataTypes.BOOLEAN_TYPE ) {
+            throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic get method",
+                    attrName, getTypeName()));
+        }
+
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+
+        if ( nullFlags[nullPos]) {
+            return DataTypes.BOOLEAN_TYPE.nullValue();
+        }
+
+        return bools[pos];
+    }
+
+    public byte getByte(String attrName) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+
+        if ( i.dataType() != DataTypes.BYTE_TYPE ) {
+            throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic get method",
+                    attrName, getTypeName()));
+        }
+
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+
+        if ( nullFlags[nullPos]) {
+            return DataTypes.BYTE_TYPE.nullValue();
+        }
+
+        return bytes[pos];
+    }
+
+    public short getShort(String attrName) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+
+        if ( i.dataType() != DataTypes.SHORT_TYPE ) {
+            throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic get method",
+                    attrName, getTypeName()));
+        }
+
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+
+        if ( nullFlags[nullPos]) {
+            return DataTypes.SHORT_TYPE.nullValue();
+        }
+
+        return shorts[pos];
+    }
+
+    public int getInt(String attrName) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+
+        if ( i.dataType() != DataTypes.INT_TYPE ) {
+            throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic get method",
+                    attrName, getTypeName()));
+        }
+
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+
+        if ( nullFlags[nullPos]) {
+            return DataTypes.INT_TYPE.nullValue();
+        }
+
+        return ints[pos];
+    }
+
+    public long getLong(String attrName) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+
+        if ( i.dataType() != DataTypes.LONG_TYPE ) {
+            throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic get method",
+                    attrName, getTypeName()));
+        }
+
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+
+        if ( nullFlags[nullPos]) {
+            return DataTypes.LONG_TYPE.nullValue();
+        }
+
+        return longs[pos];
+    }
+
+    public float getFloat(String attrName) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+
+        if ( i.dataType() != DataTypes.FLOAT_TYPE ) {
+            throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic get method",
+                    attrName, getTypeName()));
+        }
+
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+
+        if ( nullFlags[nullPos]) {
+            return DataTypes.FLOAT_TYPE.nullValue();
+        }
+
+        return floats[pos];
+    }
+
+    public double getDouble(String attrName) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+
+        if ( i.dataType() != DataTypes.DOUBLE_TYPE ) {
+            throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic get method",
+                    attrName, getTypeName()));
+        }
+
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+
+        if ( nullFlags[nullPos]) {
+            return DataTypes.DOUBLE_TYPE.nullValue();
+        }
+
+        return doubles[pos];
+    }
+
+    public BigInteger getBigInt(String attrName) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+
+        if ( i.dataType() != DataTypes.BIGINTEGER_TYPE ) {
+            throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic get method",
+                    attrName, getTypeName()));
+        }
+
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+
+        if ( nullFlags[nullPos]) {
+            return DataTypes.BIGINTEGER_TYPE.nullValue();
+        }
+
+        return bigIntegers[pos];
+    }
+
+    public BigDecimal getBigDecimal(String attrName) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+
+        if ( i.dataType() != DataTypes.BIGDECIMAL_TYPE ) {
+            throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic get method",
+                    attrName, getTypeName()));
+        }
+
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+
+        if ( nullFlags[nullPos]) {
+            return DataTypes.BIGDECIMAL_TYPE.nullValue();
+        }
+
+        return bigDecimals[pos];
+    }
+
+    public Date getDate(String attrName) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+
+        if ( i.dataType() != DataTypes.DATE_TYPE ) {
+            throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic get method",
+                    attrName, getTypeName()));
+        }
+
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+
+        if ( nullFlags[nullPos]) {
+            return DataTypes.DATE_TYPE.nullValue();
+        }
+
+        return dates[pos];
+    }
+
+    public String getString(String attrName) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+
+        if ( i.dataType() != DataTypes.STRING_TYPE ) {
+            throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic get method",
+                    attrName, getTypeName()));
+        }
+
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+
+        if ( nullFlags[nullPos]) {
+            return DataTypes.STRING_TYPE.nullValue();
+        }
+
+        return strings[pos];
+    }
+
+    public void setBoolean(String attrName, boolean val) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+
+        if ( i.dataType() != DataTypes.BOOLEAN_TYPE ) {
+            throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic set method",
+                    attrName, getTypeName()));
+        }
+
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+
+        nullFlags[nullPos] = false;
+        bools[pos] = val;
+    }
+
+    public void setByte(String attrName, byte val) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+
+        if ( i.dataType() != DataTypes.BYTE_TYPE ) {
+            throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic set method",
+                    attrName, getTypeName()));
+        }
+
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+
+        nullFlags[nullPos] = false;
+        bytes[pos] = val;
+    }
+
+    public void setShort(String attrName, short val) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+
+        if ( i.dataType() != DataTypes.SHORT_TYPE ) {
+            throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic set method",
+                    attrName, getTypeName()));
+        }
+
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+
+        nullFlags[nullPos] = false;
+        shorts[pos] = val;
+    }
+
+    public void setInt(String attrName, int val) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+
+        if ( i.dataType() != DataTypes.INT_TYPE ) {
+            throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic set method",
+                    attrName, getTypeName()));
+        }
+
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+
+        nullFlags[nullPos] = false;
+        ints[pos] = val;
+    }
+
+    public void setLong(String attrName, long val) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+
+        if ( i.dataType() != DataTypes.LONG_TYPE ) {
+            throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic set method",
+                    attrName, getTypeName()));
+        }
+
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+
+        nullFlags[nullPos] = false;
+        longs[pos] = val;
+    }
+
+    public void setFloat(String attrName, float val) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+
+        if ( i.dataType() != DataTypes.FLOAT_TYPE ) {
+            throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic set method",
+                    attrName, getTypeName()));
+        }
+
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+
+        nullFlags[nullPos] = false;
+        floats[pos] = val;
+    }
+
+    public void setDouble(String attrName, double val) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if (i == null) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+
+        if (i.dataType() != DataTypes.DOUBLE_TYPE) {
+            throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic set method",
+                    attrName, getTypeName()));
+        }
+
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+
+        nullFlags[nullPos] = false;
+        doubles[pos] = val;
+    }
+
+    public void setBigInt(String attrName, BigInteger val) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+
+        if ( i.dataType() != DataTypes.BIGINTEGER_TYPE ) {
+            throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic set method",
+                    attrName, getTypeName()));
+        }
+
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+
+        nullFlags[nullPos] = val == null;
+        bigIntegers[pos] = val;
+    }
+
+    public void setBigDecimal(String attrName, BigDecimal val) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+
+        if ( i.dataType() != DataTypes.BIGDECIMAL_TYPE ) {
+            throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic set method",
+                    attrName, getTypeName()));
+        }
+
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+
+        nullFlags[nullPos] = val == null;
+        bigDecimals[pos] = val;
+    }
+
+    public void setDate(String attrName, Date val) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+
+        if ( i.dataType() != DataTypes.DATE_TYPE ) {
+            throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic set method",
+                    attrName, getTypeName()));
+        }
+
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+
+        nullFlags[nullPos] = val == null;
+        dates[pos] = val;
+    }
+
+    public void setString(String attrName, String val) throws MetadataException {
+        AttributeInfo i = fieldMapping.fields.get(attrName);
+        if ( i == null ) {
+            throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
+        }
+
+        if ( i.dataType() != DataTypes.STRING_TYPE ) {
+            throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic set method",
+                    attrName, getTypeName()));
+        }
+
+        int pos = fieldMapping.fieldPos.get(attrName);
+        int nullPos = fieldMapping.fieldNullPos.get(attrName);
+
+        nullFlags[nullPos] = val == null;
+        strings[pos] = val;
+    }
 
     public void output(IStruct s, Appendable buf, String prefix) throws MetadataException {
         TypeUtils.outputVal("{", buf, prefix);
