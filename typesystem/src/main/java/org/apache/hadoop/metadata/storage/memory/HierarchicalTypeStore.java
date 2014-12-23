@@ -31,10 +31,7 @@ import org.apache.hadoop.metadata.types.AttributeInfo;
 import org.apache.hadoop.metadata.types.HierarchicalType;
 import org.apache.hadoop.metadata.types.IConstructableType;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class HierarchicalTypeStore {
@@ -80,6 +77,10 @@ public class HierarchicalTypeStore {
         superTypeStores = b1.build();
 
         nextPos = 0;
+        idPosMap = new HashMap<Id, Integer>();
+        freePositions = new ArrayList<Integer>();
+
+        lock = new ReentrantReadWriteLock();
     }
 
     /**
@@ -141,7 +142,7 @@ public class HierarchicalTypeStore {
     }
 
     void releaseWriteLock() {
-        lock.readLock().unlock();
+        lock.writeLock().unlock();
     }
 
     /**
@@ -183,7 +184,9 @@ public class HierarchicalTypeStore {
     }
 
     public void ensureCapacity(int pos) throws RepositoryException {
-        typeNameList.ensureCapacity(pos);
+        while (typeNameList.size() < pos + 1) {
+            typeNameList.add(null);
+        }
         for(Map.Entry<AttributeInfo, IAttributeStore> e : attrStores.entrySet()) {
             IAttributeStore attributeStore = e.getValue();
             attributeStore.ensureCapacity(pos);

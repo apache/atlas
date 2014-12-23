@@ -56,7 +56,7 @@ public class MapIds implements ObjectGraphWalker.NodeProcessor {
         } else if ( nd.aInfo.dataType().getTypeCategory() == DataTypes.TypeCategory.CLASS ) {
             if ( nd.value != null && nd.value instanceof  IReferenceableInstance ) {
                 Id oldId = ((IReferenceableInstance)nd.value).getId();
-                Id newId = idToNewIdMap.get(ref.getId());
+                Id newId = idToNewIdMap.get(oldId);
                 /*
                  * Replace Instances with Ids, irrespective of whether they map to newIds or not.
                  */

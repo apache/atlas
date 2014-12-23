@@ -32,7 +32,7 @@ public class ObjectGraphWalker {
         this.nodeProcessor = nodeProcessor;
         queue = new LinkedList<IReferenceableInstance>();
         processedIds = new HashSet<Id>();
-        queue.add(start);
+        visitReferenceableInstance(start);
     }
 
     public ObjectGraphWalker(TypeSystem typeSystem, NodeProcessor nodeProcessor,
@@ -42,7 +42,9 @@ public class ObjectGraphWalker {
         this.nodeProcessor = nodeProcessor;
         queue = new LinkedList<IReferenceableInstance>();
         processedIds = new HashSet<Id>();
-        queue.addAll(roots);
+        for(IReferenceableInstance r : roots) {
+            visitReferenceableInstance(r);
+        }
     }
 
     public void walk() throws MetadataException {
@@ -145,7 +147,10 @@ public class ObjectGraphWalker {
         IReferenceableInstance ref = (IReferenceableInstance) val;
 
         if (!processedIds.contains(ref.getId())) {
-            queue.add(ref);
+            processedIds.add(ref.getId());
+            if ( !(ref instanceof  Id) ) {
+                queue.add(ref);
+            }
         }
     }
 

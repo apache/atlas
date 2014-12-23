@@ -59,23 +59,23 @@ public class AttributeStores {
                 } else if ( i.dataType() == DataTypes.SHORT_TYPE ) {
                     new ShortAttributeStore(i);
                 } else if ( i.dataType() == DataTypes.INT_TYPE ) {
-                    new IntAttributeStore(i);
+                    return new IntAttributeStore(i);
                 } else if ( i.dataType() == DataTypes.LONG_TYPE ) {
-                    new LongAttributeStore(i);
+                    return new LongAttributeStore(i);
                 } else if ( i.dataType() == DataTypes.FLOAT_TYPE ) {
-                    new FloatAttributeStore(i);
+                    return new FloatAttributeStore(i);
                 } else if ( i.dataType() == DataTypes.DOUBLE_TYPE ) {
-                    new DoubleAttributeStore(i);
+                    return new DoubleAttributeStore(i);
                 } else if ( i.dataType() == DataTypes.BIGINTEGER_TYPE ) {
-                    new BigIntStore(i);
+                    return new BigIntStore(i);
                 } else if ( i.dataType() == DataTypes.BIGDECIMAL_TYPE ) {
-                    new BigDecimalStore(i);
+                    return new BigDecimalStore(i);
                 } else if ( i.dataType() == DataTypes.DATE_TYPE ) {
-                    new DateStore(i);
+                    return new DateStore(i);
                 } else if ( i.dataType() == DataTypes.STRING_TYPE ) {
-                    new StringStore(i);
+                    return new StringStore(i);
                 }  else if ( i.dataType() == DataTypes.STRING_TYPE ) {
-                    new StringStore(i);
+                    return new StringStore(i);
                 } else {
                     throw new RepositoryException(String.format("Unknown datatype %s", i.dataType()));
                 }
@@ -237,8 +237,8 @@ public class AttributeStores {
 
         @Override
         public void ensureCapacity(int pos) throws RepositoryException {
-            list.ensureCapacity(pos);
-            nullList.ensureCapacity(pos);
+            list.size(pos+1);
+            nullList.size(pos+1);
         }
     }
 
@@ -269,8 +269,8 @@ public class AttributeStores {
 
         @Override
         public void ensureCapacity(int pos) throws RepositoryException {
-            list.ensureCapacity(pos);
-            nullList.ensureCapacity(pos);
+            list.size(pos+1);
+            nullList.size(pos+1);
         }
     }
 
@@ -301,8 +301,8 @@ public class AttributeStores {
 
         @Override
         public void ensureCapacity(int pos) throws RepositoryException {
-            list.ensureCapacity(pos);
-            nullList.ensureCapacity(pos);
+            list.size(pos+1);
+            nullList.size(pos+1);
         }
     }
 
@@ -333,8 +333,8 @@ public class AttributeStores {
 
         @Override
         public void ensureCapacity(int pos) throws RepositoryException {
-            list.ensureCapacity(pos);
-            nullList.ensureCapacity(pos);
+            list.size(pos+1);
+            nullList.size(pos+1);
         }
     }
 
@@ -365,8 +365,8 @@ public class AttributeStores {
 
         @Override
         public void ensureCapacity(int pos) throws RepositoryException {
-            list.ensureCapacity(pos);
-            nullList.ensureCapacity(pos);
+            list.size(pos+1);
+            nullList.size(pos+1);
         }
     }
 
@@ -397,8 +397,8 @@ public class AttributeStores {
 
         @Override
         public void ensureCapacity(int pos) throws RepositoryException {
-            list.ensureCapacity(pos);
-            nullList.ensureCapacity(pos);
+            list.size(pos+1);
+            nullList.size(pos+1);
         }
     }
 
@@ -429,8 +429,8 @@ public class AttributeStores {
 
         @Override
         public void ensureCapacity(int pos) throws RepositoryException {
-            list.ensureCapacity(pos);
-            nullList.ensureCapacity(pos);
+            list.size(pos+1);
+            nullList.size(pos+1);
         }
     }
 
@@ -445,8 +445,10 @@ public class AttributeStores {
 
         @Override
         public void ensureCapacity(int pos) throws RepositoryException {
-            list.ensureCapacity(pos);
-            nullList.ensureCapacity(pos);
+            while (list.size() < pos + 1) {
+                list.add((T)null);
+            }
+            nullList.size(pos+1);
         }
     }
 

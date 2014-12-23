@@ -21,7 +21,9 @@ public class StorageTest extends BaseTest {
 
         Referenceable hrDept = createDeptEg1(ts);
 
-        //ITypedReferenceableInstance hrDept2 = ms.getRepository().create(hrDept);
+        ITypedReferenceableInstance hrDept2 = ms.getRepository().create(hrDept);
+
+        //System.out.println(hrDept2);
 
     }
 

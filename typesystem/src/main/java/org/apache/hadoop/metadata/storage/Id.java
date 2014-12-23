@@ -42,7 +42,7 @@ public class Id implements ITypedReferenceableInstance {
     }
 
     public Id(String className) {
-        this(-System.currentTimeMillis(), 0, className);
+        this(-System.nanoTime(), 0, className);
     }
 
     public boolean isUnassigned() {

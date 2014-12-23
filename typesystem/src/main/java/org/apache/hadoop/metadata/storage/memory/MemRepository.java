@@ -176,11 +176,19 @@ public class MemRepository implements IRepository {
             for (ITypedReferenceableInstance instance : newInstances) {
                 HierarchicalTypeStore st = typeStores.get(instance.getTypeName());
                 st.assignPosition(instance.getId());
+                for(String traitName : instance.getTraits()) {
+                    HierarchicalTypeStore tt = typeStores.get(traitName);
+                    tt.assignPosition(instance.getId());
+                }
             }
 
             for (ITypedReferenceableInstance instance : newInstances) {
                 HierarchicalTypeStore st = typeStores.get(instance.getTypeName());
                 st.store((ReferenceableInstance)instance);
+                for(String traitName : instance.getTraits()) {
+                    HierarchicalTypeStore tt = typeStores.get(traitName);
+                    // ??
+                }
             }
         } catch(RepositoryException re) {
             for (ITypedReferenceableInstance instance : newInstances) {
