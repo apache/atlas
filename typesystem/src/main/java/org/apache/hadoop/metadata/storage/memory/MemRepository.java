@@ -22,17 +22,11 @@ import org.apache.hadoop.metadata.IReferenceableInstance;
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.storage.*;
-import org.apache.hadoop.metadata.types.ClassType;
-import org.apache.hadoop.metadata.types.Multiplicity;
-import org.apache.hadoop.metadata.types.ObjectGraphWalker;
-import org.apache.hadoop.metadata.types.TypeSystem;
+import org.apache.hadoop.metadata.types.*;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MemRepository implements IRepository {
@@ -127,11 +121,20 @@ public class MemRepository implements IRepository {
         */
         List<ITypedReferenceableInstance> newInstances = new ArrayList<ITypedReferenceableInstance>();
         ITypedReferenceableInstance retInstance = null;
+        Set<ClassType> classTypes = new TreeSet<ClassType>();
+        Set<TraitType> traitTypes = new TreeSet<TraitType>();
         for(IReferenceableInstance transientInstance : discoverInstances.idToInstanceMap.values()) {
             try {
                 ClassType cT = typeSystem.getDataType(ClassType.class, transientInstance.getTypeName());
                 ITypedReferenceableInstance newInstance = cT.convert(transientInstance, Multiplicity.REQUIRED);
                 newInstances.add(newInstance);
+
+                classTypes.add(cT);
+                for(String traitName : newInstance.getTraits()) {
+                    TraitType tT = typeSystem.getDataType(TraitType.class, traitName);
+                    traitTypes.add(tT);
+                }
+
                 if (newInstance.getId() == i.getId()) {
                     retInstance = newInstance;
                 }
@@ -149,7 +152,22 @@ public class MemRepository implements IRepository {
         }
 
         /*
-         * 3. Traverse over newInstances
+         * 3. Acquire Class and Trait Storage locks.
+         * - acquire them in a stable order (super before subclass, classes before traits
+         */
+        for(ClassType cT : classTypes) {
+            HierarchicalTypeStore st = typeStores.get(cT.getName());
+            st.acquireWriteLock();
+        }
+
+        for(TraitType tT : traitTypes) {
+            HierarchicalTypeStore st = typeStores.get(tT.getName());
+            st.acquireWriteLock();
+        }
+
+
+        /*
+         * 4. Traverse over newInstances
          *    - ask ClassStore to assign a position to the Id.
          *      - for Instances with Traits, assign a position for each Trait
          *    - invoke store on the nwInstance.
@@ -170,6 +188,16 @@ public class MemRepository implements IRepository {
                 st.releaseId(instance.getId());
             }
             throw re;
+        } finally {
+            for(ClassType cT : classTypes) {
+                HierarchicalTypeStore st = typeStores.get(cT.getName());
+                st.releaseWriteLock();
+            }
+
+            for(TraitType tT : traitTypes) {
+                HierarchicalTypeStore st = typeStores.get(tT.getName());
+                st.releaseWriteLock();
+            }
         }
 
         return retInstance;
@@ -188,6 +216,40 @@ public class MemRepository implements IRepository {
     }
 
     HierarchicalTypeStore getStore(String typeName) {
-        return null;
+        return typeStores.get(typeName);
+    }
+
+    public void defineClass(ClassType type) throws RepositoryException {
+        HierarchicalTypeStore s = new HierarchicalTypeStore(this, type);
+        typeStores.put(type.getName(), s);
+    }
+
+    public void defineTrait(TraitType type) throws RepositoryException {
+        HierarchicalTypeStore s = new HierarchicalTypeStore(this, type);
+        typeStores.put(type.getName(), s);
+    }
+
+    public void defineTypes(List<HierarchicalType> types) throws RepositoryException {
+        List<TraitType> tTypes = new ArrayList<TraitType>();
+        List<ClassType> cTypes = new ArrayList<ClassType>();
+
+        for(HierarchicalType h : types) {
+            if ( h.getTypeCategory() == DataTypes.TypeCategory.TRAIT ) {
+                tTypes.add((TraitType) h);
+            } else {
+                cTypes.add((ClassType)h);
+            }
+        }
+
+        Collections.sort(tTypes);
+        Collections.sort(cTypes);
+
+        for(TraitType tT : tTypes) {
+            defineTrait(tT);
+        }
+
+        for(ClassType cT : cTypes) {
+            defineClass(cT);
+        }
     }
 }

@@ -20,8 +20,12 @@ package org.apache.hadoop.metadata.storage;
 import org.apache.hadoop.metadata.IReferenceableInstance;
 import org.apache.hadoop.metadata.ITypedInstance;
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.types.ClassType;
+import org.apache.hadoop.metadata.types.HierarchicalType;
+import org.apache.hadoop.metadata.types.TraitType;
 
 import java.text.DateFormat;
+import java.util.List;
 
 public interface IRepository {
 
@@ -38,4 +42,8 @@ public interface IRepository {
     Id newId(String typeName);
 
     ITypedInstance get(Id id) throws RepositoryException;
+
+    void defineClass(ClassType type) throws RepositoryException;
+    void defineTrait(TraitType type) throws RepositoryException;
+    void defineTypes(List<HierarchicalType> types) throws RepositoryException;
 }

@@ -31,6 +31,7 @@ import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.shorts.ShortArrayList;
 import org.apache.hadoop.metadata.ITypedStruct;
 import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.storage.Id;
 import org.apache.hadoop.metadata.storage.StructInstance;
 import org.apache.hadoop.metadata.ITypedInstance;
 import org.apache.hadoop.metadata.storage.RepositoryException;
@@ -73,6 +74,8 @@ public class AttributeStores {
                     new DateStore(i);
                 } else if ( i.dataType() == DataTypes.STRING_TYPE ) {
                     new StringStore(i);
+                }  else if ( i.dataType() == DataTypes.STRING_TYPE ) {
+                    new StringStore(i);
                 } else {
                     throw new RepositoryException(String.format("Unknown datatype %s", i.dataType()));
                 }
@@ -80,6 +83,10 @@ public class AttributeStores {
                 return new ImmutableListStore(i);
             case MAP:
                 return new ImmutableMapStore(i);
+            case STRUCT:
+                return new StructStore(i);
+            case CLASS:
+                return new IdStore(i);
             default:
                 throw new RepositoryException(String.format("Unknown Category for datatype %s", i.dataType()));
         }
@@ -535,6 +542,30 @@ public class AttributeStores {
 
         protected void load(StructInstance instance, int colPos, Object val) {
             instance.strings[colPos] = (String) val;
+        }
+
+    }
+
+    static class IdStore extends ObjectAttributeStore<Id> {
+
+        public IdStore( AttributeInfo attrInfo) {
+            super(Id.class, attrInfo);
+        }
+
+        protected void store(StructInstance instance, int colPos, int pos) {
+            list.set(pos, instance.ids[colPos]);
+        }
+
+        protected void load(StructInstance instance, int colPos, int pos) {
+            instance.ids[colPos] = list.get(pos);
+        }
+
+        protected void store(StructInstance instance, int colPos, String attrName, Map<String, Object> m) {
+            m.put(attrName, instance.ids[colPos]);
+        }
+
+        protected void load(StructInstance instance, int colPos, Object val) {
+            instance.ids[colPos] = (Id) val;
         }
 
     }

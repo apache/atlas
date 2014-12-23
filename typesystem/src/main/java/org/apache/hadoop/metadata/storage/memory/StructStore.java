@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public abstract class StructStore extends AttributeStores.AbstractAttributeStore implements IAttributeStore {
+public class StructStore extends AttributeStores.AbstractAttributeStore implements IAttributeStore {
 
     final StructType structType;
     final ImmutableMap<AttributeInfo, IAttributeStore> attrStores;
@@ -56,6 +56,7 @@ public abstract class StructStore extends AttributeStores.AbstractAttributeStore
 
     }
 
+    @Override
     protected void store(StructInstance instance, int colPos, int pos) throws RepositoryException {
         StructInstance s = instance.structs[colPos];
         for(Map.Entry<AttributeInfo, IAttributeStore> e : attrStores.entrySet()) {
@@ -64,6 +65,7 @@ public abstract class StructStore extends AttributeStores.AbstractAttributeStore
         }
     }
 
+    @Override
     protected void load(StructInstance instance, int colPos, int pos) throws RepositoryException {
         for(Map.Entry<AttributeInfo, IAttributeStore> e : attrStores.entrySet()) {
             IAttributeStore attributeStore = e.getValue();
@@ -71,10 +73,12 @@ public abstract class StructStore extends AttributeStores.AbstractAttributeStore
         }
     }
 
+    @Override
     protected void store(StructInstance instance, int colPos, String attrName, Map<String, Object> m) {
         m.put(attrName, instance.structs[colPos]);
     }
 
+    @Override
     protected void load(StructInstance instance, int colPos, Object val) {
         instance.structs[colPos] = (StructInstance) val;
     }

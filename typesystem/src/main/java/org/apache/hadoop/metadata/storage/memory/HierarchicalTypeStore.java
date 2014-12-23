@@ -128,6 +128,22 @@ public class HierarchicalTypeStore {
         }
     }
 
+    void acquireReadLock() {
+        lock.readLock().lock();
+    }
+
+    void acquireWriteLock() {
+        lock.writeLock().lock();
+    }
+
+    void releaseReadLock() {
+        lock.readLock().unlock();
+    }
+
+    void releaseWriteLock() {
+        lock.readLock().unlock();
+    }
+
     /**
      * - store the typeName
      * - store the immediate attributes in the respective IAttributeStore
