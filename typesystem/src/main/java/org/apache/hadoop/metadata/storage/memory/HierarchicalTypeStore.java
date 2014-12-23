@@ -21,13 +21,17 @@ package org.apache.hadoop.metadata.storage.memory;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import org.apache.hadoop.metadata.storage.Id;
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.storage.Id;
+import org.apache.hadoop.metadata.storage.ReferenceableInstance;
 import org.apache.hadoop.metadata.storage.RepositoryException;
 import org.apache.hadoop.metadata.types.AttributeInfo;
 import org.apache.hadoop.metadata.types.HierarchicalType;
+import org.apache.hadoop.metadata.types.IConstructableType;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,9 +40,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class HierarchicalTypeStore {
 
     final MemRepository repository;
-    final HierarchicalType hierarchicalType;
+    final IConstructableType hierarchicalType;
+    final ArrayList<String> typeNameList;
     final ImmutableMap<AttributeInfo, IAttributeStore> attrStores;
     final ImmutableList<HierarchicalTypeStore> superTypeStores;
+
 
     /**
      * Map Id to position in storage lists.
@@ -47,16 +53,19 @@ public class HierarchicalTypeStore {
 
     List<Integer> freePositions;
 
+    int nextPos;
+
     /**
      * Lock for each Class/Trait.
      */
     ReentrantReadWriteLock lock;
 
     HierarchicalTypeStore(MemRepository repository, HierarchicalType hierarchicalType) throws RepositoryException {
-        this.hierarchicalType = hierarchicalType;
+        this.hierarchicalType = (IConstructableType) hierarchicalType;
         this.repository = repository;
         ImmutableMap.Builder<AttributeInfo, IAttributeStore> b = new ImmutableBiMap.Builder<AttributeInfo,
                 IAttributeStore>();
+        typeNameList = Lists.newArrayList((String)null);
         ImmutableList<AttributeInfo>l =  hierarchicalType.immediateAttrs;
         for(AttributeInfo i : l) {
             b.put(i, AttributeStores.createStore(i) );
@@ -69,6 +78,8 @@ public class HierarchicalTypeStore {
             b1.add(repository.getStore(s));
         }
         superTypeStores = b1.build();
+
+        nextPos = 0;
     }
 
     /**
@@ -81,7 +92,22 @@ public class HierarchicalTypeStore {
      * @throws RepositoryException
      */
     int assignPosition(Id id) throws RepositoryException {
-        throw new RepositoryException("Not implemented");
+
+        int pos = -1;
+        if ( !freePositions.isEmpty() ) {
+            pos = freePositions.remove(0);
+        } else {
+            pos = nextPos++;
+            ensureCapacity(pos);
+        }
+
+        idPosMap.put(id, pos);
+
+        for(HierarchicalTypeStore s : superTypeStores) {
+            s.assignPosition(id);
+        }
+
+        return pos;
     }
 
     /**
@@ -90,7 +116,16 @@ public class HierarchicalTypeStore {
      * @throws RepositoryException
      */
     void releaseId(Id id) {
-        throw new RuntimeException("Not implemented");
+
+        Integer pos = idPosMap.get(id);
+        if ( pos != null ) {
+            idPosMap.remove(id);
+            freePositions.add(pos);
+
+            for(HierarchicalTypeStore s : superTypeStores) {
+                s.releaseId(id);
+            }
+        }
     }
 
     /**
@@ -100,8 +135,17 @@ public class HierarchicalTypeStore {
      * @param i
      * @throws RepositoryException
      */
-    void store(ITypedReferenceableInstance i) throws RepositoryException {
+    void store(ReferenceableInstance i) throws RepositoryException {
+        int pos = idPosMap.get(i.getId());
+        typeNameList.set(pos, i.getTypeName());
+        for(Map.Entry<AttributeInfo, IAttributeStore> e : attrStores.entrySet()) {
+            IAttributeStore attributeStore = e.getValue();
+            attributeStore.store(pos, hierarchicalType, i);
+        }
 
+        for(HierarchicalTypeStore s : superTypeStores) {
+            s.store(i);
+        }
     }
 
     /**
@@ -110,7 +154,23 @@ public class HierarchicalTypeStore {
      * @param i
      * @throws RepositoryException
      */
-    void load(ITypedReferenceableInstance i) throws RepositoryException {
+    void load(ReferenceableInstance i) throws RepositoryException {
+        int pos = idPosMap.get(i.getId());
+        for(Map.Entry<AttributeInfo, IAttributeStore> e : attrStores.entrySet()) {
+            IAttributeStore attributeStore = e.getValue();
+            attributeStore.load(pos, hierarchicalType, i);
+        }
 
+        for(HierarchicalTypeStore s : superTypeStores) {
+            s.load(i);
+        }
+    }
+
+    public void ensureCapacity(int pos) throws RepositoryException {
+        typeNameList.ensureCapacity(pos);
+        for(Map.Entry<AttributeInfo, IAttributeStore> e : attrStores.entrySet()) {
+            IAttributeStore attributeStore = e.getValue();
+            attributeStore.ensureCapacity(pos);
+        }
     }
 }

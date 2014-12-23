@@ -21,6 +21,7 @@ package org.apache.hadoop.metadata.storage.memory;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.storage.RepositoryException;
 import org.apache.hadoop.metadata.storage.StructInstance;
 import org.apache.hadoop.metadata.types.IConstructableType;
@@ -55,32 +56,36 @@ public abstract class StructStore extends AttributeStores.AbstractAttributeStore
 
     }
 
-    @Override
-    public void store(int pos, IConstructableType type, StructInstance instance) throws RepositoryException {
-        List<String> attrNames = type.getNames(attrInfo);
-        String attrName = attrNames.get(0);
-        int nullPos = instance.fieldMapping().fieldNullPos.get(attrName);
-        int colPos = instance.fieldMapping().fieldPos.get(attrName);
-        nullList.set(pos, instance.nullFlags[nullPos]);
-        if ( !instance.nullFlags[nullPos] ) {
-            StructInstance s = instance.structs[colPos];
-            for(Map.Entry<AttributeInfo, IAttributeStore> e : attrStores.entrySet()) {
-                e.getValue().store(pos, structType, s);
-            }
-        }
-
-        if ( attrNames.size() > 1 ) {
-            storeHiddenVals(pos, type, instance);
+    protected void store(StructInstance instance, int colPos, int pos) throws RepositoryException {
+        StructInstance s = instance.structs[colPos];
+        for(Map.Entry<AttributeInfo, IAttributeStore> e : attrStores.entrySet()) {
+            IAttributeStore attributeStore = e.getValue();
+            attributeStore.store(pos, structType, s);
         }
     }
 
-    @Override
-    public void load(int pos, IConstructableType type, StructInstance instance) throws RepositoryException {
+    protected void load(StructInstance instance, int colPos, int pos) throws RepositoryException {
+        for(Map.Entry<AttributeInfo, IAttributeStore> e : attrStores.entrySet()) {
+            IAttributeStore attributeStore = e.getValue();
+            attributeStore.load(pos, structType, instance);
+        }
+    }
 
+    protected void store(StructInstance instance, int colPos, String attrName, Map<String, Object> m) {
+        m.put(attrName, instance.structs[colPos]);
+    }
+
+    protected void load(StructInstance instance, int colPos, Object val) {
+        instance.structs[colPos] = (StructInstance) val;
     }
 
     @Override
     public void ensureCapacity(int pos) throws RepositoryException {
-
+        for(Map.Entry<AttributeInfo, IAttributeStore> e : attrStores.entrySet()) {
+            IAttributeStore attributeStore = e.getValue();
+            attributeStore.ensureCapacity(pos);
+        }
+        nullList.ensureCapacity(pos);
     }
+
 }

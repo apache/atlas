@@ -18,6 +18,9 @@
 
 package org.apache.hadoop.metadata.storage.memory;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import it.unimi.dsi.fastutil.booleans.BooleanArrayList;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
@@ -26,6 +29,8 @@ import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.shorts.ShortArrayList;
+import org.apache.hadoop.metadata.ITypedStruct;
+import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.storage.StructInstance;
 import org.apache.hadoop.metadata.ITypedInstance;
 import org.apache.hadoop.metadata.storage.RepositoryException;
@@ -71,6 +76,10 @@ public class AttributeStores {
                 } else {
                     throw new RepositoryException(String.format("Unknown datatype %s", i.dataType()));
                 }
+            case ARRAY:
+                return new ImmutableListStore(i);
+            case MAP:
+                return new ImmutableMapStore(i);
             default:
                 throw new RepositoryException(String.format("Unknown Category for datatype %s", i.dataType()));
         }
@@ -167,12 +176,12 @@ public class AttributeStores {
         /*
          * store the value from colPos in instance into the list.
          */
-        protected abstract void store(StructInstance instance, int colPos, int pos);
+        protected abstract void store(StructInstance instance, int colPos, int pos) throws RepositoryException;
 
         /*
          * load the value from pos in list into colPos in instance.
          */
-        protected abstract void load(StructInstance instance, int colPos, int pos);
+        protected abstract void load(StructInstance instance, int colPos, int pos) throws RepositoryException;
         /*
          * store the value from colPos in map as attrName
          */
@@ -526,6 +535,54 @@ public class AttributeStores {
 
         protected void load(StructInstance instance, int colPos, Object val) {
             instance.strings[colPos] = (String) val;
+        }
+
+    }
+
+    static class ImmutableListStore extends ObjectAttributeStore<ImmutableList> {
+
+        public ImmutableListStore( AttributeInfo attrInfo) {
+            super(ImmutableList.class, attrInfo);
+        }
+
+        protected void store(StructInstance instance, int colPos, int pos) {
+            list.set(pos, instance.arrays[colPos]);
+        }
+
+        protected void load(StructInstance instance, int colPos, int pos) {
+            instance.arrays[colPos] = list.get(pos);
+        }
+
+        protected void store(StructInstance instance, int colPos, String attrName, Map<String, Object> m) {
+            m.put(attrName, instance.arrays[colPos]);
+        }
+
+        protected void load(StructInstance instance, int colPos, Object val) {
+            instance.arrays[colPos] = (ImmutableList) val;
+        }
+
+    }
+
+    static class ImmutableMapStore extends ObjectAttributeStore<ImmutableMap> {
+
+        public ImmutableMapStore( AttributeInfo attrInfo) {
+            super(ImmutableMap.class, attrInfo);
+        }
+
+        protected void store(StructInstance instance, int colPos, int pos) {
+            list.set(pos, instance.maps[colPos]);
+        }
+
+        protected void load(StructInstance instance, int colPos, int pos) {
+            instance.maps[colPos] = list.get(pos);
+        }
+
+        protected void store(StructInstance instance, int colPos, String attrName, Map<String, Object> m) {
+            m.put(attrName, instance.maps[colPos]);
+        }
+
+        protected void load(StructInstance instance, int colPos, Object val) {
+            instance.maps[colPos] = (ImmutableMap) val;
         }
 
     }

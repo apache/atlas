@@ -162,7 +162,7 @@ public class MemRepository implements IRepository {
 
             for (ITypedReferenceableInstance instance : newInstances) {
                 HierarchicalTypeStore st = typeStores.get(instance.getTypeName());
-                st.store(instance);
+                st.store((ReferenceableInstance)instance);
             }
         } catch(RepositoryException re) {
             for (ITypedReferenceableInstance instance : newInstances) {
