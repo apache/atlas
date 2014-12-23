@@ -22,11 +22,9 @@ import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import org.apache.hadoop.metadata.storage.Id;
+import org.apache.hadoop.metadata.storage.*;
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.storage.Id;
-import org.apache.hadoop.metadata.storage.ReferenceableInstance;
-import org.apache.hadoop.metadata.storage.RepositoryException;
 import org.apache.hadoop.metadata.types.AttributeInfo;
 import org.apache.hadoop.metadata.types.HierarchicalType;
 import org.apache.hadoop.metadata.types.IConstructableType;
@@ -34,7 +32,7 @@ import org.apache.hadoop.metadata.types.IConstructableType;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class HierarchicalTypeStore {
+public abstract class HierarchicalTypeStore {
 
     final MemRepository repository;
     final IConstructableType hierarchicalType;
@@ -145,6 +143,13 @@ public class HierarchicalTypeStore {
         lock.writeLock().unlock();
     }
 
+    protected void storeFields(int pos, StructInstance s) throws RepositoryException {
+        for(Map.Entry<AttributeInfo, IAttributeStore> e : attrStores.entrySet()) {
+            IAttributeStore attributeStore = e.getValue();
+            attributeStore.store(pos, hierarchicalType, s);
+        }
+    }
+
     /**
      * - store the typeName
      * - store the immediate attributes in the respective IAttributeStore
@@ -155,10 +160,7 @@ public class HierarchicalTypeStore {
     void store(ReferenceableInstance i) throws RepositoryException {
         int pos = idPosMap.get(i.getId());
         typeNameList.set(pos, i.getTypeName());
-        for(Map.Entry<AttributeInfo, IAttributeStore> e : attrStores.entrySet()) {
-            IAttributeStore attributeStore = e.getValue();
-            attributeStore.store(pos, hierarchicalType, i);
-        }
+        storeFields(pos, i);
 
         for(HierarchicalTypeStore s : superTypeStores) {
             s.store(i);

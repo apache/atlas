@@ -187,7 +187,7 @@ public class MemRepository implements IRepository {
                 st.store((ReferenceableInstance)instance);
                 for(String traitName : instance.getTraits()) {
                     HierarchicalTypeStore tt = typeStores.get(traitName);
-                    // ??
+                    tt.store((ReferenceableInstance)instance);
                 }
             }
         } catch(RepositoryException re) {
@@ -228,12 +228,12 @@ public class MemRepository implements IRepository {
     }
 
     public void defineClass(ClassType type) throws RepositoryException {
-        HierarchicalTypeStore s = new HierarchicalTypeStore(this, type);
+        HierarchicalTypeStore s = new ClassStore(this, type);
         typeStores.put(type.getName(), s);
     }
 
     public void defineTrait(TraitType type) throws RepositoryException {
-        HierarchicalTypeStore s = new HierarchicalTypeStore(this, type);
+        HierarchicalTypeStore s = new TraitStore(this, type);
         typeStores.put(type.getName(), s);
     }
 
