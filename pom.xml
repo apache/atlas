@@ -315,6 +315,7 @@
         <module>repository</module>
         <module>webapp</module>
         <module>docs</module>
+        <module>metadata-hivehook</module>
     </modules>
 
     <repositories>
