@@ -142,6 +142,7 @@ public class AttributeStores {
                 if (val == NULL_VAL) {
                     instance.nullFlags[nullPos] = true;
                 } else {
+                    instance.nullFlags[nullPos] = false;
                     load(instance, colPos, val);
                 }
             }
@@ -170,8 +171,9 @@ public class AttributeStores {
             int colPos = instance.fieldMapping().fieldPos.get(attrName);
 
             if (nullList.get(pos)) {
-                instance.nullFlags[colPos] = true;
+                instance.nullFlags[nullPos] = true;
             } else {
+                instance.nullFlags[nullPos] = false;
                 load(instance, colPos, pos);
             }
 

@@ -19,6 +19,8 @@
 package org.apache.hadoop.metadata.storage.memory;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.storage.Id;
 import org.apache.hadoop.metadata.storage.ReferenceableInstance;
 import org.apache.hadoop.metadata.storage.RepositoryException;
 import org.apache.hadoop.metadata.types.ClassType;
@@ -29,9 +31,11 @@ import java.util.ArrayList;
 public class ClassStore extends HierarchicalTypeStore {
 
     final ArrayList<ImmutableList<String>> traitNamesStore;
+    final ClassType classType;
 
     public ClassStore(MemRepository repository, ClassType hierarchicalType) throws RepositoryException {
         super(repository, hierarchicalType);
+        classType = hierarchicalType;
         traitNamesStore = new ArrayList<ImmutableList<String>>();
     }
 
@@ -45,6 +49,45 @@ public class ClassStore extends HierarchicalTypeStore {
         super.ensureCapacity(pos);
         while (traitNamesStore.size() < pos + 1) {
             traitNamesStore.add(null);
+        }
+    }
+
+    boolean validate(MemRepository repo, Id id) throws RepositoryException {
+        if (id.isUnassigned() ) {
+            throw new RepositoryException(String.format("Invalid Id (unassigned) : %s", id));
+        }
+        Integer pos = idPosMap.get(id);
+        if (pos == null ) {
+            throw new RepositoryException(String.format("Invalid Id (unknown) : %s", id));
+        }
+
+        String typeName = typeNameList.get(pos);
+        if ( typeName != hierarchicalType.getName()) {
+            throw new RepositoryException(String.format("Invalid Id (incorrect typeName, type is %s) : %s",
+                    typeName, id));
+        }
+
+        return true;
+    }
+
+    /*
+     * - assumes id is already validated
+     */
+    ReferenceableInstance createInstance(MemRepository repo, Id id) throws RepositoryException {
+        Integer pos = idPosMap.get(id);
+        String typeName = typeNameList.get(pos);
+        if ( typeName != hierarchicalType.getName()) {
+            return repo.getClassStore(typeName).createInstance(repo, id);
+        }
+
+        ImmutableList<String> traitNames = traitNamesStore.get(pos);
+        String[] tNs = traitNames.toArray(new String[] {});
+
+        try {
+            ReferenceableInstance r = (ReferenceableInstance) classType.createInstance(id, tNs);
+            return r;
+        } catch ( MetadataException me) {
+            throw new RepositoryException(me);
         }
     }
 }

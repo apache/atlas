@@ -54,6 +54,28 @@ public class Id implements ITypedReferenceableInstance {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || !ITypedReferenceableInstance.class.isAssignableFrom(o.getClass())) return false;
+
+        Id id1 = ((ITypedReferenceableInstance)o).getId();
+
+        if (id != id1.id) return false;
+        if (version != id1.version) return false;
+        if (!className.equals(id1.className)) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = (int) (id ^ (id >>> 32));
+        result = 31 * result + className.hashCode();
+        result = 31 * result + version;
+        return result;
+    }
+
+    @Override
     public ImmutableList<String> getTraits() {
         return null;
     }

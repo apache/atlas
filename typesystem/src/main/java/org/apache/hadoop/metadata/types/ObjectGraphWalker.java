@@ -26,13 +26,20 @@ public class ObjectGraphWalker {
     final NodeProcessor nodeProcessor;
     Set<Id> processedIds;
 
+    public ObjectGraphWalker(TypeSystem typeSystem, NodeProcessor nodeProcessor)
+            throws MetadataException {
+        this(typeSystem, nodeProcessor, (IReferenceableInstance)null);
+    }
+
     public ObjectGraphWalker(TypeSystem typeSystem, NodeProcessor nodeProcessor, IReferenceableInstance start)
             throws MetadataException {
         this.typeSystem = typeSystem;
         this.nodeProcessor = nodeProcessor;
         queue = new LinkedList<IReferenceableInstance>();
         processedIds = new HashSet<Id>();
-        visitReferenceableInstance(start);
+        if ( start != null ) {
+            visitReferenceableInstance(start);
+        }
     }
 
     public ObjectGraphWalker(TypeSystem typeSystem, NodeProcessor nodeProcessor,
@@ -52,6 +59,10 @@ public class ObjectGraphWalker {
             IReferenceableInstance r = queue.poll();
             processReferenceableInstance(r);
         }
+    }
+
+    public void addRoot(IReferenceableInstance root) {
+        visitReferenceableInstance(root);
     }
 
     void traverseValue(IDataType dT, Object val) throws MetadataException {
@@ -138,7 +149,7 @@ public class ObjectGraphWalker {
         }
     }
 
-    void visitReferenceableInstance(Object val) throws MetadataException {
+    void visitReferenceableInstance(Object val) {
 
         if (val == null || !(val instanceof IReferenceableInstance)) {
             return;

@@ -41,6 +41,12 @@ public class TraitStore extends HierarchicalTypeStore {
         classNameStore.set(pos, i.getTypeName());
     }
 
+    void load(ReferenceableInstance i) throws RepositoryException {
+        int pos = idPosMap.get(i.getId());
+        StructInstance s = (StructInstance) i.getTrait(hierarchicalType.getName());
+        super.loadFields(pos, s);
+    }
+
     public void ensureCapacity(int pos) throws RepositoryException {
         super.ensureCapacity(pos);
         while (classNameStore.size() < pos + 1) {

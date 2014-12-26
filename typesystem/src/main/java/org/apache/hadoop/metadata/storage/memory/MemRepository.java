@@ -220,11 +220,49 @@ public class MemRepository implements IRepository {
     }
 
     public ITypedReferenceableInstance get(Id id) throws RepositoryException {
-        throw new RepositoryException("not implemented");
+
+        try {
+            ReplaceIdWithInstance replacer = new ReplaceIdWithInstance(this);
+            ObjectGraphWalker walker = new ObjectGraphWalker(typeSystem, replacer);
+            replacer.setWalker(walker);
+            ITypedReferenceableInstance r = getDuringWalk(id, walker);
+            walker.walk();
+            return r;
+        } catch (MetadataException me) {
+            throw new RepositoryException("TypeSystem error when walking the ObjectGraph", me);
+        }
+    }
+
+    /*
+     * - Id must be valid; Class must be valid.
+     * - Ask ClassStore to createInstance.
+     * - Ask ClassStore to load instance.
+     * - load instance traits
+     * - add to GraphWalker
+     */
+    ITypedReferenceableInstance getDuringWalk(Id id, ObjectGraphWalker walker) throws RepositoryException {
+        ClassStore cS = getClassStore(id.getTypeName());
+        if ( cS == null ) {
+            throw new RepositoryException(String.format("Unknown Class %s", id.getTypeName()));
+        }
+        cS.validate(this, id);
+        ReferenceableInstance r = cS.createInstance(this, id);
+        cS.load(r);
+        for(String traitName : r.getTraits()) {
+            HierarchicalTypeStore tt = typeStores.get(traitName);
+            tt.load(r);
+        }
+
+        walker.addRoot(r);
+        return r;
     }
 
     HierarchicalTypeStore getStore(String typeName) {
         return typeStores.get(typeName);
+    }
+
+    ClassStore getClassStore(String typeName) {
+        return (ClassStore) getStore(typeName);
     }
 
     public void defineClass(ClassType type) throws RepositoryException {

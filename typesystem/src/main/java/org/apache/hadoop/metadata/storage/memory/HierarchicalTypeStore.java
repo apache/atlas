@@ -150,6 +150,13 @@ public abstract class HierarchicalTypeStore {
         }
     }
 
+    protected void loadFields(int pos, StructInstance s) throws RepositoryException {
+        for(Map.Entry<AttributeInfo, IAttributeStore> e : attrStores.entrySet()) {
+            IAttributeStore attributeStore = e.getValue();
+            attributeStore.load(pos, hierarchicalType, s);
+        }
+    }
+
     /**
      * - store the typeName
      * - store the immediate attributes in the respective IAttributeStore
@@ -175,10 +182,7 @@ public abstract class HierarchicalTypeStore {
      */
     void load(ReferenceableInstance i) throws RepositoryException {
         int pos = idPosMap.get(i.getId());
-        for(Map.Entry<AttributeInfo, IAttributeStore> e : attrStores.entrySet()) {
-            IAttributeStore attributeStore = e.getValue();
-            attributeStore.load(pos, hierarchicalType, i);
-        }
+        loadFields(pos, i);
 
         for(HierarchicalTypeStore s : superTypeStores) {
             s.load(i);

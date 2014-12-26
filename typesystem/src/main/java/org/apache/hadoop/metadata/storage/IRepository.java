@@ -41,7 +41,7 @@ public interface IRepository {
 
     Id newId(String typeName);
 
-    ITypedInstance get(Id id) throws RepositoryException;
+    ITypedReferenceableInstance get(Id id) throws RepositoryException;
 
     void defineClass(ClassType type) throws RepositoryException;
     void defineTrait(TraitType type) throws RepositoryException;
