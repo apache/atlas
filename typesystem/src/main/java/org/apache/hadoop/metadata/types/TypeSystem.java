@@ -106,7 +106,7 @@ public class TypeSystem {
     ) throws MetadataException {
         Map<String, IDataType> newTypes = defineTypes(ImmutableList.<StructTypeDefinition>of(),
                 ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
-                ImmutableList.<HierarchicalTypeDefinition<ClassType>>of());
+                ImmutableList.<HierarchicalTypeDefinition<ClassType>>of(classDef));
 
         return getDataType(ClassType.class, classDef.typeName);
     }
@@ -142,6 +142,16 @@ public class TypeSystem {
         DataTypes.MapType dT = new DataTypes.MapType(keyType, valueType);
         types.put(dT.getName(), dT);
         return dT;
+    }
+
+    public EnumType defineEnumType(String name, EnumValue...values) throws MetadataException {
+        assert name != null;
+        if (types.containsKey(name)) {
+            throw new MetadataException(String.format("Redefinition of type %s not supported", name));
+        }
+        EnumType eT = new EnumType(this, name, values);
+        types.put(name, eT);
+        return eT;
     }
 
     class TransientTypeSystem extends TypeSystem {

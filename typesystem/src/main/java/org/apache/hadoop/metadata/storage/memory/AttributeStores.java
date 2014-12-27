@@ -79,6 +79,8 @@ public class AttributeStores {
                 } else {
                     throw new RepositoryException(String.format("Unknown datatype %s", i.dataType()));
                 }
+            case ENUM:
+                return new IntAttributeStore(i);
             case ARRAY:
                 return new ImmutableListStore(i);
             case MAP:

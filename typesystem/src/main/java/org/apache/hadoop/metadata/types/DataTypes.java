@@ -42,6 +42,7 @@ public class DataTypes {
 
     public static enum TypeCategory {
         PRIMITIVE,
+        ENUM,
         ARRAY,
         MAP,
         STRUCT,

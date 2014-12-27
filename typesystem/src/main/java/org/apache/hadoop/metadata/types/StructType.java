@@ -136,6 +136,9 @@ public class StructType  extends AbstractDataType<IStruct>
             } else if ( i.dataType() == DataTypes.STRING_TYPE ) {
                 fieldPos.put(i.name, numStrings);
                 numStrings++;
+            } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.ENUM ) {
+                fieldPos.put(i.name, numInts);
+                numInts++;
             } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.ARRAY ) {
                 fieldPos.put(i.name, numArrays);
                 numArrays++;

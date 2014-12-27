@@ -221,6 +221,9 @@ public abstract class HierarchicalType<ST extends HierarchicalType,T> extends Ab
                 } else if ( i.dataType() == DataTypes.STRING_TYPE ) {
                     fieldPos.put(attrName, numStrings);
                     numStrings++;
+                } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.ENUM ) {
+                    fieldPos.put(i.name, numInts);
+                    numInts++;
                 } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.ARRAY ) {
                     fieldPos.put(attrName, numArrays);
                     numArrays++;

@@ -106,7 +106,7 @@ public class StructInstance implements ITypedStruct {
         if (val != null && val instanceof Id) {
             ClassType clsType =
                     MetadataService.getCurrentTypeSystem().getDataType(ClassType.class, i.dataType().getName());
-            clsType.validateId((Id)cVal);
+            clsType.validateId((Id)val);
             cVal = val;
         } else {
             cVal = i.dataType().convert(val, i.multiplicity);
@@ -138,6 +138,8 @@ public class StructInstance implements ITypedStruct {
             dates[pos] = (Date) cVal;
         } else if ( i.dataType() == DataTypes.STRING_TYPE ) {
             strings[pos] = (String) cVal;
+        } else if (i.dataType().getTypeCategory() == DataTypes.TypeCategory.ENUM ) {
+            ints[pos] = ((EnumValue)cVal).ordinal;
         } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.ARRAY ) {
             arrays[pos] = (ImmutableList) cVal;
         } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.MAP ) {
@@ -190,6 +192,8 @@ public class StructInstance implements ITypedStruct {
             return dates[pos];
         } else if ( i.dataType() == DataTypes.STRING_TYPE ) {
             return strings[pos];
+        } else if (i.dataType().getTypeCategory() == DataTypes.TypeCategory.ENUM ) {
+            return ((EnumType)i.dataType()).fromOrdinal(ints[pos]);
         } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.ARRAY ) {
             return arrays[pos];
         } else if ( i.dataType().getTypeCategory() == DataTypes.TypeCategory.MAP ) {

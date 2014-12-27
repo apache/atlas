@@ -209,6 +209,10 @@ object Serialization {
         v = v.asInstanceOf[IReferenceableInstance].getId
       }
 
+      if ( v != null && (info.dataType().getTypeCategory eq TypeCategory.ENUM)) {
+        v = v.asInstanceOf[EnumValue].value
+      }
+
       JField(fName, Extraction.decompose(v))
     }
   }.toList.map(_.asInstanceOf[JField])
