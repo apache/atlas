@@ -18,13 +18,16 @@
 
 package org.apache.hadoop.metadata.services;
 
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
+
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -114,6 +117,54 @@ public class TitanGraphService implements GraphService {
 
         LOG.info("Indexes does not exist, Creating indexes for titanGraph");
         // todo - add index for vertex and edge property keys
+        
+        // Titan index backend does not support Mixed Index - must use a separate backend for that.
+        // Using composite for now.  Literal matches only.  Using Global Titan index.
+        TitanManagement mgmt = titanGraph.getManagementSystem();
+             
+        // This is the first run try-it-out index setup for property keys.
+        // These were pulled from the Hive bridge.  Edge  indices to come.
+        PropertyKey desc = mgmt.makePropertyKey("DESC").dataType(String.class).make();
+        mgmt.buildIndex("byDesc",Vertex.class).addKey(desc).buildCompositeIndex();
+        
+        PropertyKey dbLoc = mgmt.makePropertyKey("DB_LOCATION_URI").dataType(String.class).make();
+        mgmt.buildIndex("byDbloc",Vertex.class).addKey(dbLoc).buildCompositeIndex();
+        
+        PropertyKey name = mgmt.makePropertyKey("NAME").dataType(String.class).make();
+        mgmt.buildIndex("byName",Vertex.class).addKey(name).buildCompositeIndex();
+        
+        PropertyKey tableName = mgmt.makePropertyKey("TBL_NAME").dataType(String.class).make();
+        mgmt.buildIndex("byTableName",Vertex.class).addKey(tableName).buildCompositeIndex();
+        
+        PropertyKey tableType = mgmt.makePropertyKey("TBL_TYPE").dataType(String.class).make();
+        mgmt.buildIndex("byTableType",Vertex.class).addKey(tableType).buildCompositeIndex();
+        
+        PropertyKey createTime = mgmt.makePropertyKey("CREATE_TIME").dataType(Long.class).make();
+        mgmt.buildIndex("byCreateTime",Vertex.class).addKey(createTime).buildCompositeIndex();
+        
+        PropertyKey colName = mgmt.makePropertyKey("COLUMN_NAME").dataType(String.class).make();
+        mgmt.buildIndex("byColName",Vertex.class).addKey(colName).buildCompositeIndex();
+        
+        PropertyKey typeName = mgmt.makePropertyKey("TYPE_NAME").dataType(String.class).make();
+        mgmt.buildIndex("byTypeName",Vertex.class).addKey(typeName).buildCompositeIndex();
+        
+        /*  More attributes from the Hive bridge.
+
+        PropertyKey ownerName = mgmt.makePropertyKey("OWNER_NAME").dataType(String.class).make();
+        mgmt.buildIndex("byOwnerName",Vertex.class).addKey(ownerName).buildCompositeIndex();
+        
+        PropertyKey lastAccess = mgmt.makePropertyKey("LAST_ACCESS_TIME").dataType(Long.class).make();
+        mgmt.buildIndex("byLastAccess",Vertex.class).addKey(lastAccess).buildCompositeIndex();
+
+        PropertyKey viewExpandedText = mgmt.makePropertyKey("VIEW_EXPANDED_TEXT").dataType(String.class).make();
+        mgmt.buildIndex("byExpandedText",Vertex.class).addKey(viewExpandedText).buildCompositeIndex();
+        
+        PropertyKey viewOrigText= mgmt.makePropertyKey("VIEW_ORIGINAL_TEXT").dataType(String.class).make();
+        mgmt.buildIndex("byOrigText",Vertex.class).addKey(viewOrigText).buildCompositeIndex();
+        
+        PropertyKey comment = mgmt.makePropertyKey("COMMENT").dataType(Integer.class).make();
+        mgmt.buildIndex("byComment",Vertex.class).addKey(comment).buildCompositeIndex();
+        */
     }
 
     /**
