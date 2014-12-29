@@ -148,6 +148,7 @@ public class TitanGraphService implements GraphService {
         PropertyKey typeName = mgmt.makePropertyKey("TYPE_NAME").dataType(String.class).make();
         mgmt.buildIndex("byTypeName",Vertex.class).addKey(typeName).buildCompositeIndex();
         
+       
         /*  More attributes from the Hive bridge.
 
         PropertyKey ownerName = mgmt.makePropertyKey("OWNER_NAME").dataType(String.class).make();
@@ -165,6 +166,8 @@ public class TitanGraphService implements GraphService {
         PropertyKey comment = mgmt.makePropertyKey("COMMENT").dataType(Integer.class).make();
         mgmt.buildIndex("byComment",Vertex.class).addKey(comment).buildCompositeIndex();
         */
+        
+        mgmt.commit();
     }
 
     /**
