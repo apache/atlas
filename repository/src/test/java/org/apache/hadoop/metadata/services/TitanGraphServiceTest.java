@@ -62,6 +62,7 @@ public class TitanGraphServiceTest {
 
     @Test
     public void testGetEdgeIndexedKeys() throws Exception {
+   
         Assert.assertNotNull(titanGraphService.getEdgeIndexedKeys());
         Assert.assertEquals(titanGraphService.getEdgeIndexedKeys().size(), 8);
     }
