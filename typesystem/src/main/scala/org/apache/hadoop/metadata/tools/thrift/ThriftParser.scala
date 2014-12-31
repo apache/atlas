@@ -428,7 +428,7 @@ class ThriftParser extends StandardTokenParsers with ThriftKeywords with ThriftT
 
   def header = INCLUDE ~> stringLit ^^ { case s => new ThriftDef(IncludeDef(s))} |
     CPP_INCL ~> stringLit ^^ { case s => new ThriftDef(CppIncludeDef(s))} |
-    NAMESPACE ~ ident ~ ident ^^ { case ns ~ t ~ n => new ThriftDef(NamespaceDef(THRIFT_LANG.OTHER, t, Some(n)))} |
+    NAMESPACE ~ ident ~ ident ^^ { case ns ~ t ~ n => new ThriftDef(NamespaceDef(THRIFT_LANG.OTHER, n, Some(t)))} |
     NAMESPACE ~ STAR ~ ident ^^ { case ns ~ s ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.STAR, i))} |
     CPP_NS ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.CPP, i))} |
     PHP_NS ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.PHP, i))} |
