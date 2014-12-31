@@ -104,12 +104,12 @@ case class UnionDef(val name : String, val xsdAll : Boolean,
                     val fields : List[FieldDef],
                     val typAnnotations :Option[List[TypeAnnotation]])
 
-case class ExceptionDef(val name : String, val xsdAll : Boolean,
+case class ExceptionDef(val name : String,
                         val fields : List[FieldDef],
                         val typAnnotations :Option[List[TypeAnnotation]])
 
 case class FunctionDef(oneway : Boolean, returnType : FunctionType, name : String, parameters : List[FieldDef],
-                        throwFields : List[FieldDef], typAnnotations :Option[List[TypeAnnotation]])
+                        throwFields : Option[List[FieldDef]], typAnnotations :Option[List[TypeAnnotation]])
 
 case class ServiceDef(name : String, superName : Option[String], functions : List[FunctionDef],
                       typAnnotations :Option[List[TypeAnnotation]])
@@ -193,15 +193,14 @@ case class ThriftDef(val includes : List[IncludeDef],
 
 }
 
-class ThriftParser extends StandardTokenParsers with PackratParsers {
+trait ThriftKeywords {
+  this : StandardTokenParsers =>
 
   import scala.language.implicitConversions
-  import scala.language.higherKinds
 
   protected case class Keyword(str: String)
 
   protected implicit def asParser(k: Keyword): Parser[String] = k.str
-
 
   protected val LPAREN      = Keyword("(")
   protected val RPAREN      = Keyword(")")
@@ -228,7 +227,7 @@ class ThriftParser extends StandardTokenParsers with PackratParsers {
   protected val THROWS      = Keyword("throws")
   protected val ONEWAY      = Keyword("oneway")
   protected val EXTENDS     = Keyword("extends")
-  protected val SERVIC      = Keyword("service")
+  protected val SERVICE      = Keyword("service")
   protected val EXCEPTION   = Keyword("exception")
   protected val LBRACKET    = Keyword("{")
   protected val RBRACKET    = Keyword("}")
@@ -252,108 +251,15 @@ class ThriftParser extends StandardTokenParsers with PackratParsers {
   protected val STAR        = Keyword("*")
   protected val CPP_NS      = Keyword("cpp_namespace")
   protected val PHP_NS      = Keyword("php_namespace")
-  protected val PY_NS       = Keyword("py_namespace")
-  protected val PERL_NS     = Keyword("perl_namespace")
+  protected val PY_NS       = Keyword("py_module")
+  protected val PERL_NS     = Keyword("perl_package")
   protected val RUBY_NS     = Keyword("ruby_namespace")
   protected val SMLTK_CAT   = Keyword("smalltalk_category")
   protected val SMLTK_PRE   = Keyword("smalltalk_prefix")
-  protected val JAVA_NS     = Keyword("java_namespace")
-  protected val COCOA_NS    = Keyword("cocoa_namespace")
+  protected val JAVA_NS     = Keyword("java_package")
+  protected val COCOA_NS    = Keyword("cocoa_package")
   protected val XSD_NS      = Keyword("xsd_namespace")
   protected val CSHARP_NS   = Keyword("csharp_namespace")
-
-  private val reservedWordsDelims : Seq[String] =
-    this
-      .getClass
-      .getMethods
-      .filter(_.getReturnType == classOf[Keyword])
-      .map(_.invoke(this).asInstanceOf[Keyword].str)
-
-  private val (thriftreservedWords : Seq[String], thriftdelims : Seq[String]) =
-    reservedWordsDelims.partition(s => s.charAt(0).isLetter)
-
-  override val lexical = new ThriftLexer(thriftreservedWords, thriftdelims)
-
-  import lexical.HexConstant
-  /** A parser which matches a hex constant */
-  def hexConstant: Parser[String] =
-    elem("string literal", _.isInstanceOf[HexConstant]) ^^ (_.chars)
-
-  def apply(input: String): Option[ThriftDef] = {
-    phrase(program)(new lexical.Scanner(input)) match {
-      case Success(r, x) => Some(r)
-      case Failure(m, x) => {
-        println(m)
-        println(x.offset)
-        None
-      }
-      case Error(m, x) => {
-        println(m)
-        println(x.offset)
-        None
-      }
-    }
-  }
-
-  def applyStringLit[X](input: String): Option[String] = {
-    phrase(stringLit)(new lexical.Scanner(input)) match {
-      case Success(r, x) => Some(r)
-      case Failure(m, x) => {
-        println(m)
-        println(x.offset)
-        None
-      }
-    }
-  }
-
-  def program = headers ~ definitions ^^ { case h ~ d => h plus d}
-
-  def headers = header.*  ^^ { case l => l.foldRight(new ThriftDef)((a,t) => t plus a)}
-
-  def header = INCLUDE ~> stringLit ^^ { case s => new ThriftDef(IncludeDef(s))} |
-    CPP_INCL ~> stringLit ^^ { case s => new ThriftDef(CppIncludeDef(s))} |
-    NAMESPACE ~ ident ~ ident ^^ { case ns ~ t ~ n => new ThriftDef(NamespaceDef(THRIFT_LANG.OTHER, t, Some(n)))} |
-    NAMESPACE ~ STAR ~ ident ^^ { case ns ~ s ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.STAR, i))} |
-    CPP_NS ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.CPP, i))} |
-    PHP_NS ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.PHP, i))} |
-    PY_NS ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.PY, i))} |
-    PERL_NS ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.PERL, i))} |
-    RUBY_NS ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.RUBY, i))} |
-    SMLTK_CAT ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.SMLTK_CAT, i))} |
-    SMLTK_PRE ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.SMLTK_PRE, i))} |
-    JAVA_NS ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.JAVA, i))} |
-    COCOA_NS ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.COCOA, i))} |
-    XSD_NS ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.XSD, i))} |
-    CSHARP_NS ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.CSHARP, i))}
-
-  def definitions = typeDefinition.*  ^^ { case l => l.foldRight(new ThriftDef)((a,t) => t plus a)}
-
-  def definition = typeDefinition
-
-  def typeDefinition[Parser[ThriftDef]] = (typedef ^^ {case t => new ThriftDef(t)} |
-    enum ^^ {case e => new ThriftDef(e)} |
-    senum ^^ {case e => new ThriftDef(e)}
-    )
-
-  def typedef : Parser[TypeDef] = TYPEDEF ~ fieldType ~ ident ~ typeAnnotations.? ^^ {
-    case t ~ f ~ i ~ tA => TypeDef(i, f, tA)
-  }
-
-  def enum : Parser[EnumDef] = ENUM ~ ident ~ LBRACKET ~ enumDef.* ~ RBRACKET ~ typeAnnotations.? ^^ {
-    case e ~ i ~  l ~ ed ~ r ~ t => EnumDef(i, ed.toList, t)
-  }
-
-  def enumDef : Parser[EnumValueDef] = ident ~ EQ ~ numericLit ~ typeAnnotations.? ~ commaOrSemicolon.? ^^ {
-    case i ~ e ~ n ~ t ~ c => EnumValueDef(i, Some(IntConstant(n.toInt)), t)
-  }
-
-  def senum : Parser[SEnumDef] = SENUM ~ ident ~ LBRACKET ~ senumDef.* ~ RBRACKET ~ typeAnnotations.? ^^ {
-    case se ~ i ~  l ~ sed ~ r ~ t => SEnumDef(i, sed.toList, t)
-  }
-
-  def senumDef : Parser[String] = stringLit <~ commaOrSemicolon.?
-
-  def struct = STRUCT ~ ident ~ XSD_ALL.? ~ LBRACKET
 
   def isRequired(r : Option[String]) = r match {
     case Some(REQUIRED) => true
@@ -370,58 +276,20 @@ class ThriftParser extends StandardTokenParsers with PackratParsers {
     case _ => false
   }
 
-  def field = fieldIdentifier.? ~ fieldRequiredness.? ~ fieldType ~ ident ~ fieldValue.? ~
-    XSD_OPT.? ~ XSD_NILBLE.? ~ xsdAttributes.? ~ typeAnnotations.? ^^ {
-    case fi ~ fr ~ ft ~id ~ fv ~ xo ~ xn ~ xa ~ tA => FieldDef(
-    fi,
-    isRequired(fr),
-    ft,
-    id,
-    fv,
-    isXsdOptional(xo),
-    isXsdNillable(xn),
-    xa,
-    tA
-    )
+  def isXsdAll(r : Option[String]) = r match {
+    case Some(XSD_ALL) => true
+    case _ => false
   }
 
-  def xsdAttributes : Parser[XsdAttributes] = XSD_ATTRS ~ LBRACKET ~ field.* ~ RBRACKET ^^ {
-    case x ~ l ~ f ~ r => XsdAttributes(f)
+  def isOneWay(r : Option[String]) = r match {
+    case Some(ONEWAY) => true
+    case _ => false
   }
 
-  def fieldValue = COLON ~> constValue
+}
 
-  def fieldRequiredness : Parser[String] = REQUIRED | OPTIONAL
-
-  def fieldIdentifier : Parser[IntConstant] = numericLit <~ COLON ^^ {
-    case n => IntConstant(n.toInt)
-  }
-
-  def parseDouble(s: String) = try { Some(s.toDouble) } catch { case _ : Throwable => None }
-
-  def constValue : Parser[ConstValue] = numericLit ^^ {
-    case n => parseDouble(n) match {
-      case Some(d) => DoubleConstant(d)
-      case _ => IntConstant(n.toInt)
-    }
-  } |
-  hexConstant ^^ { case h => IntConstant(Integer.parseInt(h, 16))} |
-  stringLit ^^ { case s => StringConstant(s)} |
-  ident ^^ { case i => IdConstant(i)} |
-  constList |
-  constMap
-
-  def constValuePair = constValue ~ COLON ~ constValue ~ commaOrSemicolon.? ^^ {
-    case k ~ c ~ v ~ cs => ConstantValuePair(k,v)
-  }
-
-  def constList = LSQBRACKET ~ (constValue <~ commaOrSemicolon).* ~ RSQBRACKET ^^ {
-    case l ~ vs ~ r => ConstantList(vs)
-  }
-
-  def constMap = LBRACKET ~ constValuePair.* ~ RBRACKET ^^ {
-    case l ~ ps ~ r => ConstantMap(ps)
-  }
+trait ThriftTypeRules extends ThriftKeywords {
+  this : StandardTokenParsers  =>
 
   def containterType : Parser[ContainerType] = mapType | setType | listType
 
@@ -461,8 +329,240 @@ class ThriftParser extends StandardTokenParsers with PackratParsers {
   def typeAnnotation : Parser[TypeAnnotation] =
     (ident ~ EQ ~ stringLit ~ commaOrSemicolon.?) ^^ { case i ~ e ~ s ~ c  => TypeAnnotation(i,s)}
 
-  def commaOrSemicolon = COMMA | SEMICOLON
+  def commaOrSemicolon : Parser[String] = COMMA | SEMICOLON
 
+}
+
+/**
+ * @todo extract Constant Rules into this Trait. This requires moving `hexConstant` here. But how to specify
+ *       type of `HexConstant`, it is a Path dependent Type tied to lexical member of ThriftParser.
+ */
+trait ThriftConstantRules extends ThriftKeywords {
+  this: StandardTokenParsers =>
+
+//  def parseDouble(s: String) = try { Some(s.toDouble) } catch { case _ : Throwable => None }
+//
+//  def constValue : Parser[ConstValue] = numericLit ^^ {
+//    case n => parseDouble(n) match {
+//      case Some(d) => DoubleConstant(d)
+//      case _ => IntConstant(n.toInt)
+//    }
+//  } |
+//    hexConstant ^^ { case h => IntConstant(Integer.parseInt(h, 16))} |
+//    stringLit ^^ { case s => StringConstant(s)} |
+//    ident ^^ { case i => IdConstant(i)} |
+//    constList |
+//    constMap
+//
+//  def constValuePair = constValue ~ COLON ~ constValue ~ commaOrSemicolon.? ^^ {
+//    case k ~ c ~ v ~ cs => ConstantValuePair(k,v)
+//  }
+//
+//  def constList = LSQBRACKET ~ (constValue <~ commaOrSemicolon).* ~ RSQBRACKET ^^ {
+//    case l ~ vs ~ r => ConstantList(vs)
+//  }
+//
+//  def constMap = LBRACKET ~ constValuePair.* ~ RBRACKET ^^ {
+//    case l ~ ps ~ r => ConstantMap(ps)
+//  }
+}
+
+/**
+ * A Parser for Thrift definition scripts.
+ * Based on [[https://github.com/twitter/commons/blob/master/src/antlr/twitter/thrift/descriptors/AntlrThrift.g]].
+ * Definition is parsed into a [[org.apache.hadoop.metadata.tools.thrift.ThriftDef ThriftDef]] structure.
+ *
+ *  @example {{{
+ *  var p = new ThriftParser
+ *  var td : Option[ThriftDef] = p("""include "share/fb303/if/fb303.thrift"
+ *                namespace java org.apache.hadoop.hive.metastore.api
+ *                namespace php metastore
+ *                namespace cpp Apache.Hadoop.Hive
+ *                \""")
+ *  }}}
+ *
+ * @todo doesn't traverse includes directives. Includes are parsed into
+ *       [[org.apache.hadoop.metadata.tools.thrift.IncludeDef IncludeDef]] structures
+ *       but are not traversed.
+ * @todo mixing in [[scala.util.parsing.combinator.PackratParsers PackratParsers]] is a placeholder. Need to
+ *       change specific grammar rules to `lazy val` and `Parser[Elem]` to `PackratParser[Elem]`. Will do based on
+ *       performance analysis.
+ * @todo Error reporting
+ */
+class ThriftParser extends StandardTokenParsers with ThriftKeywords with ThriftTypeRules with PackratParsers {
+
+  import scala.language.higherKinds
+
+  private val reservedWordsDelims : Seq[String] =
+    this
+      .getClass
+      .getMethods
+      .filter(_.getReturnType == classOf[Keyword])
+      .map(_.invoke(this).asInstanceOf[Keyword].str)
+
+  private val (thriftreservedWords : Seq[String], thriftdelims : Seq[String]) =
+    reservedWordsDelims.partition(s => s.charAt(0).isLetter)
+
+  override val lexical = new ThriftLexer(thriftreservedWords, thriftdelims)
+
+  import lexical.HexConstant
+  /** A parser which matches a hex constant */
+  def hexConstant: Parser[String] =
+    elem("string literal", _.isInstanceOf[HexConstant]) ^^ (_.chars)
+
+  def apply(input: String): Option[ThriftDef] = {
+    phrase(program)(new lexical.Scanner(input)) match {
+      case Success(r, x) => Some(r)
+      case Failure(m, x) => {
+        None
+      }
+      case Error(m, x) => {
+        None
+      }
+    }
+  }
+
+  def program = headers ~ definitions ^^ { case h ~ d => h plus d}
+
+  def headers = header.*  ^^ { case l => l.foldRight(new ThriftDef)((a,t) => t plus a)}
+
+  def header = INCLUDE ~> stringLit ^^ { case s => new ThriftDef(IncludeDef(s))} |
+    CPP_INCL ~> stringLit ^^ { case s => new ThriftDef(CppIncludeDef(s))} |
+    NAMESPACE ~ ident ~ ident ^^ { case ns ~ t ~ n => new ThriftDef(NamespaceDef(THRIFT_LANG.OTHER, t, Some(n)))} |
+    NAMESPACE ~ STAR ~ ident ^^ { case ns ~ s ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.STAR, i))} |
+    CPP_NS ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.CPP, i))} |
+    PHP_NS ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.PHP, i))} |
+    PY_NS ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.PY, i))} |
+    PERL_NS ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.PERL, i))} |
+    RUBY_NS ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.RUBY, i))} |
+    SMLTK_CAT ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.SMLTK_CAT, i))} |
+    SMLTK_PRE ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.SMLTK_PRE, i))} |
+    JAVA_NS ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.JAVA, i))} |
+    COCOA_NS ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.COCOA, i))} |
+    XSD_NS ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.XSD, i))} |
+    CSHARP_NS ~ ident ^^ { case ns ~ i => new ThriftDef(NamespaceDef(THRIFT_LANG.CSHARP, i))}
+
+  def definitions : Parser[ThriftDef] = definition.*  ^^ {
+    case l => l.foldRight(new ThriftDef)((a,t) => t plus a)
+  }
+
+  def definition : Parser[ThriftDef] = const ^^ { case c => new ThriftDef(c)} |
+    typeDefinition |
+    service ^^ { case s => new ThriftDef(s)}
+
+
+  def typeDefinition : Parser[ThriftDef] = (typedef ^^ {case t => new ThriftDef(t)} |
+    enum ^^ {case e => new ThriftDef(e)} |
+    senum ^^ {case e => new ThriftDef(e)} |
+    struct ^^ {case e => new ThriftDef(e)} |
+    union ^^ {case e => new ThriftDef(e)} |
+    xception ^^ {case e => new ThriftDef(e)}
+    )
+
+  def typedef : Parser[TypeDef] = TYPEDEF ~ fieldType ~ ident ~ typeAnnotations.? ^^ {
+    case t ~ f ~ i ~ tA => TypeDef(i, f, tA)
+  }
+
+  def enum : Parser[EnumDef] = ENUM ~ ident ~ LBRACKET ~ enumDef.* ~ RBRACKET ~ typeAnnotations.? ^^ {
+    case e ~ i ~  l ~ ed ~ r ~ t => EnumDef(i, ed.toList, t)
+  }
+
+  def enumDef : Parser[EnumValueDef] = ident ~ EQ ~ numericLit ~ typeAnnotations.? ~ commaOrSemicolon.? ^^ {
+    case i ~ e ~ n ~ t ~ c => EnumValueDef(i, Some(IntConstant(n.toInt)), t)
+  }
+
+  def senum : Parser[SEnumDef] = SENUM ~ ident ~ LBRACKET ~ senumDef.* ~ RBRACKET ~ typeAnnotations.? ^^ {
+    case se ~ i ~  l ~ sed ~ r ~ t => SEnumDef(i, sed.toList, t)
+  }
+
+  def senumDef : Parser[String] = stringLit <~ commaOrSemicolon.?
+
+  def service : Parser[ServiceDef] = SERVICE ~ ident ~ extnds.? ~ LBRACKET ~ function.* ~
+    RBRACKET ~ typeAnnotations.? ^^ {
+    case s ~ i ~ e ~ lb ~ fs ~ rb ~ tA => ServiceDef(i, e, fs, tA)
+  }
+
+  def extnds : Parser[String] = EXTENDS ~> ident
+
+  def function : Parser[FunctionDef] = ONEWAY.? ~ functionType ~ ident ~ LPAREN ~ field.* ~ RPAREN ~ throwz.? ~
+    typeAnnotations.? ~ commaOrSemicolon.? ^^ {
+    case o ~ fT ~ i ~ lp ~ fs ~ rp ~ th ~ tA ~ cS => FunctionDef(isOneWay(o), fT, i, fs, th, tA)
+  }
+
+  def throwz : Parser[List[FieldDef]] = THROWS ~ LPAREN ~ field.* ~ RPAREN ^^ {
+    case t ~ l ~ fs ~ r => fs.toList
+  }
+
+  def functionType : Parser[FunctionType] = VOID ^^^ VoidType() | fieldType
+
+  def xception : Parser[ExceptionDef] = EXCEPTION ~ ident ~ LBRACKET ~ field.* ~ RBRACKET ~ typeAnnotations.? ^^ {
+    case s ~ i ~ lb ~ fs ~ rb ~ tA => ExceptionDef(i, fs.toList, tA)
+  }
+
+  def union : Parser[UnionDef] = UNION ~ ident ~ XSD_ALL.? ~ LBRACKET ~ field.* ~ RBRACKET ~ typeAnnotations.? ^^ {
+    case s ~ i ~ xA ~ lb ~ fs ~ rb ~ tA => UnionDef(i, isXsdAll(xA), fs.toList, tA)
+  }
+
+  def struct : Parser[StructDef] = STRUCT ~ ident ~ XSD_ALL.? ~ LBRACKET ~ field.* ~ RBRACKET ~ typeAnnotations.? ^^ {
+    case s ~ i ~ xA ~ lb ~ fs ~ rb ~ tA => StructDef(i, isXsdAll(xA), fs.toList, tA)
+  }
+
+  def field : Parser[FieldDef] = fieldIdentifier.? ~ fieldRequiredness.? ~ fieldType ~ ident ~ fieldValue.? ~
+    XSD_OPT.? ~ XSD_NILBLE.? ~ xsdAttributes.? ~ typeAnnotations.? ~ commaOrSemicolon.? ^^ {
+    case fi ~ fr ~ ft ~id ~ fv ~ xo ~ xn ~ xa ~ tA ~ cS => FieldDef(
+    fi,
+    isRequired(fr),
+    ft,
+    id,
+    fv,
+    isXsdOptional(xo),
+    isXsdNillable(xn),
+    xa,
+    tA
+    )
+  }
+
+  def xsdAttributes : Parser[XsdAttributes] = XSD_ATTRS ~ LBRACKET ~ field.* ~ RBRACKET ^^ {
+    case x ~ l ~ f ~ r => XsdAttributes(f)
+  }
+
+  def fieldValue = EQ ~> constValue
+
+  def fieldRequiredness : Parser[String] = REQUIRED | OPTIONAL
+
+  def fieldIdentifier : Parser[IntConstant] = numericLit <~ COLON ^^ {
+    case n => IntConstant(n.toInt)
+  }
+
+  def const : Parser[ConstDef] = CONST ~ fieldType ~ ident ~ EQ ~ constValue ~ commaOrSemicolon.? ^^ {
+    case c ~ fT ~ i ~ e ~ cV ~ cS => ConstDef(fT, i, cV)
+  }
+
+  def parseDouble(s: String) = try { Some(s.toDouble) } catch { case _ : Throwable => None }
+
+  def constValue : Parser[ConstValue] = numericLit ^^ {
+    case n => parseDouble(n) match {
+      case Some(d) => DoubleConstant(d)
+      case _ => IntConstant(n.toInt)
+    }
+  } |
+  hexConstant ^^ { case h => IntConstant(Integer.parseInt(h, 16))} |
+  stringLit ^^ { case s => StringConstant(s)} |
+  ident ^^ { case i => IdConstant(i)} |
+  constList |
+  constMap
+
+  def constValuePair = constValue ~ COLON ~ constValue ~ commaOrSemicolon.? ^^ {
+    case k ~ c ~ v ~ cs => ConstantValuePair(k,v)
+  }
+
+  def constList = LSQBRACKET ~ (constValue <~ commaOrSemicolon).* ~ RSQBRACKET ^^ {
+    case l ~ vs ~ r => ConstantList(vs)
+  }
+
+  def constMap = LBRACKET ~ constValuePair.* ~ RBRACKET ^^ {
+    case l ~ ps ~ r => ConstantMap(ps)
+  }
 }
 
 class ThriftLexer(val keywords: Seq[String], val delims : Seq[String]) extends StdLexical with ImplicitConversions {
@@ -480,12 +580,12 @@ class ThriftLexer(val keywords: Seq[String], val delims : Seq[String]) extends S
   delimiters ++= delims
 
   override lazy val token: Parser[Token] =
-    ( identifier ^^ processIdent
-      | st_identifier ^^ StIdentifier
-      | string ^^ StringLit
+    ( intConstant ^^ NumericLit
       | hexConstant ^^ HexConstant
       | dubConstant ^^ NumericLit
-      | intConstant ^^ NumericLit
+      | identifier ^^ processIdent
+      | st_identifier ^^ StIdentifier
+      | string ^^ StringLit
       | EofCh ^^^ EOF
       | '\'' ~> failure("unclosed string literal")
       | '"' ~> failure("unclosed string literal")
@@ -510,6 +610,11 @@ class ThriftLexer(val keywords: Seq[String], val delims : Seq[String]) extends S
       | '/' ~ '*' ~ failure("unclosed comment")
       ).*
 
+  protected override def comment: Parser[Any] = (
+    commentChar.* ~ '*' ~ '/'
+    )
+
+  protected def commentChar = chrExcept(EofCh, '*') | '*' ~ not('/')
 
   def string = '\"' ~> chrExcept('\"', '\n', EofCh).* <~ '\"' ^^ { _ mkString "" } |
     '\'' ~> chrExcept('\'', '\n', EofCh).* <~ '\'' ^^ { _ mkString "" }
@@ -520,8 +625,8 @@ class ThriftLexer(val keywords: Seq[String], val delims : Seq[String]) extends S
   def exponent = elem("exponent character", d => d == 'e' || d == 'E')
 
 
-  def intConstant = zero | intList
-  def intList = nonzero ~ rep(digit) ^^ {case x ~ y => (x :: y) mkString ""}
+  def intConstant = opt(sign) ~> zero | intList
+  def intList = opt(sign) ~ nonzero ~ rep(digit) ^^ {case s ~ x ~ y =>  (optString("", s) :: x :: y) mkString ""}
   def fracPart = '.' ~> rep(digit) ^^ { "." + _ mkString "" }
   def expPart = exponent ~ opt(sign) ~ rep1(digit) ^^ { case e ~ s ~ d =>
     e.toString + optString("", s) + d.mkString("")
