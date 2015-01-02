@@ -433,6 +433,15 @@ public class DataTypes {
 
     static String ARRAY_TYPE_PREFIX = "array<";
     static String ARRAY_TYPE_SUFFIX = ">";
+
+    public static String arrayTypeName(String elemTypeName) {
+        return String.format("%s%s%s", ARRAY_TYPE_PREFIX, elemTypeName, ARRAY_TYPE_SUFFIX);
+    }
+
+    public static String arrayTypeName(IDataType elemType) {
+        return arrayTypeName(elemType.getName());
+    }
+
     public static class ArrayType extends AbstractDataType<ImmutableCollection<?>> {
 
         private IDataType elemType;
@@ -441,7 +450,7 @@ public class DataTypes {
         public ArrayType(IDataType elemType) {
             assert elemType != null;
             this.elemType = elemType;
-            this.nm = String.format("%s%s%s", ARRAY_TYPE_PREFIX, elemType.getName(), ARRAY_TYPE_SUFFIX);
+            this.nm = arrayTypeName(elemType);
         }
 
         public IDataType getElemType() {
@@ -521,6 +530,16 @@ public class DataTypes {
 
     static String MAP_TYPE_PREFIX = "map<";
     static String MAP_TYPE_SUFFIX = ">";
+
+    public static String mapTypeName(String keyTypeName, String valueTypeName) {
+        return String.format("%s%s,%s%s", MAP_TYPE_PREFIX,
+                keyTypeName, valueTypeName, MAP_TYPE_SUFFIX);
+    }
+
+    public static String mapTypeName(IDataType keyType, IDataType valueType) {
+        return mapTypeName(keyType.getName(), valueType.getName());
+    }
+
     public static class MapType extends AbstractDataType<ImmutableMap<?, ?>> {
 
         private IDataType keyType;
@@ -532,8 +551,7 @@ public class DataTypes {
             assert valueType != null;
             this.keyType = keyType;
             this.valueType = valueType;
-            this.nm = String.format("%s%s,%s%s", MAP_TYPE_PREFIX,
-                    keyType.getName(), valueType.getName(), MAP_TYPE_SUFFIX);
+            this.nm = mapTypeName(keyType, valueType);
         }
 
         public IDataType getKeyType() {

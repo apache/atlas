@@ -20,15 +20,14 @@ package org.apache.hadoop.metadata.types;
 
 import java.util.Arrays;
 
-public class StructTypeDefinition {
+public final class EnumTypeDefinition {
 
-    public final String typeName;
-    public final AttributeDefinition[] attributeDefinitions;
+    public final String name;
+    public final EnumValue[] enumValues;
 
-    public StructTypeDefinition(String typeName,
-                                AttributeDefinition[] attributeDefinitions) {
-        this.typeName = typeName;
-        this.attributeDefinitions = attributeDefinitions;
+    public EnumTypeDefinition(String name, EnumValue...enumValues) {
+        this.name = name;
+        this.enumValues = enumValues;
     }
 
     @Override
@@ -36,18 +35,18 @@ public class StructTypeDefinition {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        StructTypeDefinition that = (StructTypeDefinition) o;
+        EnumTypeDefinition that = (EnumTypeDefinition) o;
 
-        if (!Arrays.equals(attributeDefinitions, that.attributeDefinitions)) return false;
-        if (!typeName.equals(that.typeName)) return false;
+        if (!Arrays.equals(enumValues, that.enumValues)) return false;
+        if (!name.equals(that.name)) return false;
 
         return true;
     }
 
     @Override
     public int hashCode() {
-        int result = typeName.hashCode();
-        result = 31 * result + Arrays.hashCode(attributeDefinitions);
+        int result = name.hashCode();
+        result = 31 * result + Arrays.hashCode(enumValues);
         return result;
     }
 }

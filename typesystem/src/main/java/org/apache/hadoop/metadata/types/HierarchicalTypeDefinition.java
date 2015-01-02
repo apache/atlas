@@ -20,14 +20,56 @@ package org.apache.hadoop.metadata.types;
 
 import com.google.common.collect.ImmutableList;
 
+import java.util.Collection;
+
 public class HierarchicalTypeDefinition<T extends HierarchicalType>  extends StructTypeDefinition {
 
     public final ImmutableList<String> superTypes;
+    public final String hierarchicalMetaTypeName;
+
+    /**
+     * Used for json deserialization only
+     * @nopublic
+     * @param hierarchicalMetaTypeName
+     * @param typeName
+     * @param superTypes
+     * @param attributeDefinitions
+     * @throws ClassNotFoundException
+     */
+    public HierarchicalTypeDefinition(String hierarchicalMetaTypeName,
+                                      String typeName, String[] superTypes,
+                                      AttributeDefinition[] attributeDefinitions) throws ClassNotFoundException {
+        this((Class<T>) Class.forName(hierarchicalMetaTypeName),
+                typeName, ImmutableList.copyOf(superTypes), attributeDefinitions);
+    }
 
     public HierarchicalTypeDefinition(Class<T> hierarchicalMetaType,
                                       String typeName, ImmutableList<String> superTypes,
                                       AttributeDefinition[] attributeDefinitions) {
         super(typeName, attributeDefinitions);
+        hierarchicalMetaTypeName = hierarchicalMetaType.getName();
         this.superTypes = superTypes == null ? ImmutableList.<String>of() : superTypes;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        HierarchicalTypeDefinition that = (HierarchicalTypeDefinition) o;
+
+        if (!hierarchicalMetaTypeName.equals(that.hierarchicalMetaTypeName)) return false;
+        if (!superTypes.equals(that.superTypes)) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + superTypes.hashCode();
+        result = 31 * result + hierarchicalMetaTypeName.hashCode();
+        return result;
     }
 }

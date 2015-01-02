@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.hadoop.metadata.types;
 
 public final class AttributeDefinition {
@@ -36,5 +37,33 @@ public final class AttributeDefinition {
         this.multiplicity = multiplicity;
         this.isComposite = isComposite;
         this.reverseAttributeName = reverseAttributeName;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AttributeDefinition that = (AttributeDefinition) o;
+
+        if (isComposite != that.isComposite) return false;
+        if (!dataTypeName.equals(that.dataTypeName)) return false;
+        if (!multiplicity.equals(that.multiplicity)) return false;
+        if (!name.equals(that.name)) return false;
+        if (reverseAttributeName != null ? !reverseAttributeName.equals(that.reverseAttributeName) : that
+                .reverseAttributeName != null)
+            return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = name.hashCode();
+        result = 31 * result + dataTypeName.hashCode();
+        result = 31 * result + multiplicity.hashCode();
+        result = 31 * result + (isComposite ? 1 : 0);
+        result = 31 * result + (reverseAttributeName != null ? reverseAttributeName.hashCode() : 0);
+        return result;
     }
 }
