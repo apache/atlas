@@ -18,9 +18,9 @@
 
 package org.apache.hadoop.metadata.services;
 
-import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
@@ -35,7 +35,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -50,6 +53,8 @@ public class TitanGraphService implements GraphService {
      * Constant for the configuration property that indicates the prefix.
      */
     private static final String METADATA_PREFIX = "metadata.graph.";
+    private static final String INDEXER_PREFIX = "metadata.indexer.vertex.";
+    private static final List<String> acceptedTypes = Arrays.asList("String","Int","Long");
 
     private TitanGraph titanGraph;
     private Set<String> vertexIndexedKeys;
@@ -103,71 +108,89 @@ public class TitanGraphService implements GraphService {
 
         return graphConfig;
     }
+    
+    private static Configuration getConfiguration(String filename, String prefix) throws ConfigurationException {
+        PropertiesConfiguration configProperties =
+                new PropertiesConfiguration(filename);
+
+        Configuration graphConfig = new PropertiesConfiguration();
+        
+        final Iterator<String> iterator = configProperties.getKeys();
+        while (iterator.hasNext()) {
+            String key = iterator.next();
+            if (key.startsWith(prefix)) {
+                String value = (String) configProperties.getProperty(key);
+                key = key.substring(prefix.length());
+                graphConfig.setProperty(key, value);
+            }
+        }
+
+        return graphConfig;
+    }
 
     protected TitanGraph initializeGraphDB(Configuration graphConfig) {
         LOG.info("Initializing titanGraph db");
         return TitanFactory.open(graphConfig);
     }
 
-    protected void createIndicesForVertexKeys() {
+    protected void createIndicesForVertexKeys() throws ConfigurationException {
+    	
         if (!titanGraph.getIndexedKeys(Vertex.class).isEmpty()) {
             LOG.info("Indexes already exist for titanGraph");
             return;
         }
 
-        LOG.info("Indexes does not exist, Creating indexes for titanGraph");
-        // todo - add index for vertex and edge property keys
+        LOG.info("Indexes do not exist, Creating indexes for titanGraph using indexer.properties.");
         
-        // Titan index backend does not support Mixed Index - must use a separate backend for that.
-        // Using composite for now.  Literal matches only.  Using Global Titan index.
-        TitanManagement mgmt = titanGraph.getManagementSystem();
-             
-        // This is the first run try-it-out index setup for property keys.
-        // These were pulled from the Hive bridge.  Edge  indices to come.
-        PropertyKey desc = mgmt.makePropertyKey("DESC").dataType(String.class).make();
-        mgmt.buildIndex("byDesc",Vertex.class).addKey(desc).buildCompositeIndex();
+        Configuration indexConfig = getConfiguration("indexer.properties", INDEXER_PREFIX);
         
-        PropertyKey dbLoc = mgmt.makePropertyKey("DB_LOCATION_URI").dataType(String.class).make();
-        mgmt.buildIndex("byDbloc",Vertex.class).addKey(dbLoc).buildCompositeIndex();
-        
-        PropertyKey name = mgmt.makePropertyKey("NAME").dataType(String.class).make();
-        mgmt.buildIndex("byName",Vertex.class).addKey(name).buildCompositeIndex();
-        
-        PropertyKey tableName = mgmt.makePropertyKey("TBL_NAME").dataType(String.class).make();
-        mgmt.buildIndex("byTableName",Vertex.class).addKey(tableName).buildCompositeIndex();
-        
-        PropertyKey tableType = mgmt.makePropertyKey("TBL_TYPE").dataType(String.class).make();
-        mgmt.buildIndex("byTableType",Vertex.class).addKey(tableType).buildCompositeIndex();
-        
-        PropertyKey createTime = mgmt.makePropertyKey("CREATE_TIME").dataType(Long.class).make();
-        mgmt.buildIndex("byCreateTime",Vertex.class).addKey(createTime).buildCompositeIndex();
-        
-        PropertyKey colName = mgmt.makePropertyKey("COLUMN_NAME").dataType(String.class).make();
-        mgmt.buildIndex("byColName",Vertex.class).addKey(colName).buildCompositeIndex();
-        
-        PropertyKey typeName = mgmt.makePropertyKey("TYPE_NAME").dataType(String.class).make();
-        mgmt.buildIndex("byTypeName",Vertex.class).addKey(typeName).buildCompositeIndex();
-        
-       
-        /*  More attributes from the Hive bridge.
+		TitanManagement mgmt = titanGraph.getManagementSystem();
+		mgmt.buildIndex("mainIndex", Vertex.class).buildMixedIndex("search");
+		TitanGraphIndex graphIndex = mgmt.getGraphIndex("mainIndex");
 
-        PropertyKey ownerName = mgmt.makePropertyKey("OWNER_NAME").dataType(String.class).make();
-        mgmt.buildIndex("byOwnerName",Vertex.class).addKey(ownerName).buildCompositeIndex();
-        
-        PropertyKey lastAccess = mgmt.makePropertyKey("LAST_ACCESS_TIME").dataType(Long.class).make();
-        mgmt.buildIndex("byLastAccess",Vertex.class).addKey(lastAccess).buildCompositeIndex();
+		// Properties are formatted: prop_name:type;prop_name:type
+		// E.g. Name:String;Date:Long
+		if (!indexConfig.isEmpty()) {
 
-        PropertyKey viewExpandedText = mgmt.makePropertyKey("VIEW_EXPANDED_TEXT").dataType(String.class).make();
-        mgmt.buildIndex("byExpandedText",Vertex.class).addKey(viewExpandedText).buildCompositeIndex();
-        
-        PropertyKey viewOrigText= mgmt.makePropertyKey("VIEW_ORIGINAL_TEXT").dataType(String.class).make();
-        mgmt.buildIndex("byOrigText",Vertex.class).addKey(viewOrigText).buildCompositeIndex();
-        
-        PropertyKey comment = mgmt.makePropertyKey("COMMENT").dataType(Integer.class).make();
-        mgmt.buildIndex("byComment",Vertex.class).addKey(comment).buildCompositeIndex();
-        */
-        
-        mgmt.commit();
+			// Get a list of property names to iterate through...
+			List<String> propList =  new ArrayList<String>();
+			
+			Iterator<String> it = indexConfig.getKeys("property.name");
+		
+			while (it.hasNext()) {
+				propList.add(it.next());
+			}
+			
+			it = propList.iterator();
+			while (it.hasNext()) {
+			
+				// Pull the property name and index, so we can register the name and look up the type.
+				String prop = it.next().toString();
+				String index = prop.substring(prop.lastIndexOf(".") + 1);
+				String type = null;
+				prop = indexConfig.getProperty(prop).toString();
+			
+				// Look up the type for the specified property name.
+				if (indexConfig.containsKey("property.type." + index)) {
+					type = indexConfig.getProperty("property.type." + index).toString();
+				} else {
+					throw new ConfigurationException("No type specified for property " + index + " in indexer.properties.");
+				}
+				
+				// Is the type submitted one of the approved ones? 
+				if (!acceptedTypes.contains(type)) {
+					throw new ConfigurationException("The type provided in indexer.properties for property " + prop + " is not supported.  Supported types are: " + acceptedTypes.toString());
+				}
+			
+				// Add the key.
+				LOG.info("Adding property: " + prop + " to index as type: " + type);
+		 		mgmt.addIndexKey(graphIndex,mgmt.makePropertyKey(prop).dataType(type.getClass()).make());
+			
+		 	}
+		
+			mgmt.commit();
+			LOG.info("Index creation complete.");
+		}
     }
 
     /**
