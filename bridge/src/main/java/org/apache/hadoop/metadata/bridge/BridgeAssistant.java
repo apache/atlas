@@ -7,8 +7,8 @@ import org.apache.hadoop.metadata.types.TypeSystem;
 
 import com.google.common.collect.ImmutableList;
 
-public interface Bridge {
-	
-	boolean defineBridgeTypes(TypeSystem ts);
-	
+public class BridgeAssistant {
+
+	protected HierarchicalTypeDefinition<ClassType> createClassTypeDef(String name, ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {return new HierarchicalTypeDefinition(ClassType.class, name, superTypes, attrDefs);}
+
 }

@@ -1,0 +1,183 @@
+package org.apache.hadoop.metadata.bridge.hivestructure;
+
+import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
+import org.apache.hadoop.hive.metastore.api.Database;
+import org.apache.hadoop.hive.metastore.api.FieldSchema;
+import org.apache.hadoop.hive.metastore.api.MetaException;
+import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
+import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.hadoop.hive.metastore.api.UnknownDBException;
+import org.apache.hadoop.hive.metastore.api.UnknownTableException;
+import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.MetadataService;
+import org.apache.hadoop.metadata.Referenceable;
+import org.apache.hadoop.metadata.storage.RepositoryException;
+import org.apache.hadoop.metadata.types.ClassType;
+import org.apache.thrift.TException;
+/*
+ * Initial pass at one time importer TODO - needs re-write
+ */
+
+
+public class HiveMetaImporter {
+	
+	private static HiveMetaStoreClient msc;
+	private static MetadataService ms;
+	
+	public HiveMetaImporter(MetadataService ms){
+	
+		try {
+			this.ms = ms;
+			msc = new HiveMetaStoreClient(new HiveConf());
+		} catch (MetaException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+	
+	public static boolean fullImport(){
+		try{
+			databasesImport();
+			for (String dbName : msc.getAllDatabases()){
+				tablesImport(dbName);
+				for(String tbName : msc.getAllTables(dbName)){
+					fieldsImport(dbName,tbName);
+				}
+			return true;
+			}
+		}catch(MetaException me){
+			me.printStackTrace();
+		}catch(RepositoryException re){
+			re.printStackTrace();
+		}
+		
+		return false;
+	}
+	
+	public static boolean databasesImport() throws MetaException, RepositoryException{
+		ClassType classType = null;
+		try {
+			classType = ms.getTypeSystem().getDataType(ClassType.class, HiveStructureBridge.DB_CLASS_TYPE);
+		} catch (MetadataException e1) {
+			e1.printStackTrace();
+		}
+		for(String dbName : msc.getAllDatabases()){
+			databaseImport(dbName);
+		}
+		return true;
+	}
+	
+	public static boolean databaseImport(String dbName) throws MetaException, RepositoryException{
+			try {
+				Database db = msc.getDatabase(dbName);
+				Referenceable dbRef = new Referenceable(HiveStructureBridge.DB_CLASS_TYPE);
+				dbRef.set("DESC", db.getDescription());
+				dbRef.set("DB_LOCATION_URI", db.getLocationUri());
+				dbRef.set("NAME", db.getName());
+				if(db.isSetOwnerType()){dbRef.set("OWNER_TYPE", db.getOwnerType());}
+				if(db.isSetOwnerName()){dbRef.set("OWNER_NAME", db.getOwnerName());}
+				
+				ms.getRepository().create(dbRef);
+			} catch (NoSuchObjectException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (TException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		return true;
+	}
+	
+	public static boolean tablesImport(String dbName) throws MetaException, RepositoryException{
+		ClassType classType = null;
+		try {
+			classType = ms.getTypeSystem().getDataType(ClassType.class, HiveStructureBridge.TB_CLASS_TYPE);
+		} catch (MetadataException e1) {
+			e1.printStackTrace();
+		}
+		for(String tbName : msc.getAllTables(dbName)){
+		tableImport(dbName, tbName);
+		}
+		return true;
+	}
+	
+	public static boolean tableImport(String dbName, String tbName) throws MetaException, RepositoryException{
+			try {
+				Table tb = msc.getTable(dbName, tbName);
+				Referenceable tbRef = new Referenceable(HiveStructureBridge.TB_CLASS_TYPE);
+				tbRef.set("CREATE_TIME", tb.getCreateTime());
+				tbRef.set("LAST_ACCESS_TIME", tb.getLastAccessTime());
+				tbRef.set("OWNER", tb.getOwner());
+				tbRef.set("TBL_NAME", tb.getTableName());
+				tbRef.set("TBL_TYPE", tb.getTableType());
+				if(tb.isSetViewExpandedText()){tbRef.set("VIEW_EXPANDED_TEXT", tb.getViewExpandedText());}
+				if(tb.isSetViewOriginalText()){tbRef.set("VIEW_ORIGINAL_TEXT", tb.getViewOriginalText());}
+
+				ms.getRepository().create(tbRef);
+			} catch (NoSuchObjectException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (TException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		return true;
+	}
+	
+	public static boolean fieldsImport (String dbName, String tbName) throws MetaException, RepositoryException{
+		ClassType classType = null;
+		try {
+			classType = ms.getTypeSystem().getDataType(ClassType.class, HiveStructureBridge.FD_CLASS_TYPE);
+		} catch (MetadataException e1) {
+			e1.printStackTrace();
+		}
+		try {
+			for(FieldSchema fs : msc.getFields(dbName, tbName)){
+				Referenceable fdRef = new Referenceable(HiveStructureBridge.FD_CLASS_TYPE);
+				if(fs.isSetComment()){fdRef.set("COMMENT", fs.getName());}
+				fdRef.set("COLUMN_NAME", fs.getName());
+				fdRef.set("TYPE_NAME", fs.getType());
+
+				ms.getRepository().create(fdRef);
+			}
+		} catch (UnknownTableException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (UnknownDBException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (TException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return true;
+	}
+	
+	public static boolean fieldImport(String dbName, String tbName, String fdName) throws MetaException{
+		try {
+			for(FieldSchema fs : msc.getFields(dbName, tbName)){
+				if (fs.getName().equals(fs)){
+				Referenceable fdRef = new Referenceable(HiveStructureBridge.TB_CLASS_TYPE);
+				if(fs.isSetComment()){fdRef.set("COMMENT", fs.getName());}
+				fdRef.set("COLUMN_NAME", fs.getName());
+				fdRef.set("TYPE_NAME", fs.getType());
+				//SaveObject to MS Backend
+				return true;
+				}
+			}
+		} catch (UnknownTableException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (UnknownDBException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (TException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return true;
+	}
+	
+}
