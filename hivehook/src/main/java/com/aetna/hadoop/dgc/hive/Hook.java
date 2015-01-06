@@ -49,12 +49,6 @@ import org.apache.hadoop.util.StringUtils;
 public class Hook implements ExecuteWithHookContext {
 
   private static final Log LOG = LogFactory.getLog(Hook.class.getName());
-  //private static TimelineClient timelineClient;
-  private enum EntityTypes { HIVE_QUERY_ID };
-  private enum EventTypes { QUERY_SUBMITTED, QUERY_COMPLETED };
-  private enum OtherInfoTypes { QUERY, STATUS, TEZ, MAPRED };
-  private enum PrimaryFilterTypes { user };
-  private static final int WAIT_TIME = 3;
   private HiveLineageBean hlb;
 
   @Override
@@ -68,7 +62,6 @@ public class Hook implements ExecuteWithHookContext {
             }
             ExplainTask explain = new ExplainTask();
             explain.initialize(hookContext.getConf(), plan, null);
-            List<Task<?>> rootTasks = plan.getRootTasks();
             String queryId = plan.getQueryId();
             String queryStartTime = plan.getQueryStartTime().toString();
             String user = hookContext.getUgi().getUserName();
@@ -92,7 +85,7 @@ public class Hook implements ExecuteWithHookContext {
             case PRE_EXEC_HOOK:
               Set<ReadEntity> db = hookContext.getInputs();
               for (Object o : db) {
-            	  LOG.error("DB:Table="+o.toString());
+            	  LOG.debug("DB:Table="+o.toString());
             	  }
               
               currentTime = System.currentTimeMillis();
