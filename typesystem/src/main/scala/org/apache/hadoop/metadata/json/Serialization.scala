@@ -18,18 +18,15 @@
 
 package org.apache.hadoop.metadata.json
 
-import org.apache.jute.compiler.JLong
-import org.apache.hadoop.metadata.types.DataTypes.{MapType, TypeCategory, ArrayType}
 import org.apache.hadoop.metadata._
+import org.apache.hadoop.metadata.storage.{Id, ReferenceableInstance}
+import org.apache.hadoop.metadata.types.DataTypes.{ArrayType, MapType, TypeCategory}
 import org.apache.hadoop.metadata.types._
-import org.apache.hadoop.metadata.storage.{ReferenceableInstance, Id}
 import org.json4s.JsonAST.JInt
 import org.json4s._
 import org.json4s.native.Serialization.{write => swrite, _}
-import org.json4s.reflect.{ScalaType, Reflector}
-import java.util.regex.Pattern
-import java.util.Date
-import collection.JavaConversions._
+
+import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 
 class BigDecimalSerializer extends CustomSerializer[java.math.BigDecimal](format => ( {
@@ -50,6 +47,15 @@ class IdSerializer extends CustomSerializer[Id](format => ( {
   case JObject(JField("id", JInt(id)) ::
   JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(className)) ::
   JField("version", JInt(version)) :: Nil) => new Id(id.toLong, version.toInt, className)
+  case JObject(JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(className)) ::
+    JField("id", JInt(id)) ::
+    JField("version", JInt(version)) :: Nil) => new Id(id.toLong, version.toInt, className)
+  case JObject(JField("id", JString(id)) ::
+    JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(className)) ::
+    JField("version", JString(version)) :: Nil) => new Id(id.toLong, version.toInt, className)
+  case JObject(JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(className)) ::
+    JField("id", JString(id)) ::
+    JField("version", JString(version)) :: Nil) => new Id(id.toLong, version.toInt, className)
 }, {
   case id: Id => JObject(JField("id", JInt(id.id)),
     JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(id.className)),
@@ -57,17 +63,19 @@ class IdSerializer extends CustomSerializer[Id](format => ( {
 }
   ))
 
-class TypedStructSerializer extends Serializer[ITypedStruct] {
+class TypedStructSerializer(val typSystem : Option[MetadataService] = None) extends Serializer[ITypedStruct] {
+
+  def currentMdSvc = typSystem.getOrElse(MetadataService.getCurrentService())
 
   def deserialize(implicit format: Formats) = {
     case (TypeInfo(clazz, ptype), json) if classOf[ITypedStruct].isAssignableFrom(clazz) => json match {
       case JObject(fs) =>
         val(typ, fields) = fs.partition(f => f._1 == Serialization.STRUCT_TYPE_FIELD_NAME)
         val typName = typ(0)._2.asInstanceOf[JString].s
-        val sT = MetadataService.getCurrentTypeSystem().getDataType(
+        val sT = currentMdSvc.getTypeSystem.getDataType(
           classOf[IConstructableType[IStruct, ITypedStruct]], typName).asInstanceOf[IConstructableType[IStruct, ITypedStruct]]
         val s = sT.createInstance()
-        Serialization.deserializeFields(sT, s, fields)
+        Serialization.deserializeFields(currentMdSvc, sT, s, fields)
         s
       case x => throw new MappingException("Can't convert " + x + " to TypedStruct")
     }
@@ -88,7 +96,10 @@ class TypedStructSerializer extends Serializer[ITypedStruct] {
   }
 }
 
-class TypedReferenceableInstanceSerializer extends Serializer[ITypedReferenceableInstance] {
+class TypedReferenceableInstanceSerializer(val typSystem : Option[MetadataService] = None)
+  extends Serializer[ITypedReferenceableInstance] {
+
+  def currentMdSvc = typSystem.getOrElse(MetadataService.getCurrentService())
 
   def deserialize(implicit format: Formats) = {
     case (TypeInfo(clazz, ptype), json) if classOf[ITypedReferenceableInstance].isAssignableFrom(clazz) => json match {
@@ -120,11 +131,11 @@ class TypedReferenceableInstanceSerializer extends Serializer[ITypedReferenceabl
         }
 
         val typName = typField.get._2.asInstanceOf[JString].s
-        val sT = MetadataService.getCurrentTypeSystem().getDataType(
+        val sT = currentMdSvc.getTypeSystem.getDataType(
           classOf[ClassType], typName).asInstanceOf[ClassType]
         val id = Serialization.deserializeId(idField.get._2)
         val s = sT.createInstance(id, traitNames:_*)
-        Serialization.deserializeFields(sT, s, fields)
+        Serialization.deserializeFields(currentMdSvc, sT, s, fields)
 
         traitsField.map { t =>
           val tObj :JObject = t._2.asInstanceOf[JObject]
@@ -132,10 +143,10 @@ class TypedReferenceableInstanceSerializer extends Serializer[ITypedReferenceabl
             val tName : String = oTrait._1
             val traitJObj : JObject = oTrait._2.asInstanceOf[JObject]
             val traitObj = s.getTrait(tName).asInstanceOf[ITypedStruct]
-            val tT = MetadataService.getCurrentTypeSystem().getDataType(
+            val tT = currentMdSvc.getTypeSystem.getDataType(
               classOf[TraitType], traitObj.getTypeName).asInstanceOf[TraitType]
             val(tTyp, tFields) = traitJObj.obj.partition(f => f._1 == Serialization.STRUCT_TYPE_FIELD_NAME)
-            Serialization.deserializeFields(tT, traitObj, tFields)
+            Serialization.deserializeFields(currentMdSvc, tT, traitObj, tFields)
           }
         }
 
@@ -217,23 +228,27 @@ object Serialization {
     }
   }.toList.map(_.asInstanceOf[JField])
 
-  def deserializeFields[T  <: ITypedInstance](sT : IConstructableType[_, T],
+  def deserializeFields[T  <: ITypedInstance](currentMdSvc: MetadataService,
+                                              sT : IConstructableType[_, T],
                                               s : T, fields : List[JField] )(implicit format: Formats)
-  = fields.foreach { f =>
-    val fName = f._1
-    val fInfo = sT.fieldMapping.fields(fName)
-    if ( fInfo != null ) {
-      //println(fName)
-      var v = f._2
-      if ( fInfo.dataType().getTypeCategory == TypeCategory.TRAIT ||
-        fInfo.dataType().getTypeCategory == TypeCategory.STRUCT) {
-        v = v match {
-          case JObject(sFields) =>
-            JObject(JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(fInfo.dataType.getName)) :: sFields)
-          case x => x
+  = {
+    MetadataService.setCurrentService(currentMdSvc)
+    fields.foreach { f =>
+      val fName = f._1
+      val fInfo = sT.fieldMapping.fields(fName)
+      if ( fInfo != null ) {
+        //println(fName)
+        var v = f._2
+        if ( fInfo.dataType().getTypeCategory == TypeCategory.TRAIT ||
+          fInfo.dataType().getTypeCategory == TypeCategory.STRUCT) {
+          v = v match {
+            case JObject(sFields) =>
+              JObject(JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(fInfo.dataType.getName)) :: sFields)
+            case x => x
+          }
         }
+        s.set(fName, Serialization.extract(fInfo.dataType(), v))
       }
-      s.set(fName, Serialization.extract(fInfo.dataType(), v))
     }
   }
 
