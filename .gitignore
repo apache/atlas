@@ -24,6 +24,7 @@ target
 .idea
 
 # Eclipse
+.cache
 .classpath
 .project
 .settings
