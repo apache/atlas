@@ -81,6 +81,7 @@ public class HiveLineageInfo implements NodeProcessor {
   public HiveLineageBean getHLBean() {
 	  return hlb;
   }
+  
   /**
    * Implements the process method for the NodeProcessor interface.
    */

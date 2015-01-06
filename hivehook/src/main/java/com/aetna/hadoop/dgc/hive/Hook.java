@@ -45,6 +45,7 @@ import org.apache.hadoop.util.StringUtils;
  * DGC Hook sends query + plan info to DGCCollector Service. To enable (hadoop 2.4 and up) set
  * hive.exec.pre.hooks/hive.exec.post.hooks/hive.exec.failure.hooks to include this class.
  */
+
 public class Hook implements ExecuteWithHookContext {
 
   private static final Log LOG = LogFactory.getLog(Hook.class.getName());
