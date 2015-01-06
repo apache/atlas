@@ -31,8 +31,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class MemRepository implements IRepository {
 
-    private static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-    private static SimpleDateFormat timestampFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    public static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    public static SimpleDateFormat timestampFormat = new SimpleDateFormat("yyyy-MM-dd");
 
     final TypeSystem typeSystem;
     /*

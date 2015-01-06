@@ -401,6 +401,12 @@ public class DataTypes {
             return convertNull(m);
         }
 
+        @Override
+        public void output(Date val, Appendable buf, String prefix) throws MetadataException {
+            TypeUtils.outputVal(val == null ? "<null>" :
+                    MetadataService.getCurrentRepository().getDateFormat().format(val), buf, prefix);
+        }
+
         public Date nullValue() {
             return null;
         }

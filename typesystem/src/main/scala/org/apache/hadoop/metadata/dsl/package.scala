@@ -18,6 +18,8 @@
 
 package org.apache.hadoop.metadata
 
+import java.text.SimpleDateFormat
+
 import org.apache.hadoop.metadata.json.{BigIntegerSerializer, BigDecimalSerializer, TypedStructSerializer, Serialization}
 import org.apache.hadoop.metadata.storage.StructInstance
 import org.apache.hadoop.metadata.types._
@@ -31,7 +33,12 @@ import scala.language.implicitConversions
 
 package object dsl {
 
-  implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new TypedStructSerializer +
+  val defFormat = new DefaultFormats {
+    override protected def dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
+    override val typeHints = NoTypeHints
+  }
+
+  implicit val formats = defFormat + new TypedStructSerializer +
     new BigDecimalSerializer + new BigIntegerSerializer
 
   def service = MetadataService.getCurrentService
