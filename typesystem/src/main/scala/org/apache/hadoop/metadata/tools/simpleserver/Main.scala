@@ -21,6 +21,8 @@ package org.apache.hadoop.metadata.tools.simpleserver
 import akka.actor.{Props, ActorSystem}
 import akka.io.IO
 import com.typesafe.config.ConfigFactory
+import org.apache.hadoop.metadata.storage.memory.MemRepository
+import org.apache.hadoop.metadata.types.TypeSystem
 import spray.can.Http
 
 /**
@@ -32,9 +34,14 @@ import spray.can.Http
  *    http GET localhost:9140/listTypeNames
  *    pbpaste | http PUT localhost:9140/defineTypes
  *    http GET localhost:9140/typeDetails typeNames:='["Department", "Person", "Manager"]'
+ *
+ *    pbpaste | http PUT localhost:9140/createInstance
+ *    pbpaste | http GET localhost:9140/getInstance
  *  }}}
  *
  *  - On the Mac, pbpaste makes available what is copied to clipboard. Copy contents of resources/sampleTypes.json
+ *  - for createInstance resources/sampleInstance.json is an example
+ *  - for getInstance send an Id back, you can copy the output from createInstance.
  *
  */
 object Main extends App {
@@ -44,6 +51,9 @@ object Main extends App {
 
   implicit val system = ActorSystem("metadataservice")
 
-  val api = system.actorOf(Props(new RestInterface()), "httpInterface")
+  val typSys = new TypeSystem
+  val memRepo = new MemRepository(typSys)
+
+  val api = system.actorOf(Props(new RestInterface(typSys, memRepo)), "httpInterface")
   IO(Http) ! Http.Bind(listener = api, interface = host, port = port)
 }

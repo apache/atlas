@@ -20,13 +20,17 @@ package org.apache.hadoop.metadata.tools.simpleserver
 
 import akka.actor._
 import akka.util.Timeout
+import org.apache.hadoop.metadata.{MetadataService, ITypedReferenceableInstance}
 import org.apache.hadoop.metadata.json.TypesDef
+import org.apache.hadoop.metadata.storage.Id
+import org.apache.hadoop.metadata.storage.memory.MemRepository
+import org.apache.hadoop.metadata.types.TypeSystem
 import spray.http.StatusCodes
 import spray.routing._
 import scala.concurrent.duration._
 
-class Responder(requestContext:RequestContext, ticketMaster:ActorRef) extends Actor with ActorLogging {
-  import org.apache.hadoop.metadata.tools.simpleserver.Json4sProtocol._
+class Responder(val typeSystem: TypeSystem, val memRepository : MemRepository,
+                requestContext:RequestContext, mdSvc:ActorRef) extends Actor with Json4sProtocol with ActorLogging {
   import org.apache.hadoop.metadata.tools.simpleserver.MetadataProtocol._
 
   def receive = {
@@ -42,33 +46,40 @@ class Responder(requestContext:RequestContext, ticketMaster:ActorRef) extends Ac
     case TypesCreated =>
       requestContext.complete(StatusCodes.OK)
       self ! PoisonPill
+
+    case InstanceCreated(id) =>
+      requestContext.complete(StatusCodes.OK, id)
+
+    case InstanceDetails(i) =>
+      requestContext.complete(StatusCodes.OK, i)
   }
 }
 
-class RestInterface extends HttpServiceActor
+class RestInterface(val typeSystem: TypeSystem, val memRepository : MemRepository) extends HttpServiceActor
 with RestApi {
   def receive = runRoute(routes)
 }
 
 
-trait RestApi extends HttpService with ActorLogging { actor: Actor =>
+trait RestApi extends HttpService with Json4sProtocol with ActorLogging { actor: Actor =>
   import MetadataProtocol._
   import scala.language.postfixOps
   import scala.concurrent.ExecutionContext.Implicits.global
+
+  val typeSystem : TypeSystem
+  val memRepository : MemRepository
 
   implicit val timeout = Timeout(10 seconds)
 
   import akka.pattern.{ask, pipe}
 
-  val mdSvc = context.actorOf(Props[MetadataService])
-
-  import Json4sProtocol._
+  val mdSvc = context.actorOf(Props(new MetadataActor(typeSystem, memRepository)))
 
   def routes: Route =
 
     path("listTypeNames") {
       get { requestContext =>
-        val responder : ActorRef = createResponder(requestContext)
+        val responder: ActorRef = createResponder(requestContext)
 
         pipe(mdSvc.ask(ListTypeNames))
 
@@ -90,9 +101,26 @@ trait RestApi extends HttpService with ActorLogging { actor: Actor =>
             mdSvc.ask(DefineTypes(typesDef)).pipeTo(responder)
           }
         }
+      } ~
+      path("createInstance") {
+        put {
+          entity(as[ITypedReferenceableInstance]) { i => requestContext =>
+            val responder = createResponder(requestContext)
+            mdSvc.ask(CreateInstance(i)).pipeTo(responder)
+          }
+        }
+      } ~
+      path("getInstance") {
+        get {
+          entity(as[Id]) { id => requestContext =>
+            val responder = createResponder(requestContext)
+            mdSvc.ask(GetInstance(id)).pipeTo(responder)
+          }
+        }
       }
+
   def createResponder(requestContext:RequestContext) = {
-    context.actorOf(Props(new Responder(requestContext, mdSvc)))
+    context.actorOf(Props(new Responder(typeSystem, memRepository, requestContext, mdSvc)))
   }
 
 }

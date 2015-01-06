@@ -64,12 +64,14 @@ public class DiscoverInstances implements ObjectGraphWalker.NodeProcessor {
                 if ( !idToNewIdMap.containsKey(id)) {
                     idToNewIdMap.put(id, repository.newId(id.className));
                 }
-                if ( idToInstanceMap.containsKey(ref)) {
+                if ( ref != null && idToInstanceMap.containsKey(ref)) {
                     // Oops
                     throw new RepositoryException(
                             String.format("Unexpected internal error: Id %s processed again", id));
                 }
-                idToInstanceMap.put(id, ref);
+                if ( ref != null ) {
+                    idToInstanceMap.put(id, ref);
+                }
             }
         }
     }
