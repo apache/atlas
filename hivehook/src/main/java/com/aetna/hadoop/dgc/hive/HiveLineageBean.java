@@ -11,12 +11,16 @@ public class HiveLineageBean implements Serializable {
 	 */
 		private static final long serialVersionUID = 1L;
 		public String queryId;
+		public String hiveId;
 		public String user;
 		public String queryStartTime;
 		public String queryEndTime;
 		public String query;
 		public String tableName;
 		public String tableLocation;
+		public boolean success;
+		public boolean failed;
+		public String executionEngine;
 		ArrayList<SourceTables> sourceTables;
 		ArrayList<QueryColumns> queryColumns;
 		ArrayList<WhereClause> whereClause;
@@ -32,6 +36,38 @@ public class HiveLineageBean implements Serializable {
 
 	    public void setQueryId(String queryId) {
 	        this.queryId = queryId;
+	    }
+	    
+	    public String getExecutionEngine() {
+	        return this.executionEngine ;
+	    }
+
+	    public void setExecutionEngine(String executionEngine) {
+	        this.executionEngine = executionEngine;
+	    }
+	     
+	    public String getHiveId() {
+	        return this.hiveId ;
+	    }
+
+	    public void setHiveId(String hiveId) {
+	        this.hiveId = hiveId;
+	    }
+	     
+	    public boolean getSuccess() {
+	        return this.success ;
+	    }
+
+	    public void setSuccess(boolean success) {
+	        this.success = success;
+	    }
+	    
+	    public boolean getFailed() {
+	        return this.failed ;
+	    }
+
+	    public void setFailed(boolean failed) {
+	        this.failed = failed;
 	    }
 	    
 	    
