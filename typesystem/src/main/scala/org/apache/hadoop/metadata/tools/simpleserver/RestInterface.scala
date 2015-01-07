@@ -20,8 +20,7 @@ package org.apache.hadoop.metadata.tools.simpleserver
 
 import akka.actor._
 import akka.util.Timeout
-import org.apache.hadoop.metadata.{MetadataService, ITypedReferenceableInstance}
-import org.apache.hadoop.metadata.json.TypesDef
+import org.apache.hadoop.metadata.{TypesDef, MetadataService, ITypedReferenceableInstance}
 import org.apache.hadoop.metadata.storage.Id
 import org.apache.hadoop.metadata.storage.memory.MemRepository
 import org.apache.hadoop.metadata.types.TypeSystem
