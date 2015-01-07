@@ -1,13 +1,14 @@
 package org.apache.hadoop.metadata.tools.thrift
 
 import org.json4s.NoTypeHints
-import org.json4s.native.Serialization.{write => swrite, _}
+import org.json4s.native.Serialization.{ write => swrite, _ }
 import org.json4s.native.JsonMethods._
 import org.junit.Test
 import org.junit.Assert
 import org.json4s._
 import scala.io.Source
 import scala.reflect.ClassTag
+import com.google.gson.JsonParser
 
 /**
  * Copied from
@@ -20,13 +21,12 @@ class EnumNameSerializer[E <: Enumeration: ClassTag](enum: E)
 
   val EnumerationClass = classOf[E#Value]
 
-  def deserialize(implicit format: Formats):
-  PartialFunction[(TypeInfo, JValue), E#Value] = {
+  def deserialize(implicit format: Formats): PartialFunction[(TypeInfo, JValue), E#Value] = {
     case (t @ TypeInfo(EnumerationClass, _), json) if (isValid(json)) => {
       json match {
         case JString(value) => enum.withName(value)
         case value => throw new MappingException("Can't convert " +
-          value + " to "+ EnumerationClass)
+          value + " to " + EnumerationClass)
       }
     }
   }
@@ -43,7 +43,7 @@ class EnumNameSerializer[E <: Enumeration: ClassTag](enum: E)
 
 class ThriftParserTest {
 
-  def toJson(td : ThriftDef) = {
+  def toJson(td: ThriftDef) = {
     implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new EnumNameSerializer(BASE_TYPES) +
       new EnumNameSerializer(THRIFT_LANG)
     val ser = swrite(td)
@@ -52,15 +52,17 @@ class ThriftParserTest {
 
   @Test def testSimple {
     var p = new ThriftParser
+    val parser = new JsonParser
 
-    var td : Option[ThriftDef] = p("""include "share/fb303/if/fb303.thrift"
+    var td: Option[ThriftDef] = p("""include "share/fb303/if/fb303.thrift"
 
                              namespace java org.apache.hadoop.hive.metastore.api
                              namespace php metastore
                              namespace cpp Apache.Hadoop.Hive
                                    """)
 
-    Assert.assertEquals(toJson(td.get), """{
+    val parsed = parser.parse(toJson(td.get))
+    val sample = parser.parse("""{
   "includes":[{
     "value":"share/fb303/if/fb303.thrift"
   }],
@@ -87,15 +89,22 @@ class ThriftParserTest {
   "xceptions":[],
   "services":[]
 }""")
+
+    Assert.assertEquals(parsed, sample)
   }
 
   @Test def testStruct {
     val p = new ThriftParser
-    var td: Option[ThriftDef] = p( """struct PartitionSpecWithSharedSD {
+    val parser = new JsonParser
+
+    var td: Option[ThriftDef] = p("""struct PartitionSpecWithSharedSD {
            1: list<PartitionWithoutSD> partitions,
            2: StorageDescriptor sd
          }""")
-    Assert.assertEquals(toJson(td.get), """{
+
+    val parsed = parser.parse(toJson(td.get))
+
+    val sample = parser.parse("""{
   "includes":[],
   "cppIncludes":[],
   "namespaces":[],
@@ -136,11 +145,15 @@ class ThriftParserTest {
   "xceptions":[],
   "services":[]
 }""")
+
+    Assert.assertEquals(parsed, sample)
   }
 
   @Test def testTableStruct {
     val p = new ThriftParser
-    var td : Option[ThriftDef] = p("""// table information
+    val parser = new JsonParser
+
+    var td: Option[ThriftDef] = p("""// table information
          struct Table {
            1: string tableName,                // name of the table
            2: string dbName,                   // database name ('default')
@@ -157,7 +170,9 @@ class ThriftParserTest {
            13: optional PrincipalPrivilegeSet privileges,
            14: optional bool temporary=false
          }""")
-    Assert.assertEquals(toJson(td.get), """{
+
+    val parsed = parser.parse(toJson(td.get))
+    val sample = parser.parse("""{
   "includes":[],
   "cppIncludes":[],
   "namespaces":[],
@@ -338,6 +353,8 @@ class ThriftParserTest {
   "xceptions":[],
   "services":[]
 }""")
+
+    Assert.assertEquals(parsed, sample)
   }
 
   @Test def testHiveThrift {
@@ -348,11 +365,13 @@ class ThriftParserTest {
     var td: Option[ThriftDef] = p(t)
     Assert.assertTrue(td.isDefined)
     //println(toJson(td.get))
-    }
-        
+  }
+
   @Test def testService {
     val p = new ThriftParser
-    var td : Option[ThriftDef] = p("""/**
+    val parser = new JsonParser
+
+    var td: Option[ThriftDef] = p("""/**
              * This interface is live.
              */
              service ThriftHiveMetastore extends fb303.FacebookService
@@ -368,7 +387,9 @@ class ThriftParserTest {
                void alter_database(1:string dbname, 2:Database db) throws(1:MetaException o1, 2:NoSuchObjectException o2)
 
              }""")
-    Assert.assertEquals(toJson(td.get), """{
+
+    val parsed = parser.parse(toJson(td.get))
+    val sample = parser.parse("""{
   "includes":[],
   "cppIncludes":[],
   "namespaces":[],
@@ -727,6 +748,9 @@ class ThriftParserTest {
       }]
     }]
   }]
-}""")  }
-        
+}""")
+
+    Assert.assertEquals(parsed, sample)
+  }
+
 }
