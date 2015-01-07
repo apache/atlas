@@ -19,17 +19,14 @@
 package org.apache.hadoop.metadata.json
 
 import com.google.common.collect.ImmutableList
-import org.apache.hadoop.metadata.MetadataException
+import org.apache.hadoop.metadata.{TypesDef, MetadataException}
 import org.apache.hadoop.metadata.types.DataTypes.{ArrayType, MapType, TypeCategory}
 import org.apache.hadoop.metadata.types._
 import org.json4s.JsonAST.JString
 import org.json4s._
 import org.json4s.native.Serialization._
 
-case class TypesDef(enumTypes: Seq[EnumTypeDefinition],
-                    structTypes: Seq[StructTypeDefinition],
-                    traitTypes: Seq[HierarchicalTypeDefinition[TraitType]],
-                    classTypes: Seq[HierarchicalTypeDefinition[ClassType]])
+
 
 /**
  * Module for serializing to/from Json.
