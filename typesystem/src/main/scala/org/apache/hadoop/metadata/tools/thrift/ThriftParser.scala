@@ -18,6 +18,9 @@
 
 package org.apache.hadoop.metadata.tools.thrift
 
+import org.apache.hadoop.metadata.MetadataException
+import org.apache.hadoop.metadata.types.DataTypes
+
 import scala.util.parsing.combinator.{ImplicitConversions, PackratParsers}
 import scala.util.parsing.combinator.lexical.StdLexical
 import scala.util.parsing.combinator.syntactical.StandardTokenParsers
@@ -34,6 +37,19 @@ object BASE_TYPES extends Enumeration {
   val I32 = Value("i32")
   val I64 = Value("i64")
   val DOUBLE = Value("double")
+
+  @throws[MetadataException]
+  def toPrimitiveTypeName(t : BASE_TYPES.Value) : String = t match {
+    case STRING => DataTypes.STRING_TYPE.getName
+    case SLIST => DataTypes.STRING_TYPE.getName
+    case BOOLEAN => DataTypes.BOOLEAN_TYPE.getName
+    case BYTE => DataTypes.BYTE_TYPE.getName
+    case I16 => DataTypes.SHORT_TYPE.getName
+    case I32 => DataTypes.INT_TYPE.getName
+    case I64 => DataTypes.LONG_TYPE.getName
+    case DOUBLE => DataTypes.DOUBLE_TYPE.getName
+    case _ => throw new MetadataException(s"Thrift BaseType ($t) not supported")
+  }
 }
 
 object THRIFT_LANG extends Enumeration {
