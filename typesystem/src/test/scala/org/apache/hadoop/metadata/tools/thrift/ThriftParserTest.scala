@@ -90,7 +90,7 @@ class ThriftParserTest {
   "services":[]
 }""")
 
-    Assert.assertEquals(parsed, sample)
+    Assert.assertEquals(parsed.toString, sample.toString)
   }
 
   @Test def testStruct {
@@ -146,7 +146,7 @@ class ThriftParserTest {
   "services":[]
 }""")
 
-    Assert.assertEquals(parsed, sample)
+    Assert.assertEquals(parsed.toString, sample.toString)
   }
 
   @Test def testTableStruct {
@@ -354,7 +354,7 @@ class ThriftParserTest {
   "services":[]
 }""")
 
-    Assert.assertEquals(parsed, sample)
+    Assert.assertEquals(parsed.toString, sample.toString)
   }
 
   @Test def testHiveThrift {
@@ -750,7 +750,7 @@ class ThriftParserTest {
   }]
 }""")
 
-    Assert.assertEquals(parsed, sample)
+    Assert.assertEquals(parsed.toString, sample.toString)
   }
 
 }
