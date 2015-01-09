@@ -52,12 +52,12 @@ class IdSerializer extends CustomSerializer[Id](format => ( {
     JField("version", JInt(version)) :: Nil) => new Id(id.toLong, version.toInt, className)
   case JObject(JField("id", JString(id)) ::
     JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(className)) ::
-    JField("version", JString(version)) :: Nil) => new Id(id.toLong, version.toInt, className)
+    JField("version", JString(version)) :: Nil) => new Id(id, version.toInt, className)
   case JObject(JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(className)) ::
     JField("id", JString(id)) ::
-    JField("version", JString(version)) :: Nil) => new Id(id.toLong, version.toInt, className)
+    JField("version", JString(version)) :: Nil) => new Id(id, version.toInt, className)
 }, {
-  case id: Id => JObject(JField("id", JInt(id.id)),
+  case id: Id => JObject(JField("id", JString(id.id)),
     JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(id.className)),
     JField("version", JInt(id.version)))
 }
@@ -106,6 +106,9 @@ class TypedReferenceableInstanceSerializer(val typSystem : Option[MetadataServic
       case JObject(JField("id", JInt(id)) ::
         JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(className)) ::
         JField("version", JInt(version)) :: Nil) => new Id(id.toLong, version.toInt, className)
+      case JObject(JField("id", JString(id)) ::
+        JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(className)) ::
+        JField("version", JInt(version)) :: Nil) => new Id(id, version.toInt, className)
       case JObject(fs) =>
         var typField : Option[JField] = None
         var idField : Option[JField] = None
@@ -205,7 +208,7 @@ object Serialization {
       Extraction.extract[ITypedReferenceableInstance](value)
   }
 
-  def serializeId(id : Id) = JObject(JField("id", JInt(id.id)),
+  def serializeId(id : Id) = JObject(JField("id", JString(id.id)),
     JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(id.className)),
     JField("version", JInt(id.version)))
 
@@ -256,6 +259,9 @@ object Serialization {
     case JObject(JField("id", JInt(id)) ::
       JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(className)) ::
       JField("version", JInt(version)) :: Nil) => new Id(id.toLong, version.toInt, className)
+    case JObject(JField("id", JString(id)) ::
+      JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(className)) ::
+      JField("version", JInt(version)) :: Nil) => new Id(id, version.toInt, className)
   }
 
   def toJson(value : ITypedReferenceableInstance) : String = {

@@ -31,22 +31,31 @@ import java.util.Date;
 
 public class Id implements ITypedReferenceableInstance {
 
-    public final long id;
+    public final String id;
     public final String className;
     public final int version;
 
-    public Id(long id, int version, String className) {
+    public Id(String id, int version, String className) {
         this.id = id;
         this.className = className;
         this.version = version;
     }
 
+    public Id(long id, int version, String className) {
+        this("" + id, version, className);
+    }
+
     public Id(String className) {
-        this(-System.nanoTime(), 0, className);
+        this("" + (-System.nanoTime()), 0, className);
     }
 
     public boolean isUnassigned() {
-        return id < 0;
+        try {
+            long l = Long.parseLong(id);
+            return l < 0;
+        } catch(NumberFormatException ne) {
+            return false;
+        }
     }
 
     public String toString() {
@@ -56,20 +65,20 @@ public class Id implements ITypedReferenceableInstance {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || !ITypedReferenceableInstance.class.isAssignableFrom(o.getClass())) return false;
+        if (o == null || getClass() != o.getClass()) return false;
 
-        Id id1 = ((ITypedReferenceableInstance)o).getId();
+        Id id1 = (Id) o;
 
-        if (id != id1.id) return false;
         if (version != id1.version) return false;
         if (!className.equals(id1.className)) return false;
+        if (!id.equals(id1.id)) return false;
 
         return true;
     }
 
     @Override
     public int hashCode() {
-        int result = (int) (id ^ (id >>> 32));
+        int result = id.hashCode();
         result = 31 * result + className.hashCode();
         result = 31 * result + version;
         return result;

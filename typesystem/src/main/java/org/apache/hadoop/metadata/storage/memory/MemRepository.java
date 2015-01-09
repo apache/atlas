@@ -63,7 +63,7 @@ public class MemRepository implements IRepository {
 
     @Override
     public Id newId(String typeName) {
-        return new Id(ID_SEQ.incrementAndGet(), 0, typeName);
+        return new Id("" + ID_SEQ.incrementAndGet(), 0, typeName);
     }
 
     /**
