@@ -24,20 +24,14 @@ import org.apache.hadoop.metadata.IReferenceableInstance;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.types.DataTypes;
 import org.apache.hadoop.metadata.types.ObjectGraphWalker;
-import org.apache.hadoop.metadata.IReferenceableInstance;
-import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.types.DataTypes;
-import org.apache.hadoop.metadata.types.ObjectGraphWalker;
 
 import java.util.Map;
 
 public class MapIds implements ObjectGraphWalker.NodeProcessor {
 
-    final IRepository repository;
     final Map<Id, Id> idToNewIdMap;
 
-    public MapIds(IRepository repository, Map<Id, Id> idToNewIdMap) {
-        this.repository = repository;
+    public MapIds(Map<Id, Id> idToNewIdMap) {
         this.idToNewIdMap = idToNewIdMap;
     }
 

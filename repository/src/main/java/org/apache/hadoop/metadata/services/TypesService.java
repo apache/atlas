@@ -18,22 +18,10 @@
 
 package org.apache.hadoop.metadata.services;
 
-import org.apache.hadoop.metadata.IReferenceableInstance;
-import org.apache.hadoop.metadata.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.service.Service;
-import org.apache.hadoop.metadata.storage.RepositoryException;
+import org.apache.hadoop.metadata.types.TypeSystem;
 
-import java.util.List;
+public interface TypesService extends Service {
 
-/**
- * An interface for persisting metadata into a blueprints enabled graph db.
- */
-public interface MetadataRepositoryService extends Service {
-
-    String createEntity(IReferenceableInstance entity,
-                        String entityType) throws RepositoryException;
-
-    ITypedReferenceableInstance getEntityDefinition(String guid) throws RepositoryException;
-
-    List<String> getEntityList(String entityType) throws RepositoryException;
+    TypeSystem getTypeSystem();
 }

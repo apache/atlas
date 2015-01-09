@@ -20,13 +20,16 @@ package org.apache.hadoop.metadata.web.resources;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.io.IOUtils;
+import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.service.Services;
-import org.apache.hadoop.metadata.services.GraphBackedMetadataRepositoryService;
-import org.apache.hadoop.metadata.services.MetadataRepositoryService;
+import org.apache.hadoop.metadata.services.DefaultMetadataService;
+import org.apache.hadoop.metadata.services.MetadataService;
 import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -54,11 +57,13 @@ import java.io.StringWriter;
 @Path("entities")
 public class EntityResource {
 
-    private MetadataRepositoryService repositoryService;
+    private static final Logger LOG = LoggerFactory.getLogger(EntityResource.class);
+
+    private MetadataService metadataService;
 
     public EntityResource() {
-        repositoryService = Services.get().getService(GraphBackedMetadataRepositoryService.NAME);
-        if (repositoryService == null) {
+        metadataService = Services.get().getService(DefaultMetadataService.NAME);
+        if (metadataService == null) {
             throw new RuntimeException("graph service is not initialized");
         }
     }
@@ -74,7 +79,7 @@ public class EntityResource {
             System.out.println("entity = " + entity);
             validateEntity(entity, entityType);
 
-            final String guid = repositoryService.submitEntity(entity, entityType);
+            final String guid = metadataService.createEntity(entity, entityType);
             JSONObject response = new JSONObject();
             response.put("GUID", guid);
 
@@ -102,8 +107,22 @@ public class EntityResource {
     @Path("definition/{guid}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getEntityDefinition(@PathParam("guid") String guid) {
+        Preconditions.checkNotNull(guid, "guid cannot be null");
 
-        return Response.ok().build();
+        try {
+            final String entityDefinition = metadataService.getEntityDefinition(guid);
+            return (entityDefinition == null)
+                    ? Response.status(Response.Status.NOT_FOUND).build()
+                    : Response.ok(entityDefinition).build();
+        } catch (MetadataException e) {
+            LOG.error("Action failed: {}\nError: {}",
+                    Response.Status.INTERNAL_SERVER_ERROR, e.getMessage());
+            throw new WebApplicationException(e, Response
+                    .status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(e.getMessage())
+                    .type(MediaType.APPLICATION_JSON)
+                    .build());
+        }
     }
 
     @GET
@@ -111,10 +130,16 @@ public class EntityResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getEntityDefinition(@PathParam("entityType") String entityType,
                                         @PathParam("entityName") String entityName) {
-        final String entityDefinition = repositoryService.getEntityDefinition(entityName, entityType);
-        return (entityDefinition == null)
-                ? Response.status(Response.Status.NOT_FOUND).build()
-                : Response.ok(entityDefinition).build();
+        return Response.status(Response.Status.SERVICE_UNAVAILABLE).build();
+    }
+
+    @GET
+    @Path("list/{entityType}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getEntityList(@PathParam("entityType") String entityType,
+                                  @DefaultValue("0") @QueryParam("offset") Integer offset,
+                                  @QueryParam("numResults") Integer resultsPerPage) {
+        return Response.ok().build();
     }
 
     @POST
@@ -159,15 +184,6 @@ public class EntityResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getDependencies(@PathParam("entityType") String entityType,
                                     @PathParam("entityName") String entityName) {
-        return Response.ok().build();
-    }
-
-    @GET
-    @Path("list/{entityType}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getEntityList(@PathParam("entityType") String entityType,
-                                  @DefaultValue("0") @QueryParam("offset") Integer offset,
-                                  @QueryParam("numResults") Integer resultsPerPage) {
         return Response.ok().build();
     }
 }

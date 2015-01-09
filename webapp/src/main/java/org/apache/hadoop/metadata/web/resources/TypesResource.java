@@ -42,6 +42,14 @@ public class TypesResource {
         return Response.ok().build();
     }
 
+    @GET
+    @Path("definition/{type}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getDefinition(@Context HttpServletRequest request,
+                                  @PathParam("type") String type) {
+        return Response.ok().build();
+    }
+
     @DELETE
     @Path("delete/{type}")
     @Produces(MediaType.APPLICATION_JSON)

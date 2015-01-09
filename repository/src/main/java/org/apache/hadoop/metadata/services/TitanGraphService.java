@@ -141,14 +141,15 @@ public class TitanGraphService implements GraphService {
         }
 
         LOG.info("Indexes do not exist, Creating indexes for titanGraph using indexer.properties.");
-        
-        Configuration indexConfig = getConfiguration("indexer.properties", INDEXER_PREFIX);
-        
+
 		TitanManagement mgmt = titanGraph.getManagementSystem();
 		mgmt.buildIndex("mainIndex", Vertex.class).buildMixedIndex("search");
 		TitanGraphIndex graphIndex = mgmt.getGraphIndex("mainIndex");
 
-		// Properties are formatted: prop_name:type;prop_name:type
+        mgmt.addIndexKey(graphIndex, mgmt.makePropertyKey("guid").dataType(String.class).make());
+
+        Configuration indexConfig = getConfiguration("indexer.properties", INDEXER_PREFIX);
+        // Properties are formatted: prop_name:type;prop_name:type
 		// E.g. Name:String;Date:Long
 		if (!indexConfig.isEmpty()) {
 

@@ -587,6 +587,12 @@
 
             <dependency>
                 <groupId>org.apache.hadoop.metadata</groupId>
+                <artifactId>metadata-typesystem</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.hadoop.metadata</groupId>
                 <artifactId>metadata-repository</artifactId>
                 <version>${project.version}</version>
             </dependency>

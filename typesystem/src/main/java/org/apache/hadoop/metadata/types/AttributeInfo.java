@@ -49,4 +49,15 @@ public class AttributeInfo {
     void setDataType(IDataType dT) {
         dataType = dT;
     }
+
+    @Override
+    public String toString() {
+        return "AttributeInfo{" +
+                "name='" + name + '\'' +
+                ", dataType=" + dataType +
+                ", multiplicity=" + multiplicity +
+                ", isComposite=" + isComposite +
+                ", reverseAttributeName='" + reverseAttributeName + '\'' +
+                '}';
+    }
 }

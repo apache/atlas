@@ -5,6 +5,10 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.io.graphson.GraphSONMode;
+import com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +24,16 @@ public final class GraphUtils {
     private static final Logger LOG = LoggerFactory.getLogger(GraphUtils.class);
 
     private GraphUtils() {
+    }
+
+    public static Vertex findVertex(Graph blueprintsGraph,
+                                    String guid) {
+        LOG.debug("Finding vertex for: guid={}", guid);
+
+        GraphQuery query = blueprintsGraph.query().has("guid", guid);
+        Iterator<Vertex> results = query.vertices().iterator();
+        // returning one since name/type is unique
+        return results.hasNext() ? results.next() : null;
     }
 
     public static Vertex findVertex(Graph blueprintsGraph,
@@ -52,6 +66,10 @@ public final class GraphUtils {
         }
 
         return "v[" + vertex.getId() + "], Properties[" + properties + "]";
+    }
+
+    public static JSONObject vertexJSON(final Vertex vertex) throws JSONException {
+        return GraphSONUtility.jsonFromElement(vertex, null, GraphSONMode.NORMAL);
     }
 
     public static String edgeString(final Edge edge) {

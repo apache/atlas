@@ -73,6 +73,11 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.hadoop.metadata</groupId>
+            <artifactId>metadata-typesystem</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
         </dependency>

@@ -69,6 +69,11 @@
         <appender-ref ref="FILE"/>
     </logger>
 
+    <logger name="com.thinkaurelius.titan" additivity="false">
+        <level value="warn"/>
+        <appender-ref ref="FILE"/>
+    </logger>
+
     <root>
         <priority value="debug"/>
         <appender-ref ref="console"/>

@@ -142,7 +142,7 @@ public class MemRepository implements IRepository {
                 /*
                  * Now replace old references with new Ids
                  */
-                MapIds mapIds = new MapIds(this, discoverInstances.idToNewIdMap);
+                MapIds mapIds = new MapIds(discoverInstances.idToNewIdMap);
                 new ObjectGraphWalker(typeSystem, mapIds, newInstances).walk();
 
             } catch (MetadataException me) {
