@@ -23,4 +23,25 @@ import org.apache.hadoop.metadata.types._
 case class TypesDef(enumTypes: Seq[EnumTypeDefinition],
                     structTypes: Seq[StructTypeDefinition],
                     traitTypes: Seq[HierarchicalTypeDefinition[TraitType]],
-                    classTypes: Seq[HierarchicalTypeDefinition[ClassType]])
+                    classTypes: Seq[HierarchicalTypeDefinition[ClassType]]) {
+
+  def enumTypesAsJavaList() =  {
+    import scala.collection.JavaConverters._
+    enumTypes.asJava
+  }
+
+  def structTypesAsJavaList() =  {
+    import scala.collection.JavaConverters._
+    structTypes.asJava
+  }
+
+  def traitTypesAsJavaList() =  {
+    import scala.collection.JavaConverters._
+    traitTypes.asJava
+  }
+
+  def classTypesAsJavaList() =  {
+    import scala.collection.JavaConverters._
+    classTypes.asJava
+  }
+}

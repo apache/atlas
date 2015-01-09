@@ -21,6 +21,7 @@ package org.apache.hadoop.metadata.types;
 import com.google.common.collect.ImmutableList;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.TypesDef;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
@@ -117,6 +118,22 @@ public class TypeSystem {
                 ImmutableList.<HierarchicalTypeDefinition<TraitType>>copyOf(traitDefs),
                 ImmutableList.<HierarchicalTypeDefinition<ClassType>>of());
         return transientTypes.defineTypes();
+    }
+
+    public Map<String, IDataType> defineTypes(TypesDef typesDef)
+            throws MetadataException {
+
+        for(EnumTypeDefinition enumDef : typesDef.enumTypesAsJavaList()) {
+            defineEnumType(enumDef);
+        }
+
+        ImmutableList<StructTypeDefinition> structDefs = ImmutableList.copyOf(typesDef.structTypesAsJavaList());
+        ImmutableList<HierarchicalTypeDefinition<TraitType>> traitDefs =
+                ImmutableList.copyOf(typesDef.traitTypesAsJavaList());
+        ImmutableList<HierarchicalTypeDefinition<ClassType>> classDefs =
+                ImmutableList.copyOf(typesDef.classTypesAsJavaList());
+
+        return defineTypes(structDefs, traitDefs, classDefs);
     }
 
     public Map<String, IDataType> defineTypes(ImmutableList<StructTypeDefinition> structDefs,
