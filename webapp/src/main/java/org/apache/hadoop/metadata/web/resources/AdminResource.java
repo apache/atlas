@@ -23,6 +23,7 @@ import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
+import javax.inject.Singleton;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -34,6 +35,7 @@ import javax.ws.rs.core.Response;
  * Jersey Resource for admin operations.
  */
 @Path("admin")
+@Singleton
 public class AdminResource {
 
     @GET

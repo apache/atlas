@@ -18,25 +18,12 @@
 
 package org.apache.hadoop.metadata.web.resources;
 
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.blueprints.Graph;
-import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.blueprints.VertexQuery;
-import com.tinkerpop.blueprints.util.io.graphson.GraphSONMode;
-import com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility;
-import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.metadata.service.Services;
-import org.apache.hadoop.metadata.services.GraphService;
-import org.apache.hadoop.metadata.services.TitanGraphService;
-import org.apache.hadoop.metadata.web.util.Servlets;
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -46,9 +33,24 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.metadata.services.GraphService;
+import org.apache.hadoop.metadata.web.util.Servlets;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.blueprints.Graph;
+import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.VertexQuery;
+import com.tinkerpop.blueprints.util.io.graphson.GraphSONMode;
+import com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility;
 
 /**
  * Jersey Resource for lineage metadata operations.
@@ -59,22 +61,25 @@ import java.util.Set;
  * for accessing the backend graph.
  */
 @Path("graph")
+@Singleton
 public class RexsterGraphResource {
     private static final Logger LOG = LoggerFactory.getLogger(RexsterGraphResource.class);
 
     public static final String RESULTS = "results";
     public static final String TOTAL_SIZE = "totalSize";
 
-    private GraphService graphService;
+    private final GraphService graphService;
 
-    public RexsterGraphResource() {
-        graphService = Services.get().getService(TitanGraphService.NAME);
+    @Inject
+    public RexsterGraphResource(GraphService graphService) {
+    	this.graphService = graphService;
+        /*graphService = Services.get().getService(TitanGraphService.NAME);
         if (graphService == null) {
             throw new WebApplicationException(Response
                     .status(Response.Status.INTERNAL_SERVER_ERROR)
                     .tag("graph service is not initialized")
                     .build());
-        }
+        }*/
     }
 
     protected Graph getGraph() {

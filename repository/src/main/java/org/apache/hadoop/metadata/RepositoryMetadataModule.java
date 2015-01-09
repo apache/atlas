@@ -24,12 +24,45 @@
  */
 package org.apache.hadoop.metadata;
 
+import org.apache.hadoop.metadata.services.GraphBackedMetadataRepositoryService;
+import org.apache.hadoop.metadata.services.GraphProvider;
+import org.apache.hadoop.metadata.services.GraphService;
+import org.apache.hadoop.metadata.services.GraphServiceConfigurator;
+import org.apache.hadoop.metadata.services.MetadataRepositoryService;
+import org.apache.hadoop.metadata.services.TitanGraphProvider;
+
+import com.google.inject.throwingproviders.ThrowingProviderBinder;
+import com.thinkaurelius.titan.core.TitanGraph;
+
 /**
  * Guice module for Repository module.
  */
 public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
 
-    protected void configure() {
-        // add configuration logic here
-    }
+	// Graph Service implementation class
+	private Class<? extends GraphService> graphServiceClass;
+	// MetadataRepositoryService implementation class
+	private Class<? extends MetadataRepositoryService> metadataRepoClass;
+
+	public RepositoryMetadataModule() {
+		GraphServiceConfigurator gsp = new GraphServiceConfigurator();
+
+		this.graphServiceClass = gsp.getImplClass();
+		this.metadataRepoClass = GraphBackedMetadataRepositoryService.class;
+	}
+
+	protected void configure() {
+		// special wiring for Titan Graph
+		ThrowingProviderBinder.create(binder())
+				.bind(GraphProvider.class, TitanGraph.class)
+				.to(TitanGraphProvider.class);
+
+		// allow for dynamic binding of the metadata repo service & graph
+		// service
+
+		// bind the MetadataRepositoryService interface to an implementation
+		bind(MetadataRepositoryService.class).to(metadataRepoClass);
+		// bind the GraphService interface to an implementation
+		bind(GraphService.class).to(graphServiceClass);
+	}
 }

@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
+
 import org.apache.hadoop.metadata.service.Services;
 import org.apache.hadoop.metadata.util.GraphUtils;
 import org.json.simple.JSONValue;
@@ -34,6 +35,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.inject.Inject;
+
 /**
  * An implementation backed by Titan Graph DB.
  */
@@ -44,6 +47,11 @@ public class GraphBackedMetadataRepositoryService implements MetadataRepositoryS
     public static final String NAME = GraphBackedMetadataRepositoryService.class.getSimpleName();
 
     private GraphService graphService;
+    
+    @Inject
+    GraphBackedMetadataRepositoryService(GraphService service) {
+    	this.graphService = service;
+    }
 
     /**
      * Name of the service.
@@ -62,11 +70,6 @@ public class GraphBackedMetadataRepositoryService implements MetadataRepositoryS
      */
     @Override
     public void start() throws Exception {
-        if (Services.get().isRegistered(TitanGraphService.NAME)) {
-            graphService = Services.get().getService(TitanGraphService.NAME);
-        } else {
-            throw new RuntimeException("graph service is not initialized");
-        }
     }
 
     /**

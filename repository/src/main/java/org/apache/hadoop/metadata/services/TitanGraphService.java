@@ -41,109 +41,98 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import javax.inject.Inject;
+
 /**
  * Default implementation for Graph service backed by Titan.
  */
 public class TitanGraphService implements GraphService {
 
-    private static final Logger LOG = LoggerFactory.getLogger(TitanGraphService.class);
-    public static final String NAME = TitanGraphService.class.getSimpleName();
+	private static final Logger LOG = LoggerFactory.getLogger(TitanGraphService.class);
+	public static final String NAME = TitanGraphService.class.getSimpleName();
 
-    /**
-     * Constant for the configuration property that indicates the prefix.
-     */
-    private static final String METADATA_PREFIX = "metadata.graph.";
-    private static final String INDEXER_PREFIX = "metadata.indexer.vertex.";
-    private static final List<String> acceptedTypes = Arrays.asList("String","Int","Long");
+	/**
+	 * Constant for the configuration property that indicates the prefix.
+	 */
+	private static final String INDEXER_PREFIX = "metadata.indexer.vertex.";
+	private static final List<String> acceptedTypes = Arrays.asList("String", "Int", "Long");
 
-    private TitanGraph titanGraph;
-    private Set<String> vertexIndexedKeys;
-    private Set<String> edgeIndexedKeys;
+	private final TitanGraph titanGraph;
 
-    /**
-     * Name of the service.
-     *
-     * @return name of the service
-     */
-    @Override
-    public String getName() {
-        return NAME;
-    }
+	@Inject
+	TitanGraphService(GraphProvider<TitanGraph> graph) throws ConfigurationException {
+		this.titanGraph = graph.get();
+		// TODO decouple from Service class and run start() here
+		// can use a shutdown hook to run the stop() method
+		// this.start();
+	}
 
-    /**
-     * Starts the service. This method blocks until the service has completely started.
-     *
-     * @throws Exception
-     */
-    @Override
-    public void start() throws Exception {
-        Configuration graphConfig = getConfiguration();
-        titanGraph = initializeGraphDB(graphConfig);
+	/**
+	 * Name of the service.
+	 *
+	 * @return name of the service
+	 */
+	@Override
+	public String getName() {
+		return NAME;
+	}
 
-        createIndicesForVertexKeys();
-        // todo - create Edge Cardinality Constraints
-        LOG.info("Initialized titanGraph db: {}", titanGraph);
+	/**
+	 * Starts the service. This method blocks until the service has completely
+	 * started.
+	 *
+	 * @throws Exception
+	 */
+	@Override
+	public void start() throws Exception {
+		createIndicesForVertexKeys();
+		// todo - create Edge Cardinality Constraints
+		LOG.info("Initialized titanGraph db: {}", titanGraph);
 
-        vertexIndexedKeys = getIndexableGraph().getIndexedKeys(Vertex.class);
-        LOG.info("Init vertex property keys: {}", vertexIndexedKeys);
+		Set<String> vertexIndexedKeys = getVertexIndexedKeys();
+		LOG.info("Init vertex property keys: {}", vertexIndexedKeys);
 
-        edgeIndexedKeys = getIndexableGraph().getIndexedKeys(Edge.class);
-        LOG.info("Init edge property keys: {}", edgeIndexedKeys);
-    }
+		Set<String> edgeIndexedKeys = getEdgeIndexedKeys();
+		LOG.info("Init edge property keys: {}", edgeIndexedKeys);
+	}
 
-    private static Configuration getConfiguration() throws ConfigurationException {
-        PropertiesConfiguration configProperties =
-                new PropertiesConfiguration("application.properties");
+	private static Configuration getConfiguration(String filename, String prefix)
+			throws ConfigurationException {
+		PropertiesConfiguration configProperties = new PropertiesConfiguration(
+				filename);
 
-        Configuration graphConfig = new PropertiesConfiguration();
-        final Iterator<String> iterator = configProperties.getKeys();
-        while (iterator.hasNext()) {
-            String key = iterator.next();
-            if (key.startsWith(METADATA_PREFIX)) {
-                String value = (String) configProperties.getProperty(key);
-                key = key.substring(METADATA_PREFIX.length());
-                graphConfig.setProperty(key, value);
-            }
-        }
+		Configuration graphConfig = new PropertiesConfiguration();
 
-        return graphConfig;
-    }
-    
-    private static Configuration getConfiguration(String filename, String prefix) throws ConfigurationException {
-        PropertiesConfiguration configProperties =
-                new PropertiesConfiguration(filename);
+		final Iterator<String> iterator = configProperties.getKeys();
+		while (iterator.hasNext()) {
+			String key = iterator.next();
+			if (key.startsWith(prefix)) {
+				String value = (String) configProperties.getProperty(key);
+				key = key.substring(prefix.length());
+				graphConfig.setProperty(key, value);
+			}
+		}
 
-        Configuration graphConfig = new PropertiesConfiguration();
-        
-        final Iterator<String> iterator = configProperties.getKeys();
-        while (iterator.hasNext()) {
-            String key = iterator.next();
-            if (key.startsWith(prefix)) {
-                String value = (String) configProperties.getProperty(key);
-                key = key.substring(prefix.length());
-                graphConfig.setProperty(key, value);
-            }
-        }
+		return graphConfig;
+	}
 
-        return graphConfig;
-    }
+	protected TitanGraph initializeGraphDB(Configuration graphConfig) {
+		LOG.info("Initializing titanGraph db");
+		return TitanFactory.open(graphConfig);
+	}
 
-    protected TitanGraph initializeGraphDB(Configuration graphConfig) {
-        LOG.info("Initializing titanGraph db");
-        return TitanFactory.open(graphConfig);
-    }
+	protected void createIndicesForVertexKeys() throws ConfigurationException {
 
-    protected void createIndicesForVertexKeys() throws ConfigurationException {
-    	
-        if (!titanGraph.getIndexedKeys(Vertex.class).isEmpty()) {
-            LOG.info("Indexes already exist for titanGraph");
-            return;
-        }
+		if (!titanGraph.getIndexedKeys(Vertex.class).isEmpty()) {
+			LOG.info("Indexes already exist for titanGraph");
+			return;
+		}
 
-        LOG.info("Indexes do not exist, Creating indexes for titanGraph using indexer.properties.");
-        
-        Configuration indexConfig = getConfiguration("indexer.properties", INDEXER_PREFIX);
-        
+		LOG.info("Indexes do not exist, Creating indexes for titanGraph using indexer.properties.");
+
+		Configuration indexConfig = getConfiguration("indexer.properties",
+				INDEXER_PREFIX);
+
 		TitanManagement mgmt = titanGraph.getManagementSystem();
 		mgmt.buildIndex("mainIndex", Vertex.class).buildMixedIndex("search");
 		TitanGraphIndex graphIndex = mgmt.getGraphIndex("mainIndex");
@@ -153,95 +142,110 @@ public class TitanGraphService implements GraphService {
 		if (!indexConfig.isEmpty()) {
 
 			// Get a list of property names to iterate through...
-			List<String> propList =  new ArrayList<String>();
-			
+			List<String> propList = new ArrayList<String>();
+
 			Iterator<String> it = indexConfig.getKeys("property.name");
-		
+
 			while (it.hasNext()) {
 				propList.add(it.next());
 			}
-			
+
 			it = propList.iterator();
 			while (it.hasNext()) {
-			
-				// Pull the property name and index, so we can register the name and look up the type.
+
+				// Pull the property name and index, so we can register the name
+				// and look up the type.
 				String prop = it.next().toString();
 				String index = prop.substring(prop.lastIndexOf(".") + 1);
 				String type = null;
 				prop = indexConfig.getProperty(prop).toString();
-			
+
 				// Look up the type for the specified property name.
 				if (indexConfig.containsKey("property.type." + index)) {
-					type = indexConfig.getProperty("property.type." + index).toString();
+					type = indexConfig.getProperty("property.type." + index)
+							.toString();
 				} else {
-					throw new ConfigurationException("No type specified for property " + index + " in indexer.properties.");
+					throw new ConfigurationException(
+							"No type specified for property " + index
+									+ " in indexer.properties.");
 				}
-				
-				// Is the type submitted one of the approved ones? 
+
+				// Is the type submitted one of the approved ones?
 				if (!acceptedTypes.contains(type)) {
-					throw new ConfigurationException("The type provided in indexer.properties for property " + prop + " is not supported.  Supported types are: " + acceptedTypes.toString());
+					throw new ConfigurationException(
+							"The type provided in indexer.properties for property "
+									+ prop
+									+ " is not supported.  Supported types are: "
+									+ acceptedTypes.toString());
 				}
-			
+
 				// Add the key.
-				LOG.info("Adding property: " + prop + " to index as type: " + type);
-		 		mgmt.addIndexKey(graphIndex,mgmt.makePropertyKey(prop).dataType(type.getClass()).make());
-			
-		 	}
-		
+				LOG.info("Adding property: " + prop + " to index as type: "
+						+ type);
+				mgmt.addIndexKey(graphIndex, mgmt.makePropertyKey(prop)
+						.dataType(type.getClass()).make());
+
+			}
+
 			mgmt.commit();
 			LOG.info("Index creation complete.");
 		}
-    }
+	}
 
-    /**
-     * Stops the service. This method blocks until the service has completely shut down.
-     */
-    @Override
-    public void stop() {
-        if (titanGraph != null) {
-            titanGraph.shutdown();
-        }
-    }
+	/**
+	 * Stops the service. This method blocks until the service has completely
+	 * shut down.
+	 */
+	@Override
+	public void stop() {
+		if (titanGraph != null) {
+			titanGraph.shutdown();
+		}
+	}
 
-    /**
-     * A version of stop() that is designed to be usable in Java7 closure
-     * clauses.
-     * Implementation classes MUST relay this directly to {@link #stop()}
-     *
-     * @throws java.io.IOException never
-     * @throws RuntimeException    on any failure during the stop operation
-     */
-    @Override
-    public void close() throws IOException {
-        stop();
-    }
+	/**
+	 * A version of stop() that is designed to be usable in Java7 closure
+	 * clauses. Implementation classes MUST relay this directly to
+	 * {@link #stop()}
+	 *
+	 * @throws java.io.IOException
+	 *             never
+	 * @throws RuntimeException
+	 *             on any failure during the stop operation
+	 */
+	@Override
+	public void close() throws IOException {
+		stop();
+	}
 
-    @Override
-    public Graph getBlueprintsGraph() {
-        return titanGraph;
-    }
+	@Override
+	public Graph getBlueprintsGraph() {
+		return titanGraph;
+	}
 
-    @Override
-    public KeyIndexableGraph getIndexableGraph() {
-        return titanGraph;
-    }
+	@Override
+	public KeyIndexableGraph getIndexableGraph() {
+		return titanGraph;
+	}
 
-    @Override
-    public TransactionalGraph getTransactionalGraph() {
-        return titanGraph;
-    }
+	@Override
+	public TransactionalGraph getTransactionalGraph() {
+		return titanGraph;
+	}
 
-    public TitanGraph getTitanGraph() {
-        return titanGraph;
-    }
+	public TitanGraph getTitanGraph() {
+		return titanGraph;
+	}
 
-    @Override
-    public Set<String> getVertexIndexedKeys() {
-        return vertexIndexedKeys;
-    }
+	@Override
+	public Set<String> getVertexIndexedKeys() {
+		// this must use the graph API instead of setting this value as a class member - it can change after creation
+		return getIndexableGraph().getIndexedKeys(Vertex.class);
+	}
 
-    @Override
-    public Set<String> getEdgeIndexedKeys() {
-        return edgeIndexedKeys;
-    }
+	@Override
+	public Set<String> getEdgeIndexedKeys() {
+		// this must use the graph API instead of setting this value as a class member - it can change after creation
+		return getIndexableGraph().getIndexedKeys(Edge.class);
+	}
 }
