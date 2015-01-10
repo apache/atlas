@@ -53,6 +53,10 @@ import org.json4s.native.Serialization._
  */
 object TypesSerialization {
 
+  def toJson(ts : TypeSystem, typName : String) : String = {
+    toJson(ts, List(typName):_*)
+  }
+
   def toJson(ts : TypeSystem, typNames : String*) : String = {
     toJson(ts, (typ : IDataType[_]) => typNames.contains(typ.getName))
   }
