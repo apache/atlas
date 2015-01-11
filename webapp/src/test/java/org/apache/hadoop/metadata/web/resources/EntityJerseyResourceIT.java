@@ -18,18 +18,22 @@
 
 package org.apache.hadoop.metadata.web.resources;
 
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
-import org.json.simple.JSONValue;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+
+import org.json.simple.JSONValue;
+import org.testng.Assert;
+import org.testng.annotations.Test;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
 
 /**
  * Integration tests for Entity Jersey Resource.
@@ -44,6 +48,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testSubmitEntity() {
         String entityStream = getTestEntityJSON();
+        JsonParser parser = new JsonParser();
 
         WebResource resource = service
                 .path("api/metadata/entities/submit")
@@ -54,11 +59,15 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.POST, ClientResponse.class, entityStream);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+        
         String response = clientResponse.getEntity(String.class);
         Assert.assertNotNull(response);
+        
+        JsonElement elem = parser.parse(response);
+        String guid = elem.getAsJsonObject().get("GUID").getAsString();
 
         try {
-            Assert.assertNotNull(UUID.fromString(response));
+            Assert.assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
             Assert.fail("Response is not a guid, " + response);
         }

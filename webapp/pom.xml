@@ -132,6 +132,11 @@
 			<artifactId>guice-servlet</artifactId>
 			<version>3.0</version>
 		</dependency>
+        <dependency>
+        	<groupId>com.google.code.gson</groupId>
+        	<artifactId>gson</artifactId>
+        	<version>2.3.1</version>
+        </dependency>
 		<dependency>
 			<groupId>com.sun.jersey.contribs</groupId>
 			<artifactId>jersey-guice</artifactId>
@@ -206,15 +211,15 @@
 					<artifactId>keytool-maven-plugin</artifactId>
 					<executions>
 						<execution>
+							<id>clean</id>
 							<phase>generate-resources</phase>
-							<id>clean-server</id>
 							<goals>
 								<goal>clean</goal>
 							</goals>
 						</execution>
 						<execution>
+							<id>genkey</id>
 							<phase>generate-resources</phase>
-							<id>server</id>
 							<goals>
 								<goal>generateKeyPair</goal>
 							</goals>
@@ -251,6 +256,7 @@
 							</connector>
 						</connectors>
 						<webApp>${project.build.directory}/metadata-webapp-${project.version}</webApp>
+						<contextPath>/</contextPath>
 						<useTestClasspath>true</useTestClasspath>
 						<systemProperties>
 							<systemProperty>
