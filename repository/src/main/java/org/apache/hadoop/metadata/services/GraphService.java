@@ -18,12 +18,13 @@
 
 package org.apache.hadoop.metadata.services;
 
+import java.util.Set;
+
+import org.apache.hadoop.metadata.service.Service;
+
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
-import org.apache.hadoop.metadata.service.Service;
-
-import java.util.Set;
 
 /**
  * A blueprints based graph service.

@@ -18,18 +18,6 @@
 
 package org.apache.hadoop.metadata.services;
 
-import com.google.common.base.Preconditions;
-import com.tinkerpop.blueprints.Graph;
-import com.tinkerpop.blueprints.TransactionalGraph;
-import com.tinkerpop.blueprints.Vertex;
-
-import org.apache.hadoop.metadata.service.Services;
-import org.apache.hadoop.metadata.util.GraphUtils;
-import org.json.simple.JSONValue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -37,69 +25,29 @@ import java.util.UUID;
 
 import javax.inject.Inject;
 
+import org.apache.hadoop.metadata.util.GraphUtils;
+import org.json.simple.JSONValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Preconditions;
+import com.tinkerpop.blueprints.TransactionalGraph;
+import com.tinkerpop.blueprints.Vertex;
+
 /**
- * An implementation backed by Titan Graph DB.
+ * An implementation backed by a Graph database provided
+ * as a Graph Service.
  */
-public class GraphBackedMetadataRepositoryService implements MetadataRepositoryService {
+public class GraphBackedMetadataRepository implements MetadataRepository {
 
     private static final Logger LOG =
-            LoggerFactory.getLogger(GraphBackedMetadataRepositoryService.class);
-    public static final String NAME = GraphBackedMetadataRepositoryService.class.getSimpleName();
+            LoggerFactory.getLogger(GraphBackedMetadataRepository.class);
 
     private GraphService graphService;
     
     @Inject
-    GraphBackedMetadataRepositoryService(GraphService service) {
+    GraphBackedMetadataRepository(GraphService service) {
     	this.graphService = service;
-    }
-
-    /**
-     * Name of the service.
-     *
-     * @return name of the service
-     */
-    @Override
-    public String getName() {
-        return NAME;
-    }
-
-    /**
-     * Starts the service. This method blocks until the service has completely started.
-     *
-     * @throws Exception
-     */
-    @Override
-    public void start() throws Exception {
-    }
-
-    /**
-     * Stops the service. This method blocks until the service has completely shut down.
-     */
-    @Override
-    public void stop() {
-        // do nothing
-        graphService = null;
-    }
-
-    /**
-     * A version of stop() that is designed to be usable in Java7 closure
-     * clauses.
-     * Implementation classes MUST relay this directly to {@link #stop()}
-     *
-     * @throws java.io.IOException never
-     * @throws RuntimeException    on any failure during the stop operation
-     */
-    @Override
-    public void close() throws IOException {
-        stop();
-    }
-
-    private Graph getBlueprintsGraph() {
-        return graphService.getBlueprintsGraph();
-    }
-
-    private TransactionalGraph getTransactionalGraph() {
-        return graphService.getTransactionalGraph();
     }
 
     @Override
@@ -114,7 +62,7 @@ public class GraphBackedMetadataRepositoryService implements MetadataRepositoryS
         // todo check if this is a duplicate
 
         final String guid = UUID.randomUUID().toString();
-        final TransactionalGraph transactionalGraph = getTransactionalGraph();
+        final TransactionalGraph transactionalGraph = graphService.getTransactionalGraph();
         try {
             transactionalGraph.rollback();
 
@@ -137,7 +85,7 @@ public class GraphBackedMetadataRepositoryService implements MetadataRepositoryS
     @Override
     public String getEntityDefinition(String entityName, String entityType) {
         LOG.info("Retrieving entity name={} type={}", entityName, entityType);
-        Vertex entityVertex = GraphUtils.findVertex(getBlueprintsGraph(), entityName, entityType);
+        Vertex entityVertex = GraphUtils.findVertex(graphService.getBlueprintsGraph(), entityName, entityType);
         if (entityVertex == null) {
             return null;
         }

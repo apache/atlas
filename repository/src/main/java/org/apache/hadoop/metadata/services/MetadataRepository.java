@@ -25,7 +25,7 @@ import java.util.List;
 /**
  * An interface for persisting metadata into a blueprints enabled graph db.
  */
-public interface MetadataRepositoryService extends Service {
+public interface MetadataRepository {
 
     String submitEntity(String entity, String entityType);
 

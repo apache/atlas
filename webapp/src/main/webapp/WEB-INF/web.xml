@@ -40,53 +40,9 @@
   	</filter-mapping>
 
 	<listener>
-		<listener-class>org.apache.hadoop.metadata.web.listeners.GuiceServletConfig</listener-class>
-	</listener>
-
-<!--
-	<filter>
-		<filter-name>audit</filter-name>
-		<filter-class>org.apache.hadoop.metadata.web.filters.AuditFilter</filter-class>
-	</filter>
-
-	<filter>
-		<filter-name>authentication</filter-name>
-		<filter-class>org.apache.hadoop.metadata.web.filters.AuthenticationFilter</filter-class>
-	</filter>
-
-	<filter-mapping>
-		<filter-name>audit</filter-name>
-		<servlet-name>MetadataRESTApi</servlet-name>
-	</filter-mapping>
-
-	<filter-mapping>
-		<filter-name>authentication</filter-name>
-		<servlet-name>MetadataRESTApi</servlet-name>
-	</filter-mapping>
-
-	<listener>
 		<listener-class>org.apache.hadoop.metadata.web.listeners.ApplicationStartupListener</listener-class>
 	</listener>
-
-	<servlet>
-		<servlet-name>MetadataRESTApi</servlet-name>
-		<servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
-		<init-param>
-			<param-name>com.sun.jersey.config.property.resourceConfigClass</param-name>
-			<param-value>com.sun.jersey.api.core.PackagesResourceConfig</param-value>
-		</init-param>
-		<init-param>
-			<param-name>com.sun.jersey.config.property.packages</param-name>
-			<param-value>
-				org.apache.hadoop.metadata.web.resources,org.apache.hadoop.metadata.web.params
-			</param-value>
-		</init-param>
-		<load-on-startup>1</load-on-startup>
-	</servlet>
-
-	<servlet-mapping>
-		<servlet-name>MetadataRESTApi</servlet-name>
-		<url-pattern>/api/metadata/*</url-pattern>
-	</servlet-mapping>
--->
+	<listener>
+		<listener-class>org.apache.hadoop.metadata.web.listeners.GuiceServletConfig</listener-class>
+	</listener>
 </web-app>

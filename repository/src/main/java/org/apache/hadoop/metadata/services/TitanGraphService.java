@@ -18,7 +18,22 @@
 
 package org.apache.hadoop.metadata.services;
 
-import com.thinkaurelius.titan.core.TitanFactory;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
@@ -28,28 +43,13 @@ import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
-import javax.inject.Inject;
-
 /**
  * Default implementation for Graph service backed by Titan.
  */
+@Singleton
 public class TitanGraphService implements GraphService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(TitanGraphService.class);
-	public static final String NAME = TitanGraphService.class.getSimpleName();
 
 	/**
 	 * Constant for the configuration property that indicates the prefix.
@@ -59,32 +59,25 @@ public class TitanGraphService implements GraphService {
 
 	private final TitanGraph titanGraph;
 
+	/**
+	 * Initialize this service through injection with a custom Provider.
+	 * 
+	 * @param graph
+	 * @throws ConfigurationException
+	 */
 	@Inject
 	TitanGraphService(GraphProvider<TitanGraph> graph) throws ConfigurationException {
+		// TODO reimplement to save the Provider and initialize the graph inside the start() method
 		this.titanGraph = graph.get();
-		// TODO decouple from Service class and run start() here
-		// can use a shutdown hook to run the stop() method
-		// this.start();
+		//start();
 	}
 
 	/**
-	 * Name of the service.
-	 *
-	 * @return name of the service
+	 * Initializes this Service.  The starting of Titan is handled by the Provider
+	 * @throws ConfigurationException
 	 */
 	@Override
-	public String getName() {
-		return NAME;
-	}
-
-	/**
-	 * Starts the service. This method blocks until the service has completely
-	 * started.
-	 *
-	 * @throws Exception
-	 */
-	@Override
-	public void start() throws Exception {
+	public void start() throws ConfigurationException {
 		createIndicesForVertexKeys();
 		// todo - create Edge Cardinality Constraints
 		LOG.info("Initialized titanGraph db: {}", titanGraph);
@@ -116,13 +109,12 @@ public class TitanGraphService implements GraphService {
 		return graphConfig;
 	}
 
-	protected TitanGraph initializeGraphDB(Configuration graphConfig) {
-		LOG.info("Initializing titanGraph db");
-		return TitanFactory.open(graphConfig);
-	}
-
+	/**
+	 * Initializes the indices for the graph.
+	 * @throws ConfigurationException
+	 */
+	// TODO move this functionality to the MetadataRepository?
 	protected void createIndicesForVertexKeys() throws ConfigurationException {
-
 		if (!titanGraph.getIndexedKeys(Vertex.class).isEmpty()) {
 			LOG.info("Indexes already exist for titanGraph");
 			return;

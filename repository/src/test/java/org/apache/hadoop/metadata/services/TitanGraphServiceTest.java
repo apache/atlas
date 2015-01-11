@@ -26,12 +26,6 @@ public class TitanGraphServiceTest extends RepositoryModuleBaseTest {
     }
 
     @Test
-    public void testGetName() throws Exception {
-        Assert.assertEquals(TitanGraphService.NAME, TitanGraphService.class.getSimpleName());
-        Assert.assertEquals(titanGraphService.getName(), TitanGraphService.NAME);
-    }
-
-    @Test
     public void testStart() throws Exception {
         Assert.assertNotNull(titanGraphService.getBlueprintsGraph());
     }

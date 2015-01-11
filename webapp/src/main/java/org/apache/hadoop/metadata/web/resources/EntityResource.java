@@ -39,7 +39,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.hadoop.metadata.services.MetadataRepositoryService;
+import org.apache.hadoop.metadata.services.MetadataRepository;
 import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONObject;
 import org.json.simple.JSONValue;
@@ -57,11 +57,17 @@ import com.google.common.base.Preconditions;
 @Singleton
 public class EntityResource {
 
-    private final MetadataRepositoryService repositoryService;
+    private final MetadataRepository repository;
 
+    /**
+     * Created by the Guice ServletModule and injected with the
+     * configured MetadataRepository.
+     * 
+     * @param repository
+     */
     @Inject
-    public EntityResource(MetadataRepositoryService repositoryService) {
-        this.repositoryService = repositoryService;
+    public EntityResource(MetadataRepository repository) {
+        this.repository = repository;
     }
 
     @POST
@@ -75,7 +81,7 @@ public class EntityResource {
             System.out.println("entity = " + entity);
             validateEntity(entity, entityType);
 
-            final String guid = repositoryService.submitEntity(entity, entityType);
+            final String guid = repository.submitEntity(entity, entityType);
             JSONObject response = new JSONObject();
             response.put("GUID", guid);
 
@@ -112,7 +118,7 @@ public class EntityResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getEntityDefinition(@PathParam("entityType") String entityType,
                                         @PathParam("entityName") String entityName) {
-        final String entityDefinition = repositoryService.getEntityDefinition(entityName, entityType);
+        final String entityDefinition = repository.getEntityDefinition(entityName, entityType);
         return (entityDefinition == null)
                 ? Response.status(Response.Status.NOT_FOUND).build()
                 : Response.ok(entityDefinition).build();

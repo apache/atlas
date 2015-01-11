@@ -19,7 +19,7 @@ public class GraphBackedMetadataRepositoryServiceTest extends RepositoryModuleBa
 	private static final String TABLE_NAME = "clicks-table";
 
 	private TitanGraphService titanGraphService;
-	private GraphBackedMetadataRepositoryService repositoryService;
+	private GraphBackedMetadataRepository repositoryService;
 
 	@BeforeClass
 	public void setUp() throws Exception {
@@ -27,8 +27,7 @@ public class GraphBackedMetadataRepositoryServiceTest extends RepositoryModuleBa
 		titanGraphService.start();
 		//Services.get().register(titanGraphService);
 
-		repositoryService = super.injector.getInstance(GraphBackedMetadataRepositoryService.class);
-		repositoryService.start();
+		repositoryService = super.injector.getInstance(GraphBackedMetadataRepository.class);
 		//Services.get().register(repositoryService);
 	}
 
@@ -38,14 +37,6 @@ public class GraphBackedMetadataRepositoryServiceTest extends RepositoryModuleBa
 				.close();
 		Services.get().getService(TitanGraphService.NAME).close();
 		Services.get().reset();*/
-	}
-
-	@Test
-	public void testGetName() throws Exception {
-		Assert.assertEquals(GraphBackedMetadataRepositoryService.NAME,
-				GraphBackedMetadataRepositoryService.class.getSimpleName());
-		Assert.assertEquals(repositoryService.getName(),
-				GraphBackedMetadataRepositoryService.NAME);
 	}
 
 	@Test

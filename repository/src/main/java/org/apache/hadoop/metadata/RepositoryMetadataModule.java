@@ -24,13 +24,14 @@
  */
 package org.apache.hadoop.metadata;
 
-import org.apache.hadoop.metadata.services.GraphBackedMetadataRepositoryService;
+import org.apache.hadoop.metadata.services.GraphBackedMetadataRepository;
 import org.apache.hadoop.metadata.services.GraphProvider;
 import org.apache.hadoop.metadata.services.GraphService;
 import org.apache.hadoop.metadata.services.GraphServiceConfigurator;
-import org.apache.hadoop.metadata.services.MetadataRepositoryService;
+import org.apache.hadoop.metadata.services.MetadataRepository;
 import org.apache.hadoop.metadata.services.TitanGraphProvider;
 
+import com.google.inject.Scopes;
 import com.google.inject.throwingproviders.ThrowingProviderBinder;
 import com.thinkaurelius.titan.core.TitanGraph;
 
@@ -42,26 +43,27 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
 	// Graph Service implementation class
 	private Class<? extends GraphService> graphServiceClass;
 	// MetadataRepositoryService implementation class
-	private Class<? extends MetadataRepositoryService> metadataRepoClass;
+	private Class<? extends MetadataRepository> metadataRepoClass;
 
 	public RepositoryMetadataModule() {
 		GraphServiceConfigurator gsp = new GraphServiceConfigurator();
 
+		// get the impl classes for the repo and the graph service
 		this.graphServiceClass = gsp.getImplClass();
-		this.metadataRepoClass = GraphBackedMetadataRepositoryService.class;
+		this.metadataRepoClass = GraphBackedMetadataRepository.class;
 	}
 
 	protected void configure() {
 		// special wiring for Titan Graph
 		ThrowingProviderBinder.create(binder())
 				.bind(GraphProvider.class, TitanGraph.class)
-				.to(TitanGraphProvider.class);
+				.to(TitanGraphProvider.class)
+				.in(Scopes.SINGLETON);
 
-		// allow for dynamic binding of the metadata repo service & graph
-		// service
+		// allow for dynamic binding of the metadata repo & graph service
 
 		// bind the MetadataRepositoryService interface to an implementation
-		bind(MetadataRepositoryService.class).to(metadataRepoClass);
+		bind(MetadataRepository.class).to(metadataRepoClass);
 		// bind the GraphService interface to an implementation
 		bind(GraphService.class).to(graphServiceClass);
 	}
