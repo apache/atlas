@@ -11,7 +11,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-public class GraphBackedMetadataRepositoryServiceTest extends RepositoryModuleBaseTest {
+public class GraphBackedMetadataRepositoryTest extends RepositoryModuleBaseTest {
 
 	private static final String ENTITY_NAME = "clicks-table";
 	private static final String ENTITY_TYPE = "hive-table";
