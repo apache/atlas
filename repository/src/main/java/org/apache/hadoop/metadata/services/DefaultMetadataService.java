@@ -36,7 +36,7 @@ public class DefaultMetadataService implements MetadataService {
     public static final String NAME = DefaultMetadataService.class.getSimpleName();
 
     private TypeSystem typeSystem;
-    private MetadataRepositoryService repositoryService;
+    private MetadataRepository repositoryService;
 
     /**
      * Creates a new type based on the type system to enable adding
@@ -149,7 +149,7 @@ public class DefaultMetadataService implements MetadataService {
         }
 
         if (Services.get().isRegistered(TitanGraphService.NAME)) {
-            repositoryService = Services.get().getService(GraphBackedMetadataRepositoryService.NAME);
+            repositoryService = Services.get().getService(GraphBackedMetadataRepository.NAME);
         } else {
             throw new RuntimeException("repository service is not initialized");
         }

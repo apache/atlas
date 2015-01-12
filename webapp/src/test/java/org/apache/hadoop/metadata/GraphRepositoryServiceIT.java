@@ -1,7 +1,7 @@
 package org.apache.hadoop.metadata;
 
 import org.apache.hadoop.metadata.service.Services;
-import org.apache.hadoop.metadata.services.GraphBackedMetadataRepositoryService;
+import org.apache.hadoop.metadata.services.GraphBackedMetadataRepository;
 import org.apache.hadoop.metadata.services.TitanGraphService;
 import org.json.simple.JSONValue;
 import org.testng.Assert;
@@ -25,15 +25,15 @@ public class GraphRepositoryServiceIT {
         titanGraphService.start();
         Services.get().register(titanGraphService);
 
-        GraphBackedMetadataRepositoryService repositoryService
-                = new GraphBackedMetadataRepositoryService();
+        GraphBackedMetadataRepository repositoryService
+                = new GraphBackedMetadataRepository();
         repositoryService.start();
         Services.get().register(repositoryService);
     }
 
     @AfterClass
     public void tearDown() throws Exception {
-        Services.get().getService(GraphBackedMetadataRepositoryService.NAME).close();
+        Services.get().getService(GraphBackedMetadataRepository.NAME).close();
         Services.get().getService(TitanGraphService.NAME).close();
         Services.get().reset();
     }

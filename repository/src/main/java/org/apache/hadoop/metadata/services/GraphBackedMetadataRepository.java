@@ -54,11 +54,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * An implementation backed by Titan Graph DB.
  */
-public class GraphBackedMetadataRepositoryService implements MetadataRepositoryService {
+public class GraphBackedMetadataRepository implements MetadataRepository {
 
     private static final Logger LOG =
-            LoggerFactory.getLogger(GraphBackedMetadataRepositoryService.class);
-    public static final String NAME = GraphBackedMetadataRepositoryService.class.getSimpleName();
+            LoggerFactory.getLogger(GraphBackedMetadataRepository.class);
+    public static final String NAME = GraphBackedMetadataRepository.class.getSimpleName();
 
     private static final String GUID_PROPERTY_KEY = "guid";
     private static final String TIMESTAMP_PROPERTY_KEY = "timestamp";

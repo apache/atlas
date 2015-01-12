@@ -29,12 +29,12 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 
-public class GraphBackedMetadataRepositoryServiceTest {
+public class GraphBackedMetadataRepositoryTest {
 
     private static final String ENTITY_TYPE = "hive-table";
 
     private TitanGraphService titanGraphService;
-    private GraphBackedMetadataRepositoryService repositoryService;
+    private GraphBackedMetadataRepository repositoryService;
     protected org.apache.hadoop.metadata.MetadataService ms;
     private String guid;
 
@@ -49,7 +49,7 @@ public class GraphBackedMetadataRepositoryServiceTest {
         Services.get().register(typesService);
         TypeSystem ts = typesService.getTypeSystem();
 
-        repositoryService = new GraphBackedMetadataRepositoryService();
+        repositoryService = new GraphBackedMetadataRepository();
         repositoryService.start();
         Services.get().register(repositoryService);
 
@@ -63,16 +63,16 @@ public class GraphBackedMetadataRepositoryServiceTest {
 
     @AfterClass
     public void tearDown() throws Exception {
-        Services.get().getService(GraphBackedMetadataRepositoryService.NAME).close();
+        Services.get().getService(GraphBackedMetadataRepository.NAME).close();
         Services.get().getService(TitanGraphService.NAME).close();
         Services.get().reset();
     }
 
     @Test
     public void testGetName() throws Exception {
-        Assert.assertEquals(GraphBackedMetadataRepositoryService.NAME,
-                GraphBackedMetadataRepositoryService.class.getSimpleName());
-        Assert.assertEquals(repositoryService.getName(), GraphBackedMetadataRepositoryService.NAME);
+        Assert.assertEquals(GraphBackedMetadataRepository.NAME,
+                GraphBackedMetadataRepository.class.getSimpleName());
+        Assert.assertEquals(repositoryService.getName(), GraphBackedMetadataRepository.NAME);
     }
 
     @Test
@@ -122,8 +122,8 @@ public class GraphBackedMetadataRepositoryServiceTest {
     public void testStartWithOutGraphServiceRegistration() throws Exception {
         try {
             Services.get().reset();
-            GraphBackedMetadataRepositoryService repositoryService = new
-                    GraphBackedMetadataRepositoryService();
+            GraphBackedMetadataRepository repositoryService = new
+                    GraphBackedMetadataRepository();
             repositoryService.start();
             Assert.fail("This should have thrown an exception");
         } finally {
