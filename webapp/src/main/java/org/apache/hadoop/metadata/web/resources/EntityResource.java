@@ -18,19 +18,11 @@
 
 package org.apache.hadoop.metadata.web.resources;
 
-import com.google.common.base.Preconditions;
-import org.apache.commons.io.IOUtils;
-import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.service.Services;
-import org.apache.hadoop.metadata.services.DefaultMetadataService;
-import org.apache.hadoop.metadata.services.MetadataService;
-import org.apache.hadoop.metadata.web.util.Servlets;
-import org.codehaus.jettison.json.JSONObject;
-import org.json.simple.JSONValue;
-import org.json.simple.parser.ParseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.io.IOException;
+import java.io.StringWriter;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -45,8 +37,18 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
-import java.io.StringWriter;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.services.MetadataService;
+import org.apache.hadoop.metadata.web.util.Servlets;
+import org.codehaus.jettison.json.JSONObject;
+import org.json.simple.JSONValue;
+import org.json.simple.parser.ParseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Preconditions;
 
 /**
  * Entity management operations as REST API.
@@ -55,17 +57,22 @@ import java.io.StringWriter;
  * of the Type they correspond with.
  */
 @Path("entities")
+@Singleton
 public class EntityResource {
 
     private static final Logger LOG = LoggerFactory.getLogger(EntityResource.class);
 
-    private MetadataService metadataService;
+    private final MetadataService metadataService;
 
-    public EntityResource() {
-        metadataService = Services.get().getService(DefaultMetadataService.NAME);
-        if (metadataService == null) {
-            throw new RuntimeException("graph service is not initialized");
-        }
+    /**
+     * Created by the Guice ServletModule and injected with the
+     * configured MetadataService.
+     * 
+     * @param metadataService
+     */
+    @Inject
+    public EntityResource(MetadataService metadataService) {
+        this.metadataService = metadataService;
     }
 
     @POST

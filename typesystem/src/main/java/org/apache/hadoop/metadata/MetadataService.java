@@ -22,6 +22,7 @@ package org.apache.hadoop.metadata;
 import org.apache.hadoop.metadata.storage.IRepository;
 import org.apache.hadoop.metadata.types.TypeSystem;
 
+// TODO get rid of this class in favor of Dependency injection
 public class MetadataService {
 
     final IRepository repo;

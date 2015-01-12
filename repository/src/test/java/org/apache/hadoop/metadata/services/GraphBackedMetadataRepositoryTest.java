@@ -1,15 +1,12 @@
 package org.apache.hadoop.metadata.services;
 
-import com.google.common.collect.ImmutableList;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Vertex;
+import java.util.List;
+
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.MetadataService;
 import org.apache.hadoop.metadata.Referenceable;
-import org.apache.hadoop.metadata.service.Services;
+import org.apache.hadoop.metadata.RepositoryModuleBaseTest;
+import org.apache.hadoop.metadata.storage.IRepository;
 import org.apache.hadoop.metadata.storage.memory.MemRepository;
 import org.apache.hadoop.metadata.types.AttributeDefinition;
 import org.apache.hadoop.metadata.types.ClassType;
@@ -27,59 +24,44 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import java.util.List;
+import com.google.common.collect.ImmutableList;
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Vertex;
 
-public class GraphBackedMetadataRepositoryTest {
+public class GraphBackedMetadataRepositoryTest extends RepositoryModuleBaseTest {
 
     private static final String ENTITY_TYPE = "hive-table";
 
     private TitanGraphService titanGraphService;
     private GraphBackedMetadataRepository repositoryService;
-    protected org.apache.hadoop.metadata.MetadataService ms;
+    private IRepository repo;
+    private TypeSystem ts;
     private String guid;
 
     @BeforeClass
     public void setUp() throws Exception {
-        titanGraphService = new TitanGraphService();
+        titanGraphService = super.injector.getInstance(TitanGraphService.class);
         titanGraphService.start();
-        Services.get().register(titanGraphService);
 
-        DefaultTypesService typesService = new DefaultTypesService();
-        typesService.start();
-        Services.get().register(typesService);
-        TypeSystem ts = typesService.getTypeSystem();
-
-        repositoryService = new GraphBackedMetadataRepository();
+        repositoryService = super.injector.getInstance(GraphBackedMetadataRepository.class);
         repositoryService.start();
-        Services.get().register(repositoryService);
 
-        // todo - only used for types
-        MemRepository mr = new MemRepository(ts);
-        ms = new org.apache.hadoop.metadata.MetadataService(mr, ts);
-        MetadataService.setCurrentService(ms);
+        ts = new TypeSystem();
+        repo = new MemRepository(ts);
 
         defineDeptEmployeeTypes(ts);
     }
 
     @AfterClass
     public void tearDown() throws Exception {
-        Services.get().getService(GraphBackedMetadataRepository.NAME).close();
-        Services.get().getService(TitanGraphService.NAME).close();
-        Services.get().reset();
-    }
-
-    @Test
-    public void testGetName() throws Exception {
-        Assert.assertEquals(GraphBackedMetadataRepository.NAME,
-                GraphBackedMetadataRepository.class.getSimpleName());
-        Assert.assertEquals(repositoryService.getName(), GraphBackedMetadataRepository.NAME);
     }
 
     @Test
     public void testSubmitEntity() throws Exception {
-        TypeSystem typeSystem = MetadataService.getCurrentService().getTypeSystem();
-        Referenceable hrDept = createDeptEg1(typeSystem);
-        ClassType deptType = typeSystem.getDataType(ClassType.class, "Department");
+        Referenceable hrDept = createDeptEg1(ts);
+        ClassType deptType = ts.getDataType(ClassType.class, "Department");
         ITypedReferenceableInstance hrDept2 = deptType.convert(hrDept, Multiplicity.REQUIRED);
 
         guid = repositoryService.createEntity(hrDept2, ENTITY_TYPE);
@@ -116,20 +98,6 @@ public class GraphBackedMetadataRepositoryTest {
         List<String> entityList = repositoryService.getEntityList(ENTITY_TYPE);
         Assert.assertNotNull(entityList);
         Assert.assertEquals(entityList.size(), 0); // as this is not implemented yet
-    }
-
-    @Test(expectedExceptions = RuntimeException.class)
-    public void testStartWithOutGraphServiceRegistration() throws Exception {
-        try {
-            Services.get().reset();
-            GraphBackedMetadataRepository repositoryService = new
-                    GraphBackedMetadataRepository();
-            repositoryService.start();
-            Assert.fail("This should have thrown an exception");
-        } finally {
-            Services.get().register(titanGraphService);
-            Services.get().register(repositoryService);
-        }
     }
 
     /*
@@ -184,7 +152,7 @@ public class GraphBackedMetadataRepositoryTest {
                 ts.getDataType(ClassType.class, "Manager")
         );
 
-        ms.getRepository().defineTypes(types);
+        repo.defineTypes(types);
     }
 
     protected Referenceable createDeptEg1(TypeSystem ts) throws MetadataException {

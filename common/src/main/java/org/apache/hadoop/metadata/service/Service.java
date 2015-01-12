@@ -27,13 +27,6 @@ import java.io.IOException;
 public interface Service extends Closeable {
 
     /**
-     * Name of the service.
-     *
-     * @return name of the service
-     */
-    String getName();
-
-    /**
      * Starts the service. This method blocks until the service has completely started.
      *
      * @throws Exception

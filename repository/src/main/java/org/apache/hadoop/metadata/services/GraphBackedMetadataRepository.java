@@ -18,16 +18,23 @@
 
 package org.apache.hadoop.metadata.services;
 
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.TransactionalGraph;
-import com.tinkerpop.blueprints.Vertex;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.inject.Inject;
+
 import org.apache.hadoop.metadata.IReferenceableInstance;
 import org.apache.hadoop.metadata.ITypedInstance;
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.ITypedStruct;
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.service.Services;
 import org.apache.hadoop.metadata.storage.Id;
 import org.apache.hadoop.metadata.storage.MapIds;
 import org.apache.hadoop.metadata.storage.RepositoryException;
@@ -41,18 +48,14 @@ import org.apache.hadoop.metadata.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.TransactionalGraph;
+import com.tinkerpop.blueprints.Vertex;
 
 /**
- * An implementation backed by Titan Graph DB.
+ * An implementation backed by a Graph database provided
+ * as a Graph Service.
  */
 public class GraphBackedMetadataRepository implements MetadataRepository {
 
@@ -69,19 +72,16 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     private final AtomicInteger ID_SEQ = new AtomicInteger(0);
 
 //    private ConcurrentHashMap<String, ITypedReferenceableInstance> types;
-    private ConcurrentHashMap<String, ITypedReferenceableInstance> instances;
+    private final ConcurrentHashMap<String, ITypedReferenceableInstance> instances;
 
-    private GraphService graphService;
-    private TypeSystem typeSystem;
-
-    /**
-     * Name of the service.
-     *
-     * @return name of the service
-     */
-    @Override
-    public String getName() {
-        return NAME;
+    private final GraphService graphService;
+    private final TypeSystem typeSystem;
+    
+    @Inject
+    GraphBackedMetadataRepository(GraphService graphService) throws MetadataException {
+    	this.instances = new ConcurrentHashMap<>();
+    	this.graphService = graphService;
+    	this.typeSystem = new TypeSystem();
     }
 
     /**
@@ -91,20 +91,6 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
      */
     @Override
     public void start() throws Exception {
-        if (Services.get().isRegistered(TitanGraphService.NAME)) {
-            graphService = Services.get().getService(TitanGraphService.NAME);
-        } else {
-            throw new RuntimeException("graph service is not initialized");
-        }
-
-        if (Services.get().isRegistered(DefaultTypesService.NAME)) {
-            DefaultTypesService typesService = Services.get().getService(DefaultTypesService.NAME);
-            typeSystem = typesService.getTypeSystem();
-        } else {
-            throw new RuntimeException("Types service is not initialized");
-        }
-
-        instances = new ConcurrentHashMap<>();
     }
 
     /**
@@ -112,8 +98,6 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
      */
     @Override
     public void stop() {
-        // do nothing
-        graphService = null;
     }
 
     /**
@@ -129,16 +113,12 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         stop();
     }
 
-    private TransactionalGraph getTransactionalGraph() {
-        return graphService.getTransactionalGraph();
-    }
-
     @Override
     public String createEntity(IReferenceableInstance entity,
                                String entityType) throws RepositoryException {
         LOG.info("adding entity={} type={}", entity, entityType);
 
-        final TransactionalGraph transactionalGraph = getTransactionalGraph();
+        final TransactionalGraph transactionalGraph = graphService.getTransactionalGraph();
         try {
             // todo check if this is a duplicate
 

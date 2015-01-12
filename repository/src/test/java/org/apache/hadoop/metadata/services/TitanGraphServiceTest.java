@@ -1,5 +1,6 @@
 package org.apache.hadoop.metadata.services;
 
+import org.apache.hadoop.metadata.RepositoryModuleBaseTest;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -8,25 +9,20 @@ import org.testng.annotations.Test;
 /**
  * Unit test for TitanGraphService.
  */
-public class TitanGraphServiceTest {
+public class TitanGraphServiceTest extends RepositoryModuleBaseTest {
 
     private TitanGraphService titanGraphService;
 
     @BeforeClass
     public void setUp() throws Exception {
-        titanGraphService = new TitanGraphService();
+    	titanGraphService = super.injector.getInstance(TitanGraphService.class);
+        //titanGraphService = new TitanGraphService();
         titanGraphService.start();
     }
 
     @AfterClass
     public void tearDown() throws Exception {
         titanGraphService.close();
-    }
-
-    @Test
-    public void testGetName() throws Exception {
-        Assert.assertEquals(TitanGraphService.NAME, TitanGraphService.class.getSimpleName());
-        Assert.assertEquals(titanGraphService.getName(), TitanGraphService.NAME);
     }
 
     @Test

@@ -18,25 +18,31 @@
 
 package org.apache.hadoop.metadata.services;
 
+import java.io.IOException;
+import java.util.List;
+
+import javax.inject.Inject;
+
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.json.Serialization$;
-import org.apache.hadoop.metadata.service.Services;
 import org.apache.hadoop.metadata.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.List;
 
 public class DefaultMetadataService implements MetadataService {
 
     private static final Logger LOG =
             LoggerFactory.getLogger(DefaultMetadataService.class);
-    public static final String NAME = DefaultMetadataService.class.getSimpleName();
 
-    private TypeSystem typeSystem;
-    private MetadataRepository repositoryService;
+    private final TypeSystem typeSystem;
+    private final MetadataRepository repository;
+    
+    @Inject
+    DefaultMetadataService(MetadataRepository repository) throws MetadataException {
+    	this.typeSystem = new TypeSystem();
+    	this.repository = repository;
+    }
 
     /**
      * Creates a new type based on the type system to enable adding
@@ -84,7 +90,7 @@ public class DefaultMetadataService implements MetadataService {
                                String entityDefinition) throws MetadataException {
         ITypedReferenceableInstance entityInstance =
                 Serialization$.MODULE$.fromJson(entityDefinition);
-        return repositoryService.createEntity(entityInstance, entityType);
+        return repository.createEntity(entityInstance, entityType);
     }
 
     /**
@@ -124,35 +130,12 @@ public class DefaultMetadataService implements MetadataService {
     }
 
     /**
-     * Name of the service.
-     *
-     * @return name of the service
-     */
-    @Override
-    public String getName() {
-        return NAME;
-    }
-
-    /**
      * Starts the service. This method blocks until the service has completely started.
      *
      * @throws Exception
      */
     @Override
     public void start() throws Exception {
-        LOG.info("Initializing the Metadata service");
-        if (Services.get().isRegistered(TitanGraphService.NAME)) {
-            DefaultTypesService typesService = Services.get().getService(DefaultTypesService.NAME);
-            typeSystem = typesService.getTypeSystem();
-        } else {
-            throw new RuntimeException("Types service is not initialized");
-        }
-
-        if (Services.get().isRegistered(TitanGraphService.NAME)) {
-            repositoryService = Services.get().getService(GraphBackedMetadataRepository.NAME);
-        } else {
-            throw new RuntimeException("repository service is not initialized");
-        }
     }
 
     /**
@@ -160,8 +143,6 @@ public class DefaultMetadataService implements MetadataService {
      */
     @Override
     public void stop() {
-        // do nothing
-        repositoryService = null;
     }
 
     /**

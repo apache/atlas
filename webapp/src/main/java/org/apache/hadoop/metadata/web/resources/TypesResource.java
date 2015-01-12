@@ -18,6 +18,7 @@
 
 package org.apache.hadoop.metadata.web.resources;
 
+import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
@@ -31,6 +32,7 @@ import javax.ws.rs.core.Response;
  * e.g. a Hive table
  */
 @Path("types")
+@Singleton
 public class TypesResource {
 
     @POST
