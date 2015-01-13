@@ -1,4 +1,4 @@
-package com.aetna.hadoop.dgc.hive;
+package org.apache.hadoop.metadata.hive;
 
 import java.io.Serializable;
 import java.util.List;

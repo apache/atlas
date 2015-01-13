@@ -1,4 +1,4 @@
-package com.aetna.hadoop.dgc.hive;
+package org.apache.hadoop.metadata.hive;
 
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -169,8 +169,8 @@ public class Hook implements ExecuteWithHookContext {
  
   public void fireAndForget(Configuration conf, HiveLineageBean hookData, String queryId) throws Exception {
 			String postUri = "http://167.69.111.50:20810/HiveHookCollector/HookServlet"; 		
-	  		if (conf.getTrimmed("aetna.hive.hook") != null) {
-		  		postUri = conf.getTrimmed("aetna.hive.hook");
+	  		if (conf.getTrimmed("hadoop.metadata.hive.hook.uri") != null) {
+		  		postUri = conf.getTrimmed("hadoop.metadata.hive.hook.uri");
 	  		} 
 	  		Gson gson = new Gson();
 	  		String gsonString = gson.toJson(hookData);
