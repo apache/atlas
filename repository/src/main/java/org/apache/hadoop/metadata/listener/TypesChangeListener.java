@@ -16,36 +16,33 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata.service;
+package org.apache.hadoop.metadata.listener;
 
-import java.io.Closeable;
-import java.io.IOException;
+import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.types.IDataType;
 
 /**
- * Service interface that's initialized at startup.
+ * Types change notification listener.
  */
-//todo: needs to be removed, as it serves no purpose now with Guice
-@Deprecated
-public interface Service extends Closeable {
+public interface TypesChangeListener {
 
     /**
-     * Starts the service. This method blocks until the service has completely started.
+     * This is upon adding a new type to Store.
      *
-     * @throws Exception
+     * @param typeName type name
+     * @param dataType data type
+     * @throws MetadataException
      */
-    void start() throws Exception;
+    void onAdd(String typeName, IDataType dataType) throws MetadataException;
 
     /**
-     * Stops the service. This method blocks until the service has completely shut down.
+     * This is upon removing an existing type from the Store.
+     *
+     * @param typeName type name
+     * @throws MetadataException
      */
-    void stop();
+    // void onRemove(String typeName) throws MetadataException;
 
-    /**
-     * A version of stop() that is designed to be usable in Java7 closure
-     * clauses.
-     * Implementation classes MUST relay this directly to {@link #stop()}
-     * @throws java.io.IOException never
-     * @throws RuntimeException on any failure during the stop operation
-     */
-    void close() throws IOException;
+    // This is upon updating an existing type to the store
+    // void onChange() throws MetadataException;
 }

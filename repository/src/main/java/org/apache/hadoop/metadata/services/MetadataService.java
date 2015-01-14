@@ -20,9 +20,13 @@ package org.apache.hadoop.metadata.services;
 
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.service.Service;
+import org.codehaus.jettison.json.JSONObject;
 
 import java.util.List;
 
+/**
+ * Metadata service.
+ */
 public interface MetadataService extends Service {
 
     /**
@@ -33,7 +37,8 @@ public interface MetadataService extends Service {
      * @param typeDefinition definition as json
      * @return a unique id for this type
      */
-    String createType(String typeName, String typeDefinition) throws MetadataException;
+    JSONObject createType(String typeName,
+                          String typeDefinition) throws MetadataException;
 
     /**
      * Return the definition for the given type.

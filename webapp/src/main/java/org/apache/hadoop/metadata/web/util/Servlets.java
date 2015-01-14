@@ -18,12 +18,15 @@
 
 package org.apache.hadoop.metadata.web.util;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.jettison.json.JSONObject;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.io.StringWriter;
 
 /**
  * Utility functions for dealing with servlets.
@@ -101,5 +104,11 @@ public final class Servlets {
                 .entity(JSONObject.quote(message))
                 .type(MediaType.APPLICATION_JSON)
                 .build();
+    }
+
+    public static String getRequestPayload(HttpServletRequest request) throws IOException {
+        StringWriter writer = new StringWriter();
+        IOUtils.copy(request.getInputStream(), writer);
+        return writer.toString();
     }
 }

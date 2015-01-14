@@ -12,6 +12,7 @@ import javax.ws.rs.core.Response;
 /**
  * Integration tests for Rexster Graph Jersey Resource.
  */
+@Test
 public class RexsterGraphJerseyResourceIT extends BaseResourceIT {
 
     @Test (enabled = false)
@@ -31,7 +32,6 @@ public class RexsterGraphJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(response);
     }
 
-    @Test
     public void testGetVertexWithInvalidId() throws Exception {
         WebResource resource = service
                 .path("api/metadata/graph/vertices/blah");
@@ -43,22 +43,18 @@ public class RexsterGraphJerseyResourceIT extends BaseResourceIT {
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
     }
 
-    @Test
     public void testGetVertexProperties() throws Exception {
 
     }
 
-    @Test
     public void testGetVertices() throws Exception {
 
     }
 
-    @Test
     public void testGetVertexEdges() throws Exception {
 
     }
 
-    @Test
     public void testGetEdge() throws Exception {
 
     }

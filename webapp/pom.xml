@@ -243,6 +243,7 @@
 					<configuration>
 						<skip>${skipITs}</skip> <!--only skip int tests -->
 						<connectors>
+<!--
 							<connector implementation="org.mortbay.jetty.security.SslSocketConnector">
 								<port>21443</port>
 								<maxIdleTime>60000</maxIdleTime>
@@ -250,6 +251,7 @@
 								<keyPassword>metadata-passwd</keyPassword>
 								<password>metadata-passwd</password>
 							</connector>
+-->
 							<connector implementation="org.mortbay.jetty.nio.SelectChannelConnector">
 								<port>21000</port>
 								<maxIdleTime>60000</maxIdleTime>

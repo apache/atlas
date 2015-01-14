@@ -1,8 +1,15 @@
 package org.apache.hadoop.metadata.web.resources;
 
+import com.google.common.collect.ImmutableList;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
+import org.apache.hadoop.metadata.types.AttributeDefinition;
+import org.apache.hadoop.metadata.types.ClassType;
+import org.apache.hadoop.metadata.types.HierarchicalTypeDefinition;
+import org.apache.hadoop.metadata.types.IDataType;
+import org.apache.hadoop.metadata.types.Multiplicity;
+import org.apache.hadoop.metadata.types.TraitType;
 import org.testng.annotations.BeforeClass;
 
 import javax.ws.rs.core.UriBuilder;
@@ -20,5 +27,23 @@ public class BaseResourceIT {
         client.resource(UriBuilder.fromUri(baseUrl).build());
 
         service = client.resource(UriBuilder.fromUri(baseUrl).build());
+    }
+
+    protected AttributeDefinition createRequiredAttrDef(String name,
+                                                        IDataType dataType) {
+        return new AttributeDefinition(name, dataType.getName(),
+                Multiplicity.REQUIRED, false, null);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected HierarchicalTypeDefinition<TraitType> createTraitTypeDef(
+            String name, ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
+        return new HierarchicalTypeDefinition(TraitType.class, name, superTypes, attrDefs);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected HierarchicalTypeDefinition<ClassType> createClassTypeDef(
+            String name, ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
+        return new HierarchicalTypeDefinition(ClassType.class, name, superTypes, attrDefs);
     }
 }

@@ -30,6 +30,7 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
+@Test (enabled = false)
 public class GraphBackedMetadataRepositoryTest extends RepositoryModuleBaseTest {
 
     private static final String ENTITY_TYPE = "hive-table";
@@ -58,7 +59,7 @@ public class GraphBackedMetadataRepositoryTest extends RepositoryModuleBaseTest 
     public void tearDown() throws Exception {
     }
 
-    @Test
+    @Test (enabled = false)
     public void testSubmitEntity() throws Exception {
         Referenceable hrDept = createDeptEg1(ts);
         ClassType deptType = ts.getDataType(ClassType.class, "Department");
@@ -81,19 +82,19 @@ public class GraphBackedMetadataRepositoryTest extends RepositoryModuleBaseTest 
         }
     }
 
-    @Test(dependsOnMethods = "testSubmitEntity")
+    @Test(dependsOnMethods = "testSubmitEntity", enabled = false)
     public void testGetEntityDefinition() throws Exception {
         ITypedReferenceableInstance entity = repositoryService.getEntityDefinition(guid);
         Assert.assertNotNull(entity);
     }
 
-    @Test
+    @Test (enabled = false)
     public void testGetEntityDefinitionNonExistent() throws Exception {
         ITypedReferenceableInstance entity = repositoryService.getEntityDefinition("blah");
         Assert.assertNull(entity);
     }
 
-    @Test
+    @Test (enabled = false)
     public void testGetEntityList() throws Exception {
         List<String> entityList = repositoryService.getEntityList(ENTITY_TYPE);
         Assert.assertNotNull(entityList);

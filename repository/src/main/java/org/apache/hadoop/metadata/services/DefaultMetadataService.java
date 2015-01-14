@@ -18,26 +18,39 @@
 
 package org.apache.hadoop.metadata.services;
 
-import java.io.IOException;
-import java.util.List;
-
-import javax.inject.Inject;
-
+import com.google.common.base.Preconditions;
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.TypesDef;
 import org.apache.hadoop.metadata.json.Serialization$;
+import org.apache.hadoop.metadata.json.TypesSerialization;
+import org.apache.hadoop.metadata.listener.TypesChangeListener;
+import org.apache.hadoop.metadata.types.IDataType;
 import org.apache.hadoop.metadata.types.TypeSystem;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+import org.json.simple.JSONValue;
+import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import java.io.IOException;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class DefaultMetadataService implements MetadataService {
 
     private static final Logger LOG =
             LoggerFactory.getLogger(DefaultMetadataService.class);
 
+    private final Set<TypesChangeListener> typesChangeListeners = new LinkedHashSet<>();
+
     private final TypeSystem typeSystem;
     private final MetadataRepository repository;
-    
+
     @Inject
     DefaultMetadataService(MetadataRepository repository) throws MetadataException {
     	this.typeSystem = new TypeSystem();
@@ -53,8 +66,46 @@ public class DefaultMetadataService implements MetadataService {
      * @return a unique id for this type
      */
     @Override
-    public String createType(String typeName, String typeDefinition) throws MetadataException {
-        return null;
+    public JSONObject createType(String typeName,
+                                 String typeDefinition) throws MetadataException {
+        try {
+            validate(typeName, typeDefinition);
+
+            TypesDef typesDef = TypesSerialization.fromJson(typeDefinition);
+            Map<String, IDataType> typesAdded = typeSystem.defineTypes(typesDef);
+
+            onAdd(typesAdded);
+
+            JSONObject response = new JSONObject();
+            for (Map.Entry<String, IDataType> entry : typesAdded.entrySet()) {
+                response.put(entry.getKey(), entry.getValue().getName());
+            }
+
+            return response;
+        } catch (ParseException e) {
+            throw new MetadataException("validation failed for: " + typeName);
+        } catch (JSONException e) {
+            throw new MetadataException("Unable to create response for: " + typeName);
+        }
+    }
+
+    private void validate(String typeName,
+                          String typeDefinition) throws ParseException, MetadataException {
+        Preconditions.checkNotNull(typeName, "type name cannot be null");
+        Preconditions.checkNotNull(typeDefinition, "type definition cannot be null");
+        JSONValue.parseWithException(typeDefinition);
+
+        // verify if the type already exists
+        String existingTypeDefinition = null;
+        try {
+            existingTypeDefinition = getTypeDefinition(typeName);
+        } catch (MetadataException ignore) {
+            // do nothing
+        }
+
+        if (existingTypeDefinition != null) {
+            throw new MetadataException("type is already defined for : " + typeName);
+        }
     }
 
     /**
@@ -65,7 +116,8 @@ public class DefaultMetadataService implements MetadataService {
      */
     @Override
     public String getTypeDefinition(String typeName) throws MetadataException {
-        return null;
+        final IDataType dataType = typeSystem.getDataType(IDataType.class, typeName);
+        return TypesSerialization.toJson(typeSystem, dataType.getName());
     }
 
     /**
@@ -75,7 +127,7 @@ public class DefaultMetadataService implements MetadataService {
      */
     @Override
     public List<String> getTypeNamesList() throws MetadataException {
-        return null;
+        return typeSystem.getTypeNames();
     }
 
     /**
@@ -88,9 +140,21 @@ public class DefaultMetadataService implements MetadataService {
     @Override
     public String createEntity(String entityType,
                                String entityDefinition) throws MetadataException {
-        ITypedReferenceableInstance entityInstance =
-                Serialization$.MODULE$.fromJson(entityDefinition);
-        return repository.createEntity(entityInstance, entityType);
+        try {
+            validateEntity(entityDefinition, entityType);
+
+            ITypedReferenceableInstance entityInstance =
+                    Serialization$.MODULE$.fromJson(entityDefinition);
+            return repository.createEntity(entityInstance, entityType);
+        } catch (ParseException e) {
+            throw new MetadataException("validation failed for: " + entityType);
+        }
+    }
+
+    private void validateEntity(String entity, String entityType) throws ParseException {
+        Preconditions.checkNotNull(entity, "entity cannot be null");
+        Preconditions.checkNotNull(entityType, "entity type cannot be null");
+        JSONValue.parseWithException(entity);
     }
 
     /**
@@ -101,7 +165,9 @@ public class DefaultMetadataService implements MetadataService {
      */
     @Override
     public String getEntityDefinition(String guid) throws MetadataException {
-        return null;
+        final ITypedReferenceableInstance instance =
+                repository.getEntityDefinition(guid);
+        return Serialization$.MODULE$.toJson(instance);
     }
 
     /**
@@ -129,6 +195,22 @@ public class DefaultMetadataService implements MetadataService {
         throw new UnsupportedOperationException();
     }
 
+    private void onAdd(Map<String, IDataType> typesAdded) throws MetadataException {
+        for (TypesChangeListener listener : typesChangeListeners) {
+            for (Map.Entry<String, IDataType> entry : typesAdded.entrySet()) {
+                listener.onAdd(entry.getKey(), entry.getValue());
+            }
+        }
+    }
+
+    public void registerListener(TypesChangeListener listener) {
+        typesChangeListeners.add(listener);
+    }
+
+    public void unregisterListener(TypesChangeListener listener) {
+        typesChangeListeners.remove(listener);
+    }
+
     /**
      * Starts the service. This method blocks until the service has completely started.
      *
@@ -143,6 +225,7 @@ public class DefaultMetadataService implements MetadataService {
      */
     @Override
     public void stop() {
+        // do nothing
     }
 
     /**

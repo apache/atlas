@@ -40,9 +40,6 @@
   	</filter-mapping>
 
 	<listener>
-		<listener-class>org.apache.hadoop.metadata.web.listeners.ApplicationStartupListener</listener-class>
-	</listener>
-	<listener>
 		<listener-class>org.apache.hadoop.metadata.web.listeners.GuiceServletConfig</listener-class>
 	</listener>
 </web-app>

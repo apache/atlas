@@ -38,6 +38,7 @@ import com.sun.jersey.api.client.WebResource;
 /**
  * Integration tests for Entity Jersey Resource.
  */
+@Test (enabled = false)
 public class EntityJerseyResourceIT extends BaseResourceIT {
 
     private static final String ENTITY_NAME = "clicks-table";
@@ -45,7 +46,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     private static final String DATABASE_NAME = "ads";
     private static final String TABLE_NAME = "clicks-table";
 
-    @Test
+    @Test (enabled = false)
     public void testSubmitEntity() {
         String entityStream = getTestEntityJSON();
         JsonParser parser = new JsonParser();
@@ -73,7 +74,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }
     }
 
-    @Test (dependsOnMethods = "testSubmitEntity")
+    @Test (dependsOnMethods = "testSubmitEntity", enabled = false)
     public void testGetEntityDefinition() {
         WebResource resource = service
                 .path("api/metadata/entities/definition")
@@ -98,7 +99,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         return JSONValue.toJSONString(props);
     }
 
-    @Test
+    @Test (enabled = false)
     public void testGetInvalidEntityDefinition() {
         WebResource resource = service
                 .path("api/metadata/entities/definition")
@@ -114,7 +115,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         System.out.println("response = " + response);
     }
 
-    @Test (dependsOnMethods = "testSubmitEntity")
+    @Test (dependsOnMethods = "testSubmitEntity", enabled = false)
     public void testGetEntityList() {
         ClientResponse clientResponse = service
                 .path("api/metadata/entities/list/")

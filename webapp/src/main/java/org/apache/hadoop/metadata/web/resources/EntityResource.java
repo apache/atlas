@@ -18,14 +18,17 @@
 
 package org.apache.hadoop.metadata.web.resources;
 
-import java.io.IOException;
-import java.io.StringWriter;
+import com.google.common.base.Preconditions;
+import org.apache.hadoop.metadata.services.MetadataService;
+import org.apache.hadoop.metadata.web.util.Servlets;
+import org.codehaus.jettison.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -37,18 +40,6 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.services.MetadataService;
-import org.apache.hadoop.metadata.web.util.Servlets;
-import org.codehaus.jettison.json.JSONObject;
-import org.json.simple.JSONValue;
-import org.json.simple.parser.ParseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Preconditions;
 
 /**
  * Entity management operations as REST API.
@@ -68,7 +59,7 @@ public class EntityResource {
      * Created by the Guice ServletModule and injected with the
      * configured MetadataService.
      * 
-     * @param metadataService
+     * @param metadataService metadata service handle
      */
     @Inject
     public EntityResource(MetadataService metadataService) {
@@ -82,32 +73,19 @@ public class EntityResource {
     public Response submit(@Context HttpServletRequest request,
                            @PathParam("entityType") final String entityType) {
         try {
-            final String entity = getEntity(request, entityType);
+            final String entity = Servlets.getRequestPayload(request);
             System.out.println("entity = " + entity);
-            validateEntity(entity, entityType);
 
             final String guid = metadataService.createEntity(entity, entityType);
             JSONObject response = new JSONObject();
             response.put("GUID", guid);
+            response.put("requestId", Thread.currentThread().getName());
 
             return Response.ok(response).build();
         } catch (Exception e) {
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         }
-    }
-
-    private String getEntity(HttpServletRequest request,
-                             String entityType) throws IOException {
-        StringWriter writer = new StringWriter();
-        IOUtils.copy(request.getInputStream(), writer);
-        return writer.toString();
-    }
-
-    private void validateEntity(String entity, String entityType) throws ParseException {
-        Preconditions.checkNotNull(entity, "entity cannot be null");
-        Preconditions.checkNotNull(entityType, "entity type cannot be null");
-        JSONValue.parseWithException(entity);
     }
 
     @GET
@@ -118,10 +96,19 @@ public class EntityResource {
 
         try {
             final String entityDefinition = metadataService.getEntityDefinition(guid);
-            return (entityDefinition == null)
-                    ? Response.status(Response.Status.NOT_FOUND).build()
-                    : Response.ok(entityDefinition).build();
-        } catch (MetadataException e) {
+
+            JSONObject response = new JSONObject();
+            response.put("requestId", Thread.currentThread().getName());
+
+            Response.Status status = Response.Status.NOT_FOUND;
+            if (entityDefinition != null) {
+                response.put("definition", entityDefinition);
+                status = Response.Status.OK;
+            }
+
+            return Response.status(status).entity(response).build();
+
+        } catch (Exception e) {
             LOG.error("Action failed: {}\nError: {}",
                     Response.Status.INTERNAL_SERVER_ERROR, e.getMessage());
             throw new WebApplicationException(e, Response
@@ -146,51 +133,6 @@ public class EntityResource {
     public Response getEntityList(@PathParam("entityType") String entityType,
                                   @DefaultValue("0") @QueryParam("offset") Integer offset,
                                   @QueryParam("numResults") Integer resultsPerPage) {
-        return Response.ok().build();
-    }
-
-    @POST
-    @Path("validate/{entityType}")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response validate(@Context HttpServletRequest request,
-                             @PathParam("entityType") String entityType) {
-        return Response.ok().build();
-    }
-
-    @DELETE
-    @Path("delete/{entityType}/{entityName}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response delete(
-            @Context HttpServletRequest request,
-            @PathParam("entityType") final String entityType,
-            @PathParam("entityName") final String entityName) {
-        return Response.ok().build();
-    }
-
-    @POST
-    @Path("update/{entityType}/{entityName}")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response update(@Context HttpServletRequest request,
-                           @PathParam("entityType") final String entityType,
-                           @PathParam("entityName") final String entityName) {
-        return Response.ok().build();
-    }
-
-    @GET
-    @Path("status/{entityType}/{entityName}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getStatus(@PathParam("entityType") String entityType,
-                              @PathParam("entityName") String entityName) {
-        return Response.ok().build();
-    }
-
-    @GET
-    @Path("dependencies/{entityType}/{entityName}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getDependencies(@PathParam("entityType") String entityType,
-                                    @PathParam("entityName") String entityName) {
         return Response.ok().build();
     }
 }

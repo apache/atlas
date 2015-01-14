@@ -18,18 +18,10 @@
 
 package org.apache.hadoop.metadata.services;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.inject.Inject;
-
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.TransactionalGraph;
+import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.metadata.IReferenceableInstance;
 import org.apache.hadoop.metadata.ITypedInstance;
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
@@ -48,10 +40,16 @@ import org.apache.hadoop.metadata.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.TransactionalGraph;
-import com.tinkerpop.blueprints.Vertex;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.inject.Inject;
 
 /**
  * An implementation backed by a Graph database provided
@@ -61,7 +59,6 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
     private static final Logger LOG =
             LoggerFactory.getLogger(GraphBackedMetadataRepository.class);
-    public static final String NAME = GraphBackedMetadataRepository.class.getSimpleName();
 
     private static final String GUID_PROPERTY_KEY = "guid";
     private static final String TIMESTAMP_PROPERTY_KEY = "timestamp";
@@ -71,7 +68,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
     private final AtomicInteger ID_SEQ = new AtomicInteger(0);
 
-//    private ConcurrentHashMap<String, ITypedReferenceableInstance> types;
+    // todo: remove this
     private final ConcurrentHashMap<String, ITypedReferenceableInstance> instances;
 
     private final GraphService graphService;
