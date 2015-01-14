@@ -31,6 +31,7 @@ import org.apache.hadoop.metadata.types.Multiplicity;
 import org.apache.hadoop.metadata.types.StructTypeDefinition;
 import org.apache.hadoop.metadata.types.TraitType;
 import org.apache.hadoop.metadata.types.TypeSystem;
+import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -129,9 +130,25 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
     }
 
-    @Test
+    @Test (dependsOnMethods = "testSubmit")
     public void testGetTypeNames() throws Exception {
+        WebResource resource = service
+                .path("api/metadata/types/list");
 
+        ClientResponse clientResponse = resource
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.GET, ClientResponse.class);
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+
+        String responseAsString = clientResponse.getEntity(String.class);
+        Assert.assertNotNull(responseAsString);
+
+        JSONObject response = new JSONObject(responseAsString);
+        Assert.assertNotNull(response.get("requestId"));
+
+        final JSONArray list = response.getJSONArray("list");
+        Assert.assertNotNull(list);
     }
 
     private List<HierarchicalTypeDefinition> createHiveTypes() throws MetadataException {
