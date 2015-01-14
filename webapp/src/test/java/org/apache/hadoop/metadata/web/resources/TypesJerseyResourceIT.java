@@ -31,6 +31,7 @@ import org.apache.hadoop.metadata.types.Multiplicity;
 import org.apache.hadoop.metadata.types.StructTypeDefinition;
 import org.apache.hadoop.metadata.types.TraitType;
 import org.apache.hadoop.metadata.types.TypeSystem;
+import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -79,14 +80,53 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
                     .type(MediaType.APPLICATION_JSON)
                     .method(HttpMethod.POST, ClientResponse.class, typesAsJSON);
             Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
-            String response = clientResponse.getEntity(String.class);
-            Assert.assertNotNull(response);
+
+            String responseAsString = clientResponse.getEntity(String.class);
+            Assert.assertNotNull(responseAsString);
+
+            JSONObject response = new JSONObject(responseAsString);
+            Assert.assertEquals(response.get("typeName"), typeDefinition.typeName);
+            Assert.assertNotNull(response.get("types"));
+            Assert.assertNotNull(response.get("requestId"));
+        }
+    }
+
+    @Test (dependsOnMethods = "testSubmit")
+    public void testGetDefinition() throws Exception {
+        for (HierarchicalTypeDefinition typeDefinition : typeDefinitions) {
+            System.out.println("typeName = " + typeDefinition.typeName);
+
+            WebResource resource = service
+                    .path("api/metadata/types/definition")
+                    .path(typeDefinition.typeName);
+
+            ClientResponse clientResponse = resource
+                    .accept(MediaType.APPLICATION_JSON)
+                    .type(MediaType.APPLICATION_JSON)
+                    .method(HttpMethod.GET, ClientResponse.class);
+            Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+
+            String responseAsString = clientResponse.getEntity(String.class);
+            Assert.assertNotNull(responseAsString);
+
+            JSONObject response = new JSONObject(responseAsString);
+            Assert.assertEquals(response.get("typeName"), typeDefinition.typeName);
+            Assert.assertNotNull(response.get("definition"));
+            Assert.assertNotNull(response.get("requestId"));
         }
     }
 
     @Test
-    public void testGetDefinition() throws Exception {
+    public void testGetDefinitionForNonexistentType() throws Exception {
+        WebResource resource = service
+                .path("api/metadata/types/definition")
+                .path("blah");
 
+        ClientResponse clientResponse = resource
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.GET, ClientResponse.class);
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
     }
 
     @Test
