@@ -18,9 +18,11 @@
 
 package org.apache.hadoop.metadata.web.resources;
 
+import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.services.MetadataService;
 import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +80,7 @@ public class TypesResource {
 
             return Response.ok(response).build();
         } catch (Exception e) {
-            LOG.error("Unable to persist entity object", e);
+            LOG.error("Unable to persist type {}", typeName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         }
@@ -98,8 +100,12 @@ public class TypesResource {
             response.put("requestId", Thread.currentThread().getName());
 
             return Response.ok(response).build();
-        } catch (Exception e) {
-            LOG.error("Unable to persist entity object", e);
+        } catch (MetadataException e) {
+            LOG.error("Unable to get type definition for type {}", typeName, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
+        } catch (JSONException e) {
+            LOG.error("Unable to get type definition for type {}", typeName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         }
