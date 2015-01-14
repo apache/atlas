@@ -23,7 +23,7 @@ public final class Multiplicity {
     public final int upper;
     public final boolean isUnique;
 
-    private Multiplicity(int lower, int upper, boolean isUnique) {
+    public Multiplicity(int lower, int upper, boolean isUnique) {
         assert lower >= 0;
         assert upper >= 1;
         assert upper >= lower;
