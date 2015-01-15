@@ -225,10 +225,8 @@
                             <arg>-feature</arg>
                         </args>
                         <jvmArgs>
-                            <jvmArg>-Xms1024m</jvmArg>
-                            <jvmArg>-Xmx1024m</jvmArg>
-                            <jvmArg>-XX:PermSize=${PermGen}</jvmArg>
-                            <jvmArg>-XX:MaxPermSize=${MaxPermGen}</jvmArg>
+                            <jvmArg>-Xmx512m</jvmArg>
+                            <jvmArg>-XX:MaxPermSize=128m</jvmArg>
                         </jvmArgs>
                         <javacArgs>
                             <javacArg>-source</javacArg>
