@@ -315,8 +315,7 @@
         <module>repository</module>
         <module>webapp</module>
         <module>docs</module>
-        <module>bridge</module>
-        <module>hivehook</module>
+        <module>metadata-bridge-parent</module>
     </modules>
 
     <repositories>

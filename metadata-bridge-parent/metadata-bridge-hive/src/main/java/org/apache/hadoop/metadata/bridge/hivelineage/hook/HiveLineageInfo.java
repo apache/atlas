@@ -1,4 +1,4 @@
-package org.apache.hadoop.metadata.hive;
+package org.apache.hadoop.metadata.bridge.hivelineage.hook;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -40,11 +40,11 @@ import org.apache.hadoop.hive.ql.parse.HiveParser;
 import org.apache.hadoop.hive.ql.parse.ParseDriver;
 import org.apache.hadoop.hive.ql.parse.ParseException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
-import org.apache.hadoop.metadata.hive.HiveLineageBean.CreateColumns;
-import org.apache.hadoop.metadata.hive.HiveLineageBean.GroupBy;
-import org.apache.hadoop.metadata.hive.HiveLineageBean.QueryColumns;
-import org.apache.hadoop.metadata.hive.HiveLineageBean.SourceTables;
-import org.apache.hadoop.metadata.hive.HiveLineageBean.WhereClause;
+import org.apache.hadoop.metadata.bridge.hivelineage.hook.HiveLineageBean.CreateColumns;
+import org.apache.hadoop.metadata.bridge.hivelineage.hook.HiveLineageBean.GroupBy;
+import org.apache.hadoop.metadata.bridge.hivelineage.hook.HiveLineageBean.QueryColumns;
+import org.apache.hadoop.metadata.bridge.hivelineage.hook.HiveLineageBean.SourceTables;
+import org.apache.hadoop.metadata.bridge.hivelineage.hook.HiveLineageBean.WhereClause;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;

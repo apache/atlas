@@ -1,4 +1,4 @@
-package org.apache.hadoop.metadata.hive;
+package org.apache.hadoop.metadata.bridge.hivelineage.hook;
 
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
