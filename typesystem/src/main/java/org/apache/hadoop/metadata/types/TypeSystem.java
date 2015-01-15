@@ -20,22 +20,40 @@ package org.apache.hadoop.metadata.types;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.TypesDef;
 
+import javax.inject.Singleton;
 import java.lang.reflect.Constructor;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
+@Singleton
 public class TypeSystem {
 
     private Map<String, IDataType> types;
 
-    public TypeSystem() throws MetadataException {
-        types = new HashMap<String, IDataType>();
+    private TypeSystem()  {
+        initialize();
+    }
+
+    /**
+     * This is only used for testing prurposes.
+     * @nonpublic
+     */
+    public void reset() {
+        initialize();
+    }
+
+    private void initialize() {
+        types = new HashMap<>();
         registerPrimitiveTypes();
     }
 
-    private TypeSystem(TypeSystem ts) {
+    private static final TypeSystem INSTANCE = new TypeSystem();
+
+    public static TypeSystem getInstance() {
+        return INSTANCE;
     }
 
     public ImmutableList<String> getTypeNames() {
@@ -87,27 +105,29 @@ public class TypeSystem {
                                        boolean errorIfExists,
                                        AttributeDefinition... attrDefs) throws MetadataException {
         StructTypeDefinition structDef = new StructTypeDefinition(name, attrDefs);
-        Map<String, IDataType> newTypes = defineTypes(ImmutableList.<StructTypeDefinition>of(structDef),
+        defineTypes(ImmutableList.of(structDef),
                 ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
                 ImmutableList.<HierarchicalTypeDefinition<ClassType>>of());
 
         return getDataType(StructType.class, structDef.typeName);
     }
 
-    public TraitType defineTraitType(HierarchicalTypeDefinition<TraitType> traitDef
-    ) throws MetadataException {
-        Map<String, IDataType> newTypes = defineTypes(ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(traitDef),
+    public TraitType defineTraitType(HierarchicalTypeDefinition<TraitType> traitDef)
+        throws MetadataException {
+
+        defineTypes(ImmutableList.<StructTypeDefinition>of(),
+                ImmutableList.of(traitDef),
                 ImmutableList.<HierarchicalTypeDefinition<ClassType>>of());
 
         return getDataType(TraitType.class, traitDef.typeName);
     }
 
-    public ClassType defineClassType(HierarchicalTypeDefinition<ClassType> classDef
-    ) throws MetadataException {
-        Map<String, IDataType> newTypes = defineTypes(ImmutableList.<StructTypeDefinition>of(),
+    public ClassType defineClassType(HierarchicalTypeDefinition<ClassType> classDef)
+        throws MetadataException {
+
+        defineTypes(ImmutableList.<StructTypeDefinition>of(),
                 ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
-                ImmutableList.<HierarchicalTypeDefinition<ClassType>>of(classDef));
+                ImmutableList.of(classDef));
 
         return getDataType(ClassType.class, classDef.typeName);
     }
@@ -115,7 +135,7 @@ public class TypeSystem {
     public Map<String, IDataType> defineTraitTypes(HierarchicalTypeDefinition<TraitType>...traitDefs)
             throws MetadataException {
         TransientTypeSystem transientTypes = new TransientTypeSystem(ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.<HierarchicalTypeDefinition<TraitType>>copyOf(traitDefs),
+                ImmutableList.copyOf(traitDefs),
                 ImmutableList.<HierarchicalTypeDefinition<ClassType>>of());
         return transientTypes.defineTypes();
     }
@@ -180,11 +200,11 @@ public class TypeSystem {
         final ImmutableList<StructTypeDefinition> structDefs;
         final ImmutableList<HierarchicalTypeDefinition<TraitType>> traitDefs;
         final ImmutableList<HierarchicalTypeDefinition<ClassType>> classDefs;
-        Map<String, StructTypeDefinition> structNameToDefMap = new HashMap<String, StructTypeDefinition>();
+        Map<String, StructTypeDefinition> structNameToDefMap = new HashMap<>();
         Map<String, HierarchicalTypeDefinition<TraitType>> traitNameToDefMap =
-                new HashMap<String, HierarchicalTypeDefinition<TraitType>>();
+                new HashMap<>();
         Map<String, HierarchicalTypeDefinition<ClassType>> classNameToDefMap =
-                new HashMap<String, HierarchicalTypeDefinition<ClassType>>();
+                new HashMap<>();
 
         Set<String> transientTypes;
 
@@ -197,20 +217,17 @@ public class TypeSystem {
                             ImmutableList<HierarchicalTypeDefinition<TraitType>> traitDefs,
                             ImmutableList<HierarchicalTypeDefinition<ClassType>> classDefs) {
 
-            super(TypeSystem.this);
             this.structDefs = structDefs;
             this.traitDefs = traitDefs;
             this.classDefs = classDefs;
-            structNameToDefMap = new HashMap<String, StructTypeDefinition>();
-            traitNameToDefMap =
-                    new HashMap<String, HierarchicalTypeDefinition<TraitType>>();
-            classNameToDefMap =
-                    new HashMap<String, HierarchicalTypeDefinition<ClassType>>();
+            structNameToDefMap = new HashMap<>();
+            traitNameToDefMap = new HashMap<>();
+            classNameToDefMap = new HashMap<>();
 
-            recursiveRefs = new ArrayList<AttributeInfo>();
-            recursiveArrayTypes = new ArrayList<DataTypes.ArrayType>();
-            recursiveMapTypes = new ArrayList<DataTypes.MapType>();
-            transientTypes  = new LinkedHashSet<String>();
+            recursiveRefs = new ArrayList<>();
+            recursiveArrayTypes = new ArrayList<>();
+            recursiveMapTypes = new ArrayList<>();
+            transientTypes  = new LinkedHashSet<>();
         }
 
         private IDataType dataType(String name) {
@@ -264,9 +281,10 @@ public class TypeSystem {
             }
         }
 
-        private <U extends HierarchicalType> void validateSuperTypes(Class<U> cls, HierarchicalTypeDefinition<U> def)
+        private <U extends HierarchicalType> void validateSuperTypes(Class<U> cls,
+                                                                     HierarchicalTypeDefinition<U> def)
                 throws MetadataException {
-            Set<String> s = new HashSet<String>();
+            Set<String> s = new HashSet<>();
             ImmutableList<String> superTypes = def.superTypes;
             for (String superTypeName : superTypes) {
 
@@ -373,13 +391,13 @@ public class TypeSystem {
          */
         private void step3() throws MetadataException {
 
-            List<TraitType> traitTypes = new ArrayList<TraitType>();
+            List<TraitType> traitTypes = new ArrayList<>();
             for (String traitTypeName : traitNameToDefMap.keySet()) {
                 traitTypes.add(getDataType(TraitType.class, traitTypeName));
             }
             Collections.sort(traitTypes);
 
-            List<ClassType> classTypes = new ArrayList<ClassType>();
+            List<ClassType> classTypes = new ArrayList<>();
             for (String classTypeName : classNameToDefMap.keySet()) {
                 classTypes.add(getDataType(ClassType.class, classTypeName));
             }
@@ -429,7 +447,7 @@ public class TypeSystem {
                 throw me;
             }
 
-            Map<String, IDataType> newTypes = new HashMap<String, IDataType>();
+            Map<String, IDataType> newTypes = new HashMap<>();
 
             for (String tName : transientTypes) {
                 newTypes.put(tName, dataType(tName));
@@ -483,4 +501,13 @@ public class TypeSystem {
         }
     }
 
+    public static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+    public DateFormat getDateFormat() {
+        return dateFormat;
+    }
+
+    public boolean allowNullsInCollections() {
+        return false;
+    }
 }

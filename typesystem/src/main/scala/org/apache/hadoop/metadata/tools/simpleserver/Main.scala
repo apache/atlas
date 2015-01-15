@@ -51,7 +51,7 @@ object Main extends App {
 
   implicit val system = ActorSystem("metadataservice")
 
-  val typSys = new TypeSystem
+  val typSys = TypeSystem.getInstance()
   val memRepo = new MemRepository(typSys)
 
   val api = system.actorOf(Props(new RestInterface(typSys, memRepo)), "httpInterface")

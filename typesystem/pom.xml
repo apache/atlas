@@ -38,7 +38,7 @@
     </prerequisites>
 
     <properties>
-        <java.version>1.6</java.version>
+        <java.version>1.7</java.version>
         <scala.version>2.10.4</scala.version>
         <scala.binary.version>2.10</scala.binary.version>
         <scala.macros.version>2.0.1</scala.macros.version>
@@ -182,6 +182,10 @@
             <groupId>it.unimi.dsi</groupId>
             <artifactId>fastutil</artifactId>
             <version>${fastutil.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.inject</groupId>
+            <artifactId>guice</artifactId>
         </dependency>
     </dependencies>
 

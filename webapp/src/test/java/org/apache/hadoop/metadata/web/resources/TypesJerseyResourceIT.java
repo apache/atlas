@@ -56,7 +56,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
     public void setUp() throws Exception {
         super.setUp();
 
-        typeSystem = new TypeSystem();
+        typeSystem = TypeSystem.getInstance();
         typeDefinitions = createHiveTypes();
     }
 

@@ -53,7 +53,7 @@ public class DefaultMetadataService implements MetadataService {
 
     @Inject
     DefaultMetadataService(MetadataRepository repository) throws MetadataException {
-    	this.typeSystem = new TypeSystem();
+    	this.typeSystem = TypeSystem.getInstance();
     	this.repository = repository;
     }
 

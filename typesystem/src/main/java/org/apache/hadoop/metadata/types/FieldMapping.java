@@ -116,7 +116,7 @@ public class FieldMapping {
 
         outputFields(s, buf, fieldPrefix);
 
-        TypeSystem ts = MetadataService.getCurrentTypeSystem();
+        TypeSystem ts = TypeSystem.getInstance();
 
         for(String sT : s.getTraits() ) {
             TraitType tt = ts.getDataType(TraitType.class, sT);

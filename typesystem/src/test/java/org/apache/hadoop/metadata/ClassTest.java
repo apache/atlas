@@ -1,6 +1,5 @@
 package org.apache.hadoop.metadata;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.hadoop.metadata.types.ClassType;
 import org.apache.hadoop.metadata.types.*;
 import org.junit.Assert;
@@ -17,7 +16,7 @@ public class ClassTest extends BaseTest {
     @Test
     public void test1() throws MetadataException {
 
-        TypeSystem ts = ms.getTypeSystem();
+        TypeSystem ts = getTypeSystem();
 
         defineDeptEmployeeTypes(ts);
         Referenceable hrDept = createDeptEg1(ts);
