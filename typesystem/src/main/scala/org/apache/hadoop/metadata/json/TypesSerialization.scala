@@ -61,6 +61,11 @@ object TypesSerialization {
     toJson(ts, (typ : IDataType[_]) => typNames.contains(typ.getName))
   }
 
+  import scala.collection.JavaConversions._
+  def toJson(ts : TypeSystem, typNames : java.util.List[String]) : String = {
+    toJson(ts, typNames.toIndexedSeq:_*)
+  }
+
   def toJson(ts : TypeSystem, export : IDataType[_] => Boolean) : String = {
     implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new MultiplicitySerializer
 
