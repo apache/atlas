@@ -32,5 +32,5 @@ class DynamicTypedStruct(val ts : ITypedStruct) extends Dynamic {
     }
     ts.set(name, value1)
   }
-  def dataType = MetadataService.getCurrentTypeSystem.getDataType(classOf[StructType], ts.getTypeName)
+  def dataType = TypeSystem.getInstance().getDataType(classOf[StructType], ts.getTypeName)
 }

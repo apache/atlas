@@ -41,10 +41,15 @@ public abstract class BaseTest {
     public static final String STRUCT_TYPE_1 = "t1";
     public static final String STRUCT_TYPE_2 = "t2";
 
+    protected TypeSystem getTypeSystem() {
+        return TypeSystem.getInstance();
+    }
+
     @Before
     public void setup() throws MetadataException {
 
-        TypeSystem ts = new TypeSystem();
+        TypeSystem ts = TypeSystem.getInstance();
+        ts.reset();
         MemRepository mr = new MemRepository(ts);
         ms = new MetadataService(mr, ts);
         MetadataService.setCurrentService(ms);

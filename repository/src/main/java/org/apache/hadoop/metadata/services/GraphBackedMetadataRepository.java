@@ -78,7 +78,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     GraphBackedMetadataRepository(GraphService graphService) throws MetadataException {
     	this.instances = new ConcurrentHashMap<>();
     	this.graphService = graphService;
-    	this.typeSystem = new TypeSystem();
+    	this.typeSystem = TypeSystem.getInstance();
     }
 
     /**
@@ -186,7 +186,6 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         for (AttributeInfo attributeInfo : fields.values()) {
             System.out.println("*** attributeInfo = " + attributeInfo);
             final IDataType dataType = attributeInfo.dataType();
-            String attributeName = attributeInfo.name;
             Object attributeValue = instance.get(attributeInfo.name);
 
             switch (dataType.getTypeCategory()) {
@@ -220,7 +219,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                     break;
 
                 case CLASS:
-                    Id id = (Id) instance.get(attributeName);
+                    Id id = (Id) instance.get(attributeInfo.name);
                     if (id != null) {
                         Vertex referenceVertex = idToVertexMap.get(id);
                         addEdge(entityVertex, referenceVertex, "references");

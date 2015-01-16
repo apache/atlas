@@ -132,7 +132,8 @@ class TypesSerializationTest extends BaseTest with TypeHelpers {
 
     val typesDef1 = TypesSerialization.fromJson(ser)
 
-    val ts1 = new TypeSystem()
+    val ts1 = TypeSystem.getInstance()
+    ts1.reset()
 
     typesDef1.enumTypes.foreach( ts1.defineEnumType(_))
 

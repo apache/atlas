@@ -105,7 +105,7 @@ public class StructInstance implements ITypedStruct {
 
         if (val != null && val instanceof Id) {
             ClassType clsType =
-                    MetadataService.getCurrentTypeSystem().getDataType(ClassType.class, i.dataType().getName());
+                    TypeSystem.getInstance().getDataType(ClassType.class, i.dataType().getName());
             clsType.validateId((Id)val);
             cVal = val;
         } else {

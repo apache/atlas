@@ -49,7 +49,7 @@ public class GraphBackedMetadataRepositoryTest extends RepositoryModuleBaseTest 
         repositoryService = super.injector.getInstance(GraphBackedMetadataRepository.class);
         repositoryService.start();
 
-        ts = new TypeSystem();
+        ts = TypeSystem.getInstance();
         repo = new MemRepository(ts);
 
         defineDeptEmployeeTypes(ts);

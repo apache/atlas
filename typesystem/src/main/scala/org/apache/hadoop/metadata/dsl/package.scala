@@ -42,7 +42,7 @@ package object dsl {
     new BigDecimalSerializer + new BigIntegerSerializer
 
   def service = MetadataService.getCurrentService
-  def ts = MetadataService.getCurrentTypeSystem
+  def ts = TypeSystem.getInstance
   def repo = MetadataService.getCurrentRepository
 
   val BOOLEAN_TYPE = DataTypes.BOOLEAN_TYPE

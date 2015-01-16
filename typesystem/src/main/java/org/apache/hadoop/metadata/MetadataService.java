@@ -1,4 +1,3 @@
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -49,15 +48,6 @@ public class MetadataService {
             throw new MetadataException("No Repository associated with current thread");
         }
         return r;
-    }
-
-    public static TypeSystem getCurrentTypeSystem() throws MetadataException {
-        MetadataService m = currentSvc.get();
-        TypeSystem t = m == null ? null : m.getTypeSystem();
-        if ( t == null ) {
-            throw new MetadataException("No TypeSystem associated with current thread");
-        }
-        return t;
     }
 
     public MetadataService(IRepository repo, TypeSystem typeSystem) {

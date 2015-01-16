@@ -21,18 +21,35 @@ package org.apache.hadoop.metadata.storage.memory;
 import org.apache.hadoop.metadata.IReferenceableInstance;
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.storage.*;
-import org.apache.hadoop.metadata.types.*;
+import org.apache.hadoop.metadata.storage.DiscoverInstances;
+import org.apache.hadoop.metadata.storage.IRepository;
+import org.apache.hadoop.metadata.storage.Id;
+import org.apache.hadoop.metadata.storage.MapIds;
+import org.apache.hadoop.metadata.storage.ReferenceableInstance;
+import org.apache.hadoop.metadata.storage.RepositoryException;
+import org.apache.hadoop.metadata.types.ClassType;
+import org.apache.hadoop.metadata.types.DataTypes;
+import org.apache.hadoop.metadata.types.HierarchicalType;
+import org.apache.hadoop.metadata.types.Multiplicity;
+import org.apache.hadoop.metadata.types.ObjectGraphWalker;
+import org.apache.hadoop.metadata.types.TraitType;
+import org.apache.hadoop.metadata.types.TypeSystem;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MemRepository implements IRepository {
 
+/*
     public static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
     public static SimpleDateFormat timestampFormat = new SimpleDateFormat("yyyy-MM-dd");
+*/
 
     final TypeSystem typeSystem;
     /*
@@ -43,9 +60,10 @@ public class MemRepository implements IRepository {
 
     public MemRepository(TypeSystem typeSystem) {
         this.typeSystem = typeSystem;
-        this.typeStores = new HashMap<String, HierarchicalTypeStore>();
+        this.typeStores = new HashMap<>();
     }
 
+/*
     @Override
     public DateFormat getDateFormat() {
         return dateFormat;
@@ -60,6 +78,7 @@ public class MemRepository implements IRepository {
     public boolean allowNullsInCollections() {
         return false;
     }
+*/
 
     @Override
     public Id newId(String typeName) {

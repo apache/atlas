@@ -19,24 +19,22 @@
 package org.apache.hadoop.metadata.types;
 
 import com.google.common.collect.ImmutableCollection;
-import com.google.common.collect.ImmutableCollection.Builder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.apache.hadoop.metadata.IReferenceableInstance;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.MetadataService;
-import org.apache.hadoop.metadata.storage.Id;
-import org.apache.hadoop.metadata.IReferenceableInstance;
 import org.apache.hadoop.metadata.storage.IRepository;
-import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.MetadataService;
 import org.apache.hadoop.metadata.storage.Id;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.text.ParseException;
-import java.util.*;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.Map;
 
 public class DataTypes {
 
@@ -388,7 +386,7 @@ public class DataTypes {
                     return (Date) val;
                 } else if ( val instanceof  String) {
                     try {
-                        return MetadataService.getCurrentRepository().getDateFormat().parse((String)val);
+                        return TypeSystem.getInstance().getDateFormat().parse((String) val);
                     } catch(ParseException ne) {
                         throw new ValueConversionException(this, val, ne);
                     }
@@ -404,7 +402,7 @@ public class DataTypes {
         @Override
         public void output(Date val, Appendable buf, String prefix) throws MetadataException {
             TypeUtils.outputVal(val == null ? "<null>" :
-                    MetadataService.getCurrentRepository().getDateFormat().format(val), buf, prefix);
+                    TypeSystem.getInstance().getDateFormat().format(val), buf, prefix);
         }
 
         public Date nullValue() {
@@ -488,14 +486,16 @@ public class DataTypes {
                     ImmutableCollection.Builder b = m.isUnique ? ImmutableSet.builder() : ImmutableList.builder();
                     while (it.hasNext() ) {
                         b.add(elemType.convert(it.next(),
-                                r.allowNullsInCollections() ? Multiplicity.OPTIONAL : Multiplicity.REQUIRED));
+                                TypeSystem.getInstance().allowNullsInCollections()
+                                        ? Multiplicity.OPTIONAL : Multiplicity.REQUIRED));
                     }
                     return b.build();
                 }
                 else {
                     try {
                         return ImmutableList.of(elemType.convert(val,
-                                r.allowNullsInCollections() ? Multiplicity.OPTIONAL : Multiplicity.REQUIRED));
+                                TypeSystem.getInstance().allowNullsInCollections()
+                                        ? Multiplicity.OPTIONAL : Multiplicity.REQUIRED));
                     } catch(Exception e) {
                         throw new ValueConversionException(this, val, e);
                     }
@@ -592,9 +592,11 @@ public class DataTypes {
                     while (it.hasNext() ) {
                         Map.Entry e = it.next();
                         b.put(keyType.convert(e.getKey(),
-                                r.allowNullsInCollections() ? Multiplicity.OPTIONAL : Multiplicity.REQUIRED),
+                                        TypeSystem.getInstance().allowNullsInCollections()
+                                                ? Multiplicity.OPTIONAL : Multiplicity.REQUIRED),
                                 valueType.convert(e.getValue(),
-                                        r.allowNullsInCollections() ? Multiplicity.OPTIONAL : Multiplicity.REQUIRED));
+                                        TypeSystem.getInstance().allowNullsInCollections()
+                                                ? Multiplicity.OPTIONAL : Multiplicity.REQUIRED));
                     }
                     return b.build();
                 }
