@@ -20,8 +20,8 @@ package org.apache.hadoop.metadata.types;
 import org.apache.hadoop.metadata.IReferenceableInstance;
 import org.apache.hadoop.metadata.IStruct;
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.MetadataService;
 import org.apache.hadoop.metadata.storage.Id;
+
 import java.util.Map;
 
 public class FieldMapping {

@@ -18,7 +18,7 @@
 
 package org.apache.hadoop.metadata.dsl
 
-import org.apache.hadoop.metadata.{ITypedStruct, MetadataService}
+import org.apache.hadoop.metadata.{ITypedStruct}
 import org.apache.hadoop.metadata.storage.StructInstance
 import org.apache.hadoop.metadata.types.{StructType, TypeSystem}
 import scala.language.dynamics

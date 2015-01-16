@@ -21,6 +21,7 @@ package org.apache.hadoop.metadata;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.hadoop.metadata.storage.IRepository;
 import org.apache.hadoop.metadata.types.AttributeDefinition;
 import org.apache.hadoop.metadata.types.ClassType;
 import org.apache.hadoop.metadata.types.DataTypes;
@@ -36,13 +37,17 @@ import java.util.Map;
 
 public abstract class BaseTest {
 
-    protected MetadataService ms;
+    protected IRepository repo;
 
     public static final String STRUCT_TYPE_1 = "t1";
     public static final String STRUCT_TYPE_2 = "t2";
 
-    protected TypeSystem getTypeSystem() {
+    protected final TypeSystem getTypeSystem() {
         return TypeSystem.getInstance();
+    }
+
+    protected final IRepository getRepository() {
+        return repo;
     }
 
     @Before
@@ -50,9 +55,7 @@ public abstract class BaseTest {
 
         TypeSystem ts = TypeSystem.getInstance();
         ts.reset();
-        MemRepository mr = new MemRepository(ts);
-        ms = new MetadataService(mr, ts);
-        MetadataService.setCurrentService(ms);
+        repo = new MemRepository(ts);
 
         StructType structType = ts.defineStructType(STRUCT_TYPE_1,
                 true,
@@ -79,8 +82,8 @@ public abstract class BaseTest {
 
     }
 
-    public static Struct createStruct(MetadataService ms) throws MetadataException {
-        StructType structType = (StructType) ms.getTypeSystem().getDataType(StructType.class, STRUCT_TYPE_1);
+    public static Struct createStruct() throws MetadataException {
+        StructType structType = (StructType) TypeSystem.getInstance().getDataType(StructType.class, STRUCT_TYPE_1);
         Struct s = new Struct(structType.getName());
         s.set("a", 1);
         s.set("b", true);
@@ -132,7 +135,7 @@ public abstract class BaseTest {
     }
 
     protected Map<String, IDataType> defineTraits(HierarchicalTypeDefinition... tDefs) throws MetadataException {
-        return ms.getTypeSystem().defineTraitTypes(tDefs);
+        return getTypeSystem().defineTraitTypes(tDefs);
     }
 
     protected HierarchicalTypeDefinition<TraitType> createTraitTypeDef(String name, ImmutableList<String> superTypes,
@@ -189,7 +192,7 @@ public abstract class BaseTest {
                 ts.getDataType(ClassType.class, "Manager")
         );
 
-        ms.getRepository().defineTypes(types);
+        repo.defineTypes(types);
 
     }
 

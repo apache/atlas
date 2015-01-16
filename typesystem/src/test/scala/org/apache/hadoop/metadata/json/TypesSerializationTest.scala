@@ -27,7 +27,7 @@ class TypesSerializationTest extends BaseTest with TypeHelpers {
 
   @Test def test1: Unit = {
 
-    val ts = ms.getTypeSystem
+    val ts = getTypeSystem
 
     val sDef = structDef("ts1", requiredAttr("a", DataTypes.INT_TYPE),
       optionalAttr("b", DataTypes.BOOLEAN_TYPE),

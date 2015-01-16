@@ -24,8 +24,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.apache.hadoop.metadata.IReferenceableInstance;
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.MetadataService;
-import org.apache.hadoop.metadata.storage.IRepository;
 import org.apache.hadoop.metadata.storage.Id;
 
 import java.math.BigDecimal;
@@ -472,7 +470,6 @@ public class DataTypes {
 
         @Override
         public ImmutableCollection<?> convert(Object val, Multiplicity m) throws MetadataException {
-            IRepository r = MetadataService.getCurrentRepository();
             if ( val != null ) {
                 Iterator it = null;
                 if ( val instanceof Collection ) {
@@ -583,7 +580,6 @@ public class DataTypes {
 
         @Override
         public ImmutableMap<?, ?> convert(Object val, Multiplicity m) throws MetadataException {
-            IRepository r = MetadataService.getCurrentRepository();
             if ( val != null ) {
                 Iterator<Map.Entry> it = null;
                 if ( Map.class.isAssignableFrom(val.getClass())) {

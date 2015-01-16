@@ -22,6 +22,7 @@ import java.text.SimpleDateFormat
 
 import org.apache.hadoop.metadata.json.{BigIntegerSerializer, BigDecimalSerializer, TypedStructSerializer, Serialization}
 import org.apache.hadoop.metadata.storage.StructInstance
+import org.apache.hadoop.metadata.storage.memory.MemRepository
 import org.apache.hadoop.metadata.types._
 
 import scala.collection.JavaConverters._
@@ -41,9 +42,8 @@ package object dsl {
   implicit val formats = defFormat + new TypedStructSerializer +
     new BigDecimalSerializer + new BigIntegerSerializer
 
-  def service = MetadataService.getCurrentService
   def ts = TypeSystem.getInstance
-  def repo = MetadataService.getCurrentRepository
+  def repo = new MemRepository(ts)
 
   val BOOLEAN_TYPE = DataTypes.BOOLEAN_TYPE
   val BYTE_TYPE = DataTypes.BYTE_TYPE

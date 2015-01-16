@@ -18,7 +18,6 @@
 
 package org.apache.hadoop.metadata.cli
 
-import org.apache.hadoop.metadata.MetadataService
 import org.apache.hadoop.metadata.storage.memory.MemRepository
 import org.apache.hadoop.metadata.types.TypeSystem
 
@@ -46,8 +45,6 @@ class SampleILoop extends ILoop {
 
   val ts: TypeSystem = TypeSystem.getInstance()
   val mr: MemRepository = new MemRepository(ts)
-  val ms : MetadataService = new MetadataService(mr, ts)
-  MetadataService.setCurrentService(ms)
 
   addThunk {
     intp.beQuietDuring {
@@ -56,7 +53,7 @@ class SampleILoop extends ILoop {
       intp.addImports("org.json4s._")
       intp.addImports("org.json4s.native.JsonMethods._")
       intp.addImports("org.apache.hadoop.metadata.dsl._")
-      intp.bindValue("service", ms)
+      //intp.bindValue("service", ms)
       //intp.bindValue("cp", intp.compilerClasspath)
     }
   }

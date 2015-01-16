@@ -20,11 +20,9 @@ package org.apache.hadoop.metadata.storage;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.metadata.IStruct;
-import org.apache.hadoop.metadata.types.*;
-import org.apache.hadoop.metadata.IStruct;
 import org.apache.hadoop.metadata.ITypedStruct;
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.MetadataService;
+import org.apache.hadoop.metadata.types.*;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;

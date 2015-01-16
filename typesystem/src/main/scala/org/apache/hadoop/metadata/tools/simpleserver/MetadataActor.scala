@@ -21,7 +21,7 @@ package org.apache.hadoop.metadata.tools.simpleserver
 import akka.actor._
 import akka.util.Timeout
 import com.google.common.collect.ImmutableList
-import org.apache.hadoop.metadata.{TypesDef, MetadataService, ITypedReferenceableInstance}
+import org.apache.hadoop.metadata.{TypesDef, ITypedReferenceableInstance}
 import org.apache.hadoop.metadata.json._
 import org.apache.hadoop.metadata.storage.memory.MemRepository
 import org.apache.hadoop.metadata.types._
@@ -72,12 +72,10 @@ import scala.collection.JavaConversions._
       sender ! TypesCreated
 
     case CreateInstance(i) =>
-      MetadataService.setCurrentService(new MetadataService(memRepository, typeSystem))
       val r = memRepository.create(i)
       sender ! InstanceCreated(r.getId)
 
     case GetInstance(id) =>
-      MetadataService.setCurrentService(new MetadataService(memRepository, typeSystem))
       val r = memRepository.get(id)
       sender ! InstanceDetails(r)
   }

@@ -109,7 +109,7 @@ public class EnumTest extends BaseTest {
 
     @Test
     public void testStruct() throws MetadataException {
-        TypeSystem ts = ms.getTypeSystem();
+        TypeSystem ts = getTypeSystem();
         defineEnums(ts);
         StructType structType = ts.defineStructType("t3",
                 true,
@@ -160,7 +160,7 @@ public class EnumTest extends BaseTest {
 
     @Test
     public void testClass() throws MetadataException {
-        TypeSystem ts = ms.getTypeSystem();
+        TypeSystem ts = getTypeSystem();
         defineEnums(ts);
         ClassType clsType = defineClassTypeWithEnum(ts);
 
@@ -193,16 +193,16 @@ public class EnumTest extends BaseTest {
     @Test
     public void testStorage() throws MetadataException {
 
-        TypeSystem ts = ms.getTypeSystem();
+        TypeSystem ts = getTypeSystem();
         defineEnums(ts);
         ClassType clsType = defineClassTypeWithEnum(ts);
 
-        ms.getRepository().defineTypes(ImmutableList.of((HierarchicalType)clsType));
+        getRepository().defineTypes(ImmutableList.of((HierarchicalType)clsType));
 
         IReferenceableInstance r = createInstanceWithEnum("t4");
-        IReferenceableInstance r1 = ms.getRepository().create(r);
+        IReferenceableInstance r1 = getRepository().create(r);
 
-        ITypedReferenceableInstance r2 = ms.getRepository().get(r1.getId());
+        ITypedReferenceableInstance r2 = getRepository().get(r1.getId());
         Assert.assertEquals(r2.toString(), "{\n" +
                 "\tid : (type: t4, id: 1)\n" +
                 "\ta : \t1\n" +
@@ -230,16 +230,16 @@ public class EnumTest extends BaseTest {
     @Test
     public void testJson() throws MetadataException {
 
-        TypeSystem ts = ms.getTypeSystem();
+        TypeSystem ts = getTypeSystem();
         defineEnums(ts);
         ClassType clsType = defineClassTypeWithEnum(ts);
 
-        ms.getRepository().defineTypes(ImmutableList.of((HierarchicalType)clsType));
+        getRepository().defineTypes(ImmutableList.of((HierarchicalType)clsType));
 
         IReferenceableInstance r = createInstanceWithEnum("t4");
-        IReferenceableInstance r1 = ms.getRepository().create(r);
+        IReferenceableInstance r1 = getRepository().create(r);
 
-        ITypedReferenceableInstance r2 = ms.getRepository().get(r1.getId());
+        ITypedReferenceableInstance r2 = getRepository().get(r1.getId());
         String jsonStr = Serialization$.MODULE$.toJson(r2);
 
         IReferenceableInstance r3 = Serialization$.MODULE$.fromJson(jsonStr);

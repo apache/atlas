@@ -10,10 +10,11 @@ import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hadoop.hive.metastore.api.UnknownDBException;
 import org.apache.hadoop.hive.metastore.api.UnknownTableException;
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.MetadataService;
 import org.apache.hadoop.metadata.Referenceable;
+import org.apache.hadoop.metadata.storage.IRepository;
 import org.apache.hadoop.metadata.storage.RepositoryException;
 import org.apache.hadoop.metadata.types.ClassType;
+import org.apache.hadoop.metadata.types.TypeSystem;
 import org.apache.thrift.TException;
 /*
  * Initial pass at one time importer TODO - needs re-write
@@ -23,12 +24,12 @@ import org.apache.thrift.TException;
 public class HiveMetaImporter {
 	
 	private static HiveMetaStoreClient msc;
-	private static MetadataService ms;
+	private static IRepository repo;
 	
-	public HiveMetaImporter(MetadataService ms){
+	public HiveMetaImporter(IRepository repo){
 	
 		try {
-			this.ms = ms;
+			this.repo = repo;
 			msc = new HiveMetaStoreClient(new HiveConf());
 		} catch (MetaException e) {
 			// TODO Auto-generated catch block
@@ -59,7 +60,7 @@ public class HiveMetaImporter {
 	public static boolean databasesImport() throws MetaException, RepositoryException{
 		ClassType classType = null;
 		try {
-			classType = ms.getTypeSystem().getDataType(ClassType.class, HiveStructureBridge.DB_CLASS_TYPE);
+			classType = TypeSystem.getInstance().getDataType(ClassType.class, HiveStructureBridge.DB_CLASS_TYPE);
 		} catch (MetadataException e1) {
 			e1.printStackTrace();
 		}
@@ -79,7 +80,7 @@ public class HiveMetaImporter {
 				if(db.isSetOwnerType()){dbRef.set("OWNER_TYPE", db.getOwnerType());}
 				if(db.isSetOwnerName()){dbRef.set("OWNER_NAME", db.getOwnerName());}
 				
-				ms.getRepository().create(dbRef);
+				repo.create(dbRef);
 			} catch (NoSuchObjectException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -93,7 +94,7 @@ public class HiveMetaImporter {
 	public static boolean tablesImport(String dbName) throws MetaException, RepositoryException{
 		ClassType classType = null;
 		try {
-			classType = ms.getTypeSystem().getDataType(ClassType.class, HiveStructureBridge.TB_CLASS_TYPE);
+			classType = TypeSystem.getInstance().getDataType(ClassType.class, HiveStructureBridge.TB_CLASS_TYPE);
 		} catch (MetadataException e1) {
 			e1.printStackTrace();
 		}
@@ -115,7 +116,7 @@ public class HiveMetaImporter {
 				if(tb.isSetViewExpandedText()){tbRef.set("VIEW_EXPANDED_TEXT", tb.getViewExpandedText());}
 				if(tb.isSetViewOriginalText()){tbRef.set("VIEW_ORIGINAL_TEXT", tb.getViewOriginalText());}
 
-				ms.getRepository().create(tbRef);
+				repo.create(tbRef);
 			} catch (NoSuchObjectException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -129,7 +130,7 @@ public class HiveMetaImporter {
 	public static boolean fieldsImport (String dbName, String tbName) throws MetaException, RepositoryException{
 		ClassType classType = null;
 		try {
-			classType = ms.getTypeSystem().getDataType(ClassType.class, HiveStructureBridge.FD_CLASS_TYPE);
+			classType = TypeSystem.getInstance().getDataType(ClassType.class, HiveStructureBridge.FD_CLASS_TYPE);
 		} catch (MetadataException e1) {
 			e1.printStackTrace();
 		}
@@ -140,7 +141,7 @@ public class HiveMetaImporter {
 				fdRef.set("COLUMN_NAME", fs.getName());
 				fdRef.set("TYPE_NAME", fs.getType());
 
-				ms.getRepository().create(fdRef);
+				repo.create(fdRef);
 			}
 		} catch (UnknownTableException e) {
 			// TODO Auto-generated catch block

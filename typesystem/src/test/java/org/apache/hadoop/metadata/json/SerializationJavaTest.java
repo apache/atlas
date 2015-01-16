@@ -47,7 +47,7 @@ public class SerializationJavaTest extends BaseTest {
     @Test
     public void test1() throws MetadataException {
 
-        TypeSystem ts = ms.getTypeSystem();
+        TypeSystem ts = getTypeSystem();
 
         HierarchicalTypeDefinition<ClassType> deptTypeDef = createClassTypeDef("Department", ImmutableList.<String>of(),
                 createRequiredAttrDef("name", DataTypes.STRING_TYPE),

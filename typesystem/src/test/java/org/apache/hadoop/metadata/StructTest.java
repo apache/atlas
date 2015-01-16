@@ -32,13 +32,13 @@ public class StructTest extends BaseTest {
     @Before
     public void setup() throws MetadataException {
         super.setup();
-        structType = (StructType) ms.getTypeSystem().getDataType(StructType.class, STRUCT_TYPE_1);
-        recursiveStructType = (StructType) ms.getTypeSystem().getDataType(StructType.class, STRUCT_TYPE_2);
+        structType = (StructType) getTypeSystem().getDataType(StructType.class, STRUCT_TYPE_1);
+        recursiveStructType = (StructType) getTypeSystem().getDataType(StructType.class, STRUCT_TYPE_2);
     }
 
     @Test
     public void test1() throws MetadataException {
-        Struct s = createStruct(ms);
+        Struct s = createStruct();
         ITypedStruct ts = structType.convert(s, Multiplicity.REQUIRED);
         Assert.assertEquals(ts.toString(), "{\n" +
                 "\ta : \t1\n" +

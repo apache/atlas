@@ -40,12 +40,12 @@ class SerializationTest extends BaseTest {
   @Before
   override def setup {
     super.setup
-    structType = ms.getTypeSystem.getDataType(classOf[StructType], BaseTest.STRUCT_TYPE_1).asInstanceOf[StructType]
-    recursiveStructType = ms.getTypeSystem.getDataType(classOf[StructType], BaseTest.STRUCT_TYPE_2).asInstanceOf[StructType]
+    structType = getTypeSystem.getDataType(classOf[StructType], BaseTest.STRUCT_TYPE_1).asInstanceOf[StructType]
+    recursiveStructType = getTypeSystem.getDataType(classOf[StructType], BaseTest.STRUCT_TYPE_2).asInstanceOf[StructType]
   }
 
   @Test def test1 {
-    val s: Struct = BaseTest.createStruct(ms)
+    val s: Struct = BaseTest.createStruct()
     val ts: ITypedStruct = structType.convert(s, Multiplicity.REQUIRED)
 
     Assert.assertEquals(ts.toString, "{\n\ta : \t1\n\tb : \ttrue\n\tc : \t1\n\td : \t2\n\te : \t1\n\tf : \t1\n\tg : \t1\n\th : \t1.0\n\ti : \t1.0\n\tj : \t1\n\tk : \t1\n\tl : \t2014-12-10\n\tm : \t[1, 1]\n\tn : \t[1.1, 1.1]\n\to : \t{b=2.0, a=1.0}\n}")
@@ -63,7 +63,7 @@ class SerializationTest extends BaseTest {
   }
 
   @Test def test2 {
-    val s: Struct = BaseTest.createStruct(ms)
+    val s: Struct = BaseTest.createStruct()
     val ts: ITypedStruct = structType.convert(s, Multiplicity.REQUIRED)
 
     implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new TypedStructSerializer +
@@ -92,7 +92,7 @@ class SerializationTest extends BaseTest {
 
     defineTraits(A, B, C, D)
 
-    val DType: TraitType = ms.getTypeSystem.getDataType(classOf[TraitType], "D").asInstanceOf[TraitType]
+    val DType: TraitType = getTypeSystem.getDataType(classOf[TraitType], "D").asInstanceOf[TraitType]
     val s1: Struct = new Struct("D")
     s1.set("d", 1)
     s1.set("c", 1)
@@ -106,7 +106,7 @@ class SerializationTest extends BaseTest {
     s1.set("A.C.D.c", 3)
     s1.set("A.C.D.d", 3)
 
-    val s: Struct = BaseTest.createStruct(ms)
+    val s: Struct = BaseTest.createStruct()
     val ts: ITypedStruct = DType.convert(s1, Multiplicity.REQUIRED)
 
     implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new TypedStructSerializer +
@@ -129,7 +129,7 @@ class SerializationTest extends BaseTest {
 
   @Test def testClass {
 
-    val ts: TypeSystem = ms.getTypeSystem
+    val ts: TypeSystem = getTypeSystem
 
     val deptTypeDef: HierarchicalTypeDefinition[ClassType] = createClassTypeDef("Department",
       ImmutableList.of[String],
