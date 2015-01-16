@@ -1,19 +1,12 @@
 package org.apache.hadoop.metadata.bridge.hivelineage.hook;
 
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.google.gson.Gson;
-
 import java.io.DataOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Set;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -24,22 +17,16 @@ import javax.net.ssl.X509TrustManager;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.QueryPlan;
 import org.apache.hadoop.hive.ql.exec.ExplainTask;
-import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.exec.Utilities;
-import org.apache.hadoop.hive.ql.exec.tez.TezTask;
 import org.apache.hadoop.hive.ql.hooks.ExecuteWithHookContext;
 import org.apache.hadoop.hive.ql.hooks.HookContext;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.util.StringUtils;
-//import org.apache.hadoop.yarn.api.records.timeline.TimelineEntity;
-//import org.apache.hadoop.yarn.api.records.timeline.TimelineEvent;
-//import org.apache.hadoop.yarn.client.api.TimelineClient;
-//import org.apache.hadoop.yarn.conf.YarnConfiguration;
 
+import com.google.gson.Gson;
 
 /**
  * DGC Hook sends query + plan info to DGCCollector Service. To enable (hadoop 2.4 and up) set
@@ -50,6 +37,10 @@ public class Hook implements ExecuteWithHookContext {
 
   private static final Log LOG = LogFactory.getLog(Hook.class.getName());
   private HiveLineageBean hlb;
+  
+  private static final String METADATA_HOST = "localhost";
+  private static final int METADATA_PORT = 20810;
+  private static final String METADATA_PATH = "/entities/submit/HiveLineage";
 
   @Override
   public void run(HookContext hookContext) throws Exception {
@@ -76,7 +67,6 @@ public class Hook implements ExecuteWithHookContext {
             }
             if (numMrJobs > 0) {
             	executionEngine="mr";
-
             }
             hiveId = sess.getSessionId();
            
@@ -168,7 +158,7 @@ public class Hook implements ExecuteWithHookContext {
         }
  
   public void fireAndForget(Configuration conf, HiveLineageBean hookData, String queryId) throws Exception {
-			String postUri = "http://167.69.111.50:20810/HiveHookCollector/HookServlet"; 		
+			String postUri = String.format("http://%s:%i%s%s", METADATA_HOST, METADATA_PORT, METADATA_PATH); 		
 	  		if (conf.getTrimmed("hadoop.metadata.hive.hook.uri") != null) {
 		  		postUri = conf.getTrimmed("hadoop.metadata.hive.hook.uri");
 	  		} 
