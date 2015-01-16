@@ -105,8 +105,8 @@ trait Json4sProtocol extends Json4sSupport {
 
   implicit def json4sFormats: Formats =
     org.json4s.native.Serialization.formats(NoTypeHints) + new MultiplicitySerializer +
-      new TypedStructSerializer(Some(new MetadataService(memRepository, typeSystem))) +
-      new TypedReferenceableInstanceSerializer(Some(new MetadataService(memRepository, typeSystem))) +
+      new TypedStructSerializer +
+      new TypedReferenceableInstanceSerializer +
       new BigDecimalSerializer + new BigIntegerSerializer + new IdSerializer
 }
 
