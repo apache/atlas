@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.hadoop.metadata.RepositoryMetadataModule;
-import org.apache.hadoop.metadata.services.GraphService;
+import org.apache.hadoop.metadata.repository.graph.GraphService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

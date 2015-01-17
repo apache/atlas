@@ -2,7 +2,7 @@ package org.apache.hadoop.metadata;
 
 import junit.framework.Assert;
 
-import org.apache.hadoop.metadata.services.GraphService;
+import org.apache.hadoop.metadata.repository.graph.GraphService;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;

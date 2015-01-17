@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata.services;
+package org.apache.hadoop.metadata.repository.graph;
 
 import java.io.IOException;
 import java.util.ArrayList;

@@ -56,6 +56,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     private static final String TABLE_NAME = "bar";
     private static final String TRAIT_TYPE = "hive_fetl";
 
+    private String tableInstanceAsJSON;
     private String guid;
 
     @BeforeClass
@@ -70,7 +71,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     public void testSubmitEntity() throws Exception {
         ITypedReferenceableInstance tableInstance = createHiveTableInstance();
 
-        String instanceAsJSON = Serialization$.MODULE$.toJson(tableInstance);
+        tableInstanceAsJSON = Serialization$.MODULE$.toJson(tableInstance);
 
         WebResource resource = service
                 .path("api/metadata/entities/submit")
@@ -79,7 +80,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         ClientResponse clientResponse = resource
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
-                .method(HttpMethod.POST, ClientResponse.class, instanceAsJSON);
+                .method(HttpMethod.POST, ClientResponse.class, tableInstanceAsJSON);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
         String responseAsString = clientResponse.getEntity(String.class);
@@ -99,7 +100,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     }
 
     @Test (dependsOnMethods = "testSubmitEntity")
-    public void testGetEntityDefinition() {
+    public void testGetEntityDefinition() throws Exception {
         WebResource resource = service
                 .path("api/metadata/entities/definition")
                 .path(guid);
@@ -109,8 +110,19 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
-        String response = clientResponse.getEntity(String.class);
-        System.out.println("response = " + response);
+
+        String responseAsString = clientResponse.getEntity(String.class);
+        Assert.assertNotNull(responseAsString);
+
+        JSONObject response = new JSONObject(responseAsString);
+        Assert.assertNotNull(response.get("requestId"));
+
+        final String definition = response.getString("definition");
+        Assert.assertNotNull(definition);
+
+        System.out.println("definition = " + definition);
+        System.out.println("tableInstanceAsJSON = " + tableInstanceAsJSON);
+        // Assert.assertEquals(definition, tableInstanceAsJSON);
     }
 
     @Test

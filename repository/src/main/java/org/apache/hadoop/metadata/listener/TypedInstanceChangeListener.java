@@ -16,24 +16,25 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata.services;
+package org.apache.hadoop.metadata.listener;
 
-import org.apache.hadoop.metadata.IReferenceableInstance;
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
-import org.apache.hadoop.metadata.service.Service;
-import org.apache.hadoop.metadata.storage.RepositoryException;
-
-import java.util.List;
+import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.types.IDataType;
 
 /**
- * An interface for persisting metadata into a blueprints enabled graph db.
+ * Typed instance change notification listener.
  */
-public interface MetadataRepository extends Service {
+public interface TypedInstanceChangeListener {
 
-    String createEntity(IReferenceableInstance entity,
-                        String entityType) throws RepositoryException;
+    /**
+     * This is upon adding a new typed instance to the repository.
+     *
+     * @param typeName type name
+     * @param typedInstance a typed instance
+     * @throws org.apache.hadoop.metadata.MetadataException
+     */
+    void onAdd(String typeName,
+               ITypedReferenceableInstance typedInstance) throws MetadataException;
 
-    ITypedReferenceableInstance getEntityDefinition(String guid) throws RepositoryException;
-
-    List<String> getEntityList(String entityType) throws RepositoryException;
 }

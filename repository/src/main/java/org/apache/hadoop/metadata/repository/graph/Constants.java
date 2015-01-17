@@ -16,33 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata.services;
+package org.apache.hadoop.metadata.repository.graph;
 
-import java.util.Set;
+final class Constants {
 
-import org.apache.hadoop.metadata.service.Service;
+    private Constants() {
+    }
 
-import com.tinkerpop.blueprints.Graph;
-import com.tinkerpop.blueprints.KeyIndexableGraph;
-import com.tinkerpop.blueprints.TransactionalGraph;
-
-/**
- * A blueprints based graph service.
- */
-public interface GraphService extends Service {
-
-    /**
-     * Returns an handle to the graph db.
-     *
-     * @return an handle to the graph db
-     */
-    Graph getBlueprintsGraph();
-
-    KeyIndexableGraph getIndexableGraph();
-
-    TransactionalGraph getTransactionalGraph();
-
-    Set<String> getVertexIndexedKeys();
-
-    Set<String> getEdgeIndexedKeys();
+    static final String GUID_PROPERTY_KEY = "GUID";
+    static final String ENTITY_TYPE_PROPERTY_KEY = "typeName";
+    static final String VERSION_PROPERTY_KEY = "version";
+    static final String TIMESTAMP_PROPERTY_KEY = "timestamp";
 }

@@ -1,4 +1,4 @@
-package org.apache.hadoop.metadata.services;
+package org.apache.hadoop.metadata.repository.graph;
 
 import com.thinkaurelius.titan.core.TitanGraph;
 

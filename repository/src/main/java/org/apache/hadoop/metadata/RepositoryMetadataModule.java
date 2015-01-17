@@ -29,13 +29,13 @@ import com.google.inject.Scopes;
 import com.google.inject.throwingproviders.ThrowingProviderBinder;
 import com.thinkaurelius.titan.core.TitanGraph;
 import org.apache.hadoop.metadata.services.DefaultMetadataService;
-import org.apache.hadoop.metadata.services.GraphBackedMetadataRepository;
-import org.apache.hadoop.metadata.services.GraphProvider;
-import org.apache.hadoop.metadata.services.GraphService;
-import org.apache.hadoop.metadata.services.GraphServiceConfigurator;
-import org.apache.hadoop.metadata.services.MetadataRepository;
+import org.apache.hadoop.metadata.repository.graph.GraphBackedMetadataRepository;
+import org.apache.hadoop.metadata.repository.graph.GraphProvider;
+import org.apache.hadoop.metadata.repository.graph.GraphService;
+import org.apache.hadoop.metadata.repository.graph.GraphServiceConfigurator;
+import org.apache.hadoop.metadata.repository.MetadataRepository;
 import org.apache.hadoop.metadata.services.MetadataService;
-import org.apache.hadoop.metadata.services.TitanGraphProvider;
+import org.apache.hadoop.metadata.repository.graph.TitanGraphProvider;
 
 /**
  * Guice module for Repository module.

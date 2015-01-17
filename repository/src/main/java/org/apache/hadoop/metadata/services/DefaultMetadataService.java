@@ -24,7 +24,9 @@ import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.TypesDef;
 import org.apache.hadoop.metadata.json.Serialization$;
 import org.apache.hadoop.metadata.json.TypesSerialization;
+import org.apache.hadoop.metadata.listener.TypedInstanceChangeListener;
 import org.apache.hadoop.metadata.listener.TypesChangeListener;
+import org.apache.hadoop.metadata.repository.MetadataRepository;
 import org.apache.hadoop.metadata.types.IDataType;
 import org.apache.hadoop.metadata.types.TypeSystem;
 import org.codehaus.jettison.json.JSONException;
@@ -47,6 +49,8 @@ public class DefaultMetadataService implements MetadataService {
             LoggerFactory.getLogger(DefaultMetadataService.class);
 
     private final Set<TypesChangeListener> typesChangeListeners = new LinkedHashSet<>();
+    private final Set<TypedInstanceChangeListener> typedInstanceChangeListeners
+            = new LinkedHashSet<>();
 
     private final TypeSystem typeSystem;
     private final MetadataRepository repository;
@@ -147,7 +151,11 @@ public class DefaultMetadataService implements MetadataService {
 
             ITypedReferenceableInstance entityInstance =
                     Serialization$.MODULE$.fromJson(entityDefinition);
-            return repository.createEntity(entityInstance, entityType);
+            final String guid = repository.createEntity(entityInstance, entityType);
+
+            onAdd(entityType, entityInstance);
+
+            return guid;
         } catch (ParseException e) {
             LOG.error("Unable to parse JSON {} for type {}", entityDefinition, entityType, e);
             throw new MetadataException("validation failed for: " + entityType);
@@ -202,6 +210,21 @@ public class DefaultMetadataService implements MetadataService {
 
     public void unregisterListener(TypesChangeListener listener) {
         typesChangeListeners.remove(listener);
+    }
+
+    private void onAdd(String typeName,
+                       ITypedReferenceableInstance typedInstance) throws MetadataException {
+        for (TypedInstanceChangeListener listener : typedInstanceChangeListeners) {
+            listener.onAdd(typeName, typedInstance);
+        }
+    }
+
+    public void registerListener(TypedInstanceChangeListener listener) {
+        typedInstanceChangeListeners.add(listener);
+    }
+
+    public void unregisterListener(TypedInstanceChangeListener listener) {
+        typedInstanceChangeListeners.remove(listener);
     }
 
     /**

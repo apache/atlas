@@ -1,6 +1,7 @@
 package org.apache.hadoop.metadata.services;
 
 import org.apache.hadoop.metadata.RepositoryModuleBaseTest;
+import org.apache.hadoop.metadata.repository.graph.TitanGraphService;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
