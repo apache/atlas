@@ -67,22 +67,23 @@ public class EntityResource {
     }
 
     @POST
-    @Path("submit/{entityType}")
+    @Path("submit/{typeName}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response submit(@Context HttpServletRequest request,
-                           @PathParam("entityType") final String entityType) {
+                           @PathParam("typeName") final String typeName) {
         try {
             final String entity = Servlets.getRequestPayload(request);
-            System.out.println("entity = " + entity);
+            LOG.debug("submitting entity {} ", entity);
 
-            final String guid = metadataService.createEntity(entity, entityType);
+            final String guid = metadataService.createEntity(typeName, entity);
             JSONObject response = new JSONObject();
             response.put("GUID", guid);
             response.put("requestId", Thread.currentThread().getName());
 
             return Response.ok(response).build();
         } catch (Exception e) {
+            LOG.error("Unable to persist instance for type {}", typeName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         }
@@ -109,8 +110,7 @@ public class EntityResource {
             return Response.status(status).entity(response).build();
 
         } catch (Exception e) {
-            LOG.error("Action failed: {}\nError: {}",
-                    Response.Status.INTERNAL_SERVER_ERROR, e.getMessage());
+            LOG.error("Unable to get instance definition for GUID {}", guid, e);
             throw new WebApplicationException(e, Response
                     .status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity(e.getMessage())

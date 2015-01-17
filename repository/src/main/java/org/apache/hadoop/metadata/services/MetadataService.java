@@ -73,15 +73,6 @@ public interface MetadataService extends Service {
     String getEntityDefinition(String guid) throws MetadataException;
 
     /**
-     * Return the definition for the given entity name and type.
-     *
-     * @param entityName name
-     * @param entityType type
-     * @return entity definition as JSON
-     */
-    String getEntityDefinition(String entityName, String entityType) throws MetadataException;
-
-    /**
      * Return the list of entity names for the given type in the repository.
      *
      * @param entityType type

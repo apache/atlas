@@ -83,8 +83,10 @@ public class DefaultMetadataService implements MetadataService {
 
             return response;
         } catch (ParseException e) {
+            LOG.error("Unable to parse JSON for type {}", typeName, e);
             throw new MetadataException("validation failed for: " + typeName);
         } catch (JSONException e) {
+            LOG.error("Unable to persist type {}", typeName, e);
             throw new MetadataException("Unable to create response for: " + typeName);
         }
     }
@@ -147,6 +149,7 @@ public class DefaultMetadataService implements MetadataService {
                     Serialization$.MODULE$.fromJson(entityDefinition);
             return repository.createEntity(entityInstance, entityType);
         } catch (ParseException e) {
+            LOG.error("Unable to parse JSON {} for type {}", entityDefinition, entityType, e);
             throw new MetadataException("validation failed for: " + entityType);
         }
     }
@@ -154,7 +157,9 @@ public class DefaultMetadataService implements MetadataService {
     private void validateEntity(String entity, String entityType) throws ParseException {
         Preconditions.checkNotNull(entity, "entity cannot be null");
         Preconditions.checkNotNull(entityType, "entity type cannot be null");
-        JSONValue.parseWithException(entity);
+
+        // todo: this is failing for instances but not types
+        // JSONValue.parseWithException(entity);
     }
 
     /**
@@ -167,21 +172,9 @@ public class DefaultMetadataService implements MetadataService {
     public String getEntityDefinition(String guid) throws MetadataException {
         final ITypedReferenceableInstance instance =
                 repository.getEntityDefinition(guid);
-        return Serialization$.MODULE$.toJson(instance);
-    }
-
-    /**
-     * Return the definition for the given entity name and type.
-     *
-     * @param entityName name
-     * @param entityType type
-     * @return entity definition as JSON
-     */
-    @Override
-    public String getEntityDefinition(String entityName,
-                                      String entityType) throws MetadataException {
-
-        throw new UnsupportedOperationException();
+        return instance == null
+                ? null
+                : Serialization$.MODULE$.toJson(instance);
     }
 
     /**

@@ -23,7 +23,43 @@ public final class GraphUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphUtils.class);
 
+    private static final String GUID_PROPERTY_KEY = "guid";
+    private static final String TIMESTAMP_PROPERTY_KEY = "timestamp";
+
     private GraphUtils() {
+    }
+
+    public static Edge addEdge(Vertex fromVertex, Vertex toVertex, String edgeLabel) {
+        return addEdge(fromVertex, toVertex, edgeLabel, null);
+    }
+
+    public static Edge addEdge(Vertex fromVertex, Vertex toVertex,
+                               String edgeLabel, String timestamp) {
+        Edge edge = findEdge(fromVertex, toVertex, edgeLabel);
+
+        Edge edgeToVertex = edge != null ? edge : fromVertex.addEdge(edgeLabel, toVertex);
+        if (timestamp != null) {
+            edgeToVertex.setProperty(TIMESTAMP_PROPERTY_KEY, timestamp);
+        }
+
+        return edgeToVertex;
+    }
+
+    public static Edge findEdge(Vertex fromVertex, Vertex toVertex, String edgeLabel) {
+        return findEdge(fromVertex, toVertex.getProperty(GUID_PROPERTY_KEY), edgeLabel);
+    }
+
+    public static Edge findEdge(Vertex fromVertex, Object toVertexName, String edgeLabel) {
+        Edge edgeToFind = null;
+        for (Edge edge : fromVertex.getEdges(Direction.OUT, edgeLabel)) {
+            if (edge.getVertex(Direction.IN).getProperty(
+                    GUID_PROPERTY_KEY).equals(toVertexName)) {
+                edgeToFind = edge;
+                break;
+            }
+        }
+
+        return edgeToFind;
     }
 
     public static Vertex findVertex(Graph blueprintsGraph,

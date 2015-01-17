@@ -18,8 +18,12 @@
 
 package org.apache.hadoop.metadata.services;
 
+import com.thinkaurelius.titan.core.TitanProperty;
+import com.thinkaurelius.titan.core.TitanVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Graph;
+import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.metadata.IReferenceableInstance;
@@ -36,20 +40,25 @@ import org.apache.hadoop.metadata.types.DataTypes;
 import org.apache.hadoop.metadata.types.IDataType;
 import org.apache.hadoop.metadata.types.Multiplicity;
 import org.apache.hadoop.metadata.types.ObjectGraphWalker;
+import org.apache.hadoop.metadata.types.StructType;
+import org.apache.hadoop.metadata.types.TraitType;
 import org.apache.hadoop.metadata.types.TypeSystem;
+import org.apache.hadoop.metadata.util.GraphUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.inject.Inject;
 
 /**
  * An implementation backed by a Graph database provided
@@ -60,25 +69,26 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     private static final Logger LOG =
             LoggerFactory.getLogger(GraphBackedMetadataRepository.class);
 
-    private static final String GUID_PROPERTY_KEY = "guid";
-    private static final String TIMESTAMP_PROPERTY_KEY = "timestamp";
+    private static final String GUID_PROPERTY_KEY = "GUID";
     private static final String ENTITY_TYPE_PROPERTY_KEY = "entityType";
+    private static final String VERSION_PROPERTY_KEY = "version";
 
     private static final String TRAIT_PROPERTY_SUFFIX = "trait.";
 
     private final AtomicInteger ID_SEQ = new AtomicInteger(0);
 
-    // todo: remove this
-    private final ConcurrentHashMap<String, ITypedReferenceableInstance> instances;
+    private final TypedInstanceToGraphMapper instanceToGraphMapper
+            = new TypedInstanceToGraphMapper();
+    private final GraphToTypedInstanceMapper graphToInstanceMapper
+            = new GraphToTypedInstanceMapper();
 
     private final GraphService graphService;
     private final TypeSystem typeSystem;
-    
+
     @Inject
     GraphBackedMetadataRepository(GraphService graphService) throws MetadataException {
-    	this.instances = new ConcurrentHashMap<>();
-    	this.graphService = graphService;
-    	this.typeSystem = TypeSystem.getInstance();
+        this.graphService = graphService;
+        this.typeSystem = TypeSystem.getInstance();
     }
 
     /**
@@ -121,16 +131,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
             transactionalGraph.rollback();
 
-            EntityProcessor entityProcessor = new EntityProcessor();
-            try {
-                new ObjectGraphWalker(typeSystem, entityProcessor, entity).walk();
-            } catch (MetadataException me) {
-                throw new RepositoryException("TypeSystem error when walking the ObjectGraph", me);
-            }
-
-            List<ITypedReferenceableInstance> newInstances = discoverInstances(entityProcessor);
-            entityProcessor.createVerticesForClasses(transactionalGraph, newInstances);
-            return addDiscoveredInstances(entity, entityProcessor, newInstances);
+            return instanceToGraphMapper.mapTypedInstanceToGraph(entity, transactionalGraph);
 
         } catch (MetadataException e) {
             transactionalGraph.rollback();
@@ -140,202 +141,25 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         }
     }
 
-    private String addDiscoveredInstances(IReferenceableInstance entity,
-                                          EntityProcessor entityProcessor,
-                                          List<ITypedReferenceableInstance> newInstances)
-        throws MetadataException {
-
-        String guid = null;
-        for (ITypedReferenceableInstance instance : newInstances) { // Traverse over newInstances
-
-            Id id = instance.getId();
-            if (id == null) {
-                // oops
-                throw new RepositoryException("id cannot be null");
-            }
-
-            Vertex entityVertex = entityProcessor.idToVertexMap.get(id);
-            instances.put((String) entityVertex.getProperty(GUID_PROPERTY_KEY), instance);
-
-            // add the attributes for the instance
-            final Map<String, AttributeInfo> fields = instance.fieldMapping().fields;
-
-            addInstanceToVertex(instance, entityVertex, fields,
-                    entityProcessor.idToVertexMap);
-
-            for (String traitName : instance.getTraits()) {
-                ITypedStruct traitInstance = (ITypedStruct) instance.getTrait(traitName);
-                // add the attributes for the trait instance
-                entityVertex.setProperty(TRAIT_PROPERTY_SUFFIX + traitName, traitName);
-                addInstanceToVertex(traitInstance, entityVertex,
-                        traitInstance.fieldMapping().fields,
-                        entityProcessor.idToVertexMap);
-            }
-
-            if (instance.getId() == entity.getId()) {
-                guid = entityVertex.getProperty(GUID_PROPERTY_KEY);
-            }
-        }
-
-        return guid;
-    }
-
-    private void addInstanceToVertex(ITypedInstance instance, Vertex entityVertex,
-                                     Map<String, AttributeInfo> fields,
-                                     Map<Id, Vertex> idToVertexMap) throws MetadataException {
-        for (AttributeInfo attributeInfo : fields.values()) {
-            System.out.println("*** attributeInfo = " + attributeInfo);
-            final IDataType dataType = attributeInfo.dataType();
-            Object attributeValue = instance.get(attributeInfo.name);
-
-            switch (dataType.getTypeCategory()) {
-                case PRIMITIVE:
-                    addPrimitiveToVertex(instance, entityVertex, attributeInfo);
-                    break;
-
-                case ENUM:
-                    addToVertex(entityVertex, attributeInfo.name,
-                            instance.getInt(attributeInfo.name));
-                    break;
-
-                case ARRAY:
-                    // todo - Add to/from json for collections
-                    break;
-
-                case MAP:
-                    // todo - Add to/from json for collections
-                    break;
-
-                case STRUCT:
-                    ITypedStruct structInstance = (ITypedStruct) attributeValue;
-                    addInstanceToVertex(structInstance, entityVertex,
-                            structInstance.fieldMapping().fields, idToVertexMap);
-                    break;
-
-                case TRAIT:
-                    ITypedStruct traitInstance = (ITypedStruct) attributeValue;
-                    addInstanceToVertex(traitInstance, entityVertex,
-                            traitInstance.fieldMapping().fields, idToVertexMap);
-                    break;
-
-                case CLASS:
-                    Id id = (Id) instance.get(attributeInfo.name);
-                    if (id != null) {
-                        Vertex referenceVertex = idToVertexMap.get(id);
-                        addEdge(entityVertex, referenceVertex, "references");
-                    }
-                    break;
-
-                default:
-                    break;
-            }
-        }
-    }
-
-    protected Edge addEdge(Vertex fromVertex, Vertex toVertex, String edgeLabel) {
-        return addEdge(fromVertex, toVertex, edgeLabel, null);
-    }
-
-    protected Edge addEdge(Vertex fromVertex, Vertex toVertex,
-                           String edgeLabel, String timestamp) {
-        Edge edge = findEdge(fromVertex, toVertex, edgeLabel);
-
-        Edge edgeToVertex = edge != null ? edge : fromVertex.addEdge(edgeLabel, toVertex);
-        if (timestamp != null) {
-            edgeToVertex.setProperty(TIMESTAMP_PROPERTY_KEY, timestamp);
-        }
-
-        return edgeToVertex;
-    }
-
-    protected Edge findEdge(Vertex fromVertex, Vertex toVertex, String edgeLabel) {
-        return findEdge(fromVertex, toVertex.getProperty(GUID_PROPERTY_KEY), edgeLabel);
-    }
-
-    protected Edge findEdge(Vertex fromVertex, Object toVertexName, String edgeLabel) {
-        Edge edgeToFind = null;
-        for (Edge edge : fromVertex.getEdges(Direction.OUT, edgeLabel)) {
-            if (edge.getVertex(Direction.IN).getProperty(GUID_PROPERTY_KEY).equals(toVertexName)) {
-                edgeToFind = edge;
-                break;
-            }
-        }
-
-        return edgeToFind;
-    }
-
-    /*
-     * Step 2: Traverse oldIdToInstance map create newInstances :
-     * List[ITypedReferenceableInstance]
-     *  - create a ITypedReferenceableInstance.
-     *   replace any old References ( ids or object references) with new Ids.
-     */
-    private List<ITypedReferenceableInstance> discoverInstances(EntityProcessor entityProcessor)
-        throws RepositoryException {
-        List<ITypedReferenceableInstance> newInstances = new ArrayList<>();
-        for (IReferenceableInstance transientInstance : entityProcessor.idToInstanceMap.values()) {
-            LOG.debug("instance {}", transientInstance);
-            try {
-                ClassType cT = typeSystem.getDataType(
-                        ClassType.class, transientInstance.getTypeName());
-                ITypedReferenceableInstance newInstance = cT.convert(
-                        transientInstance, Multiplicity.REQUIRED);
-                newInstances.add(newInstance);
-
-                /*
-                 * Now replace old references with new Ids
-                 */
-                MapIds mapIds = new MapIds(entityProcessor.idToNewIdMap);
-                new ObjectGraphWalker(typeSystem, mapIds, newInstances).walk();
-
-            } catch (MetadataException me) {
-                throw new RepositoryException(
-                        String.format("Failed to create Instance(id = %s",
-                                transientInstance.getId()), me);
-            }
-        }
-
-        return newInstances;
-    }
-
-    private void addPrimitiveToVertex(ITypedInstance instance,
-                                      Vertex entityVertex,
-                                      AttributeInfo attributeInfo) throws MetadataException {
-        if (instance.get(attributeInfo.name) == null) { // add only if instance has this attribute
-            return;
-        }
-
-        if (attributeInfo.dataType() == DataTypes.STRING_TYPE) {
-            entityVertex.setProperty(attributeInfo.name, instance.getString(attributeInfo.name));
-        } else if (attributeInfo.dataType() == DataTypes.SHORT_TYPE) {
-            entityVertex.setProperty(attributeInfo.name, instance.getShort(attributeInfo.name));
-        } else if (attributeInfo.dataType() == DataTypes.INT_TYPE) {
-            entityVertex.setProperty(attributeInfo.name, instance.getInt(attributeInfo.name));
-        } else if (attributeInfo.dataType() == DataTypes.BIGINTEGER_TYPE) {
-            entityVertex.setProperty(attributeInfo.name, instance.getBigInt(attributeInfo.name));
-        } else if (attributeInfo.dataType() == DataTypes.BOOLEAN_TYPE) {
-            entityVertex.setProperty(attributeInfo.name, instance.getBoolean(attributeInfo.name));
-        } else if (attributeInfo.dataType() == DataTypes.BYTE_TYPE) {
-            entityVertex.setProperty(attributeInfo.name, instance.getByte(attributeInfo.name));
-        } else if (attributeInfo.dataType() == DataTypes.LONG_TYPE) {
-            entityVertex.setProperty(attributeInfo.name, instance.getLong(attributeInfo.name));
-        } else if (attributeInfo.dataType() == DataTypes.FLOAT_TYPE) {
-            entityVertex.setProperty(attributeInfo.name, instance.getFloat(attributeInfo.name));
-        } else if (attributeInfo.dataType() == DataTypes.DOUBLE_TYPE) {
-            entityVertex.setProperty(attributeInfo.name, instance.getDouble(attributeInfo.name));
-        } else if (attributeInfo.dataType() == DataTypes.BIGDECIMAL_TYPE) {
-            entityVertex.setProperty(attributeInfo.name, instance.getBigDecimal(attributeInfo.name));
-        }
-    }
-
-    public static void addToVertex(Vertex entityVertex, String name, int value) {
-        entityVertex.setProperty(name, value);
-    }
-
     @Override
     public ITypedReferenceableInstance getEntityDefinition(String guid) throws RepositoryException {
         LOG.info("Retrieving entity with guid={}", guid);
-        return instances.get(guid);
+
+        final Graph graph = graphService.getBlueprintsGraph();
+        try {
+            GraphQuery query = graph.query().has(GUID_PROPERTY_KEY, guid);
+            Iterator<Vertex> results = query.vertices().iterator();
+            // returning one since name/type is unique
+            Vertex instanceVertex = results.hasNext() ? results.next() : null;
+            if (instanceVertex == null) {
+                return null;
+            }
+
+            return graphToInstanceMapper.mapGraphToTypedInstance(guid, instanceVertex);
+
+        } catch (Exception e) {
+            throw new RepositoryException(e);
+        }
     }
 
     @Override
@@ -388,17 +212,345 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             }
         }
 
-        public void createVerticesForClasses(TransactionalGraph transactionalGraph,
-                                             List<ITypedReferenceableInstance> newInstances) {
-            for (ITypedReferenceableInstance instance : newInstances) {
-                final Vertex entityVertex = transactionalGraph.addVertex(null);
-                entityVertex.setProperty(ENTITY_TYPE_PROPERTY_KEY, instance.getTypeName());
+        public void createVerticesForClassTypes(TransactionalGraph transactionalGraph,
+                                                List<ITypedReferenceableInstance> newInstances) {
+            for (ITypedReferenceableInstance typedInstance : newInstances) {
+                final Vertex instanceVertex = transactionalGraph.addVertex(null);
+                instanceVertex.setProperty(ENTITY_TYPE_PROPERTY_KEY, typedInstance.getTypeName());
                 // entityVertex.setProperty("entityName", instance.getString("name"));
 
                 final String guid = UUID.randomUUID().toString();
-                entityVertex.setProperty(GUID_PROPERTY_KEY, guid);
+                instanceVertex.setProperty(GUID_PROPERTY_KEY, guid);
 
-                idToVertexMap.put(instance.getId(), entityVertex);
+                final Id typedInstanceId = typedInstance.getId();
+                instanceVertex.setProperty(VERSION_PROPERTY_KEY, typedInstanceId.version);
+
+                idToVertexMap.put(typedInstanceId, instanceVertex);
+            }
+        }
+    }
+
+    private final class TypedInstanceToGraphMapper {
+
+        private String mapTypedInstanceToGraph(IReferenceableInstance entity,
+                                               TransactionalGraph transactionalGraph)
+        throws MetadataException {
+
+            EntityProcessor entityProcessor = new EntityProcessor();
+            try {
+                new ObjectGraphWalker(typeSystem, entityProcessor, entity).walk();
+            } catch (MetadataException me) {
+                throw new RepositoryException("TypeSystem error when walking the ObjectGraph", me);
+            }
+
+            List<ITypedReferenceableInstance> newTypedInstances = discoverInstances(entityProcessor);
+            entityProcessor.createVerticesForClassTypes(transactionalGraph, newTypedInstances);
+            return addDiscoveredInstances(entity, entityProcessor, newTypedInstances);
+        }
+
+        /*
+         * Step 2: Traverse oldIdToInstance map create newInstances :
+         * List[ITypedReferenceableInstance]
+         *  - create a ITypedReferenceableInstance.
+         *   replace any old References ( ids or object references) with new Ids.
+         */
+        private List<ITypedReferenceableInstance> discoverInstances(EntityProcessor entityProcessor)
+                throws RepositoryException {
+            List<ITypedReferenceableInstance> newTypedInstances = new ArrayList<>();
+            for (IReferenceableInstance transientInstance : entityProcessor.idToInstanceMap.values()) {
+                LOG.debug("instance {}", transientInstance);
+                try {
+                    ClassType cT = typeSystem.getDataType(
+                            ClassType.class, transientInstance.getTypeName());
+                    ITypedReferenceableInstance newInstance = cT.convert(
+                            transientInstance, Multiplicity.REQUIRED);
+                    newTypedInstances.add(newInstance);
+
+                /*
+                 * Now replace old references with new Ids
+                 */
+                    MapIds mapIds = new MapIds(entityProcessor.idToNewIdMap);
+                    new ObjectGraphWalker(typeSystem, mapIds, newTypedInstances).walk();
+
+                } catch (MetadataException me) {
+                    throw new RepositoryException(
+                            String.format("Failed to create Instance(id = %s",
+                                    transientInstance.getId()), me);
+                }
+            }
+
+            return newTypedInstances;
+        }
+
+        private String addDiscoveredInstances(IReferenceableInstance entity,
+                                              EntityProcessor entityProcessor,
+                                              List<ITypedReferenceableInstance> newTypedInstances)
+            throws MetadataException {
+
+            String guid = null;
+            for (ITypedReferenceableInstance typedInstance : newTypedInstances) { // Traverse over newInstances
+
+                Id id = typedInstance.getId();
+                if (id == null) {
+                    // oops
+                    throw new RepositoryException("id cannot be null");
+                }
+
+                Vertex instanceVertex = entityProcessor.idToVertexMap.get(id);
+
+                // add the attributes for the instance
+                final Map<String, AttributeInfo> fields = typedInstance.fieldMapping().fields;
+
+                addInstanceToVertex(typedInstance, instanceVertex, fields,
+                        entityProcessor.idToVertexMap);
+
+                for (String traitName : typedInstance.getTraits()) {
+                    ((TitanVertex) instanceVertex).addProperty("traits", traitName);
+
+                    ITypedStruct traitInstance = (ITypedStruct) typedInstance.getTrait(traitName);
+                    // add the attributes for the trait instance
+                    instanceVertex.setProperty(TRAIT_PROPERTY_SUFFIX + traitName, traitName);
+                    addInstanceToVertex(traitInstance, instanceVertex,
+                            traitInstance.fieldMapping().fields,
+                            entityProcessor.idToVertexMap);
+                }
+
+                if (typedInstance.getId() == entity.getId()) {
+                    guid = instanceVertex.getProperty(GUID_PROPERTY_KEY);
+                }
+            }
+
+            return guid;
+        }
+
+        private void addInstanceToVertex(ITypedInstance typedInstance, Vertex instanceVertex,
+                                         Map<String, AttributeInfo> fields,
+                                         Map<Id, Vertex> idToVertexMap) throws MetadataException {
+            for (AttributeInfo attributeInfo : fields.values()) {
+                System.out.println("*** attributeInfo = " + attributeInfo);
+                final IDataType dataType = attributeInfo.dataType();
+                Object attributeValue = typedInstance.get(attributeInfo.name);
+
+                switch (dataType.getTypeCategory()) {
+                    case PRIMITIVE:
+                        addPrimitiveToVertex(typedInstance, instanceVertex, attributeInfo);
+                        break;
+
+                    case ENUM:
+                        addToVertex(instanceVertex, attributeInfo.name,
+                                typedInstance.getInt(attributeInfo.name));
+                        break;
+
+                    case ARRAY:
+                        // todo - Add to/from json for collections
+                        break;
+
+                    case MAP:
+                        // todo - Add to/from json for collections
+                        break;
+
+                    case STRUCT:
+                        ITypedStruct structInstance = (ITypedStruct) attributeValue;
+                        addInstanceToVertex(structInstance, instanceVertex,
+                                structInstance.fieldMapping().fields, idToVertexMap);
+                        break;
+
+                    case TRAIT:
+                        ITypedStruct traitInstance = (ITypedStruct) attributeValue;
+                        addInstanceToVertex(traitInstance, instanceVertex,
+                                traitInstance.fieldMapping().fields, idToVertexMap);
+                        break;
+
+                    case CLASS:
+                        Id id = (Id) typedInstance.get(attributeInfo.name);
+                        if (id != null) {
+                            Vertex referenceVertex = idToVertexMap.get(id);
+                            GraphUtils.addEdge(instanceVertex, referenceVertex, id.id);
+                        }
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+        }
+
+        private void addPrimitiveToVertex(ITypedInstance typedInstance,
+                                          Vertex instanceVertex,
+                                          AttributeInfo attributeInfo) throws MetadataException {
+            if (typedInstance.get(attributeInfo.name) == null) { // add only if instance has this attribute
+                return;
+            }
+
+            if (attributeInfo.dataType() == DataTypes.STRING_TYPE) {
+                instanceVertex.setProperty(attributeInfo.name,
+                        typedInstance.getString(attributeInfo.name));
+            } else if (attributeInfo.dataType() == DataTypes.SHORT_TYPE) {
+                instanceVertex.setProperty(attributeInfo.name,
+                        typedInstance.getShort(attributeInfo.name));
+            } else if (attributeInfo.dataType() == DataTypes.INT_TYPE) {
+                instanceVertex.setProperty(attributeInfo.name,
+                        typedInstance.getInt(attributeInfo.name));
+            } else if (attributeInfo.dataType() == DataTypes.BIGINTEGER_TYPE) {
+                instanceVertex.setProperty(attributeInfo.name,
+                        typedInstance.getBigInt(attributeInfo.name));
+            } else if (attributeInfo.dataType() == DataTypes.BOOLEAN_TYPE) {
+                instanceVertex.setProperty(attributeInfo.name,
+                        typedInstance.getBoolean(attributeInfo.name));
+            } else if (attributeInfo.dataType() == DataTypes.BYTE_TYPE) {
+                instanceVertex.setProperty(attributeInfo.name,
+                        typedInstance.getByte(attributeInfo.name));
+            } else if (attributeInfo.dataType() == DataTypes.LONG_TYPE) {
+                instanceVertex.setProperty(attributeInfo.name,
+                        typedInstance.getLong(attributeInfo.name));
+            } else if (attributeInfo.dataType() == DataTypes.FLOAT_TYPE) {
+                instanceVertex.setProperty(attributeInfo.name,
+                        typedInstance.getFloat(attributeInfo.name));
+            } else if (attributeInfo.dataType() == DataTypes.DOUBLE_TYPE) {
+                instanceVertex.setProperty(attributeInfo.name,
+                        typedInstance.getDouble(attributeInfo.name));
+            } else if (attributeInfo.dataType() == DataTypes.BIGDECIMAL_TYPE) {
+                instanceVertex.setProperty(attributeInfo.name,
+                        typedInstance.getBigDecimal(attributeInfo.name));
+            }
+        }
+
+        public void addToVertex(Vertex instanceVertex, String name, int value) {
+            instanceVertex.setProperty(name, value);
+        }
+    }
+
+    private final class GraphToTypedInstanceMapper {
+
+        private ITypedReferenceableInstance mapGraphToTypedInstance(String guid,
+                                                                    Vertex instanceVertex)
+            throws MetadataException {
+
+            String typeName = instanceVertex.getProperty(ENTITY_TYPE_PROPERTY_KEY);
+            List<String> traits = new ArrayList<>();
+            for (TitanProperty property : ((TitanVertex) instanceVertex).getProperties( "traits")) {
+                traits.add((String) property.getValue());
+            }
+
+            Id id = new Id(guid, instanceVertex.<Integer>getProperty("version"), typeName);
+
+            ClassType classType = typeSystem.getDataType(ClassType.class, typeName);
+            ITypedReferenceableInstance typedInstance = classType.createInstance(
+                    id, traits.toArray(new String[traits.size()]));
+
+            graphToInstanceMapper.mapVertexToInstance(
+                    instanceVertex, typedInstance, classType.fieldMapping().fields);
+            return typedInstance;
+        }
+
+        private void mapVertexToInstance(Vertex instanceVertex, ITypedInstance typedInstance,
+                                         Map<String, AttributeInfo> fields) throws MetadataException {
+            for (AttributeInfo attributeInfo : fields.values()) {
+                System.out.println("*** attributeInfo = " + attributeInfo);
+                final IDataType dataType = attributeInfo.dataType();
+
+                switch (dataType.getTypeCategory()) {
+                    case PRIMITIVE:
+                        mapVertexToInstance(instanceVertex, typedInstance, attributeInfo);
+                        break;  // add only if vertex has this attribute
+
+                    case ENUM:
+                        // EnumType enumType = typeSystem.getDataType(
+                        //        EnumType.class, attributeInfo.name);
+                        // todo  - is this enough
+                        typedInstance.setInt(attributeInfo.name,
+                                instanceVertex.<Integer>getProperty(attributeInfo.name));
+                        break;
+
+                    case ARRAY:
+                        // todo - Add to/from json for collections
+                        break;
+
+                    case MAP:
+                        // todo - Add to/from json for collections
+                        break;
+
+                    case STRUCT:
+                        StructType structType = typeSystem.getDataType(
+                                StructType.class, attributeInfo.name);
+                        ITypedStruct structInstance = structType.createInstance();
+                        typedInstance.set(attributeInfo.name, structInstance);
+
+                        mapVertexToInstance(instanceVertex, structInstance,
+                                structInstance.fieldMapping().fields);
+                        break;
+
+                    case TRAIT:
+                        TraitType traitType = typeSystem.getDataType(
+                                TraitType.class, attributeInfo.name);
+                        ITypedStruct traitInstance = (ITypedStruct)
+                                ((ITypedReferenceableInstance) typedInstance).getTrait(attributeInfo.name);
+                        typedInstance.set(attributeInfo.name, traitInstance);
+
+                        mapVertexToInstance(instanceVertex, traitInstance,
+                                traitType.fieldMapping().fields);
+                        break;
+
+                    case CLASS:
+                        Id referenceId = null;
+                        for (Edge edge : instanceVertex.getEdges(Direction.IN)) {
+                            final Vertex vertex = edge.getVertex(Direction.OUT);
+                            if (vertex.getProperty(ENTITY_TYPE_PROPERTY_KEY).equals(attributeInfo.name)) {
+                                referenceId = new Id(vertex.<String>getProperty(GUID_PROPERTY_KEY),
+                                        vertex.<Integer>getProperty("version"),
+                                        attributeInfo.name);
+                                break;
+                            }
+                        }
+
+                        if (referenceId != null) {
+                            typedInstance.set(attributeInfo.name, referenceId);
+                        }
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+        }
+
+        private void mapVertexToInstance(Vertex instanceVertex,
+                                         ITypedInstance typedInstance,
+                                         AttributeInfo attributeInfo) throws MetadataException {
+            if (instanceVertex.getProperty(attributeInfo.name) == null) {
+                return;
+            }
+
+            if (attributeInfo.dataType() == DataTypes.STRING_TYPE) {
+                typedInstance.setString(attributeInfo.name,
+                        instanceVertex.<String>getProperty(attributeInfo.name));
+            } else if (attributeInfo.dataType() == DataTypes.SHORT_TYPE) {
+                typedInstance.setShort(attributeInfo.name,
+                        instanceVertex.<Short>getProperty(attributeInfo.name));
+            } else if (attributeInfo.dataType() == DataTypes.INT_TYPE) {
+                typedInstance.setInt(attributeInfo.name,
+                        instanceVertex.<Integer>getProperty(attributeInfo.name));
+            } else if (attributeInfo.dataType() == DataTypes.BIGINTEGER_TYPE) {
+                typedInstance.setBigInt(attributeInfo.name,
+                        instanceVertex.<BigInteger>getProperty(attributeInfo.name));
+            } else if (attributeInfo.dataType() == DataTypes.BOOLEAN_TYPE) {
+                typedInstance.setBoolean(attributeInfo.name,
+                        instanceVertex.<Boolean>getProperty(attributeInfo.name));
+            } else if (attributeInfo.dataType() == DataTypes.BYTE_TYPE) {
+                typedInstance.setByte(attributeInfo.name,
+                        instanceVertex.<Byte>getProperty(attributeInfo.name));
+            } else if (attributeInfo.dataType() == DataTypes.LONG_TYPE) {
+                typedInstance.setLong(attributeInfo.name,
+                        instanceVertex.<Long>getProperty(attributeInfo.name));
+            } else if (attributeInfo.dataType() == DataTypes.FLOAT_TYPE) {
+                typedInstance.setFloat(attributeInfo.name,
+                        instanceVertex.<Float>getProperty(attributeInfo.name));
+            } else if (attributeInfo.dataType() == DataTypes.DOUBLE_TYPE) {
+                typedInstance.setDouble(attributeInfo.name,
+                        instanceVertex.<Double>getProperty(attributeInfo.name));
+            } else if (attributeInfo.dataType() == DataTypes.BIGDECIMAL_TYPE) {
+                typedInstance.setBigDecimal(attributeInfo.name,
+                        instanceVertex.<BigDecimal>getProperty(attributeInfo.name));
             }
         }
     }

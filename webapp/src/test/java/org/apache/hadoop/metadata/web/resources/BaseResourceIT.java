@@ -10,16 +10,21 @@ import org.apache.hadoop.metadata.types.HierarchicalTypeDefinition;
 import org.apache.hadoop.metadata.types.IDataType;
 import org.apache.hadoop.metadata.types.Multiplicity;
 import org.apache.hadoop.metadata.types.TraitType;
+import org.apache.hadoop.metadata.types.TypeSystem;
 import org.testng.annotations.BeforeClass;
 
 import javax.ws.rs.core.UriBuilder;
 
-public class BaseResourceIT {
+public abstract class BaseResourceIT {
 
+    protected TypeSystem typeSystem;
     protected WebResource service;
 
     @BeforeClass
     public void setUp() throws Exception {
+        typeSystem = TypeSystem.getInstance();
+        typeSystem.reset();
+
         String baseUrl = "http://localhost:21000/";
 
         DefaultClientConfig config = new DefaultClientConfig();

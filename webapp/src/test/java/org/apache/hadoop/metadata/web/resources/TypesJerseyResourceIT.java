@@ -21,7 +21,6 @@ package org.apache.hadoop.metadata.web.resources;
 import com.google.common.collect.ImmutableList;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.json.TypesSerialization;
 import org.apache.hadoop.metadata.types.AttributeDefinition;
 import org.apache.hadoop.metadata.types.ClassType;
@@ -30,7 +29,6 @@ import org.apache.hadoop.metadata.types.HierarchicalTypeDefinition;
 import org.apache.hadoop.metadata.types.Multiplicity;
 import org.apache.hadoop.metadata.types.StructTypeDefinition;
 import org.apache.hadoop.metadata.types.TraitType;
-import org.apache.hadoop.metadata.types.TypeSystem;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
@@ -49,14 +47,12 @@ import java.util.List;
  */
 public class TypesJerseyResourceIT extends BaseResourceIT {
 
-    private TypeSystem typeSystem;
     private List<HierarchicalTypeDefinition> typeDefinitions;
 
     @BeforeClass
     public void setUp() throws Exception {
         super.setUp();
 
-        typeSystem = TypeSystem.getInstance();
         typeDefinitions = createHiveTypes();
     }
 
@@ -151,11 +147,12 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(list);
     }
 
-    private List<HierarchicalTypeDefinition> createHiveTypes() throws MetadataException {
+    private List<HierarchicalTypeDefinition> createHiveTypes() throws Exception {
         ArrayList<HierarchicalTypeDefinition> typeDefinitions = new ArrayList<>();
 
         HierarchicalTypeDefinition<ClassType> databaseTypeDefinition =
-                createClassTypeDef("database", ImmutableList.<String>of(),
+                createClassTypeDef("database",
+                        ImmutableList.<String>of(),
                         createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         createRequiredAttrDef("description", DataTypes.STRING_TYPE));
         typeDefinitions.add(databaseTypeDefinition);
