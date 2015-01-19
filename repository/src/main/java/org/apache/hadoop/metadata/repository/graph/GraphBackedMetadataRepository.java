@@ -25,6 +25,7 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.commons.collections.map.HashedMap;
 import org.apache.hadoop.metadata.IReferenceableInstance;
 import org.apache.hadoop.metadata.ITypedInstance;
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
@@ -47,6 +48,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import javax.script.Bindings;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -150,6 +155,55 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             throw new RepositoryException(e);
         } finally {
             GraphUtils.dumpToLog(graph);
+        }
+    }
+
+    public List<Map<String,String>> rawSearch(String gremlinQuery) throws RepositoryException {
+        ScriptEngineManager manager = new ScriptEngineManager();
+        ScriptEngine engine = manager.getEngineByName("gremlin-groovy");
+        Bindings bindings = engine.createBindings();
+        bindings.put("g", graphService.getTransactionalGraph());
+
+        try {
+            Object o = engine.eval(gremlinQuery, bindings);
+            if ( !(o instanceof  List)) {
+                throw new RepositoryException(String.format("Cannot process gremlin result %s", o.toString()));
+            }
+
+            List l = (List) o;
+            List<Map<String,String>> result = new ArrayList<>();
+            for(Object r : l) {
+
+                Map<String,String> oRow = new HashedMap();
+                if ( r instanceof  Map ) {
+                    Map<Object,Object> iRow = (Map) r;
+                    for(Map.Entry e : iRow.entrySet()) {
+                        Object k = e.getKey();
+                        Object v = e.getValue();
+                        oRow.put(k.toString(), v.toString());
+                    }
+                } else if ( r instanceof TitanVertex) {
+                    Iterable<TitanProperty> ps = ((TitanVertex)r).getProperties();
+                    for(TitanProperty tP : ps) {
+                        String pName = tP.getPropertyKey().getName();
+                        Object pValue = ((TitanVertex)r).getProperty(pName);
+                        if ( pValue != null ) {
+                            oRow.put(pName, pValue.toString());
+                        }
+                    }
+
+                }  else if ( r instanceof String ) {
+                    oRow.put("", r.toString());
+                } else {
+                    throw new RepositoryException(String.format("Cannot process gremlin result %s", o.toString()));
+                }
+
+                result.add(oRow);
+            }
+            return result;
+
+        }catch(ScriptException se) {
+            throw new RepositoryException(se);
         }
     }
 

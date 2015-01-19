@@ -24,6 +24,7 @@ import org.apache.hadoop.metadata.service.Service;
 import org.apache.hadoop.metadata.storage.RepositoryException;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * An interface for persisting metadata into a blueprints enabled graph db.
@@ -36,4 +37,14 @@ public interface MetadataRepository extends Service {
     ITypedReferenceableInstance getEntityDefinition(String guid) throws RepositoryException;
 
     List<String> getEntityList(String entityType) throws RepositoryException;
+
+    /**
+     * Assumes the User is familar with the persistence structure of the Repository.
+     * The given query is run uninterpreted against the underlying Graph Store.
+     * The results are returned as a List of Rows. each row is a Map of Key,Value pairs.
+     * @param gremlinQuery
+     * @return
+     * @throws RepositoryException
+     */
+    List<Map<String,String>> rawSearch(String gremlinQuery) throws RepositoryException;
 }

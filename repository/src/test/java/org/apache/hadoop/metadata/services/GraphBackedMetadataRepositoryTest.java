@@ -103,6 +103,30 @@ public class GraphBackedMetadataRepositoryTest extends RepositoryModuleBaseTest 
         Assert.assertEquals(entityList.size(), 0); // as this is not implemented yet
     }
 
+    @Test (enabled = false)
+    public void testRawSearch1() throws Exception {
+        Referenceable hrDept = createDeptEg1(ts);
+        ClassType deptType = ts.getDataType(ClassType.class, "Department");
+        ITypedReferenceableInstance hrDept2 = deptType.convert(hrDept, Multiplicity.REQUIRED);
+
+        guid = repositoryService.createEntity(hrDept2, ENTITY_TYPE);
+
+
+        // Query for all Vertices in Graph
+        Object r = repositoryService.rawSearch("g.V.toList()");
+        //System.out.println(r);
+
+        // Query for all Vertices of a Type
+        r = repositoryService.rawSearch("g.V.filter{it.typeName == 'Department'}.toList()");
+        //System.out.println(r);
+
+        // Property Query: list all Person names
+        r = repositoryService.rawSearch("g.V.filter{it.typeName == 'Person'}.'Person.name'.toList()");
+        //System.out.println(r);
+    }
+
+
+
     /*
      * Class Hierarchy is:
      *   Department(name : String, employees : Array[Person])
