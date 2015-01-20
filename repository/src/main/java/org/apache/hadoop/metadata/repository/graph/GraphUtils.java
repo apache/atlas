@@ -23,10 +23,14 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.hadoop.metadata.ITypedInstance;
+import org.apache.hadoop.metadata.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.storage.Id;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
+import java.util.UUID;
 
 /**
  * Utility class for graph operations.
@@ -38,40 +42,26 @@ public final class GraphUtils {
     private GraphUtils() {
     }
 
-    public static Edge addEdge(Vertex fromVertex, Vertex toVertex,
-                               String vertexPropertyKey, String edgeLabel) {
-        return addEdge(fromVertex, toVertex, vertexPropertyKey, edgeLabel, null);
+    public static Vertex createVertex(Graph graph,
+                                      ITypedReferenceableInstance typedInstance) {
+        return createVertex(graph, typedInstance, typedInstance.getId());
     }
 
-    public static Edge addEdge(Vertex fromVertex, Vertex toVertex,
-                               String vertexPropertyKey, String edgeLabel, String timestamp) {
-        Edge edge = findEdge(fromVertex, toVertex, vertexPropertyKey, edgeLabel);
+    public static Vertex createVertex(Graph graph,
+                                      ITypedInstance typedInstance,
+                                      Id typedInstanceId) {
+        final Vertex instanceVertex = graph.addVertex(null);
+        // type
+        instanceVertex.setProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, typedInstance.getTypeName());
 
-        Edge edgeToVertex = edge != null ? edge : fromVertex.addEdge(edgeLabel, toVertex);
-        if (timestamp != null) {
-            edgeToVertex.setProperty(Constants.TIMESTAMP_PROPERTY_KEY, timestamp);
-        }
+        // id
+        final String guid = UUID.randomUUID().toString();
+        instanceVertex.setProperty(Constants.GUID_PROPERTY_KEY, guid);
 
-        return edgeToVertex;
-    }
+        // version
+        instanceVertex.setProperty(Constants.VERSION_PROPERTY_KEY, typedInstanceId.version);
 
-    public static Edge findEdge(Vertex fromVertex, Vertex toVertex,
-                                String vertexPropertyKey, String edgeLabel) {
-        return findEdge(fromVertex, toVertex.getProperty(vertexPropertyKey),
-                vertexPropertyKey, edgeLabel);
-    }
-
-    public static Edge findEdge(Vertex fromVertex, Object toVertexName,
-                                String vertexPropertyKey, String edgeLabel) {
-        Edge edgeToFind = null;
-        for (Edge edge : fromVertex.getEdges(Direction.OUT, edgeLabel)) {
-            if (edge.getVertex(Direction.IN).getProperty(vertexPropertyKey).equals(toVertexName)) {
-                edgeToFind = edge;
-                break;
-            }
-        }
-
-        return edgeToFind;
+        return instanceVertex;
     }
 
     public static Vertex findVertex(Graph blueprintsGraph,
@@ -97,23 +87,23 @@ public final class GraphUtils {
 
     public static String edgeString(final Edge edge) {
         return "e[" + edge.getLabel() + "], ["
-                + edge.getVertex(Direction.OUT).getProperty("name")
+                + edge.getVertex(Direction.OUT)
                 + " -> " + edge.getLabel() + " -> "
-                + edge.getVertex(Direction.IN).getProperty("name")
+                + edge.getVertex(Direction.IN)
                 + "]";
     }
 
     public static void dumpToLog(final Graph graph) {
+        LOG.debug("*******************Graph Dump****************************");
         LOG.debug("Vertices of {}", graph);
         for (Vertex vertex : graph.getVertices()) {
             LOG.debug(vertexString(vertex));
-            System.out.println(vertexString(vertex));
         }
 
         LOG.debug("Edges of {}", graph);
         for (Edge edge : graph.getEdges()) {
             LOG.debug(edgeString(edge));
-            System.out.println(edgeString(edge));
         }
+        LOG.debug("*******************Graph Dump****************************");
     }
 }

@@ -34,15 +34,16 @@ import org.apache.hadoop.metadata.types.Multiplicity;
 import org.apache.hadoop.metadata.types.StructTypeDefinition;
 import org.apache.hadoop.metadata.types.TraitType;
 import org.codehaus.jettison.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import scala.actors.threadpool.Arrays;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -50,28 +51,29 @@ import java.util.UUID;
  */
 public class EntityJerseyResourceIT extends BaseResourceIT {
 
+    private static final Logger LOG = LoggerFactory.getLogger(EntityJerseyResourceIT.class);
+
     private static final String DATABASE_TYPE = "hive_database";
     private static final String DATABASE_NAME = "foo";
     private static final String TABLE_TYPE = "hive_table";
     private static final String TABLE_NAME = "bar";
-    private static final String TRAIT_TYPE = "hive_fetl";
 
-    private String tableInstanceAsJSON;
+    private ITypedReferenceableInstance tableInstance;
     private String guid;
 
     @BeforeClass
     public void setUp() throws Exception {
         super.setUp();
 
-        List<HierarchicalTypeDefinition> typeDefinitions = createHiveTypes();
-        submitTypes(typeDefinitions);
+        createHiveTypes();
+        submitTypes();
     }
 
     @Test
     public void testSubmitEntity() throws Exception {
-        ITypedReferenceableInstance tableInstance = createHiveTableInstance();
-
-        tableInstanceAsJSON = Serialization$.MODULE$.toJson(tableInstance);
+        tableInstance = createHiveTableInstance();
+        String tableInstanceAsJSON = Serialization$.MODULE$.toJson(tableInstance);
+        LOG.debug("tableInstance = " + tableInstanceAsJSON);
 
         WebResource resource = service
                 .path("api/metadata/entities/submit")
@@ -119,11 +121,23 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         final String definition = response.getString("definition");
         Assert.assertNotNull(definition);
+        LOG.debug("tableInstanceAfterGet = " + definition);
 
-        System.out.println("definition = " + definition);
-        System.out.println("tableInstanceAsJSON = " + tableInstanceAsJSON);
-        // Assert.assertEquals(definition, tableInstanceAsJSON);
+        // todo - this fails with type error, strange
+        // ITypedReferenceableInstance tableInstanceAfterGet = Serialization$.MODULE$.fromJson(definition);
+        // Assert.assertTrue(areEqual(tableInstance, tableInstanceAfterGet));
     }
+
+/*
+    private boolean areEqual(ITypedReferenceableInstance actual,
+                             ITypedReferenceableInstance expected) throws Exception {
+        for (AttributeInfo attributeInfo : actual.fieldMapping().fields.values()) {
+            Assert.assertEquals(actual.get(attributeInfo.name), expected.get(attributeInfo.name));
+        }
+
+        return true;
+    }
+*/
 
     @Test
     public void testGetInvalidEntityDefinition() {
@@ -165,15 +179,19 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         System.out.println("response = " + response);
     }
 
-    private List<HierarchicalTypeDefinition> createHiveTypes() throws Exception {
-        ArrayList<HierarchicalTypeDefinition> typeDefinitions = new ArrayList<>();
-
+    private void createHiveTypes() throws Exception {
         HierarchicalTypeDefinition<ClassType> databaseTypeDefinition =
                 createClassTypeDef(DATABASE_TYPE,
                         ImmutableList.<String>of(),
                         createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         createRequiredAttrDef("description", DataTypes.STRING_TYPE));
-        typeDefinitions.add(databaseTypeDefinition);
+
+        StructTypeDefinition structTypeDefinition =
+                new StructTypeDefinition("serdeType",
+                        new AttributeDefinition[] {
+                        createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        createRequiredAttrDef("serde", DataTypes.STRING_TYPE)
+                        });
 
         HierarchicalTypeDefinition<ClassType> tableTypeDefinition =
                 createClassTypeDef(TABLE_TYPE,
@@ -181,47 +199,45 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                         createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         createRequiredAttrDef("description", DataTypes.STRING_TYPE),
                         createRequiredAttrDef("type", DataTypes.STRING_TYPE),
-                        new AttributeDefinition(DATABASE_TYPE,
-                                DATABASE_TYPE, Multiplicity.REQUIRED, true, DATABASE_TYPE));
-        typeDefinitions.add(tableTypeDefinition);
+                        new AttributeDefinition("serde1",
+                                "serdeType", Multiplicity.REQUIRED, false, null),
+                        new AttributeDefinition("serde2",
+                                "serdeType", Multiplicity.REQUIRED, false, null),
+                        new AttributeDefinition("database",
+                                DATABASE_TYPE, Multiplicity.REQUIRED, true, null));
 
-        HierarchicalTypeDefinition<TraitType> fetlTypeDefinition =
-                createTraitTypeDef(TRAIT_TYPE,
+        HierarchicalTypeDefinition<TraitType> classificationTypeDefinition =
+                createTraitTypeDef("classification",
                         ImmutableList.<String>of(),
-                        createRequiredAttrDef("level", DataTypes.INT_TYPE));
-        typeDefinitions.add(fetlTypeDefinition);
+                        createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
 
         typeSystem.defineTypes(
-                ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.of(fetlTypeDefinition),
+                ImmutableList.of(structTypeDefinition),
+                ImmutableList.of(classificationTypeDefinition),
                 ImmutableList.of(databaseTypeDefinition, tableTypeDefinition));
-
-        return typeDefinitions;
     }
 
-    private void submitTypes(List<HierarchicalTypeDefinition> typeDefinitions) throws Exception {
-        for (HierarchicalTypeDefinition typeDefinition : typeDefinitions) {
-            String typesAsJSON = TypesSerialization.toJson(
-                    typeSystem, typeDefinition.typeName);
+    private void submitTypes() throws Exception {
+        String typesAsJSON = TypesSerialization.toJson(typeSystem,
+                Arrays.asList(new String[]{DATABASE_TYPE, TABLE_TYPE, "serdeType", "classification"}));
 
-            WebResource resource = service
-                    .path("api/metadata/types/submit")
-                    .path(typeDefinition.typeName);
+        WebResource resource = service
+                .path("api/metadata/types/submit")
+                .path(TABLE_TYPE);
 
-            ClientResponse clientResponse = resource
-                    .accept(MediaType.APPLICATION_JSON)
-                    .type(MediaType.APPLICATION_JSON)
-                    .method(HttpMethod.POST, ClientResponse.class, typesAsJSON);
-            Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+        ClientResponse clientResponse = resource
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.POST, ClientResponse.class, typesAsJSON);
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
-            String responseAsString = clientResponse.getEntity(String.class);
-            Assert.assertNotNull(responseAsString);
+        String responseAsString = clientResponse.getEntity(String.class);
+        Assert.assertNotNull(responseAsString);
 
-            JSONObject response = new JSONObject(responseAsString);
-            Assert.assertEquals(response.get("typeName"), typeDefinition.typeName);
-            Assert.assertNotNull(response.get("types"));
-            Assert.assertNotNull(response.get("requestId"));
-        }
+        JSONObject response = new JSONObject(responseAsString);
+        Assert.assertEquals(response.get("typeName"), TABLE_TYPE);
+        Assert.assertNotNull(response.get("types"));
+        Assert.assertNotNull(response.get("requestId"));
     }
 
     protected ITypedReferenceableInstance createHiveTableInstance() throws Exception {
@@ -229,14 +245,24 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         databaseInstance.set("name", DATABASE_NAME);
         databaseInstance.set("description", "foo database");
 
-        Referenceable tableInstance = new Referenceable(TABLE_TYPE, TRAIT_TYPE);
+        Referenceable tableInstance = new Referenceable(TABLE_TYPE, "classification");
         tableInstance.set("name", TABLE_NAME);
         tableInstance.set("description", "bar table");
         tableInstance.set("type", "managed");
-        tableInstance.set(DATABASE_TYPE, databaseInstance);
+        tableInstance.set("database", databaseInstance);
 
-        Struct traitInstance = (Struct) tableInstance.getTrait(TRAIT_TYPE);
-        traitInstance.set("level", 1);
+        Struct traitInstance = (Struct) tableInstance.getTrait("classification");
+        traitInstance.set("tag", "foundation_etl");
+
+        Struct serde1Instance = new Struct("serdeType");
+        serde1Instance.set("name", "serde1");
+        serde1Instance.set("serde", "serde1");
+        tableInstance.set("serde1", serde1Instance);
+
+        Struct serde2Instance = new Struct("serdeType");
+        serde2Instance.set("name", "serde2");
+        serde2Instance.set("serde", "serde2");
+        tableInstance.set("serde2", serde2Instance);
 
         ClassType tableType = typeSystem.getDataType(ClassType.class, TABLE_TYPE);
         return tableType.convert(tableInstance, Multiplicity.REQUIRED);
