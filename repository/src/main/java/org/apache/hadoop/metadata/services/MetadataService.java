@@ -78,5 +78,5 @@ public interface MetadataService extends Service {
      * @param entityType type
      * @return list of entity names for the given type in the repository
      */
-    List<String> getEntityNamesList(String entityType) throws MetadataException;
+    List<String> getEntityList(String entityType) throws MetadataException;
 }

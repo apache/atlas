@@ -23,6 +23,7 @@ import com.thinkaurelius.titan.core.TitanVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
+import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.collections.map.HashedMap;
@@ -58,6 +59,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -160,6 +162,27 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         }
     }
 
+    @Override
+    public List<String> getEntityList(String entityType) throws RepositoryException {
+        LOG.info("Retrieving entity list for type={}", entityType);
+
+        GraphQuery query = graphService.getBlueprintsGraph().query()
+                .has(Constants.ENTITY_TYPE_PROPERTY_KEY, entityType);
+        Iterator<Vertex> results = query.vertices().iterator();
+        if (!results.hasNext()) {
+            return Collections.emptyList();
+        }
+
+        ArrayList<String> entityList = new ArrayList<>();
+        while (results.hasNext()) {
+            Vertex vertex = results.next();
+            entityList.add(vertex.<String>getProperty(Constants.GUID_PROPERTY_KEY));
+        }
+
+        return entityList;
+    }
+
+    @Override
     public List<Map<String,String>> rawSearch(String gremlinQuery) throws RepositoryException {
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName("gremlin-groovy");
@@ -207,12 +230,6 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         }catch(ScriptException se) {
             throw new RepositoryException(se);
         }
-    }
-
-    @Override
-    public List<String> getEntityList(String entityType) throws RepositoryException {
-        LOG.info("Retrieving entity list for type={}", entityType);
-        return Collections.emptyList();
     }
 
     private final class EntityProcessor implements ObjectGraphWalker.NodeProcessor {
@@ -328,7 +345,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             throws MetadataException {
             String typedInstanceGUID = null;
             for (ITypedReferenceableInstance typedInstance : newTypedInstances) { // Traverse over newInstances
-                LOG.debug("Adding typed instance {}", typedInstance);
+                LOG.debug("Adding typed instance {}", typedInstance.getTypeName());
 
                 Id id = typedInstance.getId();
                 if (id == null) { // oops
@@ -364,7 +381,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                                          Map<String, AttributeInfo> fields,
                                          Map<Id, Vertex> idToVertexMap) throws MetadataException {
             LOG.debug("Mapping instance {} to vertex {} for fields {}",
-                    typedInstance, instanceVertex, fields);
+                    typedInstance.getTypeName(), instanceVertex, fields);
             for (AttributeInfo attributeInfo : fields.values()) {
                 LOG.debug("mapping attributeInfo {}", attributeInfo);
                 final IDataType dataType = attributeInfo.dataType();
@@ -611,7 +628,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         private void mapVertexToStructInstance(Vertex instanceVertex,
                                                ITypedInstance typedInstance,
                                                AttributeInfo attributeInfo) throws MetadataException {
-            LOG.debug("mapping vertex {} to struct {}", typedInstance, attributeInfo.name);
+            LOG.debug("mapping vertex {} to struct {}", instanceVertex, attributeInfo.name);
             StructType structType = typeSystem.getDataType(
                     StructType.class, attributeInfo.dataType().getName());
             ITypedStruct structInstance = structType.createInstance();

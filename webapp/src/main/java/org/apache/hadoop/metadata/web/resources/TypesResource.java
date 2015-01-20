@@ -124,7 +124,7 @@ public class TypesResource {
 
             return Response.ok(response).build();
         } catch (Exception e) {
-            LOG.error("Unable to persist entity object", e);
+            LOG.error("Unable to get types list", e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         }

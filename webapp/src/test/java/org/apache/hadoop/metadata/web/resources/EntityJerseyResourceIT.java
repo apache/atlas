@@ -33,6 +33,8 @@ import org.apache.hadoop.metadata.types.HierarchicalTypeDefinition;
 import org.apache.hadoop.metadata.types.Multiplicity;
 import org.apache.hadoop.metadata.types.StructTypeDefinition;
 import org.apache.hadoop.metadata.types.TraitType;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,7 +142,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 */
 
     @Test
-    public void testGetInvalidEntityDefinition() {
+    public void testGetInvalidEntityDefinition() throws Exception {
         WebResource resource = service
                 .path("api/metadata/entities/definition")
                 .path("blah");
@@ -150,12 +152,13 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
-        String response = clientResponse.getEntity(String.class);
-        System.out.println("response = " + response);
+
+        String responseAsString = clientResponse.getEntity(String.class);
+        Assert.assertNotNull(responseAsString);
     }
 
-    @Test (dependsOnMethods = "testSubmitEntity", enabled = false)
-    public void testGetEntityList() {
+    @Test (dependsOnMethods = "testSubmitEntity")
+    public void testGetEntityList() throws Exception {
         ClientResponse clientResponse = service
                 .path("api/metadata/entities/list/")
                 .path(TABLE_TYPE)
@@ -163,20 +166,63 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
-        String response = clientResponse.getEntity(String.class);
-        System.out.println("response = " + response);
+
+        String responseAsString = clientResponse.getEntity(String.class);
+        Assert.assertNotNull(responseAsString);
+
+        JSONObject response = new JSONObject(responseAsString);
+        Assert.assertNotNull(response.get("requestId"));
+
+        final JSONArray list = response.getJSONArray("list");
+        Assert.assertNotNull(list);
+        Assert.assertEquals(list.length(), 1);
     }
 
-    @Test (enabled = false) // todo: enable this later
-    public void testGetEntityListForBadEntityType() {
+    @Test
+    public void testGetEntityListForBadEntityType() throws Exception {
         ClientResponse clientResponse = service
                 .path("api/metadata/entities/list/blah")
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.GET, ClientResponse.class);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
-        String response = clientResponse.getEntity(String.class);
-        System.out.println("response = " + response);
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
+
+        String responseAsString = clientResponse.getEntity(String.class);
+        Assert.assertNotNull(responseAsString);
+    }
+
+    @Test
+    public void testGetEntityListForNoInstances() throws Exception {
+        addNewType();
+
+        ClientResponse clientResponse = service
+                .path("api/metadata/entities/list/test")
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.GET, ClientResponse.class);
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+
+        String responseAsString = clientResponse.getEntity(String.class);
+        Assert.assertNotNull(responseAsString);
+
+        JSONObject response = new JSONObject(responseAsString);
+        Assert.assertNotNull(response.get("requestId"));
+
+        final JSONArray list = response.getJSONArray("list");
+        Assert.assertEquals(list.length(), 0);
+    }
+
+    private void addNewType() throws Exception {
+        HierarchicalTypeDefinition<ClassType> testTypeDefinition =
+                createClassTypeDef("test",
+                        ImmutableList.<String>of(),
+                        createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        createRequiredAttrDef("description", DataTypes.STRING_TYPE));
+        typeSystem.defineClassType(testTypeDefinition);
+
+        String typesAsJSON = TypesSerialization.toJson(typeSystem,
+                Arrays.asList(new String[]{"test"}));
+        sumbitType(typesAsJSON, "test");
     }
 
     private void createHiveTypes() throws Exception {
@@ -220,10 +266,13 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     private void submitTypes() throws Exception {
         String typesAsJSON = TypesSerialization.toJson(typeSystem,
                 Arrays.asList(new String[]{DATABASE_TYPE, TABLE_TYPE, "serdeType", "classification"}));
+        sumbitType(typesAsJSON, TABLE_TYPE);
+    }
 
+    private void sumbitType(String typesAsJSON, String type) throws JSONException {
         WebResource resource = service
                 .path("api/metadata/types/submit")
-                .path(TABLE_TYPE);
+                .path(type);
 
         ClientResponse clientResponse = resource
                 .accept(MediaType.APPLICATION_JSON)
@@ -235,12 +284,12 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertEquals(response.get("typeName"), TABLE_TYPE);
+        Assert.assertEquals(response.get("typeName"), type);
         Assert.assertNotNull(response.get("types"));
         Assert.assertNotNull(response.get("requestId"));
     }
 
-    protected ITypedReferenceableInstance createHiveTableInstance() throws Exception {
+    private ITypedReferenceableInstance createHiveTableInstance() throws Exception {
         Referenceable databaseInstance = new Referenceable(DATABASE_TYPE);
         databaseInstance.set("name", DATABASE_NAME);
         databaseInstance.set("description", "foo database");

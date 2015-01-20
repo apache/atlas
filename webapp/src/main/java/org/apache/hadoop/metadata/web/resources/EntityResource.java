@@ -19,8 +19,11 @@
 package org.apache.hadoop.metadata.web.resources;
 
 import com.google.common.base.Preconditions;
+import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.services.MetadataService;
 import org.apache.hadoop.metadata.web.util.Servlets;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +43,7 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.List;
 
 /**
  * Entity management operations as REST API.
@@ -120,19 +124,27 @@ public class EntityResource {
     }
 
     @GET
-    @Path("definition/{entityType}/{entityName}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getEntityDefinition(@PathParam("entityType") String entityType,
-                                        @PathParam("entityName") String entityName) {
-        return Response.status(Response.Status.SERVICE_UNAVAILABLE).build();
-    }
-
-    @GET
     @Path("list/{entityType}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getEntityList(@PathParam("entityType") String entityType,
                                   @DefaultValue("0") @QueryParam("offset") Integer offset,
                                   @QueryParam("numResults") Integer resultsPerPage) {
-        return Response.ok().build();
+        try {
+            final List<String> entityList = metadataService.getEntityList(entityType);
+
+            JSONObject response = new JSONObject();
+            response.put("requestId", Thread.currentThread().getName());
+            response.put("list", new JSONArray(entityList));
+
+            return Response.ok(response).build();
+        } catch (MetadataException e) {
+            LOG.error("Unable to get entity list for type {}", entityType, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (JSONException e) {
+            LOG.error("Unable to get entity list for type {}", entityType, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        }
     }
 }

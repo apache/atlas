@@ -27,11 +27,11 @@ import org.apache.hadoop.metadata.json.TypesSerialization;
 import org.apache.hadoop.metadata.listener.TypedInstanceChangeListener;
 import org.apache.hadoop.metadata.listener.TypesChangeListener;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
+import org.apache.hadoop.metadata.storage.RepositoryException;
 import org.apache.hadoop.metadata.types.IDataType;
 import org.apache.hadoop.metadata.types.TypeSystem;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,7 +73,7 @@ public class DefaultMetadataService implements MetadataService {
     public JSONObject createType(String typeName,
                                  String typeDefinition) throws MetadataException {
         try {
-            validate(typeName, typeDefinition);
+            validateTypeDoesNotExist(typeName, typeDefinition);
 
             TypesDef typesDef = TypesSerialization.fromJson(typeDefinition);
             Map<String, IDataType> typesAdded = typeSystem.defineTypes(typesDef);
@@ -86,20 +86,16 @@ public class DefaultMetadataService implements MetadataService {
             }
 
             return response;
-        } catch (ParseException e) {
-            LOG.error("Unable to parse JSON for type {}", typeName, e);
-            throw new MetadataException("validation failed for: " + typeName);
         } catch (JSONException e) {
             LOG.error("Unable to persist type {}", typeName, e);
             throw new MetadataException("Unable to create response for: " + typeName);
         }
     }
 
-    private void validate(String typeName,
-                          String typeDefinition) throws ParseException, MetadataException {
+    private void validateTypeDoesNotExist(String typeName,
+                                          String typeDefinition) throws MetadataException {
         Preconditions.checkNotNull(typeName, "type name cannot be null");
         Preconditions.checkNotNull(typeDefinition, "type definition cannot be null");
-        JSONValue.parseWithException(typeDefinition);
 
         // verify if the type already exists
         String existingTypeDefinition = null;
@@ -110,7 +106,7 @@ public class DefaultMetadataService implements MetadataService {
         }
 
         if (existingTypeDefinition != null) {
-            throw new MetadataException("type is already defined for : " + typeName);
+            throw new RepositoryException("type is already defined for : " + typeName);
         }
     }
 
@@ -178,8 +174,9 @@ public class DefaultMetadataService implements MetadataService {
      */
     @Override
     public String getEntityDefinition(String guid) throws MetadataException {
-        final ITypedReferenceableInstance instance =
-                repository.getEntityDefinition(guid);
+        Preconditions.checkNotNull(guid, "guid cannot be null");
+
+        final ITypedReferenceableInstance instance = repository.getEntityDefinition(guid);
         return instance == null
                 ? null
                 : Serialization$.MODULE$.toJson(instance);
@@ -192,8 +189,26 @@ public class DefaultMetadataService implements MetadataService {
      * @return list of entity names for the given type in the repository
      */
     @Override
-    public List<String> getEntityNamesList(String entityType) throws MetadataException {
-        throw new UnsupportedOperationException();
+    public List<String> getEntityList(String entityType) throws MetadataException {
+        validateTypeExists(entityType);
+
+        return repository.getEntityList(entityType);
+    }
+
+    private void validateTypeExists(String entityType) throws MetadataException {
+        Preconditions.checkNotNull(entityType, "entity type cannot be null");
+
+        // verify if the type exists
+        String existingTypeDefinition = null;
+        try {
+            existingTypeDefinition = getTypeDefinition(entityType);
+        } catch (MetadataException ignore) {
+            // do nothing
+        }
+
+        if (existingTypeDefinition == null) {
+            throw new RepositoryException("type is not defined for : " + entityType);
+        }
     }
 
     private void onAdd(Map<String, IDataType> typesAdded) throws MetadataException {
