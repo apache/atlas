@@ -98,9 +98,9 @@ public class DefaultMetadataService implements MetadataService {
         Preconditions.checkNotNull(typeDefinition, "type definition cannot be null");
 
         // verify if the type already exists
-        String existingTypeDefinition = null;
+        IDataType existingTypeDefinition = null;
         try {
-            existingTypeDefinition = getTypeDefinition(typeName);
+            existingTypeDefinition = typeSystem.getDataType(IDataType.class, typeName);
         } catch (MetadataException ignore) {
             // do nothing
         }

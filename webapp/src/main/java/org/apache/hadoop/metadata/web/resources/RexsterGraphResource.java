@@ -73,13 +73,6 @@ public class RexsterGraphResource {
     @Inject
     public RexsterGraphResource(GraphService graphService) {
     	this.graphService = graphService;
-        /*graphService = Services.get().getService(TitanGraphService.NAME);
-        if (graphService == null) {
-            throw new WebApplicationException(Response
-                    .status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .tag("graph service is not initialized")
-                    .build());
-        }*/
     }
 
     protected Graph getGraph() {
@@ -148,8 +141,7 @@ public class RexsterGraphResource {
         try {
             Vertex vertex = findVertex(vertexId);
 
-            Map<String, String> vertexProperties =
-                    getVertexProperties(vertex, Boolean.valueOf(relationships));
+            Map<String, String> vertexProperties = getVertexProperties(vertex);
 
             JSONObject response = new JSONObject();
             response.put(RESULTS, new JSONObject(vertexProperties));
@@ -161,7 +153,7 @@ public class RexsterGraphResource {
         }
     }
 
-    private Map<String, String> getVertexProperties(Vertex vertex, boolean captureRelationships) {
+    private Map<String, String> getVertexProperties(Vertex vertex) {
         Map<String, String> vertexProperties = new HashMap<>();
         for (String key : vertex.getPropertyKeys()) {
             vertexProperties.put(key, vertex.<String>getProperty(key));

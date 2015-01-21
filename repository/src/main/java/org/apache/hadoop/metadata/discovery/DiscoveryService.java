@@ -16,28 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata.repository;
+package org.apache.hadoop.metadata.discovery;
 
-import org.apache.hadoop.metadata.IReferenceableInstance;
-import org.apache.hadoop.metadata.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.service.Service;
-import org.apache.hadoop.metadata.storage.RepositoryException;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * An interface for persisting metadata into a blueprints enabled graph db.
+ * Metadata discovery service.
  */
-public interface MetadataRepository extends Service {
-
-    String createEntity(IReferenceableInstance entity,
-                        String entityType) throws RepositoryException;
-
-    ITypedReferenceableInstance getEntityDefinition(String guid) throws RepositoryException;
-
-    List<String> getEntityList(String entityType) throws RepositoryException;
+public interface DiscoveryService {
 
     /**
      * Assumes the User is familiar with the persistence structure of the Repository.
@@ -49,4 +38,5 @@ public interface MetadataRepository extends Service {
      * @throws org.apache.hadoop.metadata.MetadataException
      */
     List<Map<String,String>> searchByGremlin(String gremlinQuery) throws MetadataException;
+
 }

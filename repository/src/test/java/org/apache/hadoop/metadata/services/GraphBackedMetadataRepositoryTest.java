@@ -113,15 +113,15 @@ public class GraphBackedMetadataRepositoryTest extends RepositoryModuleBaseTest 
 
 
         // Query for all Vertices in Graph
-        Object r = repositoryService.rawSearch("g.V.toList()");
+        Object r = repositoryService.searchByGremlin("g.V.toList()");
         //System.out.println(r);
 
         // Query for all Vertices of a Type
-        r = repositoryService.rawSearch("g.V.filter{it.typeName == 'Department'}.toList()");
+        r = repositoryService.searchByGremlin("g.V.filter{it.typeName == 'Department'}.toList()");
         //System.out.println(r);
 
         // Property Query: list all Person names
-        r = repositoryService.rawSearch("g.V.filter{it.typeName == 'Person'}.'Person.name'.toList()");
+        r = repositoryService.searchByGremlin("g.V.filter{it.typeName == 'Person'}.'Person.name'.toList()");
         //System.out.println(r);
     }
 

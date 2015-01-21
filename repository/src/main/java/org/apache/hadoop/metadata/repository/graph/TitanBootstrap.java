@@ -20,8 +20,10 @@ package org.apache.hadoop.metadata.repository.graph;
 
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
 
 public class TitanBootstrap {
@@ -78,6 +80,21 @@ public class TitanBootstrap {
                     System.out.println("e = " + edgeString(e));
                 }
             }
+
+            System.out.println("====================");
+            GraphQuery graphQuery = graph.query()
+                    .has("name", Cmp.EQUAL, "harish");
+            for (Vertex v : graphQuery.vertices()) {
+                System.out.println("v = " + vertexString(v));
+            }
+
+            graphQuery = graph.query()
+                    .has("name", Cmp.EQUAL, "venkatesh");
+            for (Edge e : graphQuery.edges()) {
+                System.out.println("e = " + edgeString(e));
+            }
+
+
         } finally {
             graph.shutdown();
         }

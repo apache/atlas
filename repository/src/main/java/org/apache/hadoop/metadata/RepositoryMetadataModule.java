@@ -28,6 +28,8 @@ package org.apache.hadoop.metadata;
 import com.google.inject.Scopes;
 import com.google.inject.throwingproviders.ThrowingProviderBinder;
 import com.thinkaurelius.titan.core.TitanGraph;
+import org.apache.hadoop.metadata.discovery.DiscoveryService;
+import org.apache.hadoop.metadata.discovery.GraphBackedDiscoveryService;
 import org.apache.hadoop.metadata.services.DefaultMetadataService;
 import org.apache.hadoop.metadata.repository.graph.GraphBackedMetadataRepository;
 import org.apache.hadoop.metadata.repository.graph.GraphProvider;
@@ -44,9 +46,11 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
 
 	// Graph Service implementation class
 	private Class<? extends GraphService> graphServiceClass;
+
 	// MetadataRepositoryService implementation class
 	private Class<? extends MetadataRepository> metadataRepoClass;
 	private Class<? extends MetadataService> metadataService;
+	private Class<? extends DiscoveryService> discoveryService;
 
 	public RepositoryMetadataModule() {
 		GraphServiceConfigurator gsp = new GraphServiceConfigurator();
@@ -55,6 +59,7 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
 		this.graphServiceClass = gsp.getImplClass();
 		this.metadataRepoClass = GraphBackedMetadataRepository.class;
 		this.metadataService = DefaultMetadataService.class;
+		this.discoveryService = GraphBackedDiscoveryService.class;
 	}
 
 	protected void configure() {
@@ -74,5 +79,8 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
 
 		// bind the MetadataService interface to an implementation
 		bind(MetadataService.class).to(metadataService);
+
+		// bind the DiscoveryService interface to an implementation
+		bind(DiscoveryService.class).to(discoveryService);
 	}
 }

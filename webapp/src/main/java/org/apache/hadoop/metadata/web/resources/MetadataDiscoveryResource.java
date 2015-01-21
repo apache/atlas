@@ -18,8 +18,27 @@
 
 package org.apache.hadoop.metadata.web.resources;
 
+import com.google.common.base.Preconditions;
+import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.discovery.DiscoveryService;
+import org.apache.hadoop.metadata.web.util.Servlets;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Jersey Resource for metadata operations.
@@ -33,4 +52,49 @@ import javax.ws.rs.Path;
 @Path("discovery")
 @Singleton
 public class MetadataDiscoveryResource {
+
+    private static final Logger LOG = LoggerFactory.getLogger(EntityResource.class);
+
+    private final DiscoveryService discoveryService;
+
+    /**
+     * Created by the Guice ServletModule and injected with the
+     * configured DiscoveryService.
+     *
+     * @param discoveryService metadata service handle
+     */
+    @Inject
+    public MetadataDiscoveryResource(DiscoveryService discoveryService) {
+        this.discoveryService = discoveryService;
+    }
+
+    @GET
+    @Path("search/gremlin/{gremlinQuery}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response searchUsingGremlinQuery(@PathParam("gremlinQuery") String gremlinQuery) {
+        Preconditions.checkNotNull(gremlinQuery, "gremlinQuery cannot be null");
+
+        try {
+            final List<Map<String,String>> results = discoveryService.searchByGremlin(gremlinQuery);
+
+            JSONObject response = new JSONObject();
+            response.put("requestId", Thread.currentThread().getName());
+
+            JSONArray list = new JSONArray();
+            for (Map<String, String> result : results) {
+                list.put(new JSONObject(result));
+            }
+            response.put("results", list);
+
+            return Response.ok(response).build();
+        } catch (MetadataException e) {
+            LOG.error("Unable to get entity list for gremlinQuery {}", gremlinQuery, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (JSONException e) {
+            LOG.error("Unable to get entity list for gremlinQuery {}", gremlinQuery, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        }
+    }
 }

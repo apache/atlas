@@ -26,7 +26,6 @@ import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
-import org.apache.commons.collections.map.HashedMap;
 import org.apache.hadoop.metadata.IReferenceableInstance;
 import org.apache.hadoop.metadata.ITypedInstance;
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
@@ -182,8 +181,17 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         return entityList;
     }
 
+    /**
+     * Assumes the User is familiar with the persistence structure of the Repository.
+     * The given query is run uninterpreted against the underlying Graph Store.
+     * The results are returned as a List of Rows. each row is a Map of Key,Value pairs.
+     *
+     * @param gremlinQuery query in gremlin dsl format
+     * @return List of Maps
+     * @throws org.apache.hadoop.metadata.MetadataException
+     */
     @Override
-    public List<Map<String,String>> rawSearch(String gremlinQuery) throws RepositoryException {
+    public List<Map<String, String>> searchByGremlin(String gremlinQuery) throws MetadataException {
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName("gremlin-groovy");
         Bindings bindings = engine.createBindings();
@@ -199,7 +207,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             List<Map<String,String>> result = new ArrayList<>();
             for(Object r : l) {
 
-                Map<String,String> oRow = new HashedMap();
+                Map<String,String> oRow = new HashMap<>();
                 if ( r instanceof  Map ) {
                     Map<Object,Object> iRow = (Map) r;
                     for(Map.Entry e : iRow.entrySet()) {
@@ -450,8 +458,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                     structInstance.fieldMapping().fields, idToVertexMap);
 
             // add an edge to the newly created vertex from the parent
-            String relationshipLabel = attributeInfo.dataType().getName() + "." + attributeInfo.name;
-            LOG.debug("Adding edge for {} -> label {} -> v{}",
+            String relationshipLabel = typedInstance.getTypeName() + "." + attributeInfo.name;
+            LOG.debug("Adding edge for {} -> struct label {} -> v{}",
                     parentInstanceVertex, relationshipLabel, structInstanceVertex);
             parentInstanceVertex.addEdge(relationshipLabel, structInstanceVertex);
         }
@@ -471,7 +479,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
             // add an edge to the newly created vertex from the parent
             String relationshipLabel = typedInstance.getTypeName() + "." + traitName;
-            LOG.debug("Adding edge for {} -> label {} -> v{}",
+            LOG.debug("Adding edge for {} -> trait label {} -> v{}",
                     parentInstanceVertex, relationshipLabel, traitInstanceVertex);
             parentInstanceVertex.addEdge(relationshipLabel, traitInstanceVertex);
         }
@@ -595,6 +603,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                         break;
 
                     case CLASS:
+                        // todo - use ObjectWalker here instead else it can be an infinite loop
+                        // for cross references
                         String relationshipLabel = typedInstance.getTypeName() + "." + attributeInfo.name;
                         LOG.debug("Finding edge for {} -> label {} ", instanceVertex, relationshipLabel);
                         for (Edge edge : instanceVertex.getEdges(Direction.OUT, relationshipLabel)) {
