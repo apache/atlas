@@ -156,8 +156,7 @@ public class AttributeStores {
             String attrName = attrNames.get(0);
             int nullPos = instance.fieldMapping().fieldNullPos.get(attrName);
             int colPos = instance.fieldMapping().fieldPos.get(attrName);
-            System.out.println("Storing attribute " + attrName + " at pos " + pos + " colPos = " + colPos +
-                "nullPos = " + nullPos);
+            nullList.set(pos, instance.nullFlags[nullPos]);
 
             if (pos == nullList.size()) {
                 nullList.add(instance.nullFlags[nullPos]);
@@ -176,7 +175,6 @@ public class AttributeStores {
         public void load(int pos, IConstructableType type, StructInstance instance) throws RepositoryException {
             List<String> attrNames = type.getNames(attrInfo);
             String attrName = attrNames.get(0);
-            System.out.println("Loading attribute " + attrName);
             int nullPos = instance.fieldMapping().fieldNullPos.get(attrName);
             int colPos = instance.fieldMapping().fieldPos.get(attrName);
 

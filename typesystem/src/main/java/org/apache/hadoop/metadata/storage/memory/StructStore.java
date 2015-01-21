@@ -21,6 +21,7 @@ package org.apache.hadoop.metadata.storage.memory;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import org.apache.hadoop.metadata.ITypedStruct;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.storage.RepositoryException;
 import org.apache.hadoop.metadata.storage.StructInstance;
@@ -67,9 +68,11 @@ public class StructStore extends AttributeStores.AbstractAttributeStore implemen
 
     @Override
     protected void load(StructInstance instance, int colPos, int pos) throws RepositoryException {
+        StructInstance s = (StructInstance) structType.createInstance();
+        instance.structs[colPos] = s;
         for(Map.Entry<AttributeInfo, IAttributeStore> e : attrStores.entrySet()) {
             IAttributeStore attributeStore = e.getValue();
-            attributeStore.load(pos, structType, instance);
+            attributeStore.load(pos, structType, s);
         }
     }
 
@@ -89,7 +92,7 @@ public class StructStore extends AttributeStores.AbstractAttributeStore implemen
             IAttributeStore attributeStore = e.getValue();
             attributeStore.ensureCapacity(pos);
         }
-        nullList.ensureCapacity(pos);
+        nullList.size(pos+1);
     }
 
 }
