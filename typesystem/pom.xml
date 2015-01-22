@@ -240,13 +240,13 @@
                         </javacArgs>
                         <!-- The following plugin is required to use quasiquotes in Scala 2.10 and is used
                              by Spark SQL for code generation. -->
-                        <compilerPlugins>
+                        <!--<compilerPlugins>
                             <compilerPlugin>
                                 <groupId>org.scalamacros</groupId>
                                 <artifactId>paradise_${scala.version}</artifactId>
                                 <version>${scala.macros.version}</version>
                             </compilerPlugin>
-                        </compilerPlugins>
+                        </compilerPlugins>-->
                     </configuration>
                 </plugin>
             </plugins>
