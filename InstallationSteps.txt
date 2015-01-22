@@ -82,11 +82,21 @@ b. Starting Metadata Server
 c. Using Falcon
 ~~~~~~~~~~~~~~~
 
-* curl -v http://localhost:21000/api/metadata/admin/version
+* Verify if the server is up and running
+  curl -v http://localhost:21000/api/metadata/admin/version
   {"Version":"v0.1"}
 
-* curl -v http://localhost:21000/api/metadata/types/list
+* List the types in the repository
+  curl -v http://localhost:21000/api/metadata/types/list
   {"list":["biginteger","short","byte","int","string","bigdecimal","boolean","date","double","long","float"],"requestId":"902580786@qtp-1479771328-0"}
+
+* List the instances for a given type
+  curl -v http://localhost:21000/api/metadata/entities/list/hive_table
+  {"requestId":"788558007@qtp-44808654-5","list":["cb9b5513-c672-42cb-8477-b8f3e537a162","ec985719-a794-4c98-b98f-0509bd23aac0","48998f81-f1d3-45a2-989a-223af5c1ed6e","a54b386e-c759-4651-8779-a099294244c4"]}
+
+  curl -v http://localhost:21000/api/metadata/entities/list/hive_database
+
+
 
 d. Stopping Falcon Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~
