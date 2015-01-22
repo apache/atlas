@@ -34,7 +34,7 @@ Building metadata from the source repository
 
 * git clone git@github.com:hortonworks/metadata.git metadata
 * cd metadata
-* export MAVEN_OPTS="-Xmx1024m -XX:MaxPermSize=256m" && mvn clean verify
+* export MAVEN_OPTS="-Xmx1024m -XX:MaxPermSize=256m" && mvn clean install
 
 
 2. Deploying Metadata
@@ -48,9 +48,47 @@ Tar can be found in {project dir}/target/apache-metadata-${project.version}-bin.
 
 Tar is structured as follows
 
-TBD
+|- bin
+   |- metadata-start.sh
+   |- metadata-stop.sh
+|- conf
+   |- application.properties
+   |- graph.properties
+   |- log4j.xml
+|- docs
+|- server
+   |- webapp
+      |- metadata.war
+|- README
+|- NOTICE.txt
+|- LICENSE.txt
+|- DISCLAIMER.txt
+|- CHANGES.txt
 
 3. Installing & running Metadata
 --------------------------------
 
-TBD
+a. Installing Metadata
+~~~~~~~~~~~~~~~~~~~~~~
+
+* tar -xzvf apache-metadata-${project.version}-bin.tar.gz
+* cd metadata-${project.version}
+
+b. Starting Metadata Server
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* bin/metadata-start.sh
+
+c. Using Falcon
+~~~~~~~~~~~~~~~
+
+* curl -v http://localhost:21000/api/metadata/admin/version
+  {"Version":"v0.1"}
+
+* curl -v http://localhost:21000/api/metadata/types/list
+  {"list":["biginteger","short","byte","int","string","bigdecimal","boolean","date","double","long","float"],"requestId":"902580786@qtp-1479771328-0"}
+
+d. Stopping Falcon Server
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* bin/metadata-stop.sh

@@ -28,7 +28,7 @@
     </appender>
 
     <appender name="FILE" class="org.apache.log4j.DailyRollingFileAppender">
-        <param name="File" value="${user.dir}/target/logs/application.log"/>
+        <param name="File" value="${metadata.log.dir}/application.log"/>
         <param name="Append" value="true"/>
         <param name="Threshold" value="debug"/>
         <layout class="org.apache.log4j.PatternLayout">
@@ -37,7 +37,7 @@
     </appender>
 
     <appender name="AUDIT" class="org.apache.log4j.DailyRollingFileAppender">
-        <param name="File" value="${user.dir}/target/logs/audit.log"/>
+        <param name="File" value="${metadata.log.dir}/audit.log"/>
         <param name="Append" value="true"/>
         <param name="Threshold" value="debug"/>
         <layout class="org.apache.log4j.PatternLayout">

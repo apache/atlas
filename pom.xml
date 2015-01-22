@@ -729,6 +729,17 @@
             </plugin>
 
             <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <descriptors>
+                        <descriptor>src/main/assemblies/standalone-package.xml</descriptor>
+                        <descriptor>src/main/assemblies/src-package.xml</descriptor>
+                    </descriptors>
+                    <finalName>apache-metadata-governance-${project.version}</finalName>
+                </configuration>
+            </plugin>
+
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.7.2</version>
