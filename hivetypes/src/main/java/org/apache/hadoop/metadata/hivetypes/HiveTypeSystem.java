@@ -384,6 +384,8 @@ public class HiveTypeSystem {
                 new AttributeDefinition("createTime", DataTypes.INT_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("lastAccessTime", DataTypes.INT_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("sd", DefinedTypes.HIVE_STORAGEDESC.name(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("columns", String.format("array<%s>", DefinedTypes.HIVE_COLUMN.name()),
+                        Multiplicity.COLLECTION, true, null),
                 new AttributeDefinition("parameters", mapStrToStrMap.getName(), Multiplicity.OPTIONAL, false, null),
 
         };
@@ -407,6 +409,8 @@ public class HiveTypeSystem {
                 new AttributeDefinition("sd", DefinedTypes.HIVE_STORAGEDESC.name(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("partitionKeys", String.format("array<%s>", DefinedTypes.HIVE_COLUMN.name()),
                         Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition("columns", String.format("array<%s>", DefinedTypes.HIVE_COLUMN.name()),
+                        Multiplicity.COLLECTION, true, null),
                 new AttributeDefinition("parameters", mapStrToStrMap.getName(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("viewOriginalText", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("viewExpandedText", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),

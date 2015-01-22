@@ -144,7 +144,7 @@ public class HiveImporter {
                 StorageDescriptor storageDesc = hiveTable.getSd();
                 ITypedStruct sdStruct = fillStorageDescStruct(storageDesc);
                 tableRef.set("sd", sdStruct);
-
+                tableRef.set("columns", sdStruct.get("cols"));
                 List<ITypedReferenceableInstance> partKeys = new ArrayList<>();
                 Referenceable colRef;
                 if (hiveTable.getPartitionKeysSize() > 0) {
@@ -184,6 +184,7 @@ public class HiveImporter {
                         partRef.set("lastAccessTime", hivePart.getLastAccessTime());
                         sdStruct = fillStorageDescStruct(hivePart.getSd());
                         partRef.set("sd", sdStruct);
+                        partRef.set("columns", sdStruct.get("cols"));
                         partRef.set("parameters", hivePart.getParameters());
                         ITypedReferenceableInstance partRefTyped = repository.create(partRef);
                         partitionInstances.add(partRefTyped.getId());
