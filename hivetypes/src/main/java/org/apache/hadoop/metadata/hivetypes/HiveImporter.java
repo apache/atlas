@@ -46,14 +46,23 @@ public class HiveImporter {
     private IRepository repository;
     private HiveTypeSystem hiveTypeSystem;
 
-    private List<Id> instances;
+    private List<Id> dbInstances;
+    private List<Id> tableInstances;
+    private List<Id> partitionInstances;
+    private List<Id> columnInstances;
+
 
     public HiveImporter(IRepository repo, HiveTypeSystem hts, HiveMetaStoreClient hmc) throws RepositoryException {
         this.repository = repo;
         this.hiveMetastoreClient = hmc;
         this.hiveTypeSystem = hts;
         typeSystem = TypeSystem.getInstance();
-        instances = new ArrayList<>();
+        dbInstances = new ArrayList<>();
+        tableInstances = new ArrayList<>();
+        partitionInstances = new ArrayList<>();
+        columnInstances = new ArrayList<>();
+
+
         if (repository == null) {
             LOG.error("repository is null");
             throw new RuntimeException("repository is null");
@@ -64,8 +73,20 @@ public class HiveImporter {
     }
 
 
-    public List<Id> getInstances() {
-        return instances;
+    public List<Id> getDBInstances() {
+        return dbInstances;
+    }
+
+    public List<Id> getTableInstances() {
+        return tableInstances;
+    }
+
+    public List<Id> getPartitionInstances() {
+        return partitionInstances;
+    }
+
+    public List<Id> getColumnInstances() {
+        return columnInstances;
     }
 
     public void importHiveMetadata() throws MetadataException {
@@ -94,7 +115,7 @@ public class HiveImporter {
             dbRef.set("ownerName", hiveDB.getOwnerName());
             dbRef.set("ownerType", hiveDB.getOwnerType().toString());
             ITypedReferenceableInstance dbRefTyped = repository.create(dbRef);
-            instances.add(dbRefTyped.getId());
+            dbInstances.add(dbRefTyped.getId());
             importTables(db, dbRefTyped);
         } catch (NoSuchObjectException nsoe) {
             throw new MetadataException(nsoe);
@@ -148,7 +169,7 @@ public class HiveImporter {
                 tableRef.set("temporary", hiveTable.isTemporary());
 
                 ITypedReferenceableInstance tableRefTyped = repository.create(tableRef);
-                instances.add(tableRefTyped.getId());
+                tableInstances.add(tableRefTyped.getId());
 
 
                 List<Partition> tableParts = hiveMetastoreClient.listPartitions(db, table, Short.MAX_VALUE);
@@ -165,7 +186,7 @@ public class HiveImporter {
                         partRef.set("sd", sdStruct);
                         partRef.set("parameters", hivePart.getParameters());
                         ITypedReferenceableInstance partRefTyped = repository.create(partRef);
-                        instances.add(partRefTyped.getId());
+                        partitionInstances.add(partRefTyped.getId());
                     }
                 }
             }
@@ -186,7 +207,7 @@ public class HiveImporter {
 
         Struct sdStruct = new Struct(storageDescName);
 
-        LOG.info("Filling storage descriptor information for " + storageDesc);
+        LOG.debug("Filling storage descriptor information for " + storageDesc);
 
         String serdeInfoName = HiveTypeSystem.DefinedTypes.HIVE_SERDE.name();
         Struct serdeInfoStruct = new Struct(serdeInfoName);
@@ -195,7 +216,7 @@ public class HiveImporter {
         serdeInfoStruct.set("serializationLib", serdeInfo.getSerializationLib());
         serdeInfoStruct.set("parameters", serdeInfo.getParameters());
 
-        LOG.info("serdeInfo = " + serdeInfo);
+        LOG.debug("serdeInfo = " + serdeInfo);
 
         StructType serdeInfotype =  (StructType) hiveTypeSystem.getDataType(serdeInfoName);
         ITypedStruct serdeInfoStructTyped =
@@ -231,6 +252,7 @@ public class HiveImporter {
             colRef.set("comment", fs.getComment());
             ITypedReferenceableInstance colRefTyped = repository.create(colRef);
             fieldsList.add(colRefTyped);
+            columnInstances.add(colRefTyped.getId());
         }
         sdStruct.set("cols", fieldsList);
 

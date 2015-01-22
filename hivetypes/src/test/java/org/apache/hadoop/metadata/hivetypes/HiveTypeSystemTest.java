@@ -52,8 +52,23 @@ public class HiveTypeSystemTest {
 
         HiveImporter himport = new HiveImporter(mr, hts, new HiveMetaStoreClient(new HiveConf()));
         himport.importHiveMetadata();
-        LOG.info("Defined instances");
-        for (Id id : himport.getInstances()) {
+        LOG.info("Defined DB instances");
+        for (Id id : himport.getDBInstances()) {
+            ITypedReferenceableInstance instance = mr.get(id);
+            LOG.info(instance.toString());
+        }
+        LOG.info("Defined Table instances");
+        for (Id id : himport.getTableInstances()) {
+            ITypedReferenceableInstance instance = mr.get(id);
+            LOG.info(instance.toString());
+        }
+        LOG.info("Defined Partition instances");
+        for (Id id : himport.getPartitionInstances()) {
+            ITypedReferenceableInstance instance = mr.get(id);
+            LOG.info(instance.toString());
+        }
+        LOG.info("Defined Column instances");
+        for (Id id : himport.getColumnInstances()) {
             ITypedReferenceableInstance instance = mr.get(id);
             LOG.info(instance.toString());
         }

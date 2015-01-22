@@ -292,7 +292,7 @@ public class HiveTypeSystem {
                 new AttributeDefinition("compressed", DataTypes.BOOLEAN_TYPE.getName(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("numBuckets", DataTypes.INT_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("serdeInfo", DefinedTypes.HIVE_SERDE.name(), Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("bucketCols", String.format("array<%s>",DataTypes.STRING_TYPE.getName()), Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition("bucketCols", String.format("array<%s>", DataTypes.STRING_TYPE.getName()), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("sortCols", String.format("array<%s>", DefinedTypes.HIVE_ORDER.name()), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("parameters", mapStrToStrMap.getName(), Multiplicity.OPTIONAL, false, null),
                 //new AttributeDefinition("skewedInfo", DefinedTypes.HIVE_SKEWEDINFO.name(), Multiplicity.OPTIONAL, false, null),
