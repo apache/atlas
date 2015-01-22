@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" itemscope="itemscope" itemtype="http://schema.org/Product">
+{% include 'includes/head.html' %}
+
+<body>
+<header class="navbar navbar-inverse navbar-static-top" data-role="navigation">
+    <div class="container" data-ng-include="'/modules/home/views/header.html'"></div>
+</header>
+<div class="container">
+    <div data-ng-include="'/modules/notification/views/notifications.html'"></div>
+    <div data-ui-view></div>
+</div>
+{% include 'includes/foot.html' %}
+</body>
+
+</html>

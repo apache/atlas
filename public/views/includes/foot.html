@@ -1,0 +1,33 @@
+<!-- Angular JS -->
+<script type="text/javascript" src="/lib/angular/angular.min.js"></script>
+<script type="text/javascript" src="/lib/lodash/dist/lodash.min.js"></script>
+<script type="text/javascript" src="/lib/angular-cookies/angular-cookies.min.js"></script>
+<script type="text/javascript" src="/lib/angular-resource/angular-resource.min.js"></script>
+<script type="text/javascript" src="/lib/angular-ui-router/release/angular-ui-router.js"></script>
+<script type="text/javascript" src="/lib/angular-base64/angular-base64.js"></script>
+
+<!-- Angular UI -->
+<script type="text/javascript" src="/lib/angular-bootstrap/ui-bootstrap.js"></script>
+<script type="text/javascript" src="/lib/angular-bootstrap/ui-bootstrap-tpls.js"></script>
+
+
+<!-- Application Depedencies -->
+<!-- Application Init -->
+<script type="text/javascript" src="js/app.js"></script>
+<script type="text/javascript" src="js/routes.js"></script>
+
+<!-- Notification module -->
+<script type="text/javascript" src="/modules/notification/notificationModule.js"></script>
+<script type="text/javascript" src="/modules/notification/notificationService.js"></script>
+<script type="text/javascript" src="/modules/notification/notificationController.js"></script>
+
+<!-- Home Module -->
+<script type="text/javascript" src="/modules/home/headerController.js"></script>
+
+<!-- Initialize the application -->
+<script type="text/javascript" src="js/init.js"></script>
+
+{% if (process.env.NODE_ENV == 'local') %}
+<!-- Livereload script rendered -->
+<script type="text/javascript" src="http://localhost:35730/livereload.js"></script>
+{% endif %}

@@ -1,0 +1,26 @@
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+
+    <title>{{app.title}}</title>
+    <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+    <meta name="keywords" content="artifact-graph, Cengage, registry-services">
+    <meta name="description" content="Cengage registry services">
+
+    <link href="/img/favicon.ico" rel="shortcut icon" type="image/x-icon">
+
+    <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/common.css">
+
+    <!--[if lt IE 9]>
+    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    {% block content %}
+    <script type="text/javascript">
+        window.user = {{JSON.stringify(user)}};
+        window.renderErrors = {{JSON.stringify(renderErrors)}};
+    </script>
+    {% endblock %}
+</head>

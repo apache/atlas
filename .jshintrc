@@ -1,0 +1,45 @@
+{
+    "browser": true, // Standard browser globals e.g. `window`, `document`.
+    "bitwise": false, // Prohibit bitwise operators (&, |, ^, etc.).
+    "camelcase": false, // Permit only camelcase for `var` and `object indexes`.
+    "curly": false, // Require {} for every new block or scope.
+    "devel": true, // Allow development statements e.g. `console.log();`.
+    "esnext": true, // Allow ES.next specific features such as `const` and `let`.
+    "eqeqeq": true, // Require triple equals i.e. `===`.
+    "immed": true, // Require immediate invocations to be wrapped in parens e.g. `( function(){}() );`
+    "indent": false, // Specify indentation spacing
+    "latedef": true, // Prohibit variable use before definition.
+    "node": true, // Enable globals available when code is running inside of the NodeJS runtime environment.
+    "newcap": false, // Require capitalization of all constructor functions e.g. `new F()`.
+    "noarg": true, // Prohibit use of `arguments.caller` and `arguments.callee`.
+    "noempty": true, // Prohibit use of empty blocks.
+    "quotmark": false, // Define quotes to string values.
+    "regexp": true, // Prohibit `.` and `[^...]` in regular expressions.
+    "strict": true, // Require `use strict` pragma in every file.
+    "smarttabs": false, // Suppresses warnings about mixed tabs and spaces
+    "trailing": true, // Prohibit trailing whitespaces.
+    "undef": true, // Require all non-global variables be declared before they are used.
+    "unused": true, // Warn unused variables.
+    "globals": { // Globals variables.
+        "angular": true
+    },
+    "predef": [ // Extra globals.
+        "define",
+        "require",
+        "exports",
+        "module",
+        "spyOn",
+        "describe",
+        "xdescribe",
+        "before",
+        "beforeEach",
+        "after",
+        "afterEach",
+        "jasmine",
+        "it",
+        "xit",
+        "inject",
+        "expect",
+        "ngGridFlexibleHeightPlugin"
+    ]
+}

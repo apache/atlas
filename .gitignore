@@ -1,0 +1,8 @@
+.DS_Store
+.bower-*/
+.idea/
+node_modules/
+lib/
+public/lib
+*.log
+public/css/common.css
