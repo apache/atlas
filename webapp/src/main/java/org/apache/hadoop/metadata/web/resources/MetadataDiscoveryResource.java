@@ -186,7 +186,8 @@ public class MetadataDiscoveryResource {
     }
     
     private void searchWalker (Vertex vtx, final int max, int counter, HashMap<String,Map<String,String>> e, HashMap<String,Map<String,String>> v) {
-    	    	
+    	 
+    	counter++;  
     	if (counter <= max) {
     		
     		Map<String,String> jsonVertexMap = new HashMap<String,String>();
@@ -229,8 +230,7 @@ public class MetadataDiscoveryResource {
    	   			*/
    	   			
   	   			e.put(edge.getId().toString(), jsonEdgeMap);
-
-  	   			counter++;   			
+ 			
    	   			searchWalker (edge.getVertex(d), max, counter, e, v);
    				
    			}
