@@ -33,6 +33,7 @@
     "method-override": "^1.0.0",
     "morgan": "^1.0.1",
     "path-extra": "~0.1.1",
+    "proxit": "^0.6.0",
     "q": "~1.0.1",
     "rc": "~0.3.4",
     "serve-favicon": "^2.0.0",

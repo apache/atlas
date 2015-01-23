@@ -13,6 +13,7 @@ var express = require('express'),
     favicon = require('serve-favicon'),
     methodOverride = require('method-override'),
     swig = require('swig'),
+    proxit = require('proxit'),
     config = require('./config');
 
 module.exports = function(app) {
@@ -26,6 +27,7 @@ module.exports = function(app) {
     // The cookieParser should be above session
     app.use(cookieParser());
 
+    app.use(proxit(config.proxit));
     // Should be placed before express.static
     // To ensure that all assets and data are compressed (utilize bandwidth)
     app.use(compress({

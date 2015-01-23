@@ -15,7 +15,15 @@ var path = require('path'),
         nodeEnv: 'local',
         root: rootPath,
         port: process.env.PORT || 3010,
-        templateEngine: 'swig'
+        templateEngine: 'swig',
+        proxit: {
+            verbose: true,
+            hosts: [{
+                routes: {
+                    '/api': 'http://162.249.6.76:21000/api'
+                }
+            }]
+        }
     });
 
 module.exports = config;
