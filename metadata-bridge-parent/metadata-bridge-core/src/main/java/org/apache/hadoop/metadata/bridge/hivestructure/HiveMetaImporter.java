@@ -31,6 +31,7 @@ public class HiveMetaImporter {
 		try {
 			this.repo = repo;
 			msc = new HiveMetaStoreClient(new HiveConf());
+			// TODO Get hive-site.conf from class path first
 		} catch (MetaException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

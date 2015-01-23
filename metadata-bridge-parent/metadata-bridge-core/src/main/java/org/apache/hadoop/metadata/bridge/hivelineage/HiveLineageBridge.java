@@ -1,14 +1,14 @@
 package org.apache.hadoop.metadata.bridge.hivelineage;
 
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.bridge.Bridge;
+import org.apache.hadoop.metadata.bridge.ABridge;
 import org.apache.hadoop.metadata.types.AttributeDefinition;
 import org.apache.hadoop.metadata.types.ClassType;
 import org.apache.hadoop.metadata.types.HierarchicalTypeDefinition;
 import org.apache.hadoop.metadata.types.Multiplicity;
 import org.apache.hadoop.metadata.types.TypeSystem;
 
-public class HiveLineageBridge implements Bridge {
+public class HiveLineageBridge extends ABridge {
 
   static final String LINEAGE_CLASS_TYPE = "HiveLineage";
 

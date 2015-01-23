@@ -3,8 +3,7 @@ package org.apache.hadoop.metadata.bridge.hivestructure;
 import java.util.ArrayList;
 
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.bridge.Bridge;
-import org.apache.hadoop.metadata.bridge.BridgeAssistant;
+import org.apache.hadoop.metadata.bridge.ABridge;
 import org.apache.hadoop.metadata.types.AttributeDefinition;
 import org.apache.hadoop.metadata.types.ClassType;
 import org.apache.hadoop.metadata.types.HierarchicalTypeDefinition;
@@ -12,7 +11,7 @@ import org.apache.hadoop.metadata.types.Multiplicity;
 import org.apache.hadoop.metadata.types.TypeSystem;
 
 
-public class HiveStructureBridge extends BridgeAssistant implements Bridge{
+public class HiveStructureBridge extends ABridge{
 
 	static final String DB_CLASS_TYPE = "HiveDatabase";
 	static final String TB_CLASS_TYPE = "HiveTable";
@@ -20,6 +19,9 @@ public class HiveStructureBridge extends BridgeAssistant implements Bridge{
 	@Override
 	public boolean defineBridgeTypes(TypeSystem ts) {
 		ArrayList<HierarchicalTypeDefinition<?>> al = new ArrayList<HierarchicalTypeDefinition<?>>();
+		// TODO 
+		//convert to helper methods
+		// Add to arrayList
 		
 		try{
 		HierarchicalTypeDefinition<ClassType> databaseClassTypeDef = new HierarchicalTypeDefinition<ClassType>("ClassType",DB_CLASS_TYPE, null,
