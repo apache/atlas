@@ -23,18 +23,18 @@ import com.google.common.collect.ImmutableList;
 public abstract class ABridge implements IBridge {
 
 	
-	protected ArrayList<Class<AEnitityBean>> typeBeanClasses;
-	protected MetadataRepository repo;
+	protected ArrayList<Class<? extends AEnitityBean>> typeBeanClasses = new ArrayList<Class<? extends AEnitityBean>>();
+	MetadataRepository repo;
 	
 	protected static final Logger LOG = LoggerFactory.getLogger("BridgeLogger");
 	protected HierarchicalTypeDefinition<ClassType> createClassTypeDef(String name, ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {return new HierarchicalTypeDefinition(ClassType.class, name, superTypes, attrDefs);}
 	
-	public ArrayList<Class<AEnitityBean>> getTypeBeanClasses() {
+	public ArrayList<Class<? extends AEnitityBean>> getTypeBeanClasses() {
 		return typeBeanClasses;
 	}
 	
 	@Inject
-	  ABridge(MetadataRepository repo) {
+	protected ABridge(MetadataRepository repo) {
 	                  this.repo = repo;
 	  }
 

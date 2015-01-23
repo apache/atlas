@@ -83,7 +83,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     private final TypeSystem typeSystem;
 
     @Inject
-    GraphBackedMetadataRepository(GraphService graphService) throws MetadataException {
+    public GraphBackedMetadataRepository(GraphService graphService) throws MetadataException {
         this.graphService = graphService;
         this.typeSystem = TypeSystem.getInstance();
     }

@@ -18,12 +18,10 @@
 
 package org.apache.hadoop.metadata.hivetypes;
 
-;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.*;
 import org.apache.hadoop.metadata.*;
+import org.apache.hadoop.metadata.repository.MetadataRepository;
 import org.apache.hadoop.metadata.storage.IRepository;
 import org.apache.hadoop.metadata.storage.Id;
 import org.apache.hadoop.metadata.storage.RepositoryException;
@@ -32,18 +30,23 @@ import org.apache.hadoop.metadata.types.Multiplicity;
 import org.apache.hadoop.metadata.types.StructType;
 import org.apache.hadoop.metadata.types.TypeSystem;
 import org.apache.thrift.TException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+
+;
 
 public class HiveImporter {
 
     private final HiveMetaStoreClient hiveMetastoreClient;
 
-    public static final Log LOG = LogFactory.getLog(HiveImporter.class);
-
+    private static final Logger LOG =
+            LoggerFactory.getLogger(HiveImporter.class);
     private TypeSystem typeSystem;
     private IRepository repository;
+    private MetadataRepository graphRepository;
     private HiveTypeSystem hiveTypeSystem;
 
     private List<Id> dbInstances;
@@ -51,9 +54,33 @@ public class HiveImporter {
     private List<Id> partitionInstances;
     private List<Id> columnInstances;
 
+    public HiveImporter(MetadataRepository repo, HiveTypeSystem hts, HiveMetaStoreClient hmc) throws RepositoryException {
+        this(hts, hmc);
+
+        if (repo == null) {
+            LOG.error("repository is null");
+            throw new RuntimeException("repository is null");
+        }
+
+        this.graphRepository = repo;
+    }
 
     public HiveImporter(IRepository repo, HiveTypeSystem hts, HiveMetaStoreClient hmc) throws RepositoryException {
-        this.repository = repo;
+        this(hts, hmc);
+
+
+        if (repo == null) {
+            LOG.error("repository is null");
+            throw new RuntimeException("repository is null");
+        }
+
+        repository = repo;
+
+        repository.defineTypes(hts.getHierarchicalTypeDefinitions());
+
+    }
+
+    private HiveImporter(HiveTypeSystem hts, HiveMetaStoreClient hmc) {
         this.hiveMetastoreClient = hmc;
         this.hiveTypeSystem = hts;
         typeSystem = TypeSystem.getInstance();
@@ -61,17 +88,7 @@ public class HiveImporter {
         tableInstances = new ArrayList<>();
         partitionInstances = new ArrayList<>();
         columnInstances = new ArrayList<>();
-
-
-        if (repository == null) {
-            LOG.error("repository is null");
-            throw new RuntimeException("repository is null");
-        }
-
-        repository.defineTypes(hts.getHierarchicalTypeDefinitions());
-
     }
-
 
     public List<Id> getDBInstances() {
         return dbInstances;
@@ -102,6 +119,21 @@ public class HiveImporter {
         }
     }
 
+    private ITypedReferenceableInstance createInstance(Referenceable ref)
+            throws MetadataException {
+        if (repository != null) {
+            return repository.create(ref);
+        } else {
+            String typeName = ref.getTypeName();
+            IDataType dataType = hiveTypeSystem.getDataType(typeName);
+            LOG.debug("creating instance of type " + typeName + " dataType " + dataType);
+            ITypedReferenceableInstance instance =
+                    (ITypedReferenceableInstance) dataType.convert(ref, Multiplicity.OPTIONAL);
+            graphRepository.createEntity(instance, typeName);
+            return instance;
+        }
+    }
+
     private void importDatabase(String db) throws MetadataException {
         try {
             LOG.info("Importing objects from database : " + db);
@@ -113,8 +145,8 @@ public class HiveImporter {
             dbRef.set("locationUri", hiveDB.getLocationUri());
             dbRef.set("parameters", hiveDB.getParameters());
             dbRef.set("ownerName", hiveDB.getOwnerName());
-            dbRef.set("ownerType", hiveDB.getOwnerType().toString());
-            ITypedReferenceableInstance dbRefTyped = repository.create(dbRef);
+            dbRef.set("ownerType", hiveDB.getOwnerType().getValue());
+            ITypedReferenceableInstance dbRefTyped = createInstance(dbRef);
             dbInstances.add(dbRefTyped.getId());
             importTables(db, dbRefTyped);
         } catch (NoSuchObjectException nsoe) {
@@ -153,7 +185,7 @@ public class HiveImporter {
                         colRef.set("name", fs.getName());
                         colRef.set("type", fs.getType());
                         colRef.set("comment", fs.getComment());
-                        ITypedReferenceableInstance colRefTyped = repository.create(colRef);
+                        ITypedReferenceableInstance colRefTyped = createInstance(colRef);
                         partKeys.add(colRefTyped);
                     }
                     tableRef.set("partitionKeys", partKeys);
@@ -168,7 +200,7 @@ public class HiveImporter {
                 tableRef.set("tableType", hiveTable.getTableType());
                 tableRef.set("temporary", hiveTable.isTemporary());
 
-                ITypedReferenceableInstance tableRefTyped = repository.create(tableRef);
+                ITypedReferenceableInstance tableRefTyped = createInstance(tableRef);
                 tableInstances.add(tableRefTyped.getId());
 
 
@@ -186,7 +218,7 @@ public class HiveImporter {
                         partRef.set("sd", sdStruct);
                         partRef.set("columns", sdStruct.get("cols"));
                         partRef.set("parameters", hivePart.getParameters());
-                        ITypedReferenceableInstance partRefTyped = repository.create(partRef);
+                        ITypedReferenceableInstance partRefTyped = createInstance(partRef);
                         partitionInstances.add(partRefTyped.getId());
                     }
                 }
@@ -251,7 +283,7 @@ public class HiveImporter {
             colRef.set("name", fs.getName());
             colRef.set("type", fs.getType());
             colRef.set("comment", fs.getComment());
-            ITypedReferenceableInstance colRefTyped = repository.create(colRef);
+            ITypedReferenceableInstance colRefTyped = createInstance(colRef);
             fieldsList.add(colRefTyped);
             columnInstances.add(colRefTyped.getId());
         }

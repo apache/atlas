@@ -4,7 +4,9 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.ArrayList;
 
-public class HiveLineageBean implements Serializable {
+import org.apache.hadoop.metadata.bridge.AEnitityBean;
+
+public class HiveLineageBean extends AEnitityBean implements Serializable  {
 
 	/**
 	 * 

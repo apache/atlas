@@ -18,6 +18,8 @@
 
 package org.apache.hadoop.metadata.hivetypes;
 
+
+import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -25,8 +27,10 @@ import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.storage.Id;
-import org.apache.hadoop.metadata.storage.memory.MemRepository;
+import org.apache.hadoop.metadata.repository.graph.GraphBackedMetadataRepository;
+import org.apache.hadoop.metadata.repository.graph.GraphService;
+import org.apache.hadoop.metadata.repository.graph.TitanGraphProvider;
+import org.apache.hadoop.metadata.repository.graph.TitanGraphService;
 import org.apache.hadoop.metadata.types.TypeSystem;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -35,57 +39,67 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.List;
 
 @Ignore
-public class HiveTypeSystemTest {
+public class HiveGraphRepositoryTest {
 
-    protected MemRepository mr;
     protected HiveTypeSystem hts;
+    GraphBackedMetadataRepository repository;
 
     private static final Logger LOG =
-            LoggerFactory.getLogger(HiveTypeSystemTest.class);
+            LoggerFactory.getLogger(HiveGraphRepositoryTest.class);
 
     @Before
-    public void setup() throws MetadataException {
+    public void setup() throws ConfigurationException, MetadataException {
 
         TypeSystem ts = TypeSystem.getInstance();
-        ts.reset();
-        mr = new MemRepository(ts);
+        GraphService gs = new TitanGraphService(new TitanGraphProvider());
+        repository = new GraphBackedMetadataRepository(gs);
         hts = HiveTypeSystem.getInstance();
     }
 
     @Test
     public void testHiveImport() throws MetaException, MetadataException, IOException {
 
-        HiveImporter hImporter = new HiveImporter(mr, hts, new HiveMetaStoreClient(new HiveConf()));
+        HiveImporter hImporter = new HiveImporter(repository, hts, new HiveMetaStoreClient(new HiveConf()));
         hImporter.importHiveMetadata();
         LOG.info("Defined DB instances");
         FileWriter fw = new FileWriter("hiveobjs.txt");
         BufferedWriter bw = new BufferedWriter(fw);
-        for (Id id : hImporter.getDBInstances()) {
-            ITypedReferenceableInstance instance = mr.get(id);
+        List<String> idList =
+                repository.getEntityList(HiveTypeSystem.DefinedTypes.HIVE_DB.name());
+        for (String id : idList) {
+            ITypedReferenceableInstance instance = repository.getEntityDefinition(id);
             bw.write(instance.toString());
         }
         LOG.info("Defined Table instances");
-        for (Id id : hImporter.getTableInstances()) {
-            ITypedReferenceableInstance instance = mr.get(id);
+        idList =
+                repository.getEntityList(HiveTypeSystem.DefinedTypes.HIVE_TABLE.name());
+
+        for (String id : idList) {
+            ITypedReferenceableInstance instance = repository.getEntityDefinition(id);
             bw.write(instance.toString());
         }
         LOG.info("Defined Partition instances");
-        for (Id id : hImporter.getPartitionInstances()) {
-            ITypedReferenceableInstance instance = mr.get(id);
+        idList =
+                repository.getEntityList(HiveTypeSystem.DefinedTypes.HIVE_PARTITION.name());
+
+        for (String id : idList) {
+            ITypedReferenceableInstance instance = repository.getEntityDefinition(id);
             bw.write(instance.toString());
         }
         LOG.info("Defined Column instances");
-        for (Id id : hImporter.getColumnInstances()) {
-            ITypedReferenceableInstance instance = mr.get(id);
+        idList =
+                repository.getEntityList(HiveTypeSystem.DefinedTypes.HIVE_COLUMN.name());
+
+        for (String id : idList) {
+            ITypedReferenceableInstance instance = repository.getEntityDefinition(id);
             bw.write(instance.toString());
         }
         bw.flush();
         bw.close();
     }
-
 }

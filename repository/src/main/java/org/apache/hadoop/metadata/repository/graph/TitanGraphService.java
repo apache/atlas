@@ -66,7 +66,7 @@ public class TitanGraphService implements GraphService {
 	 * @throws ConfigurationException
 	 */
 	@Inject
-	TitanGraphService(GraphProvider<TitanGraph> graph) throws ConfigurationException {
+	public TitanGraphService(GraphProvider<TitanGraph> graph) throws ConfigurationException {
 		// TODO reimplement to save the Provider and initialize the graph inside the start() method
 		this.titanGraph = graph.get();
 		//start();
