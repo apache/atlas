@@ -36,7 +36,7 @@ import com.google.gson.Gson;
 public class Hook implements ExecuteWithHookContext {
 
   private static final Log LOG = LogFactory.getLog(Hook.class.getName());
-  private HiveLineageBean hlb;
+  private HiveLineage hlb;
   
   private static final String METADATA_HOST = "localhost";
   private static final int METADATA_PORT = 20810;
@@ -157,7 +157,7 @@ public class Hook implements ExecuteWithHookContext {
           }
         }
  
-  public void fireAndForget(Configuration conf, HiveLineageBean hookData, String queryId) throws Exception {
+  public void fireAndForget(Configuration conf, HiveLineage hookData, String queryId) throws Exception {
 			String postUri = String.format("http://%s:%i%s%s", METADATA_HOST, METADATA_PORT, METADATA_PATH); 		
 	  		if (conf.getTrimmed("hadoop.metadata.hive.hook.uri") != null) {
 		  		postUri = conf.getTrimmed("hadoop.metadata.hive.hook.uri");

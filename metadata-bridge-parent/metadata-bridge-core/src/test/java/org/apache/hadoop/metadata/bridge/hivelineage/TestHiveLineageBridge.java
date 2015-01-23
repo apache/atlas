@@ -11,7 +11,7 @@ import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.metadata.RepositoryMetadataModule;
-import org.apache.hadoop.metadata.bridge.hivelineage.hook.HiveLineageBean;
+import org.apache.hadoop.metadata.bridge.hivelineage.hook.HiveLineage;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
 import org.apache.hadoop.metadata.storage.RepositoryException;
 import org.testng.Assert;
@@ -29,7 +29,7 @@ public class TestHiveLineageBridge {
 	MetadataRepository repo;
 
 	HiveLineageBridge bridge;
-	HiveLineageBean hlb;
+	HiveLineage hlb;
 
 	// the id of one.json in the repo (test #1)
 	String oneId;
@@ -43,7 +43,7 @@ public class TestHiveLineageBridge {
 		FileInputStream fis = new FileInputStream("one.json");
 		List<String> lines = IOUtils.readLines(fis);
 		String json = StringUtils.join(lines, "");
-		hlb = new Gson().fromJson(json, HiveLineageBean.class);
+		hlb = new Gson().fromJson(json, HiveLineage.class);
 	}
 
 	@Test(priority = 1, enabled = false)
@@ -57,7 +57,7 @@ public class TestHiveLineageBridge {
 
 	@Test(priority = 2, enabled = false)
 	public void testGet() throws RepositoryException, IOException {
-		HiveLineageBean bean = bridge.get(oneId);
+		HiveLineage bean = bridge.get(oneId);
 
 		Assert.assertEquals(hlb, bean);
 	}

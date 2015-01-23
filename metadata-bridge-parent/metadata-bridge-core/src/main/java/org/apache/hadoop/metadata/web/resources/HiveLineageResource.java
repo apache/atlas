@@ -20,7 +20,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.hadoop.metadata.bridge.hivelineage.HiveLineageBridge;
-import org.apache.hadoop.metadata.bridge.hivelineage.hook.HiveLineageBean;
+import org.apache.hadoop.metadata.bridge.hivelineage.hook.HiveLineage;
 import org.apache.hadoop.metadata.storage.RepositoryException;
 
 import com.google.gson.Gson;
@@ -52,7 +52,7 @@ public class HiveLineageResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	public JsonElement getById(@PathParam("id") String id) throws RepositoryException {
 		// get the lineage bean
-		HiveLineageBean hlb = bridge.get(id);
+		HiveLineage hlb = bridge.get(id);
 		// turn it into a JsonTree & return
 		return new Gson().toJsonTree(hlb);
 	}
@@ -78,7 +78,7 @@ public class HiveLineageResource {
 		Reader reader = new InputStreamReader(request.getInputStream());
 		try {
 			// deserialize
-			HiveLineageBean bean = new Gson().fromJson(reader, HiveLineageBean.class);
+			HiveLineage bean = new Gson().fromJson(reader, HiveLineage.class);
 			String id = bridge.create(bean);
 
 			JsonObject jo = new JsonObject();
