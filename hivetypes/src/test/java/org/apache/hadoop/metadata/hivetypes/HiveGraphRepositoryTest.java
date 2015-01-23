@@ -33,6 +33,7 @@ import org.apache.hadoop.metadata.repository.graph.TitanGraphProvider;
 import org.apache.hadoop.metadata.repository.graph.TitanGraphService;
 import org.apache.hadoop.metadata.types.TypeSystem;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
 
+@Ignore
 public class HiveGraphRepositoryTest {
 
     protected HiveTypeSystem hts;

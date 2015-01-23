@@ -23,7 +23,7 @@ import com.google.gson.Gson;
 
 @Test(enabled = false)
 @Guice(modules = RepositoryMetadataModule.class)
-public class TestHiveLineageBridgeIT {
+public class TestHiveLineageBridge {
 
 	@Inject
 	MetadataRepository repo;
