@@ -1,23 +1,26 @@
 package org.apache.hadoop.metadata.services;
 
-import org.apache.hadoop.metadata.RepositoryModuleBaseTest;
+import javax.inject.Inject;
+
+import org.apache.hadoop.metadata.RepositoryMetadataModule;
 import org.apache.hadoop.metadata.repository.graph.TitanGraphService;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 /**
  * Unit test for TitanGraphService.
  */
-public class TitanGraphServiceTest extends RepositoryModuleBaseTest {
+@Guice(modules = RepositoryMetadataModule.class)
+public class TitanGraphServiceTest {
 
-    private TitanGraphService titanGraphService;
+	@Inject
+    TitanGraphService titanGraphService;
 
     @BeforeClass
     public void setUp() throws Exception {
-    	titanGraphService = super.injector.getInstance(TitanGraphService.class);
-        //titanGraphService = new TitanGraphService();
         titanGraphService.start();
     }
 

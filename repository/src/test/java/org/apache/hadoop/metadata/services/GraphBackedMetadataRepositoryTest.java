@@ -2,11 +2,14 @@ package org.apache.hadoop.metadata.services;
 
 import java.util.List;
 
+import javax.inject.Inject;
+
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.Referenceable;
-import org.apache.hadoop.metadata.RepositoryModuleBaseTest;
+import org.apache.hadoop.metadata.RepositoryMetadataModule;
 import org.apache.hadoop.metadata.repository.graph.GraphBackedMetadataRepository;
+import org.apache.hadoop.metadata.repository.graph.GraphUtils;
 import org.apache.hadoop.metadata.repository.graph.TitanGraphService;
 import org.apache.hadoop.metadata.storage.IRepository;
 import org.apache.hadoop.metadata.storage.memory.MemRepository;
@@ -20,10 +23,10 @@ import org.apache.hadoop.metadata.types.Multiplicity;
 import org.apache.hadoop.metadata.types.StructTypeDefinition;
 import org.apache.hadoop.metadata.types.TraitType;
 import org.apache.hadoop.metadata.types.TypeSystem;
-import org.apache.hadoop.metadata.repository.graph.GraphUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -33,22 +36,24 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
 @Test (enabled = false)
-public class GraphBackedMetadataRepositoryTest extends RepositoryModuleBaseTest {
+@Guice(modules = RepositoryMetadataModule.class)
+public class GraphBackedMetadataRepositoryTest {
 
     private static final String ENTITY_TYPE = "hive-table";
 
-    private TitanGraphService titanGraphService;
-    private GraphBackedMetadataRepository repositoryService;
+    @Inject
+    TitanGraphService titanGraphService;
+    @Inject
+    GraphBackedMetadataRepository repositoryService;
+    
     private IRepository repo;
     private TypeSystem ts;
     private String guid;
 
     @BeforeClass
     public void setUp() throws Exception {
-        titanGraphService = super.injector.getInstance(TitanGraphService.class);
         titanGraphService.start();
 
-        repositoryService = super.injector.getInstance(GraphBackedMetadataRepository.class);
         repositoryService.start();
 
         ts = TypeSystem.getInstance();
