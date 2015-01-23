@@ -35,6 +35,12 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
+/**
+ * GraphBackedMetadataRepository test
+ * 
+ * Guice loads the dependencies and injects the necessary objects
+ *
+ */
 @Test (enabled = false)
 @Guice(modules = RepositoryMetadataModule.class)
 public class GraphBackedMetadataRepositoryTest {
@@ -52,8 +58,9 @@ public class GraphBackedMetadataRepositoryTest {
 
     @BeforeClass
     public void setUp() throws Exception {
+    	// start the injected graph service
         titanGraphService.start();
-
+        // start the injected repository service
         repositoryService.start();
 
         ts = TypeSystem.getInstance();

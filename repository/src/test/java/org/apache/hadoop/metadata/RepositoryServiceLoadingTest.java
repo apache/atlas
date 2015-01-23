@@ -12,10 +12,13 @@ import org.testng.annotations.Test;
 
 /**
  * Unit test for Guice injector service loading
+ * 
+ * Uses TestNG's Guice annotation to load the necessary modules and inject the
+ * objects from Guice
  */
 @Guice(modules = RepositoryMetadataModule.class)
 public class RepositoryServiceLoadingTest {
-	
+
 	@Inject
 	GraphService gs;
 
@@ -29,9 +32,6 @@ public class RepositoryServiceLoadingTest {
 
 	@Test
 	public void testGetGraphService() throws Exception {
-		/*
-		 * Now that we've got the injector, we can build objects.
-		 */
 		Assert.assertNotNull(gs);
 	}
 }
