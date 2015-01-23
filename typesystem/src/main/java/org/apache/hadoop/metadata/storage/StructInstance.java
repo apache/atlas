@@ -227,7 +227,7 @@ public class StructInstance implements ITypedStruct {
 
         if ( i.dataType() != DataTypes.BOOLEAN_TYPE ) {
             throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic get method",
-                    attrName, getTypeName()));
+                    attrName, getTypeName(), DataTypes.BOOLEAN_TYPE.getName()));
         }
 
         int pos = fieldMapping.fieldPos.get(attrName);
@@ -248,7 +248,7 @@ public class StructInstance implements ITypedStruct {
 
         if ( i.dataType() != DataTypes.BYTE_TYPE ) {
             throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic get method",
-                    attrName, getTypeName()));
+                    attrName, getTypeName(), DataTypes.BYTE_TYPE.getName()));
         }
 
         int pos = fieldMapping.fieldPos.get(attrName);
@@ -269,7 +269,7 @@ public class StructInstance implements ITypedStruct {
 
         if ( i.dataType() != DataTypes.SHORT_TYPE ) {
             throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic get method",
-                    attrName, getTypeName()));
+                    attrName, getTypeName(), DataTypes.SHORT_TYPE.getName()));
         }
 
         int pos = fieldMapping.fieldPos.get(attrName);
@@ -288,9 +288,10 @@ public class StructInstance implements ITypedStruct {
             throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
-        if ( i.dataType() != DataTypes.INT_TYPE ) {
+
+        if ( i.dataType() != DataTypes.INT_TYPE && !(i.dataType() instanceof EnumType)) {
             throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic get method",
-                    attrName, getTypeName()));
+                    attrName, getTypeName(), DataTypes.INT_TYPE.getName()));
         }
 
         int pos = fieldMapping.fieldPos.get(attrName);
@@ -311,7 +312,7 @@ public class StructInstance implements ITypedStruct {
 
         if ( i.dataType() != DataTypes.LONG_TYPE ) {
             throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic get method",
-                    attrName, getTypeName()));
+                    attrName, getTypeName(), DataTypes.LONG_TYPE.getName()));
         }
 
         int pos = fieldMapping.fieldPos.get(attrName);
@@ -332,7 +333,7 @@ public class StructInstance implements ITypedStruct {
 
         if ( i.dataType() != DataTypes.FLOAT_TYPE ) {
             throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic get method",
-                    attrName, getTypeName()));
+                    attrName, getTypeName(), DataTypes.FLOAT_TYPE.getName()));
         }
 
         int pos = fieldMapping.fieldPos.get(attrName);
@@ -353,7 +354,7 @@ public class StructInstance implements ITypedStruct {
 
         if ( i.dataType() != DataTypes.DOUBLE_TYPE ) {
             throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic get method",
-                    attrName, getTypeName()));
+                    attrName, getTypeName(), DataTypes.DOUBLE_TYPE.getName()));
         }
 
         int pos = fieldMapping.fieldPos.get(attrName);
@@ -374,7 +375,7 @@ public class StructInstance implements ITypedStruct {
 
         if ( i.dataType() != DataTypes.BIGINTEGER_TYPE ) {
             throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic get method",
-                    attrName, getTypeName()));
+                    attrName, getTypeName(), DataTypes.BIGINTEGER_TYPE.getName()));
         }
 
         int pos = fieldMapping.fieldPos.get(attrName);
@@ -395,7 +396,7 @@ public class StructInstance implements ITypedStruct {
 
         if ( i.dataType() != DataTypes.BIGDECIMAL_TYPE ) {
             throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic get method",
-                    attrName, getTypeName()));
+                    attrName, getTypeName(), DataTypes.BIGDECIMAL_TYPE.getName()));
         }
 
         int pos = fieldMapping.fieldPos.get(attrName);
@@ -416,7 +417,7 @@ public class StructInstance implements ITypedStruct {
 
         if ( i.dataType() != DataTypes.DATE_TYPE ) {
             throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic get method",
-                    attrName, getTypeName()));
+                    attrName, getTypeName(), DataTypes.DATE_TYPE.getName()));
         }
 
         int pos = fieldMapping.fieldPos.get(attrName);
@@ -437,7 +438,7 @@ public class StructInstance implements ITypedStruct {
 
         if ( i.dataType() != DataTypes.STRING_TYPE ) {
             throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic get method",
-                    attrName, getTypeName()));
+                    attrName, getTypeName(), DataTypes.STRING_TYPE.getName()));
         }
 
         int pos = fieldMapping.fieldPos.get(attrName);
@@ -458,7 +459,7 @@ public class StructInstance implements ITypedStruct {
 
         if ( i.dataType() != DataTypes.BOOLEAN_TYPE ) {
             throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic set method",
-                    attrName, getTypeName()));
+                    attrName, getTypeName(), DataTypes.BOOLEAN_TYPE.getName()));
         }
 
         int pos = fieldMapping.fieldPos.get(attrName);
@@ -476,7 +477,7 @@ public class StructInstance implements ITypedStruct {
 
         if ( i.dataType() != DataTypes.BYTE_TYPE ) {
             throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic set method",
-                    attrName, getTypeName()));
+                    attrName, getTypeName(), DataTypes.BYTE_TYPE.getName()));
         }
 
         int pos = fieldMapping.fieldPos.get(attrName);
@@ -494,7 +495,7 @@ public class StructInstance implements ITypedStruct {
 
         if ( i.dataType() != DataTypes.SHORT_TYPE ) {
             throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic set method",
-                    attrName, getTypeName()));
+                    attrName, getTypeName(), DataTypes.SHORT_TYPE.getName()));
         }
 
         int pos = fieldMapping.fieldPos.get(attrName);
@@ -510,9 +511,9 @@ public class StructInstance implements ITypedStruct {
             throw new MetadataException(String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
-        if ( i.dataType() != DataTypes.INT_TYPE ) {
+        if ( i.dataType() != DataTypes.INT_TYPE && !(i.dataType() instanceof EnumType)) {
             throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic set method",
-                    attrName, getTypeName()));
+                    attrName, getTypeName(), DataTypes.INT_TYPE.getName()));
         }
 
         int pos = fieldMapping.fieldPos.get(attrName);
@@ -530,7 +531,7 @@ public class StructInstance implements ITypedStruct {
 
         if ( i.dataType() != DataTypes.LONG_TYPE ) {
             throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic set method",
-                    attrName, getTypeName()));
+                    attrName, getTypeName(), DataTypes.LONG_TYPE.getName()));
         }
 
         int pos = fieldMapping.fieldPos.get(attrName);
@@ -548,7 +549,7 @@ public class StructInstance implements ITypedStruct {
 
         if ( i.dataType() != DataTypes.FLOAT_TYPE ) {
             throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic set method",
-                    attrName, getTypeName()));
+                    attrName, getTypeName(), DataTypes.FLOAT_TYPE.getName()));
         }
 
         int pos = fieldMapping.fieldPos.get(attrName);
@@ -566,7 +567,7 @@ public class StructInstance implements ITypedStruct {
 
         if (i.dataType() != DataTypes.DOUBLE_TYPE) {
             throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic set method",
-                    attrName, getTypeName()));
+                    attrName, getTypeName(), DataTypes.DOUBLE_TYPE.getName()));
         }
 
         int pos = fieldMapping.fieldPos.get(attrName);
@@ -584,7 +585,7 @@ public class StructInstance implements ITypedStruct {
 
         if ( i.dataType() != DataTypes.BIGINTEGER_TYPE ) {
             throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic set method",
-                    attrName, getTypeName()));
+                    attrName, getTypeName(), DataTypes.BIGINTEGER_TYPE.getName()));
         }
 
         int pos = fieldMapping.fieldPos.get(attrName);
@@ -602,7 +603,7 @@ public class StructInstance implements ITypedStruct {
 
         if ( i.dataType() != DataTypes.BIGDECIMAL_TYPE ) {
             throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic set method",
-                    attrName, getTypeName()));
+                    attrName, getTypeName(), DataTypes.BIGDECIMAL_TYPE.getName()));
         }
 
         int pos = fieldMapping.fieldPos.get(attrName);
@@ -620,7 +621,7 @@ public class StructInstance implements ITypedStruct {
 
         if ( i.dataType() != DataTypes.DATE_TYPE ) {
             throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic set method",
-                    attrName, getTypeName()));
+                    attrName, getTypeName(), DataTypes.DATE_TYPE.getName()));
         }
 
         int pos = fieldMapping.fieldPos.get(attrName);
@@ -638,7 +639,7 @@ public class StructInstance implements ITypedStruct {
 
         if ( i.dataType() != DataTypes.STRING_TYPE ) {
             throw new MetadataException(String.format("Field %s for Struct %s is not a %s, call generic set method",
-                    attrName, getTypeName()));
+                    attrName, getTypeName(), DataTypes.STRING_TYPE.getName()));
         }
 
         int pos = fieldMapping.fieldPos.get(attrName);

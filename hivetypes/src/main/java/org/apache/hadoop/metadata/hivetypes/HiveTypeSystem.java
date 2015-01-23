@@ -23,6 +23,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.types.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,7 +33,9 @@ import java.util.Map;
 
 public class HiveTypeSystem {
 
-    public static final Log LOG = LogFactory.getLog(HiveTypeSystem.class);
+
+    private static final Logger LOG =
+            LoggerFactory.getLogger(HiveTypeSystem.class);
     public static final class Holder {
         public static final HiveTypeSystem instance = new HiveTypeSystem();
     }
