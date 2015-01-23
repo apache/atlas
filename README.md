@@ -1,7 +1,12 @@
 # DGC Metadata
 
 ## Instructions
-Start up DGC:
+
+### Prerequisite
+1. Nodejs (http://nodejs.org/download/)
+2. ```npm install -g grunt-cli```
+
+### Setup:
 
 ```
 git clone https://github.com/vkadam/dgc-metadata.git
