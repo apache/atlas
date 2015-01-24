@@ -24,7 +24,7 @@ import org.apache.hadoop.metadata.types.DataTypes.{ArrayType, MapType, TypeCateg
 import org.apache.hadoop.metadata.types._
 import org.json4s.JsonAST.JInt
 import org.json4s._
-import org.json4s.native.Serialization.{write => swrite, _}
+import org.json4s.native.Serialization._
 
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
@@ -265,6 +265,13 @@ object Serialization {
   }
 
   def toJson(value : ITypedReferenceableInstance) : String = {
+    implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new TypedStructSerializer +
+      new TypedReferenceableInstanceSerializer +  new BigDecimalSerializer + new BigIntegerSerializer
+
+    write(value)
+  }
+
+  def toJsonPretty(value : ITypedReferenceableInstance) : String = {
     implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new TypedStructSerializer +
       new TypedReferenceableInstanceSerializer +  new BigDecimalSerializer + new BigIntegerSerializer
 
