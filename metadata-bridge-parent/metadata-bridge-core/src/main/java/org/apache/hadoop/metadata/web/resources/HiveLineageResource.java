@@ -52,7 +52,7 @@ public class HiveLineageResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	public JsonElement getById(@PathParam("id") String id) throws RepositoryException {
 		// get the lineage bean
-		HiveLineage hlb = bridge.get(id);
+		HiveLineage hlb = (HiveLineage) bridge.get(id);
 		// turn it into a JsonTree & return
 		return new Gson().toJsonTree(hlb);
 	}

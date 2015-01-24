@@ -5,7 +5,7 @@ import org.apache.hadoop.hive.metastore.api.MetaException;
 public class BridgeException extends MetaException {
 
 	public BridgeException(String msg) {
-		super(string);
+		super(msg);
 	}
 
 	/**

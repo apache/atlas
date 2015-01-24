@@ -1,13 +1,21 @@
 package org.apache.hadoop.metadata.bridge;
 
+//TODO - Create Index Annotation Framework for BeanConverter
+//TODO - Enhance Bean Conversion to handled nested objects
+//TODO - Enhance Bean COnversion to handle Collections
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Properties;
 
 import javax.inject.Inject;
 
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
 import org.apache.hadoop.metadata.types.AttributeDefinition;
@@ -15,31 +23,37 @@ import org.apache.hadoop.metadata.types.ClassType;
 import org.apache.hadoop.metadata.types.HierarchicalTypeDefinition;
 import org.apache.hadoop.metadata.types.Multiplicity;
 import org.apache.hadoop.metadata.types.TypeSystem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class BridgeManager {
+	
 	TypeSystem ts;
+	MetadataRepository rs;
 	ArrayList<ABridge> activeBridges;
 	private final static String bridgeFileDefault = "bridge-manager.properties"; 
+	public static final Logger LOG = LoggerFactory.getLogger("BridgeLogger");
 	
 	@Inject
-	BridgeManager(MetadataRepository rs){
+	BridgeManager(MetadataRepository rs) throws ConfigurationException, ClassNotFoundException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException{
 		this.ts = TypeSystem.getInstance();
-		if(System.getProperty("bridgeManager.propsFile") != null | !System.getProperty("bridgeManager.propsFile").isEmpty()){
+		this.rs = rs;
+		if(System.getProperty("bridgeManager.propsFile") != null && System.getProperty("bridgeManager.propsFile").length() != 0){
 			setActiveBridges(System.getProperty("bridgeManager.propsFile"));	
 		}else{
-			setActiveBridges(System.getProperty(bridgeFileDefault));
+			setActiveBridges(bridgeFileDefault);
 		}
 		
 		for (ABridge bridge : activeBridges){
 			try {
 				this.loadTypes(bridge, ts);
 			} catch (MetadataException e) {
-				// TODO Auto-generated catch block
+				BridgeManager.LOG.error(e.getMessage(), e);
 				e.printStackTrace();
 			}
 		}
-		// Handle some kind of errors - waiting on errors concept from typesystem
+		
 	}
 	
 	public ArrayList<ABridge> getActiveBridges(){
@@ -47,37 +61,30 @@ public class BridgeManager {
 	}
 	
 	private void setActiveBridges(String bridgePropFileName){
-			if(bridgePropFileName == null | bridgePropFileName.isEmpty()){
+			if(bridgePropFileName == null || bridgePropFileName.isEmpty()){
 				bridgePropFileName = BridgeManager.bridgeFileDefault;
 			}
 		ArrayList<ABridge> aBList = new ArrayList<ABridge>();
-		Properties props = new Properties();
-		InputStream configStm = this.getClass().getResourceAsStream(bridgePropFileName);
+		
+		PropertiesConfiguration config = new PropertiesConfiguration();
+		
 		try {
-			ABridge.LOG.info("Loading : Active Bridge List");
-			props.load(configStm);
-			String[] activeBridgeList = ((String)props.get("BridgeManager.activeBridges")).split(",");
-			ABridge.LOG.info("Loaded : Active Bridge List");
-			ABridge.LOG.info("First Loaded :" + activeBridgeList[0]);
+			BridgeManager.LOG.info("Loading : Active Bridge List");
+			config.load(bridgePropFileName);
+			String[] activeBridgeList = ((String)config.getProperty("BridgeManager.activeBridges")).split(",");
+			BridgeManager.LOG.info("Loaded : Active Bridge List");
+			BridgeManager.LOG.info("First Loaded :" + activeBridgeList[0]);
 			
 			for (String s : activeBridgeList){
 				Class<?> bridgeCls = (Class<?>) Class.forName(s);
-				if(bridgeCls.isAssignableFrom(ABridge.class)){
-					aBList.add((ABridge) bridgeCls.newInstance());
+				if(ABridge.class.isAssignableFrom(bridgeCls)){
+					System.out.println( s +" is able to be instaciated");
+					aBList.add((ABridge) bridgeCls.getConstructor(MetadataRepository.class).newInstance(rs));
 				}
 			}
 			
-		} catch (IOException e) {
-			ABridge.LOG.error(e.getMessage(), e);
-			e.printStackTrace();
-		} catch (InstantiationException e) {
-			ABridge.LOG.error(e.getMessage(), e);
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			ABridge.LOG.error(e.getMessage(), e);
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			ABridge.LOG.error(e.getMessage(), e);
+		} catch (InstantiationException | ConfigurationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException | ClassNotFoundException e) {
+			BridgeManager.LOG.error(e.getMessage(), e);
 			e.printStackTrace();
 		}
 		this.activeBridges = aBList;
@@ -87,7 +94,7 @@ public class BridgeManager {
 	}
 	
 	private final boolean loadTypes(ABridge bridge, TypeSystem ts) throws MetadataException{
-		for (Class<AEnitityBean> clazz : bridge.getTypeBeanClasses()){
+		for (Class<? extends AEnitityBean> clazz : bridge.getTypeBeanClasses()){
 			ts.defineClassType(BridgeManager.convertEntityBeanToClassTypeDefinition(clazz));
 		}
 		return false;
@@ -101,13 +108,13 @@ public class BridgeManager {
 			try {
 				attDefAL.add(BridgeManager.convertFieldtoAttributeDefiniton(f));
 			} catch (MetadataException e) {
-				ABridge.LOG.error("Class " + class1.getName() + " cannot be converted to TypeDefinition");
+				BridgeManager.LOG.error("Class " + class1.getName() + " cannot be converted to TypeDefinition");
 				e.printStackTrace();
 			}
 		}
 		
 		HierarchicalTypeDefinition<ClassType> typeDef = new HierarchicalTypeDefinition<>(ClassType.class, class1.getSimpleName(),
-                null, (AttributeDefinition[])attDefAL.toArray());
+                null, (AttributeDefinition[])attDefAL.toArray(new AttributeDefinition[0]));
 		
 		return typeDef;
 	}

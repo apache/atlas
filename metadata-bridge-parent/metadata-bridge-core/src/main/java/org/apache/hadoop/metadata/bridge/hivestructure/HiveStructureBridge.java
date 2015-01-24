@@ -2,8 +2,11 @@ package org.apache.hadoop.metadata.bridge.hivestructure;
 
 import java.util.ArrayList;
 
+import javax.inject.Inject;
+
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.bridge.ABridge;
+import org.apache.hadoop.metadata.repository.MetadataRepository;
 import org.apache.hadoop.metadata.types.AttributeDefinition;
 import org.apache.hadoop.metadata.types.ClassType;
 import org.apache.hadoop.metadata.types.HierarchicalTypeDefinition;
@@ -13,10 +16,17 @@ import org.apache.hadoop.metadata.types.TypeSystem;
 
 public class HiveStructureBridge extends ABridge{
 
+
 	static final String DB_CLASS_TYPE = "HiveDatabase";
 	static final String TB_CLASS_TYPE = "HiveTable";
 	static final String FD_CLASS_TYPE = "HiveField";
-	@Override
+
+	@Inject
+	protected HiveStructureBridge(MetadataRepository repo) {
+		super(repo);
+		// TODO Auto-generated constructor stub
+	}
+	
 	public boolean defineBridgeTypes(TypeSystem ts) {
 		ArrayList<HierarchicalTypeDefinition<?>> al = new ArrayList<HierarchicalTypeDefinition<?>>();
 		// TODO 

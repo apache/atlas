@@ -44,9 +44,8 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>com.thinkaurelius.titan</groupId>
-			<artifactId>titan-core</artifactId>
-			<version>0.5.2</version>
+			<groupId>commons-configuration</groupId>
+			<artifactId>commons-configuration</artifactId>
 		</dependency>
 	</dependencies>
 </project>

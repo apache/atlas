@@ -10,6 +10,7 @@ import javax.inject.Inject;
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.RepositoryMetadataModule;
 import org.apache.hadoop.metadata.bridge.hivelineage.hook.HiveLineage;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
@@ -47,7 +48,7 @@ public class TestHiveLineageBridge {
 	}
 
 	@Test(priority = 1, enabled = false)
-	public void testCreate() throws RepositoryException {
+	public void testCreate() throws MetadataException {
 		// add the lineage bean to the repo
 		oneId = bridge.create(hlb);
 
@@ -57,7 +58,7 @@ public class TestHiveLineageBridge {
 
 	@Test(priority = 2, enabled = false)
 	public void testGet() throws RepositoryException, IOException {
-		HiveLineage bean = bridge.get(oneId);
+		Object bean = bridge.get(oneId);
 
 		Assert.assertEquals(hlb, bean);
 	}
