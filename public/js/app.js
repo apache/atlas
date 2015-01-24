@@ -4,7 +4,9 @@ angular.module('dgc', ['ngCookies',
     'ngResource',
     'ui.bootstrap',
     'ui.router',
-    'dgc.system'
+    'dgc.system',
+    'dgc.home',
+    'dgc.search'
 ]);
 
 angular.module('dgc.system', ['dgc.system.notification']);
