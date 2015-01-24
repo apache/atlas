@@ -44,6 +44,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
+import javax.inject.Inject;
 import java.util.List;
 
 /**
@@ -74,7 +75,6 @@ public class GraphBackedMetadataRepositoryTest {
         repositoryService.start();
 
         ts = TypeSystem.getInstance();
-        repo = new MemRepository(ts);
 
         defineDeptEmployeeTypes(ts);
     }
