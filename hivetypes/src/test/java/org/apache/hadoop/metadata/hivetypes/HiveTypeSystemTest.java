@@ -18,8 +18,6 @@
 
 package org.apache.hadoop.metadata.hivetypes;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.MetaException;
@@ -28,18 +26,16 @@ import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.storage.Id;
 import org.apache.hadoop.metadata.storage.memory.MemRepository;
 import org.apache.hadoop.metadata.types.TypeSystem;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 import java.io.BufferedWriter;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 
-@Ignore
+@Test (enabled = false)
 public class HiveTypeSystemTest {
 
     protected MemRepository mr;
@@ -48,7 +44,7 @@ public class HiveTypeSystemTest {
     private static final Logger LOG =
             LoggerFactory.getLogger(HiveTypeSystemTest.class);
 
-    @Before
+    @BeforeClass
     public void setup() throws MetadataException {
 
         TypeSystem ts = TypeSystem.getInstance();
@@ -57,7 +53,7 @@ public class HiveTypeSystemTest {
         hts = HiveTypeSystem.getInstance();
     }
 
-    @Test
+    @Test (enabled = false)
     public void testHiveImport() throws MetaException, MetadataException, IOException {
 
         HiveImporter hImporter = new HiveImporter(mr, hts, new HiveMetaStoreClient(new HiveConf()));
@@ -87,5 +83,4 @@ public class HiveTypeSystemTest {
         bw.flush();
         bw.close();
     }
-
 }

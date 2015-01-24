@@ -60,9 +60,9 @@ public class GraphBackedMetadataRepositoryTest {
     private static final String ENTITY_TYPE = "Department";
 
     @Inject
-    TitanGraphService titanGraphService;
+    private TitanGraphService titanGraphService;
     @Inject
-    GraphBackedMetadataRepository repositoryService;
+    private GraphBackedMetadataRepository repositoryService;
     
     private TypeSystem ts;
     private String guid;

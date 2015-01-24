@@ -32,18 +32,17 @@ import org.apache.hadoop.metadata.repository.graph.GraphHelper;
 import org.apache.hadoop.metadata.repository.graph.GraphService;
 import org.apache.hadoop.metadata.repository.graph.TitanGraphProvider;
 import org.apache.hadoop.metadata.repository.graph.TitanGraphService;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.util.List;
 
-@Ignore
+@Test (enabled = false)
 public class HiveGraphRepositoryTest {
 
     protected HiveTypeSystem hts;
@@ -53,7 +52,7 @@ public class HiveGraphRepositoryTest {
     private static final Logger LOG =
             LoggerFactory.getLogger(HiveGraphRepositoryTest.class);
 
-    @Before
+    @BeforeClass
     public void setup() throws ConfigurationException, MetadataException {
 
         gs = new TitanGraphService(new TitanGraphProvider());
@@ -61,7 +60,7 @@ public class HiveGraphRepositoryTest {
         hts = HiveTypeSystem.getInstance();
     }
 
-    @After
+    @AfterClass
     public void tearDown() {
         Graph graph = gs.getBlueprintsGraph();
         System.out.println("*******************Graph Dump****************************");
@@ -77,7 +76,7 @@ public class HiveGraphRepositoryTest {
         System.out.println("*******************Graph Dump****************************");
     }
 
-    @Test
+    @Test (enabled = false)
     public void testHiveImport() throws Exception {
 
         HiveImporter hImporter = new HiveImporter(repository, hts, new HiveMetaStoreClient(new HiveConf()));

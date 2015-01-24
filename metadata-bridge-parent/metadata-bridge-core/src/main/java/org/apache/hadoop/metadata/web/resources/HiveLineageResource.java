@@ -1,11 +1,14 @@
 package org.apache.hadoop.metadata.web.resources;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.io.Writer;
-import java.util.ArrayList;
-import java.util.List;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.bridge.hivelineage.HiveLineageBridge;
+import org.apache.hadoop.metadata.bridge.hivelineage.hook.HiveLineage;
+import org.apache.hadoop.metadata.storage.RepositoryException;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -18,16 +21,9 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-
-import org.apache.hadoop.metadata.bridge.hivelineage.HiveLineageBridge;
-import org.apache.hadoop.metadata.bridge.hivelineage.hook.HiveLineage;
-import org.apache.hadoop.metadata.storage.RepositoryException;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 
 @Path("bridge/hive")
 @Singleton
@@ -73,10 +69,10 @@ public class HiveLineageResource {
 	@POST
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public JsonElement addLineage(@Context HttpServletRequest request) throws IOException, RepositoryException {
+	public JsonElement addLineage(@Context HttpServletRequest request)
+	throws IOException, MetadataException {
 		// create a reader
-		Reader reader = new InputStreamReader(request.getInputStream());
-		try {
+		try (Reader reader = new InputStreamReader(request.getInputStream())) {
 			// deserialize
 			HiveLineage bean = new Gson().fromJson(reader, HiveLineage.class);
 			String id = bridge.create(bean);
@@ -84,9 +80,6 @@ public class HiveLineageResource {
 			JsonObject jo = new JsonObject();
 			jo.addProperty("id", id);
 			return jo;
-		} finally {
-			// be a good citizen
-			reader.close();
 		}
 	}
 }
