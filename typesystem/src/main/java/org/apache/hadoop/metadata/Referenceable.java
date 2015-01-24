@@ -52,6 +52,13 @@ public class Referenceable extends Struct implements IReferenceableInstance {
         traits = ImmutableMap.of();
     }
 
+    public Referenceable(String guid, String typeName, Map<String, Object> values) {
+        super(typeName, values);
+        id = new Id(guid, 0, typeName);
+        traitNames = ImmutableList.of();
+        traits = ImmutableMap.of();
+    }
+
     @Override
     public ImmutableList<String> getTraits() {
         return traitNames;

@@ -23,8 +23,11 @@ final class Constants {
     private Constants() {
     }
 
-    static final String GUID_PROPERTY_KEY = "GUID";
-    static final String ENTITY_TYPE_PROPERTY_KEY = "typeName";
+    static final String GUID_PROPERTY_KEY = "guid";
+    static final String ENTITY_TYPE_PROPERTY_KEY = "type";
     static final String VERSION_PROPERTY_KEY = "version";
     static final String TIMESTAMP_PROPERTY_KEY = "timestamp";
+
+    static final String BACKING_INDEX = "search";
+    static final String INDEX_NAME = "metadata";
 }

@@ -19,8 +19,19 @@
 package org.apache.hadoop.metadata.hivetypes;
 
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
-import org.apache.hadoop.hive.metastore.api.*;
-import org.apache.hadoop.metadata.*;
+import org.apache.hadoop.hive.metastore.api.Database;
+import org.apache.hadoop.hive.metastore.api.FieldSchema;
+import org.apache.hadoop.hive.metastore.api.MetaException;
+import org.apache.hadoop.hive.metastore.api.Order;
+import org.apache.hadoop.hive.metastore.api.Partition;
+import org.apache.hadoop.hive.metastore.api.SerDeInfo;
+import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
+import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.hadoop.metadata.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.ITypedStruct;
+import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.Referenceable;
+import org.apache.hadoop.metadata.Struct;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
 import org.apache.hadoop.metadata.storage.IRepository;
 import org.apache.hadoop.metadata.storage.Id;
@@ -28,15 +39,11 @@ import org.apache.hadoop.metadata.storage.RepositoryException;
 import org.apache.hadoop.metadata.types.IDataType;
 import org.apache.hadoop.metadata.types.Multiplicity;
 import org.apache.hadoop.metadata.types.StructType;
-import org.apache.hadoop.metadata.types.TypeSystem;
-import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-
-;
 
 public class HiveImporter {
 
@@ -44,7 +51,6 @@ public class HiveImporter {
 
     private static final Logger LOG =
             LoggerFactory.getLogger(HiveImporter.class);
-    private TypeSystem typeSystem;
     private IRepository repository;
     private MetadataRepository graphRepository;
     private HiveTypeSystem hiveTypeSystem;
@@ -68,7 +74,6 @@ public class HiveImporter {
     public HiveImporter(IRepository repo, HiveTypeSystem hts, HiveMetaStoreClient hmc) throws RepositoryException {
         this(hts, hmc);
 
-
         if (repo == null) {
             LOG.error("repository is null");
             throw new RuntimeException("repository is null");
@@ -77,13 +82,11 @@ public class HiveImporter {
         repository = repo;
 
         repository.defineTypes(hts.getHierarchicalTypeDefinitions());
-
     }
 
     private HiveImporter(HiveTypeSystem hts, HiveMetaStoreClient hmc) {
         this.hiveMetastoreClient = hmc;
         this.hiveTypeSystem = hts;
-        typeSystem = TypeSystem.getInstance();
         dbInstances = new ArrayList<>();
         tableInstances = new ArrayList<>();
         partitionInstances = new ArrayList<>();
@@ -119,18 +122,21 @@ public class HiveImporter {
         }
     }
 
-    private ITypedReferenceableInstance createInstance(Referenceable ref)
+    private Referenceable createInstance(Referenceable ref)
             throws MetadataException {
         if (repository != null) {
-            return repository.create(ref);
+            return (Referenceable) repository.create(ref);
         } else {
             String typeName = ref.getTypeName();
             IDataType dataType = hiveTypeSystem.getDataType(typeName);
             LOG.debug("creating instance of type " + typeName + " dataType " + dataType);
             ITypedReferenceableInstance instance =
                     (ITypedReferenceableInstance) dataType.convert(ref, Multiplicity.OPTIONAL);
-            graphRepository.createEntity(instance, typeName);
-            return instance;
+            String guid = graphRepository.createEntity(instance, typeName);
+            System.out.println("creating instance of type " + typeName + " dataType " + dataType
+                    + ", guid: " + guid);
+
+            return new Referenceable(guid, ref.getTypeName(), ref.getValuesMap());
         }
     }
 
@@ -146,17 +152,15 @@ public class HiveImporter {
             dbRef.set("parameters", hiveDB.getParameters());
             dbRef.set("ownerName", hiveDB.getOwnerName());
             dbRef.set("ownerType", hiveDB.getOwnerType().getValue());
-            ITypedReferenceableInstance dbRefTyped = createInstance(dbRef);
+            Referenceable dbRefTyped = createInstance(dbRef);
             dbInstances.add(dbRefTyped.getId());
             importTables(db, dbRefTyped);
-        } catch (NoSuchObjectException nsoe) {
-            throw new MetadataException(nsoe);
-        } catch (TException te) {
-            throw new MetadataException(te);
+        } catch (Exception e) {
+            throw new MetadataException(e);
         }
     }
 
-    private void importTables(String db, ITypedReferenceableInstance dbRefTyped) throws MetadataException {
+    private void importTables(String db, Referenceable dbRefTyped) throws MetadataException {
         try {
             List<String> hiveTables = hiveMetastoreClient.getAllTables(db);
 
@@ -177,7 +181,7 @@ public class HiveImporter {
                 ITypedStruct sdStruct = fillStorageDescStruct(storageDesc);
                 tableRef.set("sd", sdStruct);
                 tableRef.set("columns", sdStruct.get("cols"));
-                List<ITypedReferenceableInstance> partKeys = new ArrayList<>();
+                List<Referenceable> partKeys = new ArrayList<>();
                 Referenceable colRef;
                 if (hiveTable.getPartitionKeysSize() > 0) {
                     for (FieldSchema fs : hiveTable.getPartitionKeys()) {
@@ -185,7 +189,7 @@ public class HiveImporter {
                         colRef.set("name", fs.getName());
                         colRef.set("type", fs.getType());
                         colRef.set("comment", fs.getComment());
-                        ITypedReferenceableInstance colRefTyped = createInstance(colRef);
+                        Referenceable colRefTyped = createInstance(colRef);
                         partKeys.add(colRefTyped);
                     }
                     tableRef.set("partitionKeys", partKeys);
@@ -200,7 +204,7 @@ public class HiveImporter {
                 tableRef.set("tableType", hiveTable.getTableType());
                 tableRef.set("temporary", hiveTable.isTemporary());
 
-                ITypedReferenceableInstance tableRefTyped = createInstance(tableRef);
+                Referenceable tableRefTyped = createInstance(tableRef);
                 tableInstances.add(tableRefTyped.getId());
 
 
@@ -218,25 +222,22 @@ public class HiveImporter {
                         partRef.set("sd", sdStruct);
                         partRef.set("columns", sdStruct.get("cols"));
                         partRef.set("parameters", hivePart.getParameters());
-                        ITypedReferenceableInstance partRefTyped = createInstance(partRef);
+                        Referenceable partRefTyped = createInstance(partRef);
                         partitionInstances.add(partRefTyped.getId());
                     }
                 }
             }
-
-        } catch (NoSuchObjectException nsoe) {
-            throw new MetadataException(nsoe);
-        } catch (TException te) {
+        } catch (Exception te) {
             throw new MetadataException(te);
         }
 
     }
 
-    private ITypedStruct fillStorageDescStruct(StorageDescriptor storageDesc) throws MetadataException {
+    private ITypedStruct fillStorageDescStruct(StorageDescriptor storageDesc) throws Exception {
         String storageDescName = HiveTypeSystem.DefinedTypes.HIVE_STORAGEDESC.name();
 
         SerDeInfo serdeInfo = storageDesc.getSerdeInfo();
-        SkewedInfo skewedInfo = storageDesc.getSkewedInfo();
+        // SkewedInfo skewedInfo = storageDesc.getSkewedInfo();
 
         Struct sdStruct = new Struct(storageDescName);
 
@@ -275,7 +276,7 @@ public class HiveImporter {
 
 
 
-        List<ITypedReferenceableInstance> fieldsList = new ArrayList<>();
+        List<Referenceable> fieldsList = new ArrayList<>();
         Referenceable colRef;
         for (FieldSchema fs : storageDesc.getCols()) {
             LOG.debug("Processing field " + fs);
@@ -283,7 +284,7 @@ public class HiveImporter {
             colRef.set("name", fs.getName());
             colRef.set("type", fs.getType());
             colRef.set("comment", fs.getComment());
-            ITypedReferenceableInstance colRefTyped = createInstance(colRef);
+            Referenceable colRefTyped = createInstance(colRef);
             fieldsList.add(colRefTyped);
             columnInstances.add(colRefTyped.getId());
         }
@@ -315,8 +316,6 @@ public class HiveImporter {
         sdStruct.set("parameters", storageDesc.getParameters());
         sdStruct.set("storedAsSubDirectories", storageDesc.isStoredAsSubDirectories());
         StructType storageDesctype = (StructType) hiveTypeSystem.getDataType(storageDescName);
-        ITypedStruct sdStructTyped =
-                storageDesctype.convert(sdStruct, Multiplicity.OPTIONAL);
-        return sdStructTyped;
+        return storageDesctype.convert(sdStruct, Multiplicity.OPTIONAL);
     }
 }

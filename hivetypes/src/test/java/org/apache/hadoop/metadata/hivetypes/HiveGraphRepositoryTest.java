@@ -19,19 +19,20 @@
 package org.apache.hadoop.metadata.hivetypes;
 
 
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Graph;
+import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
-import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.repository.graph.GraphBackedMetadataRepository;
+import org.apache.hadoop.metadata.repository.graph.GraphHelper;
 import org.apache.hadoop.metadata.repository.graph.GraphService;
 import org.apache.hadoop.metadata.repository.graph.TitanGraphProvider;
 import org.apache.hadoop.metadata.repository.graph.TitanGraphService;
-import org.apache.hadoop.metadata.types.TypeSystem;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -40,14 +41,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.util.List;
 
 @Ignore
 public class HiveGraphRepositoryTest {
 
     protected HiveTypeSystem hts;
-    GraphBackedMetadataRepository repository;
+    private GraphBackedMetadataRepository repository;
+    private GraphService gs;
 
     private static final Logger LOG =
             LoggerFactory.getLogger(HiveGraphRepositoryTest.class);
@@ -55,14 +56,29 @@ public class HiveGraphRepositoryTest {
     @Before
     public void setup() throws ConfigurationException, MetadataException {
 
-        TypeSystem ts = TypeSystem.getInstance();
-        GraphService gs = new TitanGraphService(new TitanGraphProvider());
+        gs = new TitanGraphService(new TitanGraphProvider());
         repository = new GraphBackedMetadataRepository(gs);
         hts = HiveTypeSystem.getInstance();
     }
 
+    @After
+    public void tearDown() {
+        Graph graph = gs.getBlueprintsGraph();
+        System.out.println("*******************Graph Dump****************************");
+        System.out.println("Vertices of " + graph);
+        for (Vertex vertex : graph.getVertices()) {
+            System.out.println(GraphHelper.vertexString(vertex));
+        }
+
+        System.out.println("Edges of " + graph);
+        for (Edge edge : graph.getEdges()) {
+            System.out.println(GraphHelper.edgeString(edge));
+        }
+        System.out.println("*******************Graph Dump****************************");
+    }
+
     @Test
-    public void testHiveImport() throws MetaException, MetadataException, IOException {
+    public void testHiveImport() throws Exception {
 
         HiveImporter hImporter = new HiveImporter(repository, hts, new HiveMetaStoreClient(new HiveConf()));
         hImporter.importHiveMetadata();

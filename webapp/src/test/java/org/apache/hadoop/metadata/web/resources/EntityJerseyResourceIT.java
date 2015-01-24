@@ -21,14 +21,19 @@ package org.apache.hadoop.metadata.web.resources;
 import com.google.common.collect.ImmutableList;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import org.apache.hadoop.metadata.ITypedInstance;
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.ITypedStruct;
 import org.apache.hadoop.metadata.Referenceable;
 import org.apache.hadoop.metadata.Struct;
 import org.apache.hadoop.metadata.json.Serialization$;
 import org.apache.hadoop.metadata.json.TypesSerialization;
 import org.apache.hadoop.metadata.types.AttributeDefinition;
+import org.apache.hadoop.metadata.types.AttributeInfo;
 import org.apache.hadoop.metadata.types.ClassType;
 import org.apache.hadoop.metadata.types.DataTypes;
+import org.apache.hadoop.metadata.types.EnumTypeDefinition;
+import org.apache.hadoop.metadata.types.EnumValue;
 import org.apache.hadoop.metadata.types.HierarchicalTypeDefinition;
 import org.apache.hadoop.metadata.types.Multiplicity;
 import org.apache.hadoop.metadata.types.StructTypeDefinition;
@@ -126,20 +131,33 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         LOG.debug("tableInstanceAfterGet = " + definition);
 
         // todo - this fails with type error, strange
-        // ITypedReferenceableInstance tableInstanceAfterGet = Serialization$.MODULE$.fromJson(definition);
-        // Assert.assertTrue(areEqual(tableInstance, tableInstanceAfterGet));
+        ITypedReferenceableInstance tableInstanceAfterGet = Serialization$.MODULE$.fromJson(definition);
+        Assert.assertTrue(areEqual(tableInstance, tableInstanceAfterGet));
     }
 
+    private boolean areEqual(ITypedInstance actual,
+                             ITypedInstance expected) throws Exception {
 /*
-    private boolean areEqual(ITypedReferenceableInstance actual,
-                             ITypedReferenceableInstance expected) throws Exception {
+        Assert.assertEquals(Serialization$.MODULE$.toJson(actual),
+                Serialization$.MODULE$.toJson(expected));
+*/
+
         for (AttributeInfo attributeInfo : actual.fieldMapping().fields.values()) {
-            Assert.assertEquals(actual.get(attributeInfo.name), expected.get(attributeInfo.name));
+            final DataTypes.TypeCategory typeCategory = attributeInfo.dataType().getTypeCategory();
+            if (typeCategory == DataTypes.TypeCategory.STRUCT
+                    || typeCategory == DataTypes.TypeCategory.TRAIT
+                    || typeCategory == DataTypes.TypeCategory.CLASS) {
+                areEqual((ITypedStruct) actual.get(attributeInfo.name),
+                        (ITypedStruct) expected.get(attributeInfo.name));
+            } else if (typeCategory == DataTypes.TypeCategory.PRIMITIVE
+                    || typeCategory == DataTypes.TypeCategory.ENUM) {
+                Assert.assertEquals(actual.get(attributeInfo.name),
+                        expected.get(attributeInfo.name));
+            }
         }
 
         return true;
     }
-*/
 
     @Test
     public void testGetInvalidEntityDefinition() throws Exception {
@@ -220,6 +238,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                         createRequiredAttrDef("description", DataTypes.STRING_TYPE));
         typeSystem.defineClassType(testTypeDefinition);
 
+        @SuppressWarnings("unchecked")
         String typesAsJSON = TypesSerialization.toJson(typeSystem,
                 Arrays.asList(new String[]{"test"}));
         sumbitType(typesAsJSON, "test");
@@ -229,7 +248,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         HierarchicalTypeDefinition<ClassType> databaseTypeDefinition =
                 createClassTypeDef(DATABASE_TYPE,
                         ImmutableList.<String>of(),
-                        createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         createRequiredAttrDef("description", DataTypes.STRING_TYPE));
 
         StructTypeDefinition structTypeDefinition =
@@ -239,12 +258,22 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                         createRequiredAttrDef("serde", DataTypes.STRING_TYPE)
                         });
 
+        EnumValue values[] = {
+                new EnumValue("MANAGED", 1),
+                new EnumValue("EXTERNAL", 2),
+        };
+
+        EnumTypeDefinition enumTypeDefinition =  new EnumTypeDefinition("tableType", values);
+        typeSystem.defineEnumType(enumTypeDefinition);
+
         HierarchicalTypeDefinition<ClassType> tableTypeDefinition =
                 createClassTypeDef(TABLE_TYPE,
                         ImmutableList.<String>of(),
-                        createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         createRequiredAttrDef("description", DataTypes.STRING_TYPE),
                         createRequiredAttrDef("type", DataTypes.STRING_TYPE),
+                        new AttributeDefinition("tableType", "tableType",
+                                Multiplicity.REQUIRED, false, null),
                         new AttributeDefinition("serde1",
                                 "serdeType", Multiplicity.REQUIRED, false, null),
                         new AttributeDefinition("serde2",
@@ -264,8 +293,14 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     }
 
     private void submitTypes() throws Exception {
+        @SuppressWarnings("unchecked")
         String typesAsJSON = TypesSerialization.toJson(typeSystem,
-                Arrays.asList(new String[]{DATABASE_TYPE, TABLE_TYPE, "serdeType", "classification"}));
+                Arrays.asList(new String[]{
+                        "tableType",
+                        DATABASE_TYPE,
+                        TABLE_TYPE,
+                        "serdeType",
+                        "classification"}));
         sumbitType(typesAsJSON, TABLE_TYPE);
     }
 
@@ -298,6 +333,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         tableInstance.set("name", TABLE_NAME);
         tableInstance.set("description", "bar table");
         tableInstance.set("type", "managed");
+        tableInstance.set("tableType", 1); // enum
         tableInstance.set("database", databaseInstance);
 
         Struct traitInstance = (Struct) tableInstance.getTrait("classification");

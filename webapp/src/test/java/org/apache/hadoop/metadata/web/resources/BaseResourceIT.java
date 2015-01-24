@@ -34,6 +34,12 @@ public abstract class BaseResourceIT {
         service = client.resource(UriBuilder.fromUri(baseUrl).build());
     }
 
+    protected AttributeDefinition createUniqueRequiredAttrDef(String name,
+                                                              IDataType dataType) {
+        return new AttributeDefinition(name, dataType.getName(),
+                Multiplicity.REQUIRED, false, true, true, null);
+    }
+
     protected AttributeDefinition createRequiredAttrDef(String name,
                                                         IDataType dataType) {
         return new AttributeDefinition(name, dataType.getName(),

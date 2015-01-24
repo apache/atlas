@@ -18,6 +18,7 @@
 
 package org.apache.hadoop.metadata.repository.graph;
 
+import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
@@ -35,11 +36,11 @@ import java.util.UUID;
 /**
  * Utility class for graph operations.
  */
-public final class GraphUtils {
+public final class GraphHelper {
 
-    private static final Logger LOG = LoggerFactory.getLogger(GraphUtils.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GraphHelper.class);
 
-    private GraphUtils() {
+    private GraphHelper() {
     }
 
     public static Vertex createVertex(Graph graph,
@@ -50,9 +51,15 @@ public final class GraphUtils {
     public static Vertex createVertex(Graph graph,
                                       ITypedInstance typedInstance,
                                       Id typedInstanceId) {
+        return createVertex(graph, typedInstance.getTypeName(), typedInstanceId);
+    }
+
+    public static Vertex createVertex(Graph graph,
+                                      String typeName,
+                                      Id typedInstanceId) {
         final Vertex instanceVertex = graph.addVertex(null);
         // type
-        instanceVertex.setProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, typedInstance.getTypeName());
+        instanceVertex.setProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, typeName);
 
         // id
         final String guid = UUID.randomUUID().toString();
@@ -64,13 +71,20 @@ public final class GraphUtils {
         return instanceVertex;
     }
 
-    public static Vertex findVertex(Graph blueprintsGraph,
-                                    String key, String value) {
-        LOG.debug("Finding vertex for key={}, value={}", key, value);
+    public static Edge addEdge(Vertex fromVertex, Vertex toVertex, String edgeLabel) {
+        LOG.debug("Adding edge for {} -> struct label {} -> v{}",
+                fromVertex, edgeLabel, toVertex);
+        return fromVertex.addEdge(edgeLabel, toVertex);
+    }
 
-        GraphQuery query = blueprintsGraph.query().has(key, value);
+    public static Vertex findVertexByGUID(Graph blueprintsGraph,
+                                          String value) {
+        LOG.debug("Finding vertex for key={}, value={}", Constants.GUID_PROPERTY_KEY, value);
+
+        GraphQuery query = blueprintsGraph.query()
+                .has(Constants.GUID_PROPERTY_KEY, Compare.EQUAL, value);
         Iterator<Vertex> results = query.vertices().iterator();
-        // returning one since name/type is unique
+        // returning one since guid should be unique
         return results.hasNext() ? results.next() : null;
     }
 

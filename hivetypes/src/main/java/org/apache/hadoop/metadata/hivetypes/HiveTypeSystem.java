@@ -19,10 +19,19 @@
 package org.apache.hadoop.metadata.hivetypes;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.types.*;
+import org.apache.hadoop.metadata.types.AttributeDefinition;
+import org.apache.hadoop.metadata.types.ClassType;
+import org.apache.hadoop.metadata.types.DataTypes;
+import org.apache.hadoop.metadata.types.EnumTypeDefinition;
+import org.apache.hadoop.metadata.types.EnumValue;
+import org.apache.hadoop.metadata.types.HierarchicalType;
+import org.apache.hadoop.metadata.types.HierarchicalTypeDefinition;
+import org.apache.hadoop.metadata.types.IDataType;
+import org.apache.hadoop.metadata.types.Multiplicity;
+import org.apache.hadoop.metadata.types.StructTypeDefinition;
+import org.apache.hadoop.metadata.types.TraitType;
+import org.apache.hadoop.metadata.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,8 +48,6 @@ public class HiveTypeSystem {
     public static final class Holder {
         public static final HiveTypeSystem instance = new HiveTypeSystem();
     }
-
-    private TypeSystem typeSystem;
 
     private boolean valid = false;
 
@@ -85,7 +92,7 @@ public class HiveTypeSystem {
     private List<IDataType> enumTypes;
 
 
-    private static Multiplicity ZeroOrMore = new Multiplicity(0, Integer.MAX_VALUE, true);
+    // private static Multiplicity ZeroOrMore = new Multiplicity(0, Integer.MAX_VALUE, true);
 
     private HiveTypeSystem() {
         classTypeDefinitions = new HashMap<>();
@@ -98,7 +105,7 @@ public class HiveTypeSystem {
     private void initialize() throws MetadataException {
 
         LOG.info("Initializing the Hive Typesystem");
-        typeSystem = TypeSystem.getInstance();
+        TypeSystem typeSystem = TypeSystem.getInstance();
 
         mapStrToStrMap =
                 typeSystem.defineMapType(DataTypes.STRING_TYPE, DataTypes.STRING_TYPE);
@@ -131,10 +138,16 @@ public class HiveTypeSystem {
         }
 
         typeMap.putAll(
-                typeSystem.defineTypes(getStructTypeDefinitions(), getTraitTypeDefinitions(), getClassTypeDefinitions()));
+                typeSystem.defineTypes(getStructTypeDefinitions(), getTraitTypeDefinitions(),
+                        getClassTypeDefinitions()));
+
+
         valid = true;
     }
 
+    Map<String, IDataType> getTypeMap() {
+        return typeMap;
+    }
 
     public synchronized static HiveTypeSystem getInstance() throws MetadataException {
         HiveTypeSystem hs = Holder.instance;

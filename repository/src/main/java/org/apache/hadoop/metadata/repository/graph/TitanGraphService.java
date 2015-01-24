@@ -28,6 +28,7 @@ import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import com.thinkaurelius.titan.core.PropertyKey;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -62,7 +63,7 @@ public class TitanGraphService implements GraphService {
 	/**
 	 * Initialize this service through injection with a custom Provider.
 	 * 
-	 * @param graph
+	 * @param graph graph implementation
 	 * @throws ConfigurationException
 	 */
 	@Inject
@@ -123,10 +124,23 @@ public class TitanGraphService implements GraphService {
 		LOG.info("Indexes do not exist, Creating indexes for titanGraph using indexer.properties.");
 
 		TitanManagement mgmt = titanGraph.getManagementSystem();
-		mgmt.buildIndex("mainIndex", Vertex.class).buildMixedIndex("search");
-		TitanGraphIndex graphIndex = mgmt.getGraphIndex("mainIndex");
+		TitanGraphIndex graphIndex =  mgmt.buildIndex(Constants.INDEX_NAME, Vertex.class)
+				.buildMixedIndex(Constants.BACKING_INDEX);
 
-        mgmt.addIndexKey(graphIndex, mgmt.makePropertyKey("guid").dataType(String.class).make());
+		PropertyKey guidKey = mgmt
+				.makePropertyKey(Constants.GUID_PROPERTY_KEY)
+				.dataType(String.class).make();
+		mgmt.buildIndex("byGUID", Vertex.class)
+				.addKey(guidKey)
+				.unique()
+				.buildCompositeIndex();
+
+		PropertyKey typeKey = mgmt
+				.makePropertyKey(Constants.ENTITY_TYPE_PROPERTY_KEY)
+				.dataType(String.class).make();
+		mgmt.buildIndex("byType", Vertex.class)
+				.addKey(typeKey)
+				.buildCompositeIndex();
 
         Configuration indexConfig = getConfiguration("indexer.properties", INDEXER_PREFIX);
         // Properties are formatted: prop_name:type;prop_name:type
@@ -134,7 +148,7 @@ public class TitanGraphService implements GraphService {
 		if (!indexConfig.isEmpty()) {
 
 			// Get a list of property names to iterate through...
-			List<String> propList = new ArrayList<String>();
+			List<String> propList = new ArrayList<>();
 
 			Iterator<String> it = indexConfig.getKeys("property.name");
 
@@ -147,9 +161,9 @@ public class TitanGraphService implements GraphService {
 
 				// Pull the property name and index, so we can register the name
 				// and look up the type.
-				String prop = it.next().toString();
+				String prop = it.next();
 				String index = prop.substring(prop.lastIndexOf(".") + 1);
-				String type = null;
+				String type;
 				prop = indexConfig.getProperty(prop).toString();
 
 				// Look up the type for the specified property name.

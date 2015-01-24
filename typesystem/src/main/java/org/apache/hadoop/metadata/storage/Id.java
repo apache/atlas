@@ -19,7 +19,6 @@
 package org.apache.hadoop.metadata.storage;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.hadoop.metadata.IReferenceableInstance;
 import org.apache.hadoop.metadata.IStruct;
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.MetadataException;
@@ -28,6 +27,7 @@ import org.apache.hadoop.metadata.types.FieldMapping;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
+import java.util.UUID;
 
 public class Id implements ITypedReferenceableInstance {
 
@@ -56,6 +56,16 @@ public class Id implements ITypedReferenceableInstance {
         } catch(NumberFormatException ne) {
             return false;
         }
+    }
+
+    public boolean isAssigned() {
+        try {
+            UUID.fromString(id);
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+
+        return true;
     }
 
     public String toString() {

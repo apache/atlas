@@ -1,22 +1,38 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.hadoop.metadata.services;
 
-import java.util.List;
-
-import javax.inject.Inject;
-
+import com.google.common.collect.ImmutableList;
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.Referenceable;
 import org.apache.hadoop.metadata.RepositoryMetadataModule;
 import org.apache.hadoop.metadata.repository.graph.GraphBackedMetadataRepository;
-import org.apache.hadoop.metadata.repository.graph.GraphUtils;
+import org.apache.hadoop.metadata.repository.graph.GraphHelper;
 import org.apache.hadoop.metadata.repository.graph.TitanGraphService;
-import org.apache.hadoop.metadata.storage.IRepository;
-import org.apache.hadoop.metadata.storage.memory.MemRepository;
 import org.apache.hadoop.metadata.types.AttributeDefinition;
 import org.apache.hadoop.metadata.types.ClassType;
 import org.apache.hadoop.metadata.types.DataTypes;
-import org.apache.hadoop.metadata.types.HierarchicalType;
 import org.apache.hadoop.metadata.types.HierarchicalTypeDefinition;
 import org.apache.hadoop.metadata.types.IDataType;
 import org.apache.hadoop.metadata.types.Multiplicity;
@@ -24,16 +40,11 @@ import org.apache.hadoop.metadata.types.StructTypeDefinition;
 import org.apache.hadoop.metadata.types.TraitType;
 import org.apache.hadoop.metadata.types.TypeSystem;
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import com.google.common.collect.ImmutableList;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Vertex;
+import java.util.List;
 
 /**
  * GraphBackedMetadataRepository test
@@ -41,18 +52,17 @@ import com.tinkerpop.blueprints.Vertex;
  * Guice loads the dependencies and injects the necessary objects
  *
  */
-@Test (enabled = false)
+@Test
 @Guice(modules = RepositoryMetadataModule.class)
 public class GraphBackedMetadataRepositoryTest {
 
-    private static final String ENTITY_TYPE = "hive-table";
+    private static final String ENTITY_TYPE = "Department";
 
     @Inject
     TitanGraphService titanGraphService;
     @Inject
     GraphBackedMetadataRepository repositoryService;
     
-    private IRepository repo;
     private TypeSystem ts;
     private String guid;
 
@@ -69,11 +79,7 @@ public class GraphBackedMetadataRepositoryTest {
         defineDeptEmployeeTypes(ts);
     }
 
-    @AfterClass
-    public void tearDown() throws Exception {
-    }
-
-    @Test (enabled = false)
+    @Test
     public void testSubmitEntity() throws Exception {
         Referenceable hrDept = createDeptEg1(ts);
         ClassType deptType = ts.getDataType(ClassType.class, "Department");
@@ -88,34 +94,33 @@ public class GraphBackedMetadataRepositoryTest {
     private void dumpGraph() {
         TitanGraph graph = titanGraphService.getTitanGraph();
         for (Vertex v : graph.getVertices()) {
-            // System.out.println("****v = " + GraphUtils.vertexString(v));
-            System.out.println("v = " + v);
+            System.out.println("****v = " + GraphHelper.vertexString(v));
             for (Edge e : v.getEdges(Direction.OUT)) {
-                System.out.println("****e = " + GraphUtils.edgeString(e));
+                System.out.println("****e = " + GraphHelper.edgeString(e));
             }
         }
     }
 
-    @Test(dependsOnMethods = "testSubmitEntity", enabled = false)
+    @Test(dependsOnMethods = "testSubmitEntity")
     public void testGetEntityDefinition() throws Exception {
         ITypedReferenceableInstance entity = repositoryService.getEntityDefinition(guid);
         Assert.assertNotNull(entity);
     }
 
-    @Test (enabled = false)
+    @Test
     public void testGetEntityDefinitionNonExistent() throws Exception {
         ITypedReferenceableInstance entity = repositoryService.getEntityDefinition("blah");
         Assert.assertNull(entity);
     }
 
-    @Test (enabled = false)
+    @Test
     public void testGetEntityList() throws Exception {
         List<String> entityList = repositoryService.getEntityList(ENTITY_TYPE);
         Assert.assertNotNull(entityList);
-        Assert.assertEquals(entityList.size(), 0); // as this is not implemented yet
+        Assert.assertEquals(entityList.size(), 1); // one department
     }
 
-    @Test (enabled = false)
+    @Test
     public void testRawSearch1() throws Exception {
         Referenceable hrDept = createDeptEg1(ts);
         ClassType deptType = ts.getDataType(ClassType.class, "Department");
@@ -123,21 +128,18 @@ public class GraphBackedMetadataRepositoryTest {
 
         guid = repositoryService.createEntity(hrDept2, ENTITY_TYPE);
 
-
         // Query for all Vertices in Graph
         Object r = repositoryService.searchByGremlin("g.V.toList()");
-        //System.out.println(r);
+        System.out.println("search result = " + r);
 
         // Query for all Vertices of a Type
         r = repositoryService.searchByGremlin("g.V.filter{it.typeName == 'Department'}.toList()");
-        //System.out.println(r);
+        System.out.println("search result = " + r);
 
         // Property Query: list all Person names
         r = repositoryService.searchByGremlin("g.V.filter{it.typeName == 'Person'}.'Person.name'.toList()");
-        //System.out.println(r);
+        System.out.println("search result = " + r);
     }
-
-
 
     /*
      * Class Hierarchy is:
@@ -167,7 +169,7 @@ public class GraphBackedMetadataRepositoryTest {
         );
 
         HierarchicalTypeDefinition<ClassType> managerTypeDef = createClassTypeDef("Manager",
-                ImmutableList.<String>of("Person"),
+                ImmutableList.of("Person"),
                 new AttributeDefinition("subordinates",
                         String.format("array<%s>", "Person"), Multiplicity.COLLECTION, false,
                         "manager")
@@ -180,18 +182,8 @@ public class GraphBackedMetadataRepositoryTest {
         );
 
         ts.defineTypes(ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(securityClearanceTypeDef),
-                ImmutableList.<HierarchicalTypeDefinition<ClassType>>of(deptTypeDef, personTypeDef,
-                        managerTypeDef));
-
-        ImmutableList<HierarchicalType> types = ImmutableList.of(
-                ts.getDataType(HierarchicalType.class, "SecurityClearance"),
-                ts.getDataType(ClassType.class, "Department"),
-                ts.getDataType(ClassType.class, "Person"),
-                ts.getDataType(ClassType.class, "Manager")
-        );
-
-        repo.defineTypes(types);
+                ImmutableList.of(securityClearanceTypeDef),
+                ImmutableList.of(deptTypeDef, personTypeDef, managerTypeDef));
     }
 
     protected Referenceable createDeptEg1(TypeSystem ts) throws MetadataException {
@@ -207,14 +199,15 @@ public class GraphBackedMetadataRepositoryTest {
 
         john.set("manager", jane);
 
-        hrDept.set("employees", ImmutableList.<Referenceable>of(john, jane));
+        hrDept.set("employees", ImmutableList.of(john, jane));
 
-        jane.set("subordinates", ImmutableList.<Referenceable>of(john));
+        jane.set("subordinates", ImmutableList.of(john));
 
         jane.getTrait("SecurityClearance").set("level", 1);
 
         ClassType deptType = ts.getDataType(ClassType.class, "Department");
         ITypedReferenceableInstance hrDept2 = deptType.convert(hrDept, Multiplicity.REQUIRED);
+        Assert.assertNotNull(hrDept2);
 
         return hrDept;
     }
