@@ -24,6 +24,9 @@ public final class AttributeDefinition {
     public final String dataTypeName;
     public final Multiplicity multiplicity;
     public final boolean isComposite;
+    public final boolean isUnique;
+    public final boolean isIndexable;
+
     /**
      * If this is a reference attribute, then the name of the attribute on the Class
      * that this refers to.
@@ -32,10 +35,19 @@ public final class AttributeDefinition {
 
     public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity,
                                boolean isComposite, String reverseAttributeName) {
+        this(name, dataTypeName, multiplicity, isComposite, false, true, reverseAttributeName);
+
+    }
+
+    public AttributeDefinition(String name, String dataTypeName,
+                               Multiplicity multiplicity, boolean isComposite, boolean isUnique,
+                               boolean isIndexable, String reverseAttributeName) {
         this.name = name;
         this.dataTypeName = dataTypeName;
         this.multiplicity = multiplicity;
         this.isComposite = isComposite;
+        this.isUnique = isUnique;
+        this.isIndexable = isIndexable;
         this.reverseAttributeName = reverseAttributeName;
     }
 
@@ -47,6 +59,8 @@ public final class AttributeDefinition {
         AttributeDefinition that = (AttributeDefinition) o;
 
         if (isComposite != that.isComposite) return false;
+        if (isUnique != that.isUnique) return false;
+        if (isIndexable != that.isIndexable) return false;
         if (!dataTypeName.equals(that.dataTypeName)) return false;
         if (!multiplicity.equals(that.multiplicity)) return false;
         if (!name.equals(that.name)) return false;
@@ -63,6 +77,8 @@ public final class AttributeDefinition {
         result = 31 * result + dataTypeName.hashCode();
         result = 31 * result + multiplicity.hashCode();
         result = 31 * result + (isComposite ? 1 : 0);
+        result = 31 * result + (isUnique ? 1 : 0);
+        result = 31 * result + (isIndexable ? 1 : 0);
         result = 31 * result + (reverseAttributeName != null ? reverseAttributeName.hashCode() : 0);
         return result;
     }

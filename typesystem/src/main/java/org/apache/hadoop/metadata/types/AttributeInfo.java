@@ -1,4 +1,3 @@
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -20,13 +19,15 @@
 package org.apache.hadoop.metadata.types;
 
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.MetadataException;
 
 public class AttributeInfo {
     public final String name;
     private IDataType dataType;
     public final Multiplicity multiplicity;
     public final boolean isComposite;
+    public final boolean isUnique;
+    public final boolean isIndexable;
+
     /**
      * If this is a reference attribute, then the name of the attribute on the Class
      * that this refers to.
@@ -39,6 +40,8 @@ public class AttributeInfo {
         this.dataType = t.getDataType(IDataType.class, def.dataTypeName);
         this.multiplicity = def.multiplicity;
         this.isComposite = def.isComposite;
+        this.isUnique = def.isUnique;
+        this.isIndexable = def.isIndexable;
         this.reverseAttributeName = def.reverseAttributeName;
     }
 
@@ -57,6 +60,8 @@ public class AttributeInfo {
                 ", dataType=" + dataType +
                 ", multiplicity=" + multiplicity +
                 ", isComposite=" + isComposite +
+                ", isUnique=" + isUnique +
+                ", isIndexable=" + isIndexable +
                 ", reverseAttributeName='" + reverseAttributeName + '\'' +
                 '}';
     }
