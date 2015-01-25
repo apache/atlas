@@ -1,3 +1,3 @@
 'use strict';
 
-angular.module('dgc.search', ['dgc.search.routes']);
+angular.module('dgc.search', ['dgc.details']);

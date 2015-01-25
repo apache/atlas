@@ -2,7 +2,7 @@
 
 angular.module('dgc.home').controller('HeaderController', ['$scope', function($scope) {
 
-    $scope.menu = [{'state': 'search', 'title': 'Search'}];
+    $scope.menu = [];
 
     $scope.isCollapsed = true;
     $scope.isLoggedIn = function() {

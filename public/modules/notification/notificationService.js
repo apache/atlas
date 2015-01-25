@@ -20,7 +20,9 @@ angular.module('dgc.system.notification').service('NotificationService', ['$time
         service[key] = function(message) {
             var notification = message;
             if (_.isString(message)) {
-                notification = {message: message};
+                notification = {
+                    message: message
+                };
             }
 
             notification.message = notification.msg || notification.message;

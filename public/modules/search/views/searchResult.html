@@ -1,0 +1,7 @@
+<h4>{{query}} results</h4>
+
+<ul class="list-unstyled">
+    <li ng-repeat="result in results">
+        <a data-ui-sref="details({id:result.$id$.id})">{{result.description}}</a>
+    </li>
+</ul>

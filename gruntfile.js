@@ -83,7 +83,7 @@ module.exports = function(grunt) {
     require('load-grunt-tasks')(grunt);
 
     //Default task(s).
-    grunt.registerTask('default', ['bower', 'jsbeautifier:default']);
+    grunt.registerTask('default', ['bower', 'jshint', 'jsbeautifier:default']);
 
     // Server task
     grunt.registerTask('server', ['bower', 'jshint', 'concurrent']);
