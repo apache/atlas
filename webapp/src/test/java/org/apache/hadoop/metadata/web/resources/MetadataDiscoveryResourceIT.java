@@ -32,10 +32,24 @@ import com.sun.jersey.api.client.WebResource;
 public class MetadataDiscoveryResourceIT extends BaseResourceIT {
 	
     @Test
-    public void testUriExists() throws Exception {
+    public void testFullTextUriExists() throws Exception {
         WebResource resource = service
                 .path("api/metadata/discovery/search/fulltext")
                 .queryParam("depth", "0").queryParam("text","foo").queryParam("property","Name");
+
+        ClientResponse clientResponse = resource
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.GET, ClientResponse.class);
+        Assert.assertNotEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
+        
+    }
+    
+    @Test
+    public void testLineageUriExists() throws Exception {
+        WebResource resource = service
+                .path("api/metadata/discovery/search/relationships/1")
+                .queryParam("depth", "1").queryParam("edgesToFollow","bar");
 
         ClientResponse clientResponse = resource
                 .accept(MediaType.APPLICATION_JSON)

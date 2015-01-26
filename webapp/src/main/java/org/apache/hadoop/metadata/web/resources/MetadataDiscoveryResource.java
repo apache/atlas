@@ -18,6 +18,8 @@
 
 package org.apache.hadoop.metadata.web.resources;
 
+import org.apache.commons.collections.iterators.IteratorChain;
+
 import com.google.common.base.Preconditions;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -132,20 +134,66 @@ public class MetadataDiscoveryResource {
     }
     
     /**
+     * Return a list of Vertices and Edges that eminate from the provided GUID to the depth specified.
+     * 
+     * GET http://host/api/metadata/discovery/search/relationships/{guid}
+     * 
+     * edgesToFollow = comma-separated list of Labels to follow.  Sample query:
+     * http://host/api/metadata/discovery/search/relationships/1?depth=3&edgesToFollow=Likes,Has
+     */    
+  
+    @GET
+    @Path("/search/relationships/{guid}")
+    @Produces({MediaType.APPLICATION_JSON})
+    public Response getLineageResults(@PathParam("guid") final String guid,
+            @DefaultValue("1") @QueryParam("depth") final int depth, @QueryParam("edgesToFollow") final String edgesToFollow) {
+    	
+        LOG.info("Performing GUID lineage search for guid= {}", guid);
+        Preconditions.checkNotNull(guid, "Invalid argument: \"guid\" cannot be null.");
+        Preconditions.checkNotNull(edgesToFollow, "Invalid argument: \"edgesToFollow\" cannot be null.");
+        
+        // Parent JSON Object
+        JSONObject response = new JSONObject();
+        
+        // HashMaps, which contain sub JOSN Objects to be relayed back to the parent. 
+        HashMap<String,Map<String,String>> vertices = new HashMap<String,Map<String,String>>();
+        HashMap<String,Map<String,String>> edges = new HashMap<String,Map<String,String>>();
+        
+        // Get the Vertex with the specified GUID.
+        for (Vertex v: getGraph().query().has("guid", guid).vertices()) {
+        	searchWalker(v, depth, 0, edges, vertices, edgesToFollow);
+        }
+
+        
+   		try {
+   			response.put("vertices",vertices);
+   			response.put("edges",edges);
+   		} catch (JSONException e) {
+   			throw new WebApplicationException(
+                    Servlets.getErrorResponse("Search: Error building JSON result set.", Response.Status.INTERNAL_SERVER_ERROR));
+   		}
+        
+    	return Response.ok(response).build();
+    }
+    
+    /**
      * Return a list of Vertices and Edges that match the given query.
      *
      * GET http://host/api/metadata/discovery/search/fulltext
      * 
+     * Sample query:
+     * http://host/api/metadata/discovery/search/fulltext?depth=1&property=Name&text=Zack
      */    
     // Comma separated list of types as qeury.
     @GET
     @Path("/search/fulltext")
     @Produces({MediaType.APPLICATION_JSON})
     public Response getFullTextResults(@QueryParam("text") final String searchText,
-            @DefaultValue("3") @QueryParam("depth") final int depth, @QueryParam("property") final String prop) {
+            @DefaultValue("1") @QueryParam("depth") final int depth, @QueryParam("property") final String prop) {
     	
         LOG.info("Performing full text search for vertices matching= {}", searchText);
-        validateInputs("Invalid argument: Either search text or types list passed is null or empty.", searchText, prop);
+        Preconditions.checkNotNull(searchText, "Invalid argument: \"text\" cannot be null.");
+        Preconditions.checkNotNull(prop, "Invalid argument: \"prop\" cannot be null.");
         
         /* Later - when we allow search limitation by "type".
         ArrayList<String> typesList = new ArrayList<String>();
@@ -169,7 +217,7 @@ public class MetadataDiscoveryResource {
         
        	for (Vertex v: getGraph().query().has(prop,searchText).vertices()) {
        		
-       		searchWalker(v, depth, 0, edges, vertices);
+       		searchWalker(v, depth, 0, edges, vertices, null);
        			
       	}
        	
@@ -185,13 +233,30 @@ public class MetadataDiscoveryResource {
 
     }
     
-    private void searchWalker (Vertex vtx, final int max, int counter, HashMap<String,Map<String,String>> e, HashMap<String,Map<String,String>> v) {
-    	 
-    	counter++;  
+    private static void searchWalker (Vertex vtx, final int max, int counter, HashMap<String,Map<String,String>> e, HashMap<String,Map<String,String>> v, String edgesToFollow) {
+    	
+    	counter++;
     	if (counter <= max) {
     		
     		Map<String,String> jsonVertexMap = new HashMap<String,String>();
-   			Iterator<Edge> edgeIterator = vtx.query().edges().iterator();
+    		Iterator<Edge> edgeIterator = null;
+    		
+    		// If we're doing a lineage traversal, only follow the edges specified by the query.  Otherwise
+    		// return them all.
+    		if (edgesToFollow != null) {
+    			IteratorChain ic = new IteratorChain();
+    			
+    			for (String iterateOn: edgesToFollow.split(",")){
+    				ic.addIterator(vtx.query().labels(iterateOn).edges().iterator());
+    			}
+    			
+    			edgeIterator = ic;
+    			
+    		} else {
+    			edgeIterator = vtx.query().edges().iterator();
+    		}
+    		
+   			//Iterator<Edge> edgeIterator = vtx.query().labels("Fathered").edges().iterator();
    			jsonVertexMap.put("HasRelationships", ((Boolean)edgeIterator.hasNext()).toString());
    			
    			for (String pKey: vtx.getPropertyKeys()) {
@@ -202,9 +267,10 @@ public class MetadataDiscoveryResource {
    			v.put(vtx.getId().toString(), jsonVertexMap);
    			
    			// Follow this Vertex's edges
-   			while (edgeIterator.hasNext()) {
-   				
+   			while (edgeIterator != null && edgeIterator.hasNext()) {
+   					   				
    				Edge edge = edgeIterator.next();
+   				String label = edge.getLabel();
    				
    				Map<String,String> jsonEdgeMap = new HashMap<String,String>();
    				String tail = edge.getVertex(Direction.OUT).getId().toString();
@@ -212,7 +278,7 @@ public class MetadataDiscoveryResource {
    				
    				jsonEdgeMap.put("tail", tail);
    	   			jsonEdgeMap.put("head", head);
-   	   			jsonEdgeMap.put("label", edge.getLabel());
+   	   			jsonEdgeMap.put("label", label);
    	   			
    	   			Direction d = null;
    	   			
@@ -229,9 +295,8 @@ public class MetadataDiscoveryResource {
    	   			}
    	   			*/
    	   			
-  	   			e.put(edge.getId().toString(), jsonEdgeMap);
- 			
-   	   			searchWalker (edge.getVertex(d), max, counter, e, v);
+  	   			e.put(edge.getId().toString(), jsonEdgeMap);   			
+   	   			searchWalker (edge.getVertex(d), max, counter, e, v, edgesToFollow);
    				
    			}
    			
