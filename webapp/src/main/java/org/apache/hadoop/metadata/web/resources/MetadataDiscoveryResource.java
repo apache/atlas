@@ -29,6 +29,7 @@ import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.discovery.DiscoveryService;
+import org.apache.hadoop.metadata.repository.graph.GraphHelper;
 import org.apache.hadoop.metadata.repository.graph.GraphService;
 import org.apache.hadoop.metadata.types.TypeSystem;
 import org.apache.hadoop.metadata.web.util.Servlets;
@@ -154,18 +155,23 @@ public class MetadataDiscoveryResource {
         
         // Parent JSON Object
         JSONObject response = new JSONObject();
-        
+
         // HashMaps, which contain sub JOSN Objects to be relayed back to the parent. 
         HashMap<String,Map<String,String>> vertices = new HashMap<String,Map<String,String>>();
         HashMap<String,Map<String,String>> edges = new HashMap<String,Map<String,String>>();
         
         // Get the Vertex with the specified GUID.
-        for (Vertex v: getGraph().query().has("guid", guid).vertices()) {
+        Vertex v = GraphHelper.findVertexByGUID(getGraph(), guid);
+        
+        if (v != null) {
         	searchWalker(v, depth, 0, edges, vertices, edgesToFollow);
+        	LOG.debug("Vertex {} found for guid {}", v, guid);
+        } else {
+        	LOG.debug("Vertex not found for guid {}", guid);
         }
-
         
    		try {
+            response.put("requestId", Thread.currentThread().getName());
    			response.put("vertices",vertices);
    			response.put("edges",edges);
    		} catch (JSONException e) {
@@ -215,13 +221,18 @@ public class MetadataDiscoveryResource {
         HashMap<String,Map<String,String>> vertices = new HashMap<String,Map<String,String>>();
         HashMap<String,Map<String,String>> edges = new HashMap<String,Map<String,String>>();
         
+        int resultCount = 0;
        	for (Vertex v: getGraph().query().has(prop,searchText).vertices()) {
        		
        		searchWalker(v, depth, 0, edges, vertices, null);
+       		resultCount++;
        			
       	}
        	
+       	LOG.debug("Search for {} returned {} results.", searchText ,resultCount);
+       	
    		try {
+            response.put("requestId", Thread.currentThread().getName());
    			response.put("vertices",vertices);
    			response.put("edges",edges);
    		} catch (JSONException e) {
@@ -305,15 +316,5 @@ public class MetadataDiscoveryResource {
     	
     }
     
-    private static void validateInputs(String errorMsg, String... inputs) {
-        for (String input : inputs) {
-            if (StringUtils.isEmpty(input)) {
-                throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST)
-                        .entity(errorMsg)
-                        .type("text/plain")
-                        .build());
-            }
-        }
-    }
 
 }
