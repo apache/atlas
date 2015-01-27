@@ -1,5 +1,3 @@
-package org.apache.hadoop.metadata.bridge.hivelineage.hook;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -18,6 +16,7 @@ package org.apache.hadoop.metadata.bridge.hivelineage.hook;
  * limitations under the License.
  */
 
+package org.apache.hadoop.metadata.bridge.hivelineage.hook;
 
 import java.io.IOException;
 import java.util.ArrayList;

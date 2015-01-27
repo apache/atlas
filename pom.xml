@@ -218,9 +218,12 @@
                                 <exclude>*.txt</exclude>
                                 <exclude>**/*.txt</exclude>
                                 <exclude>.git/**</exclude>
+                                <exclude>.gitignore</exclude>
                                 <exclude>**/.idea/**</exclude>
                                 <exclude>**/*.twiki</exclude>
                                 <exclude>**/*.iml</exclude>
+                                <exclude>**/*.json</exclude>
+                                <exclude>**/*.uml</exclude>
                                 <exclude>**/target/**</exclude>
                                 <exclude>**/activemq-data/**</exclude>
                                 <exclude>**/build/**</exclude>
@@ -250,15 +253,6 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-checkstyle-plugin</artifactId>
-<!--
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.apache.hadoop.metadata</groupId>
-                                <artifactId>checkstyle</artifactId>
-                                <version>${project.version}</version>
-                            </dependency>
-                        </dependencies>
--->
                         <executions>
                             <execution>
                                 <id>checkstyle-check</id>
@@ -269,9 +263,9 @@
                                 <configuration>
                                     <consoleOutput>true</consoleOutput>
                                     <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                                    <configLocation>build/checkstyle.xml</configLocation>
-                                    <headerLocation>build/checkstyle-java-header.txt</headerLocation>
-                                    <failOnViolation>true</failOnViolation>
+                                    <configLocation>src/build/checkstyle.xml</configLocation>
+                                    <headerLocation>src/build/checkstyle-java-header.txt</headerLocation>
+                                    <failOnViolation>false</failOnViolation>
                                 </configuration>
                             </execution>
                         </executions>
@@ -283,8 +277,8 @@
                         <configuration>
                             <!--debug>true</debug -->
                             <xmlOutput>true</xmlOutput>
-                            <excludeFilterFile>${basedir}/../build/checkstyle/findbugs-exclude.xml</excludeFilterFile>
-                            <failOnError>true</failOnError>
+                            <excludeFilterFile>${basedir}/../src/build/findbugs-exclude.xml</excludeFilterFile>
+                            <failOnError>false</failOnError>
                         </configuration>
                         <executions>
                             <execution>
@@ -296,6 +290,7 @@
                             </execution>
                         </executions>
                     </plugin>
+
                     <!-- Source code metrics: mvn javancss:report or mvn site -->
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
