@@ -26,7 +26,6 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.discovery.DiscoveryService;
 import org.apache.hadoop.metadata.repository.graph.GraphHelper;
@@ -178,7 +177,7 @@ public class MetadataDiscoveryResource {
    			throw new WebApplicationException(
                     Servlets.getErrorResponse("Search: Error building JSON result set.", Response.Status.INTERNAL_SERVER_ERROR));
    		}
-        
+        LOG.debug("JSON result:" + response.toString());
     	return Response.ok(response).build();
     }
     
@@ -239,7 +238,8 @@ public class MetadataDiscoveryResource {
    			throw new WebApplicationException(
                     Servlets.getErrorResponse("Search: Error building JSON result set.", Response.Status.INTERNAL_SERVER_ERROR));
    		}
-        		 
+        
+   		LOG.debug("JSON result:" + response.toString());
        	return Response.ok(response).build();
 
     }

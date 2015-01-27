@@ -59,19 +59,18 @@ public class MetadataDiscoveryResourceIT extends BaseResourceIT {
         
     }
     
-    @Test  (dependsOnMethods = "testFullTextUriExists", enabled = false)
+    @Test  (dependsOnMethods = "testFullTextUriExists")
     public void testSearchForText() throws Exception {
         WebResource resource = service
                 .path("api/metadata/discovery/search/fulltext")
-                .queryParam("depth", "3").queryParam("text","serde1").queryParam("property","name");
+                .queryParam("depth", "3").queryParam("text","bar").queryParam("property","hive_table.name");
 
         ClientResponse clientResponse = resource
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.GET, ClientResponse.class);
         
-        System.out.println(clientResponse.toString());
-        //TODO - Assure zero vertices and edges.
+        //TODO - Assure zero vertices and edges.        
         Assert.assertNotEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
         
     }
