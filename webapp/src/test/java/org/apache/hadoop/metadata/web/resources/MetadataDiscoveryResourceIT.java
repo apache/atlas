@@ -59,18 +59,19 @@ public class MetadataDiscoveryResourceIT extends BaseResourceIT {
         
     }
     
-    @Test  (dependsOnMethods = "testUriExists", enabled = false)
-    public void testSearchForNonExistentText() throws Exception {
+    @Test  (dependsOnMethods = "testFullTextUriExists")
+    public void testSearchForText() throws Exception {
         WebResource resource = service
                 .path("api/metadata/discovery/search/fulltext")
-                .queryParam("depth", "0").queryParam("text","foo").queryParam("property","Name");
+                .queryParam("depth", "3").queryParam("text","bar").queryParam("property","hive_table.name");
 
         ClientResponse clientResponse = resource
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.GET, ClientResponse.class);
-        //TODO - Assure zero vertices and edges.
-        Assert.assertEquals(true,true);
+        
+        //TODO - Assure zero vertices and edges.        
+        Assert.assertNotEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
         
     }
     
