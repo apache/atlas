@@ -9,7 +9,7 @@ import org.apache.hadoop.metadata.repository.MetadataRepository;
 public class HiveLineageBridge extends ABridge {
  
 	@Inject
-	public HiveLineageBridge(MetadataRepository mr) {
+	HiveLineageBridge(MetadataRepository mr) {
 		super(mr);
 		this.typeBeanClasses.add(HiveLineage.class);
 	}  

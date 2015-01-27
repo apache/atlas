@@ -94,7 +94,7 @@ public class BridgeManager {
 	}
 	
 	private final boolean loadTypes(ABridge bridge, TypeSystem ts) throws MetadataException{
-		for (Class<? extends AEnitityBean> clazz : bridge.getTypeBeanClasses()){
+		for (Class<? extends AEntityBean> clazz : bridge.getTypeBeanClasses()){
 			ts.defineClassType(BridgeManager.convertEntityBeanToClassTypeDefinition(clazz));
 		}
 		return false;
@@ -102,7 +102,7 @@ public class BridgeManager {
 		
 	}
 	
-	public final static HierarchicalTypeDefinition<ClassType> convertEntityBeanToClassTypeDefinition(Class<? extends AEnitityBean> class1){   
+	public final static HierarchicalTypeDefinition<ClassType> convertEntityBeanToClassTypeDefinition(Class<? extends AEntityBean> class1){   
 		ArrayList<AttributeDefinition> attDefAL = new ArrayList<AttributeDefinition>();
 		for (Field f: class1.getFields()){
 			try {

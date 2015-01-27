@@ -26,13 +26,13 @@ import com.google.common.collect.ImmutableList;
 
 public abstract class ABridge implements IBridge {
 
-	protected ArrayList<Class<? extends AEnitityBean>> typeBeanClasses = new ArrayList<Class<? extends AEnitityBean>>();
+	protected ArrayList<Class<? extends AEntityBean>> typeBeanClasses = new ArrayList<Class<? extends AEntityBean>>();
 	MetadataRepository repo;
 	
 	protected static final Logger LOG = BridgeManager.LOG;
 	protected HierarchicalTypeDefinition<ClassType> createClassTypeDef(String name, ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {return new HierarchicalTypeDefinition(ClassType.class, name, superTypes, attrDefs);}
 	
-	public ArrayList<Class<? extends AEnitityBean>> getTypeBeanClasses() {
+	public ArrayList<Class<? extends AEntityBean>> getTypeBeanClasses() {
 		return typeBeanClasses;
 	}
 	
@@ -41,12 +41,12 @@ public abstract class ABridge implements IBridge {
 	                  this.repo = repo;
 	  }
 
-	public AEnitityBean get(String id) throws RepositoryException {
+	public AEntityBean get(String id) throws RepositoryException {
 		// get from the system by id (?)
 		ITypedReferenceableInstance ref = repo.getEntityDefinition(id);
 		// turn into a HiveLineageBean
 		try {
-			Class<AEnitityBean> c = getTypeBeanInListByName(ref.getTypeName());
+			Class<AEntityBean> c = getTypeBeanInListByName(ref.getTypeName());
 			return this.convertFromITypedReferenceable(ref, getTypeBeanInListByName(ref.getTypeName()));
 		} catch (BridgeException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
 			// TODO Auto-generated catch block
@@ -55,7 +55,7 @@ public abstract class ABridge implements IBridge {
 		return null;
 	}
 
-	public String create(AEnitityBean bean) throws MetadataException {
+	public String create(AEntityBean bean) throws MetadataException {
 
 		ClassType type = TypeSystem.getInstance().getDataType(ClassType.class, bean.getClass().getSimpleName());
         ITypedReferenceableInstance refBean = null;
@@ -90,7 +90,7 @@ public abstract class ABridge implements IBridge {
 		return false;
 	}
 	
-	protected final Class<AEnitityBean> getTypeBeanInListByName(String s) throws BridgeException{
+	protected final Class<AEntityBean> getTypeBeanInListByName(String s) throws BridgeException{
 		if (containsType(s)){
 			for (Class c: typeBeanClasses){
 				if (c.getSimpleName().equals(s)){
@@ -103,7 +103,7 @@ public abstract class ABridge implements IBridge {
 		throw new BridgeException("No EntityBean Definition Found");
 	}
 	
-	protected final <T extends AEnitityBean> Referenceable convertToReferencable(T o ) throws IllegalArgumentException, IllegalAccessException{
+	protected final <T extends AEntityBean> Referenceable convertToReferencable(T o ) throws IllegalArgumentException, IllegalAccessException{
 		Referenceable selfAware = new Referenceable(o.getClass().getSimpleName());
 		for(Field f : o.getClass().getFields()){
 			selfAware.set(f.getName(), f.get(o));
@@ -111,7 +111,7 @@ public abstract class ABridge implements IBridge {
 		return selfAware;
 	}
 	
-	protected final <T extends AEnitityBean>T convertFromITypedReferenceable(ITypedReferenceableInstance instance, Class<? extends AEnitityBean> c) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, BridgeException{
+	protected final <T extends AEntityBean>T convertFromITypedReferenceable(ITypedReferenceableInstance instance, Class<? extends AEntityBean> c) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, BridgeException{
 		if(!instance.getTypeName().equals(c.getSimpleName())){
 			throw new BridgeException("ReferenceableInstance type not the same as bean");
 		}

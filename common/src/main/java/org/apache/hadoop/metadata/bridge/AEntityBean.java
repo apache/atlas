@@ -1,5 +1,5 @@
 package org.apache.hadoop.metadata.bridge;
 
-public abstract class AEnitityBean {
+public abstract class AEntityBean {
 	
 }
