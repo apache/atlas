@@ -29,9 +29,11 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import com.thinkaurelius.titan.core.PropertyKey;
+
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.hadoop.metadata.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +59,9 @@ public class TitanGraphService implements GraphService {
 	 */
 	private static final String INDEXER_PREFIX = "metadata.indexer.vertex.";
 	private static final List<String> acceptedTypes = Arrays.asList("String", "Int", "Long");
+
+	// TODO - When we get the TypeSystem to return types, this will support the commented code block below.
+	//private static final TypeSystem typeSystem = TypeSystem.getInstance();
 
 	private final TitanGraph titanGraph;
 
@@ -110,6 +115,7 @@ public class TitanGraphService implements GraphService {
 		return graphConfig;
 	}
 
+	
 	/**
 	 * Initializes the indices for the graph.
 	 * @throws ConfigurationException
@@ -141,8 +147,47 @@ public class TitanGraphService implements GraphService {
 		mgmt.buildIndex("byType", Vertex.class)
 				.addKey(typeKey)
 				.buildCompositeIndex();
+		
+		//TODO - Once we can get the TypeSystem to give me actual types, the below will be modified and replace the current
+		//indexer config.
+/*		
+		Iterator<String>  i = typeSystem.getTypeNames().iterator();
+		
+		// Get a list of property names to iterate through...
+		List<String> propList = new ArrayList<>();
+		
+		
+		while (i.hasNext()) {
+			
+			String currType = i.next();
+			
+			Iterator<String> typeDefIterator = null;
+			
+			while (typeDefIterator.hasNext()) {
 
+				// Pull the property name and index, so we can register the name
+				// and look up the type.
+				String prop = "";
+				String type = "";
+				boolean isUnique = false;
+								
+				// Add the key.
+				
+				LOG.info("Adding property: " + prop + " to index as type: "
+						+ type);
+				mgmt.addIndexKey(graphIndex, mgmt.makePropertyKey(prop)
+						.dataType(type.getClass()).make());
+				
+			}
+
+			mgmt.commit();
+			LOG.info("Index creation complete.");
+		}
+
+		
+*/
         Configuration indexConfig = getConfiguration("indexer.properties", INDEXER_PREFIX);
+        
         // Properties are formatted: prop_name:type;prop_name:type
 		// E.g. Name:String;Date:Long
 		if (!indexConfig.isEmpty()) {
@@ -196,6 +241,7 @@ public class TitanGraphService implements GraphService {
 			mgmt.commit();
 			LOG.info("Index creation complete.");
 		}
+
 	}
 
 	/**
