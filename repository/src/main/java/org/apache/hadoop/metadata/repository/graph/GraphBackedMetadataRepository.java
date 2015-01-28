@@ -463,7 +463,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             LOG.debug("Mapping instance {} to vertex {} for name {}",
                     typedInstance.getTypeName(), instanceVertex, attributeInfo.name);
             List list = (List) typedInstance.get(attributeInfo.name);
-            if (list == null) {
+            if (list == null || list.isEmpty()) {
                 return;
             }
 
@@ -495,7 +495,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                     typedInstance.getTypeName(), instanceVertex, attributeInfo.name);
             @SuppressWarnings("unchecked")
             Map<Object, Object> collection = (Map<Object, Object>) typedInstance.get(attributeInfo.name);
-            if (collection == null) {
+            if (collection == null || collection.isEmpty()) {
                 return;
             }
 
