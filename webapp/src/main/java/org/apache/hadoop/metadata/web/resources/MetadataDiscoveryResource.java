@@ -18,18 +18,10 @@
 
 package org.apache.hadoop.metadata.web.resources;
 
-import org.apache.commons.collections.iterators.IteratorChain;
-
 import com.google.common.base.Preconditions;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Graph;
-import com.tinkerpop.blueprints.Vertex;
 
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.discovery.DiscoveryService;
-import org.apache.hadoop.metadata.repository.graph.GraphHelper;
-import org.apache.hadoop.metadata.repository.graph.GraphService;
 import org.apache.hadoop.metadata.types.TypeSystem;
 import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
@@ -51,10 +43,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Jersey Resource for metadata operations.
@@ -78,31 +68,17 @@ public class MetadataDiscoveryResource {
     
     public static final List<String> typesList = TypeSystem.getInstance().getTypeNames();
     
-    private final GraphService graphService;
-    /**
+     /**
      * Created by the Guice ServletModule and injected with the
      * configured DiscoveryService.
      *
      * @param discoveryService metadata service handle
      */
     @Inject
-    public MetadataDiscoveryResource(GraphService graphService, DiscoveryService discoveryService) {
-    	this.graphService = graphService;
+    public MetadataDiscoveryResource(DiscoveryService discoveryService) {
     	this.discoveryService = discoveryService;
     }
-
-    protected Graph getGraph() {
-        return graphService.getBlueprintsGraph();
-    }
-
-    protected Set<String> getVertexIndexedKeys() {
-        return graphService.getVertexIndexedKeys();
-    }
-
-    protected Set<String> getEdgeIndexedKeys() {
-        return graphService.getEdgeIndexedKeys();
-    }
-    
+   
     @GET
     @Path("search/gremlin/{gremlinQuery}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -154,25 +130,16 @@ public class MetadataDiscoveryResource {
         
         // Parent JSON Object
         JSONObject response = new JSONObject();
-
-        // HashMaps, which contain sub JOSN Objects to be relayed back to the parent. 
-        HashMap<String,Map<String,String>> vertices = new HashMap<String,Map<String,String>>();
-        HashMap<String,Map<String,String>> edges = new HashMap<String,Map<String,String>>();
-        
-        // Get the Vertex with the specified GUID.
-        Vertex v = GraphHelper.findVertexByGUID(getGraph(), guid);
-        
-        if (v != null) {
-        	searchWalker(v, depth, 0, edges, vertices, edgesToFollow);
-        	LOG.debug("Vertex {} found for guid {}", v, guid);
-        } else {
-        	LOG.debug("Vertex not found for guid {}", guid);
-        }
+        Map<String, HashMap<String, Map<String, String>>> resultMap = discoveryService.relationshipWalk(guid, depth, edgesToFollow);
         
    		try {
             response.put("requestId", Thread.currentThread().getName());
-   			response.put("vertices",vertices);
-   			response.put("edges",edges);
+   			if (resultMap.containsKey("vertices")) {
+   				response.put("vertices",resultMap.get("vertices"));
+   			}
+   			if (resultMap.containsKey("edges")) {
+   				response.put("edges",resultMap.get("edges"));
+   			}
    		} catch (JSONException e) {
    			throw new WebApplicationException(
                     Servlets.getErrorResponse("Search: Error building JSON result set.", Response.Status.INTERNAL_SERVER_ERROR));
@@ -196,7 +163,7 @@ public class MetadataDiscoveryResource {
     public Response getFullTextResults(@QueryParam("text") final String searchText,
             @DefaultValue("1") @QueryParam("depth") final int depth, @QueryParam("property") final String prop) {
     	
-        LOG.info("Performing full text search for vertices matching= {}", searchText);
+        LOG.info("Performing full text search for vertices with property {} matching= {}", prop, searchText);
         Preconditions.checkNotNull(searchText, "Invalid argument: \"text\" cannot be null.");
         Preconditions.checkNotNull(prop, "Invalid argument: \"prop\" cannot be null.");
         
@@ -215,25 +182,17 @@ public class MetadataDiscoveryResource {
         
         // Parent JSON Object
         JSONObject response = new JSONObject();
-        
-        // HashMaps, which contain sub JOSN Objects to be relayed back to the parent. 
-        HashMap<String,Map<String,String>> vertices = new HashMap<String,Map<String,String>>();
-        HashMap<String,Map<String,String>> edges = new HashMap<String,Map<String,String>>();
-        
-        int resultCount = 0;
-       	for (Vertex v: getGraph().query().has(prop,searchText).vertices()) {
-       		
-       		searchWalker(v, depth, 0, edges, vertices, null);
-       		resultCount++;
-       			
-      	}
-       	
-       	LOG.debug("Search for {} returned {} results.", searchText ,resultCount);
-       	
+                
+        Map<String, HashMap<String, Map<String, String>>> resultMap = discoveryService.textSearch(searchText, depth, prop);
+            	
    		try {
             response.put("requestId", Thread.currentThread().getName());
-   			response.put("vertices",vertices);
-   			response.put("edges",edges);
+   			if (resultMap.containsKey("vertices")) {
+   				response.put("vertices",resultMap.get("vertices"));
+   			}
+   			if (resultMap.containsKey("edges")) {
+   				response.put("edges",resultMap.get("edges"));
+   			}
    		} catch (JSONException e) {
    			throw new WebApplicationException(
                     Servlets.getErrorResponse("Search: Error building JSON result set.", Response.Status.INTERNAL_SERVER_ERROR));
@@ -243,78 +202,5 @@ public class MetadataDiscoveryResource {
        	return Response.ok(response).build();
 
     }
-    
-    private static void searchWalker (Vertex vtx, final int max, int counter, HashMap<String,Map<String,String>> e, HashMap<String,Map<String,String>> v, String edgesToFollow) {
-    	
-    	counter++;
-    	if (counter <= max) {
-    		
-    		Map<String,String> jsonVertexMap = new HashMap<String,String>();
-    		Iterator<Edge> edgeIterator = null;
-    		
-    		// If we're doing a lineage traversal, only follow the edges specified by the query.  Otherwise
-    		// return them all.
-    		if (edgesToFollow != null) {
-    			IteratorChain ic = new IteratorChain();
-    			
-    			for (String iterateOn: edgesToFollow.split(",")){
-    				ic.addIterator(vtx.query().labels(iterateOn).edges().iterator());
-    			}
-    			
-    			edgeIterator = ic;
-    			
-    		} else {
-    			edgeIterator = vtx.query().edges().iterator();
-    		}
-    		
-   			//Iterator<Edge> edgeIterator = vtx.query().labels("Fathered").edges().iterator();
-   			jsonVertexMap.put("HasRelationships", ((Boolean)edgeIterator.hasNext()).toString());
-   			
-   			for (String pKey: vtx.getPropertyKeys()) {
-   				jsonVertexMap.put(pKey, vtx.getProperty(pKey).toString());
-   			}
-   			
-   			// Add to the Vertex map.
-   			v.put(vtx.getId().toString(), jsonVertexMap);
-   			
-   			// Follow this Vertex's edges
-   			while (edgeIterator != null && edgeIterator.hasNext()) {
-   					   				
-   				Edge edge = edgeIterator.next();
-   				String label = edge.getLabel();
-   				
-   				Map<String,String> jsonEdgeMap = new HashMap<String,String>();
-   				String tail = edge.getVertex(Direction.OUT).getId().toString();
-   				String head = edge.getVertex(Direction.IN).getId().toString();
-   				
-   				jsonEdgeMap.put("tail", tail);
-   	   			jsonEdgeMap.put("head", head);
-   	   			jsonEdgeMap.put("label", label);
-   	   			
-   	   			Direction d = null;
-   	   			
-   	   			if (tail.equals(vtx.getId().toString())) {
-   	   				d = Direction.IN;
-   	   			} else {
-   	   				d = Direction.OUT;
-   	   			}
-   	   			
-   	   			/* If we want an Edge's property keys, uncomment here.  Or we can parameterize it.
-   	   			 * Code is here now for reference/memory-jogging.
-   				for (String pKey: edge.getPropertyKeys()) {
-   	   				jsonEdgeMap.put(pKey, edge.getProperty(pKey).toString());
-   	   			}
-   	   			*/
-   	   			
-  	   			e.put(edge.getId().toString(), jsonEdgeMap);   			
-   	   			searchWalker (edge.getVertex(d), max, counter, e, v, edgesToFollow);
-   				
-   			}
-   			
-   			
-    	} 
-    	
-    }
-    
 
 }

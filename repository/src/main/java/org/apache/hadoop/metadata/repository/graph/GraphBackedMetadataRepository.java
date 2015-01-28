@@ -18,6 +18,7 @@
 
 package org.apache.hadoop.metadata.repository.graph;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
@@ -26,6 +27,8 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
+
+import org.apache.commons.collections.iterators.IteratorChain;
 import org.apache.hadoop.metadata.IReferenceableInstance;
 import org.apache.hadoop.metadata.ITypedInstance;
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
@@ -52,6 +55,7 @@ import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -178,6 +182,140 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         }
 
         return entityList;
+    }
+    
+    private static void searchWalker (Vertex vtx, final int max, int counter, HashMap<String,Map<String,String>> e, HashMap<String,Map<String,String>> v, String edgesToFollow) {
+    	
+    	counter++;
+    	if (counter <= max) {
+    		
+    		Map<String,String> jsonVertexMap = new HashMap<String,String>();
+    		Iterator<Edge> edgeIterator = null;
+    		
+    		// If we're doing a lineage traversal, only follow the edges specified by the query.  Otherwise
+    		// return them all.
+    		if (edgesToFollow != null) {
+    			IteratorChain ic = new IteratorChain();
+    			
+    			for (String iterateOn: edgesToFollow.split(",")){
+    				ic.addIterator(vtx.query().labels(iterateOn).edges().iterator());
+    			}
+    			
+    			edgeIterator = ic;
+    			
+    		} else {
+    			edgeIterator = vtx.query().edges().iterator();
+    		}
+    		
+   			//Iterator<Edge> edgeIterator = vtx.query().labels("Fathered").edges().iterator();
+   			jsonVertexMap.put("HasRelationships", ((Boolean)edgeIterator.hasNext()).toString());
+   			
+   			for (String pKey: vtx.getPropertyKeys()) {
+   				jsonVertexMap.put(pKey, vtx.getProperty(pKey).toString());
+   			}
+   			
+   			// Add to the Vertex map.
+   			v.put(vtx.getId().toString(), jsonVertexMap);
+   			
+   			// Follow this Vertex's edges
+   			while (edgeIterator != null && edgeIterator.hasNext()) {
+   					   				
+   				Edge edge = edgeIterator.next();
+   				String label = edge.getLabel();
+   				
+   				Map<String,String> jsonEdgeMap = new HashMap<String,String>();
+   				String tail = edge.getVertex(Direction.OUT).getId().toString();
+   				String head = edge.getVertex(Direction.IN).getId().toString();
+   				
+   				jsonEdgeMap.put("tail", tail);
+   	   			jsonEdgeMap.put("head", head);
+   	   			jsonEdgeMap.put("label", label);
+   	   			
+   	   			Direction d = null;
+   	   			
+   	   			if (tail.equals(vtx.getId().toString())) {
+   	   				d = Direction.IN;
+   	   			} else {
+   	   				d = Direction.OUT;
+   	   			}
+   	   			
+   	   			/* If we want an Edge's property keys, uncomment here.  Or we can parameterize it.
+   	   			 * Code is here now for reference/memory-jogging.
+   				for (String pKey: edge.getPropertyKeys()) {
+   	   				jsonEdgeMap.put(pKey, edge.getProperty(pKey).toString());
+   	   			}
+   	   			*/
+   	   			
+  	   			e.put(edge.getId().toString(), jsonEdgeMap);   			
+   	   			searchWalker (edge.getVertex(d), max, counter, e, v, edgesToFollow);
+   				
+   			}
+   			
+   			
+    	} 
+    	
+    }
+    
+    
+    /*
+     * Simple direct graph search and depth traversal.
+     * @param searchText is plain text
+     * @param prop is the Vertex property to search.
+     */
+    @Override
+    public Map<String,HashMap<String,Map<String,String>>> textSearch(String searchText, int depth, String prop) {
+ 
+    	
+    	HashMap<String,HashMap<String,Map<String,String>>> result = new HashMap<String,HashMap<String,Map<String,String>>>();  
+    	
+    	// HashMaps, which contain sub JOSN Objects to be relayed back to the parent. 
+        HashMap<String,Map<String,String>> vertices = new HashMap<String,Map<String,String>>();
+        HashMap<String,Map<String,String>> edges = new HashMap<String,Map<String,String>>();
+        
+        int resultCount = 0;
+       	for (Vertex v: graphService.getBlueprintsGraph().query().has(prop,searchText).vertices()) {
+       		
+       		searchWalker(v, depth, 0, edges, vertices, null);
+       		resultCount++;
+       			
+      	}
+       	
+       	LOG.debug("Search for {} returned {} results.", searchText ,resultCount);   
+       	
+       	result.put("vertices", vertices);
+       	result.put("edges",edges);
+       	
+       	return result;
+    }
+    
+    /*
+     * Simple graph walker for search interface, which allows following of specific edges only.
+     * @param edgesToFollow is a comma-separated-list of edges to follow.
+     */
+    @Override
+    public Map<String,HashMap<String,Map<String,String>>> relationshipWalk(String guid, int depth, String edgesToFollow) {
+	
+    	HashMap<String,HashMap<String,Map<String,String>>> result = new HashMap<String,HashMap<String,Map<String,String>>>();
+    	
+        // HashMaps, which contain sub JOSN Objects to be relayed back to the parent. 
+        HashMap<String,Map<String,String>> vertices = new HashMap<String,Map<String,String>>();
+        HashMap<String,Map<String,String>> edges = new HashMap<String,Map<String,String>>();
+        
+        // Get the Vertex with the specified GUID.
+        Vertex v = GraphHelper.findVertexByGUID(graphService.getBlueprintsGraph(), guid);
+        
+        if (v != null) {
+        	searchWalker(v, depth, 0, edges, vertices, edgesToFollow);
+        	LOG.debug("Vertex {} found for guid {}", v, guid);
+        } else {
+        	LOG.debug("Vertex not found for guid {}", guid);
+        }
+        
+       	result.put("vertices", vertices);
+       	result.put("edges",edges);
+       	
+       	return result;
+        
     }
 
     /**

@@ -19,10 +19,13 @@
 package org.apache.hadoop.metadata.discovery;
 
 import com.google.common.base.Preconditions;
+
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
 
 import javax.inject.Inject;
+
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -50,4 +53,23 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
         // simple pass-through
         return repository.searchByGremlin(gremlinQuery);
     }
+    
+    @Override
+    public Map<String, HashMap<String,Map<String,String>>> textSearch(String searchText, int depth, String prop) {
+        Preconditions.checkNotNull(searchText, "Invalid argument: \"text\" cannot be null.");
+        Preconditions.checkNotNull(prop, "Invalid argument: \"prop\" cannot be null.");
+    	
+        return repository.textSearch(searchText, depth, prop);
+    }
+    
+    @Override
+    public Map<String, HashMap<String,Map<String,String>>> relationshipWalk(String guid, int depth, String edgesToFollow) {
+        Preconditions.checkNotNull(guid, "Invalid argument: \"guid\" cannot be null.");
+        Preconditions.checkNotNull(edgesToFollow, "Invalid argument: \"edgesToFollow\" cannot be null.");
+        
+        return repository.relationshipWalk(guid, depth, edgesToFollow);
+    	
+    }
+    
+    
 }

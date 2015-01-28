@@ -20,6 +20,7 @@ package org.apache.hadoop.metadata.discovery;
 
 import org.apache.hadoop.metadata.MetadataException;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -38,5 +39,9 @@ public interface DiscoveryService {
      * @throws org.apache.hadoop.metadata.MetadataException
      */
     List<Map<String,String>> searchByGremlin(String gremlinQuery) throws MetadataException;
+    
+    
+    Map<String, HashMap<String,Map<String,String>>> textSearch(String searchText, int depth, String prop);
+    Map<String, HashMap<String,Map<String,String>>> relationshipWalk(String guid, int depth, String edgesToFollow);
 
 }

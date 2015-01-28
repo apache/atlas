@@ -24,6 +24,7 @@ import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.service.Service;
 import org.apache.hadoop.metadata.storage.RepositoryException;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -49,4 +50,7 @@ public interface MetadataRepository extends Service {
      * @throws org.apache.hadoop.metadata.MetadataException
      */
     List<Map<String,String>> searchByGremlin(String gremlinQuery) throws MetadataException;
+    
+    Map<String,HashMap<String,Map<String,String>>> textSearch(String searchText, int depth, String prop);
+    Map<String,HashMap<String,Map<String,String>>> relationshipWalk(String guid, int depth, String edgesToFollow);
 }
