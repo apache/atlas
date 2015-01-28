@@ -18,20 +18,17 @@
 
 package org.apache.hadoop.metadata.bridge.hivelineage;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.io.InputStreamReader;
 import java.util.List;
 
 import javax.inject.Inject;
 
 import org.apache.commons.collections.IteratorUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.RepositoryMetadataModule;
+import org.apache.hadoop.metadata.bridge.BridgeTypeBootstrapper;
 import org.apache.hadoop.metadata.bridge.hivelineage.hook.HiveLineage;
-import org.apache.hadoop.metadata.repository.MetadataRepository;
+import org.apache.hadoop.metadata.bridge.module.BridgeModule;
 import org.apache.hadoop.metadata.storage.RepositoryException;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
@@ -40,29 +37,28 @@ import org.testng.annotations.Test;
 
 import com.google.gson.Gson;
 
-@Test(enabled = false)
-@Guice(modules = RepositoryMetadataModule.class)
+@Guice(modules = { BridgeModule.class })
 public class TestHiveLineageBridge {
+	
+	@Inject
+	HiveLineageBridge bridge;
 
 	@Inject
-	MetadataRepository repo;
+	BridgeTypeBootstrapper bootstrapper;
 
-	HiveLineageBridge bridge;
 	HiveLineage hlb;
 
 	// the id of one.json in the repo (test #1)
 	String oneId;
+	
+	private HiveLineage loadHiveLineageBean(String path) throws IOException {
+		return new Gson().fromJson(new InputStreamReader(this.getClass().getResourceAsStream(path)), HiveLineage.class);
+	}
 
 	@BeforeClass
-	public void bootstrap() throws IOException {
-		// this used in lieu of DI for now
-		bridge = new HiveLineageBridge(repo);
-
-		// create a hive lineage bean
-		FileInputStream fis = new FileInputStream("one.json");
-		List<String> lines = IOUtils.readLines(fis);
-		String json = StringUtils.join(lines, "");
-		hlb = new Gson().fromJson(json, HiveLineage.class);
+	public void bootstrap() throws IOException, MetadataException {
+		bootstrapper.bootstrap();
+		hlb = loadHiveLineageBean("/one.json");
 	}
 
 	@Test(priority = 1, enabled = false)
@@ -84,7 +80,7 @@ public class TestHiveLineageBridge {
 	@Test(priority = 3, enabled = false)
 	public void testList() throws RepositoryException {
 		List<String> list = IteratorUtils.toList(bridge.list().iterator());
-		
+
 		Assert.assertEquals(list.size(), 1);
 		Assert.assertEquals(list.get(0), oneId);
 	}

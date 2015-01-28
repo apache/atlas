@@ -50,7 +50,6 @@ import java.util.List;
  * Guice loads the dependencies and injects the necessary objects
  *
  */
-@Test
 @Guice(modules = RepositoryMetadataModule.class)
 public class GraphBackedMetadataRepositoryTest {
 
@@ -76,7 +75,7 @@ public class GraphBackedMetadataRepositoryTest {
         defineDeptEmployeeTypes(ts);
     }
 
-    @Test
+    @Test(enabled = false)
     public void testSubmitEntity() throws Exception {
         Referenceable hrDept = createDeptEg1(ts);
         ClassType deptType = ts.getDataType(ClassType.class, "Department");
@@ -98,7 +97,7 @@ public class GraphBackedMetadataRepositoryTest {
         }
     }
 
-    @Test(dependsOnMethods = "testSubmitEntity")
+    @Test(dependsOnMethods = "testSubmitEntity", enabled = false)
     public void testGetEntityDefinition() throws Exception {
         ITypedReferenceableInstance entity = repositoryService.getEntityDefinition(guid);
         Assert.assertNotNull(entity);
@@ -110,14 +109,14 @@ public class GraphBackedMetadataRepositoryTest {
         Assert.assertNull(entity);
     }
 
-    @Test
+    @Test(enabled = false)
     public void testGetEntityList() throws Exception {
         List<String> entityList = repositoryService.getEntityList(ENTITY_TYPE);
         Assert.assertNotNull(entityList);
         Assert.assertEquals(entityList.size(), 1); // one department
     }
 
-    @Test
+    @Test(enabled = false)
     public void testRawSearch1() throws Exception {
         Referenceable hrDept = createDeptEg1(ts);
         ClassType deptType = ts.getDataType(ClassType.class, "Department");

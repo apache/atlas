@@ -54,7 +54,6 @@ public abstract class ABridge implements IBridge {
 		return typeBeanClasses;
 	}
 	
-	@Inject
 	protected ABridge(MetadataRepository repo) {
 	                  this.repo = repo;
 	  }
@@ -123,6 +122,7 @@ public abstract class ABridge implements IBridge {
 	
 	protected final <T extends AEntityBean> Referenceable convertToReferencable(T o ) throws IllegalArgumentException, IllegalAccessException{
 		Referenceable selfAware = new Referenceable(o.getClass().getSimpleName());
+		// TODO - support non-primitive types and deep inspection
 		for(Field f : o.getClass().getFields()){
 			selfAware.set(f.getName(), f.get(o));
 		}
@@ -146,7 +146,4 @@ public abstract class ABridge implements IBridge {
 		}
 		return (T)retObj;
 	}
-	
-
-
 }

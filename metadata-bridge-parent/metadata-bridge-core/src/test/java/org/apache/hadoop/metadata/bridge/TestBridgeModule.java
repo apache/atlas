@@ -18,40 +18,17 @@
 
 package org.apache.hadoop.metadata.bridge;
 
-import javax.inject.Inject;
-
-import org.apache.hadoop.metadata.RepositoryMetadataModule;
-import org.apache.hadoop.metadata.repository.MetadataRepository;
+import org.apache.hadoop.metadata.bridge.module.BridgeModule;
 import org.testng.Assert;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
+@Guice(modules = { BridgeModule.class })
+public class TestBridgeModule {
 
-@Guice(modules = RepositoryMetadataModule.class)
-public class BridgeManagerTest{
-
-	@Inject
-	MetadataRepository repo;
-	
-	@Test(enabled = false)
-	public void testLoadPropertiesFile() throws Exception {
-	BridgeManager bm = new BridgeManager(repo);
-	System.out.println(bm.getActiveBridges().size());
-	
-	Assert.assertEquals(bm.activeBridges.get(0).getClass().getSimpleName(),"HiveLineageBridge");
-	}
-	
 	@Test
-	public void testBeanConvertion(){
-
-		//Tests Conversion of Bean to Type
+	public void loadAnything() {
+		// if it makes it here, the BridgeModule loaded successfully
+		Assert.assertTrue(true);
 	}
-	
-	@Test
-	public void testIRefConvertion(){
-
-		//Tests Conversion of IRef cast to Bean
-	}
-	
-	
 }

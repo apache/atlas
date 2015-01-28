@@ -18,6 +18,8 @@
 
 package org.apache.hadoop.metadata.bridge;
 
-public interface IBridge {
+import java.util.ArrayList;
 
+public interface IBridge {
+	ArrayList<Class<? extends AEntityBean>> getTypeBeanClasses();
 }

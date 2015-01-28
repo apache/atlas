@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.hadoop.metadata.RepositoryMetadataModule;
+import org.apache.hadoop.metadata.bridge.BridgeTypeBootstrapper;
 import org.apache.hadoop.metadata.repository.graph.GraphService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,6 +78,16 @@ public class GuiceServletConfig extends GuiceServletContextListener {
 		LOG.info(String.format("Loaded Service: %s", graphService.getClass().getName()));
 		
 		LOG.info("Services bootstrapped successfully");
+		LOG.info("Bootstrapping types into Type System");
+		
+		BridgeTypeBootstrapper bootstrapper = injector.getInstance(BridgeTypeBootstrapper.class);
+		try {
+			bootstrapper.bootstrap();
+		} catch(Exception e) {
+			throw new RuntimeException(e);
+		}
+		
+		LOG.info("Types bootstrapped successfully");
 		
 		return injector;
 	}
