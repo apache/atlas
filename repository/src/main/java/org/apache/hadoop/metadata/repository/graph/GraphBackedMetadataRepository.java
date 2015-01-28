@@ -932,7 +932,9 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             LOG.debug("mapping vertex {} to array {}", instanceVertex, attributeInfo.name);
             String propertyName = typedInstance.getTypeName() + "." + attributeInfo.name;
             String keys = instanceVertex.getProperty(propertyName);
-
+            if (keys == null || keys.length() == 0) {
+                return;
+            }
             DataTypes.ArrayType arrayType = (DataTypes.ArrayType) attributeInfo.dataType();
             final IDataType elementType = arrayType.getElemType();
 
@@ -983,7 +985,9 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             LOG.debug("mapping vertex {} to array {}", instanceVertex, attributeInfo.name);
             String propertyName = typedInstance.getTypeName() + "." + attributeInfo.name;
             String keys = instanceVertex.getProperty(propertyName);
-
+            if (keys == null || keys.length() == 0) {
+                return;
+            }
             DataTypes.MapType mapType = (DataTypes.MapType) attributeInfo.dataType();
             final IDataType elementType = mapType.getValueType();
 

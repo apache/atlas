@@ -61,7 +61,6 @@ public class HiveTypeSystem {
 
         // Structs
         HIVE_SERDE,
-        HIVE_STORAGEDESC,
         HIVE_SKEWEDINFO,
         HIVE_ORDER,
         HIVE_RESOURCEURI,
@@ -69,6 +68,7 @@ public class HiveTypeSystem {
 
         // Classes
         HIVE_DB,
+        HIVE_STORAGEDESC,
         HIVE_TABLE,
         HIVE_COLUMN,
         HIVE_PARTITION,
@@ -122,7 +122,7 @@ public class HiveTypeSystem {
         //createSkewedInfoStruct();
         createOrderStruct();
         createResourceUriStruct();
-        createStorageDescStruct();
+        createStorageDescClass();
 
         createDBClass();
         createTypeClass();
@@ -168,6 +168,7 @@ public class HiveTypeSystem {
         if (valid) {
             return ImmutableList.of(
                     (HierarchicalType) typeMap.get(DefinedTypes.HIVE_DB.name()),
+                    (HierarchicalType) typeMap.get(DefinedTypes.HIVE_STORAGEDESC.name()),
                     (HierarchicalType) typeMap.get(DefinedTypes.HIVE_TABLE.name()),
                     (HierarchicalType) typeMap.get(DefinedTypes.HIVE_COLUMN.name()),
                     (HierarchicalType) typeMap.get(DefinedTypes.HIVE_PARTITION.name()),
@@ -300,7 +301,7 @@ public class HiveTypeSystem {
 
 
 
-    private void createStorageDescStruct() throws MetadataException {
+    private void createStorageDescClass() throws MetadataException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition("cols", String.format("array<%s>", DefinedTypes.HIVE_COLUMN.name()), Multiplicity.COLLECTION, false, null),
                 new AttributeDefinition("location", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
@@ -316,11 +317,10 @@ public class HiveTypeSystem {
                 new AttributeDefinition("storedAsSubDirectories", DataTypes.BOOLEAN_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
 
         };
-
-        StructTypeDefinition definition =
-                new StructTypeDefinition(DefinedTypes.HIVE_STORAGEDESC.name(), attributeDefinitions);
-
-        structTypeDefinitionMap.put(DefinedTypes.HIVE_STORAGEDESC.name(), definition);
+        HierarchicalTypeDefinition<ClassType> definition =
+                new HierarchicalTypeDefinition<>(ClassType.class, DefinedTypes.HIVE_STORAGEDESC.name(),
+                        null, attributeDefinitions);
+        classTypeDefinitions.put(DefinedTypes.HIVE_STORAGEDESC.name(), definition);
         LOG.debug("Created definition for " + DefinedTypes.HIVE_STORAGEDESC.name());
 
     }
@@ -401,8 +401,8 @@ public class HiveTypeSystem {
                 new AttributeDefinition("createTime", DataTypes.INT_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("lastAccessTime", DataTypes.INT_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("sd", DefinedTypes.HIVE_STORAGEDESC.name(), Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("columns", String.format("array<%s>", DefinedTypes.HIVE_COLUMN.name()),
-                        Multiplicity.COLLECTION, true, null),
+                //new AttributeDefinition("columns", String.format("array<%s>", DefinedTypes.HIVE_COLUMN.name()),
+                //        Multiplicity.COLLECTION, true, null),
                 new AttributeDefinition("parameters", mapStrToStrMap.getName(), Multiplicity.OPTIONAL, false, null),
 
         };
@@ -426,8 +426,8 @@ public class HiveTypeSystem {
                 new AttributeDefinition("sd", DefinedTypes.HIVE_STORAGEDESC.name(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("partitionKeys", String.format("array<%s>", DefinedTypes.HIVE_COLUMN.name()),
                         Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("columns", String.format("array<%s>", DefinedTypes.HIVE_COLUMN.name()),
-                        Multiplicity.COLLECTION, true, null),
+                //new AttributeDefinition("columns", String.format("array<%s>", DefinedTypes.HIVE_COLUMN.name()),
+                //        Multiplicity.COLLECTION, true, null),
                 new AttributeDefinition("parameters", mapStrToStrMap.getName(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("viewOriginalText", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("viewExpandedText", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),

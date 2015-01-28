@@ -39,6 +39,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.util.List;
 
@@ -82,7 +83,9 @@ public class HiveGraphRepositoryTest {
         HiveImporter hImporter = new HiveImporter(repository, hts, new HiveMetaStoreClient(new HiveConf()));
         hImporter.importHiveMetadata();
         LOG.info("Defined DB instances");
-        FileWriter fw = new FileWriter("hiveobjs.txt");
+        File f = new File("./target/logs/hiveobjs.txt");
+        f.getParentFile().mkdirs();
+        FileWriter fw = new FileWriter(f);
         BufferedWriter bw = new BufferedWriter(fw);
         List<String> idList =
                 repository.getEntityList(HiveTypeSystem.DefinedTypes.HIVE_DB.name());

@@ -126,7 +126,8 @@
     
     <property>
       <name>hive.metastore.uris</name>
-      <value>thrift://10.10.11.207:9083</value>
+        <!-- <value>thrift://10.10.11.207:9083</value> -->
+      <value>thrift://localhost:9083</value>
     </property>
     
     <property>

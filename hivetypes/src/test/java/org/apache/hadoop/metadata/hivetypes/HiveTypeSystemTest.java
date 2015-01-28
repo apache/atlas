@@ -32,6 +32,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
@@ -59,8 +60,9 @@ public class HiveTypeSystemTest {
         HiveImporter hImporter = new HiveImporter(mr, hts, new HiveMetaStoreClient(new HiveConf()));
         hImporter.importHiveMetadata();
         LOG.info("Defined DB instances");
-        FileWriter fw = new FileWriter("hiveobjs.txt");
-        BufferedWriter bw = new BufferedWriter(fw);
+        File f = new File("./target/logs/hiveobjs.txt");
+        f.getParentFile().mkdirs();
+        FileWriter fw = new FileWriter(f);        BufferedWriter bw = new BufferedWriter(fw);
         for (Id id : hImporter.getDBInstances()) {
             ITypedReferenceableInstance instance = mr.get(id);
             bw.write(instance.toString());
