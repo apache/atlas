@@ -40,8 +40,17 @@ public interface DiscoveryService {
      */
     List<Map<String,String>> searchByGremlin(String gremlinQuery) throws MetadataException;
     
-    
+    /**
+     * Simple direct graph search and depth traversal.
+     * @param searchText is plain text
+     * @param prop is the Vertex property to search.
+     */
     Map<String, HashMap<String,Map<String,String>>> textSearch(String searchText, int depth, String prop);
+    
+    /**
+     * Simple graph walker for search interface, which allows following of specific edges only.
+     * @param edgesToFollow is a comma-separated-list of edges to follow.
+     */
     Map<String, HashMap<String,Map<String,String>>> relationshipWalk(String guid, int depth, String edgesToFollow);
 
 }

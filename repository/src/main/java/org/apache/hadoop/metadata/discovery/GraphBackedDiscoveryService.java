@@ -54,6 +54,11 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
         return repository.searchByGremlin(gremlinQuery);
     }
     
+    /**
+     * Simple direct graph search and depth traversal.
+     * @param searchText is plain text
+     * @param prop is the Vertex property to search.
+     */
     @Override
     public Map<String, HashMap<String,Map<String,String>>> textSearch(String searchText, int depth, String prop) {
         Preconditions.checkNotNull(searchText, "Invalid argument: \"text\" cannot be null.");
@@ -62,6 +67,10 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
         return repository.textSearch(searchText, depth, prop);
     }
     
+    /**
+     * Simple graph walker for search interface, which allows following of specific edges only.
+     * @param edgesToFollow is a comma-separated-list of edges to follow.
+     */
     @Override
     public Map<String, HashMap<String,Map<String,String>>> relationshipWalk(String guid, int depth, String edgesToFollow) {
         Preconditions.checkNotNull(guid, "Invalid argument: \"guid\" cannot be null.");
