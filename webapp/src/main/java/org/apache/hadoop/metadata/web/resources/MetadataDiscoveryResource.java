@@ -165,20 +165,7 @@ public class MetadataDiscoveryResource {
     	
         LOG.info("Performing full text search for vertices with property {} matching= {}", prop, searchText);
         Preconditions.checkNotNull(searchText, "Invalid argument: \"text\" cannot be null.");
-        Preconditions.checkNotNull(prop, "Invalid argument: \"prop\" cannot be null.");
-        
-        /* Later - when we allow search limitation by "type".
-        ArrayList<String> typesList = new ArrayList<String>();
-        for (String s: types.split(",")) {
-        	
-        	// Types validity check.
-        	if (typesList.contains(s)) {
-        		LOG.error("Specifyed type is not a member of the Type System= {}", s);
-        		throw new WebApplicationException(
-                        Servlets.getErrorResponse("Invalid type specified in query.", Response.Status.INTERNAL_SERVER_ERROR));
-        	}
-        	typesList.add(s);
-        }*/
+        Preconditions.checkNotNull(prop, "Invalid argument: \"prop\" cannot be null.");       
         
         // Parent JSON Object
         JSONObject response = new JSONObject();

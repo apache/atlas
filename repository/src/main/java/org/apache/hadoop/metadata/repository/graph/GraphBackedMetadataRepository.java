@@ -272,6 +272,19 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         HashMap<String,Map<String,String>> vertices = new HashMap<String,Map<String,String>>();
         HashMap<String,Map<String,String>> edges = new HashMap<String,Map<String,String>>();
         
+        /* Later - when we allow search limitation by "type".
+        ArrayList<String> typesList = new ArrayList<String>();
+        for (String s: types.split(",")) {
+        	
+        	// Types validity check.
+        	if (typesList.contains(s)) {
+        		LOG.error("Specifyed type is not a member of the Type System= {}", s);
+        		throw new WebApplicationException(
+                        Servlets.getErrorResponse("Invalid type specified in query.", Response.Status.INTERNAL_SERVER_ERROR));
+        	}
+        	typesList.add(s);
+        }*/
+        
         int resultCount = 0;
        	for (Vertex v: graphService.getBlueprintsGraph().query().has(prop,searchText).vertices()) {
        		
