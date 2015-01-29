@@ -121,6 +121,11 @@
 			<artifactId>titan-es</artifactId>
 		</dependency>
 
+        <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-berkeleyje</artifactId>
+        </dependency>
+
 		<dependency>
 			<groupId>com.thinkaurelius.titan</groupId>
 			<artifactId>titan-lucene</artifactId>

@@ -514,7 +514,7 @@ public class HiveTypeSystem {
                 new AttributeDefinition("jobDefinition", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
         };
         HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, DefinedTypes.HIVE_ROLE.name(),
+                new HierarchicalTypeDefinition<>(ClassType.class, DefinedTypes.HIVE_PROCESS.name(),
                         null, attributeDefinitions);
 
         classTypeDefinitions.put(DefinedTypes.HIVE_PROCESS.name(), definition);
