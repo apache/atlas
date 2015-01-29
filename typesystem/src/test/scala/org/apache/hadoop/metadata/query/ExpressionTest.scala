@@ -42,7 +42,8 @@ class ExpressionTest extends BaseTest {
     def dbClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "DB", null,
       Array(
         attrDef("name", DataTypes.STRING_TYPE),
-        attrDef("owner", DataTypes.STRING_TYPE)
+        attrDef("owner", DataTypes.STRING_TYPE),
+        attrDef("createTime", DataTypes.LONG_TYPE)
       ))
 
     def storageDescClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "StorageDesc", null,
@@ -157,7 +158,59 @@ class ExpressionTest extends BaseTest {
 
   @Test def testBackReference: Unit = {
     val e = QueryProcessor.validate(
-      _class("DB").as("db").field("Table")).where(id("db").field("name").`=`(string("Reporting")))
+      _class("DB").as("db").field("Table").where(id("db").field("name").`=`(string("Reporting"))))
+    println(e)
+  }
+
+  @Test def testArith: Unit = {
+    val e = QueryProcessor.validate(_class("DB").where(id("name").`=`(string("Reporting"))).
+      select(id("name"), id("createTime") + int(1)))
+    println(e)
+  }
+
+  @Test def testComparisonLogical: Unit = {
+    val e = QueryProcessor.validate(_class("DB").where(id("name").`=`(string("Reporting")).
+      and(id("createTime") + int(1) > int(0))))
+    println(e)
+  }
+
+  @Test def testJoinAndSelect1: Unit = {
+    val e = QueryProcessor.validate(
+      _class("DB").as("db").field("Table").as("tab").where((id("createTime") + int(1) > int(0))
+        .and(id("db").field("name").`=`(string("Reporting")))).select(id("db").field("name").as("dbName"), id("tab").field("name").as("tabName"))
+    )
+    println(e)
+  }
+
+  @Test def testJoinAndSelect2: Unit = {
+    val e = QueryProcessor.validate(
+      _class("DB").as("db").field("Table").as("tab").where((id("createTime") + int(1) > int(0))
+        .or(id("db").field("name").`=`(string("Reporting"))))
+        .select(id("db").field("name").as("dbName"), id("tab").field("name").as("tabName"))
+    )
+    println(e)
+  }
+
+  @Test def testJoinAndSelect3: Unit = {
+    val e = QueryProcessor.validate(
+      _class("DB").as("db").field("Table").as("tab").where((id("createTime") + int(1) > int(0))
+        .and(id("db").field("name").`=`(string("Reporting")))
+        .or(id("db").hasField("owner")))
+        .select(id("db").field("name").as("dbName"), id("tab").field("name").as("tabName"))
+    )
+    println(e)
+  }
+
+  @Test def testJoinAndSelect4: Unit = {
+    val e = QueryProcessor.validate(
+      _class("DB") as "db" join "Table" as "tab" where (
+      id("createTime") + int(1) > int(0) and
+        ( id("db") `.` "name" `=` string("Reporting") ) or
+        ( id("db") hasField "owner" )
+      ) select (
+        id("db") `.` "name" as "dbName", id("tab") `.` "name" as "tabName"
+      )
+    )
     println(e)
   }
 }

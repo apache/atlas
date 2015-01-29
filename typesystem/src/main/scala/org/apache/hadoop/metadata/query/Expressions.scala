@@ -243,6 +243,8 @@ object Expressions {
      * Fluent API methods
      */
     def field(fieldName : String) = new UnresolvedFieldExpression(this, fieldName)
+    def join(fieldName : String) = field(fieldName)
+    def `.`(fieldName : String) = field(fieldName)
     def as(alias : String) = new AliasExpression(this, alias)
 
     def arith(op : String)(rightExpr : Expression) = new ArithmeticExpression(op, this, rightExpr)
@@ -274,11 +276,14 @@ object Expressions {
   }
 
   trait BinaryNode {
+    self :  Expression =>
     def left: Expression
 
     def right: Expression
 
     def children = Seq(left, right)
+
+    override def namedExpressions  = left.namedExpressions ++ right.namedExpressions
   }
 
   trait LeafNode {
@@ -286,8 +291,9 @@ object Expressions {
   }
 
   trait UnaryNode {
+    self :  Expression =>
     def child: Expression
-
+    override def namedExpressions  = child.namedExpressions
     def children = child :: Nil
   }
 
@@ -339,9 +345,11 @@ object Expressions {
     lazy val dataType = fieldInfo.attrInfo.dataType()
     override lazy val resolved: Boolean = true
 
+    override def namedExpressions = if ( child.isDefined ) child.get.namedExpressions else Map()
+
     override def toString = {
       if (child.isDefined) {
-        val sep = if (dataType.isInstanceOf[ClassType]) " " else ","
+        val sep = if (dataType.isInstanceOf[ClassType]) " " else "."
         s"${child.get}${sep}$fieldName"
       } else {
         fieldName
@@ -366,7 +374,7 @@ object Expressions {
   case class BackReference(alias: String, reference: Expression, child: Option[Expression]) extends Expression {
     val children = if (child.isDefined) List(child.get) else Nil
     val dataType = reference.dataType
-
+    override def namedExpressions = if ( child.isDefined ) child.get.namedExpressions else Map()
     override def toString = if (child.isDefined) s"${child.get} $alias" else alias
   }
 
@@ -533,7 +541,7 @@ object Expressions {
       DataTypes.BOOLEAN_TYPE
     }
 
-    override def toString = children.mkString("", " and ", "")
+    override def toString = children.mkString("", s" $symbol ", "")
   }
 
   case class FilterExpression(val child: Expression, val condExpr: Expression) extends Expression {
@@ -548,7 +556,7 @@ object Expressions {
       }
       child.dataType
     }
-
+    override def namedExpressions  = child.namedExpressions ++ condExpr.namedExpressions
     override def toString = s"$child where $condExpr"
   }
 
@@ -569,6 +577,7 @@ object Expressions {
       }
       TypeUtils.createStructType(selectListWithAlias)
     }
+    override def namedExpressions  = child.namedExpressions ++ (selectList.flatMap(_.namedExpressions))
 
     override def toString = s"""$child select ${selectListWithAlias.mkString("", ", ", "")}"""
   }
