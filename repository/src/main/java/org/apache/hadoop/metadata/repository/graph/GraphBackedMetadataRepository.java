@@ -47,6 +47,7 @@ import org.apache.hadoop.metadata.types.ObjectGraphWalker;
 import org.apache.hadoop.metadata.types.StructType;
 import org.apache.hadoop.metadata.types.TraitType;
 import org.apache.hadoop.metadata.types.TypeSystem;
+import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -184,7 +185,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         return entityList;
     }
     
-    private static void searchWalker (Vertex vtx, final int max, int counter, HashMap<String,Map<String,String>> e, HashMap<String,Map<String,String>> v, String edgesToFollow) {
+    private static void searchWalker (Vertex vtx, final int max, int counter, HashMap<String,JSONObject> e, HashMap<String,JSONObject> v, String edgesToFollow) {
     	
     	counter++;
     	if (counter <= max) {
@@ -215,7 +216,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
    			}
    			
    			// Add to the Vertex map.
-   			v.put(vtx.getId().toString(), jsonVertexMap);
+   			v.put(vtx.getId().toString(), new JSONObject(jsonVertexMap));
    			
    			// Follow this Vertex's edges
    			while (edgeIterator != null && edgeIterator.hasNext()) {
@@ -246,7 +247,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
    	   			}
    	   			*/
    	   			
-  	   			e.put(edge.getId().toString(), jsonEdgeMap);   			
+  	   			e.put(edge.getId().toString(), new JSONObject(jsonEdgeMap));   			
    	   			searchWalker (edge.getVertex(d), max, counter, e, v, edgesToFollow);
    				
    			}
@@ -263,14 +264,14 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
      * @param prop is the Vertex property to search.
      */
     @Override
-    public Map<String,HashMap<String,Map<String,String>>> textSearch(String searchText, int depth, String prop) {
+    public Map<String,HashMap<String,JSONObject>> textSearch(String searchText, int depth, String prop) {
  
     	
-    	HashMap<String,HashMap<String,Map<String,String>>> result = new HashMap<String,HashMap<String,Map<String,String>>>();  
+    	HashMap<String,HashMap<String,JSONObject>> result = new HashMap<String,HashMap<String,JSONObject>>();  
     	
     	// HashMaps, which contain sub JOSN Objects to be relayed back to the parent. 
-        HashMap<String,Map<String,String>> vertices = new HashMap<String,Map<String,String>>();
-        HashMap<String,Map<String,String>> edges = new HashMap<String,Map<String,String>>();
+        HashMap<String,JSONObject> vertices = new HashMap<String,JSONObject>();
+        HashMap<String,JSONObject> edges = new HashMap<String,JSONObject>();
         
         /* Later - when we allow search limitation by "type".
         ArrayList<String> typesList = new ArrayList<String>();
@@ -306,13 +307,13 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
      * @param edgesToFollow is a comma-separated-list of edges to follow.
      */
     @Override
-    public Map<String,HashMap<String,Map<String,String>>> relationshipWalk(String guid, int depth, String edgesToFollow) {
+    public Map<String,HashMap<String,JSONObject>> relationshipWalk(String guid, int depth, String edgesToFollow) {
 	
-    	HashMap<String,HashMap<String,Map<String,String>>> result = new HashMap<String,HashMap<String,Map<String,String>>>();
+    	HashMap<String,HashMap<String,JSONObject>> result = new HashMap<String,HashMap<String,JSONObject>>();
     	
         // HashMaps, which contain sub JOSN Objects to be relayed back to the parent. 
-        HashMap<String,Map<String,String>> vertices = new HashMap<String,Map<String,String>>();
-        HashMap<String,Map<String,String>> edges = new HashMap<String,Map<String,String>>();
+        HashMap<String,JSONObject> vertices = new HashMap<String,JSONObject>();
+        HashMap<String,JSONObject> edges = new HashMap<String,JSONObject>();
         
         // Get the Vertex with the specified GUID.
         Vertex v = GraphHelper.findVertexByGUID(graphService.getBlueprintsGraph(), guid);

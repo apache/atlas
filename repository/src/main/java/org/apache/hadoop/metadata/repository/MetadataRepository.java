@@ -23,6 +23,7 @@ import org.apache.hadoop.metadata.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.service.Service;
 import org.apache.hadoop.metadata.storage.RepositoryException;
+import org.codehaus.jettison.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.List;
@@ -56,11 +57,11 @@ public interface MetadataRepository extends Service {
      * @param searchText is plain text
      * @param prop is the Vertex property to search.
      */
-    Map<String,HashMap<String,Map<String,String>>> textSearch(String searchText, int depth, String prop);
+    Map<String, HashMap<String,JSONObject>> textSearch(String searchText, int depth, String prop);
     
     /**
      * Simple graph walker for search interface, which allows following of specific edges only.
      * @param edgesToFollow is a comma-separated-list of edges to follow.
      */
-    Map<String,HashMap<String,Map<String,String>>> relationshipWalk(String guid, int depth, String edgesToFollow);
+    Map<String, HashMap<String,JSONObject>> relationshipWalk(String guid, int depth, String edgesToFollow);
 }

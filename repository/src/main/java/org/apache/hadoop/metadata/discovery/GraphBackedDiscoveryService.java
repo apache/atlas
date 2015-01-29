@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
+import org.codehaus.jettison.json.JSONObject;
 
 import javax.inject.Inject;
 
@@ -60,7 +61,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
      * @param prop is the Vertex property to search.
      */
     @Override
-    public Map<String, HashMap<String,Map<String,String>>> textSearch(String searchText, int depth, String prop) {
+    public Map<String, HashMap<String,JSONObject>> textSearch(String searchText, int depth, String prop) {
         Preconditions.checkNotNull(searchText, "Invalid argument: \"text\" cannot be null.");
         Preconditions.checkNotNull(prop, "Invalid argument: \"prop\" cannot be null.");
     	
@@ -72,7 +73,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
      * @param edgesToFollow is a comma-separated-list of edges to follow.
      */
     @Override
-    public Map<String, HashMap<String,Map<String,String>>> relationshipWalk(String guid, int depth, String edgesToFollow) {
+    public Map<String, HashMap<String,JSONObject>> relationshipWalk(String guid, int depth, String edgesToFollow) {
         Preconditions.checkNotNull(guid, "Invalid argument: \"guid\" cannot be null.");
         Preconditions.checkNotNull(edgesToFollow, "Invalid argument: \"edgesToFollow\" cannot be null.");
         
