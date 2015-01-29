@@ -47,18 +47,19 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-@Path("bridge/hive")
+//@Path("bridge/hive")
 @Singleton
 public class HiveLineageResource {
 
-	private final HiveLineageBridge bridge;
+	private final HiveLineageBridge bridge = null;
 
+	/*
 	//@Inject
 	public HiveLineageResource(HiveLineageBridge bridge) {
 		this.bridge = bridge;
 	}
 	
-	@Inject
+	//@Inject
 	public HiveLineageResource(Map<Class<? extends IBridge>, IBridge> bridges) {
 		this.bridge = (HiveLineageBridge) bridges.get(HiveLineageBridge.class);
 	}
@@ -102,4 +103,5 @@ public class HiveLineageResource {
 			return jo;
 		}
 	}
+	*/
 }

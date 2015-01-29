@@ -78,6 +78,9 @@ public class GuiceServletConfig extends GuiceServletContextListener {
 		LOG.info(String.format("Loaded Service: %s", graphService.getClass().getName()));
 		
 		LOG.info("Services bootstrapped successfully");
+		/*
+		 * Turned off for now - will be revisited later
+		 * 
 		LOG.info("Bootstrapping types into Type System");
 		
 		BridgeTypeBootstrapper bootstrapper = injector.getInstance(BridgeTypeBootstrapper.class);
@@ -88,6 +91,7 @@ public class GuiceServletConfig extends GuiceServletContextListener {
 		}
 		
 		LOG.info("Types bootstrapped successfully");
+		*/
 		
 		return injector;
 	}
