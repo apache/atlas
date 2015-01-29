@@ -184,8 +184,9 @@ public class DemoDataDriver {
 		String typesAsJSON = TypesSerialization.toJson(
 				typeSystem,
 				Arrays.asList(new String[] { DATABASE_TYPE, TABLE_TYPE,
-						"serdeType", "classification" }));
+						"serdeType", "classification", "HiveLineage" }));
 		sumbitType(typesAsJSON, TABLE_TYPE);
+		sumbitType(typesAsJSON, "HiveLineage");
 	}
 
 	private void sumbitType(String typesAsJSON, String type)
