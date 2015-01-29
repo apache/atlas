@@ -21,6 +21,7 @@ package org.apache.hadoop.metadata.hivetypes;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
+import org.apache.hadoop.hive.metastore.api.Index;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.Order;
 import org.apache.hadoop.hive.metastore.api.Partition;
@@ -58,7 +59,10 @@ public class HiveImporter {
     private List<Id> dbInstances;
     private List<Id> tableInstances;
     private List<Id> partitionInstances;
+    private List<Id> indexInstances;
     private List<Id> columnInstances;
+    private List<Id> processInstances;
+
 
 
     private class Pair<L, R> {
@@ -111,7 +115,10 @@ public class HiveImporter {
         dbInstances = new ArrayList<>();
         tableInstances = new ArrayList<>();
         partitionInstances = new ArrayList<>();
+        indexInstances = new ArrayList<>();
         columnInstances = new ArrayList<>();
+        processInstances = new ArrayList<>();
+
     }
 
     public List<Id> getDBInstances() {
@@ -128,6 +135,14 @@ public class HiveImporter {
 
     public List<Id> getColumnInstances() {
         return columnInstances;
+    }
+
+    public List<Id> getIndexInstances() {
+        return indexInstances;
+    }
+
+    public List<Id> getProcessInstances() {
+        return processInstances;
     }
 
     public void importHiveMetadata() throws MetadataException {
@@ -174,6 +189,7 @@ public class HiveImporter {
             ref.set(attr, instance.right());
         }
     }
+
 
     private void importDatabase(String db) throws MetadataException {
         try {
@@ -277,6 +293,29 @@ public class HiveImporter {
                         InstancePair partRefTyped = createInstance(partRef);
                         if (usingMemRepository()) {
                             partitionInstances.add(partRefTyped.left().getId());
+                        }
+                    }
+                }
+
+                List<Index> indexes = hiveMetastoreClient.listIndexes(db, table, Short.MAX_VALUE);
+
+                if (indexes.size() > 0 ) {
+                    for (Index index : indexes) {
+                        Referenceable indexRef = new Referenceable(HiveTypeSystem.DefinedTypes.HIVE_INDEX.name());
+                        indexRef.set("indexName", index.getIndexName());
+                        indexRef.set("indexHandlerClass", index.getIndexHandlerClass());
+                        setReferenceInstanceAttribute(indexRef, "dbName", dbRefTyped);
+                        indexRef.set("createTime", index.getCreateTime());
+                        indexRef.set("lastAccessTime", index.getLastAccessTime());
+                        indexRef.set("origTableName", index.getOrigTableName());
+                        indexRef.set("indexTableName", index.getIndexTableName());
+                        sdRefTyped = fillStorageDescStruct(index.getSd());
+                        setReferenceInstanceAttribute(indexRef, "sd", sdRefTyped);
+                        indexRef.set("parameters", index.getParameters());
+                        tableRef.set("deferredRebuild", index.isDeferredRebuild());
+                        InstancePair indexRefTyped = createInstance(indexRef);
+                        if (usingMemRepository()) {
+                            indexInstances.add(indexRefTyped.left().getId());
                         }
                     }
                 }

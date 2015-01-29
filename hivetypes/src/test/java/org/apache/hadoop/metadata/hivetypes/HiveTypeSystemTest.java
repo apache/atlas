@@ -82,6 +82,16 @@ public class HiveTypeSystemTest {
             ITypedReferenceableInstance instance = mr.get(id);
             bw.write(instance.toString());
         }
+        LOG.info("Defined Index instances");
+        for (Id id : hImporter.getIndexInstances()) {
+            ITypedReferenceableInstance instance = mr.get(id);
+            bw.write(instance.toString());
+        }
+        LOG.info("Defined Process instances");
+        for (Id id : hImporter.getProcessInstances()) {
+            ITypedReferenceableInstance instance = mr.get(id);
+            bw.write(instance.toString());
+        }
         bw.flush();
         bw.close();
     }

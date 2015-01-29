@@ -117,6 +117,22 @@ public class HiveGraphRepositoryTest {
             ITypedReferenceableInstance instance = repository.getEntityDefinition(id);
             bw.write(instance.toString());
         }
+        LOG.info("Defined Index instances");
+        idList =
+                repository.getEntityList(HiveTypeSystem.DefinedTypes.HIVE_INDEX.name());
+
+        for (String id : idList) {
+            ITypedReferenceableInstance instance = repository.getEntityDefinition(id);
+            bw.write(instance.toString());
+        }
+        LOG.info("Defined Process instances");
+        idList =
+                repository.getEntityList(HiveTypeSystem.DefinedTypes.HIVE_PROCESS.name());
+
+        for (String id : idList) {
+            ITypedReferenceableInstance instance = repository.getEntityDefinition(id);
+            bw.write(instance.toString());
+        }
         bw.flush();
         bw.close();
     }

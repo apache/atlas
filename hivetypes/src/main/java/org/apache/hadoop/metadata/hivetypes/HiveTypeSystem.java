@@ -76,6 +76,7 @@ public class HiveTypeSystem {
         HIVE_FUNCTION,
         HIVE_ROLE,
         HIVE_TYPE,
+        HIVE_PROCESS,
         //HIVE_VIEW,
 
     }
@@ -132,6 +133,7 @@ public class HiveTypeSystem {
         createIndexClass();
         createFunctionClass();
         createRoleClass();
+        createProcessClass();
 
         for (EnumTypeDefinition def : getEnumTypeDefinitions()) {
             enumTypes.add(typeSystem.defineEnumType(def));
@@ -174,7 +176,8 @@ public class HiveTypeSystem {
                     (HierarchicalType) typeMap.get(DefinedTypes.HIVE_PARTITION.name()),
                     (HierarchicalType) typeMap.get(DefinedTypes.HIVE_INDEX.name()),
                     (HierarchicalType) typeMap.get(DefinedTypes.HIVE_FUNCTION.name()),
-                    (HierarchicalType) typeMap.get(DefinedTypes.HIVE_ROLE.name())
+                    (HierarchicalType) typeMap.get(DefinedTypes.HIVE_ROLE.name()),
+                    (HierarchicalType) typeMap.get(DefinedTypes.HIVE_PROCESS.name())
             );
         } else {
             return ImmutableList.of();
@@ -445,12 +448,12 @@ public class HiveTypeSystem {
     private void createIndexClass() throws MetadataException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition("indexName", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("indexHandleClass", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("indexHandlerClass", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("dbName", DefinedTypes.HIVE_DB.name(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("createTime", DataTypes.INT_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("lastAccessTime", DataTypes.INT_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("origTableName", DefinedTypes.HIVE_TABLE.name(), Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("indexTableName", DefinedTypes.HIVE_TABLE.name(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("indexTableName", DefinedTypes.HIVE_TABLE.name(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("sd", DefinedTypes.HIVE_STORAGEDESC.name(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("parameters", mapStrToStrMap.getName(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("deferredRebuild", DataTypes.BOOLEAN_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
@@ -496,6 +499,26 @@ public class HiveTypeSystem {
 
         classTypeDefinitions.put(DefinedTypes.HIVE_ROLE.name(), definition);
         LOG.debug("Created definition for " + DefinedTypes.HIVE_ROLE.name());
+
+    }
+
+
+    private void createProcessClass() throws MetadataException {
+        AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
+                new AttributeDefinition("processName", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("startTime", DataTypes.INT_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("endTime", DataTypes.INT_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("userName", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("sourceTableNames", String.format("array<%s>", DefinedTypes.HIVE_TABLE.name()), Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition("targetTableNames", String.format("array<%s>", DefinedTypes.HIVE_TABLE.name()), Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition("jobDefinition", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+        };
+        HierarchicalTypeDefinition<ClassType> definition =
+                new HierarchicalTypeDefinition<>(ClassType.class, DefinedTypes.HIVE_ROLE.name(),
+                        null, attributeDefinitions);
+
+        classTypeDefinitions.put(DefinedTypes.HIVE_PROCESS.name(), definition);
+        LOG.debug("Created definition for " + DefinedTypes.HIVE_PROCESS.name());
 
     }
 
