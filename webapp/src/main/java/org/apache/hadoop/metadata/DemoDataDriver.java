@@ -167,7 +167,7 @@ public class DemoDataDriver {
 				createRequiredAttrDef("queryStartTime", DataTypes.STRING_TYPE),
 				createRequiredAttrDef("queryEndTime", DataTypes.STRING_TYPE),
 				createRequiredAttrDef("query", DataTypes.STRING_TYPE),
-				new AttributeDefinition("sourceTables", TABLE_TYPE,
+				new AttributeDefinition("tableName", TABLE_TYPE,
 						Multiplicity.REQUIRED, true, null),
 				createRequiredAttrDef("success", DataTypes.STRING_TYPE),
 				createRequiredAttrDef("executionEngine", DataTypes.STRING_TYPE),
