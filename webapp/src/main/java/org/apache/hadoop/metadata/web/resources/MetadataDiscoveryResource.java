@@ -130,7 +130,7 @@ public class MetadataDiscoveryResource {
         
         // Parent JSON Object
         JSONObject response = new JSONObject();
-        Map<String, HashMap<String, Map<String, String>>> resultMap = discoveryService.relationshipWalk(guid, depth, edgesToFollow);
+        Map<String, HashMap<String, JSONObject>> resultMap = discoveryService.relationshipWalk(guid, depth, edgesToFollow);
         
    		try {
             response.put("requestId", Thread.currentThread().getName());
@@ -170,7 +170,7 @@ public class MetadataDiscoveryResource {
         // Parent JSON Object
         JSONObject response = new JSONObject();
                 
-        Map<String, HashMap<String, Map<String, String>>> resultMap = discoveryService.textSearch(searchText, depth, prop);
+        Map<String, HashMap<String, JSONObject>> resultMap = discoveryService.textSearch(searchText, depth, prop);
             	
    		try {
             response.put("requestId", Thread.currentThread().getName());
