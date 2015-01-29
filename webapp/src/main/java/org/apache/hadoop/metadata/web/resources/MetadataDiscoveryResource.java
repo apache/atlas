@@ -138,7 +138,7 @@ public class MetadataDiscoveryResource {
    				response.put("vertices",new JSONObject(resultMap.get("vertices")));
    			}
    			if (resultMap.containsKey("edges")) {
-   				response.put("edges",new JSONObject(resultMap.get("vertices")));
+   				response.put("edges",new JSONObject(resultMap.get("edges")));
    			}
    		} catch (JSONException e) {
    			throw new WebApplicationException(
