@@ -27,6 +27,7 @@ import org.apache.hadoop.metadata.json.TypesSerialization;
 import org.apache.hadoop.metadata.listener.TypedInstanceChangeListener;
 import org.apache.hadoop.metadata.listener.TypesChangeListener;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
+import org.apache.hadoop.metadata.repository.SearchIndexer;
 import org.apache.hadoop.metadata.storage.RepositoryException;
 import org.apache.hadoop.metadata.types.IDataType;
 import org.apache.hadoop.metadata.types.TypeSystem;
@@ -56,9 +57,12 @@ public class DefaultMetadataService implements MetadataService {
     private final MetadataRepository repository;
 
     @Inject
-    DefaultMetadataService(MetadataRepository repository) throws MetadataException {
+    DefaultMetadataService(MetadataRepository repository,
+                           SearchIndexer searchIndexer) throws MetadataException {
     	this.typeSystem = TypeSystem.getInstance();
     	this.repository = repository;
+
+        registerListener(searchIndexer);
     }
 
     /**

@@ -118,12 +118,12 @@
 
 		<dependency>
 			<groupId>com.thinkaurelius.titan</groupId>
-			<artifactId>titan-berkeleyje</artifactId>
+			<artifactId>titan-es</artifactId>
 		</dependency>
 
 		<dependency>
 			<groupId>com.thinkaurelius.titan</groupId>
-			<artifactId>titan-es</artifactId>
+			<artifactId>titan-lucene</artifactId>
 		</dependency>
 
 		<dependency>
