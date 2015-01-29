@@ -112,6 +112,25 @@ public class TypeSystem {
         return getDataType(StructType.class, structDef.typeName);
     }
 
+    /**
+     * construct a temporary StructType for a Query Result. This is not registered in the typeSystem.
+     * The attributes in the typeDefinition can only reference permanent types.
+     * @param name
+     * @param attrDefs
+     * @return
+     * @throws MetadataException
+     */
+    public StructType defineQueryResultType(String name,
+                                       AttributeDefinition... attrDefs) throws MetadataException {
+
+        AttributeInfo[] infos = new AttributeInfo[attrDefs.length];
+        for (int i = 0; i < attrDefs.length; i++) {
+            infos[i] = new AttributeInfo(this, attrDefs[i]);
+        }
+        StructType type = new StructType(TypeSystem.this, name, null, infos);
+        return type;
+    }
+
     public TraitType defineTraitType(HierarchicalTypeDefinition<TraitType> traitDef)
         throws MetadataException {
 
