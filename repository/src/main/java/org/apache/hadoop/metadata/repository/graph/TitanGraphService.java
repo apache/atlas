@@ -18,25 +18,6 @@
 
 package org.apache.hadoop.metadata.repository.graph;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
-import com.thinkaurelius.titan.core.PropertyKey;
-
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.hadoop.metadata.types.TypeSystem;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
@@ -45,6 +26,20 @@ import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Default implementation for Graph service backed by Titan.
@@ -115,12 +110,11 @@ public class TitanGraphService implements GraphService {
 		return graphConfig;
 	}
 
-	
 	/**
 	 * Initializes the indices for the graph.
 	 * @throws ConfigurationException
 	 */
-	// TODO move this functionality to the MetadataRepository?
+	// TODO move this functionality to the SearchIndexer?
 	protected void createIndicesForVertexKeys() throws ConfigurationException {
 		if (!titanGraph.getIndexedKeys(Vertex.class).isEmpty()) {
 			LOG.info("Indexes already exist for titanGraph");
@@ -133,61 +127,7 @@ public class TitanGraphService implements GraphService {
 		TitanGraphIndex graphIndex =  mgmt.buildIndex(Constants.INDEX_NAME, Vertex.class)
 				.buildMixedIndex(Constants.BACKING_INDEX);
 
-		PropertyKey guidKey = mgmt
-				.makePropertyKey(Constants.GUID_PROPERTY_KEY)
-				.dataType(String.class).make();
-		mgmt.buildIndex("byGUID", Vertex.class)
-				.addKey(guidKey)
-				.unique()
-				.buildCompositeIndex();
-
-		PropertyKey typeKey = mgmt
-				.makePropertyKey(Constants.ENTITY_TYPE_PROPERTY_KEY)
-				.dataType(String.class).make();
-		mgmt.buildIndex("byType", Vertex.class)
-				.addKey(typeKey)
-				.buildCompositeIndex();
-		
-		//TODO - Once we can get the TypeSystem to give me actual types, the below will be modified and replace the current
-		//indexer config.
-/*		
-		Iterator<String>  i = typeSystem.getTypeNames().iterator();
-		
-		// Get a list of property names to iterate through...
-		List<String> propList = new ArrayList<>();
-		
-		
-		while (i.hasNext()) {
-			
-			String currType = i.next();
-			
-			Iterator<String> typeDefIterator = null;
-			
-			while (typeDefIterator.hasNext()) {
-
-				// Pull the property name and index, so we can register the name
-				// and look up the type.
-				String prop = "";
-				String type = "";
-				boolean isUnique = false;
-								
-				// Add the key.
-				
-				LOG.info("Adding property: " + prop + " to index as type: "
-						+ type);
-				mgmt.addIndexKey(graphIndex, mgmt.makePropertyKey(prop)
-						.dataType(type.getClass()).make());
-				
-			}
-
-			mgmt.commit();
-			LOG.info("Index creation complete.");
-		}
-
-		
-*/
         Configuration indexConfig = getConfiguration("indexer.properties", INDEXER_PREFIX);
-        
         // Properties are formatted: prop_name:type;prop_name:type
 		// E.g. Name:String;Date:Long
 		if (!indexConfig.isEmpty()) {
@@ -241,7 +181,6 @@ public class TitanGraphService implements GraphService {
 			mgmt.commit();
 			LOG.info("Index creation complete.");
 		}
-
 	}
 
 	/**

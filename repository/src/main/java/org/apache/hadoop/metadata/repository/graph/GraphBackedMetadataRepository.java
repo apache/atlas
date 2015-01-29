@@ -620,9 +620,6 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             }
 
             String propertyName = typedInstance.getTypeName() + "." + attributeInfo.name;
-            // todo: move this to the indexer
-            GraphHelper.createPropertyKey(titanGraph.getManagementSystem(), propertyName);
-
             IDataType elementType = ((DataTypes.ArrayType) attributeInfo.dataType()).getElemType();
 
             StringBuilder buffer = new StringBuilder();
@@ -652,9 +649,6 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             }
 
             String propertyName = typedInstance.getTypeName() + "." + attributeInfo.name;
-            // todo: move this to the indexer
-            GraphHelper.createPropertyKey(titanGraph.getManagementSystem(), propertyName);
-
             StringBuilder buffer = new StringBuilder();
             IDataType elementType = ((DataTypes.MapType) attributeInfo.dataType()).getValueType();
             for (Map.Entry entry : collection.entrySet()) {
@@ -719,11 +713,6 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                     referenceVertex = GraphHelper.findVertexByGUID(titanGraph, id.id);
                 } else {
                     referenceVertex = idToVertexMap.get(id);
-/*
-                    ClassType classType = typeSystem.getDataType(ClassType.class, typeName);
-                    mapInstanceToVertex(id, typedInstance, referenceVertex,
-                            classType.fieldMapping().fields, idToVertexMap);
-*/
                 }
 
                 if (referenceVertex != null) {
@@ -998,38 +987,6 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                         propertyNameWithSuffix.lastIndexOf("."), propertyNameWithSuffix.length());
                 values.put(key, mapVertexToCollectionEntry(
                         instanceVertex, attributeInfo, elementType, propertyNameWithSuffix));
-/*
-                switch (valueType.getTypeCategory()) {
-                    case PRIMITIVE:
-                        values.put(key, instanceVertex.getProperty(propertyNameWithSuffix));
-                        break;
-
-                    case ENUM:
-                        values.put(key, instanceVertex.getProperty(propertyNameWithSuffix));
-                        break;
-
-                    case ARRAY:
-                    case MAP:
-                    case TRAIT:
-                        // do nothing
-                        break;
-
-                    case STRUCT:
-                        ITypedStruct structInstance = getStructInstanceFromVertex(instanceVertex,
-                                valueType, attributeInfo.name, propertyNameWithSuffix);
-                        values.put(key, structInstance);
-                        break;
-
-                    case CLASS:
-                        Object idOrInstance = mapClassReferenceToVertex(
-                                instanceVertex, attributeInfo, propertyNameWithSuffix);
-                        values.put(key, idOrInstance);
-                        break;
-
-                    default:
-                        break;
-                }
-*/
             }
 
             typedInstance.set(attributeInfo.name, values);

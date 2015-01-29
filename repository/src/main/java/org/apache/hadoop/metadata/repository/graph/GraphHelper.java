@@ -18,9 +18,8 @@
 
 package org.apache.hadoop.metadata.repository.graph;
 
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.TitanIndexQuery;
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -91,21 +90,15 @@ public final class GraphHelper {
         return results.hasNext() ? results.next() : null;
     }
 
-    public static PropertyKey createPropertyKey(TitanManagement management, String propertyName) {
-        PropertyKey propertyKey = management.getPropertyKey(propertyName);
-        if (propertyKey == null) {
-            propertyKey = management
-                    .makePropertyKey(propertyName)
-                    .dataType(String.class)
-                    .cardinality(Cardinality.SET)
-                    .make();
+    public static Vertex findVertexByGUIDUsingIndex(TitanGraph titanGraph,
+                                                    String value) {
+        LOG.debug("Finding vertex for key={}, value={}", Constants.GUID_PROPERTY_KEY, value);
 
-            management.buildIndex("by" + propertyName, Vertex.class)
-                    .addKey(propertyKey)
-                    .buildCompositeIndex();
-        }
-
-        return propertyKey;
+        TitanIndexQuery query = titanGraph.indexQuery("index_" + Constants.GUID_PROPERTY_KEY,
+                Constants.GUID_PROPERTY_KEY + " = " +  value);
+        Iterator<TitanIndexQuery.Result<Vertex>> results = query.vertices().iterator();
+        // returning one since guid should be unique
+        return results.hasNext() ? results.next().getElement() : null;
     }
 
     public static String vertexString(final Vertex vertex) {
