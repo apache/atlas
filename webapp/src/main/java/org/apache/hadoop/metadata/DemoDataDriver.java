@@ -171,7 +171,7 @@ public class DemoDataDriver {
 						Multiplicity.REQUIRED, true, null),
 				createRequiredAttrDef("success", DataTypes.STRING_TYPE),
 				createRequiredAttrDef("executionEngine", DataTypes.STRING_TYPE),
-				new AttributeDefinition("sourceTables", TABLE_TYPE,
+				new AttributeDefinition("sourceTables", DataTypes.arrayTypeName(TABLE_TYPE),
 						Multiplicity.COLLECTION, true, "forwardLineage"));
 
 		typeSystem.defineTypes(ImmutableList.of(structTypeDefinition),
@@ -181,12 +181,15 @@ public class DemoDataDriver {
 	}
 
 	private void submitTypes() throws Exception {
-		String typesAsJSON = TypesSerialization.toJson(
+		String tableTypesAsJSON = TypesSerialization.toJson(
 				typeSystem,
 				Arrays.asList(new String[] { DATABASE_TYPE, TABLE_TYPE,
-						"serdeType", "classification", "HiveLineage" }));
-		sumbitType(typesAsJSON, TABLE_TYPE);
-		sumbitType(typesAsJSON, "HiveLineage");
+						"serdeType", "classification"}));
+		String lineageTypesAsJSON = TypesSerialization.toJson(
+				typeSystem,
+				Arrays.asList(new String[] { "HiveLineage" }));
+		sumbitType(tableTypesAsJSON, TABLE_TYPE);
+		sumbitType(lineageTypesAsJSON, "HiveLineage");
 	}
 
 	private void sumbitType(String typesAsJSON, String type)
@@ -250,6 +253,7 @@ public class DemoDataDriver {
 		lineageInstance.set("user", user);
 		lineageInstance.set("queryStartTime", queryStartTime);
 		lineageInstance.set("queryEndTime", queryEndTime);
+		lineageInstance.set("query", query);
 		lineageInstance.set("success", success);
 		lineageInstance.set("executionEngine", executionEngine);
 
@@ -259,12 +263,13 @@ public class DemoDataDriver {
 				break;
 			}
 		}
-		ArrayList<Referenceable> sourceTablesRefArr = new ArrayList<Referenceable>();
+		ArrayList<ITypedReferenceableInstance> sourceTablesRefArr = new ArrayList<ITypedReferenceableInstance>();
 
 		for (String s : sourceTables.split(",")) {
+			System.out.println("search for table "+s);
 			for (ITypedReferenceableInstance table : tableArray) {
 				if (table.get("name").equals(s)) {
-
+					sourceTablesRefArr.add(table);
 				}
 			}
 		}
@@ -304,9 +309,9 @@ public class DemoDataDriver {
 			lineageArray.add(lineageInstance);
 		}
 
-		for (ITypedReferenceableInstance i : tableArray) {
+		/*for (ITypedReferenceableInstance i : tableArray) {
 			driver.submitEntity(i);
-		}
+		}*/
 		for (ITypedReferenceableInstance i : lineageArray) {
 			driver.submitEntity(i);
 		}
@@ -322,18 +327,18 @@ public class DemoDataDriver {
 						"Service User 02",
 						"1420563838114",
 						"1420563853806",
-						"CREATE TABLE providerCharges AS SELECT providerMasterList.*, ClaimPayments.* FROM  providerMasterList LEFT JOIN ClaimsPayment ON providerMasterList.providerID = claimsPayment.providerId  WHERE ClaimPaymets.paidStatus = \"true\";",
+						"CREATE TABLE providerCharges AS SELECT providerMasterList.*, claimPayments.* FROM  providerMasterList LEFT JOIN claimPayments ON providerMasterList.providerID = claimPayments.providerId  WHERE claimPayments.paidStatus = \"true\";",
 						"providerCharges", "true", "tez",
-						"providerMasterList,ClaimsPayments" },
+						"providerMasterList,claimPayments" },
 				{
 						"s123456_20150106120304_036125d5-a991-4dfc-9ff2-05b665c7e711",
 						"90797386-3933-4ab0-ae68-a7baa72435d4",
 						"Service User 02",
 						"1420563838314",
 						"1420563853906",
-						"CREATE TABLE providerComparativeModel AS SELECT providerCharges.*, LocationsOfThings.* FROM  providerCharges LEFT JOIN LocationOfThings ON providerCharges.providerName = LocationofThings.peopleName  WHERE LocationOfThings.isDr = \"true\";",
+						"CREATE TABLE providerComparativeModel AS SELECT providerCharges.*, LocationsOfThings.* FROM  providerCharges LEFT JOIN LocationsOfThings ON providerCharges.providerName = LocationsOfThings.peopleName  WHERE LocationsOfThings.isDr = \"true\";",
 						"providerComparativeModel", "true", "mapred",
-						"providerCharges,LocationOfThings" } };
+						"providerCharges,LocationsOfThings" } };
 	}
 
 	private static String[][] getTestTableData() {
@@ -344,7 +349,7 @@ public class DemoDataDriver {
 						"Providers Addresses and Locations of performed procedures",
 						"org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe",
 						"org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe" },
-				{ "charges_db", "ClaimPayments", "Claims paid",
+				{ "charges_db", "claimPayments", "Claims paid",
 						"org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe",
 						"org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe" },
 				{ "model_db", "providerCharges",
