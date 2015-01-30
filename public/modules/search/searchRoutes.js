@@ -9,7 +9,7 @@ angular.module('dgc.search').config(['$stateProvider',
             url: '/search',
             templateUrl: '/modules/search/views/search.html'
         }).state('search.results', {
-            url: '/:query',
+            url: '/?',
             templateUrl: '/modules/search/views/searchResult.html'
         });
     }

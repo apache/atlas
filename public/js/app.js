@@ -6,8 +6,7 @@ angular.module('dgc', ['ngCookies',
     'ui.router',
     'dgc.system',
     'dgc.home',
-    'dgc.search',
-    'dgc.details'
+    'dgc.search'
 ]);
 
 angular.module('dgc.system', ['dgc.system.notification']);

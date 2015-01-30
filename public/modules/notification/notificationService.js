@@ -17,7 +17,7 @@ angular.module('dgc.system.notification').service('NotificationService', ['$time
         };
 
     _.each(colorCoding, function(value, key) {
-        service[key] = function(message) {
+        service[key] = function(message, timeout) {
             var notification = message;
             if (_.isString(message)) {
                 notification = {
@@ -28,7 +28,7 @@ angular.module('dgc.system.notification').service('NotificationService', ['$time
             notification.message = notification.msg || notification.message;
             delete notification.msg;
             notification.type = value;
-            notification.timeout = _.isUndefined(notification.timeout) ? true : notification.timeout;
+            notification.timeout = _.isUndefined(timeout) ? (_.isUndefined(notification.timeout) ? true : notification.timeout) : timeout;
             notifications.push(notification);
 
             if (notification.timeout) {
