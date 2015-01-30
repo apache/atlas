@@ -18,32 +18,16 @@
 
 package org.apache.hadoop.metadata.query
 
-import Expressions._
+import javax.script.{Bindings, ScriptEngine, ScriptEngineManager}
+
 import com.thinkaurelius.titan.core.TitanGraph
 
-object QueryProcessor {
+class GremlinEvaluator(qry : GremlinQuery, g: TitanGraph) {
 
-  def evaluate(e : Expression, g : TitanGraph) : AnyRef = {
-    validate(e)
-    val q = new GremlinTranslator(e).translate()
-    println(q.queryStr)
-    new GremlinEvaluator(q, g).evaluate()
-  }
+  val manager: ScriptEngineManager = new ScriptEngineManager
+  val engine: ScriptEngine = manager.getEngineByName("gremlin-groovy")
+  val bindings: Bindings = engine.createBindings
+  bindings.put("g", g)
 
-  def validate(e : Expression) : Expression = {
-    val e1 = e.transformUp(new Resolver())
-
-    e1.traverseUp {
-      case x : Expression if !x.resolved =>
-        throw new ExpressionException(x, s"Failed to resolved expression $x")
-    }
-
-    /*
-     * trigger computation of dataType of expression tree
-     */
-    e1.dataType
-
-    e1
-  }
-
+  def evaluate() : AnyRef = engine.eval(qry.queryStr, bindings)
 }

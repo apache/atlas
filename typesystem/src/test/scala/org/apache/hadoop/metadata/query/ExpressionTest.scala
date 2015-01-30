@@ -30,71 +30,7 @@ class ExpressionTest extends BaseTest {
   override def setup {
     super.setup
 
-    def attrDef(name : String, dT : IDataType[_],
-                m : Multiplicity = Multiplicity.OPTIONAL,
-                isComposite: Boolean = false,
-                reverseAttributeName: String = null) = {
-      require(name != null)
-      require(dT != null)
-      new AttributeDefinition(name, dT.getName, m, isComposite, reverseAttributeName)
-    }
-
-    def dbClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "DB", null,
-      Array(
-        attrDef("name", DataTypes.STRING_TYPE),
-        attrDef("owner", DataTypes.STRING_TYPE),
-        attrDef("createTime", DataTypes.LONG_TYPE)
-      ))
-
-    def storageDescClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "StorageDesc", null,
-      Array(
-        attrDef("inputFormat", DataTypes.STRING_TYPE),
-        attrDef("outputFormat", DataTypes.STRING_TYPE)
-      ))
-
-    def columnClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "Column", null,
-      Array(
-        attrDef("name", DataTypes.STRING_TYPE),
-        attrDef("dataType", DataTypes.STRING_TYPE),
-        new AttributeDefinition("sd", "StorageDesc", Multiplicity.REQUIRED, false, null)
-      ))
-
-    def tblClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "Table", null,
-      Array(
-        attrDef("name", DataTypes.STRING_TYPE),
-        new AttributeDefinition("db", "DB", Multiplicity.REQUIRED, false, null),
-        new AttributeDefinition("sd", "StorageDesc", Multiplicity.REQUIRED, false, null)
-      ))
-
-    def loadProcessClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "LoadProcess", null,
-      Array(
-        attrDef("name", DataTypes.STRING_TYPE),
-        new AttributeDefinition("inputTables", "Table", Multiplicity.COLLECTION, false, null),
-        new AttributeDefinition("outputTable", "Table", Multiplicity.REQUIRED, false, null)
-      ))
-
-    def viewClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "View", null,
-      Array(
-        attrDef("name", DataTypes.STRING_TYPE),
-        new AttributeDefinition("inputTables", "Table", Multiplicity.COLLECTION, false, null)
-      ))
-
-    def dimTraitDef = new HierarchicalTypeDefinition[TraitType](classOf[TraitType], "Dimension", null,
-      Array[AttributeDefinition]())
-    def piiTraitDef = new HierarchicalTypeDefinition[TraitType](classOf[TraitType], "PII", null,
-      Array[AttributeDefinition]())
-    def metricTraitDef = new HierarchicalTypeDefinition[TraitType](classOf[TraitType], "Metric", null,
-      Array[AttributeDefinition]())
-    def etlTraitDef = new HierarchicalTypeDefinition[TraitType](classOf[TraitType], "ETL", null,
-      Array[AttributeDefinition]())
-    def jdbcTraitDef = new HierarchicalTypeDefinition[TraitType](classOf[TraitType], "Jdbc", null,
-      Array[AttributeDefinition]())
-
-    getTypeSystem.defineTypes(ImmutableList.of[StructTypeDefinition],
-      ImmutableList.of[HierarchicalTypeDefinition[TraitType]](dimTraitDef, piiTraitDef,
-        metricTraitDef, etlTraitDef, jdbcTraitDef),
-      ImmutableList.of[HierarchicalTypeDefinition[ClassType]](dbClsDef, storageDescClsDef, columnClsDef, tblClsDef,
-        loadProcessClsDef, viewClsDef))
+    QueryTestsUtils.setupTypes
 
   }
 

@@ -4,34 +4,11 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 import javax.script.{Bindings, ScriptEngine, ScriptEngineManager}
 
-import com.thinkaurelius.titan.core.{TitanFactory, TitanGraph}
-import com.typesafe.config.{Config, ConfigFactory}
-import org.apache.commons.configuration.{Configuration, ConfigurationException, MapConfiguration}
+import com.thinkaurelius.titan.core.TitanGraph
+import com.typesafe.config.ConfigFactory
 import org.apache.commons.io.FileUtils
 
 import scala.collection.mutable.ArrayBuffer
-
-trait GraphUtils {
-  import scala.collection.JavaConversions._
-
-  def getConfiguration(config : Config) : Configuration = {
-    val keys = config.entrySet().map { _.getKey}
-    val gConfig : java.util.Map[String, String] = new java.util.HashMap[String, String]()
-    keys.foreach { k =>
-      gConfig.put(k, config.getString(k))
-    }
-    return new MapConfiguration(gConfig)
-  }
-
-
-  def titanGraph(conf : Config) = {
-    try {
-      TitanFactory.open(getConfiguration(conf))
-    } catch  {
-      case e : ConfigurationException =>  throw new RuntimeException(e)
-    }
-  }
-}
 
 object HiveTitanSample {
 
