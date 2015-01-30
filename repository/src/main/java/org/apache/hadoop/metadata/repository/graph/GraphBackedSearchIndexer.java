@@ -18,12 +18,14 @@
 
 package org.apache.hadoop.metadata.repository.graph;
 
-import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.EdgeLabel;
+import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.repository.SearchIndexer;
@@ -69,38 +71,25 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
 
         LOG.info("Indexes do not exist, Creating indexes for titanGraph.");
         try {
-            createIndex(management, Constants.GUID_PROPERTY_KEY, String.class, true);
-            createIndex(management, Constants.ENTITY_TYPE_PROPERTY_KEY, String.class);
-            createIndex(management, Constants.TIMESTAMP_PROPERTY_KEY, Long.class);
+            management.buildIndex(Constants.VERTEX_INDEX, Vertex.class)
+                    .buildMixedIndex(Constants.BACKING_INDEX);
+            management.buildIndex(Constants.EDGE_INDEX, Edge.class)
+                    .buildMixedIndex(Constants.BACKING_INDEX);
+
+            // create a composite index for guid as its unique
+            createCompositeIndex(management, Constants.GUID_INDEX,
+                    Constants.GUID_PROPERTY_KEY, String.class, true);
+
+            // create a composite and mixed index for type since it can be combined with other keys
+            createCompositeIndex(management, Constants.ENTITY_TYPE_INDEX,
+                    Constants.ENTITY_TYPE_PROPERTY_KEY, String.class, false);
+            createVertexMixedIndex(management, Constants.ENTITY_TYPE_PROPERTY_KEY, String.class);
         } finally {
             management.commit();
         }
 
         LOG.info("Index creation for global keys complete.");
-        // dumpIndexKeys();
     }
-
-/*
-    private void dumpIndexKeys() {
-        for (TitanGraphIndex index : management.getGraphIndexes(Vertex.class)) {
-            System.out.println("index.getName() = " + index.getName());
-
-            for (PropertyKey key : index.getFieldKeys()) {
-                System.out.println("key.getName() = " + key.getName());
-                System.out.println("key = " + key);
-            }
-        }
-
-        for (TitanGraphIndex index : management.getGraphIndexes(Edge.class)) {
-            System.out.println("index.getName() = " + index.getName());
-
-            for (PropertyKey key : index.getFieldKeys()) {
-                System.out.println("key.getName() = " + key.getName());
-                System.out.println("key = " + key);
-            }
-        }
-    }
-*/
 
     /**
      * This is upon adding a new type to Store.
@@ -113,18 +102,16 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
     public void onAdd(String typeName, IDataType dataType) throws MetadataException {
         LOG.info("Creating indexes for type name={}, definition={}", typeName, dataType);
 
+        TitanManagement management = titanGraph.getManagementSystem();
         try {
-            TitanManagement management = titanGraph.getManagementSystem();
             addIndexForType(management, dataType);
             management.commit();
             LOG.info("Index creation for type {} complete", typeName);
 
         } catch (Exception e) {
             LOG.error("Error creating index for type {}", dataType, e);
-            // management.rollback();
+            management.rollback();
         }
-
-        // dumpIndexKeys();
     }
 
     private void addIndexForType(TitanManagement management, IDataType dataType) {
@@ -170,18 +157,18 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
         final String propertyName = typeName + "." + field.name;
         switch (field.dataType().getTypeCategory()) {
             case PRIMITIVE:
-                createIndex(management, propertyName,
-                        getPrimitiveClass(field.dataType()), field.isUnique);
+                createVertexMixedIndex(
+                        management, propertyName, getPrimitiveClass(field.dataType()));
                 break;
 
             case ENUM:
-                createIndex(management, propertyName, Integer.class, field.isUnique);
+                createVertexMixedIndex(management, propertyName, Integer.class);
                 break;
 
             case ARRAY:
             case MAP:
                 // index the property holder for element names
-                createIndex(management, propertyName, String.class, field.isUnique);
+                createVertexMixedIndex(management, propertyName, String.class);
                 break;
 
             case STRUCT:
@@ -195,7 +182,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
 
             case CLASS:
                 // this is only A reference, index the attribute for edge
-                createEdgeIndex(management, propertyName, String.class);
+                createEdgeMixedIndex(management, propertyName);
                 break;
 
             default:
@@ -229,39 +216,18 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
         throw new IllegalArgumentException("unknown data type " + dataType);
     }
 
-    private static PropertyKey createIndex(TitanManagement management,
-                                           String propertyName, Class propertyClass) {
-        return createIndex(management,
-                propertyName, propertyClass, Cardinality.SINGLE, false, Vertex.class);
-    }
-
-    private static PropertyKey createIndex(TitanManagement management,
-                                           String propertyName,
-                                           Class propertyClass, boolean isUnique) {
-        return createIndex(management,
-                propertyName, propertyClass, Cardinality.SINGLE, isUnique, Vertex.class);
-    }
-
-    private static PropertyKey createEdgeIndex(TitanManagement management,
-                                               String propertyName, Class propertyClass) {
-        return createIndex(management,
-                propertyName, propertyClass, Cardinality.SINGLE, false, Edge.class);
-    }
-
-    private static PropertyKey createIndex(TitanManagement management,
-                                           String propertyName, Class propertyClass,
-                                           Cardinality cardinality, boolean isUnique,
-                                           Class<? extends Element> elementClass) {
+    private static PropertyKey createCompositeIndex(TitanManagement management, String indexName,
+                                                    String propertyName, Class propertyClass,
+                                                    boolean isUnique) {
         PropertyKey propertyKey = management.getPropertyKey(propertyName);
         if (propertyKey == null) {
             propertyKey = management
                     .makePropertyKey(propertyName)
                     .dataType(propertyClass)
-                    .cardinality(cardinality)
                     .make();
 
             TitanManagement.IndexBuilder indexBuilder = management
-                    .buildIndex("index_" + propertyName, elementClass)
+                    .buildIndex(indexName, Vertex.class)
                     .addKey(propertyKey);
 
             if (isUnique) {
@@ -272,5 +238,27 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
         }
 
         return propertyKey;
+    }
+
+    private static PropertyKey createVertexMixedIndex(TitanManagement management,
+                                                      String propertyName, Class propertyClass) {
+        PropertyKey propertyKey = management.getPropertyKey(propertyName);
+        if (propertyKey == null) {
+            propertyKey = management
+                    .makePropertyKey(propertyName)
+                    .dataType(propertyClass)
+                    .make();
+        }
+
+        TitanGraphIndex vertexIndex = management.getGraphIndex(Constants.VERTEX_INDEX);
+        management.addIndexKey(vertexIndex, propertyKey);
+
+        return propertyKey;
+    }
+
+    private static void createEdgeMixedIndex(TitanManagement management,
+                                             String propertyName) {
+        EdgeLabel edgeLabel = management.makeEdgeLabel(propertyName).make();
+        management.buildEdgeIndex(edgeLabel, propertyName, Direction.BOTH, Order.DEFAULT);
     }
 }

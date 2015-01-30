@@ -18,16 +18,13 @@
 
 package org.apache.hadoop.metadata.repository.graph;
 
-import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.GraphQuery;
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
-
 import org.apache.commons.collections.iterators.IteratorChain;
 import org.apache.hadoop.metadata.IReferenceableInstance;
 import org.apache.hadoop.metadata.ITypedInstance;
@@ -56,7 +53,6 @@ import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -131,15 +127,14 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                                String typeName) throws RepositoryException {
         LOG.info("adding entity={} type={}", typedInstance, typeName);
 
-        final TransactionalGraph transactionalGraph = graphService.getTransactionalGraph();
         try {
-            transactionalGraph.rollback();
+            titanGraph.rollback();
             final String guid = instanceToGraphMapper.mapTypedInstanceToGraph(typedInstance);
-            transactionalGraph.commit();  // commit if there are no errors
+            titanGraph.commit();  // commit if there are no errors
             return guid;
 
         } catch (MetadataException e) {
-            transactionalGraph.rollback();
+            titanGraph.rollback();
             throw new RepositoryException(e);
         }
     }
@@ -148,10 +143,9 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     public ITypedReferenceableInstance getEntityDefinition(String guid) throws RepositoryException {
         LOG.info("Retrieving entity with guid={}", guid);
 
-        final TransactionalGraph transactionalGraph = graphService.getTransactionalGraph();
         try {
-            transactionalGraph.rollback();  // clean up before starting a query
-            Vertex instanceVertex = GraphHelper.findVertexByGUID(transactionalGraph, guid);
+            titanGraph.rollback();  // clean up before starting a query
+            Vertex instanceVertex = GraphHelper.findVertexByGUID(titanGraph, guid);
             if (instanceVertex == null) {
                 LOG.debug("Could not find a vertex for guid {}", guid);
                 return null;
@@ -168,7 +162,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     @Override
     public List<String> getEntityList(String entityType) throws RepositoryException {
         LOG.info("Retrieving entity list for type={}", entityType);
-
+        // todo - replace this with index based query
         GraphQuery query = graphService.getBlueprintsGraph().query()
                 .has(Constants.ENTITY_TYPE_PROPERTY_KEY, entityType);
         Iterator<Vertex> results = query.vertices().iterator();
@@ -183,18 +177,35 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         }
 
         return entityList;
+
+/*
+        TitanIndexQuery query = titanGraph.indexQuery(Constants.VERTEX_INDEX,
+                "v." + Constants.ENTITY_TYPE_PROPERTY_KEY + ":(" + entityType + ")");
+        Iterator<TitanIndexQuery.Result<Vertex>> results = query.vertices().iterator();
+        if (!results.hasNext()) {
+            return Collections.emptyList();
+        }
+
+        ArrayList<String> entityList = new ArrayList<>();
+        while (results.hasNext()) {
+            Vertex vertex = results.next().getElement();
+            entityList.add(vertex.<String>getProperty(Constants.GUID_PROPERTY_KEY));
+        }
+
+        return entityList;
+*/
     }
     
-    private static void searchWalker (Vertex vtx, final int max, int counter, HashMap<String,JSONObject> e, HashMap<String,JSONObject> v, String edgesToFollow) {
-    	
+    private static void searchWalker (Vertex vtx, final int max, int counter,
+                                      HashMap<String,JSONObject> e,
+                                      HashMap<String,JSONObject> v, String edgesToFollow) {
     	counter++;
     	if (counter <= max) {
+    		Map<String,String> jsonVertexMap = new HashMap<>();
+    		Iterator<Edge> edgeIterator;
     		
-    		Map<String,String> jsonVertexMap = new HashMap<String,String>();
-    		Iterator<Edge> edgeIterator = null;
-    		
-    		// If we're doing a lineage traversal, only follow the edges specified by the query.  Otherwise
-    		// return them all.
+    		// If we're doing a lineage traversal, only follow the edges specified by the query.
+    		// Otherwise return them all.
     		if (edgesToFollow != null) {
     			IteratorChain ic = new IteratorChain();
     			
@@ -224,7 +235,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
    				Edge edge = edgeIterator.next();
    				String label = edge.getLabel();
    				
-   				Map<String,String> jsonEdgeMap = new HashMap<String,String>();
+   				Map<String,String> jsonEdgeMap = new HashMap<>();
    				String tail = edge.getVertex(Direction.OUT).getId().toString();
    				String head = edge.getVertex(Direction.IN).getId().toString();
    				
@@ -232,8 +243,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
    	   			jsonEdgeMap.put("head", head);
    	   			jsonEdgeMap.put("label", label);
    	   			
-   	   			Direction d = null;
-   	   			
+   	   			Direction d;
    	   			if (tail.equals(vtx.getId().toString())) {
    	   				d = Direction.IN;
    	   			} else {
@@ -249,12 +259,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
    	   			
   	   			e.put(edge.getId().toString(), new JSONObject(jsonEdgeMap));   			
    	   			searchWalker (edge.getVertex(d), max, counter, e, v, edgesToFollow);
-   				
    			}
-   			
-   			
-    	} 
-    	
+    	}
     }
     
     
@@ -264,16 +270,16 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
      * @param prop is the Vertex property to search.
      */
     @Override
-    public Map<String,HashMap<String,JSONObject>> textSearch(String searchText, int depth, String prop) {
+    public Map<String,HashMap<String,JSONObject>> textSearch(String searchText,
+                                                             int depth, String prop) {
  
-    	
-    	HashMap<String,HashMap<String,JSONObject>> result = new HashMap<String,HashMap<String,JSONObject>>();  
+    	HashMap<String,HashMap<String,JSONObject>> result = new HashMap<>();
     	
     	// HashMaps, which contain sub JOSN Objects to be relayed back to the parent. 
-        HashMap<String,JSONObject> vertices = new HashMap<String,JSONObject>();
-        HashMap<String,JSONObject> edges = new HashMap<String,JSONObject>();
+        HashMap<String,JSONObject> vertices = new HashMap<>();
+        HashMap<String,JSONObject> edges = new HashMap<>();
         
-        /* Later - when we allow search limitation by "type".
+        /* todo: Later - when we allow search limitation by "type".
         ArrayList<String> typesList = new ArrayList<String>();
         for (String s: types.split(",")) {
         	
@@ -307,16 +313,17 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
      * @param edgesToFollow is a comma-separated-list of edges to follow.
      */
     @Override
-    public Map<String,HashMap<String,JSONObject>> relationshipWalk(String guid, int depth, String edgesToFollow) {
+    public Map<String,HashMap<String,JSONObject>> relationshipWalk(String guid, int depth,
+                                                                   String edgesToFollow) {
 	
-    	HashMap<String,HashMap<String,JSONObject>> result = new HashMap<String,HashMap<String,JSONObject>>();
+    	HashMap<String,HashMap<String,JSONObject>> result = new HashMap<>();
     	
         // HashMaps, which contain sub JOSN Objects to be relayed back to the parent. 
-        HashMap<String,JSONObject> vertices = new HashMap<String,JSONObject>();
-        HashMap<String,JSONObject> edges = new HashMap<String,JSONObject>();
+        HashMap<String,JSONObject> vertices = new HashMap<>();
+        HashMap<String,JSONObject> edges = new HashMap<>();
         
         // Get the Vertex with the specified GUID.
-        Vertex v = GraphHelper.findVertexByGUID(graphService.getBlueprintsGraph(), guid);
+        Vertex v = GraphHelper.findVertexByGUID(titanGraph, guid);
         
         if (v != null) {
         	searchWalker(v, depth, 0, edges, vertices, edgesToFollow);
@@ -589,7 +596,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                             (ITypedStruct) typedInstance.get(attributeInfo.name),
                             attributeInfo, idToVertexMap);
                     // add an edge to the newly created vertex from the parent
-                    GraphHelper.addEdge(instanceVertex, structInstanceVertex, propertyName);
+                    GraphHelper.addEdge(
+                            titanGraph, instanceVertex, structInstanceVertex, propertyName);
                     break;
 
                 case TRAIT:
@@ -687,8 +695,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                     Vertex structInstanceVertex = mapStructInstanceToVertex(id,
                             (ITypedStruct) value, attributeInfo, idToVertexMap);
                     // add an edge to the newly created vertex from the parent
-                    GraphHelper.addEdge(instanceVertex, structInstanceVertex,
-                            propertyName);
+                    GraphHelper.addEdge(
+                            titanGraph, instanceVertex, structInstanceVertex, propertyName);
                     break;
 
                 case CLASS:
@@ -717,9 +725,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
                 if (referenceVertex != null) {
                     // add an edge to the class vertex from the instance
-                    GraphHelper.addEdge(instanceVertex, referenceVertex, propertyKey);
-                } else { // Oops - todo - throw an exception?
-                    System.out.println("BOOOOO = " + id);
+                    GraphHelper.addEdge(titanGraph, instanceVertex, referenceVertex, propertyKey);
                 }
             }
         }
@@ -754,7 +760,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
             // add an edge to the newly created vertex from the parent
             String relationshipLabel = typedInstance.getTypeName() + "." + traitName;
-            GraphHelper.addEdge(parentInstanceVertex, traitInstanceVertex, relationshipLabel);
+            GraphHelper.addEdge(
+                    titanGraph, parentInstanceVertex, traitInstanceVertex, relationshipLabel);
         }
 
         private void mapPrimitiveToVertex(ITypedInstance typedInstance,

@@ -59,7 +59,7 @@ public class GraphBackedMetadataRepositoryTest {
     private TitanGraphService titanGraphService;
     @Inject
     private GraphBackedMetadataRepository repositoryService;
-    
+
     private TypeSystem ts;
     private String guid;
 
@@ -70,12 +70,14 @@ public class GraphBackedMetadataRepositoryTest {
         // start the injected repository service
         repositoryService.start();
 
+        new GraphBackedSearchIndexer(titanGraphService);
+
         ts = TypeSystem.getInstance();
 
         defineDeptEmployeeTypes(ts);
     }
 
-    @Test(enabled = false)
+    @Test
     public void testSubmitEntity() throws Exception {
         Referenceable hrDept = createDeptEg1(ts);
         ClassType deptType = ts.getDataType(ClassType.class, "Department");
@@ -97,7 +99,7 @@ public class GraphBackedMetadataRepositoryTest {
         }
     }
 
-    @Test(dependsOnMethods = "testSubmitEntity", enabled = false)
+    @Test(dependsOnMethods = "testSubmitEntity")
     public void testGetEntityDefinition() throws Exception {
         ITypedReferenceableInstance entity = repositoryService.getEntityDefinition(guid);
         Assert.assertNotNull(entity);
@@ -112,11 +114,12 @@ public class GraphBackedMetadataRepositoryTest {
     @Test(enabled = false)
     public void testGetEntityList() throws Exception {
         List<String> entityList = repositoryService.getEntityList(ENTITY_TYPE);
+        System.out.println("entityList = " + entityList);
         Assert.assertNotNull(entityList);
         Assert.assertEquals(entityList.size(), 1); // one department
     }
 
-    @Test(enabled = false)
+    @Test
     public void testRawSearch1() throws Exception {
         Referenceable hrDept = createDeptEg1(ts);
         ClassType deptType = ts.getDataType(ClassType.class, "Department");

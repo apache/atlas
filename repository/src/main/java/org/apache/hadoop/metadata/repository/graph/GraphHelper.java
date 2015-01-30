@@ -19,8 +19,6 @@
 package org.apache.hadoop.metadata.repository.graph;
 
 import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanIndexQuery;
-import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
@@ -73,32 +71,23 @@ public final class GraphHelper {
         return instanceVertex;
     }
 
-    public static Edge addEdge(Vertex fromVertex, Vertex toVertex, String edgeLabel) {
+    public static Edge addEdge(TitanGraph titanGraph, Vertex fromVertex, Vertex toVertex,
+                               String edgeLabel) {
         LOG.debug("Adding edge for {} -> struct label {} -> v{}",
                 fromVertex, edgeLabel, toVertex);
-        return fromVertex.addEdge(edgeLabel, toVertex);
+
+        return titanGraph.addEdge(null, fromVertex, toVertex, edgeLabel);
     }
 
-    public static Vertex findVertexByGUID(Graph blueprintsGraph,
+    public static Vertex findVertexByGUID(TitanGraph titanGraph,
                                           String value) {
         LOG.debug("Finding vertex for key={}, value={}", Constants.GUID_PROPERTY_KEY, value);
 
-        GraphQuery query = blueprintsGraph.query()
-                .has(Constants.GUID_PROPERTY_KEY, Compare.EQUAL, value);
+        GraphQuery query = titanGraph.query()
+                .has(Constants.GUID_PROPERTY_KEY, value);
         Iterator<Vertex> results = query.vertices().iterator();
         // returning one since guid should be unique
         return results.hasNext() ? results.next() : null;
-    }
-
-    public static Vertex findVertexByGUIDUsingIndex(TitanGraph titanGraph,
-                                                    String value) {
-        LOG.debug("Finding vertex for key={}, value={}", Constants.GUID_PROPERTY_KEY, value);
-
-        TitanIndexQuery query = titanGraph.indexQuery("index_" + Constants.GUID_PROPERTY_KEY,
-                Constants.GUID_PROPERTY_KEY + " = " +  value);
-        Iterator<TitanIndexQuery.Result<Vertex>> results = query.vertices().iterator();
-        // returning one since guid should be unique
-        return results.hasNext() ? results.next().getElement() : null;
     }
 
     public static String vertexString(final Vertex vertex) {
@@ -120,6 +109,7 @@ public final class GraphHelper {
                 + "]";
     }
 
+/*
     public static void dumpToLog(final Graph graph) {
         LOG.debug("*******************Graph Dump****************************");
         LOG.debug("Vertices of {}", graph);
@@ -133,4 +123,5 @@ public final class GraphHelper {
         }
         LOG.debug("*******************Graph Dump****************************");
     }
+*/
 }

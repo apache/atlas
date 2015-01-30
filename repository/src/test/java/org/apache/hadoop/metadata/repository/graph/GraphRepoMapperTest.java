@@ -73,6 +73,8 @@ public class GraphRepoMapperTest {
         // start the injected repository service
         repositoryService.start();
 
+        new GraphBackedSearchIndexer(titanGraphService);
+
         typeSystem = TypeSystem.getInstance();
 
         createHiveTypes();
@@ -109,7 +111,6 @@ public class GraphRepoMapperTest {
     public void testGetEntityDefinition() throws Exception {
         TitanGraph graph = titanGraphService.getTitanGraph();
         GraphQuery query = graph.query()
-                .has("type", Compare.EQUAL, TABLE_TYPE)
                 .has("type", Compare.EQUAL, TABLE_TYPE);
         Iterator<Vertex> results = query.vertices().iterator();
         // returning one since guid should be unique

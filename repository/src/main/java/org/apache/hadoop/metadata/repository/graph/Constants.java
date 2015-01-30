@@ -24,10 +24,27 @@ final class Constants {
     }
 
     static final String GUID_PROPERTY_KEY = "guid";
+    static final String GUID_INDEX = "guid_index";
+
     static final String ENTITY_TYPE_PROPERTY_KEY = "type";
+    static final String ENTITY_TYPE_INDEX = "type_index";
+
     static final String VERSION_PROPERTY_KEY = "version";
     static final String TIMESTAMP_PROPERTY_KEY = "timestamp";
 
+    /**
+     * search backing index name.
+     */
     static final String BACKING_INDEX = "search";
     static final String INDEX_NAME = "metadata";
+
+    /**
+     * search backing index name for vertex keys.
+     */
+    static final String VERTEX_INDEX = "vertex_index";
+
+    /**
+     * search backing index name for edge labels.
+     */
+    static final String EDGE_INDEX = "edge_index";
 }
