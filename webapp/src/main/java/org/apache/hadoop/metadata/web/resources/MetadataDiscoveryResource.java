@@ -161,7 +161,7 @@ public class MetadataDiscoveryResource {
     @Path("/search/fulltext")
     @Produces({MediaType.APPLICATION_JSON})
     public Response getFullTextResults(@QueryParam("text") final String searchText,
-            @DefaultValue("1") @QueryParam("depth") final int depth, @QueryParam("property") final String prop) {
+            @DefaultValue("1") @QueryParam("depth") final int depth,@DefaultValue("guid") @QueryParam("property") final String prop) {
     	
         LOG.info("Performing full text search for vertices with property {} matching= {}", prop, searchText);
         Preconditions.checkNotNull(searchText, "Invalid argument: \"text\" cannot be null.");

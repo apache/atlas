@@ -19,12 +19,14 @@
 package org.apache.hadoop.metadata.repository.graph;
 
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.TitanIndexQuery.Result;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
+
 import org.apache.commons.collections.iterators.IteratorChain;
 import org.apache.hadoop.metadata.IReferenceableInstance;
 import org.apache.hadoop.metadata.ITypedInstance;
@@ -53,6 +55,7 @@ import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -273,6 +276,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     public Map<String,HashMap<String,JSONObject>> textSearch(String searchText,
                                                              int depth, String prop) {
  
+    	TitanGraph g = (TitanGraph)graphService.getBlueprintsGraph();
     	HashMap<String,HashMap<String,JSONObject>> result = new HashMap<>();
     	
     	// HashMaps, which contain sub JOSN Objects to be relayed back to the parent. 
@@ -293,8 +297,11 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         }*/
         
         int resultCount = 0;
-       	for (Vertex v: graphService.getBlueprintsGraph().query().has(prop,searchText).vertices()) {
+        
+       	//for (Result<Vertex> v: g.indexQuery(Constants.VERTEX_INDEX, "v." + prop + ":(" + searchText + ")").vertices()) {
+        for (Vertex v: graphService.getBlueprintsGraph().query().has(prop,searchText).vertices()) {
        		
+        	//searchWalker(v.getElement(), depth, 0, edges, vertices, null);
        		searchWalker(v, depth, 0, edges, vertices, null);
        		resultCount++;
        			
