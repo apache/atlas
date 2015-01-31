@@ -13,13 +13,8 @@ var express = require('express');
  */
 
 // Initializing system variables
-var config = require('./server/config/config');
-
-// Load configurations
-// Set the node enviornment variable if not set before
-process.env.NODE_ENV = config.nodeEnv;
-
-var app = express();
+var config = require('./server/config/config'),
+    app = express();
 
 // Express settings
 require('./server/config/express')(app);
@@ -28,8 +23,8 @@ require('./server/config/express')(app);
 var port = process.env.PORT || config.port;
 app.listen(port);
 
-console.log('Environment is = "' + process.env.NODE_ENV + '"');
-console.log('Express app started on port ' + port + ' using config\n', config);
+console.log('Environment is = "' + config.nodeEnv + '"');
+console.log('Express app started on port ' + port + ' using config\n', JSON.stringify(config, null, 4));
 
 // Expose app
 module.exports = app;

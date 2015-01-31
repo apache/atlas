@@ -25,5 +25,6 @@ var path = require('path'),
             }]
         }
     });
-
+// Set the node enviornment variable if not set before
+config.nodeEnv = process.env.NODE_ENV = process.env.NODE_ENV || config.nodeEnv;
 module.exports = config;

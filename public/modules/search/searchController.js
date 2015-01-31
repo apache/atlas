@@ -11,12 +11,16 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
             SearchResource.search($location.search(query).search(), function(response) {
                 $scope.results = response;
                 if ($scope.results.length < 1) {
-                    NotificationService.error("No Result found", false);
+                    NotificationService.error('No Result found', false);
                 }
                 $state.go('search.results', {}, {
                     location: false
                 });
             });
+        };
+
+        $scope.typeAvailable = function() {
+            return ['hive_table'].indexOf(this.result.type && this.result.type.toLowerCase()) > -1;
         };
 
         var urlParts = $location.url().split('?');
