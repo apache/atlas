@@ -2,7 +2,7 @@
     "name": "dgc-metadata",
     "description": "DGC Metadata",
     "version": "1.0.0-SNAPSHOT",
-    "dependencies": {
+    "devDependencies": {
         "angular": "~1.2.15",
         "angular-resource": "~1.2.15",
         "angular-cookies": "~1.2.15",
@@ -13,6 +13,8 @@
         "angular-ui-router": "~0.2.13",
         "lodash": "~3.0.0",
         "angular-ui-utils": "~0.1.1",
-        "font-awesome": "~4.2.0"
+        "font-awesome": "~4.2.0",
+        "closure-compiler": "https://dl.google.com/closure-compiler/compiler-20140814.zip",
+        "ng-closure-runner": "https://raw.github.com/angular/ng-closure-runner/v0.2.3/assets/ng-closure-runner.zip"
     }
 }

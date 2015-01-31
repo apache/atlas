@@ -23,7 +23,7 @@ angular.module('dgc').factory('lodash', ['$window',
             renderErrors: $window.renderErrors
         };
     }
-]).run(function(Global, NotificationService, lodash) {
+]).run(['Global', 'NotificationService', 'lodash', function(Global, NotificationService, lodash) {
     var errors = Global.renderErrors;
     if (angular.isArray(errors) || angular.isObject(errors)) {
         lodash.forEach(errors, function(err) {
@@ -37,4 +37,4 @@ angular.module('dgc').factory('lodash', ['$window',
         errors.timeout = false;
         NotificationService.error(errors);
     }
-});
+}]);

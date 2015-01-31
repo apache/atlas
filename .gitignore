@@ -4,5 +4,6 @@
 node_modules/
 lib/
 public/lib
+public/dist
 *.log
 public/css/common.css

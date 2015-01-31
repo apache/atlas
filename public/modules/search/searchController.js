@@ -8,7 +8,7 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
         $scope.search = function(query) {
             $scope.results = [];
             NotificationService.reset();
-            SearchResource.search($location.search(query).$$search, function(response) {
+            SearchResource.search($location.search(query).search(), function(response) {
                 $scope.results = response;
                 if ($scope.results.length < 1) {
                     NotificationService.error("No Result found", false);
@@ -19,7 +19,7 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
             });
         };
 
-        var urlParts = $location.$$url.split('?');
+        var urlParts = $location.url().split('?');
         $scope.query = urlParts.length > 1 ? urlParts[1] : null;
         if ($scope.query) {
             $scope.search($scope.query);
