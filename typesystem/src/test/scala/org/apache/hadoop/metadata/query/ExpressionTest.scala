@@ -60,7 +60,7 @@ class ExpressionTest extends BaseTest {
   }
 
   @Test def testIsTrait: Unit = {
-    val e = QueryProcessor.validate(_class("DB").where(isTrait("Jdbc")))
+    val e = QueryProcessor.validate(_class("DB").where(isTrait("JdbcAccess")))
     println(e)
   }
 
@@ -112,15 +112,16 @@ class ExpressionTest extends BaseTest {
 
   @Test def testJoinAndSelect1: Unit = {
     val e = QueryProcessor.validate(
-      _class("DB").as("db").field("Table").as("tab").where((id("createTime") + int(1) > int(0))
-        .and(id("db").field("name").`=`(string("Reporting")))).select(id("db").field("name").as("dbName"), id("tab").field("name").as("tabName"))
+      _class("DB").as("db").field("Table").as("tab").where((id("db").field("createTime") + int(1) > int(0))
+        .and(id("db").field("name").`=`(string("Reporting")))).select(id("db").field("name").as("dbName"),
+          id("tab").field("name").as("tabName"))
     )
     println(e)
   }
 
   @Test def testJoinAndSelect2: Unit = {
     val e = QueryProcessor.validate(
-      _class("DB").as("db").field("Table").as("tab").where((id("createTime") + int(1) > int(0))
+      _class("DB").as("db").field("Table").as("tab").where((id("db").field("createTime") + int(1) > int(0))
         .or(id("db").field("name").`=`(string("Reporting"))))
         .select(id("db").field("name").as("dbName"), id("tab").field("name").as("tabName"))
     )
@@ -129,7 +130,7 @@ class ExpressionTest extends BaseTest {
 
   @Test def testJoinAndSelect3: Unit = {
     val e = QueryProcessor.validate(
-      _class("DB").as("db").field("Table").as("tab").where((id("createTime") + int(1) > int(0))
+      _class("DB").as("db").field("Table").as("tab").where((id("db").field("createTime") + int(1) > int(0))
         .and(id("db").field("name").`=`(string("Reporting")))
         .or(id("db").hasField("owner")))
         .select(id("db").field("name").as("dbName"), id("tab").field("name").as("tabName"))
@@ -140,7 +141,7 @@ class ExpressionTest extends BaseTest {
   @Test def testJoinAndSelect4: Unit = {
     val e = QueryProcessor.validate(
       _class("DB") as "db" join "Table" as "tab" where (
-      id("createTime") + int(1) > int(0) and
+        id("db").field("createTime") + int(1) > int(0) and
         ( id("db") `.` "name" `=` string("Reporting") ) or
         ( id("db") hasField "owner" )
       ) select (

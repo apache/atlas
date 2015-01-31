@@ -240,6 +240,32 @@ object Expressions {
     }
 
     /*
+     * treeString methods
+     */
+    def nodeName = getClass.getSimpleName
+
+    def argString: String = productIterator.flatMap {
+      case e: Expression if children contains e => Nil
+      case e: Expression if e.toString contains "\n" => s"(${e.simpleString})" :: Nil
+      case seq: Seq[_] => seq.mkString("[", ",", "]") :: Nil
+      case set: Set[_] => set.mkString("{", ",", "}") :: Nil
+      case other => other :: Nil
+    }.mkString(", ")
+
+    /** String representation of this node without any children */
+    def simpleString = s"$nodeName $argString"
+
+    protected def generateTreeString(depth: Int, builder: StringBuilder): StringBuilder = {
+      builder.append(" " * depth)
+      builder.append(simpleString)
+      builder.append("\n")
+      children.foreach(_.generateTreeString(depth + 1, builder))
+      builder
+    }
+
+    def treeString = generateTreeString(0, new StringBuilder).toString
+
+    /*
      * Fluent API methods
      */
     def field(fieldName : String) = new UnresolvedFieldExpression(this, fieldName)
@@ -342,7 +368,7 @@ object Expressions {
   case class FieldExpression(fieldName: String, fieldInfo: FieldInfo, child: Option[Expression])
     extends Expression {
     val children = if (child.isDefined) List(child.get) else Nil
-    lazy val dataType = fieldInfo.attrInfo.dataType()
+    lazy val dataType = if (!fieldInfo.isReverse) fieldInfo.attrInfo.dataType() else fieldInfo.reverseDataType
     override lazy val resolved: Boolean = true
 
     override def namedExpressions = if ( child.isDefined ) child.get.namedExpressions else Map()

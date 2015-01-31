@@ -24,8 +24,8 @@ import com.thinkaurelius.titan.core.TitanGraph
 object QueryProcessor {
 
   def evaluate(e : Expression, g : TitanGraph) : AnyRef = {
-    validate(e)
-    val q = new GremlinTranslator(e).translate()
+    val e1 = validate(e)
+    val q = new GremlinTranslator(e1).translate()
     println(q.queryStr)
     new GremlinEvaluator(q, g).evaluate()
   }

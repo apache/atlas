@@ -110,7 +110,7 @@ object QueryTestsUtils extends GraphUtils {
       Array[AttributeDefinition]())
     def etlTraitDef = new HierarchicalTypeDefinition[TraitType](classOf[TraitType], "ETL", null,
       Array[AttributeDefinition]())
-    def jdbcTraitDef = new HierarchicalTypeDefinition[TraitType](classOf[TraitType], "Jdbc", null,
+    def jdbcTraitDef = new HierarchicalTypeDefinition[TraitType](classOf[TraitType], "JdbcAccess", null,
       Array[AttributeDefinition]())
 
     TypeSystem.getInstance().defineTypes(ImmutableList.of[StructTypeDefinition],
