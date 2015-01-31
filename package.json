@@ -47,6 +47,7 @@
         "grunt-bower-task": "~0.4.0",
         "grunt-cli": "~0.1.11",
         "grunt-concurrent": "^1.0.0",
+        "grunt-contrib-compress": "^0.13.0",
         "grunt-contrib-jshint": "^0.11.0",
         "grunt-contrib-watch": "^0.6.0",
         "grunt-dev-update": "^1.0.2",

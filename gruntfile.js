@@ -1,7 +1,6 @@
 'use strict';
 
 module.exports = function(grunt) {
-    // Project Configuration
     var classPathSep = (process.platform === "win32") ? ';' : ':';
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
@@ -78,7 +77,6 @@ module.exports = function(grunt) {
                 }
             }
         },
-        // app
         dist: 'public/dist/app.min.js',
         modules: grunt.file.expand(
             'public/js/app.js',
@@ -108,16 +106,22 @@ module.exports = function(grunt) {
                     updateType: 'force'
                 }
             }
+        },
+        compress: {
+            main: {
+                options: {
+                    archive: '<%= pkg.name %>_<%= pkg.version %>.tgz'
+                },
+                src: ['node_modules/**', 'package.json', 'server.js', 'server/**', 'public/**', '!public/js/**', '!public/modules/**/*.js']
+            }
         }
     });
 
-    //Load NPM tasks
     require('load-grunt-tasks')(grunt);
 
-    //Default task(s).
     grunt.registerTask('default', ['devUpdate', 'bower', 'jshint', 'jsbeautifier:default', 'shell:min']);
 
-    // Server task
     grunt.registerTask('server', ['bower', 'jshint', 'concurrent']);
+    grunt.registerTask('server:prod', ['nodemon:prod']);
     grunt.registerTask('server:prod', ['nodemon:prod']);
 };
