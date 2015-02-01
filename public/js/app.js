@@ -15,6 +15,10 @@ angular.module('dgc').factory('lodash', ['$window',
     function($window) {
         return $window._;
     }
+]).factory('d3', ['$window',
+    function($window) {
+        return $window.d3;
+    }
 ]).factory('Global', ['$window',
     function($window) {
         return {

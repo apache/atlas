@@ -1,13 +1,12 @@
 <div class="container" data-ng-controller="DetailsController">
     <div class="col-lg-12">
+        <h3>{{details.$id$.id}}</h3>
+        <br/>
         <tabset>
             <tab data-heading="Wiki">
-                <div data-ng-repeat="(key,value) in details" data-ng-if="isString(value)" ng-include="'/modules/details/views/attribute.html'"></div>
+                <div data-ng-repeat="(key,value) in details" data-ng-if="isString(value)" data-ng-include="'/modules/details/views/attribute.html'"></div>
             </tab>
-            <tab data-heading="Raw">
-                <pre>{{details | json}}</pre>
-            </tab>
-            <tab data-heading="Lineage">Graph will be here soon...</tab>
+            <tab data-heading="Lineage"><ng-include src="'/modules/lineage/views/lineage.html'"/></tab>
         </tabset>
     </div>
 </div>

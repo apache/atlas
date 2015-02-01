@@ -1,3 +1,3 @@
 'use strict';
 
-angular.module('dgc.details', []);
+angular.module('dgc.details', ['dgc.lineage']);
