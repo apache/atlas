@@ -29,6 +29,7 @@ import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class GraphBackedDiscoveryService implements DiscoveryService {
 
@@ -79,6 +80,15 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
         
         return repository.relationshipWalk(guid, depth, edgesToFollow);
     	
+    }
+    
+    /**
+     * Return a Set of indexed properties in the graph.
+     * No parameters.
+     */
+    @Override
+    public Set<String> getGraphIndexedFields() {
+    	return repository.getGraphIndexedFields();
     }
     
     

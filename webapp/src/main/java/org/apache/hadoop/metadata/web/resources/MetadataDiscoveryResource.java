@@ -189,5 +189,32 @@ public class MetadataDiscoveryResource {
        	return Response.ok(response).build();
 
     }
+    
+    /**
+     * Return a list Vertices and Edges in the index.
+     * 
+     * GET http://host/api/metadata/discovery/getIndexedFields
+     *
+     * No parameters taken.
+     */    
+  
+    @GET
+    @Path("/getIndexedFields")
+    @Produces({MediaType.APPLICATION_JSON})
+    public Response getLineageResults() {
+    	
+    	JSONObject response = new JSONObject();
+    	
+    	try {
+    		response.put("indexed_fields:",discoveryService.getGraphIndexedFields());
+    	} catch (JSONException e) {
+   			throw new WebApplicationException(
+                    Servlets.getErrorResponse("Search: Error building JSON result set.", Response.Status.INTERNAL_SERVER_ERROR));
+   		}
+    	
+    	LOG.debug("JSON result:" + response.toString());
+       	return Response.ok(response).build();
+    	
+    }
 
 }

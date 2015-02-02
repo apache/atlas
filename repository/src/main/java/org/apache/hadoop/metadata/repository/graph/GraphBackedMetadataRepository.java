@@ -65,6 +65,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -140,6 +141,15 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             titanGraph.rollback();
             throw new RepositoryException(e);
         }
+    }
+    
+    /**
+     * Return a Set of indexed properties in the graph.
+     * No parameters.
+     */
+    @Override
+    public Set<String> getGraphIndexedFields() {
+    	return graphService.getIndexableGraph().getIndexedKeys(Vertex.class);
     }
 
     @Override

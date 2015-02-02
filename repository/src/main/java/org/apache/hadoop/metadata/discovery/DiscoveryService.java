@@ -24,6 +24,7 @@ import org.codehaus.jettison.json.JSONObject;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Metadata discovery service.
@@ -54,4 +55,9 @@ public interface DiscoveryService {
      */
     Map<String, HashMap<String,JSONObject>> relationshipWalk(String guid, int depth, String edgesToFollow);
 
+    /**
+     * Return a Set of indexed properties in the graph.
+     * No parameters.
+     */
+    Set<String> getGraphIndexedFields();
 }

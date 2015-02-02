@@ -46,6 +46,19 @@ public class MetadataDiscoveryResourceIT extends BaseResourceIT {
     }
     
     @Test
+    public void testGetIndexedProperties() throws Exception {
+        WebResource resource = service
+                .path("api/metadata/discovery/getIndexedFields");
+
+        ClientResponse clientResponse = resource
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.GET, ClientResponse.class);
+        Assert.assertNotEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
+        
+    }
+    
+    @Test
     public void testLineageUriExists() throws Exception {
         WebResource resource = service
                 .path("api/metadata/discovery/search/relationships/1")

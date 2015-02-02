@@ -28,6 +28,7 @@ import org.codehaus.jettison.json.JSONObject;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * An interface for persisting metadata into a blueprints enabled graph db.
@@ -64,4 +65,10 @@ public interface MetadataRepository extends Service {
      * @param edgesToFollow is a comma-separated-list of edges to follow.
      */
     Map<String, HashMap<String,JSONObject>> relationshipWalk(String guid, int depth, String edgesToFollow);
+       
+    /**
+     * Return a Set of indexed properties in the graph.
+     * No parameters.
+     */
+    Set<String> getGraphIndexedFields();
 }
