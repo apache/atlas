@@ -20,14 +20,36 @@ package org.apache.hadoop.metadata.query
 
 import javax.script.{Bindings, ScriptEngine, ScriptEngineManager}
 
-import com.thinkaurelius.titan.core.TitanGraph
+import com.thinkaurelius.titan.core.{TitanVertex, TitanGraph}
+import org.apache.hadoop.metadata.ITypedInstance
+import org.apache.hadoop.metadata.types.{ClassType, IConstructableType}
+import scala.language.existentials
 
-class GremlinEvaluator(qry : GremlinQuery, g: TitanGraph) {
+case class GremlinQueryResult(qry : GremlinQuery,
+                              resultDataType : IConstructableType[_, _ <: ITypedInstance],
+                               rows : List[ITypedInstance])
+
+class GremlinEvaluator(qry : GremlinQuery, persistenceStrategy : GraphPersistenceStrategies, g: TitanGraph) {
 
   val manager: ScriptEngineManager = new ScriptEngineManager
   val engine: ScriptEngine = manager.getEngineByName("gremlin-groovy")
   val bindings: Bindings = engine.createBindings
   bindings.put("g", g)
 
-  def evaluate() : AnyRef = engine.eval(qry.queryStr, bindings)
+  def evaluate() : GremlinQueryResult = {
+    import scala.collection.JavaConversions._
+    val rType = qry.expr.dataType
+    val rawRes = engine.eval(qry.queryStr, bindings)
+
+    if ( rType.isInstanceOf[ClassType]) {
+      val dType = rType.asInstanceOf[ClassType]
+      val rows = rawRes.asInstanceOf[java.util.List[TitanVertex]].map { v =>
+        persistenceStrategy.constructClassInstance(dType, v)
+      }
+      GremlinQueryResult(qry, dType, rows.toList)
+    } else {
+      null
+    }
+
+  }
 }

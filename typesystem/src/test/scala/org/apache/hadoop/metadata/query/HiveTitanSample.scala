@@ -46,6 +46,16 @@ object HiveTitanSample {
         }
       }
 
+      this.getClass.getDeclaredFields filter (_.getName == "traits") foreach { f =>
+        f.setAccessible(true)
+        var traits = f.get(this).asInstanceOf[Option[List[Trait]]]
+
+        if ( traits.isDefined ) {
+          val fV = traits.get.map(_.getClass.getSimpleName).mkString(",")
+          sb.append(s""", "traitNames" : "$fV"""")
+        }
+      }
+
       sb.append("}")
       vertices += sb.toString()
     }
@@ -84,11 +94,11 @@ object HiveTitanSample {
   case class StorageDescriptor(inputFormat : String, outputFormat : String,
                                _id: String = "" + nextVertexId.incrementAndGet()) extends Struct
 
-  case class Column(name : String, dataType : String, storageDesc : StorageDescriptor,
+  case class Column(name : String, dataType : String, sd : StorageDescriptor,
                     traits : Option[List[Trait]] = None,
                                _id: String = "" + nextVertexId.incrementAndGet()) extends Instance
 
-  case class Table(name: String, db: DB, storageDesc : StorageDescriptor,
+  case class Table(name: String, db: DB, sd : StorageDescriptor,
                    traits : Option[List[Trait]] = None,
                    _id: String = "" + nextVertexId.incrementAndGet()) extends Instance
 
@@ -247,31 +257,31 @@ val GremlinQueries  = List(
 
   // 5. List all tables that are Dimensions and have the TextInputFormat
   """
-    g.V.as("v").and(_().outE("Table.Dimension"), _().out("Table.storageDesc").has("inputFormat", "TextInputFormat")).name
+    g.V.as("v").and(_().outE("Table.Dimension"), _().out("Table.sd").has("inputFormat", "TextInputFormat")).name
   """.stripMargin,
 
   // 6. List all tables that are Dimensions or have the TextInputFormat
   """
-    g.V.as("v").or(_().outE("Table.Dimension"), _().out("Table.storageDesc").has("inputFormat", "TextInputFormat")).name
+    g.V.as("v").or(_().outE("Table.Dimension"), _().out("Table.sd").has("inputFormat", "TextInputFormat")).name
   """.stripMargin,
 
   // 7. List tables that have at least 1 PII column
   """
-    g.V.has("typeName", "Table").as("tab").out("Table.storageDesc").in("Column.storageDesc").as("column"). \
+    g.V.has("typeName", "Table").as("tab").out("Table.sd").in("Column.sd").as("column"). \
       out("Column.PII").select.groupBy{it.getColumn("tab")}{it.getColumn("column")}{[ "c" : it.size]}.cap.scatter.filter{it.value.c > 0}. \
       transform{it.key}.name  """.stripMargin
 
   // 7.a from Table as tab -> g.V.has("typeName", "Table").as("tab")
-  // 7.b storageDesc.Column as column -> out("Table.storageDesc").in("Column.storageDesc").as("column")
+  // 7.b sd.Column as column -> out("Table.sd").in("Column.sd").as("column")
   // 7.c is PII -> out("Column.PII")
   // 7.d select tab, column -> select{it}{it}
   // 7.e groupBy tab compute count(column) as c
   // 7.f where c > 0
 
   // 7.a Alias(Type("Table"), "tab")
-  // 7b. Field("storageDesc", Alias(Type("Table"), "tab"))
-  //     Alias(Field("Column", Field("storageDesc", Alias(Type("Table"), "tab"))), "column")
-  // 7.c Filter(is("PII"), Alias(Field("Column", Field("storageDesc", Alias(Type("Table"), "tab"))), "column"))
+  // 7b. Field("sd", Alias(Type("Table"), "tab"))
+  //     Alias(Field("Column", Field("sd", Alias(Type("Table"), "tab"))), "column")
+  // 7.c Filter(is("PII"), Alias(Field("Column", Field("sd", Alias(Type("Table"), "tab"))), "column"))
   // 7.d
   )
 }

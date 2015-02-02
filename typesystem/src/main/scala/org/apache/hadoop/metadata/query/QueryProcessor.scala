@@ -23,11 +23,16 @@ import com.thinkaurelius.titan.core.TitanGraph
 
 object QueryProcessor {
 
-  def evaluate(e : Expression, g : TitanGraph) : AnyRef = {
+  def evaluate(e : Expression, g : TitanGraph) : GremlinQueryResult = {
+    val gP = GraphPersistenceStrategy1
     val e1 = validate(e)
-    val q = new GremlinTranslator(e1).translate()
-    println(q.queryStr)
-    new GremlinEvaluator(q, g).evaluate()
+    val q = new GremlinTranslator(e1, gP).translate()
+//    println("---------------------")
+//    println("Query: " + e1)
+//    println("Expression Tree:\n" + e1.treeString)
+//    println("Gremlin Query: " + q.queryStr)
+//    println("---------------------")
+    new GremlinEvaluator(q, gP, g).evaluate()
   }
 
   def validate(e : Expression) : Expression = {

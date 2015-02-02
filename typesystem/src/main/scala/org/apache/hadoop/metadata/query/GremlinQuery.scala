@@ -18,59 +18,19 @@
 
 package org.apache.hadoop.metadata.query
 
-import Expressions._
-import org.apache.hadoop.metadata.query.TypeUtils.FieldInfo
+import org.apache.hadoop.metadata.query.Expressions._
 import org.apache.hadoop.metadata.types.DataTypes.TypeCategory
-import org.apache.hadoop.metadata.types.{AttributeInfo, IDataType}
 
-import scala.collection.immutable.TreeMap
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 
-case class GremlinQuery(expr : Expression, queryStr : String) {
+case class GremlinQuery(expr: Expression, queryStr: String) {
 
-}
-
-trait GraphPersistenceStrategies {
-  /**
-   * Name of attribute used to store typeName in vertex
-   */
-  def typeAttributeName : String
-
-  /**
-   * Given a dataType and a reference attribute, how is edge labeled
-   */
-  def edgeLabel(iDataType: IDataType[_], aInfo : AttributeInfo) : String
-
-  def traitLabel(cls : IDataType[_], traitName : String) : String
-
-  def edgeLabel(fInfo : FieldInfo) : String = fInfo match {
-    case FieldInfo(dataType, aInfo, null) => edgeLabel(dataType, aInfo)
-    case FieldInfo(dataType, aInfo, reverseDataType) => edgeLabel(reverseDataType, aInfo)
-  }
-
-  def fieldPrefixInSelect : String
-
-  def gremlinCompOp(op : ComparisonExpression) = op.symbol match {
-    case "=" => "T.eq"
-    case "!=" => "T.neq"
-    case ">" => "T.gt"
-    case ">=" => "T.gte"
-    case "<" => "T.lt"
-    case "<=" => "T.lte"
-    case _ => throw new ExpressionException(op, "Comparison operator not supported in Gremlin")
-  }
-}
-
-object GraphPersistenceStrategy1 extends GraphPersistenceStrategies {
-  val typeAttributeName = "typeName"
-  def edgeLabel(dataType: IDataType[_], aInfo : AttributeInfo) = s"${dataType.getName}.${aInfo.name}"
-  val fieldPrefixInSelect = "it"
-  def traitLabel(cls : IDataType[_], traitName : String) = s"${cls.getName}.$traitName"
 }
 
 trait SelectExpressionHandling {
+
   /**
    * To aide in gremlinQuery generation add an alias to the input of SelectExpressions
    */
@@ -78,21 +38,21 @@ trait SelectExpressionHandling {
 
     private var idx = 0
 
-    def isDefinedAt(e : Expression) = true
+    def isDefinedAt(e: Expression) = true
 
-    class DecorateFieldWithAlias(aliasE : AliasExpression)
+    class DecorateFieldWithAlias(aliasE: AliasExpression)
       extends PartialFunction[Expression, Expression] {
-      def isDefinedAt(e : Expression) = true
+      def isDefinedAt(e: Expression) = true
 
-      def apply(e : Expression) = e match {
+      def apply(e: Expression) = e match {
         case fe@FieldExpression(fieldName, fInfo, None) =>
           FieldExpression(fieldName, fInfo, Some(BackReference(aliasE.alias, aliasE.child, None)))
         case _ => e
       }
     }
 
-    def apply(e : Expression) = e match {
-      case SelectExpression(_:AliasExpression, _) => e
+    def apply(e: Expression) = e match {
+      case SelectExpression(_: AliasExpression, _) => e
       case SelectExpression(child, selList) => {
         idx = idx + 1
         val aliasE = AliasExpression(child, s"_src$idx")
@@ -102,7 +62,7 @@ trait SelectExpressionHandling {
     }
   }
 
-  def getSelectExpressionSrc(e : Expression) : List[String] = {
+  def getSelectExpressionSrc(e: Expression): List[String] = {
     val l = ArrayBuffer[String]()
     e.traverseUp {
       case BackReference(alias, _, _) => l += alias
@@ -110,22 +70,22 @@ trait SelectExpressionHandling {
     l.toSet.toList
   }
 
-  def validateSelectExprHaveOneSrc : PartialFunction[Expression, Unit] = {
+  def validateSelectExprHaveOneSrc: PartialFunction[Expression, Unit] = {
     case SelectExpression(_, selList) => {
       selList.foreach { se =>
         val srcs = getSelectExpressionSrc(se)
-        if ( srcs.size > 1 ) {
+        if (srcs.size > 1) {
           throw new GremlinTranslationException(se, "Only one src allowed in a Select Expression")
         }
       }
     }
   }
 
-  def groupSelectExpressionsBySrc(sel :SelectExpression) : mutable.LinkedHashMap[String, List[Expression]] = {
+  def groupSelectExpressionsBySrc(sel: SelectExpression): mutable.LinkedHashMap[String, List[Expression]] = {
     val m = mutable.LinkedHashMap[String, List[Expression]]()
-    sel.selectListWithAlias.foreach {se =>
+    sel.selectListWithAlias.foreach { se =>
       val l = getSelectExpressionSrc(se.child)
-      if ( !m.contains(l(0)) ) {
+      if (!m.contains(l(0))) {
         m(l(0)) = List()
       }
       m(l(0)) = m(l(0)) :+ se.child
@@ -136,18 +96,18 @@ trait SelectExpressionHandling {
 }
 
 class GremlinTranslationException(expr: Expression, reason: String) extends
-  ExpressionException(expr, s"Unsupported Gremlin translation: $reason")
+ExpressionException(expr, s"Unsupported Gremlin translation: $reason")
 
-class GremlinTranslator(expr : Expression,
-                        gPersistenceBehavior : GraphPersistenceStrategies = GraphPersistenceStrategy1)
-extends SelectExpressionHandling {
+class GremlinTranslator(expr: Expression,
+                        gPersistenceBehavior: GraphPersistenceStrategies)
+  extends SelectExpressionHandling {
 
-  val wrapAndRule : PartialFunction[Expression, Expression] = {
-    case f : FilterExpression if !f.condExpr.isInstanceOf[LogicalExpression] =>
+  val wrapAndRule: PartialFunction[Expression, Expression] = {
+    case f: FilterExpression if !f.condExpr.isInstanceOf[LogicalExpression] =>
       FilterExpression(f.child, new LogicalExpression("and", List(f.condExpr)))
   }
 
-  val validateComparisonForm : PartialFunction[Expression, Unit]= {
+  val validateComparisonForm: PartialFunction[Expression, Unit] = {
     case c@ComparisonExpression(_, left, right) =>
       if (!left.isInstanceOf[FieldExpression]) {
         throw new GremlinTranslationException(c, s"lhs of comparison is not a field")
@@ -159,7 +119,7 @@ extends SelectExpressionHandling {
       ()
   }
 
-  private def genQuery(expr : Expression, inSelect : Boolean) : String = expr match {
+  private def genQuery(expr: Expression, inSelect: Boolean): String = expr match {
     case ClassExpression(clsName) => s"""has("${gPersistenceBehavior.typeAttributeName}","$clsName")"""
     case TraitExpression(clsName) => s"""has("${gPersistenceBehavior.typeAttributeName}","$clsName")"""
     case fe@FieldExpression(fieldName, fInfo, child) if fe.dataType.getTypeCategory == TypeCategory.PRIMITIVE => {
@@ -193,10 +153,10 @@ extends SelectExpressionHandling {
     }
     case sel@SelectExpression(child, selList) => {
       val m = groupSelectExpressionsBySrc(sel)
-      var srcNamesList : List[String] = List()
-      var srcExprsList : List[List[String]] = List()
+      var srcNamesList: List[String] = List()
+      var srcExprsList: List[List[String]] = List()
       val it = m.iterator
-      while(it.hasNext) {
+      while (it.hasNext) {
         val (src, selExprs) = it.next
         srcNamesList = srcNamesList :+ s""""$src""""
         srcExprsList = srcExprsList :+ selExprs.map { selExpr =>
@@ -204,7 +164,9 @@ extends SelectExpressionHandling {
         }
       }
       val srcNamesString = srcNamesList.mkString("[", ",", "]")
-      val srcExprsStringList = srcExprsList.map{_.mkString("[", ",", "]")}
+      val srcExprsStringList = srcExprsList.map {
+        _.mkString("[", ",", "]")
+      }
       val srcExprsString = srcExprsStringList.foldLeft("")(_ + "{" + _ + "}")
       s"${genQuery(child, inSelect)}.select($srcNamesString)$srcExprsString"
     }
@@ -219,12 +181,12 @@ extends SelectExpressionHandling {
       s"""has("$fieldName")"""
     case hasFieldUnaryExpression(fieldName, child) =>
       s"""${genQuery(child, inSelect)}.has("$fieldName")"""
-    case ArithmeticExpression(symb,left,right) => s"${genQuery(left,inSelect)} $symb ${genQuery(right, inSelect)}"
-    case l : Literal[_] => l.toString
-    case x =>  throw new GremlinTranslationException(x, "expression not yet supported")
+    case ArithmeticExpression(symb, left, right) => s"${genQuery(left, inSelect)} $symb ${genQuery(right, inSelect)}"
+    case l: Literal[_] => l.toString
+    case x => throw new GremlinTranslationException(x, "expression not yet supported")
   }
 
-  def translate() : GremlinQuery = {
+  def translate(): GremlinQuery = {
     var e1 = expr.transformUp(wrapAndRule)
 
     e1.traverseUp(validateComparisonForm)
@@ -234,7 +196,7 @@ extends SelectExpressionHandling {
 
     e1 match {
       case e1: SelectExpression => GremlinQuery(e1, s"g.V.${genQuery(e1, false)}.toList()")
-      case e1 => GremlinQuery(e1, s"g.V.${genQuery(e1, false)}.map().toList()")
+      case e1 => GremlinQuery(e1, s"g.V.${genQuery(e1, false)}.toList()")
     }
 
   }

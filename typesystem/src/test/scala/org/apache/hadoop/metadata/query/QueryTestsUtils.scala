@@ -66,7 +66,7 @@ object QueryTestsUtils extends GraphUtils {
       Array(
         attrDef("name", DataTypes.STRING_TYPE),
         attrDef("owner", DataTypes.STRING_TYPE),
-        attrDef("createTime", DataTypes.LONG_TYPE)
+        attrDef("createTime", DataTypes.INT_TYPE)
       ))
 
     def storageDescClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "StorageDesc", null,
