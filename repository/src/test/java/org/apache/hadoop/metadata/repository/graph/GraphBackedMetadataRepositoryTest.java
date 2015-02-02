@@ -18,23 +18,16 @@
 
 package org.apache.hadoop.metadata.repository.graph;
 
-import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
-import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.Referenceable;
 import org.apache.hadoop.metadata.RepositoryMetadataModule;
-import org.apache.hadoop.metadata.types.AttributeDefinition;
+import org.apache.hadoop.metadata.TestUtils;
 import org.apache.hadoop.metadata.types.ClassType;
-import org.apache.hadoop.metadata.types.DataTypes;
-import org.apache.hadoop.metadata.types.HierarchicalTypeDefinition;
-import org.apache.hadoop.metadata.types.IDataType;
 import org.apache.hadoop.metadata.types.Multiplicity;
-import org.apache.hadoop.metadata.types.StructTypeDefinition;
-import org.apache.hadoop.metadata.types.TraitType;
 import org.apache.hadoop.metadata.types.TypeSystem;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
@@ -74,12 +67,12 @@ public class GraphBackedMetadataRepositoryTest {
 
         ts = TypeSystem.getInstance();
 
-        defineDeptEmployeeTypes(ts);
+        TestUtils.defineDeptEmployeeTypes(ts);
     }
 
     @Test
     public void testSubmitEntity() throws Exception {
-        Referenceable hrDept = createDeptEg1(ts);
+        Referenceable hrDept = TestUtils.createDeptEg1(ts);
         ClassType deptType = ts.getDataType(ClassType.class, "Department");
         ITypedReferenceableInstance hrDept2 = deptType.convert(hrDept, Multiplicity.REQUIRED);
 
@@ -117,114 +110,5 @@ public class GraphBackedMetadataRepositoryTest {
         System.out.println("entityList = " + entityList);
         Assert.assertNotNull(entityList);
         Assert.assertEquals(entityList.size(), 1); // one department
-    }
-
-    @Test
-    public void testRawSearch1() throws Exception {
-        Referenceable hrDept = createDeptEg1(ts);
-        ClassType deptType = ts.getDataType(ClassType.class, "Department");
-        ITypedReferenceableInstance hrDept2 = deptType.convert(hrDept, Multiplicity.REQUIRED);
-
-        guid = repositoryService.createEntity(hrDept2, ENTITY_TYPE);
-
-        // Query for all Vertices in Graph
-        Object r = repositoryService.searchByGremlin("g.V.toList()");
-        System.out.println("search result = " + r);
-
-        // Query for all Vertices of a Type
-        r = repositoryService.searchByGremlin("g.V.filter{it.typeName == 'Department'}.toList()");
-        System.out.println("search result = " + r);
-
-        // Property Query: list all Person names
-        r = repositoryService.searchByGremlin("g.V.filter{it.typeName == 'Person'}.'Person.name'.toList()");
-        System.out.println("search result = " + r);
-    }
-
-    /*
-     * Class Hierarchy is:
-     *   Department(name : String, employees : Array[Person])
-     *   Person(name : String, department : Department, manager : Manager)
-     *   Manager(subordinates : Array[Person]) extends Person
-     *
-     * Persons can have SecurityClearance(level : Int) clearance.
-     */
-    protected void defineDeptEmployeeTypes(TypeSystem ts) throws MetadataException {
-
-        HierarchicalTypeDefinition<ClassType> deptTypeDef =
-                createClassTypeDef("Department", ImmutableList.<String>of(),
-                        createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        new AttributeDefinition("employees",
-                                String.format("array<%s>", "Person"), Multiplicity.COLLECTION, true,
-                                "department")
-                );
-
-        HierarchicalTypeDefinition<ClassType> personTypeDef = createClassTypeDef("Person",
-                ImmutableList.<String>of(),
-                createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                new AttributeDefinition("department",
-                        "Department", Multiplicity.REQUIRED, false, "employees"),
-                new AttributeDefinition("manager",
-                        "Manager", Multiplicity.OPTIONAL, false, "subordinates")
-        );
-
-        HierarchicalTypeDefinition<ClassType> managerTypeDef = createClassTypeDef("Manager",
-                ImmutableList.of("Person"),
-                new AttributeDefinition("subordinates",
-                        String.format("array<%s>", "Person"), Multiplicity.COLLECTION, false,
-                        "manager")
-        );
-
-        HierarchicalTypeDefinition<TraitType> securityClearanceTypeDef = createTraitTypeDef(
-                "SecurityClearance",
-                ImmutableList.<String>of(),
-                createRequiredAttrDef("level", DataTypes.INT_TYPE)
-        );
-
-        ts.defineTypes(ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.of(securityClearanceTypeDef),
-                ImmutableList.of(deptTypeDef, personTypeDef, managerTypeDef));
-    }
-
-    protected Referenceable createDeptEg1(TypeSystem ts) throws MetadataException {
-        Referenceable hrDept = new Referenceable("Department");
-        Referenceable john = new Referenceable("Person");
-        Referenceable jane = new Referenceable("Manager", "SecurityClearance");
-
-        hrDept.set("name", "hr");
-        john.set("name", "John");
-        john.set("department", hrDept);
-        jane.set("name", "Jane");
-        jane.set("department", hrDept);
-
-        john.set("manager", jane);
-
-        hrDept.set("employees", ImmutableList.of(john, jane));
-
-        jane.set("subordinates", ImmutableList.of(john));
-
-        jane.getTrait("SecurityClearance").set("level", 1);
-
-        ClassType deptType = ts.getDataType(ClassType.class, "Department");
-        ITypedReferenceableInstance hrDept2 = deptType.convert(hrDept, Multiplicity.REQUIRED);
-        Assert.assertNotNull(hrDept2);
-
-        return hrDept;
-    }
-
-    public static AttributeDefinition createRequiredAttrDef(String name,
-                                                            IDataType dataType) {
-        return new AttributeDefinition(name, dataType.getName(), Multiplicity.REQUIRED, false, null);
-    }
-
-    @SuppressWarnings("unchecked")
-    protected HierarchicalTypeDefinition<TraitType> createTraitTypeDef(
-            String name, ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
-        return new HierarchicalTypeDefinition(TraitType.class, name, superTypes, attrDefs);
-    }
-
-    @SuppressWarnings("unchecked")
-    protected HierarchicalTypeDefinition<ClassType> createClassTypeDef(
-            String name, ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
-        return new HierarchicalTypeDefinition(ClassType.class, name, superTypes, attrDefs);
     }
 }
