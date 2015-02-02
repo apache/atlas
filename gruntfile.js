@@ -1,9 +1,13 @@
 'use strict';
 
+var git = require('git-rev');
+
 module.exports = function(grunt) {
-    var classPathSep = (process.platform === "win32") ? ';' : ':';
+    var classPathSep = (process.platform === "win32") ? ';' : ':',
+        gitHash = '',
+        pkg = grunt.file.readJSON('package.json');
+
     grunt.initConfig({
-        pkg: grunt.file.readJSON('package.json'),
         watch: {
             options: {
                 livereload: 35730
@@ -108,9 +112,11 @@ module.exports = function(grunt) {
             }
         },
         compress: {
-            main: {
+            release: {
                 options: {
-                    archive: '<%= pkg.name %>_<%= pkg.version %>.tgz'
+                    archive: function() {
+                        return [pkg.name, pkg.version, gitHash].join('_') + '.tgz';
+                    }
                 },
                 src: ['node_modules/**', 'package.json', 'server.js', 'server/**', 'public/**', '!public/js/**', '!public/modules/**/*.js']
             }
@@ -119,9 +125,18 @@ module.exports = function(grunt) {
 
     require('load-grunt-tasks')(grunt);
 
-    grunt.registerTask('default', ['devUpdate', 'bower', 'jshint', 'jsbeautifier:default', 'shell:min']);
+    grunt.registerTask('default', ['devUpdate', 'bower', 'jshint', 'jsbeautifier:default']);
 
     grunt.registerTask('server', ['bower', 'jshint', 'concurrent']);
     grunt.registerTask('server:prod', ['nodemon:prod']);
     grunt.registerTask('server:prod', ['nodemon:prod']);
+
+    grunt.registerTask('release', 'Create release package', function() {
+        var done = this.async();
+        git.short(function(str) {
+            gitHash = str;
+            grunt.task.run(['shell:min', 'compress:release']);
+            done();
+        });
+    });
 };

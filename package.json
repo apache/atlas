@@ -43,6 +43,7 @@
         "view-helpers": "~0.1.4"
     },
     "devDependencies": {
+        "git-rev": "^0.2.1",
         "grunt": "~0.4.2",
         "grunt-bower-task": "~0.4.0",
         "grunt-cli": "~0.1.11",
