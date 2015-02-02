@@ -46,7 +46,6 @@ module.exports = function(app) {
     app.set('view engine', 'html');
 
     // Set views path, template engine and default layout
-    console.log(config.root + '/public/views');
     app.set('views', config.root + '/public/views');
 
     // Enable jsonp
@@ -69,6 +68,12 @@ module.exports = function(app) {
      * User json parser after proxied requests. If its used before proxied requests post request doesn't work
      * */
     app.use(bodyParser.json());
+
+    /*
+     * Make app details available to routes
+     * */
+
+    app.config = config;
 
     /**
      * System Routes

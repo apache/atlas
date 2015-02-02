@@ -64,8 +64,8 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
             });
         }
 
-        var width = 960,
-            height = 600;
+        var width = Math.max($element[0].offsetWidth, 960),
+            height = Math.max($element[0].offsetHeight, 350);
 
         var force = d3.layout.force()
             .linkDistance(200)

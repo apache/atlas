@@ -10,7 +10,7 @@ var path = require('path'),
     config = require('rc')(packageJson.name, {
         app: {
             name: packageJson.name,
-            title: 'DGC'
+            title: 'DGI | aetna'
         },
         nodeEnv: 'local',
         root: rootPath,
@@ -25,6 +25,6 @@ var path = require('path'),
             }]
         }
     });
-// Set the node enviornment variable if not set before
+// Set the node environment variable if not set before
 config.nodeEnv = process.env.NODE_ENV = process.env.NODE_ENV || config.nodeEnv;
 module.exports = config;
