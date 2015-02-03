@@ -18,8 +18,8 @@
 
 package org.apache.hadoop.metadata.query
 
-import Expressions._
 import com.thinkaurelius.titan.core.TitanGraph
+import org.apache.hadoop.metadata.query.Expressions._
 
 object QueryProcessor {
 

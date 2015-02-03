@@ -20,14 +20,20 @@ package org.apache.hadoop.metadata.query
 
 import javax.script.{Bindings, ScriptEngine, ScriptEngineManager}
 
-import com.thinkaurelius.titan.core.{TitanVertex, TitanGraph}
-import org.apache.hadoop.metadata.ITypedInstance
-import org.apache.hadoop.metadata.types.{ClassType, IConstructableType}
+import com.thinkaurelius.titan.core.TitanGraph
+import com.tinkerpop.pipes.util.structures.Row
+import org.apache.hadoop.metadata.json._
+import org.apache.hadoop.metadata.types._
+import org.json4s._
+import org.json4s.native.Serialization._
+
 import scala.language.existentials
 
-case class GremlinQueryResult(qry : GremlinQuery,
-                              resultDataType : IConstructableType[_, _ <: ITypedInstance],
-                               rows : List[ITypedInstance])
+case class GremlinQueryResult(query : String,
+                              resultDataType : IDataType[_],
+                               rows : List[_]) {
+  def toJson = JsonHelper.toJson(this)
+}
 
 class GremlinEvaluator(qry : GremlinQuery, persistenceStrategy : GraphPersistenceStrategies, g: TitanGraph) {
 
@@ -41,15 +47,52 @@ class GremlinEvaluator(qry : GremlinQuery, persistenceStrategy : GraphPersistenc
     val rType = qry.expr.dataType
     val rawRes = engine.eval(qry.queryStr, bindings)
 
-    if ( rType.isInstanceOf[ClassType]) {
-      val dType = rType.asInstanceOf[ClassType]
-      val rows = rawRes.asInstanceOf[java.util.List[TitanVertex]].map { v =>
-        persistenceStrategy.constructClassInstance(dType, v)
+    if ( !qry.hasSelectList ) {
+      val rows = rawRes.asInstanceOf[java.util.List[AnyRef]].map { v =>
+        persistenceStrategy.constructInstance(rType, v)
       }
-      GremlinQueryResult(qry, dType, rows.toList)
+      GremlinQueryResult(qry.expr.toString, rType, rows.toList)
     } else {
-      null
+      val sType = rType.asInstanceOf[StructType]
+      val rows = rawRes.asInstanceOf[java.util.List[Row[java.util.List[_]]]].map { r =>
+        val sInstance = sType.createInstance()
+        val selExpr = qry.expr.asInstanceOf[Expressions.SelectExpression]
+        selExpr.selectListWithAlias.foreach { aE =>
+          val cName = aE.alias
+          val (src, idx) = qry.resultMaping(cName)
+          val v = r.getColumn(src).get(idx)
+          sInstance.set(cName, aE.dataType.convert(v, Multiplicity.OPTIONAL))
+        }
+        sInstance
+      }
+      GremlinQueryResult(qry.expr.toString, sType, rows.toList)
     }
 
+  }
+}
+
+object JsonHelper {
+
+  class GremlinQueryResultSerializer()
+    extends Serializer[GremlinQueryResult] {
+    def deserialize(implicit format: Formats) = {
+      throw new UnsupportedOperationException("Deserialization of GremlinQueryResult not supported")
+    }
+
+    def serialize(implicit f: Formats) = {
+      case GremlinQueryResult(query, rT, rows) =>
+        JObject(JField("query", JString(query)),
+          JField("dataType", TypesSerialization.toJsonValue(rT)(f)),
+          JField("rows", Extraction.decompose(rows)(f))
+        )
+    }
+  }
+
+  implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new TypedStructSerializer +
+    new TypedReferenceableInstanceSerializer +  new BigDecimalSerializer + new BigIntegerSerializer +
+    new GremlinQueryResultSerializer
+
+  def toJson(r : GremlinQueryResult ) : String = {
+    writePretty(r)
   }
 }

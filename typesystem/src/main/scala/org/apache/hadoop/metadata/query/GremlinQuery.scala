@@ -25,8 +25,9 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 
-case class GremlinQuery(expr: Expression, queryStr: String) {
+case class GremlinQuery(expr: Expression, queryStr: String, resultMaping : Map[String, (String, Int)]) {
 
+  def hasSelectList = resultMaping != null
 }
 
 trait SelectExpressionHandling {
@@ -91,6 +92,24 @@ trait SelectExpressionHandling {
       m(l(0)) = m(l(0)) :+ se.child
     }
     m
+  }
+
+  /**
+   * For each Output Column in the SelectExpression compute the ArrayList(Src) this maps to and the position within
+   * this list.
+   * @param sel
+   * @return
+   */
+  def buildResultMapping(sel : SelectExpression) : Map[String, (String, Int)] = {
+    val srcToExprs = groupSelectExpressionsBySrc(sel)
+    val m = new mutable.HashMap[String, (String, Int)]
+    sel.selectListWithAlias.foreach { se =>
+      val src = getSelectExpressionSrc(se.child)(0)
+      val srcExprs = srcToExprs(src)
+      var idx = srcExprs.indexOf(se.child)
+      m(se.alias) = (src, idx)
+    }
+    m.toMap
   }
 
 }
@@ -195,8 +214,11 @@ class GremlinTranslator(expr: Expression,
     e1.traverseUp(validateSelectExprHaveOneSrc)
 
     e1 match {
-      case e1: SelectExpression => GremlinQuery(e1, s"g.V.${genQuery(e1, false)}.toList()")
-      case e1 => GremlinQuery(e1, s"g.V.${genQuery(e1, false)}.toList()")
+      case e1: SelectExpression => {
+        val rMap = buildResultMapping(e1)
+        GremlinQuery(e1, s"g.V.${genQuery(e1, false)}.toList()", rMap)
+      }
+      case e1 => GremlinQuery(e1, s"g.V.${genQuery(e1, false)}.toList()", null)
     }
 
   }

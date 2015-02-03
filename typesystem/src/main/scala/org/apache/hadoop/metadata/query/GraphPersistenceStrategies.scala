@@ -21,7 +21,7 @@ package org.apache.hadoop.metadata.query
 import com.thinkaurelius.titan.core.TitanVertex
 import com.tinkerpop.blueprints.Direction
 import org.apache.hadoop.metadata.types.DataTypes._
-import org.apache.hadoop.metadata.{ITypedInstance, ITypedReferenceableInstance}
+import org.apache.hadoop.metadata.{IStruct, ITypedInstance, IReferenceableInstance, ITypedReferenceableInstance}
 import org.apache.hadoop.metadata.query.Expressions.{ExpressionException, ComparisonExpression}
 import org.apache.hadoop.metadata.query.TypeUtils.FieldInfo
 import org.apache.hadoop.metadata.storage.Id
@@ -80,14 +80,7 @@ trait GraphPersistenceStrategies {
    */
   def getIdFromVertex(dataTypeNm : String, v : TitanVertex) : Id
 
-  /**
-   * construct a  [[ITypedReferenceableInstance]] from its vertex
-   *
-   * @param dataType
-   * @param v
-   * @return
-   */
-  def constructClassInstance(dataType : ClassType, v : TitanVertex) : ITypedReferenceableInstance
+  def constructInstance[U](dataType : IDataType[U], v : AnyRef) : U
 
   def gremlinCompOp(op : ComparisonExpression) = op.symbol match {
     case "=" => "T.eq"
@@ -117,6 +110,35 @@ object GraphPersistenceStrategy1 extends GraphPersistenceStrategies {
       Seq[String](s.split(","):_*)
     } else {
       Seq()
+    }
+  }
+
+  def constructInstance[U](dataType : IDataType[U], v : AnyRef) : U = {
+    dataType.getTypeCategory match {
+      case DataTypes.TypeCategory.PRIMITIVE =>  dataType.convert(v, Multiplicity.OPTIONAL)
+      case DataTypes.TypeCategory.STRUCT => {
+        val sType = dataType.asInstanceOf[StructType]
+        val sInstance = sType.createInstance()
+        loadStructInstance(sType, sInstance, v.asInstanceOf[TitanVertex])
+        dataType.convert(sInstance, Multiplicity.OPTIONAL)
+      }
+      case DataTypes.TypeCategory.TRAIT => {
+        val tType = dataType.asInstanceOf[TraitType]
+        val tInstance = tType.createInstance()
+        /*
+         * this is not right, we should load the Instance associated with this trait.
+         * for now just loading the trait struct.
+         */
+        loadStructInstance(tType, tInstance, v.asInstanceOf[TitanVertex])
+        dataType.convert(tInstance, Multiplicity.OPTIONAL)
+      }
+      case DataTypes.TypeCategory.CLASS => {
+        val cType = dataType.asInstanceOf[ClassType]
+        val cInstance = constructClassInstance(dataType.asInstanceOf[ClassType], v.asInstanceOf[TitanVertex])
+        dataType.convert(cInstance, Multiplicity.OPTIONAL)
+      }
+      case DataTypes.TypeCategory.ENUM => dataType.convert(v, Multiplicity.OPTIONAL)
+      case x => throw new UnsupportedOperationException(s"load for ${dataType} not supported")
     }
   }
 
