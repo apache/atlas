@@ -1,7 +1,7 @@
 'use strict';
 
-angular.module('dgc.lineage').controller('LineageController', ['$element', '$scope', '$stateParams', 'LineageResource', 'd3',
-    function($element, $scope, $stateParams, LineageResource, d3) {
+angular.module('dgc.lineage').controller('LineageController', ['$element', '$scope', '$state', '$stateParams', 'LineageResource', 'd3',
+    function($element, $scope, $state, $stateParams, LineageResource, d3) {
 
         function render(nodes) {
             var links = d3.layout.tree().links(nodes);
@@ -29,7 +29,7 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
 
             var nodeEnter = node.enter().append('g')
                 .attr('class', 'node')
-                //.on('click', click)
+                .on('click', click)
                 .call(force.drag);
 
             nodeEnter.append('circle')
@@ -46,6 +46,14 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
 
             /*node.select('circle')
              .style('fill', color);*/
+        }
+
+        function click(node) {
+            $state.go('details', {
+                id: node.guid
+            }, {
+                location: 'replace'
+            });
         }
 
         function tick() {
