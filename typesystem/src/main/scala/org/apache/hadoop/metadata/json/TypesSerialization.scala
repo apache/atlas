@@ -53,6 +53,24 @@ import org.json4s.native.Serialization._
  */
 object TypesSerialization {
 
+  def toJsonValue(typ : IDataType[_])(implicit formats: Formats) : JValue = {
+    typ.getTypeCategory match {
+      case TypeCategory.CLASS => {
+        Extraction.decompose(convertClassTypeToHierarchicalTypeDefintion(typ.asInstanceOf[ClassType]))
+      }
+      case TypeCategory.STRUCT => {
+        Extraction.decompose(convertStructTypeToStructDef(typ.asInstanceOf[StructType]))
+      }
+      case TypeCategory.TRAIT => {
+        Extraction.decompose(convertTraitTypeToHierarchicalTypeDefintion(typ.asInstanceOf[TraitType]))
+      }
+      case TypeCategory.ENUM => {
+        Extraction.decompose(convertEnumTypeToEnumTypeDef(typ.asInstanceOf[EnumType]))
+      }
+      case _ => JString(s"${typ.getName}")
+    }
+  }
+
   def toJson(ts : TypeSystem, typName : String) : String = {
     toJson(ts, List(typName):_*)
   }
