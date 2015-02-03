@@ -19,6 +19,10 @@
 package org.apache.hadoop.metadata;
 
 import com.google.common.collect.ImmutableList;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
@@ -51,7 +55,8 @@ import java.util.Arrays;
 
 public class DemoDataDriver {
 
-	private static ArrayList<ITypedReferenceableInstance> tableArray;
+	private static ArrayList<ITypedReferenceableInstance> initTableArray;
+	private static ArrayList<ITypedReferenceableInstance> postSaveTableArray;
 	private static ArrayList<ITypedReferenceableInstance> lineageArray;
 
 	private static final Logger LOG = LoggerFactory
@@ -59,6 +64,7 @@ public class DemoDataDriver {
 
 	private static final String DATABASE_TYPE = "hive_database";
 	private static final String TABLE_TYPE = "hive_table";
+	private static final String LINEAGE_TYPE = "HiveLineage";
 
 	protected TypeSystem typeSystem;
 	protected WebResource service;
@@ -115,9 +121,9 @@ public class DemoDataDriver {
 		assert clientResponse.getStatus() == Response.Status.OK.getStatusCode();
 	}
 
-	public void getEntityList() throws Exception {
+	public void getEntityList(String s) throws Exception {
 		ClientResponse clientResponse = service
-				.path("api/metadata/entities/list/").path(TABLE_TYPE)
+				.path("api/metadata/entities/list/").path(s)
 				.accept(MediaType.APPLICATION_JSON)
 				.type(MediaType.APPLICATION_JSON)
 				.method(HttpMethod.GET, ClientResponse.class);
@@ -129,6 +135,30 @@ public class DemoDataDriver {
 		System.out.println("list = " + list);
 		assert list != null;
 		assert list.length() > 0;
+	}
+	
+	public String getEntityReturnList(){
+		ClientResponse clientResponse = service
+				.path("api/metadata/entities/list/").path(TABLE_TYPE)
+				.accept(MediaType.APPLICATION_JSON)
+				.type(MediaType.APPLICATION_JSON)
+				.method(HttpMethod.GET, ClientResponse.class);
+		assert clientResponse.getStatus() == Response.Status.OK.getStatusCode();
+
+		String responseAsString = clientResponse.getEntity(String.class);
+		return responseAsString;
+	}
+	
+	public String getTableEntityByGUID(String guid) throws Exception {
+		ClientResponse clientResponse = service
+				.path("api/metadata/entities/definition/"+guid)
+				.accept(MediaType.APPLICATION_JSON)
+				.type(MediaType.APPLICATION_JSON)
+				.method(HttpMethod.GET, ClientResponse.class);
+		assert clientResponse.getStatus() == Response.Status.OK.getStatusCode();
+
+		String responseAsString = clientResponse.getEntity(String.class);
+		return responseAsString;
 	}
 
 	private void createTypes() throws Exception {
@@ -171,8 +201,9 @@ public class DemoDataDriver {
 						Multiplicity.REQUIRED, true, null),
 				createRequiredAttrDef("success", DataTypes.STRING_TYPE),
 				createRequiredAttrDef("executionEngine", DataTypes.STRING_TYPE),
-				new AttributeDefinition("sourceTables", DataTypes.arrayTypeName(TABLE_TYPE),
-						Multiplicity.COLLECTION, true, "forwardLineage"));
+				new AttributeDefinition("sourceTables", DataTypes
+						.arrayTypeName(TABLE_TYPE), Multiplicity.COLLECTION,
+						true, "forwardLineage"));
 
 		typeSystem.defineTypes(ImmutableList.of(structTypeDefinition),
 				ImmutableList.of(classificationTypeDefinition), ImmutableList
@@ -184,9 +215,8 @@ public class DemoDataDriver {
 		String tableTypesAsJSON = TypesSerialization.toJson(
 				typeSystem,
 				Arrays.asList(new String[] { DATABASE_TYPE, TABLE_TYPE,
-						"serdeType", "classification"}));
-		String lineageTypesAsJSON = TypesSerialization.toJson(
-				typeSystem,
+						"serdeType", "classification" }));
+		String lineageTypesAsJSON = TypesSerialization.toJson(typeSystem,
 				Arrays.asList(new String[] { "HiveLineage" }));
 		sumbitType(tableTypesAsJSON, TABLE_TYPE);
 		sumbitType(lineageTypesAsJSON, "HiveLineage");
@@ -257,7 +287,7 @@ public class DemoDataDriver {
 		lineageInstance.set("success", success);
 		lineageInstance.set("executionEngine", executionEngine);
 
-		for (ITypedReferenceableInstance table : tableArray) {
+		for (ITypedReferenceableInstance table : postSaveTableArray) {
 			if (table.get("name").equals(tableName)) {
 				lineageInstance.set("tableName", table);
 				break;
@@ -266,8 +296,8 @@ public class DemoDataDriver {
 		ArrayList<ITypedReferenceableInstance> sourceTablesRefArr = new ArrayList<ITypedReferenceableInstance>();
 
 		for (String s : sourceTables.split(",")) {
-			System.out.println("search for table "+s);
-			for (ITypedReferenceableInstance table : tableArray) {
+			System.out.println("search for table " + s);
+			for (ITypedReferenceableInstance table : postSaveTableArray) {
 				if (table.get("name").equals(s)) {
 					sourceTablesRefArr.add(table);
 				}
@@ -290,17 +320,35 @@ public class DemoDataDriver {
 		driver.createTypes();
 		driver.submitTypes();
 
-		DemoDataDriver.tableArray = new ArrayList<ITypedReferenceableInstance>();
+		DemoDataDriver.initTableArray = new ArrayList<ITypedReferenceableInstance>();
+		DemoDataDriver.postSaveTableArray = new ArrayList<ITypedReferenceableInstance>();
 		DemoDataDriver.lineageArray = new ArrayList<ITypedReferenceableInstance>();
 
 		String[][] tableData = getTestTableData();
+		
+		//Create Table Objects
 		for (String[] row : tableData) {
 			ITypedReferenceableInstance tableInstance = driver
 					.createHiveTableInstance(row[0], row[1], row[2], row[3],
 							row[4]);
-			tableArray.add(tableInstance);
+			initTableArray.add(tableInstance);
 		}
-
+		//Save Table Objects
+		for (ITypedReferenceableInstance i : initTableArray) {
+			 driver.submitEntity(i); }
+		
+		//Returned the Saved Table Objects
+		JsonParser jp = new JsonParser();
+		JsonObject jo = (JsonObject) jp.parse(driver.getEntityReturnList());
+		JsonArray ja = jo.getAsJsonArray("list");
+		for (JsonElement e : ja){
+			JsonObject joInner = (JsonObject)jp.parse(driver.getTableEntityByGUID(e.getAsString()));
+			
+			ITypedReferenceableInstance tabRef = Serialization$.MODULE$.fromJson(joInner.get("definition").getAsString().toString());
+			postSaveTableArray.add(tabRef);
+		}						
+		
+		//Create Lineage Objects
 		String[][] lineageData = getTestLineageData();
 		for (String[] row : lineageData) {
 			ITypedReferenceableInstance lineageInstance = driver
@@ -309,19 +357,24 @@ public class DemoDataDriver {
 			lineageArray.add(lineageInstance);
 		}
 
-		/*for (ITypedReferenceableInstance i : tableArray) {
-			driver.submitEntity(i);
-		}*/
+		//Save Lineage Objects
+		 
 		for (ITypedReferenceableInstance i : lineageArray) {
 			driver.submitEntity(i);
 		}
-
-		driver.getEntityList();
+		System.out.println("###############DATABASES ADDED##############################");
+		driver.getEntityList(DemoDataDriver.DATABASE_TYPE);
+		System.out.println("##################TABLES ADDED##############################");
+		driver.getEntityList(DemoDataDriver.TABLE_TYPE);
+		System.out.println("#################LINEAGE ADDED##############################");
+		driver.getEntityList(DemoDataDriver.LINEAGE_TYPE);
+		System.out.println("############################################################");
+		System.out.println("DEMO DATA ADDED SUCCESSFULLY");
 	}
 
 	private static String[][] getTestLineageData() {
 		return new String[][] {
-				{
+				{		
 						"s123456_20150106120303_036186d5-a991-4dfc-9ff2-05b072c7e711",
 						"90797386-3933-4ab0-ae68-a7baa7e155d4",
 						"Service User 02",
@@ -360,8 +413,7 @@ public class DemoDataDriver {
 						"DS imported dataset from internet of ideas",
 						"org.apache.hadoop.hive.ql.io.orc.OrcSerde",
 						"org.apache.hadoop.hive.ql.io.orc.OrcSerde" },
-				{
-						"ds_db",
+				{ "ds_db",
 						"providerComparativeModel",
 						"DS created Table for comparing charges findings to dataset from internet",
 						"org.apache.hadoop.hive.ql.io.orc.OrcSerde",

@@ -62,7 +62,7 @@ public class DefaultMetadataService implements MetadataService {
     	this.typeSystem = TypeSystem.getInstance();
     	this.repository = repository;
 
-        registerListener(searchIndexer);
+        //registerListener(searchIndexer);
     }
 
     /**
