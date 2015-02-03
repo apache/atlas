@@ -115,6 +115,7 @@ public class TitanGraphService implements GraphService {
 	 * @throws ConfigurationException
 	 */
 	// TODO move this functionality to the SearchIndexer?
+	@Deprecated
 	protected void createIndicesForVertexKeys() throws ConfigurationException {
 		if (!titanGraph.getIndexedKeys(Vertex.class).isEmpty()) {
 			LOG.info("Indexes already exist for titanGraph");

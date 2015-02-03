@@ -156,7 +156,6 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     @Override
     public List<String> getEntityList(String entityType) throws RepositoryException {
         LOG.info("Retrieving entity list for type={}", entityType);
-        // todo - replace this with index based query
         GraphQuery query = graphService.getBlueprintsGraph().query()
                 .has(Constants.ENTITY_TYPE_PROPERTY_KEY, entityType);
         Iterator<Vertex> results = query.vertices().iterator();
@@ -171,23 +170,6 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         }
 
         return entityList;
-
-/*
-        TitanIndexQuery query = titanGraph.indexQuery(Constants.VERTEX_INDEX,
-                "v." + Constants.ENTITY_TYPE_PROPERTY_KEY + ":(" + entityType + ")");
-        Iterator<TitanIndexQuery.Result<Vertex>> results = query.vertices().iterator();
-        if (!results.hasNext()) {
-            return Collections.emptyList();
-        }
-
-        ArrayList<String> entityList = new ArrayList<>();
-        while (results.hasNext()) {
-            Vertex vertex = results.next().getElement();
-            entityList.add(vertex.<String>getProperty(Constants.GUID_PROPERTY_KEY));
-        }
-
-        return entityList;
-*/
     }
     
     private final class EntityProcessor implements ObjectGraphWalker.NodeProcessor {

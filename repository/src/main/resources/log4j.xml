@@ -74,6 +74,11 @@
         <appender-ref ref="FILE"/>
     </logger>
 
+    <logger name="org.elasticsearch" additivity="false">
+        <level value="warn"/>
+        <appender-ref ref="FILE"/>
+    </logger>
+
     <root>
         <priority value="debug"/>
         <appender-ref ref="console"/>
