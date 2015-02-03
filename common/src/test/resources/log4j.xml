@@ -27,6 +27,15 @@
         </layout>
     </appender>
 
+    <appender name="FILE" class="org.apache.log4j.DailyRollingFileAppender">
+        <param name="File" value="${user.dir}/target/logs/application.log"/>
+        <param name="Append" value="true"/>
+        <param name="Threshold" value="debug"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%d %-5p - [%t:%x] ~ %m (%c{1}:%L)%n"/>
+        </layout>
+    </appender>
+
     <appender name="AUDIT" class="org.apache.log4j.DailyRollingFileAppender">
         <param name="File" value="${user.dir}/target/logs/audit.log"/>
         <param name="Append" value="true"/>
@@ -57,7 +66,22 @@
 
     <logger name="org.apache.hadoop.metadata" additivity="false">
         <level value="debug"/>
-        <appender-ref ref="console"/>
+        <appender-ref ref="FILE"/>
+    </logger>
+
+    <logger name="com.thinkaurelius.titan" additivity="false">
+        <level value="warn"/>
+        <appender-ref ref="FILE"/>
+    </logger>
+
+    <logger name="org.elasticsearch" additivity="false">
+        <level value="warn"/>
+        <appender-ref ref="FILE"/>
+    </logger>
+
+    <logger name="org.apache.lucene" additivity="false">
+        <level value="warn"/>
+        <appender-ref ref="FILE"/>
     </logger>
 
     <root>

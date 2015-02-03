@@ -62,6 +62,11 @@
         <appender-ref ref="FILE"/>
     </logger>
 
+    <logger name="org.apache.lucene" additivity="false">
+        <level value="info"/>
+        <appender-ref ref="FILE"/>
+    </logger>
+
     <logger name="AUDIT">
         <level value="info"/>
         <appender-ref ref="AUDIT"/>
