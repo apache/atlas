@@ -107,7 +107,7 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
             var nodes = {};
 
             function getNode(nodeId) {
-                if (!nodes[nodeId]) {
+                if (!nodes[nodeId] && data.vertices[nodeId]) {
                     nodes[nodeId] = angular.copy(data.vertices[nodeId]);
                 }
                 return nodes[nodeId];
@@ -120,11 +120,20 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                  * */
                 var parentId = node.tail,
                     parentNode = getNode(parentId);
-                if (!parentNode.children) {
-                    parentNode.children = [];
+                if (!parentNode) {
+                    console.log('Parent Node not found id', parentId);
+                } else {
+                    var childId = node.head,
+                        childNode = getNode(childId);
+                    if (childNode) {
+                        if (!parentNode.children) {
+                            parentNode.children = [];
+                        }
+                        parentNode.children.push(childNode);
+                    } else {
+                        console.log('Child Node not found id', childId);
+                    }
                 }
-                var childId = node.head;
-                parentNode.children.push(getNode(childId));
             });
 
             var id = 0,
