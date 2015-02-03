@@ -3,7 +3,7 @@
         <h3>{{details.$id$.id}}</h3>
         <div class="lineage" data-ng-include="'/modules/lineage/views/lineage.html'"></div>
         <div class="wiki">
-            <section class="row" data-ng-repeat="(key,value) in details" data-ng-if="isString(value)" data-ng-include="'/modules/details/views/attribute.html'"></section>
+            <section data-ng-repeat="(key,value) in details" data-ng-if="isString(value)" data-ng-include="'/modules/details/views/attribute.html'"></section>
         </div>
     </div>
 </div>

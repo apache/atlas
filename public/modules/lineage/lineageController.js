@@ -30,6 +30,8 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
             var nodeEnter = node.enter().append('g')
                 .attr('class', 'node')
                 .on('click', click)
+                .on('mouseover', tooltip.show)
+                .on('mouseout', tooltip.hide)
                 .call(force.drag);
 
             nodeEnter.append('circle')
@@ -89,6 +91,16 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
         var link = svg.selectAll('.link'),
             node = svg.selectAll('.node');
 
+        /* Initialize tooltip */
+        var tooltip = d3.tip()
+            .attr('class', 'd3-tip')
+            .html(function(d) {
+                return '<pre class="alert alert-success">' + d.__tooltip + '</pre>';
+            });
+
+        /* Invoke the tip in the context of your visualization */
+        svg.call(tooltip);
+
         $scope.lineageData = LineageResource.get({
             id: $stateParams.id
         }, function(data) {
@@ -122,6 +134,7 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                 node.__id = id++;
                 node.__key = key;
                 node.__name = node['hive_table.name'];
+                node.__tooltip = node['hive_table.description'] || node['HiveLineage.query'];
                 returnArray.push(node);
             });
             render(returnArray);

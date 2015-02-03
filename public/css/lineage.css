@@ -1,12 +1,12 @@
 .node circle {
     cursor: pointer;
-    stroke: #3182bd;
+    stroke: green;
     stroke-width: 2px;
-    fill: #c6dbef;
+    fill: #1cef3d;
 }
 
 .node circle.empty {
-    fill: #fd8d3c;
+    fill: #fdd916;
 }
 
 .node text {
@@ -17,6 +17,15 @@
 
 line.link {
     fill: none;
-    stroke: #9ecae1;
+    stroke: green;
     stroke-width: 2px;
+}
+
+.d3-tip pre {
+    max-width: 400px;
+}
+
+div.lineage {
+    border-bottom: 2px solid #006600;
+    margin-bottom: 30px;
 }
