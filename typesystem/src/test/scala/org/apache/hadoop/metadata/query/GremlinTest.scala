@@ -1,14 +1,11 @@
 package org.apache.hadoop.metadata.query
 
 import com.thinkaurelius.titan.core.TitanGraph
-import org.apache.hadoop.metadata.json._
 import org.apache.hadoop.metadata.query.Expressions._
 import org.apache.hadoop.metadata.types.TypeSystem
-import org.json4s.NoTypeHints
 import org.junit.runner.RunWith
 import org.scalatest._
 import org.scalatest.junit.JUnitRunner
-import org.json4s.native.Serialization.writePretty
 
 @RunWith(classOf[JUnitRunner])
 class GremlinTest extends FunSuite with BeforeAndAfterAll {
@@ -25,10 +22,14 @@ class GremlinTest extends FunSuite with BeforeAndAfterAll {
     g.shutdown()
   }
 
+  val STRUCT_NAME_REGEX = (TypeUtils.TEMP_STRUCT_NAME_PREFIX + "\\d+").r
+
   def validateJson(r : GremlinQueryResult, expected : String = null) : Unit = {
     val rJ = r.toJson
     if ( expected != null ) {
-      Assertions.assert(rJ == expected)
+      val a = STRUCT_NAME_REGEX.replaceAllIn(rJ, "")
+      val b = STRUCT_NAME_REGEX.replaceAllIn(expected, "")
+      Assertions.assert(a == b)
     } else {
       println(rJ)
     }
