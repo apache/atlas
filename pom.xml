@@ -66,8 +66,8 @@
         <slf4j.version>1.7.7</slf4j.version>
         <jetty.version>6.1.26</jetty.version>
         <jersey.version>1.9</jersey.version>
-        <blueprints-core.version>2.5.0</blueprints-core.version>
-        <titan.version>0.5.2</titan.version>
+        <tinkerpop.version>2.5.0</tinkerpop.version>
+        <titan.version>0.5.3</titan.version>
     </properties>
 
     <profiles>
@@ -534,7 +534,7 @@
             <dependency>
                 <groupId>com.tinkerpop.blueprints</groupId>
                 <artifactId>blueprints-core</artifactId>
-                <version>${blueprints-core.version}</version>
+                <version>${tinkerpop.version}</version>
             </dependency>
 
             <dependency>
