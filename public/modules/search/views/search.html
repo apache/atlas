@@ -1,24 +1,28 @@
-<div class="container" data-ng-controller="SearchController">
-    <form name="form" novalidate>
-        <div class="row">
-            <div class="col-sm-offset-1 col-lg-5">
-                <div class="input-group">
+<div data-ng-controller="SearchController">
+    <div class="search">
+        <form name="form" novalidate class="container">
+            <div class="col-lg-7">
+                <div class="row input-group">
                     <input type="text" class="form-control" placeholder="Search" data-ng-model="query" data-typeahead="type for type in types" required/>
                     <span class="input-group-btn">
-                        <button class="btn btn-default" type="submit" data-ng-disabled="form.$invalid" data-ng-click="search(query)"><i class="glyphicon glyphicon-search white "></i></button>
+                        <button class="btn btn-success" type="submit" data-ng-disabled="form.$invalid" data-ng-click="search(query)">
+                            <i class="glyphicon glyphicon-search white "></i>
+                        </button>
                     </span>
                 </div>
+                <div class="row">
+                    <small class="small-txt">Examples : property=HiveLineage.executionEngine&text=tez</small>
+                    <br/>
+                    <small class="small-txt">property=type&text=HiveLineage</small>
+                    <br/>
+                    <small class="small-txt">property=type&text=hive_table</small>
+                </div>
             </div>
-        </div>
+        </form>
+    </div>
+    <div class="container">
         <div class="row">
-            <div class="col-sm-offset-1 col-lg-6">
-                <small class="small-txt">Examples : property=HiveLineage.executionEngine&text=tez</small><br/>
-                <small class="small-txt">property=type&text=HiveLineage</small><br/>
-                <small class="small-txt">property=type&text=hive_table</small>
-            </div>
+            <div class="col-lg-11" data-ui-view=""></div>
         </div>
-        <div class="row">
-            <div class="col-sm-offset-1 col-lg-11" data-ui-view=""></div>
-        </div>
-    </form>
+    </div>
 </div>
