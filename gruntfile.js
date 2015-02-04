@@ -127,7 +127,7 @@ module.exports = function(grunt) {
 
     grunt.registerTask('default', ['devUpdate', 'bower', 'jshint', 'jsbeautifier:default']);
 
-    grunt.registerTask('server', ['bower', 'jshint', 'concurrent']);
+    grunt.registerTask('server', ['bower', 'jshint', 'shell:min', 'concurrent']);
     grunt.registerTask('server:prod', ['nodemon:prod']);
     grunt.registerTask('server:prod', ['nodemon:prod']);
 
