@@ -19,6 +19,7 @@
 package org.apache.hadoop.metadata.query
 
 import Expressions._
+import org.apache.hadoop.metadata.types.IDataType
 
 class Resolver(srcExpr : Option[Expression] = None, aliases : Map[String, Expression] = Map())
 extends PartialFunction[Expression, Expression] {
@@ -71,6 +72,46 @@ extends PartialFunction[Expression, Expression] {
     case SelectExpression(child, selectList) if child.resolved => {
       val r = new Resolver(Some(child), child.namedExpressions)
       return new SelectExpression(child, selectList.map{_.transformUp(r)})
+    }
+    case x => x
+  }
+}
+
+/**
+ * - any FieldReferences that explicitly reference the input, can be converted to implicit references
+ * - any FieldReferences that explicitly reference a
+ */
+object FieldValidator extends PartialFunction[Expression, Expression] {
+
+  def isDefinedAt(x: Expression) = true
+
+  def validateQualifiedField(srcDataType : IDataType[_]) : PartialFunction[Expression, Expression] = {
+    case FieldExpression(fNm, fInfo, Some(child)) if child.children == Nil && child.dataType == srcDataType =>
+      FieldExpression(fNm, fInfo, None)
+    case fe@FieldExpression(fNm, fInfo, Some(child)) if child.children == Nil =>
+      throw new ExpressionException(fe, s"srcType of field doesn't match input type")
+    case hasFieldUnaryExpression(fNm, child) if child.dataType == srcDataType =>
+      hasFieldLeafExpression(fNm)
+    case hF@hasFieldUnaryExpression(fNm, child) =>
+      throw new ExpressionException(hF, s"srcType of field doesn't match input type")
+    case isTraitUnaryExpression(fNm, child) if child.dataType == srcDataType =>
+      isTraitLeafExpression(fNm)
+    case iT@isTraitUnaryExpression(fNm, child) =>
+      throw new ExpressionException(iT, s"srcType of field doesn't match input type")
+  }
+
+  def apply(e : Expression) : Expression = e match {
+    case f@FilterExpression(inputExpr, condExpr) => {
+      val validatedCE = condExpr.transformUp(validateQualifiedField(inputExpr.dataType))
+      if ( validatedCE.fastEquals(condExpr) ) {
+        f
+      } else {
+        new FilterExpression(inputExpr, validatedCE)
+      }
+    }
+    case SelectExpression(child, selectList) if child.resolved => {
+      val v = validateQualifiedField(child.dataType)
+      return new SelectExpression(child, selectList.map{_.transformUp(v)})
     }
     case x => x
   }

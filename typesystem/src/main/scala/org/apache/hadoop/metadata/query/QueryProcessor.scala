@@ -48,7 +48,15 @@ object QueryProcessor {
      */
     e1.dataType
 
-    e1
+    /*
+     * ensure fieldReferences match the input expression's dataType
+     */
+    val e2 = e1.transformUp(FieldValidator)
+    val e3 = e2.transformUp(new Resolver())
+
+    e3.dataType
+
+    e3
   }
 
 }

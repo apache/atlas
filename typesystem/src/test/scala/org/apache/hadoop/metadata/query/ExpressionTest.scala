@@ -92,6 +92,21 @@ class ExpressionTest extends BaseTest {
     println(e)
   }
 
+  @Test def testNegFieldReference: Unit = {
+    try {
+      val e = QueryProcessor.validate(_class("DB").where(_class("LoadProcess").hasField("name")))
+      println(e)
+    } catch {
+      case e : ExpressionException
+        if e.getMessage.endsWith("srcType of field doesn't match input type, expression: LoadProcess has name") => ()
+    }
+  }
+
+  @Test def testFieldReferenceRedundant: Unit = {
+    val e = QueryProcessor.validate(_class("DB").where(_class("DB").hasField("name")))
+    println(e)
+  }
+
   @Test def testBackReference: Unit = {
     val e = QueryProcessor.validate(
       _class("DB").as("db").field("Table").where(id("db").field("name").`=`(string("Reporting"))))

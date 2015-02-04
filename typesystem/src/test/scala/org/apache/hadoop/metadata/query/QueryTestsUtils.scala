@@ -92,7 +92,7 @@ object QueryTestsUtils extends GraphUtils {
     def loadProcessClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "LoadProcess", null,
       Array(
         attrDef("name", DataTypes.STRING_TYPE),
-        new AttributeDefinition("inputTables", "Table", Multiplicity.COLLECTION, false, null),
+        new AttributeDefinition("inputTables", DataTypes.arrayTypeName("Table"), Multiplicity.COLLECTION, false, null),
         new AttributeDefinition("outputTable", "Table", Multiplicity.REQUIRED, false, null)
       ))
 
