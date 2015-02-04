@@ -21,7 +21,7 @@ package org.apache.hadoop.metadata.query
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.apache.hadoop.metadata.MetadataException
-import org.apache.hadoop.metadata.types.DataTypes.PrimitiveType
+import org.apache.hadoop.metadata.types.DataTypes.{ArrayType, TypeCategory, PrimitiveType}
 import org.apache.hadoop.metadata.types._
 
 object TypeUtils {
@@ -72,6 +72,10 @@ object TypeUtils {
     case _ => None
   }
 
+  def hasFields(iDataType: IDataType[_]) : Boolean = {
+    fieldMapping(iDataType).isDefined
+  }
+
   import scala.language.existentials
   case class FieldInfo(dataType : IDataType[_], attrInfo : AttributeInfo, reverseDataType : IDataType[_] = null) {
     def isReverse = reverseDataType != null
@@ -109,10 +113,23 @@ object TypeUtils {
         if (idTypFMap.isDefined) {
           import scala.collection.JavaConversions._
           val fields: Seq[AttributeInfo] = idTypFMap.get.fields.values().filter { aInfo =>
-            aInfo.dataType() == typ
+            aInfo.dataType() == typ ||
+              ( aInfo.dataType().getTypeCategory == TypeCategory.ARRAY &&
+                aInfo.dataType().asInstanceOf[ArrayType].getElemType == typ
+                )
           }.toSeq
           if (fields.size == 1) {
             return Some(FieldInfo(typ, fields(0), idTyp))
+          }
+          /*
+           * is there only 1 array field of this type?
+           * If yes resolve to it.
+           * @todo: allow user to specify the relationship to follow by further qualifying the type. for e.g.
+           *   field("LoadProcess.inputTables")
+           */
+          val aFields = fields.filter { aInfo => aInfo.dataType().getTypeCategory == TypeCategory.ARRAY}
+          if (aFields.size == 1) {
+            return Some(FieldInfo(typ, aFields(0), idTyp))
           }
         }
       } catch {

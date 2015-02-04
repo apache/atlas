@@ -19,7 +19,7 @@
 package org.apache.hadoop.metadata.query
 
 import org.apache.hadoop.metadata.MetadataException
-import org.apache.hadoop.metadata.types.DataTypes.PrimitiveType
+import org.apache.hadoop.metadata.types.DataTypes.{ArrayType, TypeCategory, PrimitiveType}
 import org.apache.hadoop.metadata.types._
 
 object Expressions {
@@ -367,8 +367,23 @@ object Expressions {
 
   case class FieldExpression(fieldName: String, fieldInfo: FieldInfo, child: Option[Expression])
     extends Expression {
+
+    def elemType(t : IDataType[_]) : IDataType[_] = {
+      if (t.getTypeCategory == TypeCategory.ARRAY ) {
+        val aT = t.asInstanceOf[ArrayType]
+        if ( aT.getElemType.getTypeCategory == TypeCategory.CLASS ||
+          aT.getElemType.getTypeCategory == TypeCategory.STRUCT ) {
+          return aT.getElemType
+        }
+      }
+      t
+    }
+
     val children = if (child.isDefined) List(child.get) else Nil
-    lazy val dataType = if (!fieldInfo.isReverse) fieldInfo.attrInfo.dataType() else fieldInfo.reverseDataType
+    lazy val dataType = {
+      val t = if (!fieldInfo.isReverse) fieldInfo.attrInfo.dataType() else fieldInfo.reverseDataType
+      elemType(t)
+    }
     override lazy val resolved: Boolean = true
 
     override def namedExpressions = if ( child.isDefined ) child.get.namedExpressions else Map()
