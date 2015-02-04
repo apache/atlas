@@ -20,6 +20,7 @@ package org.apache.hadoop.metadata.query
 
 import org.apache.hadoop.metadata.query.Expressions._
 import org.apache.hadoop.metadata.types.DataTypes.TypeCategory
+import org.apache.hadoop.metadata.types.IDataType
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -141,6 +142,16 @@ class GremlinTranslator(expr: Expression,
       ()
   }
 
+  class counter {var i : Int = -1; def next : Int = {i+= 1; i}}
+
+  def addAliasToLoopInput(c : counter = new counter()) : PartialFunction[Expression, Expression] = {
+    case l@LoopExpression(aliasE@AliasExpression(_,_), _, _) =>  l
+    case l@LoopExpression(inputExpr, loopExpr, t) =>  {
+      val aliasE = AliasExpression(inputExpr, s"_loop${c.next}")
+      LoopExpression(aliasE, loopExpr, t)
+    }
+  }
+
   private def genQuery(expr: Expression, inSelect: Boolean): String = expr match {
     case ClassExpression(clsName) => s"""has("${gPersistenceBehavior.typeAttributeName}","$clsName")"""
     case TraitExpression(clsName) => s"""has("${gPersistenceBehavior.typeAttributeName}","$clsName")"""
@@ -192,6 +203,14 @@ class GremlinTranslator(expr: Expression,
       val srcExprsString = srcExprsStringList.foldLeft("")(_ + "{" + _ + "}")
       s"${genQuery(child, inSelect)}.select($srcNamesString)$srcExprsString"
     }
+    case loop@LoopExpression(input, loopExpr, t) => {
+      val inputQry = genQuery(input, inSelect)
+      val loopingPathGExpr = genQuery(loopExpr, inSelect)
+      val loopGExpr = s"""loop("${input.asInstanceOf[AliasExpression].alias}")"""
+      val untilCriteria = if ( t.isDefined) s"{it.loops < ${t.get.value}}" else "{true}"
+      val loopObjectGExpr = gPersistenceBehavior.loopObjectExpression(input.dataType)
+      s"""${inputQry}.${loopingPathGExpr}.${loopGExpr}${untilCriteria}${loopObjectGExpr}"""
+    }
     case BackReference(alias, _, _) =>
       if (inSelect) gPersistenceBehavior.fieldPrefixInSelect else s"""back("$alias")"""
     case AliasExpression(child, alias) => s"""${genQuery(child, inSelect)}.as("$alias")"""
@@ -215,6 +234,7 @@ class GremlinTranslator(expr: Expression,
 
     e1 = e1.transformUp(new AddAliasToSelectInput)
     e1.traverseUp(validateSelectExprHaveOneSrc)
+    e1 = e1.transformUp(addAliasToLoopInput())
 
     e1 match {
       case e1: SelectExpression => {

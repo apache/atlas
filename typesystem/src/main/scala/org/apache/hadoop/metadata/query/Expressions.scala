@@ -298,7 +298,10 @@ object Expressions {
 
     def where(condExpr: Expression) = new FilterExpression(this, condExpr)
     def select(selectList: Expression*) = new SelectExpression(this, selectList.toList)
-
+    
+    def loop(loopingExpr : Expression) = new LoopExpression(this, loopingExpr, None)
+    def loop(loopingExpr : Expression, times : Literal[Int]) =
+      new LoopExpression(this, loopingExpr, Some(times))
 
   }
 
@@ -622,6 +625,32 @@ object Expressions {
     override def namedExpressions  = child.namedExpressions ++ (selectList.flatMap(_.namedExpressions))
 
     override def toString = s"""$child select ${selectListWithAlias.mkString("", ", ", "")}"""
+  }
+  
+  case class LoopExpression(val input: Expression, val loopingExpression: Expression,
+                            val times : Option[Literal[Int]]) extends Expression {
+    val children = List(input, loopingExpression)
+    lazy val dataType = {
+      if (!resolved) {
+        throw new UnresolvedException(this,
+          s"datatype. Can not resolve due to unresolved children")
+      }
+      if ( input.dataType.getTypeCategory != TypeCategory.CLASS) {
+        throw new ExpressionException(this, s"Loop Expression applied to type : '${input.dataType.getName}';" +
+          " loop can only be applied to Class Expressions")
+      }
+      if (input.dataType != loopingExpression.dataType) {
+        throw new ExpressionException(this,
+          s"Invalid Loop Expression; input and loopExpression dataTypes don't match: " +
+          s"(${input.dataType.getName},${loopingExpression.dataType.getName}})")
+      }
+      input.dataType
+    }
+    override def namedExpressions  = input.namedExpressions
+    override def toString = {
+      if (times.isDefined) s"$input loop ($loopingExpression) times ${times.get.value}"
+      else  s"$input loop ($loopingExpression)"
+    }
   }
 
 }

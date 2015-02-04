@@ -165,4 +165,9 @@ class ExpressionTest extends BaseTest {
     )
     println(e)
   }
+
+  @Test def testLineageAll: Unit = {
+    val e = QueryProcessor.validate(_class("Table").loop(id("LoadProcess").field("outputTable")))
+    println(e)
+  }
 }

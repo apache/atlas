@@ -91,6 +91,10 @@ trait GraphPersistenceStrategies {
     case "<=" => "T.lte"
     case _ => throw new ExpressionException(op, "Comparison operator not supported in Gremlin")
   }
+
+  def loopObjectExpression(dataType : IDataType[_]) = {
+    s"{it.object.'${typeAttributeName}' == '${dataType.getName}'}"
+  }
 }
 
 object GraphPersistenceStrategy1 extends GraphPersistenceStrategies {
