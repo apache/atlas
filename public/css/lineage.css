@@ -1,24 +1,23 @@
-.node circle {
+g circle {
     cursor: pointer;
     stroke: green;
     stroke-width: 2px;
-    fill: #1cef3d;
+    fill: url(#process-image);
 }
 
-.node circle.empty {
+g circle.empty {
     fill: #fdd916;
 }
 
-.node text {
-    font: 15px sans-serif;
-    pointer-events: none;
-    text-anchor: middle;
-}
-
-line.link {
+.link {
     fill: none;
     stroke: green;
     stroke-width: 2px;
+}
+
+g text {
+    pointer-events: none;
+    text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
 }
 
 .d3-tip pre {
