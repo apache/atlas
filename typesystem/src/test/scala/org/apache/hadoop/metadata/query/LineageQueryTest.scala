@@ -382,4 +382,118 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll {
 }""")
   }
 
+  test("testLineageFixedDepth") {
+    val r = QueryProcessor.evaluate(_class("Table").loop(id("LoadProcess").field("outputTable"), int(1)), g)
+    validateJson(r, """{
+  "query":"Table as _loop0 loop (LoadProcess outputTable) times 1",
+  "dataType":{
+    "superTypes":[
+
+    ],
+    "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.types.ClassType",
+    "typeName":"Table",
+    "attributeDefinitions":[
+      {
+        "name":"name",
+        "dataTypeName":"string",
+        "multiplicity":{
+          "lower":0,
+          "upper":1,
+          "isUnique":false
+        },
+        "isComposite":false,
+        "isUnique":false,
+        "isIndexable":true,
+        "reverseAttributeName":null
+      },
+      {
+        "name":"db",
+        "dataTypeName":"DB",
+        "multiplicity":{
+          "lower":1,
+          "upper":1,
+          "isUnique":false
+        },
+        "isComposite":false,
+        "isUnique":false,
+        "isIndexable":true,
+        "reverseAttributeName":null
+      },
+      {
+        "name":"sd",
+        "dataTypeName":"StorageDesc",
+        "multiplicity":{
+          "lower":1,
+          "upper":1,
+          "isUnique":false
+        },
+        "isComposite":false,
+        "isUnique":false,
+        "isIndexable":true,
+        "reverseAttributeName":null
+      }
+    ]
+  },
+  "rows":[
+    {
+      "$typeName$":"Table",
+      "$id$":{
+        "id":"8960",
+        "$typeName$":"Table",
+        "version":0
+      },
+      "sd":{
+        "id":"7424",
+        "$typeName$":"StorageDesc",
+        "version":0
+      },
+      "db":{
+        "id":"7168",
+        "$typeName$":"DB",
+        "version":0
+      },
+      "name":"sales_fact_daily_mv"
+    },
+    {
+      "$typeName$":"Table",
+      "$id$":{
+        "id":"8960",
+        "$typeName$":"Table",
+        "version":0
+      },
+      "sd":{
+        "id":"7424",
+        "$typeName$":"StorageDesc",
+        "version":0
+      },
+      "db":{
+        "id":"7168",
+        "$typeName$":"DB",
+        "version":0
+      },
+      "name":"sales_fact_daily_mv"
+    },
+    {
+      "$typeName$":"Table",
+      "$id$":{
+        "id":"12800",
+        "$typeName$":"Table",
+        "version":0
+      },
+      "sd":{
+        "id":"11264",
+        "$typeName$":"StorageDesc",
+        "version":0
+      },
+      "db":{
+        "id":"7168",
+        "$typeName$":"DB",
+        "version":0
+      },
+      "name":"sales_fact_monthly_mv"
+    }
+  ]
+}""")
+  }
+
 }

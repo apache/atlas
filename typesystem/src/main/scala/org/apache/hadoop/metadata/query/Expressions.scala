@@ -300,7 +300,7 @@ object Expressions {
     def select(selectList: Expression*) = new SelectExpression(this, selectList.toList)
     
     def loop(loopingExpr : Expression) = new LoopExpression(this, loopingExpr, None)
-    def loop(loopingExpr : Expression, times : Literal[Int]) =
+    def loop(loopingExpr : Expression, times : Literal[Integer]) =
       new LoopExpression(this, loopingExpr, Some(times))
 
   }
@@ -628,7 +628,7 @@ object Expressions {
   }
   
   case class LoopExpression(val input: Expression, val loopingExpression: Expression,
-                            val times : Option[Literal[Int]]) extends Expression {
+                            val times : Option[Literal[Integer]]) extends Expression {
     val children = List(input, loopingExpression)
     lazy val dataType = {
       if (!resolved) {
