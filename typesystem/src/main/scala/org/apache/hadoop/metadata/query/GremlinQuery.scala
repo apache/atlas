@@ -53,7 +53,10 @@ trait SelectExpressionHandling {
     }
 
     def apply(e: Expression) = e match {
-      case SelectExpression(_: AliasExpression, _) => e
+      case SelectExpression(aliasE@AliasExpression(_,_), selList) =>  {
+        idx = idx + 1
+        SelectExpression(aliasE, selList.map(_.transformUp(new DecorateFieldWithAlias(aliasE))))
+      }
       case SelectExpression(child, selList) => {
         idx = idx + 1
         val aliasE = AliasExpression(child, s"_src$idx")

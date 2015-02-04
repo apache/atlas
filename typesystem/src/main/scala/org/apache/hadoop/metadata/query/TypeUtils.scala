@@ -79,6 +79,13 @@ object TypeUtils {
   import scala.language.existentials
   case class FieldInfo(dataType : IDataType[_], attrInfo : AttributeInfo, reverseDataType : IDataType[_] = null) {
     def isReverse = reverseDataType != null
+    override  def toString : String = {
+      if ( reverseDataType == null ) {
+        s"""FieldInfo("${dataType.getName}", "${attrInfo.name}")"""
+      } else {
+        s"""FieldInfo("${dataType.getName}", "${attrInfo.name}", "${reverseDataType.getName}")"""
+      }
+    }
   }
 
   /**

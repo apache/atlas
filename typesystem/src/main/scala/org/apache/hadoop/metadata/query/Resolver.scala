@@ -85,18 +85,20 @@ object FieldValidator extends PartialFunction[Expression, Expression] {
 
   def isDefinedAt(x: Expression) = true
 
+  def isSrc(e : Expression) = e.isInstanceOf[ClassExpression] || e.isInstanceOf[TraitExpression]
+
   def validateQualifiedField(srcDataType : IDataType[_]) : PartialFunction[Expression, Expression] = {
-    case FieldExpression(fNm, fInfo, Some(child)) if child.children == Nil && child.dataType == srcDataType =>
+    case FieldExpression(fNm, fInfo, Some(child)) if (child.children == Nil && child.dataType == srcDataType) =>
       FieldExpression(fNm, fInfo, None)
-    case fe@FieldExpression(fNm, fInfo, Some(child)) if child.children == Nil =>
+    case fe@FieldExpression(fNm, fInfo, Some(child)) if isSrc(child) =>
       throw new ExpressionException(fe, s"srcType of field doesn't match input type")
     case hasFieldUnaryExpression(fNm, child) if child.dataType == srcDataType =>
       hasFieldLeafExpression(fNm)
-    case hF@hasFieldUnaryExpression(fNm, child) =>
+    case hF@hasFieldUnaryExpression(fNm, child) if isSrc(child) =>
       throw new ExpressionException(hF, s"srcType of field doesn't match input type")
     case isTraitUnaryExpression(fNm, child) if child.dataType == srcDataType =>
       isTraitLeafExpression(fNm)
-    case iT@isTraitUnaryExpression(fNm, child) =>
+    case iT@isTraitUnaryExpression(fNm, child) if isSrc(child) =>
       throw new ExpressionException(iT, s"srcType of field doesn't match input type")
   }
 

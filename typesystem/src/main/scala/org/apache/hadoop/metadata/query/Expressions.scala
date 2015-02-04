@@ -249,6 +249,7 @@ object Expressions {
       case e: Expression if e.toString contains "\n" => s"(${e.simpleString})" :: Nil
       case seq: Seq[_] => seq.mkString("[", ",", "]") :: Nil
       case set: Set[_] => set.mkString("{", ",", "}") :: Nil
+      case f : IDataType[_] => f.getName :: Nil
       case other => other :: Nil
     }.mkString(", ")
 
