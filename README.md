@@ -9,8 +9,8 @@
 ### Setup:
 
 ```
-git clone https://github.com/vkadam/dgc-metadata.git
-cd dgc-metadata
+git clone https://github.com/hortonworks/dgi-metadata-ui.git
+cd dgi-metadata-ui
 npm install
 grunt server
 ```
