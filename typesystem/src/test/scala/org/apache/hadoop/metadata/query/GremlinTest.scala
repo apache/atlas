@@ -29,7 +29,6 @@ class GremlinTest extends FunSuite with BeforeAndAfterAll {
     if ( expected != null ) {
       val a = STRUCT_NAME_REGEX.replaceAllIn(rJ, "")
       val b = STRUCT_NAME_REGEX.replaceAllIn(expected, "")
-      println(rJ)
       Assertions.assert(a == b)
     } else {
       println(rJ)

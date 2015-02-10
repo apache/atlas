@@ -23,6 +23,7 @@ import javax.script.{Bindings, ScriptEngine, ScriptEngineManager}
 
 import com.google.common.collect.ImmutableList
 import com.thinkaurelius.titan.core.{TitanFactory, TitanGraph}
+import com.tinkerpop.blueprints.Vertex
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.commons.configuration.{ConfigurationException, MapConfiguration, Configuration}
 import org.apache.commons.io.FileUtils
@@ -43,7 +44,12 @@ trait GraphUtils {
 
   def titanGraph(conf : Config) = {
     try {
-      TitanFactory.open(getConfiguration(conf))
+      val g = TitanFactory.open(getConfiguration(conf))
+      val mgmt = g.getManagementSystem
+      val typname = mgmt.makePropertyKey("typeName").dataType(classOf[String]).make()
+      mgmt.buildIndex("byTypeName",classOf[Vertex]).addKey(typname).buildCompositeIndex()
+      mgmt.commit()
+      g
     } catch  {
       case e : ConfigurationException =>  throw new RuntimeException(e)
     }
