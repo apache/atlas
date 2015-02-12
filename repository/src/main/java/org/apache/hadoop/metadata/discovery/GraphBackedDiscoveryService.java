@@ -90,36 +90,38 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
             // Add to the Vertex map.
             v.put(vtx.getId().toString(), new JSONObject(jsonVertexMap));
 
-            // Follow this Vertex's edges
-            while (edgeIterator != null && edgeIterator.hasNext()) {
+            // Follow this Vertex's edges if this isn't the last level of depth
+            if (counter < max) {
+            	while (edgeIterator != null && edgeIterator.hasNext()) {
 
-                Edge edge = edgeIterator.next();
-                String label = edge.getLabel();
+                	Edge edge = edgeIterator.next();
+                	String label = edge.getLabel();
 
-                Map<String,String> jsonEdgeMap = new HashMap<>();
-                String tail = edge.getVertex(Direction.OUT).getId().toString();
-                String head = edge.getVertex(Direction.IN).getId().toString();
+                	Map<String,String> jsonEdgeMap = new HashMap<>();
+                	String tail = edge.getVertex(Direction.OUT).getId().toString();
+                	String head = edge.getVertex(Direction.IN).getId().toString();
 
-                jsonEdgeMap.put("tail", tail);
-                jsonEdgeMap.put("head", head);
-                jsonEdgeMap.put("label", label);
+                	jsonEdgeMap.put("tail", tail);
+                	jsonEdgeMap.put("head", head);
+                	jsonEdgeMap.put("label", label);
 
-                Direction d;
-                if (tail.equals(vtx.getId().toString())) {
-                    d = Direction.IN;
-                } else {
-                    d = Direction.OUT;
-                }
+                	Direction d;
+                	if (tail.equals(vtx.getId().toString())) {
+                    	d = Direction.IN;
+                	} else {
+                    	d = Direction.OUT;
+                	}
 
-   	   			/* If we want an Edge's property keys, uncomment here.  Or we can parameterize it.
-   	   			 * Code is here now for reference/memory-jogging.
-   				for (String pKey: edge.getPropertyKeys()) {
-   	   				jsonEdgeMap.put(pKey, edge.getProperty(pKey).toString());
-   	   			}
-   	   			*/
+   	   				/* If we want an Edge's property keys, uncomment here.  Or we can parameterize it.
+   	   			 	* Code is here now for reference/memory-jogging.
+   					for (String pKey: edge.getPropertyKeys()) {
+   	   					jsonEdgeMap.put(pKey, edge.getProperty(pKey).toString());
+   	   				}
+   	   			 */
 
-                e.put(edge.getId().toString(), new JSONObject(jsonEdgeMap));
-                searchWalker (edge.getVertex(d), max, counter, e, v, edgesToFollow);
+                	e.put(edge.getId().toString(), new JSONObject(jsonEdgeMap));
+                	searchWalker (edge.getVertex(d), max, counter, e, v, edgesToFollow);
+            	}
             }
         }
     }
