@@ -1,0 +1,38 @@
+       <!-- Page Content -->
+   <div class="container">
+   <div class="row">
+   <div class="col-lg-12">
+   <div class="col-lg-1"></div>
+   <div class="col-lg-10"> <div class="col-lg-6">
+    <div class="input-group">
+      <input type="text" ng-model="query"   ng-keyup="$event.keyCode == 13 && executeSearch()"  class="form-control textorange" placeholder="Hive, Table">
+      <span class="input-group-btn">
+          <button class="btn btn-default searchbtn" ng-click="executeSearch()"  type="submit"><i class="glyphicon glyphicon-search white "></i></button>
+      </span>
+    </div></div></div>
+    <div class="col-lg-12">
+     
+   <div class="col-lg-1"></div>
+   <div class="col-lg-10"><small style="color:#999999; margin-top:2px">Hive, Table</div>
+   <div class="col-lg-1"></div></div>
+   
+   <div class="col-lg-12" style="height:20px"></div>
+     <!--search end--> 
+      <!-- Hive Table -->
+   <div class="col-lg-1"></div>
+   <div class="col-lg-10  table-border">
+   <div  ng-hide="iswiki">
+    <input type="hidden" ng-model="iserror">
+    <h4 class="titletxt1">{{SearchQuery}}</h4>
+    <ul class="list-unstyled">
+      <li ng-hide="iserror" class="sm-txt1" ng-repeat="entity in entities"><u><a href="" ng-click="wikiView(entity)" style="line-height: 2.5;">{{ entity}}</a></u></li>     	   
+	  <li ng-show="iserror" class="sm-txt1">{{ error}}</li>  
+    </ul>
+    </ul>   
+</div>
+<div  ng-show="iswiki" data-ng-include="selectedDefination.path"></div>   
+   </div>
+   <div class="col-lg-1"></div></div>
+   
+      </div>
+    

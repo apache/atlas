@@ -1,0 +1,2 @@
+<h4 class="titletxt2">{{key}}:</h4>
+<p class="sm-txt2">{{value | date:'medium'}}</p>
