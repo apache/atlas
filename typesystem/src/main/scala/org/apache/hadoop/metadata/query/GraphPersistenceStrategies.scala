@@ -26,7 +26,7 @@ import org.apache.hadoop.metadata.query.Expressions.{ExpressionException, Compar
 import org.apache.hadoop.metadata.query.TypeUtils.FieldInfo
 import org.apache.hadoop.metadata.storage.Id
 import org.apache.hadoop.metadata.types._
-
+import scala.collection.JavaConversions._
 
 /**
  * Represents the Bridge between the QueryProcessor and the Graph Persistence scheme used.
@@ -63,7 +63,7 @@ trait GraphPersistenceStrategies {
    * @param v
    * @return
    */
-  def traitNames(v : TitanVertex) : Seq[String]
+  def traitNames(v : TitanVertex) : java.util.List[String]
 
   def edgeLabel(fInfo : FieldInfo) : String = fInfo match {
     case FieldInfo(dataType, aInfo, null) => edgeLabel(dataType, aInfo)
@@ -80,7 +80,7 @@ trait GraphPersistenceStrategies {
    */
   def getIdFromVertex(dataTypeNm : String, v : TitanVertex) : Id
 
-  def constructInstance[U](dataType : IDataType[U], v : AnyRef) : U
+  def constructInstance[U](dataType : IDataType[U], v : java.lang.Object) : U
 
   def gremlinCompOp(op : ComparisonExpression) = op.symbol match {
     case "=" => "T.eq"
@@ -108,7 +108,7 @@ object GraphPersistenceStrategy1 extends GraphPersistenceStrategies {
   def getIdFromVertex(dataTypeNm : String, v : TitanVertex) : Id =
     new Id(v.getId.toString, 0, dataTypeNm)
 
-  def traitNames(v : TitanVertex) : Seq[String] = {
+  def traitNames(v : TitanVertex) : java.util.List[String] = {
     val s = v.getProperty[String]("traitNames")
     if ( s != null ) {
       Seq[String](s.split(","):_*)
