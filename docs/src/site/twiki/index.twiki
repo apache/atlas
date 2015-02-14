@@ -1,0 +1,18 @@
+---+ Data Governance and Metadata platform for Hadoop
+
+
+---++ Why?
+
+   *
+
+   * Captures Lineage information for data sets and processes
+
+---+ Getting Started
+
+
+#LicenseInfo
+---+ Licensing Information
+
+Metadata (DGC) is distributed under [[http://www.apache.org/licenses/LICENSE-2.0][Apache License 2.0]].
+
+
