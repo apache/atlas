@@ -1,0 +1,60 @@
+{
+    "name": "dgc-metadata",
+    "description": "DGC Metadata",
+    "version": "1.0.0-SNAPSHOT",
+    "private": true,
+    "bin": "server.js",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/hortonworks/metadata"
+    },
+    "engines": {
+        "node": "0.10.x",
+        "npm": "1.3.x"
+    },
+    "keywords": [
+        "DGC",
+        "HortonWorks"
+    ],
+    "scripts": {
+        "postinstall": "node node_modules/bower/bin/bower install"
+    },
+    "dependencies": {
+        "body-parser": "^1.2.0",
+        "bower": "~1.3.1",
+        "compression": "^1.0.2",
+        "consolidate": "~0.10.0",
+        "cookie-parser": "^1.0.1",
+        "cookies": "~0.4.0",
+        "express": "~4.2.0",
+        "express-load": "^1.1.14",
+        "forever": "~0.11.1",
+        "lodash": "~2.4.1",
+        "method-override": "^1.0.0",
+        "morgan": "^1.0.1",
+        "path-extra": "~0.1.1",
+        "proxit": "^0.6.0",
+        "q": "~1.0.1",
+        "rc": "~0.3.4",
+        "serve-favicon": "^2.0.0",
+        "static-favicon": "^2.0.0-alpha",
+        "superagent": "^0.20.0",
+        "swig": "~1.3.2",
+        "view-helpers": "~0.1.4"
+    },
+    "devDependencies": {
+        "git-rev": "^0.2.1",
+        "grunt": "~0.4.2",
+        "grunt-bower-task": "~0.4.0",
+        "grunt-cli": "~0.1.11",
+        "grunt-concurrent": "^1.0.0",
+        "grunt-contrib-compress": "^0.13.0",
+        "grunt-contrib-jshint": "^0.11.0",
+        "grunt-contrib-watch": "^0.6.0",
+        "grunt-dev-update": "^1.0.2",
+        "grunt-jsbeautifier": "^0.2.6",
+        "grunt-nodemon": "^0.4.0",
+        "grunt-shell": "^1.1.1",
+        "load-grunt-tasks": "^3.1.0"
+    }
+}

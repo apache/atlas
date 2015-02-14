@@ -1,0 +1,7 @@
+<h4>{{results.length}} results matching your search query "{{query}}" were found</h4>
+<ul class="list-unstyled">
+    <li ng-repeat="result in results">
+        <div data-ng-if="typeAvailable()" data-ng-include="'/modules/search/views/types/'+result.type.toLowerCase()+'.html'"></div>
+        <div data-ng-if="!typeAvailable()" data-ng-include="'/modules/search/views/types/guid.html'"></div>
+    </li>
+</ul>
