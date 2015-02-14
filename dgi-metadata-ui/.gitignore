@@ -6,5 +6,4 @@ lib/
 public/lib
 public/dist
 *.log
-public/css/common.css
 *.tgz
