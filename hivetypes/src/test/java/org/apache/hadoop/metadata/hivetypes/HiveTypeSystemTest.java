@@ -21,11 +21,15 @@ package org.apache.hadoop.metadata.hivetypes;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.MetaException;
+import org.apache.hadoop.hive.ql.plan.api.QueryPlan;
+import org.apache.hadoop.hive.service.HiveClient;
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.storage.Id;
 import org.apache.hadoop.metadata.storage.memory.MemRepository;
 import org.apache.hadoop.metadata.types.TypeSystem;
+import org.apache.thrift.protocol.TBinaryProtocol;
+import org.apache.thrift.transport.TSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.BeforeClass;
@@ -35,13 +39,17 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
 
-@Test (enabled = false)
+@Test (enabled = true)
 public class HiveTypeSystemTest {
 
     protected MemRepository mr;
     protected HiveTypeSystem hts;
-
+    private static final String hiveHost = "c6501.ambari.apache.org";
+    private static final short hivePort = 10000;
     private static final Logger LOG =
             LoggerFactory.getLogger(HiveTypeSystemTest.class);
 
@@ -54,11 +62,14 @@ public class HiveTypeSystemTest {
         hts = HiveTypeSystem.getInstance();
     }
 
-    @Test (enabled = false)
+    @Test (enabled = true)
     public void testHiveImport() throws MetaException, MetadataException, IOException {
-
-        HiveImporter hImporter = new HiveImporter(mr, hts, new HiveMetaStoreClient(new HiveConf()));
+        HiveConf conf = new HiveConf();
+        HiveMetaStoreClient hiveMetaStoreClient;
+        hiveMetaStoreClient = new HiveMetaStoreClient(conf);
+        HiveImporter hImporter = new HiveImporter(mr, hts, hiveMetaStoreClient);
         hImporter.importHiveMetadata();
+
         LOG.info("Defined DB instances");
         File f = new File("./target/logs/hiveobjs.txt");
         f.getParentFile().mkdirs();
@@ -95,4 +106,20 @@ public class HiveTypeSystemTest {
         bw.flush();
         bw.close();
     }
+
+    @Test (enabled = true)
+    public void testHiveLineage() throws MetaException, MetadataException, IOException, Exception {
+        Class.forName("org.apache.hive.jdbc.HiveDriver");
+        String url = "jdbc:hive2://" + hiveHost + ":" + hivePort;
+        Connection con = DriverManager.getConnection(url, "ambari-qa", "");
+        Statement stmt = con.createStatement();
+        stmt.execute("drop table if exists t");
+        stmt.execute("create table t(a int, b string)");
+        stmt.execute("drop table if exists t2");
+        stmt.execute("create table t2 as select * from t");
+
+    }
+
+
+
 }

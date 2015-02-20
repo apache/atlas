@@ -18,6 +18,7 @@
 
 package org.apache.hadoop.metadata.hivetypes;
 
+import org.apache.hadoop.hive.cli.CliDriver;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
@@ -28,6 +29,7 @@ import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.metastore.api.SerDeInfo;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.hadoop.hive.service.HiveClient;
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.ITypedStruct;
 import org.apache.hadoop.metadata.MetadataException;
@@ -64,7 +66,6 @@ public class HiveImporter {
     private List<Id> processInstances;
 
 
-
     private class Pair<L, R> {
         final L left;
         final R right;
@@ -73,8 +74,14 @@ public class HiveImporter {
             this.left = left;
             this.right = right;
         }
-        public L left() { return this.left;}
-        public R right() { return this.right;}
+
+        public L left() {
+            return this.left;
+        }
+
+        public R right() {
+            return this.right;
+        }
     }
 
 
@@ -84,7 +91,8 @@ public class HiveImporter {
         }
     }
 
-    public HiveImporter(MetadataRepository repo, HiveTypeSystem hts, HiveMetaStoreClient hmc) throws RepositoryException {
+    public HiveImporter( MetadataRepository repo, HiveTypeSystem hts, HiveMetaStoreClient hmc)
+            throws RepositoryException {
         this(hts, hmc);
 
         if (repo == null) {
@@ -96,7 +104,8 @@ public class HiveImporter {
 
     }
 
-    public HiveImporter(IRepository repo, HiveTypeSystem hts, HiveMetaStoreClient hmc) throws RepositoryException {
+    public HiveImporter(IRepository repo, HiveTypeSystem hts, HiveMetaStoreClient hmc)
+            throws RepositoryException {
         this(hts, hmc);
 
         if (repo == null) {
@@ -158,6 +167,9 @@ public class HiveImporter {
         }
     }
 
+    public void importHiveRTInfo(String stmt) throws MetadataException {
+
+    }
 
     private boolean usingMemRepository() {
         return this.graphRepository == null;
@@ -182,7 +194,7 @@ public class HiveImporter {
     }
 
     private void setReferenceInstanceAttribute(Referenceable ref, String attr,
-                                               InstancePair instance)  {
+                                               InstancePair instance) {
         if (usingMemRepository()) {
             ref.set(attr, instance.left());
         } else {
@@ -218,112 +230,164 @@ public class HiveImporter {
             List<String> hiveTables = hiveMetastoreClient.getAllTables(db);
 
             for (String table : hiveTables) {
-                LOG.info("Importing objects from " + db + "." + table);
+                importTable(db, table, dbRefTyped);
+            }
+        } catch (Exception e) {
+            throw new MetadataException(e);
+        }
+    }
 
-                Table hiveTable = hiveMetastoreClient.getTable(db, table);
+    private void importTable(String db, String table, InstancePair dbRefTyped) throws MetadataException {
+        try {
+            LOG.info("Importing objects from " + db + "." + table);
 
-                Referenceable tableRef = new Referenceable(HiveTypeSystem.DefinedTypes.HIVE_TABLE.name());
-                setReferenceInstanceAttribute(tableRef, "dbName", dbRefTyped);
-                tableRef.set("tableName", hiveTable.getTableName());
-                tableRef.set("owner", hiveTable.getOwner());
-                tableRef.set("createTime", hiveTable.getCreateTime());
-                tableRef.set("lastAccessTime", hiveTable.getLastAccessTime());
-                tableRef.set("retention", hiveTable.getRetention());
+            Table hiveTable = hiveMetastoreClient.getTable(db, table);
 
-                StorageDescriptor storageDesc = hiveTable.getSd();
-                InstancePair sdRefTyped = fillStorageDescStruct(storageDesc);
-                setReferenceInstanceAttribute(tableRef, "sd", sdRefTyped);
-                List<InstancePair> partKeys = new ArrayList<>();
-                Referenceable colRef;
-                if (hiveTable.getPartitionKeysSize() > 0) {
-                    for (FieldSchema fs : hiveTable.getPartitionKeys()) {
-                        colRef = new Referenceable(HiveTypeSystem.DefinedTypes.HIVE_COLUMN.name());
-                        colRef.set("name", fs.getName());
-                        colRef.set("type", fs.getType());
-                        colRef.set("comment", fs.getComment());
-                        InstancePair colRefTyped = createInstance(colRef);
-                        partKeys.add(colRefTyped);
-                    }
-                    if (usingMemRepository()) {
-                        List<ITypedReferenceableInstance> keys = new ArrayList<>();
-                        for (InstancePair ip : partKeys) {
-                            keys.add(ip.left());
-                        }
-                        tableRef.set("partitionKeys", keys);
-                    } else {
-                        List<Referenceable> keys = new ArrayList<>();
-                        for (InstancePair ip : partKeys) {
-                            keys.add(ip.right());
-                        }
-                        tableRef.set("partitionKeys", keys);
-                    }
+            Referenceable tableRef = new Referenceable(HiveTypeSystem.DefinedTypes.HIVE_TABLE.name());
+            setReferenceInstanceAttribute(tableRef, "dbName", dbRefTyped);
+            tableRef.set("tableName", hiveTable.getTableName());
+            tableRef.set("owner", hiveTable.getOwner());
+            tableRef.set("createTime", hiveTable.getCreateTime());
+            tableRef.set("lastAccessTime", hiveTable.getLastAccessTime());
+            tableRef.set("retention", hiveTable.getRetention());
+
+            StorageDescriptor storageDesc = hiveTable.getSd();
+            InstancePair sdRefTyped = fillStorageDescStruct(storageDesc);
+            setReferenceInstanceAttribute(tableRef, "sd", sdRefTyped);
+            List<InstancePair> partKeys = new ArrayList<>();
+            Referenceable colRef;
+            if (hiveTable.getPartitionKeysSize() > 0) {
+                for (FieldSchema fs : hiveTable.getPartitionKeys()) {
+                    colRef = new Referenceable(HiveTypeSystem.DefinedTypes.HIVE_COLUMN.name());
+                    colRef.set("name", fs.getName());
+                    colRef.set("type", fs.getType());
+                    colRef.set("comment", fs.getComment());
+                    InstancePair colRefTyped = createInstance(colRef);
+                    partKeys.add(colRefTyped);
                 }
-                tableRef.set("parameters", hiveTable.getParameters());
-                if (hiveTable.isSetViewOriginalText()) {
-                    tableRef.set("viewOriginalText", hiveTable.getViewOriginalText());
-                }
-                if (hiveTable.isSetViewExpandedText()) {
-                    tableRef.set("viewExpandedText", hiveTable.getViewExpandedText());
-                }
-                tableRef.set("tableType", hiveTable.getTableType());
-                tableRef.set("temporary", hiveTable.isTemporary());
-
-                InstancePair tableRefTyped = createInstance(tableRef);
                 if (usingMemRepository()) {
-                    tableInstances.add(tableRefTyped.left().getId());
-                }
-
-
-                List<Partition> tableParts = hiveMetastoreClient.listPartitions(db, table, Short.MAX_VALUE);
-                hiveMetastoreClient.listPartitionSpecs(db, table, Short.MAX_VALUE);
-
-                if (tableParts.size() > 0) {
-                    for (Partition hivePart : tableParts) {
-                        Referenceable partRef = new Referenceable(HiveTypeSystem.DefinedTypes.HIVE_PARTITION.name());
-                        partRef.set("values", hivePart.getValues());
-                        setReferenceInstanceAttribute(partRef, "dbName", dbRefTyped);
-                        setReferenceInstanceAttribute(partRef, "tableName", tableRefTyped);
-                        partRef.set("createTime", hivePart.getCreateTime());
-                        partRef.set("lastAccessTime", hivePart.getLastAccessTime());
-                        //sdStruct = fillStorageDescStruct(hivePart.getSd());
-                        // Instead of creating copies of the sdstruct for partitions we are reusing existing ones
-                        // will fix to identify partitions with differing schema.
-                        setReferenceInstanceAttribute(partRef, "sd", sdRefTyped);
-                        partRef.set("parameters", hivePart.getParameters());
-                        InstancePair partRefTyped = createInstance(partRef);
-                        if (usingMemRepository()) {
-                            partitionInstances.add(partRefTyped.left().getId());
-                        }
+                    List<ITypedReferenceableInstance> keys = new ArrayList<>();
+                    for (InstancePair ip : partKeys) {
+                        keys.add(ip.left());
                     }
-                }
-
-                List<Index> indexes = hiveMetastoreClient.listIndexes(db, table, Short.MAX_VALUE);
-
-                if (indexes.size() > 0 ) {
-                    for (Index index : indexes) {
-                        Referenceable indexRef = new Referenceable(HiveTypeSystem.DefinedTypes.HIVE_INDEX.name());
-                        indexRef.set("indexName", index.getIndexName());
-                        indexRef.set("indexHandlerClass", index.getIndexHandlerClass());
-                        setReferenceInstanceAttribute(indexRef, "dbName", dbRefTyped);
-                        indexRef.set("createTime", index.getCreateTime());
-                        indexRef.set("lastAccessTime", index.getLastAccessTime());
-                        indexRef.set("origTableName", index.getOrigTableName());
-                        indexRef.set("indexTableName", index.getIndexTableName());
-                        sdRefTyped = fillStorageDescStruct(index.getSd());
-                        setReferenceInstanceAttribute(indexRef, "sd", sdRefTyped);
-                        indexRef.set("parameters", index.getParameters());
-                        tableRef.set("deferredRebuild", index.isDeferredRebuild());
-                        InstancePair indexRefTyped = createInstance(indexRef);
-                        if (usingMemRepository()) {
-                            indexInstances.add(indexRefTyped.left().getId());
-                        }
+                    tableRef.set("partitionKeys", keys);
+                } else {
+                    List<Referenceable> keys = new ArrayList<>();
+                    for (InstancePair ip : partKeys) {
+                        keys.add(ip.right());
                     }
+                    tableRef.set("partitionKeys", keys);
                 }
             }
-        } catch (Exception te) {
-            throw new MetadataException(te);
+            tableRef.set("parameters", hiveTable.getParameters());
+            if (hiveTable.isSetViewOriginalText()) {
+                tableRef.set("viewOriginalText", hiveTable.getViewOriginalText());
+            }
+            if (hiveTable.isSetViewExpandedText()) {
+                tableRef.set("viewExpandedText", hiveTable.getViewExpandedText());
+            }
+            tableRef.set("tableType", hiveTable.getTableType());
+            tableRef.set("temporary", hiveTable.isTemporary());
+
+            InstancePair tableRefTyped = createInstance(tableRef);
+            if (usingMemRepository()) {
+                tableInstances.add(tableRefTyped.left().getId());
+            }
+
+            importPartitions(db, table, dbRefTyped, tableRefTyped, sdRefTyped);
+            List<Index> indexes = hiveMetastoreClient.listIndexes(db, table, Short.MAX_VALUE);
+
+            if (indexes.size() > 0) {
+                for (Index index : indexes) {
+                    importIndexes(db, table, dbRefTyped, tableRef);
+                }
+            }
+        } catch (Exception e) {
+            throw new MetadataException(e);
         }
 
+
+    }
+
+    private void importPartitions(String db, String table, InstancePair dbRefTyped,
+                                  InstancePair tableRefTyped, InstancePair sdRefTyped)
+            throws MetadataException {
+        try {
+            List<Partition> tableParts = hiveMetastoreClient.listPartitions(db, table, Short.MAX_VALUE);
+            if (tableParts.size() > 0) {
+                for (Partition hivePart : tableParts) {
+                    importPartition(hivePart, dbRefTyped, tableRefTyped, sdRefTyped);
+                }
+            }
+        } catch (Exception e) {
+            throw new MetadataException(e);
+        }
+    }
+
+
+    private void importPartition(Partition hivePart,
+                                 InstancePair dbRefTyped, InstancePair tableRefTyped, InstancePair sdRefTyped)
+            throws MetadataException {
+        try {
+            Referenceable partRef = new Referenceable(HiveTypeSystem.DefinedTypes.HIVE_PARTITION.name());
+            partRef.set("values", hivePart.getValues());
+            setReferenceInstanceAttribute(partRef, "dbName", dbRefTyped);
+            setReferenceInstanceAttribute(partRef, "tableName", tableRefTyped);
+            partRef.set("createTime", hivePart.getCreateTime());
+            partRef.set("lastAccessTime", hivePart.getLastAccessTime());
+            //sdStruct = fillStorageDescStruct(hivePart.getSd());
+            // Instead of creating copies of the sdstruct for partitions we are reusing existing ones
+            // will fix to identify partitions with differing schema.
+            setReferenceInstanceAttribute(partRef, "sd", sdRefTyped);
+            partRef.set("parameters", hivePart.getParameters());
+            InstancePair partRefTyped = createInstance(partRef);
+            if (usingMemRepository()) {
+                partitionInstances.add(partRefTyped.left().getId());
+            }
+        } catch (Exception e) {
+            throw new MetadataException(e);
+        }
+    }
+
+
+    private void importIndexes(String db, String table, InstancePair dbRefTyped, Referenceable tableRef)
+            throws MetadataException {
+        try {
+            List<Index> indexes = hiveMetastoreClient.listIndexes(db, table, Short.MAX_VALUE);
+            if (indexes.size() > 0) {
+                for (Index index : indexes) {
+                    importIndex(index, dbRefTyped, tableRef);
+                }
+            }
+        } catch (Exception e) {
+            throw new MetadataException(e);
+        }
+    }
+
+    private void importIndex(Index index,
+                             InstancePair dbRefTyped, Referenceable tableRef)
+            throws MetadataException {
+        try {
+            Referenceable indexRef = new Referenceable(HiveTypeSystem.DefinedTypes.HIVE_INDEX.name());
+            indexRef.set("indexName", index.getIndexName());
+            indexRef.set("indexHandlerClass", index.getIndexHandlerClass());
+            setReferenceInstanceAttribute(indexRef, "dbName", dbRefTyped);
+            indexRef.set("createTime", index.getCreateTime());
+            indexRef.set("lastAccessTime", index.getLastAccessTime());
+            indexRef.set("origTableName", index.getOrigTableName());
+            indexRef.set("indexTableName", index.getIndexTableName());
+            InstancePair sdRefTyped = fillStorageDescStruct(index.getSd());
+            setReferenceInstanceAttribute(indexRef, "sd", sdRefTyped);
+            indexRef.set("parameters", index.getParameters());
+            tableRef.set("deferredRebuild", index.isDeferredRebuild());
+            InstancePair indexRefTyped = createInstance(indexRef);
+            if (usingMemRepository()) {
+                indexInstances.add(indexRefTyped.left().getId());
+            }
+
+        } catch (Exception e) {
+            throw new MetadataException(e);
+        }
     }
 
     private InstancePair fillStorageDescStruct(StorageDescriptor storageDesc) throws Exception {
@@ -344,7 +408,7 @@ public class HiveImporter {
 
         LOG.debug("serdeInfo = " + serdeInfo);
 
-        StructType serdeInfotype =  (StructType) hiveTypeSystem.getDataType(serdeInfoName);
+        StructType serdeInfotype = (StructType) hiveTypeSystem.getDataType(serdeInfoName);
         ITypedStruct serdeInfoStructTyped =
                 serdeInfotype.convert(serdeInfoStruct, Multiplicity.OPTIONAL);
 
@@ -365,7 +429,6 @@ public class HiveImporter {
         //            skewedInfotype.convert(skewedInfoStruct, Multiplicity.OPTIONAL);
         //    sdStruct.set("skewedInfo", skewedInfoStructTyped);
         //}
-
 
 
         List<InstancePair> fieldsList = new ArrayList<>();

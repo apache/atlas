@@ -23,8 +23,11 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.configuration.ConfigurationException;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.cli.CliDriver;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
+import org.apache.hadoop.hive.service.HiveClient;
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.repository.graph.GraphBackedMetadataRepository;
@@ -40,8 +43,13 @@ import org.testng.annotations.Test;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URL;
 import java.util.List;
+import java.util.Properties;
 
 @Test (enabled = false)
 public class HiveGraphRepositoryTest {
@@ -49,6 +57,8 @@ public class HiveGraphRepositoryTest {
     protected HiveTypeSystem hts;
     private GraphBackedMetadataRepository repository;
     private GraphService gs;
+    public static final String HIVE_L4J_PROPS = "target/hive-log4j.properties";
+    public static final String HIVE_EXEC_L4J_PROPS = "target/hive-exec-log4j.properties";
 
     private static final Logger LOG =
             LoggerFactory.getLogger(HiveGraphRepositoryTest.class);
@@ -79,8 +89,10 @@ public class HiveGraphRepositoryTest {
 
     @Test (enabled = false)
     public void testHiveImport() throws Exception {
-
-        HiveImporter hImporter = new HiveImporter(repository, hts, new HiveMetaStoreClient(new HiveConf()));
+        HiveConf conf = new HiveConf();
+        HiveMetaStoreClient hiveMetaStoreClient;
+        hiveMetaStoreClient = new HiveMetaStoreClient(conf);
+        HiveImporter hImporter = new HiveImporter(repository, hts, hiveMetaStoreClient);
         hImporter.importHiveMetadata();
         LOG.info("Defined DB instances");
         File f = new File("./target/logs/hiveobjs.txt");
@@ -136,4 +148,5 @@ public class HiveGraphRepositoryTest {
         bw.flush();
         bw.close();
     }
+
 }

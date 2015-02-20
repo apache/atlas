@@ -511,7 +511,10 @@ public class HiveTypeSystem {
                 new AttributeDefinition("userName", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("sourceTableNames", String.format("array<%s>", DefinedTypes.HIVE_TABLE.name()), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("targetTableNames", String.format("array<%s>", DefinedTypes.HIVE_TABLE.name()), Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("jobDefinition", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("queryText", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("queryPlan", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("queryId", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("queryGraph", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
         };
         HierarchicalTypeDefinition<ClassType> definition =
                 new HierarchicalTypeDefinition<>(ClassType.class, DefinedTypes.HIVE_PROCESS.name(),
