@@ -30,7 +30,6 @@ public class HiveLineage extends AEntityBean implements Serializable  {
 	 * 
 	 */
 		private static final long serialVersionUID = 1L;
-		
 		public String queryId;
 		public String hiveId;
 		public String user;
@@ -38,6 +37,8 @@ public class HiveLineage extends AEntityBean implements Serializable  {
 		public String queryEndTime;
 		public String query;
 		public String tableName;
+		public String databaseName;
+		public String action;
 		public String tableLocation;
 		public boolean success;
 		public boolean failed;
@@ -99,6 +100,24 @@ public class HiveLineage extends AEntityBean implements Serializable  {
 	    public void setTableName(String tableName) {
 	        this.tableName = tableName;
 	    }
+	    
+	    
+	    public String getAction() {
+	        return this.action ;
+	    }
+
+	    public void setAction(String action) {
+	        this.action = action;
+	    }
+	    
+	    public void setDatabaseName(String databaseName) {
+	        this.databaseName = databaseName;
+	    }
+	    
+	    public String getDatabaseName() {
+	        return this.databaseName ;
+	    }
+
 	    
 	    public String getTableLocation() {
 	        return this.tableLocation ;
@@ -210,7 +229,7 @@ public class HiveLineage extends AEntityBean implements Serializable  {
 			public String columnName;
 			public String columnAlias;
 			public String columnFunction;
-			
+			public String columnDistinctFunction;
 			
 	        public String getTbAliasOrName() {
 	            return this.tbAliasOrName ;
@@ -244,6 +263,13 @@ public class HiveLineage extends AEntityBean implements Serializable  {
 	        public void setColumnFunction(String columnFunction) {
 	            this.columnFunction = columnFunction;
 	        }	
+	        public String getColumnDistinctFunction() {
+	            return this.columnDistinctFunction ;
+	        }
+
+	        public void setColumnDistinctFunction(String columnDistinctFunction) {
+	            this.columnDistinctFunction = columnDistinctFunction;
+	        }
 		}
 		
 		public class GroupBy {
@@ -274,6 +300,8 @@ public class HiveLineage extends AEntityBean implements Serializable  {
 			public String columnName;
 			public String columnOperator;
 			public String columnValue;
+			public ArrayList<ColumnValueIn> columnValueIn;			
+
 			
 			
 	        public String getColumnCondition() {
@@ -316,6 +344,17 @@ public class HiveLineage extends AEntityBean implements Serializable  {
 	        public void setColumnValue(String columnValue) {
 	            this.columnValue = columnValue;
 	        }	
+	        
+	        
+		    public ArrayList<ColumnValueIn> getColumnValueIn() {
+		        return this.columnValueIn ;
+		    }
+
+		    public void setColumnValueIn(ArrayList<ColumnValueIn> columnValueIn) {
+		        this.columnValueIn = columnValueIn;
+		    }
+	        
+	        
 		}
 		
 
@@ -349,6 +388,19 @@ public class HiveLineage extends AEntityBean implements Serializable  {
 		            this.columnType = columnType;
 		        }
 	        }
+	        
+	        public class ColumnValueIn {
+	        	public String columnValueIn;
+	        	
+		        public String getColumnValueIn() {
+		            return this.columnValueIn ;
+		        }
 
-		
+		        public void setColumnValueIn(String columnValueIn) {
+		            this.columnValueIn = columnValueIn;
+		        }
+		        
+
+	        }
+	
 }
