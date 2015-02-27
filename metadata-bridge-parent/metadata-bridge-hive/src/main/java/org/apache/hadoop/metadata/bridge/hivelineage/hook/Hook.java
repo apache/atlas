@@ -87,43 +87,56 @@ public class Hook implements ExecuteWithHookContext {
             	executionEngine="mr";
             }
             hiveId = sess.getSessionId();
-           
+            String defaultdb = null;
+
 
             switch(hookContext.getHookType()) {
             case PRE_EXEC_HOOK:
-              Set<ReadEntity> db = hookContext.getInputs();
-              for (Object o : db) {
-            	  LOG.debug("DB:Table="+o.toString());
-            	  }
-              
+              Set<ReadEntity> db_pre = hookContext.getInputs();
+              for (Object o : db_pre) {
+              	  LOG.debug("DB:Table="+o.toString());
+              	  defaultdb = o.toString().split("@")[0];
+              }
+                
               currentTime = System.currentTimeMillis();
               HiveLineageInfo lep_pre = new HiveLineageInfo();
               lep_pre.getLineageInfo(query);
               hlb=lep_pre.getHLBean();
+              hlb.setDatabaseName(defaultdb);
               hlb.setQueryEndTime(Long.toString(currentTime));
               hlb.setQueryId(queryId);
               hlb.setQuery(query);
               hlb.setUser(user);
               hlb.setHiveId(hiveId);
               hlb.setSuccess(false);
-              if (executionEngine.equalsIgnoreCase("mr")) {
-            	  hlb.setExecutionEngine("mapreduce");
-              }
-              if (executionEngine.equalsIgnoreCase("tez")) {
-            	  hlb.setExecutionEngine("tez");
-              }
-              if (executionEngine.equalsIgnoreCase("spark")) {
-            	  hlb.setExecutionEngine("spark");
-              }
+              if (executionEngine != null ) {
+                	if (executionEngine.equalsIgnoreCase("mr")) {
+                		hlb.setExecutionEngine("mapreduce");
+                	}
+                	if (executionEngine.equalsIgnoreCase("tez")) {
+                		hlb.setExecutionEngine("tez");
+                	}
+                	if (executionEngine.equalsIgnoreCase("spark")) {
+                		hlb.setExecutionEngine("spark");
+                	}
+                } else {
+                	hlb.setExecutionEngine("local");
+                }
               hlb.setQueryStartTime(queryStartTime);
               fireAndForget(hookContext.getConf(), hlb, queryId);
           
               break;
             case POST_EXEC_HOOK: 
+                Set<ReadEntity> db_post = hookContext.getInputs();
+                for (Object o : db_post) {
+              	  LOG.debug("DB:Table="+o.toString());
+              	  defaultdb = o.toString().split("@")[0];
+              	}
                 currentTime = System.currentTimeMillis();
                 HiveLineageInfo lep_post = new HiveLineageInfo();
                 lep_post.getLineageInfo(query);
                 hlb=lep_post.getHLBean();
+                hlb.setDatabaseName(defaultdb);
                 hlb.setQueryEndTime(Long.toString(currentTime));
                 hlb.setQueryId(queryId);
                 hlb.setQuery(query);
@@ -131,22 +144,32 @@ public class Hook implements ExecuteWithHookContext {
                 hlb.setQueryStartTime(queryStartTime);
                 hlb.setSuccess(true);
                 hlb.setHiveId(hiveId);
-                if (executionEngine.equalsIgnoreCase("mr")) {
-              	  hlb.setExecutionEngine("mapreduce");
-                }
-                if (executionEngine.equalsIgnoreCase("tez")) {
-              	  hlb.setExecutionEngine("tez");
-                }
-                if (executionEngine.equalsIgnoreCase("spark")) {
-              	  hlb.setExecutionEngine("spark");
+                if (executionEngine != null ) {                 
+                	if (executionEngine.equalsIgnoreCase("mr")) {
+                		hlb.setExecutionEngine("mapreduce");
+                	}
+                	if (executionEngine.equalsIgnoreCase("tez")) {
+                		hlb.setExecutionEngine("tez");
+                	}
+                	if (executionEngine.equalsIgnoreCase("spark")) {
+                		hlb.setExecutionEngine("spark");
+                	}
+                } else {
+                	hlb.setExecutionEngine("local");
                 }
                 fireAndForget(hookContext.getConf(), hlb, queryId);
 
               break;
             case ON_FAILURE_HOOK:
+                Set<ReadEntity> db_fail = hookContext.getInputs();
+                for (Object o : db_fail) {
+              	  LOG.debug("DB:Table="+o.toString());
+              	  defaultdb = o.toString().split("@")[0];
+              	}
                 HiveLineageInfo lep_failed = new HiveLineageInfo();
                 lep_failed.getLineageInfo(query);
                 hlb=lep_failed.getHLBean();
+                hlb.setDatabaseName(defaultdb);
                 hlb.setQueryEndTime(Long.toString(currentTime));
                 hlb.setQueryId(queryId);
                 hlb.setQuery(query);
@@ -155,14 +178,18 @@ public class Hook implements ExecuteWithHookContext {
                 hlb.setSuccess(false);
                 hlb.setFailed(true);
                 hlb.setHiveId(hiveId);
-                if (executionEngine.equalsIgnoreCase("mr")) {
-              	  hlb.setExecutionEngine("mapreduce");
-                }
-                if (executionEngine.equalsIgnoreCase("tez")) {
-              	  hlb.setExecutionEngine("tez");
-                }
-                if (executionEngine.equalsIgnoreCase("spark")) {
-              	  hlb.setExecutionEngine("spark");
+                if (executionEngine != null ) {         
+                	if (executionEngine.equalsIgnoreCase("mr")) {
+                		hlb.setExecutionEngine("mapreduce");
+                	}
+                	if (executionEngine.equalsIgnoreCase("tez")) {
+                		hlb.setExecutionEngine("tez");
+                	}
+                	if (executionEngine.equalsIgnoreCase("spark")) {
+                		hlb.setExecutionEngine("spark");
+                	}
+                } else {
+                	hlb.setExecutionEngine("local");
                 }
                 fireAndForget(hookContext.getConf(), hlb, queryId);
             	break;
