@@ -24,7 +24,7 @@ import java.util.ArrayList;
 
 import org.apache.hadoop.metadata.bridge.AEntityBean;
 
-public class HiveLineage extends AEntityBean implements Serializable  {
+public class HiveLineage implements Serializable  {
 
 	/**
 	 * 

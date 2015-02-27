@@ -72,7 +72,7 @@
 		<version>2.4</version>
 	</plugin>
   
-
+<!--  
      <plugin>
     <groupId>org.apache.maven.plugins</groupId>
     <artifactId>maven-dependency-plugin</artifactId>
@@ -92,12 +92,11 @@
                         <outputDirectory>${project.build.directory}</outputDirectory>                                 
                     </artifactItem>
                 </artifactItems>
-                <!-- other configurations here -->
             </configuration>
         </execution>
     </executions>
 </plugin> 
-      
+      -->
       
       
       
