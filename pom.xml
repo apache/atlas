@@ -68,139 +68,12 @@
         <jersey.version>1.9</jersey.version>
         <tinkerpop.version>2.5.0</tinkerpop.version>
         <titan.version>0.5.3</titan.version>
+        <hadoop.version>2.5.0</hadoop.version>
+        <hive.version>0.14.0</hive.version>
+        <falcon.version>0.7-SNAPSHOT</falcon.version>
     </properties>
 
     <profiles>
-        <profile>
-            <id>hadoop-2</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <properties>
-                <hadoop.version>2.5.0</hadoop.version>
-            </properties>
-            <dependencyManagement>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-client</artifactId>
-                        <version>${hadoop.version}</version>
-                        <scope>provided</scope>
-                        <exclusions>
-                            <exclusion>
-                                <groupId>com.sun.jersey</groupId>
-                                <artifactId>jersey-server</artifactId>
-                            </exclusion>
-                            <exclusion>
-                                <groupId>com.sun.jersey</groupId>
-                                <artifactId>jersey-core</artifactId>
-                            </exclusion>
-                            <exclusion>
-                                <groupId>com.sun.jersey</groupId>
-                                <artifactId>jersey-json</artifactId>
-                            </exclusion>
-                            <exclusion>
-                                <groupId>org.glassfish</groupId>
-                                <artifactId>javax.servlet</artifactId>
-                            </exclusion>
-                            <exclusion>
-                                <groupId>org.apache.hadoop</groupId>
-                                <artifactId>hadoop-annotations</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-hdfs</artifactId>
-                        <version>${hadoop.version}</version>
-                        <scope>provided</scope>
-                        <exclusions>
-                            <exclusion>
-                                <groupId>org.apache.hadoop</groupId>
-                                <artifactId>hadoop-annotations</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-common</artifactId>
-                        <version>${hadoop.version}</version>
-                        <scope>provided</scope>
-                        <exclusions>
-                            <exclusion>
-                                <groupId>org.apache.hadoop</groupId>
-                                <artifactId>hadoop-annotations</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-mapreduce-client-common</artifactId>
-                        <version>${hadoop.version}</version>
-                        <scope>provided</scope>
-                        <exclusions>
-                            <exclusion>
-                                <groupId>org.apache.hadoop</groupId>
-                                <artifactId>hadoop-annotations</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-hdfs</artifactId>
-                        <version>${hadoop.version}</version>
-                        <classifier>tests</classifier>
-                        <scope>test</scope>
-                    </dependency>
-
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-common</artifactId>
-                        <version>${hadoop.version}</version>
-                        <classifier>tests</classifier>
-                        <scope>test</scope>
-                    </dependency>
-
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-yarn-server-resourcemanager</artifactId>
-                        <version>${hadoop.version}</version>
-                        <scope>provided</scope>
-                    </dependency>
-
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-yarn-server-nodemanager</artifactId>
-                        <version>${hadoop.version}</version>
-                        <scope>provided</scope>
-                    </dependency>
-
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-auth</artifactId>
-                        <version>${hadoop.version}</version>
-                        <scope>provided</scope>
-                        <exclusions>
-                            <exclusion>
-                                <groupId>org.apache.hadoop</groupId>
-                                <artifactId>hadoop-annotations</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-distcp</artifactId>
-                        <version>${hadoop.version}</version>
-                        <scope>provided</scope>
-                    </dependency>
-                </dependencies>
-            </dependencyManagement>
-        </profile>
-
         <profile>
             <id>test-patch</id>
             <build>
@@ -311,6 +184,7 @@
         <module>webapp</module>
         <module>docs</module>
         <module>hivetypes</module>
+        <module>falcontypes</module>
         <module>metadata-bridge-parent</module>
     </modules>
 
@@ -367,6 +241,87 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- hadoop -->
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-client</artifactId>
+                <version>${hadoop.version}</version>
+                <scope>provided</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.sun.jersey</groupId>
+                        <artifactId>jersey-server</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.sun.jersey</groupId>
+                        <artifactId>jersey-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.sun.jersey</groupId>
+                        <artifactId>jersey-json</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.glassfish</groupId>
+                        <artifactId>javax.servlet</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-annotations</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <!-- hive -->
+            <dependency>
+                <groupId>org.apache.hive</groupId>
+                <artifactId>hive-metastore</artifactId>
+                <version>${hive.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.calcite</groupId>
+                        <artifactId>calcite-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.calcite</groupId>
+                        <artifactId>calcite-avatica</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.hive</groupId>
+                <artifactId>hive-exec</artifactId>
+                <version>${hive.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.calcite</groupId>
+                        <artifactId>calcite-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.calcite</groupId>
+                        <artifactId>calcite-avatica</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.calcite</groupId>
+                <artifactId>calcite-avatica</artifactId>
+                <version>0.9.2-incubating</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.calcite</groupId>
+                <artifactId>calcite-core</artifactId>
+                <version>0.9.2-incubating</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.falcon</groupId>
+                <artifactId>falcon-client</artifactId>
+                <version>${falcon.version}</version>
+            </dependency>
+
             <!-- Logging -->
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -761,7 +716,6 @@
                     <forkMode>always</forkMode>
                     <argLine>-Djava.security.krb5.realm= -Djava.security.krb5.kdc=
                         -Dhadoop.tmp.dir=${project.build.directory}/tmp-hadoop-${user.name}</argLine>
-                    <excludedGroups>${excluded.test.groups}</excludedGroups>
                 </configuration>
                 <executions>
                     <execution>

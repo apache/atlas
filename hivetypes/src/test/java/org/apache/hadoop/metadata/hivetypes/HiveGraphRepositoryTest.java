@@ -23,11 +23,8 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.configuration.ConfigurationException;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hive.cli.CliDriver;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
-import org.apache.hadoop.hive.service.HiveClient;
 import org.apache.hadoop.metadata.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.repository.graph.GraphBackedMetadataRepository;
@@ -43,13 +40,8 @@ import org.testng.annotations.Test;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.URL;
 import java.util.List;
-import java.util.Properties;
 
 @Test (enabled = false)
 public class HiveGraphRepositoryTest {
