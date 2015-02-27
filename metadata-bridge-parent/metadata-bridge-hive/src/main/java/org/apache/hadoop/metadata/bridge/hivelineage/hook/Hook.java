@@ -203,7 +203,7 @@ public class Hook implements ExecuteWithHookContext {
         }
  
   public void fireAndForget(Configuration conf, HiveLineage hookData, String queryId) throws Exception {
-			String postUri = String.format("http://%s:%s%s%s", METADATA_HOST, METADATA_PORT, METADATA_PATH); 		
+			String postUri = String.format("http://%s:%s%s", METADATA_HOST, METADATA_PORT, METADATA_PATH); 		
 	  		if (conf.getTrimmed("hadoop.metadata.hive.hook.uri") != null) {
 		  		postUri = conf.getTrimmed("hadoop.metadata.hive.hook.uri");
 	  		} 
