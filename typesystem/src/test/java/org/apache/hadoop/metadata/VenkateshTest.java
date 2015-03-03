@@ -20,10 +20,8 @@ package org.apache.hadoop.metadata;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.hadoop.metadata.json.Serialization$;
-import org.apache.hadoop.metadata.json.TypesSerialization;
 import org.apache.hadoop.metadata.json.TypesSerialization$;
 import org.apache.hadoop.metadata.types.*;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;

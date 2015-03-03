@@ -27,7 +27,7 @@ import org.junit.Test;
 public class ClassTest extends BaseTest {
 
     @Before
-    public void setup() throws MetadataException {
+    public void setup() throws Exception {
         super.setup();
     }
 

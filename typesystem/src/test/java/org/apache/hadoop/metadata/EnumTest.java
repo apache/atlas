@@ -35,7 +35,7 @@ import java.util.Map;
 public class EnumTest extends BaseTest {
 
     @Before
-    public void setup() throws MetadataException {
+    public void setup() throws Exception {
         super.setup();
     }
 

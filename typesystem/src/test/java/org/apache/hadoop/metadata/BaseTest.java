@@ -51,7 +51,7 @@ public abstract class BaseTest {
     }
 
     @Before
-    public void setup() throws MetadataException {
+    public void setup() throws Exception {
 
         TypeSystem ts = TypeSystem.getInstance();
         ts.reset();

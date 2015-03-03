@@ -29,15 +29,13 @@ import org.apache.falcon.entity.v0.cluster.Properties;
 import org.apache.falcon.entity.v0.cluster.Property;
 import org.apache.falcon.resource.EntityList;
 import org.apache.hadoop.metadata.ITypedInstance;
-import org.apache.hadoop.metadata.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.Referenceable;
 import org.apache.hadoop.metadata.Struct;
-import org.apache.hadoop.metadata.storage.IRepository;
+import org.apache.hadoop.metadata.repository.MetadataRepository;
 import org.apache.hadoop.metadata.types.Multiplicity;
 import org.apache.hadoop.metadata.types.StructType;
 import org.parboiled.common.StringUtils;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,22 +45,22 @@ public class FalconImporter {
 
     private final FalconTypeSystem typeSystem;
     private final FalconClient client;
-    private final IRepository repository;
+    private final MetadataRepository repository;
 
     @Inject
-    public FalconImporter(FalconTypeSystem typeSystem, FalconClient client, IRepository repo) {
+    public FalconImporter(FalconTypeSystem typeSystem, FalconClient client, MetadataRepository repo) {
         this.typeSystem = typeSystem;
         this.client = client;
         this.repository = repo;
     }
 
-    private ITypedReferenceableInstance importClusters() throws FalconCLIException, MetadataException {
+    public void importClusters() throws FalconCLIException, MetadataException {
         EntityList clusters = client.getEntityList(EntityType.CLUSTER.name(), null, null, null, null, null, null, null, null);
         for (EntityList.EntityElement element : clusters.getElements()) {
             Cluster cluster = (Cluster) client.getDefinition(EntityType.CLUSTER.name(), element.name);
 
-            Referenceable entityRef = new Referenceable(FalconTypeSystem.DefinedTypes.ENTITY.name());
-            entityRef.set("name", cluster.getName());
+            Referenceable clusterRef = new Referenceable(FalconTypeSystem.DefinedTypes.CLUSTER.name());
+            clusterRef.set("name", cluster.getName());
 
             if (cluster.getACL() != null) {
                 Struct acl = new Struct(FalconTypeSystem.DefinedTypes.ACL.name());
@@ -70,20 +68,16 @@ public class FalconImporter {
                 acl.set("group", cluster.getACL().getGroup());
                 acl.set("permission", cluster.getACL().getPermission());
                 StructType aclType = (StructType) typeSystem.getDataType(FalconTypeSystem.DefinedTypes.ACL.name());
-                entityRef.set("acl", aclType.convert(acl, Multiplicity.REQUIRED));
+                clusterRef.set("acl", aclType.convert(acl, Multiplicity.REQUIRED));
             }
 
             if (StringUtils.isNotEmpty(cluster.getTags())) {
-                entityRef.set("tags", getMap(cluster.getTags()));
+                clusterRef.set("tags", getMap(cluster.getTags()));
             }
 
             if (cluster.getProperties() != null) {
-                entityRef.set("properties", getMap(cluster.getProperties()));
+                clusterRef.set("properties", getMap(cluster.getProperties()));
             }
-
-            repository.create(entityRef);
-
-            Referenceable clusterRef = new Referenceable(FalconTypeSystem.DefinedTypes.CLUSTER.name());
 
             if (cluster.getLocations() != null) {
                 List<ITypedInstance> locations = new ArrayList<>();
@@ -109,9 +103,8 @@ public class FalconImporter {
                 }
                 clusterRef.set("interfaces", interfaces);
             }
-
+            repository.createEntity(clusterRef, clusterRef.getTypeName());
         }
-        return null;
     }
 
     private Map<String, String> getMap(Properties properties) {

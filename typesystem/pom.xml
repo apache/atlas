@@ -63,6 +63,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-client</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-compiler</artifactId>
             <version>${scala.version}</version>
@@ -161,11 +166,10 @@
             <artifactId>guava</artifactId>
             <version>${guava.version}</version>
         </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.10</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -202,7 +206,6 @@
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-es</artifactId>
         </dependency>
-
     </dependencies>
 
     <build>

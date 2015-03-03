@@ -30,7 +30,7 @@ public class StructTest extends BaseTest {
     StructType recursiveStructType;
 
     @Before
-    public void setup() throws MetadataException {
+    public void setup() throws Exception {
         super.setup();
         structType = (StructType) getTypeSystem().getDataType(StructType.class, STRUCT_TYPE_1);
         recursiveStructType = (StructType) getTypeSystem().getDataType(StructType.class, STRUCT_TYPE_2);
