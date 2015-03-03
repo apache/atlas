@@ -20,6 +20,7 @@ package org.apache.hadoop.metadata.web.resources;
 
 import com.google.common.collect.ImmutableList;
 import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import org.apache.hadoop.metadata.types.AttributeDefinition;
@@ -29,8 +30,13 @@ import org.apache.hadoop.metadata.types.IDataType;
 import org.apache.hadoop.metadata.types.Multiplicity;
 import org.apache.hadoop.metadata.types.TraitType;
 import org.apache.hadoop.metadata.types.TypeSystem;
+import org.codehaus.jettison.json.JSONObject;
+import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 
+import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
 public abstract class BaseResourceIT {
@@ -50,6 +56,26 @@ public abstract class BaseResourceIT {
         client.resource(UriBuilder.fromUri(baseUrl).build());
 
         service = client.resource(UriBuilder.fromUri(baseUrl).build());
+    }
+
+    protected void sumbitType(String typesAsJSON, String type) throws Exception {
+        WebResource resource = service
+                .path("api/metadata/types/submit")
+                .path(type);
+
+        ClientResponse clientResponse = resource
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.POST, ClientResponse.class, typesAsJSON);
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+
+        String responseAsString = clientResponse.getEntity(String.class);
+        Assert.assertNotNull(responseAsString);
+
+        JSONObject response = new JSONObject(responseAsString);
+        Assert.assertEquals(response.get("typeName"), type);
+        Assert.assertNotNull(response.get("types"));
+        Assert.assertNotNull(response.get("requestId"));
     }
 
     protected AttributeDefinition createUniqueRequiredAttrDef(String name,

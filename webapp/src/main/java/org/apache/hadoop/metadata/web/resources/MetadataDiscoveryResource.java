@@ -19,10 +19,8 @@
 package org.apache.hadoop.metadata.web.resources;
 
 import com.google.common.base.Preconditions;
-
-import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.discovery.DiscoveryException;
 import org.apache.hadoop.metadata.discovery.DiscoveryService;
-import org.apache.hadoop.metadata.types.TypeSystem;
 import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -41,7 +39,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,9 +61,7 @@ public class MetadataDiscoveryResource {
 	private final DiscoveryService discoveryService;
     
     public static final String RESULTS = "results";
-    public static final String TOTAL_SIZE = "totalSize";
-    
-    public static final List<String> typesList = TypeSystem.getInstance().getTypeNames();
+    // public static final String TOTAL_SIZE = "totalSize";
     
      /**
      * Created by the Guice ServletModule and injected with the
@@ -78,11 +73,80 @@ public class MetadataDiscoveryResource {
     public MetadataDiscoveryResource(DiscoveryService discoveryService) {
     	this.discoveryService = discoveryService;
     }
-   
+
+    /**
+     * Search using query DSL.
+     *
+     * @param query search query in raw gremlin or DSL format falling back to full text.
+     * @return JSON representing the type and results.
+     */
     @GET
-    @Path("search/gremlin/{gremlinQuery}")
+    @Path("search")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response searchUsingGremlinQuery(@PathParam("gremlinQuery") String gremlinQuery) {
+    public Response search(@QueryParam("query") String query) {
+        Preconditions.checkNotNull(query, "query cannot be null");
+
+        if (query.startsWith("g.")) { // raw gremlin query
+            return searchUsingGremlinQuery(query);
+        }
+
+        try {
+            JSONObject response = new JSONObject();
+            response.put("requestId", Thread.currentThread().getName());
+            response.put("query", query);
+
+            try {   // fall back to dsl
+                final String jsonResult = discoveryService.searchByDSL(query);
+                response.put("queryType", "dsl");
+                response.put(RESULTS, new JSONObject(jsonResult));
+
+            } catch (Throwable throwable) {
+                LOG.error("Unable to get entity list for query {} using dsl", query, throwable);
+
+                // todo: fall back to full text search
+                response.put("queryType", "full-text");
+                response.put(RESULTS, new JSONObject());
+            }
+
+            return Response.ok(response).build();
+        } catch (JSONException e) {
+            LOG.error("Unable to get entity list for query {}", query, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    @GET
+    @Path("search/dsl")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response searchUsingQueryDSL(@QueryParam("query") String dslQuery) {
+        Preconditions.checkNotNull(dslQuery, "dslQuery cannot be null");
+
+        try {
+            final String jsonResult = discoveryService.searchByDSL(dslQuery);
+
+            JSONObject response = new JSONObject();
+            response.put("requestId", Thread.currentThread().getName());
+            response.put("query", dslQuery);
+            response.put("queryType", "dsl");
+            response.put(RESULTS, new JSONObject(jsonResult));
+
+            return Response.ok(response).build();
+        } catch (DiscoveryException e) {
+            LOG.error("Unable to get entity list for dslQuery {}", dslQuery, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (JSONException e) {
+            LOG.error("Unable to get entity list for dslQuery {}", dslQuery, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    @GET
+    @Path("search/gremlin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response searchUsingGremlinQuery(@QueryParam("query") String gremlinQuery) {
         Preconditions.checkNotNull(gremlinQuery, "gremlinQuery cannot be null");
 
         try {
@@ -90,15 +154,17 @@ public class MetadataDiscoveryResource {
 
             JSONObject response = new JSONObject();
             response.put("requestId", Thread.currentThread().getName());
+            response.put("query", gremlinQuery);
+            response.put("queryType", "gremlin");
 
             JSONArray list = new JSONArray();
             for (Map<String, String> result : results) {
                 list.put(new JSONObject(result));
             }
-            response.put("results", list);
+            response.put(RESULTS, list);
 
             return Response.ok(response).build();
-        } catch (MetadataException e) {
+        } catch (DiscoveryException e) {
             LOG.error("Unable to get entity list for gremlinQuery {}", gremlinQuery, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
@@ -110,7 +176,7 @@ public class MetadataDiscoveryResource {
     }
     
     /**
-     * Return a list of Vertices and Edges that eminate from the provided GUID to the depth specified.
+     * Return a list of Vertices and Edges that emanate from the provided GUID to the depth specified.
      * 
      * GET http://host/api/metadata/discovery/search/relationships/{guid}
      * 
@@ -122,7 +188,8 @@ public class MetadataDiscoveryResource {
     @Path("/search/relationships/{guid}")
     @Produces({MediaType.APPLICATION_JSON})
     public Response getLineageResults(@PathParam("guid") final String guid,
-            @DefaultValue("1") @QueryParam("depth") final int depth, @QueryParam("edgesToFollow") final String edgesToFollow) {
+                                      @DefaultValue("1") @QueryParam("depth") final int depth,
+                                      @QueryParam("edgesToFollow") final String edgesToFollow) {
     	
         LOG.info("Performing GUID lineage search for guid= {}", guid);
         Preconditions.checkNotNull(guid, "Invalid argument: \"guid\" cannot be null.");
@@ -161,7 +228,8 @@ public class MetadataDiscoveryResource {
     @Path("/search/fulltext")
     @Produces({MediaType.APPLICATION_JSON})
     public Response getFullTextResults(@QueryParam("text") final String searchText,
-            @DefaultValue("1") @QueryParam("depth") final int depth,@DefaultValue("guid") @QueryParam("property") final String prop) {
+                                       @DefaultValue("1") @QueryParam("depth") final int depth,
+                                       @DefaultValue("guid") @QueryParam("property") final String prop) {
     	
         LOG.info("Performing full text search for vertices with property {} matching= {}", prop, searchText);
         Preconditions.checkNotNull(searchText, "Invalid argument: \"text\" cannot be null.");
@@ -170,7 +238,8 @@ public class MetadataDiscoveryResource {
         // Parent JSON Object
         JSONObject response = new JSONObject();
                 
-        Map<String, HashMap<String, JSONObject>> resultMap = discoveryService.textSearch(searchText, depth, prop);
+        Map<String, HashMap<String, JSONObject>> resultMap = discoveryService.textSearch(
+                searchText, depth, prop);
             	
    		try {
             response.put("requestId", Thread.currentThread().getName());
@@ -182,7 +251,8 @@ public class MetadataDiscoveryResource {
    			}
    		} catch (JSONException e) {
    			throw new WebApplicationException(
-                    Servlets.getErrorResponse("Search: Error building JSON result set.", Response.Status.INTERNAL_SERVER_ERROR));
+                    Servlets.getErrorResponse("Search: Error building JSON result set.",
+                            Response.Status.INTERNAL_SERVER_ERROR));
    		}
         
    		LOG.debug("JSON result:" + response.toString());
@@ -202,19 +272,17 @@ public class MetadataDiscoveryResource {
     @Path("/getIndexedFields")
     @Produces({MediaType.APPLICATION_JSON})
     public Response getLineageResults() {
-    	
     	JSONObject response = new JSONObject();
     	
     	try {
     		response.put("indexed_fields:",discoveryService.getGraphIndexedFields());
     	} catch (JSONException e) {
    			throw new WebApplicationException(
-                    Servlets.getErrorResponse("Search: Error building JSON result set.", Response.Status.INTERNAL_SERVER_ERROR));
+                    Servlets.getErrorResponse("Search: Error building JSON result set.",
+                            Response.Status.INTERNAL_SERVER_ERROR));
    		}
     	
     	LOG.debug("JSON result:" + response.toString());
        	return Response.ok(response).build();
-    	
     }
-
 }
