@@ -116,7 +116,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
             case ENUM:
             case ARRAY:
             case MAP:
-                // do nothing since these are NOT types
+                // do nothing since these are only attributes
+                // and not types like structs, traits or classes
                 break;
 
             case STRUCT:

@@ -39,7 +39,6 @@ import org.apache.hadoop.metadata.types.Multiplicity;
 import org.apache.hadoop.metadata.types.StructTypeDefinition;
 import org.apache.hadoop.metadata.types.TraitType;
 import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -302,26 +301,6 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                         "serdeType",
                         "classification"}));
         sumbitType(typesAsJSON, TABLE_TYPE);
-    }
-
-    private void sumbitType(String typesAsJSON, String type) throws JSONException {
-        WebResource resource = service
-                .path("api/metadata/types/submit")
-                .path(type);
-
-        ClientResponse clientResponse = resource
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
-                .method(HttpMethod.POST, ClientResponse.class, typesAsJSON);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
-
-        String responseAsString = clientResponse.getEntity(String.class);
-        Assert.assertNotNull(responseAsString);
-
-        JSONObject response = new JSONObject(responseAsString);
-        Assert.assertEquals(response.get("typeName"), type);
-        Assert.assertNotNull(response.get("types"));
-        Assert.assertNotNull(response.get("requestId"));
     }
 
     private ITypedReferenceableInstance createHiveTableInstance() throws Exception {

@@ -16,14 +16,7 @@
  * limitations under the License.
  */
 
-/*
- * Created by IntelliJ IDEA.
- * User: seetharam
- * Date: 12/1/14
- * Time: 2:21 PM
- */
 package org.apache.hadoop.metadata;
-
 
 import com.google.inject.Scopes;
 import com.google.inject.throwingproviders.ThrowingProviderBinder;

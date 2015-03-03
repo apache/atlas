@@ -30,6 +30,8 @@ import java.util.List;
  */
 public interface MetadataRepository extends Service {
 
+    String getTypeAttributeName();
+
     String createEntity(IReferenceableInstance entity,
                         String entityType) throws RepositoryException;
 

@@ -18,7 +18,6 @@
 
 package org.apache.hadoop.metadata.discovery;
 
-import org.apache.hadoop.metadata.MetadataException;
 import org.codehaus.jettison.json.JSONObject;
 
 import java.util.HashMap;
@@ -32,28 +31,38 @@ import java.util.Set;
 public interface DiscoveryService {
 
     /**
+     * Search using query DSL.
+     *
+     * @param dslQuery query in DSL format.
+     * @return JSON representing the type and results.
+     */
+    String searchByDSL(String dslQuery) throws DiscoveryException;
+
+    /**
      * Assumes the User is familiar with the persistence structure of the Repository.
      * The given query is run uninterpreted against the underlying Graph Store.
      * The results are returned as a List of Rows. each row is a Map of Key,Value pairs.
      *
      * @param gremlinQuery query in gremlin dsl format
      * @return List of Maps
-     * @throws org.apache.hadoop.metadata.MetadataException
+     * @throws org.apache.hadoop.metadata.discovery.DiscoveryException
      */
-    List<Map<String,String>> searchByGremlin(String gremlinQuery) throws MetadataException;
+    List<Map<String,String>> searchByGremlin(String gremlinQuery) throws DiscoveryException;
     
     /**
      * Simple direct graph search and depth traversal.
      * @param searchText is plain text
      * @param prop is the Vertex property to search.
      */
-    Map<String, HashMap<String,JSONObject>> textSearch(String searchText, int depth, String prop);
+    Map<String, HashMap<String,JSONObject>> textSearch(String searchText,
+                                                       int depth, String prop);
     
     /**
      * Simple graph walker for search interface, which allows following of specific edges only.
      * @param edgesToFollow is a comma-separated-list of edges to follow.
      */
-    Map<String, HashMap<String,JSONObject>> relationshipWalk(String guid, int depth, String edgesToFollow);
+    Map<String, HashMap<String,JSONObject>> relationshipWalk(String guid,
+                                                             int depth, String edgesToFollow);
 
     /**
      * Return a Set of indexed properties in the graph.

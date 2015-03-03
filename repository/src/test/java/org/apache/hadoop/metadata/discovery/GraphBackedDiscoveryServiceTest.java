@@ -26,8 +26,11 @@ import org.apache.hadoop.metadata.repository.graph.GraphBackedMetadataRepository
 import org.apache.hadoop.metadata.types.ClassType;
 import org.apache.hadoop.metadata.types.Multiplicity;
 import org.apache.hadoop.metadata.types.TypeSystem;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONObject;
+import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
@@ -36,32 +39,66 @@ import javax.inject.Inject;
 @Guice(modules = RepositoryMetadataModule.class)
 public class GraphBackedDiscoveryServiceTest {
 
-    private TypeSystem typeSystem;
-
     @Inject
     private GraphBackedMetadataRepository repositoryService;
 
     @Inject
     private GraphBackedDiscoveryService discoveryService;
 
-    @BeforeMethod
+    @BeforeClass
     public void setUp() throws Exception {
-        typeSystem = TypeSystem.getInstance();
-    }
+        TypeSystem typeSystem = TypeSystem.getInstance();
+        typeSystem.reset();
 
-    @AfterMethod
-    public void tearDown() throws Exception {
+        TestUtils.defineDeptEmployeeTypes(typeSystem);
 
-    }
-
-    @Test
-    public void testRawSearch1() throws Exception {
         Referenceable hrDept = TestUtils.createDeptEg1(typeSystem);
         ClassType deptType = typeSystem.getDataType(ClassType.class, "Department");
         ITypedReferenceableInstance hrDept2 = deptType.convert(hrDept, Multiplicity.REQUIRED);
 
         repositoryService.createEntity(hrDept2, "Department");
+    }
 
+    @AfterClass
+    public void tearDown() throws Exception {
+        TypeSystem.getInstance().reset();
+    }
+
+    @Test
+    public void testSearchByDSL() throws Exception {
+        String dslQuery = "from Department";
+
+        String jsonResults = discoveryService.searchByDSL(dslQuery);
+        Assert.assertNotNull(jsonResults);
+
+        JSONObject results = new JSONObject(jsonResults);
+        Assert.assertEquals(results.length(), 3);
+        System.out.println("results = " + results);
+
+        Object query = results.get("query");
+        Assert.assertNotNull(query);
+
+        JSONObject dataType = results.getJSONObject("dataType");
+        Assert.assertNotNull(dataType);
+        String typeName = dataType.getString("typeName");
+        Assert.assertNotNull(typeName);
+        Assert.assertEquals(typeName, "Department");
+
+        JSONArray rows = results.getJSONArray("rows");
+        Assert.assertNotNull(rows);
+        Assert.assertEquals(rows.length(), 1);
+    }
+
+    @Test (expectedExceptions = Throwable.class)
+    public void testSearchByDSLBadQuery() throws Exception {
+        String dslQuery = "from blah";
+
+        discoveryService.searchByDSL(dslQuery);
+        Assert.fail();
+    }
+
+    @Test
+    public void testRawSearch1() throws Exception {
         // Query for all Vertices in Graph
         Object r = discoveryService.searchByGremlin("g.V.toList()");
         System.out.println("search result = " + r);
@@ -73,15 +110,5 @@ public class GraphBackedDiscoveryServiceTest {
         // Property Query: list all Person names
         r = discoveryService.searchByGremlin("g.V.filter{it.typeName == 'Person'}.'Person.name'.toList()");
         System.out.println("search result = " + r);
-    }
-
-    @Test
-    public void testTextSearch() throws Exception {
-
-    }
-
-    @Test
-    public void testRelationshipWalk() throws Exception {
-
     }
 }
