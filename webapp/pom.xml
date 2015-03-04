@@ -188,6 +188,13 @@
 					<configuration>
 						<webResources>
 							<resource>
+								<directory>../dashboard/dashboard-v1</directory>
+							</resource>
+							<resource>
+								<directory>../dashboard/dashboard-v2</directory>
+								<targetPath>dashboard-v2</targetPath>
+							</resource>
+							<resource>
 								<directory>src/main/webapp/WEB-INF</directory>
 								<targetPath>WEB-INF</targetPath>
 							</resource>
