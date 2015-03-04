@@ -70,7 +70,7 @@
         <titan.version>0.5.3</titan.version>
         <hadoop.version>2.5.0</hadoop.version>
         <hive.version>0.14.0</hive.version>
-        <falcon.version>0.6-SNAPSHOT</falcon.version>
+        <falcon.version>0.6.0.2.2.0.0-2041</falcon.version>
     </properties>
 
     <profiles>

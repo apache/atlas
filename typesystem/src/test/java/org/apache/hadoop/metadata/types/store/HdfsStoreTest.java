@@ -47,14 +47,19 @@ public class HdfsStoreTest extends BaseTest{
         fs.delete(new Path(LOCATION), true);
 
         //define type system
+        HierarchicalTypeDefinition<TraitType> tagTypeDefinition =
+                createTraitTypeDef("tag",
+                        ImmutableList.<String>of(),
+                        createRequiredAttrDef("level", DataTypes.INT_TYPE));
         HierarchicalTypeDefinition<ClassType> databaseTypeDefinition =
                 createClassTypeDef("database",
                         ImmutableList.<String>of(),
                         createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        createRequiredAttrDef("description", DataTypes.STRING_TYPE));
+                        createRequiredAttrDef("description", DataTypes.STRING_TYPE),
+                        createRequiredAttrDef("tag", "tag"));
         TypeSystem.getInstance().defineTypes(
                 ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
+                ImmutableList.of(tagTypeDefinition),
                 ImmutableList.of(databaseTypeDefinition));
 
     }

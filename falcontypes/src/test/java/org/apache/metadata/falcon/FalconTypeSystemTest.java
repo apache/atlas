@@ -19,12 +19,17 @@
 package org.apache.metadata.falcon;
 
 import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.types.ClassType;
+import org.apache.hadoop.metadata.types.TraitType;
+import org.apache.hadoop.metadata.types.TypeSystem;
+import org.junit.Assert;
 import org.testng.annotations.Test;
 
 public class FalconTypeSystemTest {
     @Test
     public void testTypeSystem() throws MetadataException {
-        FalconTypeSystem instance = FalconTypeSystem.getInstance();
-        instance.getDataType(FalconTypeSystem.DefinedTypes.CLUSTER.name());
+        FalconTypeSystem.getInstance();
+        Assert.assertNotNull(TypeSystem.getInstance().getDataType(ClassType.class, FalconTypeSystem.DefinedTypes.CLUSTER.name()));
+        Assert.assertNotNull(TypeSystem.getInstance().getDataType(TraitType.class, FalconTypeSystem.DefinedTypes.TAG.name()));
     }
 }

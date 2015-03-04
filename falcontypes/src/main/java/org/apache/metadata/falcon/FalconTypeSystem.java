@@ -26,7 +26,6 @@ import org.apache.hadoop.metadata.types.DataTypes;
 import org.apache.hadoop.metadata.types.EnumTypeDefinition;
 import org.apache.hadoop.metadata.types.EnumValue;
 import org.apache.hadoop.metadata.types.HierarchicalTypeDefinition;
-import org.apache.hadoop.metadata.types.IDataType;
 import org.apache.hadoop.metadata.types.Multiplicity;
 import org.apache.hadoop.metadata.types.StructTypeDefinition;
 import org.apache.hadoop.metadata.types.TraitType;
@@ -34,18 +33,17 @@ import org.apache.hadoop.metadata.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 public class FalconTypeSystem {
     public static final Logger LOG = LoggerFactory.getLogger(FalconTypeSystem.class);
 
     private static FalconTypeSystem INSTANCE;
     public static final TypeSystem TYPE_SYSTEM = TypeSystem.getInstance();
-    private final Map<String, IDataType> typeMap = new HashMap<>();
 
-    private Map<String, EnumTypeDefinition> enumTypeDefinitionMap = new HashMap<>();
-    private Map<String, StructTypeDefinition> structTypeDefinitionMap = new HashMap<>();
+    private List<StructTypeDefinition> structTypeDefinitions = new ArrayList<>();
+    private List<HierarchicalTypeDefinition<TraitType>> traitTypeDefinitions = new ArrayList<>();
 
     public static FalconTypeSystem getInstance() throws MetadataException {
         if (INSTANCE == null) {
@@ -62,13 +60,8 @@ public class FalconTypeSystem {
         HierarchicalTypeDefinition<ClassType> cluster = defineCluster();
         //TODO define feed and process
 
-        for (Map.Entry<String, EnumTypeDefinition> entry : enumTypeDefinitionMap.entrySet()) {
-            typeMap.put(entry.getKey(), TYPE_SYSTEM.defineEnumType(entry.getValue()));
-        }
-
-        typeMap.putAll(
-                TYPE_SYSTEM.defineTypes(ImmutableList.copyOf(structTypeDefinitionMap.values()), ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
-                        ImmutableList.of(cluster)));
+        TYPE_SYSTEM.defineTypes(ImmutableList.copyOf(structTypeDefinitions), ImmutableList.copyOf(traitTypeDefinitions),
+                ImmutableList.of(cluster));
 
     }
 
@@ -76,11 +69,12 @@ public class FalconTypeSystem {
         defineACL();
         defineClusterInterface();
         defineClusterLocation();
+        defineTags();
 
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition("name", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("acl", DefinedTypes.ACL.name(), Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("tags", TYPE_SYSTEM.defineMapType(DataTypes.STRING_TYPE, DataTypes.STRING_TYPE).getName(), Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition("tags", DefinedTypes.TAG.name(), Multiplicity.COLLECTION, false, null),
                 new AttributeDefinition("locations", TYPE_SYSTEM.defineMapType(DataTypes.STRING_TYPE, DataTypes.STRING_TYPE).getName(), Multiplicity.COLLECTION, false, null),
                 new AttributeDefinition("interfaces", DefinedTypes.CLUSTER_INTERFACE.name(), Multiplicity.COLLECTION, false, null),
                 new AttributeDefinition("properties", TYPE_SYSTEM.defineMapType(DataTypes.STRING_TYPE, DataTypes.STRING_TYPE).getName(), Multiplicity.OPTIONAL, false, null),
@@ -91,7 +85,19 @@ public class FalconTypeSystem {
         return cluster;
     }
 
-    private StructTypeDefinition defineClusterLocation() {
+    private HierarchicalTypeDefinition<TraitType> defineTags() {
+        AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
+                new AttributeDefinition("name", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("value", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null)
+        };
+
+        HierarchicalTypeDefinition<TraitType> traitType = new HierarchicalTypeDefinition<>(TraitType.class, DefinedTypes.TAG.name(), ImmutableList.<String>of(), attributeDefinitions);
+        LOG.debug("Created definition for " + DefinedTypes.TAG.name());
+        traitTypeDefinitions.add(traitType);
+        return traitType;
+    }
+
+    private StructTypeDefinition defineClusterLocation() throws MetadataException {
         EnumValue values[] = {
                 new EnumValue("WORKING", 1),
                 new EnumValue("STAGING", 2),
@@ -100,7 +106,7 @@ public class FalconTypeSystem {
 
         LOG.debug("Created definition for " + DefinedTypes.CLUSTER_LOCATION_TYPE.name());
         EnumTypeDefinition locationType = new EnumTypeDefinition(DefinedTypes.CLUSTER_LOCATION_TYPE.name(), values);
-        enumTypeDefinitionMap.put(locationType.name, locationType);
+        TYPE_SYSTEM.defineEnumType(locationType);
 
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition("type", DefinedTypes.CLUSTER_LOCATION_TYPE.name(), Multiplicity.REQUIRED, false, null),
@@ -108,13 +114,13 @@ public class FalconTypeSystem {
         };
         LOG.debug("Created definition for " + DefinedTypes.CLUSTER_LOCATION.name());
         StructTypeDefinition location = new StructTypeDefinition(DefinedTypes.CLUSTER_LOCATION.name(), attributeDefinitions);
-        structTypeDefinitionMap.put(location.typeName, location);
+        structTypeDefinitions.add(location);
         return location;
     }
 
-    private StructTypeDefinition defineClusterInterface() {
+    private StructTypeDefinition defineClusterInterface() throws MetadataException {
         EnumValue values[] = {
-                new EnumValue("READ_ONLY", 1),
+                new EnumValue("READONLY", 1),
                 new EnumValue("WRITE", 2),
                 new EnumValue("EXECUTE", 3),
                 new EnumValue("WORKFLOW", 4),
@@ -124,7 +130,7 @@ public class FalconTypeSystem {
 
         LOG.debug("Created definition for " + DefinedTypes.CLUSTER_INTERFACE_TYPE.name());
         EnumTypeDefinition interfaceType = new EnumTypeDefinition(DefinedTypes.CLUSTER_INTERFACE_TYPE.name(), values);
-        enumTypeDefinitionMap.put(interfaceType.name, interfaceType);
+        TYPE_SYSTEM.defineEnumType(interfaceType);
 
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition("type", DefinedTypes.CLUSTER_INTERFACE_TYPE.name(), Multiplicity.REQUIRED, false, null),
@@ -133,18 +139,19 @@ public class FalconTypeSystem {
         };
         LOG.debug("Created definition for " + DefinedTypes.CLUSTER_INTERFACE.name());
         StructTypeDefinition interfaceEntity = new StructTypeDefinition(DefinedTypes.CLUSTER_INTERFACE.name(), attributeDefinitions);
-        structTypeDefinitionMap.put(interfaceEntity.typeName, interfaceEntity);
+        structTypeDefinitions.add(interfaceEntity);
         return interfaceEntity;
     }
 
     public static enum DefinedTypes {
         ACL,
+        TAG,
 
         CLUSTER,
         CLUSTER_INTERFACE,
         CLUSTER_INTERFACE_TYPE,
         CLUSTER_LOCATION,
-        CLUSTER_LOCATION_TYPE;
+        CLUSTER_LOCATION_TYPE
     }
 
     private StructTypeDefinition defineACL() {
@@ -155,11 +162,7 @@ public class FalconTypeSystem {
         };
         LOG.debug("Created definition for " + DefinedTypes.ACL.name());
         StructTypeDefinition acl = new StructTypeDefinition(DefinedTypes.ACL.name(), attributeDefinitions);
-        structTypeDefinitionMap.put(acl.typeName, acl);
+        structTypeDefinitions.add(acl);
         return acl;
-    }
-
-    public IDataType getDataType(String typeName) {
-        return typeMap.get(typeName);
     }
 }

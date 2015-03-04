@@ -51,7 +51,9 @@ public class EnumType extends AbstractDataType<EnumValue> {
     public EnumValue convert(Object val, Multiplicity m) throws MetadataException {
         if ( val != null ) {
             EnumValue e = null;
-            if ( val instanceof Integer) {
+            if (val instanceof EnumValue) {
+                e = (EnumValue) val;
+            } else if ( val instanceof Integer) {
                 e = ordinalMap.get((Integer)val);
             } else if ( val instanceof  String) {
                 e = valueMap.get((String)val);
@@ -77,6 +79,6 @@ public class EnumType extends AbstractDataType<EnumValue> {
     }
 
     public EnumValue fromValue(String val) {
-        return valueMap.get(val);
+        return valueMap.get(val.trim());
     }
 }
