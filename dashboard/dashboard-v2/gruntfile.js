@@ -2,7 +2,7 @@
 
 var git = require('git-rev');
 
-module.exports = function (grunt) {
+module.exports = function(grunt) {
     var classPathSep = (process.platform === "win32") ? ';' : ':',
         gitHash = '',
         pkg = grunt.file.readJSON('package.json');
@@ -92,16 +92,16 @@ module.exports = function (grunt) {
         shell: {
             min: {
                 command: 'java ' +
-                '-cp public/lib/closure-compiler/compiler.jar' + classPathSep +
-                'public/lib/ng-closure-runner/ngcompiler.jar ' +
-                'org.angularjs.closurerunner.NgClosureRunner ' +
-                '--compilation_level SIMPLE_OPTIMIZATIONS ' +
+                    '-cp public/lib/closure-compiler/compiler.jar' + classPathSep +
+                    'public/lib/ng-closure-runner/ngcompiler.jar ' +
+                    'org.angularjs.closurerunner.NgClosureRunner ' +
+                    '--compilation_level SIMPLE_OPTIMIZATIONS ' +
                     //'--formatting PRETTY_PRINT ' +
-                '--language_in ECMASCRIPT5_STRICT ' +
-                '--angular_pass ' +
-                '--manage_closure_dependencies ' +
-                '--js <%= modules %> ' +
-                '--js_output_file <%= dist %>'
+                    '--language_in ECMASCRIPT5_STRICT ' +
+                    '--angular_pass ' +
+                    '--manage_closure_dependencies ' +
+                    '--js <%= modules %> ' +
+                    '--js_output_file <%= dist %>'
             }
         },
         devUpdate: {
@@ -114,7 +114,7 @@ module.exports = function (grunt) {
         compress: {
             release: {
                 options: {
-                    archive: function () {
+                    archive: function() {
                         return [pkg.name, pkg.version, gitHash].join('_') + '.tgz';
                     }
                 },
@@ -131,16 +131,16 @@ module.exports = function (grunt) {
     grunt.registerTask('server:prod', ['nodemon:prod']);
     grunt.registerTask('server:prod', ['nodemon:prod']);
 
-    grunt.registerTask('minify', 'Minify the all js', function () {
+    grunt.registerTask('minify', 'Minify the all js', function() {
         var done = this.async();
         grunt.file.mkdir('public/dist');
         grunt.task.run(['shell:min']);
         done();
     });
 
-    grunt.registerTask('release', 'Create release package', function () {
+    grunt.registerTask('release', 'Create release package', function() {
         var done = this.async();
-        git.short(function (str) {
+        git.short(function(str) {
             gitHash = str;
             grunt.task.run(['minify', 'compress:release']);
             done();

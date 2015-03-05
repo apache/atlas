@@ -8,7 +8,7 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
         $scope.search = function(query) {
             $scope.results = [];
             NotificationService.reset();
-            SearchResource.search($location.search(query).search(), function(response) {
+            SearchResource.search($location.search(query).search(), function searchSuccess(response) {
                 $scope.results = response;
                 if ($scope.results.length < 1) {
                     NotificationService.error('No Result found', false);
@@ -16,6 +16,8 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
                 $state.go('search.results', {}, {
                     location: false
                 });
+            }, function searchError(err) {
+                NotificationService.error('Error occurred during executing search query, error status code = ' + err.status + ', status text = ' + err.statusText, false);
             });
         };
 
