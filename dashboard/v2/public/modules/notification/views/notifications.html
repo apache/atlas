@@ -16,7 +16,7 @@
   ~ limitations under the License.
   -->
 
-<div data-ng-controller="NotificationController">
+<div class="container" data-ng-controller="NotificationController">
     <alert data-ng-repeat="notification in getNotifications()" data-type="{{notification.type}}" data-close="close(notification)">
         {{notification.message}}
     </alert>

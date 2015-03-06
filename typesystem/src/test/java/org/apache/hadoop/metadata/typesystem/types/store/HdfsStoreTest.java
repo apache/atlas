@@ -33,6 +33,7 @@ import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.TraitType;
 import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
+import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -51,7 +52,7 @@ public class HdfsStoreTest extends BaseTest {
 
         //define type system
         HierarchicalTypeDefinition<TraitType> tagTypeDefinition =
-                createTraitTypeDef("tag",
+                TypesUtil.createTraitTypeDef("tag",
                         ImmutableList.<String>of(),
                         createRequiredAttrDef("level", DataTypes.INT_TYPE));
         HierarchicalTypeDefinition<ClassType> databaseTypeDefinition =
@@ -59,7 +60,7 @@ public class HdfsStoreTest extends BaseTest {
                         ImmutableList.<String>of(),
                         createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         createRequiredAttrDef("description", DataTypes.STRING_TYPE),
-                        createRequiredAttrDef("tag", "tag"));
+                        createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
         TypeSystem.getInstance().defineTypes(
                 ImmutableList.<StructTypeDefinition>of(),
                 ImmutableList.of(tagTypeDefinition),

@@ -96,7 +96,8 @@ c. Using Falcon
 
   curl -v http://localhost:21000/api/metadata/entities/list/hive_database
 
-
+* Search for entities (instances) in the repository
+  curl -v http://localhost:21000/api/metadata/discovery/search/dsl?query="from hive_table"
 
 d. Stopping Falcon Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~
