@@ -16,92 +16,88 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>org.apache.hadoop.metadata</groupId>
-    <artifactId>metadata-bridge-parent</artifactId>
-    <version>0.1-incubating-SNAPSHOT</version>
-  </parent>
-  <artifactId>metadata-bridge-hive</artifactId>
-    <packaging>jar</packaging>   
-  
-  <dependencies>
-  	<dependency>
-  		<groupId>com.google.code.gson</groupId>
-  		<artifactId>gson</artifactId>
-  		<version>2.2.2</version>
-  	</dependency>
-  	<dependency>
-		<groupId>org.apache.hive</groupId>
-		<artifactId>hive-common</artifactId>
-		<version>0.13.1</version>
-		<scope>provided</scope>
-	</dependency>
-	<dependency>
-		<groupId>org.apache.hadoop</groupId>
-		<artifactId>hadoop-common</artifactId>
-		<version>2.4.0</version>
-		<scope>provided</scope>
-	</dependency>
-	<dependency>
-		<groupId>org.apache.hive</groupId>
-		<artifactId>hive-exec</artifactId>
-		<version>0.13.1</version>
-		<scope>provided</scope>
-	</dependency>
-	<dependency>
-		<groupId>org.apache.hadoop.metadata</groupId>
-		<artifactId>metadata-common</artifactId>
-	</dependency>
-  </dependencies>
-  <build>
- 	<plugins>
-	 <plugin>
-		<groupId>org.apache.maven.plugins</groupId>
-		<artifactId>maven-compiler-plugin</artifactId>
-		<version>3.1</version>
-		<configuration>
-			<source>1.6</source>
-			<target>1.6</target>
-		</configuration>
-	</plugin>
-	<plugin>
-		<groupId>org.apache.maven.plugins</groupId>
-		<artifactId>maven-jar-plugin</artifactId>
-		<version>2.4</version>
-	</plugin>
-  
-<!--  
-     <plugin>
-    <groupId>org.apache.maven.plugins</groupId>
-    <artifactId>maven-dependency-plugin</artifactId>
-    <executions>
-        <execution>
-            <id>copy</id>
-            <phase>prepare-package</phase>
-            <goals>
-                <goal>copy</goal>
-            </goals>
-            <configuration>
-                <artifactItems>
-                    <artifactItem>
-						<groupId>org.apache.hadoop.metadata</groupId>
-						<artifactId>metadata-common</artifactId>
-                        <version>0.1-incubating-SNAPSHOT</version>
-                        <outputDirectory>${project.build.directory}</outputDirectory>                                 
-                    </artifactItem>
-                </artifactItems>
-            </configuration>
-        </execution>
-    </executions>
-</plugin> 
-      -->
-      
-      
-      
-      
-   </plugins>
-</build>
-  
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.apache.hadoop.metadata</groupId>
+        <artifactId>metadata-bridge-parent</artifactId>
+        <version>0.1-incubating-SNAPSHOT</version>
+    </parent>
+    <artifactId>metadata-bridge-hive</artifactId>
+    <packaging>jar</packaging>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.2.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-common</artifactId>
+            <version>0.13.1</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-common</artifactId>
+            <version>2.4.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-exec</artifactId>
+            <version>0.13.1</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.1</version>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.4</version>
+            </plugin>
+
+            <!--
+                 <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.apache.hadoop.metadata</groupId>
+                                    <artifactId>metadata-common</artifactId>
+                                    <version>0.1-incubating-SNAPSHOT</version>
+                                    <outputDirectory>${project.build.directory}</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+                  -->
+
+
+        </plugins>
+    </build>
+
 </project>

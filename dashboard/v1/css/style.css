@@ -1,0 +1,93 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.bg-top2{
+background: #eeeded; /* for non-css3 browsers */
+
+filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#eeeded', endColorstr='#e5e5e4'); /* for IE */
+background: -webkit-gradient(linear, left top, left bottom, from(#eeeded), to(#e5e5e4)); /* for webkit browsers */
+background: -moz-linear-gradient(top,  #eeeded,  #e5e5e4); /* for firefox 3.6+ */
+width:100%;
+border-bottom:solid 1px #d9d9d8;
+margin-bottom:20px;
+
+
+}
+
+
+.bg-top{
+background: #fafafa; /* for non-css3 browsers */
+border-bottom:solid 4px #5cbb5a;
+}
+.bg-bottom{
+background: #fafafa; /* for non-css3 browsers */
+border-top:solid 4px #5cbb5a;
+}
+.txt2{
+color:#333333;
+margin:10px;
+}
+.table-border{
+border:solid 2px #d9d9d8;;
+margin-left:30px;
+background-color:#edecec;
+
+}
+
+.search_table{
+border-top:solid 2px #5cbb5a;;
+border-left:solid 2px #5cbb5a;;
+border-bottom:solid 2px #5cbb5a;;
+background-color:#f4f4f4;
+color:#333333;
+}
+
+.serach_btn{
+border:solid 1px #686867;;
+
+}
+
+.txt1{
+color:#5cbb5a;
+font-size:23px;
+}
+
+.hrbg{
+background-color:#686867;
+border:solid 1px #686867;
+}
+
+/* unvisited link */
+.searchbtn a:link {
+background-color: #bdbdbd;
+}
+
+/* visited link */
+.searchbtn a:visited {
+background-color: #bdbdbd;
+}
+
+/* mouse over link */
+.searchbtn a:hover {
+background-color: #6abd45;
+}
+
+/* selected link */
+.searchbtn a:active {
+background-color: #bdbdbd;
+} 

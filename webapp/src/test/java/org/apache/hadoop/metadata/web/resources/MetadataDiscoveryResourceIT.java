@@ -21,16 +21,17 @@ package org.apache.hadoop.metadata.web.resources;
 import com.google.common.collect.ImmutableList;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-import org.apache.hadoop.metadata.ITypedReferenceableInstance;
-import org.apache.hadoop.metadata.Referenceable;
-import org.apache.hadoop.metadata.json.Serialization$;
-import org.apache.hadoop.metadata.json.TypesSerialization;
-import org.apache.hadoop.metadata.types.ClassType;
-import org.apache.hadoop.metadata.types.DataTypes;
-import org.apache.hadoop.metadata.types.HierarchicalTypeDefinition;
-import org.apache.hadoop.metadata.types.Multiplicity;
-import org.apache.hadoop.metadata.types.StructTypeDefinition;
-import org.apache.hadoop.metadata.types.TraitType;
+import org.apache.hadoop.metadata.typesystem.json.Serialization$;
+import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
+import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.typesystem.Referenceable;
+import org.apache.hadoop.metadata.typesystem.types.ClassType;
+import org.apache.hadoop.metadata.typesystem.types.DataTypes;
+import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
+import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.TraitType;
+import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -103,7 +104,7 @@ public class MetadataDiscoveryResourceIT extends BaseResourceIT {
 
     @Test
     public void testSearchUsingGremlin() throws Exception {
-         String query = "g.V.has('type', 'dsl_test_type').toList()";
+        String query = "g.V.has('type', 'dsl_test_type').toList()";
         WebResource resource = service
                 .path("api/metadata/discovery/search")
                 .queryParam("query", query);
@@ -257,10 +258,10 @@ public class MetadataDiscoveryResourceIT extends BaseResourceIT {
 
     private void createTypes() throws Exception {
         HierarchicalTypeDefinition<ClassType> dslTestTypeDefinition =
-                createClassTypeDef("dsl_test_type",
+                TypesUtil.createClassTypeDef("dsl_test_type",
                         ImmutableList.<String>of(),
-                        createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        createRequiredAttrDef("description", DataTypes.STRING_TYPE));
+                        TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
 
         typeSystem.defineTypes(
                 ImmutableList.<StructTypeDefinition>of(),

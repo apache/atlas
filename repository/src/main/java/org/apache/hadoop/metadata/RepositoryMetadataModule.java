@@ -22,64 +22,64 @@ import com.google.inject.Scopes;
 import com.google.inject.throwingproviders.ThrowingProviderBinder;
 import com.thinkaurelius.titan.core.TitanGraph;
 import org.apache.hadoop.metadata.discovery.DiscoveryService;
-import org.apache.hadoop.metadata.discovery.GraphBackedDiscoveryService;
-import org.apache.hadoop.metadata.repository.SearchIndexer;
-import org.apache.hadoop.metadata.repository.graph.GraphBackedSearchIndexer;
-import org.apache.hadoop.metadata.services.DefaultMetadataService;
+import org.apache.hadoop.metadata.discovery.SearchIndexer;
+import org.apache.hadoop.metadata.discovery.graph.GraphBackedDiscoveryService;
+import org.apache.hadoop.metadata.repository.MetadataRepository;
 import org.apache.hadoop.metadata.repository.graph.GraphBackedMetadataRepository;
+import org.apache.hadoop.metadata.repository.graph.GraphBackedSearchIndexer;
 import org.apache.hadoop.metadata.repository.graph.GraphProvider;
 import org.apache.hadoop.metadata.repository.graph.GraphService;
 import org.apache.hadoop.metadata.repository.graph.GraphServiceConfigurator;
-import org.apache.hadoop.metadata.repository.MetadataRepository;
-import org.apache.hadoop.metadata.services.MetadataService;
 import org.apache.hadoop.metadata.repository.graph.TitanGraphProvider;
+import org.apache.hadoop.metadata.services.DefaultMetadataService;
+import org.apache.hadoop.metadata.services.MetadataService;
 
 /**
  * Guice module for Repository module.
  */
 public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
 
-	// Graph Service implementation class
-	private Class<? extends GraphService> graphServiceClass;
+    // Graph Service implementation class
+    private Class<? extends GraphService> graphServiceClass;
 
-	// MetadataRepositoryService implementation class
-	private Class<? extends MetadataRepository> metadataRepoClass;
-	private Class<? extends MetadataService> metadataService;
-	private Class<? extends DiscoveryService> discoveryService;
-	private Class<? extends SearchIndexer> searchIndexer;
+    // MetadataRepositoryService implementation class
+    private Class<? extends MetadataRepository> metadataRepoClass;
+    private Class<? extends MetadataService> metadataService;
+    private Class<? extends DiscoveryService> discoveryService;
+    private Class<? extends SearchIndexer> searchIndexer;
 
-	public RepositoryMetadataModule() {
-		GraphServiceConfigurator gsp = new GraphServiceConfigurator();
+    public RepositoryMetadataModule() {
+        GraphServiceConfigurator gsp = new GraphServiceConfigurator();
 
-		// get the impl classes for the repo and the graph service
-		this.graphServiceClass = gsp.getImplClass();
-		this.metadataRepoClass = GraphBackedMetadataRepository.class;
-		this.metadataService = DefaultMetadataService.class;
-		this.discoveryService = GraphBackedDiscoveryService.class;
-		this.searchIndexer = GraphBackedSearchIndexer.class;
-	}
+        // get the impl classes for the repo and the graph service
+        this.graphServiceClass = gsp.getImplClass();
+        this.metadataRepoClass = GraphBackedMetadataRepository.class;
+        this.metadataService = DefaultMetadataService.class;
+        this.discoveryService = GraphBackedDiscoveryService.class;
+        this.searchIndexer = GraphBackedSearchIndexer.class;
+    }
 
-	protected void configure() {
-		// special wiring for Titan Graph
-		ThrowingProviderBinder.create(binder())
-				.bind(GraphProvider.class, TitanGraph.class)
-				.to(TitanGraphProvider.class)
-				.in(Scopes.SINGLETON);
+    protected void configure() {
+        // special wiring for Titan Graph
+        ThrowingProviderBinder.create(binder())
+                .bind(GraphProvider.class, TitanGraph.class)
+                .to(TitanGraphProvider.class)
+                .in(Scopes.SINGLETON);
 
-		// allow for dynamic binding of the metadata repo & graph service
+        // allow for dynamic binding of the metadata repo & graph service
 
-		// bind the MetadataRepositoryService interface to an implementation
-		bind(MetadataRepository.class).to(metadataRepoClass);
+        // bind the MetadataRepositoryService interface to an implementation
+        bind(MetadataRepository.class).to(metadataRepoClass);
 
-		// bind the GraphService interface to an implementation
-		bind(GraphService.class).to(graphServiceClass);
+        // bind the GraphService interface to an implementation
+        bind(GraphService.class).to(graphServiceClass);
 
-		// bind the MetadataService interface to an implementation
-		bind(MetadataService.class).to(metadataService);
+        // bind the MetadataService interface to an implementation
+        bind(MetadataService.class).to(metadataService);
 
-		// bind the DiscoveryService interface to an implementation
-		bind(DiscoveryService.class).to(discoveryService);
+        // bind the DiscoveryService interface to an implementation
+        bind(DiscoveryService.class).to(discoveryService);
 
-		bind(SearchIndexer.class).to(searchIndexer);
-	}
+        bind(SearchIndexer.class).to(searchIndexer);
+    }
 }

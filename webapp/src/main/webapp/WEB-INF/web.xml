@@ -21,31 +21,33 @@
         "http://java.sun.com/dtd/web-app_2_3.dtd">
 
 <web-app>
-	<display-name>Apache Metadata Placeholder</display-name>
-	<description>Apache Metadata Placeholder</description>
-	
-	<context-param>
-    	<param-name>guice.packages</param-name>
-    	<param-value>org.apache.hadoop.metadata.web.resources,org.apache.hadoop.metadata.web.params</param-value>
-  	</context-param>
-  	
-	<!--
-		More information can be found here:
-		
-		https://jersey.java.net/nonav/apidocs/1.11/contribs/jersey-guice/com/sun/jersey/guice/spi/container/servlet/package-summary.html
-	 -->
+    <display-name>Apache Metadata Placeholder</display-name>
+    <description>Apache Metadata Placeholder</description>
 
-	<filter>
-    	<filter-name>guiceFilter</filter-name>
-    	<filter-class>com.google.inject.servlet.GuiceFilter</filter-class>
-  	</filter>
+    <context-param>
+        <param-name>guice.packages</param-name>
+        <param-value>
+            org.apache.hadoop.metadata.web.resources,org.apache.hadoop.metadata.web.params
+        </param-value>
+    </context-param>
 
-  	<filter-mapping>
-    	<filter-name>guiceFilter</filter-name>
-    	<url-pattern>/*</url-pattern>
-  	</filter-mapping>
+    <!--
+        More information can be found here:
 
-	<listener>
-		<listener-class>org.apache.hadoop.metadata.web.listeners.GuiceServletConfig</listener-class>
-	</listener>
+        https://jersey.java.net/nonav/apidocs/1.11/contribs/jersey-guice/com/sun/jersey/guice/spi/container/servlet/package-summary.html
+     -->
+
+    <filter>
+        <filter-name>guiceFilter</filter-name>
+        <filter-class>com.google.inject.servlet.GuiceFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>guiceFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <listener>
+        <listener-class>org.apache.hadoop.metadata.web.listeners.GuiceServletConfig</listener-class>
+    </listener>
 </web-app>

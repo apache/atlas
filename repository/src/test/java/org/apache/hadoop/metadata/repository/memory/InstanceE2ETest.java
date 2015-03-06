@@ -1,0 +1,139 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.hadoop.metadata.repository.memory;
+
+import com.google.common.collect.ImmutableList;
+import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.typesystem.TypesDef;
+import org.apache.hadoop.metadata.typesystem.json.Serialization$;
+import org.apache.hadoop.metadata.typesystem.json.TypesSerialization$;
+import org.apache.hadoop.metadata.repository.BaseTest;
+import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.typesystem.Referenceable;
+import org.apache.hadoop.metadata.typesystem.Struct;
+import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.ClassType;
+import org.apache.hadoop.metadata.typesystem.types.DataTypes;
+import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
+import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.TraitType;
+import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
+import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class InstanceE2ETest extends BaseTest {
+
+    protected List<HierarchicalTypeDefinition> createHiveTypes(TypeSystem typeSystem)
+    throws MetadataException {
+        ArrayList<HierarchicalTypeDefinition> typeDefinitions = new ArrayList<>();
+
+        HierarchicalTypeDefinition<ClassType> databaseTypeDefinition =
+                TypesUtil.createClassTypeDef("hive_database",
+                        ImmutableList.<String>of(),
+                        TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
+        typeDefinitions.add(databaseTypeDefinition);
+
+        HierarchicalTypeDefinition<ClassType> tableTypeDefinition = TypesUtil.createClassTypeDef(
+                "hive_table",
+                ImmutableList.<String>of(),
+                TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE),
+                TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE),
+                new AttributeDefinition("hive_database",
+                        "hive_database", Multiplicity.REQUIRED, false, "hive_database"));
+        typeDefinitions.add(tableTypeDefinition);
+
+        HierarchicalTypeDefinition<TraitType> fetlTypeDefinition = TypesUtil.createTraitTypeDef(
+                "hive_fetl",
+                ImmutableList.<String>of(),
+                TypesUtil.createRequiredAttrDef("level", DataTypes.INT_TYPE));
+        typeDefinitions.add(fetlTypeDefinition);
+
+        typeSystem.defineTypes(
+                ImmutableList.<StructTypeDefinition>of(),
+                ImmutableList.of(fetlTypeDefinition),
+                ImmutableList.of(databaseTypeDefinition, tableTypeDefinition));
+
+        return typeDefinitions;
+    }
+
+    protected ITypedReferenceableInstance createHiveTableInstance(TypeSystem typeSystem)
+    throws MetadataException {
+        Referenceable databaseInstance = new Referenceable("hive_database");
+        databaseInstance.set("name", "hive_database");
+        databaseInstance.set("description", "foo database");
+
+        Referenceable tableInstance = new Referenceable("hive_table", "hive_fetl");
+        tableInstance.set("name", "t1");
+        tableInstance.set("description", "bar table");
+        tableInstance.set("type", "managed");
+        tableInstance.set("hive_database", databaseInstance);
+
+        Struct traitInstance = (Struct) tableInstance.getTrait("hive_fetl");
+        traitInstance.set("level", 1);
+
+        tableInstance.set("hive_fetl", traitInstance);
+
+        ClassType tableType = typeSystem.getDataType(ClassType.class, "hive_table");
+        return tableType.convert(tableInstance, Multiplicity.REQUIRED);
+    }
+
+    @Test
+    public void testType() throws MetadataException {
+
+        TypeSystem ts = getTypeSystem();
+
+        createHiveTypes(ts);
+
+        String jsonStr = TypesSerialization$.MODULE$
+                .toJson(ts, ImmutableList.of("hive_database", "hive_table"));
+        System.out.println(jsonStr);
+
+        TypesDef typesDef1 = TypesSerialization$.MODULE$.fromJson(jsonStr);
+        System.out.println(typesDef1);
+
+        ts.reset();
+        ts.defineTypes(typesDef1);
+        jsonStr = TypesSerialization$.MODULE$
+                .toJson(ts, ImmutableList.of("hive_database", "hive_table"));
+        System.out.println(jsonStr);
+
+    }
+
+    @Test
+    public void testInstance() throws MetadataException {
+
+        TypeSystem ts = getTypeSystem();
+
+        createHiveTypes(ts);
+
+        ITypedReferenceableInstance i = createHiveTableInstance(getTypeSystem());
+
+        String jsonStr = Serialization$.MODULE$.toJson(i);
+        System.out.println(jsonStr);
+
+        i = Serialization$.MODULE$.fromJson(jsonStr);
+        System.out.println(i);
+    }
+}

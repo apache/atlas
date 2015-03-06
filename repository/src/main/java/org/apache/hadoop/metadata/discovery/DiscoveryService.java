@@ -47,22 +47,22 @@ public interface DiscoveryService {
      * @return List of Maps
      * @throws org.apache.hadoop.metadata.discovery.DiscoveryException
      */
-    List<Map<String,String>> searchByGremlin(String gremlinQuery) throws DiscoveryException;
-    
+    List<Map<String, String>> searchByGremlin(String gremlinQuery) throws DiscoveryException;
+
     /**
      * Simple direct graph search and depth traversal.
      * @param searchText is plain text
      * @param prop is the Vertex property to search.
      */
-    Map<String, HashMap<String,JSONObject>> textSearch(String searchText,
-                                                       int depth, String prop);
-    
+    Map<String, HashMap<String, JSONObject>> textSearch(String searchText,
+                                                        int depth, String prop);
+
     /**
      * Simple graph walker for search interface, which allows following of specific edges only.
      * @param edgesToFollow is a comma-separated-list of edges to follow.
      */
-    Map<String, HashMap<String,JSONObject>> relationshipWalk(String guid,
-                                                             int depth, String edgesToFollow);
+    Map<String, HashMap<String, JSONObject>> relationshipWalk(String guid,
+                                                              int depth, String edgesToFollow);
 
     /**
      * Return a Set of indexed properties in the graph.

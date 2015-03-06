@@ -1,0 +1,46 @@
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<div data-ng-controller="SearchController">
+    <div class="search">
+        <form name="form" novalidate class="container">
+            <div class="col-lg-7">
+                <div class="row input-group">
+                    <input type="text" class="form-control" placeholder="Search" data-ng-model="query" data-typeahead="type for type in types" required/>
+                    <span class="input-group-btn">
+                        <button class="btn btn-success" type="submit" data-ng-disabled="form.$invalid" data-ng-click="search(query)">
+                            <i class="glyphicon glyphicon-search white "></i>
+                        </button>
+                    </span>
+                </div>
+                <div class="row">
+                    <small class="small-txt">Examples : property=HiveLineage.executionEngine&text=tez</small>
+                    <br/>
+                    <small class="small-txt">property=type&text=HiveLineage</small>
+                    <br/>
+                    <small class="small-txt">property=type&text=hive_table</small>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-11" data-ui-view=""></div>
+        </div>
+    </div>
+</div>

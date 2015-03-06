@@ -19,7 +19,7 @@
 package org.apache.hadoop.metadata.listener;
 
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.types.IDataType;
+import org.apache.hadoop.metadata.typesystem.types.IDataType;
 
 /**
  * Types change notification listener.

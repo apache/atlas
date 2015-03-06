@@ -19,7 +19,6 @@
 package org.apache.hadoop.metadata.services;
 
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.service.Service;
 import org.codehaus.jettison.json.JSONObject;
 
 import java.util.List;
@@ -27,7 +26,7 @@ import java.util.List;
 /**
  * Metadata service.
  */
-public interface MetadataService extends Service {
+public interface MetadataService {
 
     /**
      * Creates a new type based on the type system to enable adding

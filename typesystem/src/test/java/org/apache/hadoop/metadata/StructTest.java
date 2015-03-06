@@ -18,8 +18,10 @@
 
 package org.apache.hadoop.metadata;
 
-import org.apache.hadoop.metadata.storage.StructInstance;
-import org.apache.hadoop.metadata.types.*;
+import org.apache.hadoop.metadata.typesystem.ITypedStruct;
+import org.apache.hadoop.metadata.typesystem.Struct;
+import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
+import org.apache.hadoop.metadata.typesystem.types.StructType;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,7 +35,8 @@ public class StructTest extends BaseTest {
     public void setup() throws Exception {
         super.setup();
         structType = (StructType) getTypeSystem().getDataType(StructType.class, STRUCT_TYPE_1);
-        recursiveStructType = (StructType) getTypeSystem().getDataType(StructType.class, STRUCT_TYPE_2);
+        recursiveStructType = (StructType) getTypeSystem()
+                .getDataType(StructType.class, STRUCT_TYPE_2);
     }
 
     @Test

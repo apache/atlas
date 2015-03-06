@@ -18,17 +18,15 @@
 
 package org.apache.hadoop.metadata.repository;
 
-import org.apache.hadoop.metadata.IReferenceableInstance;
-import org.apache.hadoop.metadata.ITypedReferenceableInstance;
-import org.apache.hadoop.metadata.service.Service;
-import org.apache.hadoop.metadata.storage.RepositoryException;
+import org.apache.hadoop.metadata.typesystem.IReferenceableInstance;
+import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 
 import java.util.List;
 
 /**
  * An interface for persisting metadata into a blueprints enabled graph db.
  */
-public interface MetadataRepository extends Service {
+public interface MetadataRepository {
 
     String getTypeAttributeName();
 

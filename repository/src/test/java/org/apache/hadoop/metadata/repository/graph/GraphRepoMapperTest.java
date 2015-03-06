@@ -25,21 +25,21 @@ import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
-import org.apache.hadoop.metadata.ITypedReferenceableInstance;
-import org.apache.hadoop.metadata.Referenceable;
 import org.apache.hadoop.metadata.RepositoryMetadataModule;
-import org.apache.hadoop.metadata.Struct;
-import org.apache.hadoop.metadata.types.AttributeDefinition;
-import org.apache.hadoop.metadata.types.ClassType;
-import org.apache.hadoop.metadata.types.DataTypes;
-import org.apache.hadoop.metadata.types.EnumTypeDefinition;
-import org.apache.hadoop.metadata.types.EnumValue;
-import org.apache.hadoop.metadata.types.HierarchicalTypeDefinition;
-import org.apache.hadoop.metadata.types.IDataType;
-import org.apache.hadoop.metadata.types.Multiplicity;
-import org.apache.hadoop.metadata.types.StructTypeDefinition;
-import org.apache.hadoop.metadata.types.TraitType;
-import org.apache.hadoop.metadata.types.TypeSystem;
+import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.typesystem.Referenceable;
+import org.apache.hadoop.metadata.typesystem.Struct;
+import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.ClassType;
+import org.apache.hadoop.metadata.typesystem.types.DataTypes;
+import org.apache.hadoop.metadata.typesystem.types.EnumTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.EnumValue;
+import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
+import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.TraitType;
+import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
+import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -69,9 +69,7 @@ public class GraphRepoMapperTest {
     @BeforeClass
     public void setUp() throws Exception {
         // start the injected graph service
-        titanGraphService.start();
-        // start the injected repository service
-        repositoryService.start();
+        titanGraphService.initialize();
 
         new GraphBackedSearchIndexer(titanGraphService);
 
@@ -107,7 +105,7 @@ public class GraphRepoMapperTest {
         System.out.println("added table = " + tableGUID);
     }
 
-    @Test (dependsOnMethods = "testSubmitEntity")
+    @Test(dependsOnMethods = "testSubmitEntity")
     public void testGetEntityDefinition() throws Exception {
         TitanGraph graph = titanGraphService.getTitanGraph();
         GraphQuery query = graph.query()
@@ -137,7 +135,8 @@ public class GraphRepoMapperTest {
             System.out.print("vertex = " + vertex + " [");
             TitanVertex titanVertex = (TitanVertex) graph.getVertex(vertex.getId());
             System.out.print("guid= " + titanVertex.getProperty(Constants.GUID_PROPERTY_KEY));
-            System.out.print("type= " + titanVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY));
+            System.out
+                    .print("type= " + titanVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY));
             System.out.println("]");
         }
 
@@ -150,16 +149,16 @@ public class GraphRepoMapperTest {
 
     private void createHiveTypes() throws Exception {
         HierarchicalTypeDefinition<ClassType> databaseTypeDefinition =
-                createClassTypeDef(DATABASE_TYPE,
+                TypesUtil.createClassTypeDef(DATABASE_TYPE,
                         ImmutableList.<String>of(),
-                        createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        createRequiredAttrDef("description", DataTypes.STRING_TYPE));
+                        TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
 
         StructTypeDefinition structTypeDefinition =
                 new StructTypeDefinition("serdeType",
-                        new AttributeDefinition[] {
-                                createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                                createRequiredAttrDef("serde", DataTypes.STRING_TYPE)
+                        new AttributeDefinition[]{
+                                TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                                TypesUtil.createRequiredAttrDef("serde", DataTypes.STRING_TYPE)
                         });
 
         EnumValue values[] = {
@@ -167,27 +166,27 @@ public class GraphRepoMapperTest {
                 new EnumValue("EXTERNAL", 2),
         };
 
-        EnumTypeDefinition enumTypeDefinition =  new EnumTypeDefinition("tableType", values);
+        EnumTypeDefinition enumTypeDefinition = new EnumTypeDefinition("tableType", values);
         typeSystem.defineEnumType(enumTypeDefinition);
 
         HierarchicalTypeDefinition<ClassType> columnsDefinition =
-                createClassTypeDef("column_type",
+                TypesUtil.createClassTypeDef("column_type",
                         ImmutableList.<String>of(),
-                        createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        createRequiredAttrDef("type", DataTypes.STRING_TYPE));
+                        TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
 
         StructTypeDefinition partitionDefinition =
                 new StructTypeDefinition("partition_type",
-                        new AttributeDefinition[] {
-                                createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        new AttributeDefinition[]{
+                                TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         });
 
         HierarchicalTypeDefinition<ClassType> tableTypeDefinition =
-                createClassTypeDef(TABLE_TYPE,
+                TypesUtil.createClassTypeDef(TABLE_TYPE,
                         ImmutableList.<String>of(),
-                        createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        createRequiredAttrDef("description", DataTypes.STRING_TYPE),
-                        createRequiredAttrDef("type", DataTypes.STRING_TYPE),
+                        TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE),
+                        TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE),
                         // enum
                         new AttributeDefinition("tableType", "tableType",
                                 Multiplicity.REQUIRED, false, null),
@@ -213,9 +212,9 @@ public class GraphRepoMapperTest {
                                 DATABASE_TYPE, Multiplicity.REQUIRED, true, null));
 
         HierarchicalTypeDefinition<TraitType> classificationTypeDefinition =
-                createTraitTypeDef("classification",
+                TypesUtil.createTraitTypeDef("classification",
                         ImmutableList.<String>of(),
-                        createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
+                        TypesUtil.createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
 
         typeSystem.defineTypes(
                 ImmutableList.of(structTypeDefinition, partitionDefinition),
@@ -277,29 +276,5 @@ public class GraphRepoMapperTest {
 
         ClassType tableType = typeSystem.getDataType(ClassType.class, TABLE_TYPE);
         return tableType.convert(tableInstance, Multiplicity.REQUIRED);
-    }
-
-    protected AttributeDefinition createUniqueRequiredAttrDef(String name,
-                                                              IDataType dataType) {
-        return new AttributeDefinition(name, dataType.getName(),
-                Multiplicity.REQUIRED, false, true, true, null);
-    }
-
-    protected AttributeDefinition createRequiredAttrDef(String name,
-                                                        IDataType dataType) {
-        return new AttributeDefinition(name, dataType.getName(),
-                Multiplicity.REQUIRED, false, null);
-    }
-
-    @SuppressWarnings("unchecked")
-    protected HierarchicalTypeDefinition<TraitType> createTraitTypeDef(
-            String name, ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
-        return new HierarchicalTypeDefinition(TraitType.class, name, superTypes, attrDefs);
-    }
-
-    @SuppressWarnings("unchecked")
-    protected HierarchicalTypeDefinition<ClassType> createClassTypeDef(
-            String name, ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
-        return new HierarchicalTypeDefinition(ClassType.class, name, superTypes, attrDefs);
     }
 }

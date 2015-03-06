@@ -18,9 +18,22 @@
 
 package org.apache.hadoop.metadata.web.resources;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.blueprints.Graph;
+import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.VertexQuery;
+import com.tinkerpop.blueprints.util.io.graphson.GraphSONMode;
+import com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility;
+import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.metadata.repository.graph.GraphService;
+import org.apache.hadoop.metadata.web.util.Servlets;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -33,46 +46,52 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.metadata.repository.graph.GraphService;
-import org.apache.hadoop.metadata.web.util.Servlets;
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.blueprints.Graph;
-import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.blueprints.VertexQuery;
-import com.tinkerpop.blueprints.util.io.graphson.GraphSONMode;
-import com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Jersey Resource for lineage metadata operations.
  * Implements most of the GET operations of Rexster API with out the indexes.
  * https://github.com/tinkerpop/rexster/wiki/Basic-REST-API
- * 
+ *
  * This is a subset of Rexster's REST API, designed to provide only read-only methods
  * for accessing the backend graph.
  */
 @Path("graph")
 @Singleton
 public class RexsterGraphResource {
-    private static final Logger LOG = LoggerFactory.getLogger(RexsterGraphResource.class);
-
     public static final String RESULTS = "results";
     public static final String TOTAL_SIZE = "totalSize";
-
+    public static final String OUT_E = "outE";
+    public static final String IN_E = "inE";
+    public static final String BOTH_E = "bothE";
+    public static final String OUT = "out";
+    public static final String IN = "in";
+    public static final String BOTH = "both";
+    public static final String OUT_COUNT = "outCount";
+    public static final String IN_COUNT = "inCount";
+    public static final String BOTH_COUNT = "bothCount";
+    public static final String OUT_IDS = "outIds";
+    public static final String IN_IDS = "inIds";
+    public static final String BOTH_IDS = "bothIds";
+    private static final Logger LOG = LoggerFactory.getLogger(RexsterGraphResource.class);
     private final GraphService graphService;
 
     @Inject
     public RexsterGraphResource(GraphService graphService) {
-    	this.graphService = graphService;
+        this.graphService = graphService;
+    }
+
+    private static void validateInputs(String errorMsg, String... inputs) {
+        for (String input : inputs) {
+            if (StringUtils.isEmpty(input)) {
+                throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST)
+                        .entity(errorMsg)
+                        .type("text/plain")
+                        .build());
+            }
+        }
     }
 
     protected Graph getGraph() {
@@ -201,7 +220,8 @@ public class RexsterGraphResource {
                                    @PathParam("direction") String direction) {
         LOG.info("Get vertex edges for vertexId= {}, direction= {}", vertexId, direction);
         // Validate vertex id. Direction is validated in VertexQueryArguments.
-        validateInputs("Invalid argument: vertex id or direction passed is null or empty.", vertexId, direction);
+        validateInputs("Invalid argument: vertex id or direction passed is null or empty.",
+                vertexId, direction);
         try {
             Vertex vertex = findVertex(vertexId);
 
@@ -216,9 +236,11 @@ public class RexsterGraphResource {
     private Response getVertexEdges(Vertex vertex, String direction) throws JSONException {
         // break out the segment into the return and the direction
         VertexQueryArguments queryArguments = new VertexQueryArguments(direction);
-        // if this is a query and the _return is "count" then we don't bother to send back the result array
+        // if this is a query and the _return is "count" then we don't bother to send back the
+        // result array
         boolean countOnly = queryArguments.isCountOnly();
-        // what kind of data the calling client wants back (vertices, edges, count, vertex identifiers)
+        // what kind of data the calling client wants back (vertices, edges, count, vertex
+        // identifiers)
         ReturnType returnType = queryArguments.getReturnType();
         // the query direction (both, out, in)
         Direction queryDirection = queryArguments.getQueryDirection();
@@ -288,7 +310,8 @@ public class RexsterGraphResource {
         }
     }
 
-    private <T extends Element> JSONObject buildJSONResponse(Iterable<T> elements) throws JSONException {
+    private <T extends Element> JSONObject buildJSONResponse(Iterable<T> elements)
+    throws JSONException {
         JSONArray vertexArray = new JSONArray();
         long counter = 0;
         for (Element element : elements) {
@@ -303,32 +326,7 @@ public class RexsterGraphResource {
 
         return response;
     }
-
-    private static void validateInputs(String errorMsg, String... inputs) {
-        for (String input : inputs) {
-            if (StringUtils.isEmpty(input)) {
-                throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST)
-                        .entity(errorMsg)
-                        .type("text/plain")
-                        .build());
-            }
-        }
-    }
-
     private enum ReturnType {VERTICES, EDGES, COUNT, VERTEX_IDS}
-
-    public static final String OUT_E = "outE";
-    public static final String IN_E = "inE";
-    public static final String BOTH_E = "bothE";
-    public static final String OUT = "out";
-    public static final String IN = "in";
-    public static final String BOTH = "both";
-    public static final String OUT_COUNT = "outCount";
-    public static final String IN_COUNT = "inCount";
-    public static final String BOTH_COUNT = "bothCount";
-    public static final String OUT_IDS = "outIds";
-    public static final String IN_IDS = "inIds";
-    public static final String BOTH_IDS = "bothIds";
 
     /**
      * Helper class for query arguments.

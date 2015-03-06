@@ -21,14 +21,15 @@ package org.apache.hadoop.metadata.web.resources;
 import com.google.common.collect.ImmutableList;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-import org.apache.hadoop.metadata.json.TypesSerialization;
-import org.apache.hadoop.metadata.types.AttributeDefinition;
-import org.apache.hadoop.metadata.types.ClassType;
-import org.apache.hadoop.metadata.types.DataTypes;
-import org.apache.hadoop.metadata.types.HierarchicalTypeDefinition;
-import org.apache.hadoop.metadata.types.Multiplicity;
-import org.apache.hadoop.metadata.types.StructTypeDefinition;
-import org.apache.hadoop.metadata.types.TraitType;
+import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
+import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.ClassType;
+import org.apache.hadoop.metadata.typesystem.types.DataTypes;
+import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
+import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.TraitType;
+import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
@@ -88,7 +89,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         }
     }
 
-    @Test (dependsOnMethods = "testSubmit")
+    @Test(dependsOnMethods = "testSubmit")
     public void testGetDefinition() throws Exception {
         for (HierarchicalTypeDefinition typeDefinition : typeDefinitions) {
             System.out.println("typeName = " + typeDefinition.typeName);
@@ -126,7 +127,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
     }
 
-    @Test (dependsOnMethods = "testSubmit")
+    @Test(dependsOnMethods = "testSubmit")
     public void testGetTypeNames() throws Exception {
         WebResource resource = service
                 .path("api/metadata/types/list");
@@ -151,26 +152,26 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         ArrayList<HierarchicalTypeDefinition> typeDefinitions = new ArrayList<>();
 
         HierarchicalTypeDefinition<ClassType> databaseTypeDefinition =
-                createClassTypeDef("database",
+                TypesUtil.createClassTypeDef("database",
                         ImmutableList.<String>of(),
-                        createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        createRequiredAttrDef("description", DataTypes.STRING_TYPE));
+                        TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
         typeDefinitions.add(databaseTypeDefinition);
 
-        HierarchicalTypeDefinition<ClassType> tableTypeDefinition = createClassTypeDef(
+        HierarchicalTypeDefinition<ClassType> tableTypeDefinition = TypesUtil.createClassTypeDef(
                 "table",
                 ImmutableList.<String>of(),
-                createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                createRequiredAttrDef("description", DataTypes.STRING_TYPE),
-                createRequiredAttrDef("type", DataTypes.STRING_TYPE),
+                TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE),
+                TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE),
                 new AttributeDefinition("database",
                         "database", Multiplicity.REQUIRED, false, "database"));
         typeDefinitions.add(tableTypeDefinition);
 
-        HierarchicalTypeDefinition<TraitType> fetlTypeDefinition = createTraitTypeDef(
+        HierarchicalTypeDefinition<TraitType> fetlTypeDefinition = TypesUtil.createTraitTypeDef(
                 "fetl",
                 ImmutableList.<String>of(),
-                createRequiredAttrDef("level", DataTypes.INT_TYPE));
+                TypesUtil.createRequiredAttrDef("level", DataTypes.INT_TYPE));
         typeDefinitions.add(fetlTypeDefinition);
 
         typeSystem.defineTypes(

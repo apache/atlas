@@ -19,16 +19,21 @@
 package org.apache.hadoop.metadata;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.hadoop.metadata.types.AttributeDefinition;
-import org.apache.hadoop.metadata.types.ClassType;
-import org.apache.hadoop.metadata.types.DataTypes;
-import org.apache.hadoop.metadata.types.HierarchicalTypeDefinition;
-import org.apache.hadoop.metadata.types.IDataType;
-import org.apache.hadoop.metadata.types.Multiplicity;
-import org.apache.hadoop.metadata.types.StructTypeDefinition;
-import org.apache.hadoop.metadata.types.TraitType;
-import org.apache.hadoop.metadata.types.TypeSystem;
+import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.typesystem.Referenceable;
+import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.ClassType;
+import org.apache.hadoop.metadata.typesystem.types.DataTypes;
+import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
+import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.TraitType;
+import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.testng.Assert;
+
+import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createClassTypeDef;
+import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
+import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createTraitTypeDef;
 
 /**
  * Test utility class.
@@ -107,23 +112,5 @@ public final class TestUtils {
         Assert.assertNotNull(hrDept2);
 
         return hrDept;
-    }
-
-    public static AttributeDefinition createRequiredAttrDef(String name,
-                                                            IDataType dataType) {
-        return new AttributeDefinition(name, dataType.getName(), Multiplicity.REQUIRED, false,
-                null);
-    }
-
-    @SuppressWarnings("unchecked")
-    public static HierarchicalTypeDefinition<TraitType> createTraitTypeDef(
-            String name, ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
-        return new HierarchicalTypeDefinition(TraitType.class, name, superTypes, attrDefs);
-    }
-
-    @SuppressWarnings("unchecked")
-    public static HierarchicalTypeDefinition<ClassType> createClassTypeDef(
-            String name, ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
-        return new HierarchicalTypeDefinition(ClassType.class, name, superTypes, attrDefs);
     }
 }

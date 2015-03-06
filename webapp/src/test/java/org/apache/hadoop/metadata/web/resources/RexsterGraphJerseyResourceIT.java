@@ -33,7 +33,7 @@ import javax.ws.rs.core.Response;
 @Test
 public class RexsterGraphJerseyResourceIT extends BaseResourceIT {
 
-    @Test (enabled = false)
+    @Test(enabled = false)
     public void testGetVertex() throws Exception {
         // todo: add a vertex before fetching it
 

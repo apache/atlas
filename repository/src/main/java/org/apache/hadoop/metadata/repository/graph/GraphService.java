@@ -18,18 +18,16 @@
 
 package org.apache.hadoop.metadata.repository.graph;
 
-import java.util.Set;
-
-import org.apache.hadoop.metadata.service.Service;
-
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 
+import java.util.Set;
+
 /**
  * A blueprints based graph service.
  */
-public interface GraphService extends Service {
+public interface GraphService {
 
     /**
      * Returns an handle to the graph db.

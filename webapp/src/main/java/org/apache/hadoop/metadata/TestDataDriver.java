@@ -23,17 +23,19 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
-import org.apache.hadoop.metadata.json.Serialization$;
-import org.apache.hadoop.metadata.json.TypesSerialization;
-import org.apache.hadoop.metadata.types.AttributeDefinition;
-import org.apache.hadoop.metadata.types.ClassType;
-import org.apache.hadoop.metadata.types.DataTypes;
-import org.apache.hadoop.metadata.types.HierarchicalTypeDefinition;
-import org.apache.hadoop.metadata.types.IDataType;
-import org.apache.hadoop.metadata.types.Multiplicity;
-import org.apache.hadoop.metadata.types.StructTypeDefinition;
-import org.apache.hadoop.metadata.types.TraitType;
-import org.apache.hadoop.metadata.types.TypeSystem;
+import org.apache.hadoop.metadata.typesystem.json.Serialization$;
+import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
+import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.typesystem.Referenceable;
+import org.apache.hadoop.metadata.typesystem.Struct;
+import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.ClassType;
+import org.apache.hadoop.metadata.typesystem.types.DataTypes;
+import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
+import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.TraitType;
+import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -46,6 +48,10 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.util.Arrays;
 
+import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createClassTypeDef;
+import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
+import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createTraitTypeDef;
+
 public class TestDataDriver {
 
     private static final Logger LOG = LoggerFactory.getLogger(TestDataDriver.class);
@@ -55,6 +61,37 @@ public class TestDataDriver {
 
     protected TypeSystem typeSystem;
     protected WebResource service;
+
+    public static void main(String[] args) throws Exception {
+        TestDataDriver driver = new TestDataDriver();
+        driver.setUp();
+
+        driver.createHiveTypes();
+        driver.submitTypes();
+
+        String[][] data = getTestData();
+        for (String[] row : data) {
+            ITypedReferenceableInstance tableInstance = driver.createHiveTableInstance(
+                    row[0], row[1], row[2], row[3], row[4]);
+            driver.submitEntity(tableInstance);
+        }
+
+        driver.getEntityList();
+    }
+
+    private static String[][] getTestData() {
+        return new String[][]{
+                {"sales_db", "customer_fact", "pii", "serde1", "serde2"},
+                {"sales_db", "sales_dim", "dim", "serde1", "serde2"},
+                {"sales_db", "product_dim", "dim", "serde1", "serde2"},
+                {"sales_db", "time_dim", "dim", "serde1", "serde2"},
+                {"reporting_db", "weekly_sales_summary", "summary", "serde1", "serde2"},
+                {"reporting_db", "daily_sales_summary", "summary", "serde1", "serde2"},
+                {"reporting_db", "monthly_sales_summary", "summary", "serde1", "serde2"},
+                {"reporting_db", "quarterly_sales_summary", "summary", "serde1", "serde2"},
+                {"reporting_db", "yearly_sales_summary", "summary", "serde1", "serde2"},
+        };
+    }
 
     public void setUp() throws Exception {
         typeSystem = TypeSystem.getInstance();
@@ -67,24 +104,6 @@ public class TestDataDriver {
         client.resource(UriBuilder.fromUri(baseUrl).build());
 
         service = client.resource(UriBuilder.fromUri(baseUrl).build());
-    }
-
-    protected AttributeDefinition createRequiredAttrDef(String name,
-                                                        IDataType dataType) {
-        return new AttributeDefinition(name, dataType.getName(),
-                Multiplicity.REQUIRED, false, null);
-    }
-
-    @SuppressWarnings("unchecked")
-    protected HierarchicalTypeDefinition<TraitType> createTraitTypeDef(
-            String name, ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
-        return new HierarchicalTypeDefinition(TraitType.class, name, superTypes, attrDefs);
-    }
-
-    @SuppressWarnings("unchecked")
-    protected HierarchicalTypeDefinition<ClassType> createClassTypeDef(
-            String name, ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
-        return new HierarchicalTypeDefinition(ClassType.class, name, superTypes, attrDefs);
     }
 
     public void submitEntity(ITypedReferenceableInstance tableInstance) throws Exception {
@@ -128,7 +147,7 @@ public class TestDataDriver {
 
         StructTypeDefinition structTypeDefinition =
                 new StructTypeDefinition("serdeType",
-                        new AttributeDefinition[] {
+                        new AttributeDefinition[]{
                                 createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                                 createRequiredAttrDef("serde", DataTypes.STRING_TYPE)
                         });
@@ -159,7 +178,8 @@ public class TestDataDriver {
 
     private void submitTypes() throws Exception {
         String typesAsJSON = TypesSerialization.toJson(typeSystem,
-                Arrays.asList(new String[]{DATABASE_TYPE, TABLE_TYPE, "serdeType", "classification"}));
+                Arrays.asList(
+                        new String[]{DATABASE_TYPE, TABLE_TYPE, "serdeType", "classification"}));
         sumbitType(typesAsJSON, TABLE_TYPE);
     }
 
@@ -210,36 +230,5 @@ public class TestDataDriver {
 
         ClassType tableType = typeSystem.getDataType(ClassType.class, TABLE_TYPE);
         return tableType.convert(tableInstance, Multiplicity.REQUIRED);
-    }
-
-    public static void main(String[] args) throws Exception {
-        TestDataDriver driver = new TestDataDriver();
-        driver.setUp();
-
-        driver.createHiveTypes();
-        driver.submitTypes();
-
-        String[][] data = getTestData();
-        for (String[] row : data) {
-            ITypedReferenceableInstance tableInstance = driver.createHiveTableInstance(
-                    row[0], row[1], row[2], row[3], row[4]);
-            driver.submitEntity(tableInstance);
-        }
-
-        driver.getEntityList();
-    }
-
-    private static String[][] getTestData() {
-        return new String[][]{
-                {"sales_db", "customer_fact", "pii", "serde1", "serde2"},
-                {"sales_db", "sales_dim", "dim", "serde1", "serde2"},
-                {"sales_db", "product_dim", "dim", "serde1", "serde2"},
-                {"sales_db", "time_dim", "dim", "serde1", "serde2"},
-                {"reporting_db", "weekly_sales_summary", "summary", "serde1", "serde2"},
-                {"reporting_db", "daily_sales_summary", "summary", "serde1", "serde2"},
-                {"reporting_db", "monthly_sales_summary", "summary", "serde1", "serde2"},
-                {"reporting_db", "quarterly_sales_summary", "summary", "serde1", "serde2"},
-                {"reporting_db", "yearly_sales_summary", "summary", "serde1", "serde2"},
-        };
     }
 }

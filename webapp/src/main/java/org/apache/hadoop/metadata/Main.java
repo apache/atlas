@@ -69,7 +69,8 @@ public final class Main {
             appPath = cmd.getOptionValue(APP_PATH);
         }
 
-        PropertiesConfiguration configuration = new PropertiesConfiguration("application.properties");
+        PropertiesConfiguration configuration = new PropertiesConfiguration(
+                "application.properties");
         final String enableTLSFlag = configuration.getString("metadata.enableTLS");
         final int appPort = getApplicationPort(cmd, enableTLSFlag);
         final boolean enableTLS = isTLSEnabled(enableTLSFlag, appPort);
@@ -105,7 +106,8 @@ public final class Main {
 
     private static boolean isTLSEnabled(String enableTLSFlag, int appPort) {
         return Boolean.valueOf(StringUtils.isEmpty(enableTLSFlag)
-                ? System.getProperty("metadata.enableTLS", (appPort % 1000) == 443 ? "true" : "false")
+                ? System
+                .getProperty("metadata.enableTLS", (appPort % 1000) == 443 ? "true" : "false")
                 : enableTLSFlag);
     }
 }

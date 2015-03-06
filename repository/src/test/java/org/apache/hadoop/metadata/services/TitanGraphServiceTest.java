@@ -18,8 +18,6 @@
 
 package org.apache.hadoop.metadata.services;
 
-import javax.inject.Inject;
-
 import org.apache.hadoop.metadata.RepositoryMetadataModule;
 import org.apache.hadoop.metadata.repository.graph.TitanGraphService;
 import org.testng.Assert;
@@ -28,18 +26,20 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
+import javax.inject.Inject;
+
 /**
  * Unit test for TitanGraphService.
  */
 @Guice(modules = RepositoryMetadataModule.class)
 public class TitanGraphServiceTest {
 
-	@Inject
+    @Inject
     TitanGraphService titanGraphService;
 
     @BeforeClass
     public void setUp() throws Exception {
-        titanGraphService.start();
+        titanGraphService.initialize();
     }
 
     @AfterClass
@@ -70,17 +70,5 @@ public class TitanGraphServiceTest {
     @Test
     public void testGetTitanGraph() throws Exception {
         Assert.assertNotNull(titanGraphService.getTitanGraph());
-    }
-
-    @Test
-    public void testGetVertexIndexedKeys() throws Exception {
-        Assert.assertNotNull(titanGraphService.getVertexIndexedKeys());
-        Assert.assertTrue(titanGraphService.getVertexIndexedKeys().size() > 0);
-    }
-
-    @Test
-    public void testGetEdgeIndexedKeys() throws Exception {
-        Assert.assertNotNull(titanGraphService.getEdgeIndexedKeys());
-        Assert.assertTrue(titanGraphService.getEdgeIndexedKeys().size() > 0);
     }
 }

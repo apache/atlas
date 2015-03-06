@@ -34,14 +34,6 @@ public class TitanBootstrap {
         graph = TitanFactory.build().set("storage.backend", "inmemory").open();
     }
 
-    public TitanGraph getGraph() {
-        return graph;
-    }
-
-    public Vertex createVertex() {
-        return graph.addVertex(null);
-    }
-
     public static String vertexString(final Vertex vertex) {
         StringBuilder properties = new StringBuilder();
         for (String propertyKey : vertex.getPropertyKeys()) {
@@ -98,5 +90,13 @@ public class TitanBootstrap {
         } finally {
             graph.shutdown();
         }
+    }
+
+    public TitanGraph getGraph() {
+        return graph;
+    }
+
+    public Vertex createVertex() {
+        return graph.addVertex(null);
     }
 }

@@ -18,6 +18,9 @@
 
 package org.apache.hadoop.metadata;
 
+/**
+ * Base Exception class for metadata API.
+ */
 public class MetadataException extends Exception {
 
     public MetadataException() {
@@ -35,7 +38,8 @@ public class MetadataException extends Exception {
         super(cause);
     }
 
-    public MetadataException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    public MetadataException(String message, Throwable cause, boolean enableSuppression,
+                             boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 }

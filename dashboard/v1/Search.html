@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<html ng-app="DgcApp" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title ng-bind="windowTitle">search</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="css/heroic-features.css" rel="stylesheet">
+    <link href="css/sticky-footer-navbar.css" rel="stylesheet">
+
+        <link href="css/style.css" rel="stylesheet">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+	<script src="lib/Angular/angular.min.js" type="text/javascript" ></script>
+	<script src="lib/Angular/angular-route.min.js" type="text/javascript" ></script>
+  <script src="http://angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.6.0.js" type="text/javascript"></script>
+<script type="text/javascript" src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+	<script src="js/app.js" type="text/javascript" ></script>
+	<script src="js/controllers.js" type="text/javascript" ></script>
+
+<style type="text/css">
+  	.node {
+		font: 15px sans-serif;
+		opacity: 1.5;
+                stroke-width: 0.5px;
+            }
+	.node a{
+	text-decoration:none;		
+	}
+            .link {
+                stroke: #23A410;
+                stroke-opacity: 1.6;
+            }
+
+#suit{
+stroke: #23A410;
+background: #23A410;
+}
+path.link {
+  fill: none;
+  stroke: #23A410;
+  stroke-width: 4px;
+  cursor: default;
+}
+
+svg:not(.active):not(.ctrl) path.link {
+  cursor: pointer;
+}
+
+path.link.selected {
+  stroke-dasharray: 10,2;
+}
+
+path.link.dragline {
+  pointer-events: none;
+}
+
+path.link.hidden {
+  stroke-width: 0;
+}
+
+.navbar-bottom{
+background-color:#fafafa;
+border-top:solid 4px #5cbb5a;
+position:absolute;
+width:100%;
+height:60px;
+}
+        </style>
+
+</head>
+<body>
+
+    <!-- Navigation -->
+ <nav class="navbar navbar-default navbar-fixed-top bg-top">
+      <div class="container">
+        <a href="index.html">  <h4 style="color:#333333; padding-left:15px; padding-top:5px"> <img src="img/logo-sm.png"></h4> </a>
+      </div>
+    </nav>
+   
+
+	
+<div class="main" ng-view>
+</div>
+
+
+    <footer class="navbar-bottom">
+      <div class="container">
+      <p class="txt2" align="right">Powered by<img src="img/HWLOGO-g.png"></p>
+      </div>
+    </footer>
+</body>
+
+</html>

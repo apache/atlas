@@ -21,8 +21,18 @@ package org.apache.hadoop.metadata;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.hadoop.metadata.json.Serialization$;
-import org.apache.hadoop.metadata.types.*;
+import org.apache.hadoop.metadata.typesystem.IReferenceableInstance;
+import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.typesystem.ITypedStruct;
+import org.apache.hadoop.metadata.typesystem.Referenceable;
+import org.apache.hadoop.metadata.typesystem.Struct;
+import org.apache.hadoop.metadata.typesystem.types.ClassType;
+import org.apache.hadoop.metadata.typesystem.types.DataTypes;
+import org.apache.hadoop.metadata.typesystem.types.EnumType;
+import org.apache.hadoop.metadata.typesystem.types.EnumValue;
+import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
+import org.apache.hadoop.metadata.typesystem.types.StructType;
+import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,6 +41,10 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
 import java.util.Map;
+
+import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createClassTypeDef;
+import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
+import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
 
 public class EnumTest extends BaseTest {
 
@@ -77,9 +91,10 @@ public class EnumTest extends BaseTest {
         s.set("j", BigInteger.valueOf(1L));
         s.set("k", new BigDecimal(1));
         s.set("l", new Date(1418265358440L));
-        s.set("m", Lists.<Integer>asList(Integer.valueOf(1), new Integer[]{Integer.valueOf(1)}));
-        s.set("n", Lists.<BigDecimal>asList(BigDecimal.valueOf(1.1), new BigDecimal[]{BigDecimal.valueOf(1.1)}));
-        Map<String, Double> hm = Maps.<String, Double>newHashMap();
+        s.set("m", Lists.asList(1, new Integer[]{1}));
+        s.set("n",
+                Lists.asList(BigDecimal.valueOf(1.1), new BigDecimal[]{BigDecimal.valueOf(1.1)}));
+        Map<String, Double> hm = Maps.newHashMap();
         hm.put("a", 1.0);
         hm.put("b", 2.0);
         s.set("o", hm);
@@ -121,7 +136,8 @@ public class EnumTest extends BaseTest {
                 createOptionalAttrDef("l", DataTypes.DATE_TYPE),
                 createOptionalAttrDef("m", ts.defineArrayType(DataTypes.INT_TYPE)),
                 createOptionalAttrDef("n", ts.defineArrayType(DataTypes.BIGDECIMAL_TYPE)),
-                createOptionalAttrDef("o", ts.defineMapType(DataTypes.STRING_TYPE, DataTypes.DOUBLE_TYPE)),
+                createOptionalAttrDef("o",
+                        ts.defineMapType(DataTypes.STRING_TYPE, DataTypes.DOUBLE_TYPE)),
                 createOptionalAttrDef("enum4", ts.getDataType(EnumType.class, "LockLevel"))));
     }
 
@@ -148,7 +164,8 @@ public class EnumTest extends BaseTest {
                 createOptionalAttrDef("l", DataTypes.DATE_TYPE),
                 createOptionalAttrDef("m", ts.defineArrayType(DataTypes.INT_TYPE)),
                 createOptionalAttrDef("n", ts.defineArrayType(DataTypes.BIGDECIMAL_TYPE)),
-                createOptionalAttrDef("o", ts.defineMapType(DataTypes.STRING_TYPE, DataTypes.DOUBLE_TYPE)),
+                createOptionalAttrDef("o",
+                        ts.defineMapType(DataTypes.STRING_TYPE, DataTypes.DOUBLE_TYPE)),
                 createOptionalAttrDef("enum4", ts.getDataType(EnumType.class, "LockLevel")));
 
         Struct s = createStructWithEnum("t3");
@@ -203,84 +220,6 @@ public class EnumTest extends BaseTest {
                 "\tl : \t2014-12-10\n" +
                 "\tm : \t[1, 1]\n" +
                 "\tn : \t[1.1, 1.1]\n" +
-                "\to : \t{b=2.0, a=1.0}\n" +
-                "\tenum4 : \tPARTITION\n" +
-                "}");
-    }
-
-    @Test
-    public void testStorage() throws MetadataException {
-
-        TypeSystem ts = getTypeSystem();
-        defineEnums(ts);
-        ClassType clsType = defineClassTypeWithEnum(ts);
-
-        getRepository().defineTypes(ImmutableList.of((HierarchicalType)clsType));
-
-        IReferenceableInstance r = createInstanceWithEnum("t4");
-        IReferenceableInstance r1 = getRepository().create(r);
-
-        ITypedReferenceableInstance r2 = getRepository().get(r1.getId());
-        Assert.assertEquals(r2.toString(), "{\n" +
-                "\tid : (type: t4, id: 1)\n" +
-                "\ta : \t1\n" +
-                "\tb : \ttrue\n" +
-                "\tc : \t1\n" +
-                "\td : \t0\n" +
-                "\tenum1 : \tGLOBAL\n" +
-                "\te : \t1\n" +
-                "\tf : \t1\n" +
-                "\tg : \t1\n" +
-                "\tenum2 : \tUSER\n" +
-                "\th : \t1.0\n" +
-                "\ti : \t1.0\n" +
-                "\tj : \t1\n" +
-                "\tk : \t1\n" +
-                "\tenum3 : \tCOMMITTED\n" +
-                "\tl : \t2014-12-10\n" +
-                "\tm : \t[1, 1]\n" +
-                "\tn : \t[1.1, 1.1]\n" +
-                "\to : \t{b=2.0, a=1.0}\n" +
-                "\tenum4 : \tPARTITION\n" +
-                "}");
-    }
-
-    @Test
-    public void testJson() throws MetadataException {
-
-        TypeSystem ts = getTypeSystem();
-        defineEnums(ts);
-        ClassType clsType = defineClassTypeWithEnum(ts);
-
-        getRepository().defineTypes(ImmutableList.of((HierarchicalType)clsType));
-
-        IReferenceableInstance r = createInstanceWithEnum("t4");
-        IReferenceableInstance r1 = getRepository().create(r);
-
-        ITypedReferenceableInstance r2 = getRepository().get(r1.getId());
-        String jsonStr = Serialization$.MODULE$.toJson(r2);
-
-        IReferenceableInstance r3 = Serialization$.MODULE$.fromJson(jsonStr);
-        Assert.assertEquals(r3.toString(), "{\n" +
-                "\tid : (type: t4, id: 1)\n" +
-                "\ta : \t1\n" +
-                "\tb : \ttrue\n" +
-                "\tc : \t1\n" +
-                "\td : \t0\n" +
-                "\tenum1 : \tGLOBAL\n" +
-                "\te : \t1\n" +
-                "\tf : \t1\n" +
-                "\tg : \t1\n" +
-                "\tenum2 : \tUSER\n" +
-                "\th : \t1.0\n" +
-                "\ti : \t1.0\n" +
-                "\tj : \t1\n" +
-                "\tk : \t1\n" +
-                "\tenum3 : \tCOMMITTED\n" +
-                "\tl : \t2014-12-11\n" +
-                "\tm : \t[1, 1]\n" +
-                "\tn : \t[1.100000000000000088817841970012523233890533447265625, 1" +
-                ".100000000000000088817841970012523233890533447265625]\n" +
                 "\to : \t{b=2.0, a=1.0}\n" +
                 "\tenum4 : \tPARTITION\n" +
                 "}");

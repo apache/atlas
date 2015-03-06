@@ -19,10 +19,20 @@
 package org.apache.hadoop.metadata;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.hadoop.metadata.typesystem.IStruct;
+import org.apache.hadoop.metadata.typesystem.ITypedStruct;
+import org.apache.hadoop.metadata.typesystem.Struct;
+import org.apache.hadoop.metadata.typesystem.types.DataTypes;
+import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
+import org.apache.hadoop.metadata.typesystem.types.TraitType;
 import org.junit.Assert;
-import org.apache.hadoop.metadata.types.*;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
+import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
+import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createTraitTypeDef;
 
 public class TraitTest extends BaseTest {
 
@@ -40,12 +50,16 @@ public class TraitTest extends BaseTest {
      *   D(d) extends B,C
      *
      * - There are a total of 11 fields in an instance of D
-     * - an attribute that is hidden by a SubType can referenced by prefixing it with the complete Path.
-     *   For e.g. the 'b' attribute in A (that is a superType for B) is hidden the 'b' attribute in B.
+     * - an attribute that is hidden by a SubType can referenced by prefixing it with the
+     * complete Path.
+     *   For e.g. the 'b' attribute in A (that is a superType for B) is hidden the 'b' attribute
+     *   in B.
      *   So it is availabel by the name 'A.B.D.b'
      *
-     * - Another way to set attributes is to cast. Casting a 'D' instance of 'B' makes the 'A.B.D.b' attribute
-     *   available as 'A.B.b'. Casting one more time to an 'A' makes the 'A.B.b' attribute available as 'b'.
+     * - Another way to set attributes is to cast. Casting a 'D' instance of 'B' makes the 'A.B.D
+     * .b' attribute
+     *   available as 'A.B.b'. Casting one more time to an 'A' makes the 'A.B.b' attribute
+     *   available as 'b'.
      */
     @Test
     public void test1() throws MetadataException {

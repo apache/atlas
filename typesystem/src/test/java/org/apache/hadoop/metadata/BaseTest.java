@@ -21,13 +21,21 @@ package org.apache.hadoop.metadata;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.hadoop.metadata.storage.IRepository;
-import org.apache.hadoop.metadata.types.AttributeDefinition;
-import org.apache.hadoop.metadata.types.ClassType;
-import org.apache.hadoop.metadata.types.DataTypes;
-import org.apache.hadoop.metadata.types.StructType;
-import org.apache.hadoop.metadata.storage.memory.MemRepository;
-import org.apache.hadoop.metadata.types.*;
+import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.typesystem.Referenceable;
+import org.apache.hadoop.metadata.typesystem.Struct;
+import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.ClassType;
+import org.apache.hadoop.metadata.typesystem.types.DataTypes;
+import org.apache.hadoop.metadata.typesystem.types.HierarchicalType;
+import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.IDataType;
+import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
+import org.apache.hadoop.metadata.typesystem.types.StructType;
+import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.TraitType;
+import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
+import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
 import org.junit.Before;
 
 import java.math.BigDecimal;
@@ -37,53 +45,12 @@ import java.util.Map;
 
 public abstract class BaseTest {
 
-    protected IRepository repo;
-
     public static final String STRUCT_TYPE_1 = "t1";
     public static final String STRUCT_TYPE_2 = "t2";
 
-    protected final TypeSystem getTypeSystem() {
-        return TypeSystem.getInstance();
-    }
-
-    protected final IRepository getRepository() {
-        return repo;
-    }
-
-    @Before
-    public void setup() throws Exception {
-
-        TypeSystem ts = TypeSystem.getInstance();
-        ts.reset();
-        repo = new MemRepository(ts);
-
-        StructType structType = ts.defineStructType(STRUCT_TYPE_1,
-                true,
-                createRequiredAttrDef("a", DataTypes.INT_TYPE),
-                createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE),
-                createOptionalAttrDef("c", DataTypes.BYTE_TYPE),
-                createOptionalAttrDef("d", DataTypes.SHORT_TYPE),
-                createOptionalAttrDef("e", DataTypes.INT_TYPE),
-                createOptionalAttrDef("f", DataTypes.INT_TYPE),
-                createOptionalAttrDef("g", DataTypes.LONG_TYPE),
-                createOptionalAttrDef("h", DataTypes.FLOAT_TYPE),
-                createOptionalAttrDef("i", DataTypes.DOUBLE_TYPE),
-                createOptionalAttrDef("j", DataTypes.BIGINTEGER_TYPE),
-                createOptionalAttrDef("k", DataTypes.BIGDECIMAL_TYPE),
-                createOptionalAttrDef("l", DataTypes.DATE_TYPE),
-                createOptionalAttrDef("m", ts.defineArrayType(DataTypes.INT_TYPE)),
-                createOptionalAttrDef("n", ts.defineArrayType(DataTypes.BIGDECIMAL_TYPE)),
-                createOptionalAttrDef("o", ts.defineMapType(DataTypes.STRING_TYPE, DataTypes.DOUBLE_TYPE)));
-
-        StructType recursiveStructType = ts.defineStructType(STRUCT_TYPE_2,
-                true,
-                createRequiredAttrDef("a", DataTypes.INT_TYPE),
-                createOptionalAttrDef("s", STRUCT_TYPE_2));
-
-    }
-
     public static Struct createStruct() throws MetadataException {
-        StructType structType = (StructType) TypeSystem.getInstance().getDataType(StructType.class, STRUCT_TYPE_1);
+        StructType structType = (StructType) TypeSystem.getInstance()
+                .getDataType(StructType.class, STRUCT_TYPE_1);
         Struct s = new Struct(structType.getName());
         s.set("a", 1);
         s.set("b", true);
@@ -98,7 +65,8 @@ public abstract class BaseTest {
         s.set("k", new BigDecimal(1));
         s.set("l", new Date(1418265358440L));
         s.set("m", Lists.<Integer>asList(Integer.valueOf(1), new Integer[]{Integer.valueOf(1)}));
-        s.set("n", Lists.<BigDecimal>asList(BigDecimal.valueOf(1.1), new BigDecimal[]{BigDecimal.valueOf(1.1)}));
+        s.set("n", Lists.<BigDecimal>asList(BigDecimal.valueOf(1.1),
+                new BigDecimal[]{BigDecimal.valueOf(1.1)}));
         Map<String, Double> hm = Maps.<String, Double>newHashMap();
         hm.put("a", 1.0);
         hm.put("b", 2.0);
@@ -106,46 +74,46 @@ public abstract class BaseTest {
         return s;
     }
 
-    public static AttributeDefinition createOptionalAttrDef(String name,
-                                                            IDataType dataType
-    ) {
-
-        return new AttributeDefinition(name, dataType.getName(), Multiplicity.OPTIONAL, false, null);
+    protected final TypeSystem getTypeSystem() {
+        return TypeSystem.getInstance();
     }
 
-    public static AttributeDefinition createOptionalAttrDef(String name,
-                                                            String dataType
-    ) {
-        return new AttributeDefinition(name, dataType, Multiplicity.OPTIONAL, false, null);
+    @Before
+    public void setup() throws Exception {
+
+        TypeSystem ts = TypeSystem.getInstance();
+        ts.reset();
+
+        StructType structType = ts.defineStructType(STRUCT_TYPE_1,
+                true,
+                TypesUtil.createRequiredAttrDef("a", DataTypes.INT_TYPE),
+                TypesUtil.createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE),
+                TypesUtil.createOptionalAttrDef("c", DataTypes.BYTE_TYPE),
+                TypesUtil.createOptionalAttrDef("d", DataTypes.SHORT_TYPE),
+                TypesUtil.createOptionalAttrDef("e", DataTypes.INT_TYPE),
+                TypesUtil.createOptionalAttrDef("f", DataTypes.INT_TYPE),
+                TypesUtil.createOptionalAttrDef("g", DataTypes.LONG_TYPE),
+                TypesUtil.createOptionalAttrDef("h", DataTypes.FLOAT_TYPE),
+                TypesUtil.createOptionalAttrDef("i", DataTypes.DOUBLE_TYPE),
+                TypesUtil.createOptionalAttrDef("j", DataTypes.BIGINTEGER_TYPE),
+                TypesUtil.createOptionalAttrDef("k", DataTypes.BIGDECIMAL_TYPE),
+                TypesUtil.createOptionalAttrDef("l", DataTypes.DATE_TYPE),
+                TypesUtil.createOptionalAttrDef("m", ts.defineArrayType(DataTypes.INT_TYPE)),
+                TypesUtil.createOptionalAttrDef("n", ts.defineArrayType(DataTypes.BIGDECIMAL_TYPE)),
+                TypesUtil.createOptionalAttrDef("o",
+                        ts.defineMapType(DataTypes.STRING_TYPE, DataTypes.DOUBLE_TYPE)));
+
+        StructType recursiveStructType = ts.defineStructType(STRUCT_TYPE_2,
+                true,
+                TypesUtil.createRequiredAttrDef("a", DataTypes.INT_TYPE),
+                TypesUtil.createOptionalAttrDef("s", STRUCT_TYPE_2));
+
     }
 
+    protected Map<String, IDataType> defineTraits(HierarchicalTypeDefinition... tDefs)
+    throws MetadataException {
 
-    public static AttributeDefinition createRequiredAttrDef(String name,
-                                                            IDataType dataType
-    ) {
-
-        return new AttributeDefinition(name, dataType.getName(), Multiplicity.REQUIRED, false, null);
-    }
-
-    public static AttributeDefinition createRequiredAttrDef(String name,
-                                                            String dataType
-    ) {
-
-        return new AttributeDefinition(name, dataType, Multiplicity.REQUIRED, false, null);
-    }
-
-    protected Map<String, IDataType> defineTraits(HierarchicalTypeDefinition... tDefs) throws MetadataException {
         return getTypeSystem().defineTraitTypes(tDefs);
-    }
-
-    protected HierarchicalTypeDefinition<TraitType> createTraitTypeDef(String name, ImmutableList<String> superTypes,
-                                                                       AttributeDefinition... attrDefs) {
-        return new HierarchicalTypeDefinition(TraitType.class, name, superTypes, attrDefs);
-    }
-
-    protected HierarchicalTypeDefinition<ClassType> createClassTypeDef(String name, ImmutableList<String> superTypes,
-                                                                       AttributeDefinition... attrDefs) {
-        return new HierarchicalTypeDefinition(ClassType.class, name, superTypes, attrDefs);
     }
 
     /*
@@ -158,32 +126,41 @@ public abstract class BaseTest {
      */
     protected void defineDeptEmployeeTypes(TypeSystem ts) throws MetadataException {
 
-        HierarchicalTypeDefinition<ClassType> deptTypeDef = createClassTypeDef("Department", ImmutableList.<String>of(),
-                createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                new AttributeDefinition("employees",
-                        String.format("array<%s>", "Person"), Multiplicity.COLLECTION, true, "department")
-        );
-        HierarchicalTypeDefinition<ClassType> personTypeDef = createClassTypeDef("Person", ImmutableList.<String>of(),
-                createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+        HierarchicalTypeDefinition<ClassType> deptTypeDef = TypesUtil
+                .createClassTypeDef("Department",
+                        ImmutableList.<String>of(),
+                        TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        new AttributeDefinition("employees",
+                                String.format("array<%s>", "Person"), Multiplicity.COLLECTION, true,
+                                "department")
+                );
+        HierarchicalTypeDefinition<ClassType> personTypeDef = TypesUtil.createClassTypeDef("Person",
+                ImmutableList.<String>of(),
+                TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                 new AttributeDefinition("department",
                         "Department", Multiplicity.REQUIRED, false, "employees"),
                 new AttributeDefinition("manager",
                         "Manager", Multiplicity.OPTIONAL, false, "subordinates")
         );
-        HierarchicalTypeDefinition<ClassType> managerTypeDef = createClassTypeDef("Manager",
-                ImmutableList.<String>of("Person"),
-                new AttributeDefinition("subordinates",
-                        String.format("array<%s>", "Person"), Multiplicity.COLLECTION, false, "manager")
-        );
+        HierarchicalTypeDefinition<ClassType> managerTypeDef =
+                TypesUtil.createClassTypeDef("Manager",
+                        ImmutableList.<String>of("Person"),
+                        new AttributeDefinition("subordinates",
+                                String.format("array<%s>", "Person"),
+                                Multiplicity.COLLECTION, false, "manager")
+                );
 
-        HierarchicalTypeDefinition<TraitType> securityClearanceTypeDef = createTraitTypeDef("SecurityClearance",
-                ImmutableList.<String>of(),
-                createRequiredAttrDef("level", DataTypes.INT_TYPE)
-        );
+        HierarchicalTypeDefinition<TraitType> securityClearanceTypeDef =
+                TypesUtil.createTraitTypeDef(
+                        "SecurityClearance",
+                        ImmutableList.<String>of(),
+                        TypesUtil.createRequiredAttrDef("level", DataTypes.INT_TYPE)
+                );
 
         ts.defineTypes(ImmutableList.<StructTypeDefinition>of(),
                 ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(securityClearanceTypeDef),
-                ImmutableList.<HierarchicalTypeDefinition<ClassType>>of(deptTypeDef, personTypeDef, managerTypeDef));
+                ImmutableList.<HierarchicalTypeDefinition<ClassType>>of(deptTypeDef, personTypeDef,
+                        managerTypeDef));
 
         ImmutableList<HierarchicalType> types = ImmutableList.of(
                 ts.getDataType(HierarchicalType.class, "SecurityClearance"),
@@ -191,9 +168,6 @@ public abstract class BaseTest {
                 ts.getDataType(ClassType.class, "Person"),
                 ts.getDataType(ClassType.class, "Manager")
         );
-
-        repo.defineTypes(types);
-
     }
 
     protected Referenceable createDeptEg1(TypeSystem ts) throws MetadataException {
@@ -220,5 +194,4 @@ public abstract class BaseTest {
 
         return hrDept;
     }
-
 }

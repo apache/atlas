@@ -21,23 +21,24 @@ package org.apache.hadoop.metadata.web.resources;
 import com.google.common.collect.ImmutableList;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-import org.apache.hadoop.metadata.ITypedInstance;
-import org.apache.hadoop.metadata.ITypedReferenceableInstance;
-import org.apache.hadoop.metadata.ITypedStruct;
-import org.apache.hadoop.metadata.Referenceable;
-import org.apache.hadoop.metadata.Struct;
-import org.apache.hadoop.metadata.json.Serialization$;
-import org.apache.hadoop.metadata.json.TypesSerialization;
-import org.apache.hadoop.metadata.types.AttributeDefinition;
-import org.apache.hadoop.metadata.types.AttributeInfo;
-import org.apache.hadoop.metadata.types.ClassType;
-import org.apache.hadoop.metadata.types.DataTypes;
-import org.apache.hadoop.metadata.types.EnumTypeDefinition;
-import org.apache.hadoop.metadata.types.EnumValue;
-import org.apache.hadoop.metadata.types.HierarchicalTypeDefinition;
-import org.apache.hadoop.metadata.types.Multiplicity;
-import org.apache.hadoop.metadata.types.StructTypeDefinition;
-import org.apache.hadoop.metadata.types.TraitType;
+import org.apache.hadoop.metadata.typesystem.json.Serialization$;
+import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
+import org.apache.hadoop.metadata.typesystem.ITypedInstance;
+import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.typesystem.ITypedStruct;
+import org.apache.hadoop.metadata.typesystem.Referenceable;
+import org.apache.hadoop.metadata.typesystem.Struct;
+import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.AttributeInfo;
+import org.apache.hadoop.metadata.typesystem.types.ClassType;
+import org.apache.hadoop.metadata.typesystem.types.DataTypes;
+import org.apache.hadoop.metadata.typesystem.types.EnumTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.EnumValue;
+import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
+import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.TraitType;
+import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
@@ -107,7 +108,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }
     }
 
-    @Test (dependsOnMethods = "testSubmitEntity")
+    @Test(dependsOnMethods = "testSubmitEntity")
     public void testGetEntityDefinition() throws Exception {
         WebResource resource = service
                 .path("api/metadata/entities/definition")
@@ -130,7 +131,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         LOG.debug("tableInstanceAfterGet = " + definition);
 
         // todo - this fails with type error, strange
-        ITypedReferenceableInstance tableInstanceAfterGet = Serialization$.MODULE$.fromJson(definition);
+        ITypedReferenceableInstance tableInstanceAfterGet = Serialization$.MODULE$
+                .fromJson(definition);
         Assert.assertTrue(areEqual(tableInstance, tableInstanceAfterGet));
     }
 
@@ -174,7 +176,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
     }
 
-    @Test (dependsOnMethods = "testSubmitEntity")
+    @Test(dependsOnMethods = "testSubmitEntity")
     public void testGetEntityList() throws Exception {
         ClientResponse clientResponse = service
                 .path("api/metadata/entities/list/")
@@ -202,7 +204,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.GET, ClientResponse.class);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
+        Assert.assertEquals(clientResponse.getStatus(),
+                Response.Status.BAD_REQUEST.getStatusCode());
 
         String responseAsString = clientResponse.getEntity(String.class);
         Assert.assertNotNull(responseAsString);
@@ -231,10 +234,10 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     private void addNewType() throws Exception {
         HierarchicalTypeDefinition<ClassType> testTypeDefinition =
-                createClassTypeDef("test",
+                TypesUtil.createClassTypeDef("test",
                         ImmutableList.<String>of(),
-                        createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        createRequiredAttrDef("description", DataTypes.STRING_TYPE));
+                        TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
         typeSystem.defineClassType(testTypeDefinition);
 
         @SuppressWarnings("unchecked")
@@ -245,16 +248,16 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     private void createHiveTypes() throws Exception {
         HierarchicalTypeDefinition<ClassType> databaseTypeDefinition =
-                createClassTypeDef(DATABASE_TYPE,
+                TypesUtil.createClassTypeDef(DATABASE_TYPE,
                         ImmutableList.<String>of(),
-                        createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        createRequiredAttrDef("description", DataTypes.STRING_TYPE));
+                        TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
 
         StructTypeDefinition structTypeDefinition =
                 new StructTypeDefinition("serdeType",
-                        new AttributeDefinition[] {
-                        createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        createRequiredAttrDef("serde", DataTypes.STRING_TYPE)
+                        new AttributeDefinition[]{
+                                TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                                TypesUtil.createRequiredAttrDef("serde", DataTypes.STRING_TYPE)
                         });
 
         EnumValue values[] = {
@@ -262,15 +265,15 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 new EnumValue("EXTERNAL", 2),
         };
 
-        EnumTypeDefinition enumTypeDefinition =  new EnumTypeDefinition("tableType", values);
+        EnumTypeDefinition enumTypeDefinition = new EnumTypeDefinition("tableType", values);
         typeSystem.defineEnumType(enumTypeDefinition);
 
         HierarchicalTypeDefinition<ClassType> tableTypeDefinition =
-                createClassTypeDef(TABLE_TYPE,
+                TypesUtil.createClassTypeDef(TABLE_TYPE,
                         ImmutableList.<String>of(),
-                        createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        createRequiredAttrDef("description", DataTypes.STRING_TYPE),
-                        createRequiredAttrDef("type", DataTypes.STRING_TYPE),
+                        TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE),
+                        TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE),
                         new AttributeDefinition("tableType", "tableType",
                                 Multiplicity.REQUIRED, false, null),
                         new AttributeDefinition("serde1",
@@ -281,9 +284,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                                 DATABASE_TYPE, Multiplicity.REQUIRED, true, null));
 
         HierarchicalTypeDefinition<TraitType> classificationTypeDefinition =
-                createTraitTypeDef("classification",
+                TypesUtil.createTraitTypeDef("classification",
                         ImmutableList.<String>of(),
-                        createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
+                        TypesUtil.createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
 
         typeSystem.defineTypes(
                 ImmutableList.of(structTypeDefinition),

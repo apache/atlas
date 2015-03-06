@@ -18,14 +18,15 @@
 
 package org.apache.hadoop.metadata.discovery;
 
-import org.apache.hadoop.metadata.ITypedReferenceableInstance;
-import org.apache.hadoop.metadata.Referenceable;
 import org.apache.hadoop.metadata.RepositoryMetadataModule;
 import org.apache.hadoop.metadata.TestUtils;
+import org.apache.hadoop.metadata.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.hadoop.metadata.repository.graph.GraphBackedMetadataRepository;
-import org.apache.hadoop.metadata.types.ClassType;
-import org.apache.hadoop.metadata.types.Multiplicity;
-import org.apache.hadoop.metadata.types.TypeSystem;
+import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.typesystem.Referenceable;
+import org.apache.hadoop.metadata.typesystem.types.ClassType;
+import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
+import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
@@ -89,7 +90,7 @@ public class GraphBackedDiscoveryServiceTest {
         Assert.assertEquals(rows.length(), 1);
     }
 
-    @Test (expectedExceptions = Throwable.class)
+    @Test(expectedExceptions = Throwable.class)
     public void testSearchByDSLBadQuery() throws Exception {
         String dslQuery = "from blah";
 
@@ -108,7 +109,8 @@ public class GraphBackedDiscoveryServiceTest {
         System.out.println("search result = " + r);
 
         // Property Query: list all Person names
-        r = discoveryService.searchByGremlin("g.V.filter{it.typeName == 'Person'}.'Person.name'.toList()");
+        r = discoveryService
+                .searchByGremlin("g.V.filter{it.typeName == 'Person'}.'Person.name'.toList()");
         System.out.println("search result = " + r);
     }
 }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,43 +18,18 @@
 
 package org.apache.hadoop.metadata.web.resources;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.util.Map;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-
-import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.bridge.IBridge;
 import org.apache.hadoop.metadata.bridge.hivelineage.HiveLineageBridge;
-import org.apache.hadoop.metadata.bridge.hivelineage.hook.HiveLineage;
-import org.apache.hadoop.metadata.storage.RepositoryException;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
+import javax.inject.Singleton;
 
 //@Path("bridge/hive")
 @Singleton
 public class HiveLineageResource {
 
-	private final HiveLineageBridge bridge = null;
+    private final HiveLineageBridge bridge = null;
 
 	/*
-	//@Inject
+    //@Inject
 	public HiveLineageResource(HiveLineageBridge bridge) {
 		this.bridge = bridge;
 	}

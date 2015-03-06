@@ -38,6 +38,8 @@ import javax.ws.rs.core.Response;
 @Singleton
 public class AdminResource {
 
+    private Response version;
+
     @GET
     @Path("stack")
     @Produces(MediaType.TEXT_PLAIN)
@@ -60,8 +62,6 @@ public class AdminResource {
         return builder.toString();
     }
 
-    private Response version;
-
     @GET
     @Path("version")
     @Produces(MediaType.APPLICATION_JSON)
@@ -71,7 +71,8 @@ public class AdminResource {
                 JSONObject response = new JSONObject();
                 response.put("Version", "v0.1"); // todo: get version
                 // todo: add hadoop version?
-                // response.put("Hadoop", VersionInfo.getVersion() + "-r" + VersionInfo.getRevision());
+                // response.put("Hadoop", VersionInfo.getVersion() + "-r" + VersionInfo
+                // .getRevision());
                 version = Response.ok(response).build();
             } catch (JSONException e) {
                 throw new WebApplicationException(

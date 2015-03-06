@@ -22,13 +22,13 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
-import org.apache.hadoop.metadata.ITypedReferenceableInstance;
-import org.apache.hadoop.metadata.Referenceable;
 import org.apache.hadoop.metadata.RepositoryMetadataModule;
 import org.apache.hadoop.metadata.TestUtils;
-import org.apache.hadoop.metadata.types.ClassType;
-import org.apache.hadoop.metadata.types.Multiplicity;
-import org.apache.hadoop.metadata.types.TypeSystem;
+import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.typesystem.Referenceable;
+import org.apache.hadoop.metadata.typesystem.types.ClassType;
+import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
+import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
@@ -39,7 +39,7 @@ import java.util.List;
 
 /**
  * GraphBackedMetadataRepository test
- * 
+ *
  * Guice loads the dependencies and injects the necessary objects
  *
  */
@@ -58,10 +58,8 @@ public class GraphBackedMetadataRepositoryTest {
 
     @BeforeClass
     public void setUp() throws Exception {
-    	// start the injected graph service
-        titanGraphService.start();
-        // start the injected repository service
-        repositoryService.start();
+        // start the injected graph service
+        titanGraphService.initialize();
 
         new GraphBackedSearchIndexer(titanGraphService);
 

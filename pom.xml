@@ -16,8 +16,9 @@
   ~ limitations under the License.
   -->
 
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd"
+        xmlns="http://maven.apache.org/POM/4.0.0">
 
     <parent>
         <groupId>org.apache</groupId>
@@ -33,6 +34,10 @@
     <name>metadata-governance</name>
     <packaging>pom</packaging>
     <url>http://www.apache.org/</url>
+
+    <prerequisites>
+        <maven>3.0.4</maven>
+    </prerequisites>
 
     <licenses>
         <license>
@@ -71,6 +76,19 @@
         <hadoop.version>2.5.0</hadoop.version>
         <hive.version>0.14.0</hive.version>
         <falcon.version>0.6.0.2.2.0.0-2041</falcon.version>
+
+        <!-- scala versions -->
+        <scala.version>2.10.4</scala.version>
+        <scala.binary.version>2.10</scala.binary.version>
+        <scala.macros.version>2.0.1</scala.macros.version>
+        <log4j.version>1.2.17</log4j.version>
+        <akka.version>2.3.7</akka.version>
+        <spray.version>1.3.1</spray.version>
+        <guava.version>11.0.2</guava.version>
+        <fastutil.version>6.5.16</fastutil.version>
+
+        <PermGen>64m</PermGen>
+        <MaxPermGen>512m</MaxPermGen>
     </properties>
 
     <profiles>
@@ -98,7 +116,6 @@
                                 <exclude>**/*.json</exclude>
                                 <exclude>**/*.uml</exclude>
                                 <exclude>**/target/**</exclude>
-                                <exclude>**/activemq-data/**</exclude>
                                 <exclude>**/build/**</exclude>
                                 <exclude>**/*.patch</exclude>
                                 <exclude>derby.log</exclude>
@@ -110,6 +127,7 @@
                                 <exclude>**/data.txt</exclude>
                                 <exclude>**/maven-eclipse.xml</exclude>
                                 <exclude>**/.externalToolBuilders/**</exclude>
+                                <exclude>dashboard/**</exclude>
                             </excludes>
                         </configuration>
                         <executions>
@@ -179,12 +197,10 @@
 
     <modules>
         <module>typesystem</module>
-        <module>common</module>
         <module>repository</module>
         <module>webapp</module>
         <module>docs</module>
-        <module>hivetypes</module>
-        <module>falcontypes</module>
+        <module>tools</module>
         <module>metadata-bridge-parent</module>
     </modules>
 
@@ -236,6 +252,11 @@
             <id>repository.jboss.org-public</id>
             <name>JBoss repository</name>
             <url>https://repository.jboss.org/nexus/content/groups/public</url>
+        </repository>
+        <repository>
+            <id>typesafe</id>
+            <name>Typesafe Repository</name>
+            <url>http://repo.typesafe.com/typesafe/releases/</url>
         </repository>
     </repositories>
 
@@ -531,12 +552,6 @@
             <!--  metadata modules -->
             <dependency>
                 <groupId>org.apache.hadoop.metadata</groupId>
-                <artifactId>metadata-common</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.hadoop.metadata</groupId>
                 <artifactId>metadata-typesystem</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -547,6 +562,134 @@
                 <version>${project.version}</version>
             </dependency>
 
+            <!--Scala dependencies-->
+            <dependency>
+                <groupId>org.scala-lang</groupId>
+                <artifactId>scala-compiler</artifactId>
+                <version>${scala.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.scala-lang</groupId>
+                <artifactId>scala-reflect</artifactId>
+                <version>${scala.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.scala-lang</groupId>
+                <artifactId>jline</artifactId>
+                <version>${scala.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.scala-lang</groupId>
+                <artifactId>scala-library</artifactId>
+                <version>${scala.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.scala-lang</groupId>
+                <artifactId>scala-actors</artifactId>
+                <version>${scala.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.scala-lang</groupId>
+                <artifactId>scalap</artifactId>
+                <version>${scala.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.scalatest</groupId>
+                <artifactId>scalatest_${scala.binary.version}</artifactId>
+                <version>2.2.0</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.scalamacros</groupId>
+                <artifactId>quasiquotes_${scala.binary.version}</artifactId>
+                <version>${scala.macros.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.json4s</groupId>
+                <artifactId>json4s-native_2.10</artifactId>
+                <version>3.2.11</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.github.nscala-time</groupId>
+                <artifactId>nscala-time_2.10</artifactId>
+                <version>1.6.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.typesafe</groupId>
+                <artifactId>config</artifactId>
+                <version>1.2.1</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.typesafe.akka</groupId>
+                <artifactId>akka-actor_2.10</artifactId>
+                <version>${akka.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.typesafe.akka</groupId>
+                <artifactId>akka-testkit_2.10</artifactId>
+                <version>${akka.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.typesafe.akka</groupId>
+                <artifactId>akka-slf4j_2.10</artifactId>
+                <version>${akka.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.spray</groupId>
+                <artifactId>spray-routing</artifactId>
+                <version>${spray.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.spray</groupId>
+                <artifactId>spray-can</artifactId>
+                <version>${spray.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.spray</groupId>
+                <artifactId>spray-httpx</artifactId>
+                <version>${spray.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.spray</groupId>
+                <artifactId>spray-testkit</artifactId>
+                <version>${spray.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.google.code.gson</groupId>
+                <artifactId>gson</artifactId>
+                <version>2.3.1</version>
+            </dependency>
+
+            <dependency>
+                <groupId>it.unimi.dsi</groupId>
+                <artifactId>fastutil</artifactId>
+                <version>${fastutil.version}</version>
+            </dependency>
+
             <!--Test dependencies-->
             <dependency>
                 <groupId>org.testng</groupId>
@@ -555,6 +698,7 @@
                 <scope>test</scope>
             </dependency>
 
+            <!-- todo - use testng and delete junit -->
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
@@ -665,8 +809,69 @@
                     <artifactId>maven-dependency-plugin</artifactId>
                     <version>2.8</version>
                 </plugin>
+
+                <plugin>
+                    <groupId>net.alchim31.maven</groupId>
+                    <artifactId>scala-maven-plugin</artifactId>
+                    <version>3.2.0</version>
+                    <executions>
+                        <execution>
+                            <id>scala-compile-first</id>
+                            <phase>process-resources</phase>
+                            <goals>
+                                <goal>compile</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>scala-test-compile-first</id>
+                            <phase>process-test-resources</phase>
+                            <goals>
+                                <goal>testCompile</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>attach-scaladocs</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>doc-jar</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <scalaVersion>${scala.version}</scalaVersion>
+                        <recompileMode>incremental</recompileMode>
+                        <useZincServer>true</useZincServer>
+                        <args>
+                            <arg>-unchecked</arg>
+                            <arg>-deprecation</arg>
+                            <arg>-feature</arg>
+                        </args>
+                        <jvmArgs>
+                            <jvmArg>-Xmx512m</jvmArg>
+                            <jvmArg>-XX:MaxPermSize=128m</jvmArg>
+                        </jvmArgs>
+                        <!--
+                                                <javacArgs>
+                                                    <javacArg>-source</javacArg>
+                                                    <javacArg>${java.version}</javacArg>
+                                                    <javacArg>-target</javacArg>
+                                                    <javacArg>${java.version}</javacArg>
+                                                </javacArgs>
+                        -->
+                        <!-- The following plugin is required to use quasiquotes in Scala 2.10 and is used
+                             by Spark SQL for code generation. -->
+                        <!--<compilerPlugins>
+                            <compilerPlugin>
+                                <groupId>org.scalamacros</groupId>
+                                <artifactId>paradise_${scala.version}</artifactId>
+                                <version>${scala.macros.version}</version>
+                            </compilerPlugin>
+                        </compilerPlugins>-->
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -709,7 +914,8 @@
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <forkMode>always</forkMode>
                     <argLine>-Djava.security.krb5.realm= -Djava.security.krb5.kdc=
-                        -Dhadoop.tmp.dir=${project.build.directory}/tmp-hadoop-${user.name}</argLine>
+                        -Dhadoop.tmp.dir=${project.build.directory}/tmp-hadoop-${user.name}
+                    </argLine>
                 </configuration>
                 <executions>
                     <execution>
@@ -740,6 +946,11 @@
                         <append>true</append>
                     </requestLog>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

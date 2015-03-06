@@ -1,18 +1,26 @@
 ---+ Data Governance and Metadata platform for Hadoop
 
 
----++ Why?
+---++ Overview
 
-   *
+
+---++ Use Cases
+
+   * Enables modeling
 
    * Captures Lineage information for data sets and processes
 
----+ Getting Started
+---++ Getting Started
+
+
+---++ Contents
+   * [[Architecture][High Level Architecture]]
+   * [[TypeSystem][Type System]]
+   * [[Repository][Metadata Repository]]
+   * [[Discovery][Metadata Discovery]]
 
 
 #LicenseInfo
 ---+ Licensing Information
 
-Metadata (DGC) is distributed under [[http://www.apache.org/licenses/LICENSE-2.0][Apache License 2.0]].
-
-
+Metadata (DGI) is distributed under [[http://www.apache.org/licenses/LICENSE-2.0][Apache License 2.0]].

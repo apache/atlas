@@ -19,18 +19,18 @@
 package org.apache.hadoop.metadata.services;
 
 import com.google.common.base.Preconditions;
-import org.apache.hadoop.metadata.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.TypesDef;
-import org.apache.hadoop.metadata.json.Serialization$;
-import org.apache.hadoop.metadata.json.TypesSerialization;
-import org.apache.hadoop.metadata.listener.TypedInstanceChangeListener;
+import org.apache.hadoop.metadata.typesystem.TypesDef;
+import org.apache.hadoop.metadata.discovery.SearchIndexer;
+import org.apache.hadoop.metadata.typesystem.json.Serialization$;
+import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
+import org.apache.hadoop.metadata.listener.EntityChangeListener;
 import org.apache.hadoop.metadata.listener.TypesChangeListener;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
-import org.apache.hadoop.metadata.repository.SearchIndexer;
-import org.apache.hadoop.metadata.storage.RepositoryException;
-import org.apache.hadoop.metadata.types.IDataType;
-import org.apache.hadoop.metadata.types.TypeSystem;
+import org.apache.hadoop.metadata.repository.RepositoryException;
+import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.typesystem.types.IDataType;
+import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.json.simple.parser.ParseException;
@@ -38,7 +38,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.io.IOException;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +49,7 @@ public class DefaultMetadataService implements MetadataService {
             LoggerFactory.getLogger(DefaultMetadataService.class);
 
     private final Set<TypesChangeListener> typesChangeListeners = new LinkedHashSet<>();
-    private final Set<TypedInstanceChangeListener> typedInstanceChangeListeners
+    private final Set<EntityChangeListener> entityChangeListeners
             = new LinkedHashSet<>();
 
     private final TypeSystem typeSystem;
@@ -59,8 +58,8 @@ public class DefaultMetadataService implements MetadataService {
     @Inject
     DefaultMetadataService(MetadataRepository repository,
                            SearchIndexer searchIndexer) throws MetadataException {
-    	this.typeSystem = TypeSystem.getInstance();
-    	this.repository = repository;
+        this.typeSystem = TypeSystem.getInstance();
+        this.repository = repository;
 
         registerListener(searchIndexer);
     }
@@ -233,46 +232,16 @@ public class DefaultMetadataService implements MetadataService {
 
     private void onAdd(String typeName,
                        ITypedReferenceableInstance typedInstance) throws MetadataException {
-        for (TypedInstanceChangeListener listener : typedInstanceChangeListeners) {
+        for (EntityChangeListener listener : entityChangeListeners) {
             listener.onAdd(typeName, typedInstance);
         }
     }
 
-    public void registerListener(TypedInstanceChangeListener listener) {
-        typedInstanceChangeListeners.add(listener);
+    public void registerListener(EntityChangeListener listener) {
+        entityChangeListeners.add(listener);
     }
 
-    public void unregisterListener(TypedInstanceChangeListener listener) {
-        typedInstanceChangeListeners.remove(listener);
-    }
-
-    /**
-     * Starts the service. This method blocks until the service has completely started.
-     *
-     * @throws Exception
-     */
-    @Override
-    public void start() throws Exception {
-    }
-
-    /**
-     * Stops the service. This method blocks until the service has completely shut down.
-     */
-    @Override
-    public void stop() {
-        // do nothing
-    }
-
-    /**
-     * A version of stop() that is designed to be usable in Java7 closure
-     * clauses.
-     * Implementation classes MUST relay this directly to {@link #stop()}
-     *
-     * @throws java.io.IOException never
-     * @throws RuntimeException    on any failure during the stop operation
-     */
-    @Override
-    public void close() throws IOException {
-        stop();
+    public void unregisterListener(EntityChangeListener listener) {
+        entityChangeListeners.remove(listener);
     }
 }

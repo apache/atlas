@@ -24,9 +24,9 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
-import org.apache.hadoop.metadata.ITypedInstance;
-import org.apache.hadoop.metadata.ITypedReferenceableInstance;
-import org.apache.hadoop.metadata.storage.Id;
+import org.apache.hadoop.metadata.typesystem.ITypedInstance;
+import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.typesystem.persistence.Id;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

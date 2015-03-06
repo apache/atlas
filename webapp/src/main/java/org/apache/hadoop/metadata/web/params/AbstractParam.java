@@ -35,7 +35,8 @@ public abstract class AbstractParam<T> {
      *
      * @param input an input value from a client request
      */
-    @SuppressWarnings({"AbstractMethodCallInConstructor", "OverriddenMethodCallDuringObjectConstruction"})
+    @SuppressWarnings({"AbstractMethodCallInConstructor",
+            "OverriddenMethodCallDuringObjectConstruction"})
     protected AbstractParam(String input) {
         try {
             this.value = parse(input);
@@ -84,7 +85,8 @@ public abstract class AbstractParam<T> {
     }
 
     /**
-     * Given a string representation which was unable to be parsed, produce a {@link javax.ws.rs.core.Response.Status} for the
+     * Given a string representation which was unable to be parsed, produce a {@link javax.ws.rs
+     * .core.Response.Status} for the
      * {@link Response} to be sent to the client.
      *
      * @return the HTTP {@link javax.ws.rs.core.Response.Status} of the error message
@@ -114,8 +116,12 @@ public abstract class AbstractParam<T> {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) { return true; }
-        if ((obj == null) || (getClass() != obj.getClass())) { return false; }
+        if (this == obj) {
+            return true;
+        }
+        if ((obj == null) || (getClass() != obj.getClass())) {
+            return false;
+        }
         final AbstractParam<?> that = (AbstractParam<?>) obj;
         return value.equals(that.value);
     }

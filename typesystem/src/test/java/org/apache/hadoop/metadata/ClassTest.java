@@ -18,8 +18,11 @@
 
 package org.apache.hadoop.metadata;
 
-import org.apache.hadoop.metadata.types.ClassType;
-import org.apache.hadoop.metadata.types.*;
+import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.typesystem.Referenceable;
+import org.apache.hadoop.metadata.typesystem.types.ClassType;
+import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
+import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

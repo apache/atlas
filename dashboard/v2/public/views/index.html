@@ -1,0 +1,39 @@
+<!doctype html>
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" itemscope="itemscope" itemtype="http://schema.org/Product">
+{% include 'includes/head.html' %}
+
+<body>
+<header class="navbar navbar-static-top navbar-top" data-role="navigation">
+    <div class="container" data-ng-include="'/modules/home/views/header.html'"></div>
+</header>
+<div class="content">
+    <div data-ng-include="'/modules/notification/views/notifications.html'"></div>
+    <div data-ui-view></div>
+</div>
+<footer class="footer navbar-bottom">
+    <div class="container">
+        <p align="right">Powered by<img src="modules/home/img/logo-green.png"></p>
+    </div>
+</footer>
+{% include 'includes/foot.html' %}
+</body>
+
+</html>

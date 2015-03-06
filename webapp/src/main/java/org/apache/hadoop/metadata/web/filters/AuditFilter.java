@@ -18,7 +18,7 @@
 
 package org.apache.hadoop.metadata.web.filters;
 
-import org.apache.hadoop.metadata.util.DateTimeHelper;
+import org.apache.hadoop.metadata.web.util.DateTimeHelper;
 import org.apache.hadoop.metadata.web.util.Servlets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

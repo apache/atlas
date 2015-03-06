@@ -41,6 +41,14 @@ public class EmbeddedServer {
         server.setHandler(application);
     }
 
+    public static EmbeddedServer newServer(int port, String path, boolean secure) {
+        if (secure) {
+            return new SecureEmbeddedServer(port, path);
+        } else {
+            return new EmbeddedServer(port, path);
+        }
+    }
+
     protected Connector getConnector(int port) {
         Connector connector = new SocketConnector();
         connector.setPort(port);
@@ -56,7 +64,8 @@ public class EmbeddedServer {
 
     private Integer getBufferSize() {
         try {
-            PropertiesConfiguration configuration = new PropertiesConfiguration("application.properties");
+            PropertiesConfiguration configuration = new PropertiesConfiguration(
+                    "application.properties");
             return configuration.getInt("metadata.jetty.request.buffer.size", DEFAULT_BUFFER_SIZE);
         } catch (ConfigurationException e) {
             // do nothing
@@ -72,13 +81,5 @@ public class EmbeddedServer {
 
     public void stop() throws Exception {
         server.stop();
-    }
-
-    public static EmbeddedServer newServer(int port, String path, boolean secure) {
-        if (secure) {
-            return new SecureEmbeddedServer(port, path);
-        } else {
-            return new EmbeddedServer(port, path);
-        }
     }
 }
