@@ -73,7 +73,7 @@ public class MetadataDiscoveryResource {
     }
 
     /**
-     * Search using query DSL.
+     * Search using a given query.
      *
      * @param query search query in raw gremlin or DSL format falling back to full text.
      * @return JSON representing the type and results.
@@ -114,6 +114,12 @@ public class MetadataDiscoveryResource {
         }
     }
 
+    /**
+     * Search using query DSL format.
+     *
+     * @param dslQuery search query in DSL format.
+     * @return JSON representing the type and results.
+     */
     @GET
     @Path("search/dsl")
     @Produces(MediaType.APPLICATION_JSON)
@@ -141,6 +147,12 @@ public class MetadataDiscoveryResource {
         }
     }
 
+    /**
+     * Search using raw gremlin query format.
+     *
+     * @param gremlinQuery search query in raw gremlin format.
+     * @return JSON representing the type and results.
+     */
     @GET
     @Path("search/gremlin")
     @Produces(MediaType.APPLICATION_JSON)
@@ -183,7 +195,6 @@ public class MetadataDiscoveryResource {
      * edgesToFollow = comma-separated list of Labels to follow.  Sample query:
      * http://host/api/metadata/discovery/search/relationships/1?depth=3&edgesToFollow=Likes,Has
      */
-
     @GET
     @Path("/search/relationships/{guid}")
     @Produces({MediaType.APPLICATION_JSON})
@@ -225,8 +236,9 @@ public class MetadataDiscoveryResource {
      *
      * Sample query:
      * http://host/api/metadata/discovery/search/fulltext?depth=1&property=Name&text=Zack
+     *
+     * Comma separated list of types as qeury.
      */
-    // Comma separated list of types as qeury.
     @GET
     @Path("/search/fulltext")
     @Produces({MediaType.APPLICATION_JSON})
@@ -272,7 +284,6 @@ public class MetadataDiscoveryResource {
      *
      * No parameters taken.
      */
-
     @GET
     @Path("/getIndexedFields")
     @Produces({MediaType.APPLICATION_JSON})

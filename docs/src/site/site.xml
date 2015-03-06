@@ -53,14 +53,12 @@
     <body>
         <head>
             <script type="text/javascript">
-                $( document ).ready( function() { $( '.carousel' ).carousel( { interval: 3500 } ) }
-                );
+                $( document ).ready( function() { $( '.carousel' ).carousel( { interval: 3500 } ) } );
             </script>
         </head>
 
         <breadcrumbs position="left">
-            <item name="MetadataGovernance" title="Apache Metadata and Governance"
-                  href="index.html"/>
+            <item name="MetadataGovernance" title="Apache Metadata and Governance" href="index.html"/>
         </breadcrumbs>
 
         <footer>

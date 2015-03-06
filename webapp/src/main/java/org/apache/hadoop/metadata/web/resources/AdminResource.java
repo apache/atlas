@@ -40,6 +40,11 @@ public class AdminResource {
 
     private Response version;
 
+    /**
+     * Fetches the thread stack dump for this application.
+     *
+     * @return json representing the thread stack dump.
+     */
     @GET
     @Path("stack")
     @Produces(MediaType.TEXT_PLAIN)
@@ -62,6 +67,11 @@ public class AdminResource {
         return builder.toString();
     }
 
+    /**
+     * Fetches the version for this application.
+     *
+     * @return json representing the version.
+     */
     @GET
     @Path("version")
     @Produces(MediaType.APPLICATION_JSON)

@@ -10,15 +10,21 @@
 
    * Captures Lineage information for data sets and processes
 
+
 ---++ Getting Started
 
 
----++ Contents
+---++ Documentation
+
    * [[Architecture][High Level Architecture]]
    * [[TypeSystem][Type System]]
    * [[Repository][Metadata Repository]]
    * [[Discovery][Metadata Discovery]]
 
+
+---++ API Documentation
+
+   * <a href="api/rest.html">REST API Documentation</a>
 
 #LicenseInfo
 ---+ Licensing Information

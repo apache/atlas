@@ -47,6 +47,8 @@ import java.util.List;
  *
  * A type is the description of any representable item;
  * e.g. a Hive table
+ *
+ * You could represent any meta model representing any domain using these types.
  */
 @Path("types")
 @Singleton
@@ -61,6 +63,12 @@ public class TypesResource {
         this.metadataService = metadataService;
     }
 
+    /**
+     * Submits a type definition corresponding to a given type representing a meta model of a
+     * domain. Could represent things like Hive Database, Hive Table, etc.
+     *
+     * @param typeName name of a type, should be unique.
+     */
     @POST
     @Path("submit/{typeName}")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -86,6 +94,11 @@ public class TypesResource {
         }
     }
 
+    /**
+     * Fetch the complete definition of a given type name which is unique.
+     *
+     * @param typeName name of a type which is unique.
+     */
     @GET
     @Path("definition/{typeName}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -111,6 +124,9 @@ public class TypesResource {
         }
     }
 
+    /**
+     * Gets the list of types registed in the type system.
+     */
     @GET
     @Path("list")
     @Produces(MediaType.APPLICATION_JSON)

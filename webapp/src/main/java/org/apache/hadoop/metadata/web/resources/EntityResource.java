@@ -70,6 +70,11 @@ public class EntityResource {
         this.metadataService = metadataService;
     }
 
+    /**
+     * Submits an entity definition (instance) corresponding to a given type.
+     *
+     * @param typeName name of a type which is unique.
+     */
     @POST
     @Path("submit/{typeName}")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -93,6 +98,11 @@ public class EntityResource {
         }
     }
 
+    /**
+     * Fetch the complete definition of an entity given its GUID.
+     *
+     * @param guid GUID for the entity
+     */
     @GET
     @Path("definition/{guid}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -123,6 +133,13 @@ public class EntityResource {
         }
     }
 
+    /**
+     * Gets the list of entities for a given entity type.
+     *
+     * @param entityType     name of a type which is unique
+     * @param offset         starting offset for pagination
+     * @param resultsPerPage number of results for pagination
+     */
     @GET
     @Path("list/{entityType}")
     @Produces(MediaType.APPLICATION_JSON)

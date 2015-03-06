@@ -851,12 +851,12 @@
                             <jvmArg>-XX:MaxPermSize=128m</jvmArg>
                         </jvmArgs>
                         <!--
-                                                <javacArgs>
-                                                    <javacArg>-source</javacArg>
-                                                    <javacArg>${java.version}</javacArg>
-                                                    <javacArg>-target</javacArg>
-                                                    <javacArg>${java.version}</javacArg>
-                                                </javacArgs>
+                        <javacArgs>
+                            <javacArg>-source</javacArg>
+                            <javacArg>${java.version}</javacArg>
+                            <javacArg>-target</javacArg>
+                            <javacArg>${java.version}</javacArg>
+                        </javacArgs>
                         -->
                         <!-- The following plugin is required to use quasiquotes in Scala 2.10 and is used
                              by Spark SQL for code generation. -->
@@ -868,6 +868,12 @@
                             </compilerPlugin>
                         </compilerPlugins>-->
                     </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.enunciate</groupId>
+                    <artifactId>maven-enunciate-plugin</artifactId>
+                    <version>1.29</version>
                 </plugin>
             </plugins>
         </pluginManagement>
