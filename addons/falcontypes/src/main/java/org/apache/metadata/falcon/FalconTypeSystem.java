@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * <p/>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p/>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,17 +20,16 @@ package org.apache.metadata.falcon;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
-import org.apache.hadoop.metadata.typesystem.types.ClassType;
-import org.apache.hadoop.metadata.typesystem.types.DataTypes;
-import org.apache.hadoop.metadata.typesystem.types.EnumTypeDefinition;
-import org.apache.hadoop.metadata.typesystem.types.EnumValue;
-import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
-import org.apache.hadoop.metadata.typesystem.types.IDataType;
-import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
-import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
-import org.apache.hadoop.metadata.typesystem.types.TraitType;
-import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
+import org.apache.hadoop.metadata.types.AttributeDefinition;
+import org.apache.hadoop.metadata.types.ClassType;
+import org.apache.hadoop.metadata.types.DataTypes;
+import org.apache.hadoop.metadata.types.EnumTypeDefinition;
+import org.apache.hadoop.metadata.types.EnumValue;
+import org.apache.hadoop.metadata.types.HierarchicalTypeDefinition;
+import org.apache.hadoop.metadata.types.Multiplicity;
+import org.apache.hadoop.metadata.types.StructTypeDefinition;
+import org.apache.hadoop.metadata.types.TraitType;
+import org.apache.hadoop.metadata.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,13 +53,21 @@ public class FalconTypeSystem {
 
     public static FalconTypeSystem getInstance() throws MetadataException {
         if (INSTANCE == null) {
-            synchronized (LOG) {
+            synchronized(LOG) {
                 if (INSTANCE == null) {
                     INSTANCE = new FalconTypeSystem();
                 }
             }
         }
         return INSTANCE;
+    }
+
+    private FalconTypeSystem() throws MetadataException {
+        HierarchicalTypeDefinition<ClassType> cluster = defineCluster();
+        //TODO define feed and process
+
+        TYPE_SYSTEM.defineTypes(ImmutableList.copyOf(structTypeDefinitions), ImmutableList.copyOf(traitTypeDefinitions),
+                ImmutableList.of(cluster));
     }
 
     private HierarchicalTypeDefinition<ClassType> defineCluster() throws MetadataException {
@@ -78,8 +85,7 @@ public class FalconTypeSystem {
                 new AttributeDefinition("properties", TYPE_SYSTEM.defineMapType(DataTypes.STRING_TYPE, DataTypes.STRING_TYPE).getName(), Multiplicity.OPTIONAL, false, null),
         };
         HierarchicalTypeDefinition<ClassType> cluster =
-                new HierarchicalTypeDefinition<>(ClassType.class, DefinedTypes.CLUSTER.name(),
-                        ImmutableList.<String>of(), attributeDefinitions);
+                new HierarchicalTypeDefinition<>(ClassType.class, DefinedTypes.CLUSTER.name(), ImmutableList.<String>of(), attributeDefinitions);
         LOG.debug("Created definition for " + DefinedTypes.CLUSTER.name());
         return cluster;
     }
@@ -108,10 +114,8 @@ public class FalconTypeSystem {
         TYPE_SYSTEM.defineEnumType(locationType);
 
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition("type", DefinedTypes.CLUSTER_LOCATION_TYPE.name(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("path", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("type", DefinedTypes.CLUSTER_LOCATION_TYPE.name(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("path", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
         };
         LOG.debug("Created definition for " + DefinedTypes.CLUSTER_LOCATION.name());
         StructTypeDefinition location = new StructTypeDefinition(DefinedTypes.CLUSTER_LOCATION.name(), attributeDefinitions);
@@ -134,12 +138,9 @@ public class FalconTypeSystem {
         TYPE_SYSTEM.defineEnumType(interfaceType);
 
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition("type", DefinedTypes.CLUSTER_INTERFACE_TYPE.name(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("endpoint", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("version", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("type", DefinedTypes.CLUSTER_INTERFACE_TYPE.name(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("endpoint", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("version", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
         };
         LOG.debug("Created definition for " + DefinedTypes.CLUSTER_INTERFACE.name());
         StructTypeDefinition interfaceEntity = new StructTypeDefinition(DefinedTypes.CLUSTER_INTERFACE.name(), attributeDefinitions);
