@@ -20,22 +20,42 @@ package org.apache.hadoop.metadata.repository.graph;
 
 public final class Constants {
 
+    /**
+     * Globally Unique identifier property key.
+     */
     public static final String GUID_PROPERTY_KEY = "guid";
     public static final String GUID_INDEX = "guid_index";
-    public static final String ENTITY_TYPE_PROPERTY_KEY = "type";
+
+    /**
+     * Entity type name property key.
+     */
+    public static final String ENTITY_TYPE_PROPERTY_KEY = "typeName";
     public static final String ENTITY_TYPE_INDEX = "type_index";
+
+    /**
+     * Data type property key.
+     */
+    // public static final String DATA_TYPE_PROPERTY_KEY = "dataType";
+
+    /**
+     * Trait names property key.
+     */
+    public static final String TRAIT_NAMES_PROPERTY_KEY = "traitNames";
+
     public static final String VERSION_PROPERTY_KEY = "version";
     public static final String TIMESTAMP_PROPERTY_KEY = "timestamp";
-    public static final String TRAIT_NAMES_PROPERTY_KEY = "traits";
+
     /**
      * search backing index name.
      */
     public static final String BACKING_INDEX = "search";
     public static final String INDEX_NAME = "metadata";
+
     /**
      * search backing index name for vertex keys.
      */
     public static final String VERTEX_INDEX = "vertex_index";
+
     /**
      * search backing index name for edge labels.
      */

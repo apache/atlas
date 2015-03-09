@@ -21,13 +21,13 @@ package org.apache.hadoop.metadata.web.resources;
 import com.google.common.collect.ImmutableList;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-import org.apache.hadoop.metadata.typesystem.json.Serialization$;
-import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
 import org.apache.hadoop.metadata.typesystem.ITypedInstance;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.ITypedStruct;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.Struct;
+import org.apache.hadoop.metadata.typesystem.json.Serialization$;
+import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
 import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.AttributeInfo;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
@@ -46,11 +46,12 @@ import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-import scala.actors.threadpool.Arrays;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -131,17 +132,17 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         LOG.debug("tableInstanceAfterGet = " + definition);
 
         // todo - this fails with type error, strange
-        ITypedReferenceableInstance tableInstanceAfterGet = Serialization$.MODULE$
-                .fromJson(definition);
+        ITypedReferenceableInstance tableInstanceAfterGet =
+                Serialization$.MODULE$.fromJson(definition);
         Assert.assertTrue(areEqual(tableInstance, tableInstanceAfterGet));
     }
 
     private boolean areEqual(ITypedInstance actual,
                              ITypedInstance expected) throws Exception {
-/*
+        /*
         Assert.assertEquals(Serialization$.MODULE$.toJson(actual),
                 Serialization$.MODULE$.toJson(expected));
-*/
+        */
 
         for (AttributeInfo attributeInfo : actual.fieldMapping().fields.values()) {
             final DataTypes.TypeCategory typeCategory = attributeInfo.dataType().getTypeCategory();
@@ -283,14 +284,27 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                         new AttributeDefinition("database",
                                 DATABASE_TYPE, Multiplicity.REQUIRED, true, null));
 
-        HierarchicalTypeDefinition<TraitType> classificationTypeDefinition =
+        HierarchicalTypeDefinition<TraitType> classificationTraitDefinition =
                 TypesUtil.createTraitTypeDef("classification",
                         ImmutableList.<String>of(),
                         TypesUtil.createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
+        HierarchicalTypeDefinition<TraitType> piiTrait =
+                TypesUtil.createTraitTypeDef("pii", ImmutableList.<String>of());
+        HierarchicalTypeDefinition<TraitType> phiTrait =
+                TypesUtil.createTraitTypeDef("phi", ImmutableList.<String>of());
+        HierarchicalTypeDefinition<TraitType> pciTrait =
+                TypesUtil.createTraitTypeDef("pci", ImmutableList.<String>of());
+        HierarchicalTypeDefinition<TraitType> soxTrait =
+                TypesUtil.createTraitTypeDef("sox", ImmutableList.<String>of());
+        HierarchicalTypeDefinition<TraitType> secTrait =
+                TypesUtil.createTraitTypeDef("sec", ImmutableList.<String>of());
+        HierarchicalTypeDefinition<TraitType> financeTrait =
+                TypesUtil.createTraitTypeDef("finance", ImmutableList.<String>of());
 
         typeSystem.defineTypes(
                 ImmutableList.of(structTypeDefinition),
-                ImmutableList.of(classificationTypeDefinition),
+                ImmutableList.of(classificationTraitDefinition, piiTrait, phiTrait, pciTrait,
+                        soxTrait, secTrait, financeTrait),
                 ImmutableList.of(databaseTypeDefinition, tableTypeDefinition));
     }
 
@@ -302,7 +316,14 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                         DATABASE_TYPE,
                         TABLE_TYPE,
                         "serdeType",
-                        "classification"}));
+                        "classification",
+                        "pii",
+                        "phi",
+                        "pci",
+                        "sox",
+                        "sec",
+                        "finance",
+                }));
         sumbitType(typesAsJSON, TABLE_TYPE);
     }
 
@@ -311,7 +332,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         databaseInstance.set("name", DATABASE_NAME);
         databaseInstance.set("description", "foo database");
 
-        Referenceable tableInstance = new Referenceable(TABLE_TYPE, "classification");
+        Referenceable tableInstance = new Referenceable(TABLE_TYPE,
+                "classification", "pii", "phi", "pci", "sox", "sec", "finance");
         tableInstance.set("name", TABLE_NAME);
         tableInstance.set("description", "bar table");
         tableInstance.set("type", "managed");
@@ -330,6 +352,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         serde2Instance.set("name", "serde2");
         serde2Instance.set("serde", "serde2");
         tableInstance.set("serde2", serde2Instance);
+
+        List<String> traits = tableInstance.getTraits();
+        Assert.assertEquals(traits.size(), 7);
 
         ClassType tableType = typeSystem.getDataType(ClassType.class, TABLE_TYPE);
         return tableType.convert(tableInstance, Multiplicity.REQUIRED);

@@ -18,10 +18,19 @@
 
 package org.apache.hadoop.metadata.discovery;
 
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Vertex;
+import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.metadata.RepositoryMetadataModule;
 import org.apache.hadoop.metadata.TestUtils;
 import org.apache.hadoop.metadata.discovery.graph.GraphBackedDiscoveryService;
+import org.apache.hadoop.metadata.query.HiveTitanSample;
+import org.apache.hadoop.metadata.query.QueryTestsUtils;
 import org.apache.hadoop.metadata.repository.graph.GraphBackedMetadataRepository;
+import org.apache.hadoop.metadata.repository.graph.GraphHelper;
+import org.apache.hadoop.metadata.repository.graph.GraphService;
+import org.apache.hadoop.metadata.repository.graph.TitanGraphService;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
@@ -32,13 +41,22 @@ import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+import javax.script.Bindings;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
+import java.io.File;
 
 @Guice(modules = RepositoryMetadataModule.class)
 public class GraphBackedDiscoveryServiceTest {
+
+    @Inject
+    private GraphService graphService;
 
     @Inject
     private GraphBackedMetadataRepository repositoryService;
@@ -51,6 +69,9 @@ public class GraphBackedDiscoveryServiceTest {
         TypeSystem typeSystem = TypeSystem.getInstance();
         typeSystem.reset();
 
+        QueryTestsUtils.setupTypes();
+        setupSampleData();
+
         TestUtils.defineDeptEmployeeTypes(typeSystem);
 
         Referenceable hrDept = TestUtils.createDeptEg1(typeSystem);
@@ -58,6 +79,34 @@ public class GraphBackedDiscoveryServiceTest {
         ITypedReferenceableInstance hrDept2 = deptType.convert(hrDept, Multiplicity.REQUIRED);
 
         repositoryService.createEntity(hrDept2, "Department");
+    }
+
+    private void setupSampleData() throws ScriptException {
+        TitanGraph titanGraph = ((TitanGraphService) graphService).getTitanGraph();
+
+        ScriptEngineManager manager = new ScriptEngineManager();
+        ScriptEngine engine = manager.getEngineByName("gremlin-groovy");
+        Bindings bindings = engine.createBindings();
+        bindings.put("g", titanGraph);
+
+        String hiveGraphFile = FileUtils.getTempDirectory().getPath()
+                + File.separator + System.nanoTime() + ".gson";
+        System.out.println("hiveGraphFile = " + hiveGraphFile);
+        HiveTitanSample.writeGson(hiveGraphFile);
+        bindings.put("hiveGraphFile", hiveGraphFile);
+
+        engine.eval("g.loadGraphSON(hiveGraphFile)", bindings);
+        titanGraph.commit();
+
+        System.out.println("*******************Graph Dump****************************");
+        for (Vertex vertex : titanGraph.getVertices()) {
+            System.out.println(GraphHelper.vertexString(vertex));
+        }
+
+        for (Edge edge : titanGraph.getEdges()) {
+            System.out.println(GraphHelper.edgeString(edge));
+        }
+        System.out.println("*******************Graph Dump****************************");
     }
 
     @AfterClass
@@ -112,5 +161,80 @@ public class GraphBackedDiscoveryServiceTest {
         r = discoveryService
                 .searchByGremlin("g.V.filter{it.typeName == 'Person'}.'Person.name'.toList()");
         System.out.println("search result = " + r);
+    }
+
+    @DataProvider(name = "dslQueriesProvider")
+    private Object[][] createDSLQueries() {
+        return new String[][] {
+                {"from DB"},
+                {"DB"},
+                {"from Table"},
+                {"Table"},
+                {"DB, Table"},
+                /*{"DB as db1 Table where db1.name = \"Reporting\""},*/
+                {"DB name = \"Reporting\""},
+                {"Column as PII"},
+                {"Table as Dimension"},
+                {"View as Dimension"},
+                {"Column as PII select Column.name"},
+                {"Column select Column.name"},
+                {"from Table select Table.name"},
+        };
+    }
+
+    @Test (dataProvider = "dslQueriesProvider")
+    public void testSearchByDSLQueries(String dslQuery) throws Exception {
+        System.out.println("Executing dslQuery = " + dslQuery);
+        String jsonResults = discoveryService.searchByDSL(dslQuery);
+        Assert.assertNotNull(jsonResults);
+
+        JSONObject results = new JSONObject(jsonResults);
+        Assert.assertEquals(results.length(), 3);
+        System.out.println("results = " + results);
+
+        Object query = results.get("query");
+        Assert.assertNotNull(query);
+
+        JSONObject dataType = results.getJSONObject("dataType");
+        Assert.assertNotNull(dataType);
+        String typeName = dataType.getString("typeName");
+        Assert.assertNotNull(typeName);
+
+        JSONArray rows = results.getJSONArray("rows");
+        Assert.assertNotNull(rows);
+        Assert.assertTrue(rows.length() > 0);
+    }
+
+    @Test
+    public void testSearchByDSLQuery() throws Exception {
+        String dslQuery = "Column as PII";
+        System.out.println("Executing dslQuery = " + dslQuery);
+        String jsonResults = discoveryService.searchByDSL(dslQuery);
+        Assert.assertNotNull(jsonResults);
+
+        JSONObject results = new JSONObject(jsonResults);
+        Assert.assertEquals(results.length(), 3);
+        System.out.println("results = " + results);
+
+        Object query = results.get("query");
+        Assert.assertNotNull(query);
+
+        JSONObject dataType = results.getJSONObject("dataType");
+        Assert.assertNotNull(dataType);
+        String typeName = dataType.getString("typeName");
+        Assert.assertNotNull(typeName);
+
+        JSONArray rows = results.getJSONArray("rows");
+        Assert.assertNotNull(rows);
+        Assert.assertTrue(rows.length() > 0);
+
+        for (int index = 0; index < rows.length(); index++) {
+            JSONObject row = rows.getJSONObject(index);
+            String type = row.getString("$typeName$");
+            Assert.assertEquals(type, "Column");
+
+            String name = row.getString("name");
+            Assert.assertNotEquals(name, "null");
+        }
     }
 }

@@ -21,6 +21,7 @@ package org.apache.hadoop.metadata.web.resources;
 import com.google.common.collect.ImmutableList;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import org.apache.hadoop.metadata.typesystem.Struct;
 import org.apache.hadoop.metadata.typesystem.json.Serialization$;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
@@ -43,6 +44,7 @@ import scala.actors.threadpool.Arrays;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.List;
 
 
 public class MetadataDiscoveryResourceIT extends BaseResourceIT {
@@ -263,9 +265,27 @@ public class MetadataDiscoveryResourceIT extends BaseResourceIT {
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
 
+        HierarchicalTypeDefinition<TraitType> classificationTraitDefinition =
+                TypesUtil.createTraitTypeDef("Classification",
+                        ImmutableList.<String>of(),
+                        TypesUtil.createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
+        HierarchicalTypeDefinition<TraitType> piiTrait =
+                TypesUtil.createTraitTypeDef("PII", ImmutableList.<String>of());
+        HierarchicalTypeDefinition<TraitType> phiTrait =
+                TypesUtil.createTraitTypeDef("PHI", ImmutableList.<String>of());
+        HierarchicalTypeDefinition<TraitType> pciTrait =
+                TypesUtil.createTraitTypeDef("PCI", ImmutableList.<String>of());
+        HierarchicalTypeDefinition<TraitType> soxTrait =
+                TypesUtil.createTraitTypeDef("SOX", ImmutableList.<String>of());
+        HierarchicalTypeDefinition<TraitType> secTrait =
+                TypesUtil.createTraitTypeDef("SEC", ImmutableList.<String>of());
+        HierarchicalTypeDefinition<TraitType> financeTrait =
+                TypesUtil.createTraitTypeDef("Finance", ImmutableList.<String>of());
+
         typeSystem.defineTypes(
                 ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
+                ImmutableList.of(classificationTraitDefinition, piiTrait, phiTrait, pciTrait,
+                        soxTrait, secTrait, financeTrait),
                 ImmutableList.of(dslTestTypeDefinition));
     }
 
@@ -274,14 +294,28 @@ public class MetadataDiscoveryResourceIT extends BaseResourceIT {
         String typesAsJSON = TypesSerialization.toJson(typeSystem,
                 Arrays.asList(new String[]{
                         "dsl_test_type",
+                        "Classification",
+                        "PII",
+                        "PHI",
+                        "PCI",
+                        "SOX",
+                        "SEC",
+                        "Finance",
                 }));
         sumbitType(typesAsJSON, "dsl_test_type");
     }
 
     private ITypedReferenceableInstance createInstance() throws Exception {
-        Referenceable entityInstance = new Referenceable("dsl_test_type");
+        Referenceable entityInstance = new Referenceable("dsl_test_type",
+                "Classification", "PII", "PHI", "PCI", "SOX", "SEC", "Finance");
         entityInstance.set("name", "foo name");
         entityInstance.set("description", "bar description");
+
+        Struct traitInstance = (Struct) entityInstance.getTrait("Classification");
+        traitInstance.set("tag", "foundation_etl");
+
+        List<String> traits = entityInstance.getTraits();
+        Assert.assertEquals(traits.size(), 7);
 
         ClassType tableType = typeSystem.getDataType(ClassType.class, "dsl_test_type");
         return tableType.convert(entityInstance, Multiplicity.REQUIRED);

@@ -19,6 +19,7 @@
 package org.apache.hadoop.metadata.query
 
 import java.io.File
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import javax.script.{Bindings, ScriptEngine, ScriptEngineManager}
 
@@ -37,6 +38,8 @@ object HiveTitanSample {
         val _id: String
 
         def id = _id
+        val version = 0
+        val guid = s"""${UUID.randomUUID()}""".stripMargin
 
         def addEdge(to: Vertex, label: String, edges: ArrayBuffer[String]): Unit = {
             edges +=
@@ -62,6 +65,7 @@ object HiveTitanSample {
                     case l: List[_] => l.foreach(x => addEdge(x.asInstanceOf[Vertex],
                         s"${this.getClass.getSimpleName}.${f.getName}", edges))
                     case _ => sb.append( s""", "${f.getName}" : $fV""")
+                        sb.append( s""", "${this.getClass.getSimpleName}.${f.getName}" : $fV""")
                 }
             }
 
@@ -322,7 +326,7 @@ object TestApp extends App with GraphUtils {
     val bindings: Bindings = engine.createBindings
     bindings.put("g", g)
 
-    val hiveGraphFile = FileUtils.getTempDirectory().getPath.toString + File.separator + System.nanoTime() + ".gson"
+    val hiveGraphFile = FileUtils.getTempDirectory().getPath + File.separator + System.nanoTime() + ".gson"
     HiveTitanSample.writeGson(hiveGraphFile)
     bindings.put("hiveGraphFile", hiveGraphFile)
 
