@@ -25,6 +25,17 @@ case class TypesDef(enumTypes: Seq[EnumTypeDefinition],
                     traitTypes: Seq[HierarchicalTypeDefinition[TraitType]],
                     classTypes: Seq[HierarchicalTypeDefinition[ClassType]]) {
 
+    def this(enumType : EnumTypeDefinition) = this(Seq(enumType), Seq(), Seq(), Seq())
+    def this(structType: StructTypeDefinition) = this(Seq(), Seq(structType), Seq(), Seq())
+    def this(typ: HierarchicalTypeDefinition[_], isTrait : Boolean) = this(
+      Seq(),
+      Seq(),
+      if ( isTrait )
+        Seq(typ.asInstanceOf[HierarchicalTypeDefinition[TraitType]]) else Seq(),
+      if (!isTrait )
+        Seq(typ.asInstanceOf[HierarchicalTypeDefinition[ClassType]]) else Seq()
+    )
+
     def enumTypesAsJavaList() = {
         import scala.collection.JavaConverters._
         enumTypes.asJava

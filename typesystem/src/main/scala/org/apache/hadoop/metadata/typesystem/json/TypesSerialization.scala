@@ -99,7 +99,25 @@ object TypesSerialization {
         read[TypesDef](jsonStr)
     }
 
-    private def convertAttributeInfoToAttributeDef(aInfo: AttributeInfo) = {
+    def toJson(typesDef : TypesDef) : String = {
+      implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new MultiplicitySerializer
+      writePretty(typesDef)
+
+    }
+
+    def toJson(enumTypeDefinition: EnumTypeDefinition) : String = {
+      toJson(new TypesDef(enumTypeDefinition))
+    }
+
+    def toJson(structTypeDefinition: StructTypeDefinition) : String = {
+      toJson(new TypesDef(structTypeDefinition))
+    }
+
+    def toJson(typDef: HierarchicalTypeDefinition[_], isTrait : Boolean) : String = {
+      toJson(new TypesDef(typDef, isTrait))
+    }
+
+  private def convertAttributeInfoToAttributeDef(aInfo: AttributeInfo) = {
         new AttributeDefinition(aInfo.name, aInfo.dataType().getName, aInfo.multiplicity,
             aInfo.isComposite, aInfo.reverseAttributeName)
     }
