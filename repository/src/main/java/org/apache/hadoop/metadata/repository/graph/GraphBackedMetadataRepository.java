@@ -18,6 +18,7 @@
 
 package org.apache.hadoop.metadata.repository.graph;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
@@ -50,7 +51,6 @@ import javax.inject.Inject;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -96,14 +96,17 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         return Constants.ENTITY_TYPE_PROPERTY_KEY;
     }
 
+    @Override
     public String getTraitLabel(IDataType<?> dataType, String traitName) {
         return dataType.getName() + "." + traitName;
     }
 
+    @Override
     public String getFieldNameInVertex(IDataType<?> dataType, AttributeInfo aInfo) {
         return dataType.getName() + "." + aInfo.name;
     }
 
+    @Override
     public String getEdgeLabel(IDataType<?> dataType, AttributeInfo aInfo) {
         return dataType.getName() + "." + aInfo.name;
     }
@@ -131,18 +134,25 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
         try {
             titanGraph.rollback();  // clean up before starting a query
-            Vertex instanceVertex = GraphHelper.findVertexByGUID(titanGraph, guid);
-            if (instanceVertex == null) {
-                LOG.debug("Could not find a vertex for guid {}", guid);
-                return null;
-            }
+            Vertex instanceVertex = getVertexForGUID(guid);
 
             LOG.debug("Found a vertex {} for guid {}", instanceVertex, guid);
             return graphToInstanceMapper.mapGraphToTypedInstance(guid, instanceVertex);
 
-        } catch (Exception e) {
+        } catch (MetadataException e) {
             throw new RepositoryException(e);
         }
+    }
+
+    private Vertex getVertexForGUID(String guid) throws RepositoryException {
+        Vertex instanceVertex = GraphHelper.findVertexByGUID(titanGraph, guid);
+        if (instanceVertex == null) {
+            LOG.debug("Could not find a vertex for guid={}", guid);
+            throw new RepositoryException(
+                    "Could not find an entity in the repository for guid: " + guid);
+        }
+
+        return instanceVertex;
     }
 
     @Override
@@ -164,18 +174,133 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         return entityList;
     }
 
-    public Id getIdFromVertex(String dataTypeName, TitanVertex vertex) {
+    /**
+     * Gets the list of trait names for a given entity represented by a guid.
+     *
+     * @param guid globally unique identifier for the entity
+     * @return a list of trait names for the given entity guid
+     * @throws RepositoryException
+     */
+    @Override
+    public List<String> getTraitNames(String guid) throws RepositoryException {
+        LOG.info("Retrieving trait names for entity={}", guid);
+        titanGraph.rollback();  // clean up before starting a query
+        Vertex instanceVertex = getVertexForGUID(guid);
+        return getTraitNames(instanceVertex);
+    }
+
+    public List<String> getTraitNames(Vertex entityVertex) {
+        ArrayList<String> traits = new ArrayList<>();
+        for (TitanProperty property : ((TitanVertex) entityVertex)
+                .getProperties(Constants.TRAIT_NAMES_PROPERTY_KEY)) {
+            traits.add((String) property.getValue());
+        }
+
+        return traits;
+    }
+
+    /**
+     * Adds a new trait to an existing entity represented by a guid.
+     *
+     * @param guid          globally unique identifier for the entity
+     * @param traitInstance trait instance that needs to be added to entity
+     * @throws RepositoryException
+     */
+    @Override
+    public void addTrait(String guid, String traitName,
+                         ITypedStruct traitInstance) throws RepositoryException {
+        Preconditions.checkNotNull(traitInstance, "Trait instance cannot be null");
+        LOG.info("Adding a new trait={} for entity={}", traitName, guid);
+
+        try {
+            titanGraph.rollback();  // clean up before starting a query
+            Vertex instanceVertex = getVertexForGUID(guid);
+
+            // add the trait instance as a new vertex
+            final String typeName = getTypeName(instanceVertex);
+            instanceToGraphMapper.mapTraitInstanceToVertex(
+                    traitName, traitInstance, getIdFromVertex(typeName, instanceVertex),
+                    typeName, instanceVertex, Collections.<Id, Vertex>emptyMap());
+
+            // update the traits in entity once adding trait instance is successful
+            ((TitanVertex) instanceVertex)
+                    .addProperty(Constants.TRAIT_NAMES_PROPERTY_KEY, traitName);
+
+            titanGraph.commit();  // commit if there are no errors
+        } catch (MetadataException e) {
+            titanGraph.rollback();
+            throw new RepositoryException(e);
+        }
+    }
+
+    /**
+     * Deletes a given trait from an existing entity represented by a guid.
+     *
+     * @param guid      globally unique identifier for the entity
+     * @param traitNameToBeDeleted name of the trait
+     * @throws RepositoryException
+     */
+    @Override
+    public void deleteTrait(String guid, String traitNameToBeDeleted)
+            throws RepositoryException {
+        LOG.info("Deleting trait={} from entity={}", traitNameToBeDeleted, guid);
+        try {
+            titanGraph.rollback();  // clean up before starting a query
+            Vertex instanceVertex = getVertexForGUID(guid);
+
+            List<String> traitNames = getTraitNames(instanceVertex);
+            if (!traitNames.contains(traitNameToBeDeleted)) {
+                throw new RepositoryException("Could not find trait=" + traitNameToBeDeleted
+                        + " in the repository for entity: " + guid);
+            }
+
+            final String entityTypeName = getTypeName(instanceVertex);
+            String relationshipLabel = entityTypeName + "." + traitNameToBeDeleted;
+            Iterator<Edge> results = instanceVertex.getEdges(
+                    Direction.OUT, relationshipLabel).iterator();
+            if (results.hasNext()) { // there should only be one edge for this label
+                final Edge traitEdge = results.next();
+                final Vertex traitVertex = traitEdge.getVertex(Direction.IN);
+
+                // remove the edge to the trait instance from the repository
+                titanGraph.removeEdge(traitEdge);
+
+                if (traitVertex != null) { // remove the trait instance from the repository
+                    titanGraph.removeVertex(traitVertex);
+
+                    // update the traits in entity once trait removal is successful
+                    traitNames.remove(traitNameToBeDeleted);
+                    updateTraits(instanceVertex, traitNames);
+                }
+
+                titanGraph.commit();  // commit if there are no errors
+            }
+        } catch (Exception e) {
+            titanGraph.rollback();
+            throw new RepositoryException(e);
+        }
+    }
+
+    private void updateTraits(Vertex instanceVertex, List<String> traitNames) {
+        // remove the key
+        instanceVertex.removeProperty(Constants.TRAIT_NAMES_PROPERTY_KEY);
+
+        // add it back again
+        for (String traitName : traitNames) {
+            ((TitanVertex) instanceVertex).addProperty(
+                    Constants.TRAIT_NAMES_PROPERTY_KEY, traitName);
+        }
+    }
+
+    public Id getIdFromVertex(String dataTypeName, Vertex vertex) {
         return new Id(
                 vertex.<String>getProperty(Constants.GUID_PROPERTY_KEY),
                 vertex.<Integer>getProperty(Constants.VERSION_PROPERTY_KEY),
                 dataTypeName);
     }
 
-    public List<String> getTraitNames(TitanVertex vertex) {
-        final String traitNames = vertex.getProperty(Constants.TRAIT_NAMES_PROPERTY_KEY);
-        return traitNames == null
-                ? Collections.<String>emptyList()
-                : Arrays.asList(traitNames.split(","));
+    String getTypeName(Vertex instanceVertex) {
+        return instanceVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY);
     }
 
     private final class EntityProcessor implements ObjectGraphWalker.NodeProcessor {
@@ -230,7 +355,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                     if (id.isAssigned()) {  // has a GUID
                         instanceVertex = GraphHelper.findVertexByGUID(titanGraph, id.id);
                     } else {
-                        instanceVertex = GraphHelper.createVertex(titanGraph, typedInstance);
+                        instanceVertex =
+                                GraphHelper.createVertexWithIdentity(titanGraph, typedInstance);
                     }
 
                     idToVertexMap.put(id, instanceVertex);
@@ -242,7 +368,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     private final class TypedInstanceToGraphMapper {
 
         private String mapTypedInstanceToGraph(IReferenceableInstance typedInstance)
-        throws MetadataException {
+            throws MetadataException {
 
             EntityProcessor entityProcessor = new EntityProcessor();
             try {
@@ -258,7 +384,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             return addDiscoveredInstances(typedInstance, entityProcessor, newTypedInstances);
         }
 
-        /*
+        /**
          * Step 2: Traverse oldIdToInstance map create newInstances :
          * List[ITypedReferenceableInstance]
          *  - create a ITypedReferenceableInstance.
@@ -277,9 +403,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                             transientInstance, Multiplicity.REQUIRED);
                     newTypedInstances.add(newInstance);
 
-                /*
-                 * Now replace old references with new Ids
-                 */
+                    // Now replace old references with new Ids
                     MapIds mapIds = new MapIds(entityProcessor.idToNewIdMap);
                     new ObjectGraphWalker(typeSystem, mapIds, newTypedInstances).walk();
 
@@ -488,8 +612,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 case CLASS:
                     Id referenceId = (Id) value;
                     mapClassReferenceAsEdge(
-                            instanceVertex, idToVertexMap,
-                            propertyName, referenceId);
+                            instanceVertex, idToVertexMap, propertyName, referenceId);
                     break;
 
                 default:
@@ -521,7 +644,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                                                  Map<Id, Vertex> idToVertexMap)
         throws MetadataException {
             // add a new vertex for the struct or trait instance
-            Vertex structInstanceVertex = GraphHelper.createVertex(
+            Vertex structInstanceVertex = GraphHelper.createVertexWithoutIdentity(
                     graphService.getBlueprintsGraph(), structInstance.getTypeName(), id);
             LOG.debug("created vertex {} for struct {}", structInstanceVertex, attributeInfo.name);
 
@@ -536,18 +659,28 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                                               ITypedReferenceableInstance typedInstance,
                                               Vertex parentInstanceVertex,
                                               Map<Id, Vertex> idToVertexMap)
-        throws MetadataException {
+            throws MetadataException {
             // add a new vertex for the struct or trait instance
-            Vertex traitInstanceVertex = GraphHelper.createVertex(
-                    graphService.getBlueprintsGraph(), traitInstance, typedInstance.getId());
+            mapTraitInstanceToVertex(traitName, traitInstance, typedInstance.getId(),
+                    typedInstance.getTypeName(), parentInstanceVertex, idToVertexMap);
+        }
+
+        private void mapTraitInstanceToVertex(String traitName, ITypedStruct traitInstance,
+                                              Id typedInstanceId, String typedInstanceTypeName,
+                                              Vertex parentInstanceVertex,
+                                              Map<Id, Vertex> idToVertexMap)
+            throws MetadataException {
+            // add a new vertex for the struct or trait instance
+            Vertex traitInstanceVertex = GraphHelper.createVertexWithoutIdentity(
+                    graphService.getBlueprintsGraph(), traitInstance.getTypeName(), typedInstanceId);
             LOG.debug("created vertex {} for trait {}", traitInstanceVertex, traitName);
 
             // map all the attributes to this newly created vertex
-            mapInstanceToVertex(typedInstance.getId(), traitInstance, traitInstanceVertex,
+            mapInstanceToVertex(typedInstanceId, traitInstance, traitInstanceVertex,
                     traitInstance.fieldMapping().fields, idToVertexMap);
 
             // add an edge to the newly created vertex from the parent
-            String relationshipLabel = typedInstance.getTypeName() + "." + traitName;
+            String relationshipLabel = typedInstanceTypeName + "." + traitName;
             GraphHelper.addEdge(
                     titanGraph, parentInstanceVertex, traitInstanceVertex, relationshipLabel);
         }
@@ -602,16 +735,12 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
         public ITypedReferenceableInstance mapGraphToTypedInstance(String guid,
                                                                    Vertex instanceVertex)
-        throws MetadataException {
+            throws MetadataException {
 
             LOG.debug("Mapping graph root vertex {} to typed instance for guid {}",
                     instanceVertex, guid);
             String typeName = instanceVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY);
-            List<String> traits = new ArrayList<>();
-            for (TitanProperty property : ((TitanVertex) instanceVertex)
-                    .getProperties(Constants.TRAIT_NAMES_PROPERTY_KEY)) {
-                traits.add((String) property.getValue());
-            }
+            List<String> traits = getTraitNames(instanceVertex);
 
             Id id = new Id(guid,
                     instanceVertex.<Integer>getProperty(Constants.VERSION_PROPERTY_KEY), typeName);

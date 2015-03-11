@@ -81,6 +81,10 @@ public class TypeSystem {
         types.put(DataTypes.STRING_TYPE.getName(), DataTypes.STRING_TYPE);
     }
 
+    public boolean isRegistered(String typeName) {
+        return types.containsKey(typeName);
+    }
+
     public <T> T getDataType(Class<T> cls, String name) throws MetadataException {
         if (types.containsKey(name)) {
             return cls.cast(types.get(name));

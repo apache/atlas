@@ -33,7 +33,24 @@ public interface EntityChangeListener {
      * @param typedInstance a typed instance
      * @throws org.apache.hadoop.metadata.MetadataException
      */
-    void onAdd(String typeName,
-               ITypedReferenceableInstance typedInstance) throws MetadataException;
+    void onEntityAdded(String typeName,
+                       ITypedReferenceableInstance typedInstance) throws MetadataException;
 
+    /**
+     * This is upon adding a new trait to a typed instance.
+     *
+     * @param guid          globally unique identifier for the entity
+     * @param traitName     trait name for the instance that needs to be added to entity
+     * @throws org.apache.hadoop.metadata.MetadataException
+     */
+    void onTraitAdded(String guid, String traitName) throws MetadataException;
+
+    /**
+     * This is upon deleting a trait from a typed instance.
+     *
+     * @param guid          globally unique identifier for the entity
+     * @param traitName     trait name for the instance that needs to be deleted from entity
+     * @throws org.apache.hadoop.metadata.MetadataException
+     */
+    void onTraitDeleted(String guid, String traitName) throws MetadataException;
 }

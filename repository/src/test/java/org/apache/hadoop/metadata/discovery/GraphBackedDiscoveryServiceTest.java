@@ -173,10 +173,12 @@ public class GraphBackedDiscoveryServiceTest {
                 {"DB, Table"},
                 /*{"DB as db1 Table where db1.name = \"Reporting\""},*/
                 {"DB name = \"Reporting\""},
-                {"Column as PII"},
-                {"Table as Dimension"},
-                {"View as Dimension"},
-                {"Column as PII select Column.name"},
+/*
+                {"Column where is PII"},
+                {"Table where is Dimension"},
+                {"View where is Dimension"},
+                {"Column where is PII select Column.name"},
+*/
                 {"Column select Column.name"},
                 {"from Table select Table.name"},
         };

@@ -52,6 +52,11 @@
     <dependencies>
         <dependency>
             <groupId>org.apache.hadoop.metadata</groupId>
+            <artifactId>metadata-typesystem</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hadoop.metadata</groupId>
             <artifactId>metadata-repository</artifactId>
         </dependency>
 

@@ -19,6 +19,7 @@
 package org.apache.hadoop.metadata.services;
 
 import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.typesystem.ITypedStruct;
 import org.codehaus.jettison.json.JSONObject;
 
 import java.util.List;
@@ -78,4 +79,35 @@ public interface MetadataService {
      * @return list of entity names for the given type in the repository
      */
     List<String> getEntityList(String entityType) throws MetadataException;
+
+    // Trait management functions
+    /**
+     * Gets the list of trait names for a given entity represented by a guid.
+     *
+     * @param guid globally unique identifier for the entity
+     * @return a list of trait names for the given entity guid
+     * @throws MetadataException
+     */
+    List<String> getTraitNames(String guid) throws MetadataException;
+
+    /**
+     * Adds a new trait to an existing entity represented by a guid.
+     *
+     * @param guid          globally unique identifier for the entity
+     * @param traitName     trait name for the instance that needs to be added to entity
+     * @param traitInstance trait instance that needs to be added to entity
+     * @throws MetadataException
+     */
+    void addTrait(String guid, String traitName,
+                  ITypedStruct traitInstance) throws MetadataException;
+
+    /**
+     * Deletes a given trait from an existing entity represented by a guid.
+     *
+     * @param guid                 globally unique identifier for the entity
+     * @param traitNameToBeDeleted name of the trait
+     * @throws MetadataException
+     */
+    void deleteTrait(String guid,
+                     String traitNameToBeDeleted) throws MetadataException;
 }

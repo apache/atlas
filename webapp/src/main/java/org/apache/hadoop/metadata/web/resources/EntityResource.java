@@ -123,7 +123,14 @@ public class EntityResource {
 
             return Response.status(status).entity(response).build();
 
-        } catch (Exception e) {
+        } catch (MetadataException e) {
+            LOG.error("An entity with GUID={} does not exist", guid, e);
+            throw new WebApplicationException(e, Response
+                    .status(Response.Status.NOT_FOUND)
+                    .entity(e.getMessage())
+                    .type(MediaType.APPLICATION_JSON)
+                    .build());
+        } catch (JSONException e) {
             LOG.error("Unable to get instance definition for GUID {}", guid, e);
             throw new WebApplicationException(e, Response
                     .status(Response.Status.INTERNAL_SERVER_ERROR)

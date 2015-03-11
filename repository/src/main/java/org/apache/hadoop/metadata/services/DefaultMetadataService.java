@@ -20,20 +20,21 @@ package org.apache.hadoop.metadata.services;
 
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.typesystem.TypesDef;
 import org.apache.hadoop.metadata.discovery.SearchIndexer;
-import org.apache.hadoop.metadata.typesystem.json.Serialization$;
-import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
 import org.apache.hadoop.metadata.listener.EntityChangeListener;
 import org.apache.hadoop.metadata.listener.TypesChangeListener;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
 import org.apache.hadoop.metadata.repository.RepositoryException;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.typesystem.ITypedStruct;
+import org.apache.hadoop.metadata.typesystem.TypesDef;
+import org.apache.hadoop.metadata.typesystem.json.Serialization$;
+import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
 import org.apache.hadoop.metadata.typesystem.types.IDataType;
 import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import org.json.simple.parser.ParseException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,7 +82,7 @@ public class DefaultMetadataService implements MetadataService {
             TypesDef typesDef = TypesSerialization.fromJson(typeDefinition);
             Map<String, IDataType> typesAdded = typeSystem.defineTypes(typesDef);
 
-            onAdd(typesAdded);
+            onTypesAddedToRepo(typesAdded);
 
             JSONObject response = new JSONObject();
             for (Map.Entry<String, IDataType> entry : typesAdded.entrySet()) {
@@ -101,15 +102,9 @@ public class DefaultMetadataService implements MetadataService {
         Preconditions.checkNotNull(typeDefinition, "type definition cannot be null");
 
         // verify if the type already exists
-        IDataType existingTypeDefinition = null;
-        try {
-            existingTypeDefinition = typeSystem.getDataType(IDataType.class, typeName);
-        } catch (MetadataException ignore) {
-            // do nothing
-        }
-
-        if (existingTypeDefinition != null) {
-            throw new RepositoryException("type is already defined for : " + typeName);
+        if (typeSystem.isRegistered(typeName)) {
+            LOG.error("type is already defined for {}", typeName);
+            throw new MetadataException("type is already defined for : " + typeName);
         }
     }
 
@@ -145,28 +140,16 @@ public class DefaultMetadataService implements MetadataService {
     @Override
     public String createEntity(String entityType,
                                String entityDefinition) throws MetadataException {
-        try {
-            validateEntity(entityDefinition, entityType);
-
-            ITypedReferenceableInstance entityInstance =
-                    Serialization$.MODULE$.fromJson(entityDefinition);
-            final String guid = repository.createEntity(entityInstance, entityType);
-
-            onAdd(entityType, entityInstance);
-
-            return guid;
-        } catch (ParseException e) {
-            LOG.error("Unable to parse JSON {} for type {}", entityDefinition, entityType, e);
-            throw new MetadataException("validation failed for: " + entityType);
-        }
-    }
-
-    private void validateEntity(String entity, String entityType) throws ParseException {
-        Preconditions.checkNotNull(entity, "entity cannot be null");
+        Preconditions.checkNotNull(entityDefinition, "entity cannot be null");
         Preconditions.checkNotNull(entityType, "entity type cannot be null");
 
-        // todo: this is failing for instances but not types
-        // JSONValue.parseWithException(entity);
+        ITypedReferenceableInstance entityInstance =
+                Serialization$.MODULE$.fromJson(entityDefinition);
+        final String guid = repository.createEntity(entityInstance, entityType);
+
+        onEntityAddedToRepo(entityType, entityInstance);
+
+        return guid;
     }
 
     /**
@@ -180,9 +163,7 @@ public class DefaultMetadataService implements MetadataService {
         Preconditions.checkNotNull(guid, "guid cannot be null");
 
         final ITypedReferenceableInstance instance = repository.getEntityDefinition(guid);
-        return instance == null
-                ? null
-                : Serialization$.MODULE$.toJson(instance);
+        return Serialization$.MODULE$.toJson(instance);
     }
 
     /**
@@ -214,7 +195,65 @@ public class DefaultMetadataService implements MetadataService {
         }
     }
 
-    private void onAdd(Map<String, IDataType> typesAdded) throws MetadataException {
+    /**
+     * Gets the list of trait names for a given entity represented by a guid.
+     *
+     * @param guid globally unique identifier for the entity
+     * @return a list of trait names for the given entity guid
+     * @throws MetadataException
+     */
+    @Override
+    public List<String> getTraitNames(String guid) throws MetadataException {
+        Preconditions.checkNotNull(guid, "entity GUID cannot be null");
+        return repository.getTraitNames(guid);
+    }
+
+    /**
+     * Adds a new trait to an existing entity represented by a guid.
+     *
+     * @param guid          globally unique identifier for the entity
+     * @param traitName     trait name for the instance that needs to be added to entity
+     * @param traitInstance trait instance that needs to be added to entity
+     * @throws MetadataException
+     */
+    @Override
+    public void addTrait(String guid, String traitName,
+                         ITypedStruct traitInstance) throws MetadataException {
+        Preconditions.checkNotNull(guid, "entity GUID cannot be null");
+        Preconditions.checkNotNull(traitName, "Trait name cannot be null");
+        Preconditions.checkNotNull(traitInstance, "Trait instance cannot be null");
+
+        // ensure trait type is already registered with the TS
+        Preconditions.checkArgument(!typeSystem.isRegistered(traitName),
+                "trait=%s should be defined in type system before it can be added", traitName);
+
+        repository.addTrait(guid, traitName, traitInstance);
+        onTraitAddedToEntity(guid, traitName);
+    }
+
+    /**
+     * Deletes a given trait from an existing entity represented by a guid.
+     *
+     * @param guid                 globally unique identifier for the entity
+     * @param traitNameToBeDeleted name of the trait
+     * @throws MetadataException
+     */
+    @Override
+    public void deleteTrait(String guid,
+                            String traitNameToBeDeleted) throws MetadataException {
+        Preconditions.checkNotNull(guid, "entity GUID cannot be null");
+        Preconditions.checkNotNull(traitNameToBeDeleted, "Trait name cannot be null");
+
+        // ensure trait type is already registered with the TS
+        Preconditions.checkArgument(!typeSystem.isRegistered(traitNameToBeDeleted),
+                "trait=%s should be defined in type system before it can be deleted",
+                traitNameToBeDeleted);
+
+        repository.deleteTrait(guid, traitNameToBeDeleted);
+        onTraitDeletedFromEntity(guid, traitNameToBeDeleted);
+    }
+
+    private void onTypesAddedToRepo(Map<String, IDataType> typesAdded) throws MetadataException {
         for (TypesChangeListener listener : typesChangeListeners) {
             for (Map.Entry<String, IDataType> entry : typesAdded.entrySet()) {
                 listener.onAdd(entry.getKey(), entry.getValue());
@@ -230,10 +269,26 @@ public class DefaultMetadataService implements MetadataService {
         typesChangeListeners.remove(listener);
     }
 
-    private void onAdd(String typeName,
-                       ITypedReferenceableInstance typedInstance) throws MetadataException {
+    private void onEntityAddedToRepo(String typeName,
+                                     ITypedReferenceableInstance typedInstance)
+        throws MetadataException {
+
         for (EntityChangeListener listener : entityChangeListeners) {
-            listener.onAdd(typeName, typedInstance);
+            listener.onEntityAdded(typeName, typedInstance);
+        }
+    }
+
+    private void onTraitAddedToEntity(String typeName,
+                                      String traitName) throws MetadataException {
+        for (EntityChangeListener listener : entityChangeListeners) {
+            listener.onTraitAdded(typeName, traitName);
+        }
+    }
+
+    private void onTraitDeletedFromEntity(String typeName,
+                                          String traitName) throws MetadataException {
+        for (EntityChangeListener listener : entityChangeListeners) {
+            listener.onTraitDeleted(typeName, traitName);
         }
     }
 

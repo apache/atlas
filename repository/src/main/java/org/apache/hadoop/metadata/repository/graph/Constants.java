@@ -33,14 +33,10 @@ public final class Constants {
     public static final String ENTITY_TYPE_INDEX = "type_index";
 
     /**
-     * Data type property key.
-     */
-    // public static final String DATA_TYPE_PROPERTY_KEY = "dataType";
-
-    /**
-     * Trait names property key.
+     * Trait names property key and index name.
      */
     public static final String TRAIT_NAMES_PROPERTY_KEY = "traitNames";
+    public static final String TRAIT_NAMES_INDEX = "trait_names_index";
 
     public static final String VERSION_PROPERTY_KEY = "version";
     public static final String TIMESTAMP_PROPERTY_KEY = "timestamp";

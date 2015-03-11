@@ -24,7 +24,6 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
-import org.apache.hadoop.metadata.typesystem.ITypedInstance;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.persistence.Id;
 import org.slf4j.Logger;
@@ -43,32 +42,34 @@ public final class GraphHelper {
     private GraphHelper() {
     }
 
-    public static Vertex createVertex(Graph graph,
-                                      ITypedReferenceableInstance typedInstance) {
-        return createVertex(graph, typedInstance, typedInstance.getId());
-    }
+    public static Vertex createVertexWithIdentity(Graph graph,
+                                                  ITypedReferenceableInstance typedInstance) {
+        final Vertex vertexWithIdentity = createVertexWithoutIdentity(
+                graph, typedInstance.getTypeName(), typedInstance.getId());
 
-    public static Vertex createVertex(Graph graph,
-                                      ITypedInstance typedInstance,
-                                      Id typedInstanceId) {
-        return createVertex(graph, typedInstance.getTypeName(), typedInstanceId);
-    }
-
-    public static Vertex createVertex(Graph graph,
-                                      String typeName,
-                                      Id typedInstanceId) {
-        final Vertex instanceVertex = graph.addVertex(null);
-        // type
-        instanceVertex.setProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, typeName);
-
-        // id
+        // add identity
         final String guid = UUID.randomUUID().toString();
-        instanceVertex.setProperty(Constants.GUID_PROPERTY_KEY, guid);
+        vertexWithIdentity.setProperty(Constants.GUID_PROPERTY_KEY, guid);
 
-        // version
-        instanceVertex.setProperty(Constants.VERSION_PROPERTY_KEY, typedInstanceId.version);
+        return vertexWithIdentity;
+    }
 
-        return instanceVertex;
+    public static Vertex createVertexWithoutIdentity(Graph graph,
+                                                     String typeName,
+                                                     Id typedInstanceId) {
+        final Vertex vertexWithoutIdentity = graph.addVertex(null);
+
+        // add type information
+        vertexWithoutIdentity.setProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, typeName);
+
+        // add version information
+        vertexWithoutIdentity.setProperty(Constants.VERSION_PROPERTY_KEY, typedInstanceId.version);
+
+        // add timestamp information
+        vertexWithoutIdentity.setProperty(
+                Constants.TIMESTAMP_PROPERTY_KEY, System.currentTimeMillis());
+
+        return vertexWithoutIdentity;
     }
 
     public static Edge addEdge(TitanGraph titanGraph, Vertex fromVertex, Vertex toVertex,
