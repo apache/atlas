@@ -57,6 +57,7 @@ trait QueryKeywords {
     protected val GROUPBY = Keyword("groupby")
     protected val LOOP = Keyword("loop")
     protected val ISA = Keyword("isa")
+    protected val IS = Keyword("is")
     protected val HAS = Keyword("has")
     protected val AS = Keyword("as")
     protected val TIMES = Keyword("times")
@@ -195,7 +196,7 @@ class QueryParser extends StandardTokenParsers with QueryKeywords with Expressio
 
     def compE =
         arithE ~ (LT | LTE | EQ | NEQ | GT | GTE) ~ arithE ^^ { case l ~ op ~ r => l.compareOp(op)(r)} |
-            arithE ~ ISA ~ ident ^^ { case l ~ i ~ t => l.isTrait(t)} |
+            arithE ~ (ISA | IS) ~ ident ^^ { case l ~ i ~ t => l.isTrait(t)} |
             arithE ~ HAS ~ ident ^^ { case l ~ i ~ f => l.hasField(f)} |
             arithE
 

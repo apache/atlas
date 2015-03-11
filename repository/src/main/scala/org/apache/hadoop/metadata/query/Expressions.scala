@@ -523,7 +523,7 @@ object Expressions {
     case class isTraitUnaryExpression(traitName: String, child: Expression)
         extends Expression with UnaryNode {
         // validate TraitName
-        typSystem.getDataType(classOf[ClassType], traitName)
+        typSystem.getDataType(classOf[TraitType], traitName)
         lazy val dataType = {
             if (!resolved) {
                 throw new UnresolvedException(this,

@@ -57,6 +57,12 @@ class ParserTest extends BaseTest {
         println(p("DB name = \"Reporting\"").right.get.toString)
     }
 
+  @Test def testIsTrait: Unit = {
+    val p = new QueryParser
+    println(p("Table isa Dimension").right.get.toString)
+    println(p("Table is Dimension").right.get.toString)
+  }
+
     @Test def test4: Unit = {
         val p = new QueryParser
         println(p("DB where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1").right.get.toString)
