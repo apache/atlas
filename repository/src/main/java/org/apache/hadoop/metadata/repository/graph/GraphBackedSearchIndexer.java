@@ -18,6 +18,7 @@
 
 package org.apache.hadoop.metadata.repository.graph;
 
+import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.PropertyKey;
@@ -33,6 +34,7 @@ import org.apache.hadoop.metadata.typesystem.types.AttributeInfo;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
 import org.apache.hadoop.metadata.typesystem.types.DataTypes;
 import org.apache.hadoop.metadata.typesystem.types.IDataType;
+import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
 import org.apache.hadoop.metadata.typesystem.types.StructType;
 import org.apache.hadoop.metadata.typesystem.types.TraitType;
 import org.slf4j.Logger;
@@ -78,12 +80,16 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
 
         // create a composite index for guid as its unique
         createCompositeIndex(Constants.GUID_INDEX,
-                Constants.GUID_PROPERTY_KEY, String.class, true);
+                Constants.GUID_PROPERTY_KEY, String.class, true, Cardinality.SINGLE);
 
         // create a composite and mixed index for type since it can be combined with other keys
-        createCompositeIndex(Constants.ENTITY_TYPE_INDEX,
-                Constants.ENTITY_TYPE_PROPERTY_KEY, String.class, false);
-        createVertexMixedIndex(Constants.ENTITY_TYPE_PROPERTY_KEY, String.class);
+        createCompositeAndMixedIndex(Constants.ENTITY_TYPE_INDEX,
+                Constants.ENTITY_TYPE_PROPERTY_KEY, String.class, false, Cardinality.SINGLE);
+
+        // create a composite and mixed index for traitNames since it can be combined with other
+        // keys. Traits must be a set and not a list.
+        createCompositeAndMixedIndex(Constants.TRAIT_NAMES_INDEX,
+                Constants.TRAIT_NAMES_PROPERTY_KEY, String.class, false, Cardinality.SET);
 
         LOG.info("Index creation for global keys complete.");
     }
@@ -152,18 +158,20 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
         final String propertyName = typeName + "." + field.name;
         switch (field.dataType().getTypeCategory()) {
             case PRIMITIVE:
-                createVertexMixedIndex(
-                        propertyName, getPrimitiveClass(field.dataType()));
+                createVertexMixedIndex(propertyName,
+                        getPrimitiveClass(field.dataType()), getCardinality(field.multiplicity));
                 break;
 
             case ENUM:
-                createVertexMixedIndex(propertyName, Integer.class);
+                createVertexMixedIndex(
+                        propertyName, Integer.class, getCardinality(field.multiplicity));
                 break;
 
             case ARRAY:
             case MAP:
                 // index the property holder for element names
-                createVertexMixedIndex(propertyName, String.class);
+                createVertexMixedIndex(
+                        propertyName, String.class, getCardinality(field.multiplicity));
                 break;
 
             case STRUCT:
@@ -211,14 +219,36 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
         throw new IllegalArgumentException("unknown data type " + dataType);
     }
 
-    private PropertyKey createCompositeIndex(String indexName, String propertyName,
-                                             Class propertyClass, boolean isUnique) {
+    private Cardinality getCardinality(Multiplicity multiplicity) {
+        if (multiplicity == Multiplicity.OPTIONAL || multiplicity == Multiplicity.REQUIRED) {
+            return Cardinality.SINGLE;
+        } else if (multiplicity == Multiplicity.COLLECTION) {
+            return Cardinality.LIST;
+        } else if (multiplicity == Multiplicity.SET) {
+            return Cardinality.SET;
+        }
+
+        // todo - default to LIST as this is the most forgiving
+        return Cardinality.LIST;
+    }
+
+    private void createCompositeAndMixedIndex(String indexName,
+                                              String propertyName, Class propertyClass,
+                                              boolean isUnique, Cardinality cardinality) {
+        createCompositeIndex(indexName, propertyName, propertyClass, isUnique, cardinality);
+        createVertexMixedIndex(propertyName, propertyClass, cardinality);
+    }
+
+    private PropertyKey createCompositeIndex(String indexName,
+                                             String propertyName, Class propertyClass,
+                                             boolean isUnique, Cardinality cardinality) {
         TitanManagement management = titanGraph.getManagementSystem();
         PropertyKey propertyKey = management.getPropertyKey(propertyName);
         if (propertyKey == null) {
             propertyKey = management
                     .makePropertyKey(propertyName)
                     .dataType(propertyClass)
+                    .cardinality(cardinality)
                     .make();
 
             TitanManagement.IndexBuilder indexBuilder = management
@@ -231,19 +261,22 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
 
             indexBuilder.buildCompositeIndex();
             management.commit();
+
+            LOG.info("Created index for property {} in composite index {}", propertyName, indexName);
         }
 
-        LOG.info("Created index for property {} in composite index {}", propertyName, indexName);
         return propertyKey;
     }
 
-    private PropertyKey createVertexMixedIndex(String propertyName, Class propertyClass) {
+    private PropertyKey createVertexMixedIndex(String propertyName, Class propertyClass,
+                                               Cardinality cardinality) {
         TitanManagement management = titanGraph.getManagementSystem();
         PropertyKey propertyKey = management.getPropertyKey(propertyName);
         if (propertyKey == null) {
             propertyKey = management
                     .makePropertyKey(propertyName)
                     .dataType(propertyClass)
+                    .cardinality(cardinality)
                     .make();
 
             TitanGraphIndex vertexIndex = management.getGraphIndex(Constants.VERTEX_INDEX);
