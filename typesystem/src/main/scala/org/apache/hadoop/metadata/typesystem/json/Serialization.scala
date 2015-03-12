@@ -19,7 +19,7 @@
 package org.apache.hadoop.metadata.typesystem.json
 
 import org.apache.hadoop.metadata.typesystem._
-import org.apache.hadoop.metadata.typesystem.persistence.{Id, ReferenceableInstance}
+import org.apache.hadoop.metadata.typesystem.persistence.{StructInstance, Id, ReferenceableInstance}
 import org.apache.hadoop.metadata.typesystem.types.DataTypes.{ArrayType, MapType, TypeCategory}
 import org.apache.hadoop.metadata.typesystem.types._
 import org.json4s.JsonAST.JInt
@@ -271,6 +271,13 @@ object Serialization {
         write(value)
     }
 
+    def toJson(value: ITypedInstance): String = {
+      implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new TypedStructSerializer +
+        new TypedReferenceableInstanceSerializer + new BigDecimalSerializer + new BigIntegerSerializer
+
+      write(value)
+    }
+
     def toJsonPretty(value: ITypedReferenceableInstance): String = {
         implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new TypedStructSerializer +
             new TypedReferenceableInstanceSerializer + new BigDecimalSerializer + new BigIntegerSerializer
@@ -284,4 +291,11 @@ object Serialization {
 
         read[ReferenceableInstance](jsonStr)
     }
+
+  def traitFromJson(jsonStr: String): ITypedInstance = {
+    implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new TypedStructSerializer +
+      new TypedReferenceableInstanceSerializer + new BigDecimalSerializer + new BigIntegerSerializer
+
+    read[StructInstance](jsonStr)
+  }
 }

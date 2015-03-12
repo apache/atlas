@@ -21,8 +21,7 @@ package org.apache.hadoop.metadata.typesystem.json;
 import com.google.common.collect.ImmutableList;
 import org.apache.hadoop.metadata.BaseTest;
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
-import org.apache.hadoop.metadata.typesystem.Referenceable;
+import org.apache.hadoop.metadata.typesystem.*;
 import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
 import org.apache.hadoop.metadata.typesystem.types.DataTypes;
@@ -147,5 +146,29 @@ public class SerializationJavaTest extends BaseTest {
         hrDept2 = Serialization$.MODULE$.fromJson(jsonStr);
         Assert.assertEquals(hrDept2.toString(), hrDeptStr);
 
+    }
+
+    @Test
+    public void testTrait() throws MetadataException {
+
+        TypeSystem ts = getTypeSystem();
+        HierarchicalTypeDefinition<TraitType> securityClearanceTypeDef = createTraitTypeDef(
+                "SecurityClearance2",
+                ImmutableList.<String>of(),
+                createRequiredAttrDef("level", DataTypes.INT_TYPE)
+        );
+
+        ts.defineTypes(ImmutableList.<StructTypeDefinition>of(),
+                ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(securityClearanceTypeDef),
+                ImmutableList.<HierarchicalTypeDefinition<ClassType>>of());
+
+
+        Struct s = new Struct("SecurityClearance2");
+        s.set("level", 1);
+        TraitType tType = ts.getDataType(TraitType.class, "SecurityClearance2");
+        ITypedInstance t = tType.convert(s, Multiplicity.REQUIRED);
+        String jsonStr = Serialization$.MODULE$.toJson(t);
+        ITypedInstance t2 = Serialization$.MODULE$.traitFromJson(jsonStr);
+        Assert.assertEquals(t.toString(), t2.toString());
     }
 }
