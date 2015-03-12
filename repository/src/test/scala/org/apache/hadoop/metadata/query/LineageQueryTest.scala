@@ -65,7 +65,7 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll {
     "superTypes":[
 
     ],
-    "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.types.ClassType",
+    "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
     "typeName":"Table",
     "attributeDefinitions":[
       {
@@ -189,7 +189,7 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll {
     "superTypes":[
 
     ],
-    "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.types.ClassType",
+    "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
     "typeName":"Table",
     "attributeDefinitions":[
       {
@@ -407,7 +407,7 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll {
     "superTypes":[
 
     ],
-    "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.types.ClassType",
+    "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
     "typeName":"Table",
     "attributeDefinitions":[
       {

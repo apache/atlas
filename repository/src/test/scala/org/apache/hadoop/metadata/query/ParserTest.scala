@@ -78,4 +78,10 @@ class ParserTest extends BaseTest {
         val p = new QueryParser
         println(p("Table loop (LoadProcess outputTable)").right.get.toString)
     }
+
+  @Test def testNegInvalidateType: Unit = {
+    val p = new QueryParser
+    val x = p("from blah")
+    println(p("from blah").left)
+  }
 }
