@@ -28,6 +28,7 @@ import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.Struct;
 import org.apache.hadoop.metadata.typesystem.json.Serialization$;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
+import org.apache.hadoop.metadata.typesystem.json.TypesSerialization$;
 import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.AttributeInfo;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
@@ -239,12 +240,125 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                         ImmutableList.<String>of(),
                         TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
-        typeSystem.defineClassType(testTypeDefinition);
 
-        @SuppressWarnings("unchecked")
-        String typesAsJSON = TypesSerialization.toJson(typeSystem,
-                Arrays.asList(new String[]{"test"}));
+        String typesAsJSON = TypesSerialization.toJson(testTypeDefinition);
         sumbitType(typesAsJSON, "test");
+    }
+
+    @Test (dependsOnMethods = "testSubmitEntity")
+    public void testGetTraitNames() throws Exception {
+        ClientResponse clientResponse = service
+                .path("api/metadata/entities/traits/list")
+                .path(guid)
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.GET, ClientResponse.class);
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+
+        String responseAsString = clientResponse.getEntity(String.class);
+        Assert.assertNotNull(responseAsString);
+
+        JSONObject response = new JSONObject(responseAsString);
+        Assert.assertNotNull(response.get("requestId"));
+        Assert.assertNotNull(response.get("GUID"));
+
+        final JSONArray list = response.getJSONArray("list");
+        Assert.assertEquals(list.length(), 7);
+    }
+
+    @Test (dependsOnMethods = "testGetTraitNames")
+    public void testAddTrait() throws Exception {
+        final String traitName = "PII_Trait";
+        HierarchicalTypeDefinition<TraitType> piiTrait =
+                TypesUtil.createTraitTypeDef(traitName, ImmutableList.<String>of());
+        String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
+        LOG.debug("traitDefinitionAsJSON = " + traitDefinitionAsJSON);
+        sumbitType(traitDefinitionAsJSON, traitName);
+
+        typeSystem.defineTraitType(piiTrait);
+        Struct s = new Struct(traitName);
+        TraitType tType = typeSystem.getDataType(TraitType.class, traitName);
+        ITypedInstance traitInstance = tType.convert(s, Multiplicity.REQUIRED);
+        String traitInstanceAsJSON = Serialization$.MODULE$.toJson(traitInstance);
+        LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
+
+        ClientResponse clientResponse = service
+                .path("api/metadata/entities/traits/add")
+                .path(guid)
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+
+        String responseAsString = clientResponse.getEntity(String.class);
+        Assert.assertNotNull(responseAsString);
+
+        JSONObject response = new JSONObject(responseAsString);
+        Assert.assertNotNull(response.get("requestId"));
+        Assert.assertNotNull(response.get("GUID"));
+        Assert.assertNotNull(response.get("traitInstance"));
+    }
+
+    @Test
+    public void testAddTraitWithNoRegistration() throws Exception {
+        final String traitName = "PII_Trait_Blah";
+        HierarchicalTypeDefinition<TraitType> piiTrait =
+                TypesUtil.createTraitTypeDef(traitName, ImmutableList.<String>of());
+        String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
+        LOG.debug("traitDefinitionAsJSON = " + traitDefinitionAsJSON);
+
+        typeSystem.defineTraitType(piiTrait);
+        Struct s = new Struct(traitName);
+        TraitType tType = typeSystem.getDataType(TraitType.class, traitName);
+        ITypedInstance traitInstance = tType.convert(s, Multiplicity.REQUIRED);
+        String traitInstanceAsJSON = Serialization$.MODULE$.toJson(traitInstance);
+        LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
+
+        ClientResponse clientResponse = service
+                .path("api/metadata/entities/traits/add")
+                .path(guid)
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
+        Assert.assertEquals(clientResponse.getStatus(),
+                Response.Status.BAD_REQUEST.getStatusCode());
+    }
+
+    @Test (dependsOnMethods = "testAddTrait")
+    public void testDeleteTrait() throws Exception {
+        final String traitName = "PII_Trait";
+
+        ClientResponse clientResponse = service
+                .path("api/metadata/entities/traits/delete")
+                .path(guid)
+                .path(traitName)
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.PUT, ClientResponse.class);
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+
+        String responseAsString = clientResponse.getEntity(String.class);
+        Assert.assertNotNull(responseAsString);
+
+        JSONObject response = new JSONObject(responseAsString);
+        Assert.assertNotNull(response.get("requestId"));
+        Assert.assertNotNull(response.get("GUID"));
+        Assert.assertNotNull(response.get("traitName"));
+    }
+
+    @Test
+    public void testDeleteTraitNonExistent() throws Exception {
+        final String traitName = "blah_trait";
+
+        ClientResponse clientResponse = service
+                .path("api/metadata/entities/traits/delete")
+                .path(guid)
+                .path(traitName)
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.PUT, ClientResponse.class);
+        Assert.assertEquals(clientResponse.getStatus(),
+                Response.Status.BAD_REQUEST.getStatusCode());
     }
 
     private void createHiveTypes() throws Exception {

@@ -111,4 +111,8 @@ public final class Servlets {
         IOUtils.copy(request.getInputStream(), writer);
         return writer.toString();
     }
+
+    public static String getRequestId() {
+        return Thread.currentThread().getName();
+    }
 }

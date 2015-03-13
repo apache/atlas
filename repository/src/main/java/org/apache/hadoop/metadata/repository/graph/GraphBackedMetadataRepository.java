@@ -207,9 +207,10 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
      * @throws RepositoryException
      */
     @Override
-    public void addTrait(String guid, String traitName,
+    public void addTrait(String guid,
                          ITypedStruct traitInstance) throws RepositoryException {
         Preconditions.checkNotNull(traitInstance, "Trait instance cannot be null");
+        final String traitName = traitInstance.getTypeName();
         LOG.info("Adding a new trait={} for entity={}", traitName, guid);
 
         try {
@@ -219,7 +220,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             // add the trait instance as a new vertex
             final String typeName = getTypeName(instanceVertex);
             instanceToGraphMapper.mapTraitInstanceToVertex(
-                    traitName, traitInstance, getIdFromVertex(typeName, instanceVertex),
+                    traitInstance, getIdFromVertex(typeName, instanceVertex),
                     typeName, instanceVertex, Collections.<Id, Vertex>emptyMap());
 
             // update the traits in entity once adding trait instance is successful
@@ -446,7 +447,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                     ITypedStruct traitInstance = (ITypedStruct) typedInstance.getTrait(traitName);
 
                     // add the attributes for the trait instance
-                    mapTraitInstanceToVertex(traitName, traitInstance, typedInstance,
+                    mapTraitInstanceToVertex(traitInstance, typedInstance,
                             instanceVertex, entityProcessor.idToVertexMap);
                 }
 
@@ -655,22 +656,23 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             return structInstanceVertex;
         }
 
-        private void mapTraitInstanceToVertex(String traitName, ITypedStruct traitInstance,
+        private void mapTraitInstanceToVertex(ITypedStruct traitInstance,
                                               ITypedReferenceableInstance typedInstance,
                                               Vertex parentInstanceVertex,
                                               Map<Id, Vertex> idToVertexMap)
             throws MetadataException {
             // add a new vertex for the struct or trait instance
-            mapTraitInstanceToVertex(traitName, traitInstance, typedInstance.getId(),
+            mapTraitInstanceToVertex(traitInstance, typedInstance.getId(),
                     typedInstance.getTypeName(), parentInstanceVertex, idToVertexMap);
         }
 
-        private void mapTraitInstanceToVertex(String traitName, ITypedStruct traitInstance,
+        private void mapTraitInstanceToVertex(ITypedStruct traitInstance,
                                               Id typedInstanceId, String typedInstanceTypeName,
                                               Vertex parentInstanceVertex,
                                               Map<Id, Vertex> idToVertexMap)
             throws MetadataException {
             // add a new vertex for the struct or trait instance
+            final String traitName = traitInstance.getTypeName();
             Vertex traitInstanceVertex = GraphHelper.createVertexWithoutIdentity(
                     graphService.getBlueprintsGraph(), traitInstance.getTypeName(), typedInstanceId);
             LOG.debug("created vertex {} for trait {}", traitInstanceVertex, traitName);

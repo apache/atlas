@@ -27,7 +27,6 @@ import org.apache.hadoop.metadata.typesystem.types.ClassType;
 import org.apache.hadoop.metadata.typesystem.types.DataTypes;
 import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
-import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.TraitType;
 import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
 import org.codehaus.jettison.json.JSONArray;
@@ -65,8 +64,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testSubmit() throws Exception {
         for (HierarchicalTypeDefinition typeDefinition : typeDefinitions) {
-            String typesAsJSON = TypesSerialization.toJson(
-                    typeSystem, typeDefinition.typeName);
+            String typesAsJSON = TypesSerialization.toJson(typeDefinition);
             System.out.println("typesAsJSON = " + typesAsJSON);
 
             WebResource resource = service
@@ -173,11 +171,6 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
                 ImmutableList.<String>of(),
                 TypesUtil.createRequiredAttrDef("level", DataTypes.INT_TYPE));
         typeDefinitions.add(fetlTypeDefinition);
-
-        typeSystem.defineTypes(
-                ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.of(fetlTypeDefinition),
-                ImmutableList.of(databaseTypeDefinition, tableTypeDefinition));
 
         return typeDefinitions;
     }

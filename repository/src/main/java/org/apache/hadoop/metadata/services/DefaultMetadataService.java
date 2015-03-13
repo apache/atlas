@@ -34,7 +34,6 @@ import org.apache.hadoop.metadata.typesystem.types.IDataType;
 import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +43,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Simple wrapper over TypeSystem and MetadataRepository services with hooks
+ * for listening to changes to the repository.
+ */
 public class DefaultMetadataService implements MetadataService {
 
     private static final Logger LOG =
@@ -211,24 +214,36 @@ public class DefaultMetadataService implements MetadataService {
     /**
      * Adds a new trait to an existing entity represented by a guid.
      *
-     * @param guid          globally unique identifier for the entity
-     * @param traitName     trait name for the instance that needs to be added to entity
-     * @param traitInstance trait instance that needs to be added to entity
+     * @param guid                    globally unique identifier for the entity
+     * @param traitInstanceDefinition trait instance json that needs to be added to entity
      * @throws MetadataException
      */
     @Override
-    public void addTrait(String guid, String traitName,
-                         ITypedStruct traitInstance) throws MetadataException {
+    public void addTrait(String guid,
+                         String traitInstanceDefinition) throws MetadataException {
         Preconditions.checkNotNull(guid, "entity GUID cannot be null");
-        Preconditions.checkNotNull(traitName, "Trait name cannot be null");
-        Preconditions.checkNotNull(traitInstance, "Trait instance cannot be null");
+        Preconditions.checkNotNull(traitInstanceDefinition, "Trait instance cannot be null");
+
+        ITypedStruct traitInstance = deserializeTraitInstance(traitInstanceDefinition);
+        final String traitName = traitInstance.getTypeName();
 
         // ensure trait type is already registered with the TS
-        Preconditions.checkArgument(!typeSystem.isRegistered(traitName),
+        Preconditions.checkArgument(typeSystem.isRegistered(traitName),
                 "trait=%s should be defined in type system before it can be added", traitName);
 
-        repository.addTrait(guid, traitName, traitInstance);
+        repository.addTrait(guid, traitInstance);
+
         onTraitAddedToEntity(guid, traitName);
+    }
+
+    private ITypedStruct deserializeTraitInstance(String traitInstanceDefinition)
+        throws MetadataException {
+
+        try {
+            return (ITypedStruct) Serialization$.MODULE$.traitFromJson(traitInstanceDefinition);
+        } catch (Exception e) {
+            throw new MetadataException("Error deserializing trait instance");
+        }
     }
 
     /**
@@ -245,11 +260,12 @@ public class DefaultMetadataService implements MetadataService {
         Preconditions.checkNotNull(traitNameToBeDeleted, "Trait name cannot be null");
 
         // ensure trait type is already registered with the TS
-        Preconditions.checkArgument(!typeSystem.isRegistered(traitNameToBeDeleted),
+        Preconditions.checkArgument(typeSystem.isRegistered(traitNameToBeDeleted),
                 "trait=%s should be defined in type system before it can be deleted",
                 traitNameToBeDeleted);
 
         repository.deleteTrait(guid, traitNameToBeDeleted);
+
         onTraitDeletedFromEntity(guid, traitNameToBeDeleted);
     }
 

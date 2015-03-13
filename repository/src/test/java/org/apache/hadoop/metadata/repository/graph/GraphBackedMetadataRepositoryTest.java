@@ -231,7 +231,7 @@ public class GraphBackedMetadataRepositoryTest {
         TraitType traitType = typeSystem.defineTraitType(piiTrait);
         ITypedStruct traitInstance = traitType.createInstance();
 
-        repositoryService.addTrait(aGUID, PII, traitInstance);
+        repositoryService.addTrait(aGUID, traitInstance);
 
         // refresh trait names
         traitNames = repositoryService.getTraitNames(aGUID);
@@ -242,7 +242,7 @@ public class GraphBackedMetadataRepositoryTest {
 
     @Test (expectedExceptions = NullPointerException.class)
     public void testAddTraitWithNullInstance() throws Exception {
-        repositoryService.addTrait(getGUID(), PII, null);
+        repositoryService.addTrait(getGUID(), null);
         Assert.fail();
     }
 
@@ -251,7 +251,7 @@ public class GraphBackedMetadataRepositoryTest {
         TraitType traitType = typeSystem.getDataType(TraitType.class, PII);
         ITypedStruct traitInstance = traitType.createInstance();
 
-        repositoryService.addTrait(UUID.randomUUID().toString(), PII, traitInstance);
+        repositoryService.addTrait(UUID.randomUUID().toString(), traitInstance);
         Assert.fail();
     }
 
