@@ -67,8 +67,9 @@ trait GraphPersistenceStrategies {
     def traitNames(v: TitanVertex): java.util.List[String]
 
     def edgeLabel(fInfo: FieldInfo): String = fInfo match {
-        case FieldInfo(dataType, aInfo, null) => edgeLabel(dataType, aInfo)
-        case FieldInfo(dataType, aInfo, reverseDataType) => edgeLabel(reverseDataType, aInfo)
+        case FieldInfo(dataType, aInfo, null, null) => edgeLabel(dataType, aInfo)
+        case FieldInfo(dataType, aInfo, reverseDataType, null) => edgeLabel(reverseDataType, aInfo)
+        case FieldInfo(dataType, null, null, traitName) => traitLabel(dataType, traitName)
     }
 
     def fieldPrefixInSelect: String

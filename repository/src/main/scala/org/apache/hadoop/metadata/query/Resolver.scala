@@ -65,6 +65,10 @@ class Resolver(srcExpr: Option[Expression] = None, aliases: Map[String, Expressi
             if (fInfo.isDefined) {
                 return new FieldExpression(fieldName, fInfo.get, Some(child))
             }
+            val tType = resolveAsTraitType(fieldName)
+            if (tType.isDefined) {
+              return new FieldExpression(fieldName, FieldInfo(child.dataType, null, null, fieldName), Some(child))
+            }
             f
         }
         case isTraitLeafExpression(traitName, classExpression)

@@ -176,6 +176,16 @@ class GremlinTranslator(expr: Expression,
                 case None => step
             }
         }
+        case fe@FieldExpression(fieldName, fInfo, child)
+          if fInfo.traitName != null => {
+          val direction = "out"
+          val edgeLbl = gPersistenceBehavior.edgeLabel(fInfo)
+          val step = s"""$direction("$edgeLbl")"""
+          child match {
+            case Some(e) => s"${genQuery(e, inSelect)}.$step"
+            case None => step
+          }
+        }
         case c@ComparisonExpression(symb, f@FieldExpression(fieldName, fInfo, ch), l) => {
             ch match {
                 case Some(child) =>

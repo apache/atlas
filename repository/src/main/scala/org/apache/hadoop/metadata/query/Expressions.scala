@@ -406,7 +406,15 @@ object Expressions {
 
         val children = if (child.isDefined) List(child.get) else Nil
         lazy val dataType = {
-            val t = if (!fieldInfo.isReverse) fieldInfo.attrInfo.dataType() else fieldInfo.reverseDataType
+            val t = {
+              if (fieldInfo.traitName != null ) {
+                typSystem.getDataType(classOf[TraitType], fieldInfo.traitName)
+              } else if (!fieldInfo.isReverse) {
+                fieldInfo.attrInfo.dataType()
+              } else {
+                fieldInfo.reverseDataType
+              }
+            }
             elemType(t)
         }
         override lazy val resolved: Boolean = true

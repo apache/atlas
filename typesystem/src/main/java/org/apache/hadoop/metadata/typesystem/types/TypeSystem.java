@@ -87,7 +87,11 @@ public class TypeSystem {
 
     public <T> T getDataType(Class<T> cls, String name) throws MetadataException {
         if (types.containsKey(name)) {
-            return cls.cast(types.get(name));
+            try {
+                return cls.cast(types.get(name));
+            } catch(ClassCastException cce) {
+                throw new MetadataException(cce);
+            }
         }
 
         /*
