@@ -54,14 +54,14 @@ class GremlinEvaluator(qry: GremlinQuery, persistenceStrategy: GraphPersistenceS
             GremlinQueryResult(qry.expr.toString, rType, rows.toList)
         } else {
             val sType = rType.asInstanceOf[StructType]
-            val rows = rawRes.asInstanceOf[java.util.List[Row[java.util.List[_]]]].map { r =>
+            val rows = rawRes.asInstanceOf[java.util.List[Row[java.util.List[AnyRef]]]].map { r =>
                 val sInstance = sType.createInstance()
                 val selExpr = qry.expr.asInstanceOf[Expressions.SelectExpression]
                 selExpr.selectListWithAlias.foreach { aE =>
                     val cName = aE.alias
                     val (src, idx) = qry.resultMaping(cName)
                     val v = r.getColumn(src).get(idx)
-                    sInstance.set(cName, aE.dataType.convert(v, Multiplicity.OPTIONAL))
+                    sInstance.set(cName, persistenceStrategy.constructInstance(aE.dataType, v))
                 }
                 sInstance
             }
