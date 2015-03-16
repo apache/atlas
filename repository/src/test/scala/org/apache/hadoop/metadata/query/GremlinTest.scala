@@ -27,7 +27,7 @@ import Matchers._
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class GremlinTest extends FunSuite with BeforeAndAfterAll {
+class GremlinTest extends FunSuite with BeforeAndAfterAll with BaseGremlinTest {
 
     var g: TitanGraph = null
 
@@ -39,19 +39,6 @@ class GremlinTest extends FunSuite with BeforeAndAfterAll {
 
     override def afterAll() {
         g.shutdown()
-    }
-
-    val STRUCT_NAME_REGEX = (TypeUtils.TEMP_STRUCT_NAME_PREFIX + "\\d+").r
-
-    def validateJson(r: GremlinQueryResult, expected: String = null): Unit = {
-        val rJ = r.toJson
-        if (expected != null) {
-            val a = STRUCT_NAME_REGEX.replaceAllIn(rJ, "")
-            val b = STRUCT_NAME_REGEX.replaceAllIn(expected, "")
-            Assertions.assert(a == b)
-        } else {
-            println(rJ)
-        }
     }
 
     test("testClass") {

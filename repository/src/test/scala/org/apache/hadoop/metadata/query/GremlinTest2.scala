@@ -27,7 +27,7 @@ import Matchers._
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class GremlinTest2 extends FunSuite with BeforeAndAfterAll {
+class GremlinTest2 extends FunSuite with BeforeAndAfterAll with BaseGremlinTest {
 
   var g: TitanGraph = null
 
@@ -41,22 +41,29 @@ class GremlinTest2 extends FunSuite with BeforeAndAfterAll {
     g.shutdown()
   }
 
-  val STRUCT_NAME_REGEX = (TypeUtils.TEMP_STRUCT_NAME_PREFIX + "\\d+").r
-
-  def validateJson(r: GremlinQueryResult, expected: String = null): Unit = {
-    val rJ = r.toJson
-    if (expected != null) {
-      val a = STRUCT_NAME_REGEX.replaceAllIn(rJ, "")
-      val b = STRUCT_NAME_REGEX.replaceAllIn(expected, "")
-      Assertions.assert(a == b)
-    } else {
-      println(rJ)
-    }
-  }
-
   test("testTraitSelect") {
     val r = QueryProcessor.evaluate(_class("Table").as("t").join("Dimension").as("dim").select(id("t"), id("dim")), g)
     validateJson(r, "{\n  \"query\":\"Table as t.Dimension as dim select t as _col_0, dim as _col_1\",\n  \"dataType\":{\n    \"typeName\":\"\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"_col_0\",\n        \"dataTypeName\":\"Table\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"_col_1\",\n        \"dataTypeName\":\"Dimension\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"\",\n      \"_col_1\":{\n        \"$typeName$\":\"Dimension\"\n      },\n      \"_col_0\":{\n        \"id\":\"3328\",\n        \"$typeName$\":\"Table\",\n        \"version\":0\n      }\n    },\n    {\n      \"$typeName$\":\"\",\n      \"_col_1\":{\n        \"$typeName$\":\"Dimension\"\n      },\n      \"_col_0\":{\n        \"id\":\"4864\",\n        \"$typeName$\":\"Table\",\n        \"version\":0\n      }\n    },\n    {\n      \"$typeName$\":\"\",\n      \"_col_1\":{\n        \"$typeName$\":\"Dimension\"\n      },\n      \"_col_0\":{\n        \"id\":\"6656\",\n        \"$typeName$\":\"Table\",\n        \"version\":0\n      }\n    }\n  ]\n}")
+  }
+
+  test("testTrait") {
+    val r = QueryProcessor.evaluate(_trait("Dimension"), g)
+    validateJson(r)
+  }
+
+  test("testTraitInstance") {
+    val r = QueryProcessor.evaluate(_trait("Dimension").traitInstance(), g)
+    validateJson(r)
+  }
+
+  test("testInstanceAddedToFilter") {
+    val r = QueryProcessor.evaluate(_trait("Dimension").hasField("typeName"), g)
+    validateJson(r)
+  }
+
+  test("testInstanceFilter") {
+    val r = QueryProcessor.evaluate(_trait("Dimension").traitInstance().hasField("name"), g)
+    validateJson(r)
   }
 
 }

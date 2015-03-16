@@ -322,6 +322,8 @@ object Expressions {
         def loop(loopingExpr: Expression, times: Literal[Integer]) =
             new LoopExpression(this, loopingExpr, Some(times))
 
+        def traitInstance() = new TraitInstanceExpression(this)
+        def instance() = new InstanceExpression(this)
     }
 
     trait BinaryNode {
@@ -405,6 +407,7 @@ object Expressions {
         }
 
         val children = if (child.isDefined) List(child.get) else Nil
+        import scala.language.existentials
         lazy val dataType = {
             val t = {
               if (fieldInfo.traitName != null ) {
@@ -688,4 +691,34 @@ object Expressions {
             else s"$input loop ($loopingExpression)"
         }
     }
+
+    case class TraitInstanceExpression(child: Expression)
+      extends Expression with UnaryNode {
+      lazy val dataType = {
+        if (!resolved) {
+          throw new UnresolvedException(this,
+            s"datatype. Can not resolve due to unresolved child")
+        }
+        if (!child.dataType.isInstanceOf[TraitType]) {
+          throw new ExpressionException(this,
+            s"Cannot apply instance on ${child.dataType.getName}, it is not a TraitType")
+        }
+        TypeUtils.INSTANCE_ID_TYP
+      }
+
+      override def toString = s"$child traitInstance"
+    }
+
+  case class InstanceExpression(child: Expression)
+    extends Expression with UnaryNode {
+    lazy val dataType = {
+      if (!resolved) {
+        throw new UnresolvedException(this,
+          s"datatype. Can not resolve due to unresolved child")
+      }
+      TypeUtils.INSTANCE_ID_TYP
+    }
+
+    override def toString = s"$child instance"
+  }
 }

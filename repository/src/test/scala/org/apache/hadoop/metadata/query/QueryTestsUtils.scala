@@ -28,6 +28,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.commons.configuration.{Configuration, ConfigurationException, MapConfiguration}
 import org.apache.commons.io.FileUtils
 import org.apache.hadoop.metadata.typesystem.types._
+import org.scalatest.{BeforeAndAfterAll, FunSuite, Assertions}
 
 trait GraphUtils {
 
@@ -147,4 +148,22 @@ object QueryTestsUtils extends GraphUtils {
         engine.eval("g.loadGraphSON(hiveGraphFile)", bindings)
         g
     }
+
+}
+
+trait BaseGremlinTest {
+  self : FunSuite with BeforeAndAfterAll =>
+
+  val STRUCT_NAME_REGEX = (TypeUtils.TEMP_STRUCT_NAME_PREFIX + "\\d+").r
+  def validateJson(r: GremlinQueryResult, expected: String = null): Unit = {
+    val rJ = r.toJson
+    if (expected != null) {
+      val a = STRUCT_NAME_REGEX.replaceAllIn(rJ, "")
+      val b = STRUCT_NAME_REGEX.replaceAllIn(expected, "")
+      Assertions.assert(a == b)
+    } else {
+      println(rJ)
+    }
+  }
+
 }

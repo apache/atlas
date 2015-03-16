@@ -157,6 +157,30 @@ class GremlinTranslator(expr: Expression,
         }
     }
 
+    def instanceClauseToTop(topE : Expression) : PartialFunction[Expression, Expression] = {
+      case le : LogicalExpression if (le fastEquals topE) =>  {
+        le.instance()
+      }
+      case ce : ComparisonExpression if (ce fastEquals topE) =>  {
+        ce.instance()
+      }
+      case he : hasFieldUnaryExpression if (he fastEquals topE) =>  {
+        he.instance()
+      }
+    }
+
+    def traitClauseWithInstanceForTop(topE : Expression) : PartialFunction[Expression, Expression] = {
+      case te : TraitExpression if (te fastEquals topE) =>  {
+        val theTrait = te.as("theTrait")
+        val theInstance = theTrait.traitInstance().as("theInstance")
+        val outE =
+          theInstance.select(id("theTrait"),
+            id("theInstance").field(TypeUtils.INSTANCE_ID_TYP_TYPENAME_ATTRNAME).as("instanceTypeName"),
+            id("theInstance").field(TypeUtils.INSTANCE_ID_TYP_ID_ATTRNAME).as("instanceId"))
+        QueryProcessor.validate(outE)
+      }
+    }
+
     private def genQuery(expr: Expression, inSelect: Boolean): String = expr match {
         case ClassExpression(clsName) => s"""has("${gPersistenceBehavior.typeAttributeName}","$clsName")"""
         case TraitExpression(clsName) => s"""has("${gPersistenceBehavior.typeAttributeName}","$clsName")"""
@@ -178,7 +202,7 @@ class GremlinTranslator(expr: Expression,
         }
         case fe@FieldExpression(fieldName, fInfo, child)
           if fInfo.traitName != null => {
-          val direction = "out"
+          val direction = gPersistenceBehavior.instanceToTraitEdgeDirection
           val edgeLbl = gPersistenceBehavior.edgeLabel(fInfo)
           val step = s"""$direction("$edgeLbl")"""
           child match {
@@ -239,6 +263,13 @@ class GremlinTranslator(expr: Expression,
             s"""${genQuery(child, inSelect)}.has("$fieldName")"""
         case ArithmeticExpression(symb, left, right) => s"${genQuery(left, inSelect)} $symb ${genQuery(right, inSelect)}"
         case l: Literal[_] => l.toString
+        case in@TraitInstanceExpression(child) => {
+          val direction = gPersistenceBehavior.traitToInstanceEdgeDirection
+          s"${genQuery(child, inSelect)}.$direction()"
+        }
+        case in@InstanceExpression(child) => {
+          s"${genQuery(child, inSelect)}"
+        }
         case x => throw new GremlinTranslationException(x, "expression not yet supported")
     }
 
@@ -250,6 +281,8 @@ class GremlinTranslator(expr: Expression,
         e1 = e1.transformUp(new AddAliasToSelectInput)
         e1.traverseUp(validateSelectExprHaveOneSrc)
         e1 = e1.transformUp(addAliasToLoopInput())
+        e1 = e1.transformUp(instanceClauseToTop(e1))
+        e1 = e1.transformUp(traitClauseWithInstanceForTop(e1))
 
         e1 match {
             case e1: SelectExpression => {
