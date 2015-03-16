@@ -108,8 +108,17 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
                     TitanVertex structVertex = (TitanVertex) value;
                     StructType structType = (StructType) dataType;
                     ITypedStruct structInstance = structType.createInstance();
-                    metadataRepository.getGraphToInstanceMapper().mapVertexToInstance(
-                            structVertex, structInstance, structType.fieldMapping().fields);
+
+                    if ( dataType.getName() == TypeUtils.INSTANCE_ID_TYP().getName()) {
+                        structInstance.set(TypeUtils.INSTANCE_ID_TYP_TYPENAME_ATTRNAME(),
+                                structVertex.getProperty(typeAttributeName()));
+                        structInstance.set(TypeUtils.INSTANCE_ID_TYP_ID_ATTRNAME(),
+                                structVertex.getProperty(idAttributeName()));
+
+                    } else {
+                        metadataRepository.getGraphToInstanceMapper().mapVertexToInstance(
+                                structVertex, structInstance, structType.fieldMapping().fields);
+                    }
                     return dataType.convert(structInstance, Multiplicity.OPTIONAL);
 
                 case TRAIT:
@@ -180,4 +189,14 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
     public String loopObjectExpression(IDataType<?> dataType) {
         return "{it.object." + typeAttributeName() + " == '" + dataType.getName() + "'}";
     }
+
+    @Override
+    public String instanceToTraitEdgeDirection() { return "out"; }
+
+    @Override
+    public String traitToInstanceEdgeDirection() { return "in"; }
+
+    @Override
+    public String idAttributeName() { return metadataRepository.getIdAttributeName(); }
+
 }

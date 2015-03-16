@@ -45,11 +45,23 @@ trait GraphPersistenceStrategies {
     def typeAttributeName: String
 
     /**
+     * Name of attribute used to store guid in vertex
+     */
+    def idAttributeName : String
+
+    /**
      * Given a dataType and a reference attribute, how is edge labeled
      */
     def edgeLabel(iDataType: IDataType[_], aInfo: AttributeInfo): String
 
     def traitLabel(cls: IDataType[_], traitName: String): String
+
+    def instanceToTraitEdgeDirection : String = "out"
+    def traitToInstanceEdgeDirection = instanceToTraitEdgeDirection match {
+      case "out" => "in"
+      case "in" => "out"
+      case x => x
+    }
 
     /**
      * The propertyKey used to store the attribute in a Graph Vertex.
@@ -101,6 +113,7 @@ trait GraphPersistenceStrategies {
 
 object GraphPersistenceStrategy1 extends GraphPersistenceStrategies {
     val typeAttributeName = "typeName"
+    val idAttributeName = "guid"
 
     def edgeLabel(dataType: IDataType[_], aInfo: AttributeInfo) = s"${dataType.getName}.${aInfo.name}"
 
@@ -125,6 +138,16 @@ object GraphPersistenceStrategy1 extends GraphPersistenceStrategies {
     def constructInstance[U](dataType: IDataType[U], v: AnyRef): U = {
         dataType.getTypeCategory match {
             case DataTypes.TypeCategory.PRIMITIVE => dataType.convert(v, Multiplicity.OPTIONAL)
+            case DataTypes.TypeCategory.STRUCT if dataType.getName == TypeUtils.INSTANCE_ID_TYP.getName => {
+              val sType = dataType.asInstanceOf[StructType]
+              val sInstance = sType.createInstance()
+              val tV = v.asInstanceOf[TitanVertex]
+              sInstance.set(TypeUtils.INSTANCE_ID_TYP_TYPENAME_ATTRNAME,
+                tV.getProperty[java.lang.String](typeAttributeName))
+              sInstance.set(TypeUtils.INSTANCE_ID_TYP_ID_ATTRNAME,
+                tV.getProperty[java.lang.String](idAttributeName))
+              dataType.convert(sInstance, Multiplicity.OPTIONAL)
+            }
             case DataTypes.TypeCategory.STRUCT => {
                 val sType = dataType.asInstanceOf[StructType]
                 val sInstance = sType.createInstance()

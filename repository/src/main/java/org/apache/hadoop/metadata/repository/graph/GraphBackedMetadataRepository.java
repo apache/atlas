@@ -96,6 +96,10 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         return Constants.ENTITY_TYPE_PROPERTY_KEY;
     }
 
+    public String getIdAttributeName() {
+        return Constants.GUID_PROPERTY_KEY;
+    }
+
     @Override
     public String getTraitLabel(IDataType<?> dataType, String traitName) {
         return dataType.getName() + "." + traitName;

@@ -65,6 +65,18 @@ object TypeUtils {
             aDefs:_*);
     }
 
+    val INSTANCE_ID_TYP_ID_ATTRNAME = "guid"
+    val INSTANCE_ID_TYP_TYPENAME_ATTRNAME = "typeName"
+    val INSTANCE_ID_TYP_NAME = TEMP_STRUCT_NAME_PREFIX + "_IdType"
+    val INSTANCE_ID_TYP = {
+      val idAttr = new AttributeDefinition(INSTANCE_ID_TYP_ID_ATTRNAME,
+        DataTypes.STRING_TYPE.getName, Multiplicity.REQUIRED, false, null)
+      val typNmAttr =
+        new AttributeDefinition(INSTANCE_ID_TYP_TYPENAME_ATTRNAME,
+          DataTypes.STRING_TYPE.getName, Multiplicity.REQUIRED, false, null)
+      typSystem.defineQueryResultType(INSTANCE_ID_TYP_NAME, idAttr, typNmAttr);
+    }
+
     def fieldMapping(iDataType: IDataType[_]) : Option[FieldMapping] = iDataType match {
         case c : ClassType => Some(c.fieldMapping())
         case t : TraitType => Some(t.fieldMapping())
