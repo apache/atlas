@@ -16,23 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata;
+package org.apache.hadoop.metadata.typesystem.types;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.typesystem.IReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.ITypedStruct;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.Struct;
-import org.apache.hadoop.metadata.typesystem.types.ClassType;
-import org.apache.hadoop.metadata.typesystem.types.DataTypes;
-import org.apache.hadoop.metadata.typesystem.types.EnumType;
-import org.apache.hadoop.metadata.typesystem.types.EnumValue;
-import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
-import org.apache.hadoop.metadata.typesystem.types.StructType;
-import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

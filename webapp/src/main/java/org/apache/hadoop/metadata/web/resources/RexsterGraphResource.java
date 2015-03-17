@@ -61,8 +61,6 @@ import java.util.Set;
 @Path("graph")
 @Singleton
 public class RexsterGraphResource {
-    public static final String RESULTS = "results";
-    public static final String TOTAL_SIZE = "totalSize";
     public static final String OUT_E = "outE";
     public static final String IN_E = "inE";
     public static final String BOTH_E = "bothE";
@@ -122,7 +120,7 @@ public class RexsterGraphResource {
             Vertex vertex = findVertex(vertexId);
 
             JSONObject response = new JSONObject();
-            response.put(RESULTS, GraphSONUtility.jsonFromElement(
+            response.put(Servlets.RESULTS, GraphSONUtility.jsonFromElement(
                     vertex, getVertexIndexedKeys(), GraphSONMode.NORMAL));
             return Response.ok(response).build();
         } catch (JSONException e) {
@@ -163,8 +161,8 @@ public class RexsterGraphResource {
             Map<String, String> vertexProperties = getVertexProperties(vertex);
 
             JSONObject response = new JSONObject();
-            response.put(RESULTS, new JSONObject(vertexProperties));
-            response.put(TOTAL_SIZE, vertexProperties.size());
+            response.put(Servlets.RESULTS, new JSONObject(vertexProperties));
+            response.put(Servlets.TOTAL_SIZE, vertexProperties.size());
             return Response.ok(response).build();
         } catch (JSONException e) {
             throw new WebApplicationException(
@@ -273,9 +271,9 @@ public class RexsterGraphResource {
 
         JSONObject response = new JSONObject();
         if (!countOnly) {
-            response.put(RESULTS, elementArray);
+            response.put(Servlets.RESULTS, elementArray);
         }
-        response.put(TOTAL_SIZE, counter);
+        response.put(Servlets.TOTAL_SIZE, counter);
         return Response.ok(response).build();
     }
 
@@ -301,7 +299,7 @@ public class RexsterGraphResource {
             }
 
             JSONObject response = new JSONObject();
-            response.put(RESULTS, GraphSONUtility.jsonFromElement(
+            response.put(Servlets.RESULTS, GraphSONUtility.jsonFromElement(
                     edge, getEdgeIndexedKeys(), GraphSONMode.NORMAL));
             return Response.ok(response).build();
         } catch (JSONException e) {
@@ -321,8 +319,8 @@ public class RexsterGraphResource {
         }
 
         JSONObject response = new JSONObject();
-        response.put(RESULTS, vertexArray);
-        response.put(TOTAL_SIZE, counter);
+        response.put(Servlets.RESULTS, vertexArray);
+        response.put(Servlets.TOTAL_SIZE, counter);
 
         return response;
     }

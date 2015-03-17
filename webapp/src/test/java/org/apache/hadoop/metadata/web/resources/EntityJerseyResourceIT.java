@@ -40,6 +40,7 @@ import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
 import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.TraitType;
 import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
+import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
@@ -98,9 +99,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get("requestId"));
+        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
 
-        guid = response.get("GUID").toString();
+        guid = response.get(Servlets.RESULTS).toString();
         Assert.assertNotNull(guid);
 
         try {
@@ -126,9 +127,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get("requestId"));
+        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
 
-        final String definition = response.getString("definition");
+        final String definition = response.getString(Servlets.RESULTS);
         Assert.assertNotNull(definition);
         LOG.debug("tableInstanceAfterGet = " + definition);
 
@@ -192,9 +193,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get("requestId"));
+        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
 
-        final JSONArray list = response.getJSONArray("list");
+        final JSONArray list = response.getJSONArray(Servlets.RESULTS);
         Assert.assertNotNull(list);
         Assert.assertEquals(list.length(), 1);
     }
@@ -228,9 +229,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get("requestId"));
+        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
 
-        final JSONArray list = response.getJSONArray("list");
+        final JSONArray list = response.getJSONArray(Servlets.RESULTS);
         Assert.assertEquals(list.length(), 0);
     }
 
@@ -259,10 +260,10 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get("requestId"));
+        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
         Assert.assertNotNull(response.get("GUID"));
 
-        final JSONArray list = response.getJSONArray("list");
+        final JSONArray list = response.getJSONArray(Servlets.RESULTS);
         Assert.assertEquals(list.length(), 7);
     }
 
@@ -294,7 +295,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get("requestId"));
+        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
         Assert.assertNotNull(response.get("GUID"));
         Assert.assertNotNull(response.get("traitInstance"));
     }
@@ -341,7 +342,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get("requestId"));
+        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
         Assert.assertNotNull(response.get("GUID"));
         Assert.assertNotNull(response.get("traitName"));
     }

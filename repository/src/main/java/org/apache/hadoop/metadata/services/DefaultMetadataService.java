@@ -24,7 +24,6 @@ import org.apache.hadoop.metadata.discovery.SearchIndexer;
 import org.apache.hadoop.metadata.listener.EntityChangeListener;
 import org.apache.hadoop.metadata.listener.TypesChangeListener;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
-import org.apache.hadoop.metadata.repository.RepositoryException;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.ITypedStruct;
 import org.apache.hadoop.metadata.typesystem.TypesDef;
@@ -134,6 +133,16 @@ public class DefaultMetadataService implements MetadataService {
     }
 
     /**
+     * Return the list of trait type names in the type system.
+     *
+     * @return list of trait type names in the type system
+     */
+    @Override
+    public List<String> getTraitNamesList() throws MetadataException {
+        return typeSystem.getTraitsNames();
+    }
+
+    /**
      * Creates an entity, instance of the type.
      *
      * @param entityType       type
@@ -186,15 +195,8 @@ public class DefaultMetadataService implements MetadataService {
         Preconditions.checkNotNull(entityType, "entity type cannot be null");
 
         // verify if the type exists
-        String existingTypeDefinition = null;
-        try {
-            existingTypeDefinition = getTypeDefinition(entityType);
-        } catch (MetadataException ignore) {
-            // do nothing
-        }
-
-        if (existingTypeDefinition == null) {
-            throw new RepositoryException("type is not defined for : " + entityType);
+        if (!typeSystem.isRegistered(entityType)) {
+            throw new MetadataException("type is not defined for : " + entityType);
         }
     }
 

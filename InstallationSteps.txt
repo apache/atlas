@@ -29,7 +29,7 @@ You would need the following installed:
 1. Building Metadata
 --------------------
 
-Building metadata from the source repository
+Building DGI from the source repository
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * git clone git@github.com:hortonworks/metadata.git metadata
@@ -37,7 +37,7 @@ Building metadata from the source repository
 * export MAVEN_OPTS="-Xmx1024m -XX:MaxPermSize=256m" && mvn clean install
 
 
-2. Deploying Metadata
+2. Deploying DGI
 ---------------------
 
 Once the build successfully completes, artifacts can be packaged for deployment.
@@ -65,21 +65,21 @@ Tar is structured as follows
 |- DISCLAIMER.txt
 |- CHANGES.txt
 
-3. Installing & running Metadata
+3. Installing & running DGI
 --------------------------------
 
-a. Installing Metadata
+a. Installing DGI
 ~~~~~~~~~~~~~~~~~~~~~~
 
 * tar -xzvf apache-metadata-${project.version}-bin.tar.gz
 * cd metadata-${project.version}
 
-b. Starting Metadata Server
+b. Starting DGI Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * bin/metadata-start.sh
 
-c. Using Falcon
+c. Using DGI
 ~~~~~~~~~~~~~~~
 
 * Verify if the server is up and running
@@ -99,7 +99,7 @@ c. Using Falcon
 * Search for entities (instances) in the repository
   curl -v http://localhost:21000/api/metadata/discovery/search/dsl?query="from hive_table"
 
-d. Stopping Falcon Server
+d. Stopping DGI Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * bin/metadata-stop.sh

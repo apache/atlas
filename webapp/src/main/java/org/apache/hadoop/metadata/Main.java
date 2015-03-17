@@ -29,6 +29,8 @@ import org.apache.hadoop.metadata.web.service.EmbeddedServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Iterator;
+
 /**
  * Driver for running Metadata as a standalone server with embedded jetty server.
  */
@@ -60,36 +62,29 @@ public final class Main {
 
     public static void main(String[] args) throws Exception {
         CommandLine cmd = parseArgs(args);
-        // todo: enable version for webapp
-        // String projectVersion = getProjectVersion();
-        // String appPath = "webapp/target/metadata-webapp-" + projectVersion;
-        String appPath = "webapp/target/metadata-governance";
+        PropertiesConfiguration buildConfiguration =
+                new PropertiesConfiguration("metadata-buildinfo.properties");
+        String appPath = "webapp/target/metadata-webapp-" + getProjectVersion(buildConfiguration);
 
         if (cmd.hasOption(APP_PATH)) {
             appPath = cmd.getOptionValue(APP_PATH);
         }
 
-        PropertiesConfiguration configuration = new PropertiesConfiguration(
-                "application.properties");
+        PropertiesConfiguration configuration =
+                new PropertiesConfiguration("application.properties");
         final String enableTLSFlag = configuration.getString("metadata.enableTLS");
         final int appPort = getApplicationPort(cmd, enableTLSFlag);
         final boolean enableTLS = isTLSEnabled(enableTLSFlag, appPort);
         configuration.setProperty("metadata.enableTLS", String.valueOf(enableTLS));
 
-        LOG.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-        LOG.info("Server starting with TLS ? {} on port {}", enableTLS, appPort);
-        LOG.info("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+        showStartupInfo(buildConfiguration, enableTLS, appPort);
         EmbeddedServer server = EmbeddedServer.newServer(appPort, appPath, enableTLS);
         server.start();
     }
 
-/*
-    private static String getProjectVersion() throws ConfigurationException {
-        PropertiesConfiguration configuration =
-                new PropertiesConfiguration("metadata-buildinfo.properties");
-        return configuration.getString("project.version");
+    private static String getProjectVersion(PropertiesConfiguration buildConfiguration) {
+        return buildConfiguration.getString("project.version");
     }
-*/
 
     private static int getApplicationPort(CommandLine cmd, String enableTLSFlag) {
         final int appPort;
@@ -109,5 +104,30 @@ public final class Main {
                 ? System
                 .getProperty("metadata.enableTLS", (appPort % 1000) == 443 ? "true" : "false")
                 : enableTLSFlag);
+    }
+
+    private static void showStartupInfo(PropertiesConfiguration buildConfiguration,
+                                        boolean enableTLS, int appPort) {
+        StringBuilder buffer = new StringBuilder();
+        buffer.append("\n############################################");
+        buffer.append("############################################");
+        buffer.append("\n                               DGI Server (STARTUP)");
+        buffer.append("\n");
+        try {
+            final Iterator<String> keys = buildConfiguration.getKeys();
+            while (keys.hasNext()) {
+                String key = keys.next();
+                buffer.append('\n').append('\t').append(key).
+                        append(":\t").append(buildConfiguration.getProperty(key));
+            }
+        } catch (Throwable e) {
+            buffer.append("*** Unable to get build info ***");
+        }
+        buffer.append("\n############################################");
+        buffer.append("############################################");
+        LOG.info(buffer.toString());
+        LOG.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+        LOG.info("Server starting with TLS ? {} on port {}", enableTLS, appPort);
+        LOG.info("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
     }
 }

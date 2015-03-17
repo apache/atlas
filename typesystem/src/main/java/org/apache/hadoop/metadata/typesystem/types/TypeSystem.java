@@ -34,6 +34,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Singleton
 public class TypeSystem {
@@ -42,6 +43,12 @@ public class TypeSystem {
     public static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
     private Map<String, IDataType> types;
     private IdType idType;
+
+    /**
+     * An in-memory copy of list of traits for convenience.
+     */
+    private List<String> traitTypes;
+
 
     private TypeSystem() {
         initialize();
@@ -60,13 +67,23 @@ public class TypeSystem {
     }
 
     private void initialize() {
-        types = new HashMap<>();
+        types = new ConcurrentHashMap<>();
+        traitTypes = new ArrayList<>();
+
         registerPrimitiveTypes();
         registerCoreTypes();
     }
 
     public ImmutableList<String> getTypeNames() {
         return ImmutableList.copyOf(types.keySet());
+    }
+
+    public ImmutableList<String> getTraitsNames() {
+        return ImmutableList.copyOf(traitTypes);
+    }
+
+    private void addTraitName(String traitName) {
+        traitTypes.add(traitName);
     }
 
     private void registerPrimitiveTypes() {
@@ -145,9 +162,9 @@ public class TypeSystem {
      * construct a temporary StructType for a Query Result. This is not registered in the
      * typeSystem.
      * The attributes in the typeDefinition can only reference permanent types.
-     * @param name
-     * @param attrDefs
-     * @return
+     * @param name     struct type name
+     * @param attrDefs struct type definition
+     * @return temporary struct type
      * @throws MetadataException
      */
     public StructType defineQueryResultType(String name,
@@ -158,8 +175,8 @@ public class TypeSystem {
         for (int i = 0; i < attrDefs.length; i++) {
             infos[i] = new AttributeInfo(this, attrDefs[i]);
         }
-        StructType type = new StructType(TypeSystem.this, name, null, infos);
-        return type;
+
+        return new StructType(this, name, null, infos);
     }
 
     public TraitType defineTraitType(HierarchicalTypeDefinition<TraitType> traitDef)
@@ -183,8 +200,7 @@ public class TypeSystem {
     }
 
     public Map<String, IDataType> defineTraitTypes(
-            HierarchicalTypeDefinition<TraitType>... traitDefs)
-    throws MetadataException {
+            HierarchicalTypeDefinition<TraitType>... traitDefs) throws MetadataException {
         TransientTypeSystem transientTypes = new TransientTypeSystem(
                 ImmutableList.<StructTypeDefinition>of(),
                 ImmutableList.copyOf(traitDefs),
@@ -441,11 +457,11 @@ public class TypeSystem {
             }
 
             try {
-                Constructor<U> cons = cls.getDeclaredConstructor(new Class[]{
+                Constructor<U> cons = cls.getDeclaredConstructor(
                         TypeSystem.class,
                         String.class,
                         ImmutableList.class,
-                        AttributeInfo[].class});
+                        AttributeInfo[].class);
                 U type = cons.newInstance(TypeSystem.this, def.typeName, def.superTypes, infos);
                 TypeSystem.this.types.put(def.typeName, type);
                 return type;
@@ -481,13 +497,13 @@ public class TypeSystem {
             for (TraitType traitType : traitTypes) {
                 constructHierarchicalType(TraitType.class,
                         traitNameToDefMap.get(traitType.getName()));
+                addTraitName(traitType.getName());
             }
 
             for (ClassType classType : classTypes) {
                 constructHierarchicalType(ClassType.class,
                         classNameToDefMap.get(classType.getName()));
             }
-
         }
 
         /*

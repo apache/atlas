@@ -48,11 +48,18 @@ public interface MetadataService {
     String getTypeDefinition(String typeName) throws MetadataException;
 
     /**
-     * Return the list of types in the repository.
+     * Return the list of types in the type system.
      *
-     * @return list of type names in the repository
+     * @return list of type names in the type system
      */
     List<String> getTypeNamesList() throws MetadataException;
+
+    /**
+     * Return the list of trait type names in the type system.
+     *
+     * @return list of trait type names in the type system
+     */
+    List<String> getTraitNamesList() throws MetadataException;
 
     /**
      * Creates an entity, instance of the type.

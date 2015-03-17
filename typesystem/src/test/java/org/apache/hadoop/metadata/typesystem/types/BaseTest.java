@@ -16,25 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata;
+package org.apache.hadoop.metadata.typesystem.types;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.Struct;
-import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
-import org.apache.hadoop.metadata.typesystem.types.ClassType;
-import org.apache.hadoop.metadata.typesystem.types.DataTypes;
-import org.apache.hadoop.metadata.typesystem.types.HierarchicalType;
-import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
-import org.apache.hadoop.metadata.typesystem.types.IDataType;
-import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
-import org.apache.hadoop.metadata.typesystem.types.StructType;
-import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
-import org.apache.hadoop.metadata.typesystem.types.TraitType;
-import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
 import org.junit.Before;
 
@@ -49,8 +39,8 @@ public abstract class BaseTest {
     public static final String STRUCT_TYPE_2 = "t2";
 
     public static Struct createStruct() throws MetadataException {
-        StructType structType = (StructType) TypeSystem.getInstance()
-                .getDataType(StructType.class, STRUCT_TYPE_1);
+        StructType structType = TypeSystem.getInstance().getDataType(
+                StructType.class, STRUCT_TYPE_1);
         Struct s = new Struct(structType.getName());
         s.set("a", 1);
         s.set("b", true);
@@ -64,10 +54,10 @@ public abstract class BaseTest {
         s.set("j", BigInteger.valueOf(1L));
         s.set("k", new BigDecimal(1));
         s.set("l", new Date(1418265358440L));
-        s.set("m", Lists.<Integer>asList(Integer.valueOf(1), new Integer[]{Integer.valueOf(1)}));
-        s.set("n", Lists.<BigDecimal>asList(BigDecimal.valueOf(1.1),
+        s.set("m", Lists.asList(1, new Integer[]{1}));
+        s.set("n", Lists.asList(BigDecimal.valueOf(1.1),
                 new BigDecimal[]{BigDecimal.valueOf(1.1)}));
-        Map<String, Double> hm = Maps.<String, Double>newHashMap();
+        Map<String, Double> hm = Maps.newHashMap();
         hm.put("a", 1.0);
         hm.put("b", 2.0);
         s.set("o", hm);
@@ -80,7 +70,6 @@ public abstract class BaseTest {
 
     @Before
     public void setup() throws Exception {
-
         TypeSystem ts = TypeSystem.getInstance();
         ts.reset();
 
@@ -102,16 +91,17 @@ public abstract class BaseTest {
                 TypesUtil.createOptionalAttrDef("n", ts.defineArrayType(DataTypes.BIGDECIMAL_TYPE)),
                 TypesUtil.createOptionalAttrDef("o",
                         ts.defineMapType(DataTypes.STRING_TYPE, DataTypes.DOUBLE_TYPE)));
+        System.out.println("defined structType = " + structType);
 
         StructType recursiveStructType = ts.defineStructType(STRUCT_TYPE_2,
                 true,
                 TypesUtil.createRequiredAttrDef("a", DataTypes.INT_TYPE),
                 TypesUtil.createOptionalAttrDef("s", STRUCT_TYPE_2));
-
+        System.out.println("defined recursiveStructType = " + recursiveStructType);
     }
 
     protected Map<String, IDataType> defineTraits(HierarchicalTypeDefinition... tDefs)
-    throws MetadataException {
+        throws MetadataException {
 
         return getTypeSystem().defineTraitTypes(tDefs);
     }
@@ -144,7 +134,7 @@ public abstract class BaseTest {
         );
         HierarchicalTypeDefinition<ClassType> managerTypeDef =
                 TypesUtil.createClassTypeDef("Manager",
-                        ImmutableList.<String>of("Person"),
+                        ImmutableList.of("Person"),
                         new AttributeDefinition("subordinates",
                                 String.format("array<%s>", "Person"),
                                 Multiplicity.COLLECTION, false, "manager")
@@ -158,8 +148,8 @@ public abstract class BaseTest {
                 );
 
         ts.defineTypes(ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(securityClearanceTypeDef),
-                ImmutableList.<HierarchicalTypeDefinition<ClassType>>of(deptTypeDef, personTypeDef,
+                ImmutableList.of(securityClearanceTypeDef),
+                ImmutableList.of(deptTypeDef, personTypeDef,
                         managerTypeDef));
 
         ImmutableList<HierarchicalType> types = ImmutableList.of(
@@ -183,9 +173,9 @@ public abstract class BaseTest {
 
         john.set("manager", jane);
 
-        hrDept.set("employees", ImmutableList.<Referenceable>of(john, jane));
+        hrDept.set("employees", ImmutableList.of(john, jane));
 
-        jane.set("subordinates", ImmutableList.<Referenceable>of(john));
+        jane.set("subordinates", ImmutableList.of(john));
 
         jane.getTrait("SecurityClearance").set("level", 1);
 

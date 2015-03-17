@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -19,7 +19,6 @@
 package org.apache.hadoop.metadata.typesystem.json
 
 import com.google.common.collect.ImmutableList
-import org.apache.hadoop.metadata.BaseTest
 import org.apache.hadoop.metadata.typesystem.types._
 import org.junit.{Assert, Test}
 

@@ -16,12 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata;
+package org.apache.hadoop.metadata.typesystem.types;
 
+import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.typesystem.ITypedStruct;
 import org.apache.hadoop.metadata.typesystem.Struct;
-import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
-import org.apache.hadoop.metadata.typesystem.types.StructType;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

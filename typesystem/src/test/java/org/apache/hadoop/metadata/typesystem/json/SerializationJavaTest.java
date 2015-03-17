@@ -19,7 +19,7 @@
 package org.apache.hadoop.metadata.typesystem.json;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.hadoop.metadata.BaseTest;
+import org.apache.hadoop.metadata.typesystem.types.BaseTest;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.typesystem.*;
 import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;

@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
+import org.apache.hadoop.metadata.typesystem.json.TypesSerialization$;
 import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
 import org.apache.hadoop.metadata.typesystem.types.DataTypes;
@@ -29,6 +30,7 @@ import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
 import org.apache.hadoop.metadata.typesystem.types.TraitType;
 import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
+import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
@@ -83,7 +85,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
             JSONObject response = new JSONObject(responseAsString);
             Assert.assertEquals(response.get("typeName"), typeDefinition.typeName);
             Assert.assertNotNull(response.get("types"));
-            Assert.assertNotNull(response.get("requestId"));
+            Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
         }
     }
 
@@ -108,7 +110,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
             JSONObject response = new JSONObject(responseAsString);
             Assert.assertEquals(response.get("typeName"), typeDefinition.typeName);
             Assert.assertNotNull(response.get("definition"));
-            Assert.assertNotNull(response.get("requestId"));
+            Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
         }
     }
 
@@ -140,10 +142,54 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get("requestId"));
+        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
 
-        final JSONArray list = response.getJSONArray("list");
+        final JSONArray list = response.getJSONArray(Servlets.RESULTS);
         Assert.assertNotNull(list);
+    }
+
+    @Test
+    public void testGetTraitNames() throws Exception {
+        String[] traitsAdded = addTraits();
+
+        WebResource resource = service
+                .path("api/metadata/types/traits/list");
+
+        ClientResponse clientResponse = resource
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.GET, ClientResponse.class);
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+
+        String responseAsString = clientResponse.getEntity(String.class);
+        Assert.assertNotNull(responseAsString);
+
+        JSONObject response = new JSONObject(responseAsString);
+        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
+
+        final JSONArray list = response.getJSONArray(Servlets.RESULTS);
+        Assert.assertNotNull(list);
+        Assert.assertTrue(list.length() >= traitsAdded.length);
+    }
+
+    private String[] addTraits() throws Exception {
+        String[] traitNames = {
+                "class_trait",
+                "secure_trait",
+                "pii_trait",
+                "ssn_trait",
+                "salary_trait",
+                "sox_trait",
+        };
+
+        for (String traitName : traitNames) {
+            HierarchicalTypeDefinition<TraitType> traitTypeDef =
+                    TypesUtil.createTraitTypeDef(traitName, ImmutableList.<String>of());
+            String json = TypesSerialization$.MODULE$.toJson(traitTypeDef, true);
+            sumbitType(json, traitName);
+        }
+
+        return traitNames;
     }
 
     private List<HierarchicalTypeDefinition> createHiveTypes() throws Exception {

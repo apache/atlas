@@ -84,7 +84,7 @@ public class TypesResource {
             JSONObject response = new JSONObject();
             response.put("typeName", typeName);
             response.put("types", typesAdded);
-            response.put("requestId", Thread.currentThread().getName());
+            response.put(Servlets.REQUEST_ID, Servlets.getRequestId());
 
             return Response.ok(response).build();
         } catch (Exception e) {
@@ -110,7 +110,7 @@ public class TypesResource {
             JSONObject response = new JSONObject();
             response.put("typeName", typeName);
             response.put("definition", typeDefinition);
-            response.put("requestId", Thread.currentThread().getName());
+            response.put(Servlets.REQUEST_ID, Servlets.getRequestId());
 
             return Response.ok(response).build();
         } catch (MetadataException e) {
@@ -125,7 +125,7 @@ public class TypesResource {
     }
 
     /**
-     * Gets the list of types registed in the type system.
+     * Gets the list of type names registered in the type system.
      */
     @GET
     @Path("list")
@@ -135,8 +135,32 @@ public class TypesResource {
             final List<String> typeNamesList = metadataService.getTypeNamesList();
 
             JSONObject response = new JSONObject();
-            response.put("list", new JSONArray(typeNamesList));
-            response.put("requestId", Thread.currentThread().getName());
+            response.put(Servlets.RESULTS, new JSONArray(typeNamesList));
+            response.put(Servlets.TOTAL_SIZE, typeNamesList.size());
+            response.put(Servlets.REQUEST_ID, Servlets.getRequestId());
+
+            return Response.ok(response).build();
+        } catch (Exception e) {
+            LOG.error("Unable to get types list", e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        }
+    }
+
+    /**
+     * Gets the list of trait type names registered in the type system.
+     */
+    @GET
+    @Path("traits/list")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getTraitNames(@Context HttpServletRequest request) {
+        try {
+            final List<String> traitNamesList = metadataService.getTraitNamesList();
+
+            JSONObject response = new JSONObject();
+            response.put(Servlets.RESULTS, new JSONArray(traitNamesList));
+            response.put(Servlets.TOTAL_SIZE, traitNamesList.size());
+            response.put(Servlets.REQUEST_ID, Servlets.getRequestId());
 
             return Response.ok(response).build();
         } catch (Exception e) {

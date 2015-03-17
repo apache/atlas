@@ -23,6 +23,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
+import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
@@ -68,6 +69,6 @@ public abstract class BaseResourceIT {
         JSONObject response = new JSONObject(responseAsString);
         Assert.assertEquals(response.get("typeName"), type);
         Assert.assertNotNull(response.get("types"));
-        Assert.assertNotNull(response.get("requestId"));
+        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
     }
 }

@@ -93,7 +93,7 @@ public class EntityResource {
             final String guid = metadataService.createEntity(typeName, entity);
             JSONObject response = new JSONObject();
             response.put(Servlets.REQUEST_ID, Servlets.getRequestId());
-            response.put(GUID, guid);
+            response.put(Servlets.RESULTS, guid);
 
             return Response.ok(response).build();
         } catch (MetadataException | IOException | IllegalArgumentException e) {
@@ -128,7 +128,7 @@ public class EntityResource {
 
             Response.Status status = Response.Status.NOT_FOUND;
             if (entityDefinition != null) {
-                response.put("definition", entityDefinition);
+                response.put(Servlets.RESULTS, entityDefinition);
                 status = Response.Status.OK;
             }
 
@@ -172,7 +172,8 @@ public class EntityResource {
             JSONObject response = new JSONObject();
             response.put(Servlets.REQUEST_ID, Servlets.getRequestId());
             response.put("type", entityType);
-            response.put("list", new JSONArray(entityList));
+            response.put(Servlets.RESULTS, new JSONArray(entityList));
+            response.put(Servlets.TOTAL_SIZE, entityList.size());
 
             return Response.ok(response).build();
         } catch (MetadataException | IllegalArgumentException e) {
@@ -206,7 +207,8 @@ public class EntityResource {
             JSONObject response = new JSONObject();
             response.put(Servlets.REQUEST_ID, Servlets.getRequestId());
             response.put(GUID, guid);
-            response.put("list", new JSONArray(traitNames));
+            response.put(Servlets.RESULTS, new JSONArray(traitNames));
+            response.put(Servlets.TOTAL_SIZE, traitNames.size());
 
             return Response.ok(response).build();
         } catch (MetadataException | IllegalArgumentException e) {

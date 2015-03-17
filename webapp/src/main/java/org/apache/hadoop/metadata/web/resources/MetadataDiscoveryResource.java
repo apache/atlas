@@ -56,10 +56,9 @@ import java.util.Map;
 @Singleton
 public class MetadataDiscoveryResource {
 
-    public static final String RESULTS = "results";
     private static final Logger LOG = LoggerFactory.getLogger(EntityResource.class);
+
     private final DiscoveryService discoveryService;
-    // public static final String TOTAL_SIZE = "totalSize";
 
     /**
      * Created by the Guice ServletModule and injected with the
@@ -90,20 +89,20 @@ public class MetadataDiscoveryResource {
 
         try {
             JSONObject response = new JSONObject();
-            response.put("requestId", Thread.currentThread().getName());
+            response.put(Servlets.REQUEST_ID, Servlets.getRequestId());
             response.put("query", query);
 
             try {   // fall back to dsl
                 final String jsonResult = discoveryService.searchByDSL(query);
                 response.put("queryType", "dsl");
-                response.put(RESULTS, new JSONObject(jsonResult));
+                response.put(Servlets.RESULTS, new JSONObject(jsonResult));
 
             } catch (Throwable throwable) {
                 LOG.error("Unable to get entity list for query {} using dsl", query, throwable);
 
                 // todo: fall back to full text search
                 response.put("queryType", "full-text");
-                response.put(RESULTS, new JSONObject());
+                response.put(Servlets.RESULTS, new JSONObject());
             }
 
             return Response.ok(response).build();
@@ -130,10 +129,10 @@ public class MetadataDiscoveryResource {
             final String jsonResult = discoveryService.searchByDSL(dslQuery);
 
             JSONObject response = new JSONObject();
-            response.put("requestId", Thread.currentThread().getName());
+            response.put(Servlets.REQUEST_ID, Servlets.getRequestId());
             response.put("query", dslQuery);
             response.put("queryType", "dsl");
-            response.put(RESULTS, new JSONObject(jsonResult));
+            response.put(Servlets.RESULTS, new JSONObject(jsonResult));
 
             return Response.ok(response).build();
         } catch (DiscoveryException e) {
@@ -164,7 +163,7 @@ public class MetadataDiscoveryResource {
                     .searchByGremlin(gremlinQuery);
 
             JSONObject response = new JSONObject();
-            response.put("requestId", Thread.currentThread().getName());
+            response.put(Servlets.REQUEST_ID, Servlets.getRequestId());
             response.put("query", gremlinQuery);
             response.put("queryType", "gremlin");
 
@@ -172,7 +171,8 @@ public class MetadataDiscoveryResource {
             for (Map<String, String> result : results) {
                 list.put(new JSONObject(result));
             }
-            response.put(RESULTS, list);
+            response.put(Servlets.RESULTS, list);
+            response.put(Servlets.TOTAL_SIZE, list.length());
 
             return Response.ok(response).build();
         } catch (DiscoveryException e) {
@@ -213,7 +213,7 @@ public class MetadataDiscoveryResource {
                 .relationshipWalk(guid, depth, edgesToFollow);
 
         try {
-            response.put("requestId", Thread.currentThread().getName());
+            response.put(Servlets.REQUEST_ID, Servlets.getRequestId());
             if (resultMap.containsKey("vertices")) {
                 response.put("vertices", new JSONObject(resultMap.get("vertices")));
             }
@@ -259,7 +259,7 @@ public class MetadataDiscoveryResource {
                 searchText, depth, prop);
 
         try {
-            response.put("requestId", Thread.currentThread().getName());
+            response.put(Servlets.REQUEST_ID, Servlets.getRequestId());
             if (resultMap.containsKey("vertices")) {
                 response.put("vertices", resultMap.get("vertices"));
             }
