@@ -138,13 +138,14 @@ object GraphPersistenceStrategy1 extends GraphPersistenceStrategies {
     def constructInstance[U](dataType: IDataType[U], v: AnyRef): U = {
         dataType.getTypeCategory match {
             case DataTypes.TypeCategory.PRIMITIVE => dataType.convert(v, Multiplicity.OPTIONAL)
-            case DataTypes.TypeCategory.STRUCT if dataType.getName == TypeUtils.INSTANCE_ID_TYP.getName => {
+            case DataTypes.TypeCategory.STRUCT
+              if dataType.getName == TypeSystem.getInstance().getIdType.getName => {
               val sType = dataType.asInstanceOf[StructType]
               val sInstance = sType.createInstance()
               val tV = v.asInstanceOf[TitanVertex]
-              sInstance.set(TypeUtils.INSTANCE_ID_TYP_TYPENAME_ATTRNAME,
+              sInstance.set(TypeSystem.getInstance().getIdType.typeNameAttrName,
                 tV.getProperty[java.lang.String](typeAttributeName))
-              sInstance.set(TypeUtils.INSTANCE_ID_TYP_ID_ATTRNAME,
+              sInstance.set(TypeSystem.getInstance().getIdType.idAttrName,
                 tV.getProperty[java.lang.String](idAttributeName))
               dataType.convert(sInstance, Multiplicity.OPTIONAL)
             }

@@ -41,6 +41,7 @@ public class TypeSystem {
     private static final TypeSystem INSTANCE = new TypeSystem();
     public static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
     private Map<String, IDataType> types;
+    private IdType idType;
 
     private TypeSystem() {
         initialize();
@@ -61,6 +62,7 @@ public class TypeSystem {
     private void initialize() {
         types = new HashMap<>();
         registerPrimitiveTypes();
+        registerCoreTypes();
     }
 
     public ImmutableList<String> getTypeNames() {
@@ -79,6 +81,18 @@ public class TypeSystem {
         types.put(DataTypes.BIGDECIMAL_TYPE.getName(), DataTypes.BIGDECIMAL_TYPE);
         types.put(DataTypes.DATE_TYPE.getName(), DataTypes.DATE_TYPE);
         types.put(DataTypes.STRING_TYPE.getName(), DataTypes.STRING_TYPE);
+    }
+
+
+    /*
+     * The only core OOB type we will define is the Struct to represent the Identity of an Instance.
+     */
+    private void registerCoreTypes() {
+        idType = new IdType();
+    }
+
+    public IdType getIdType() {
+        return idType;
     }
 
     public boolean isRegistered(String typeName) {
@@ -561,5 +575,38 @@ public class TypeSystem {
         throws MetadataException {
             throw new MetadataException("Internal Error: define type called on TrasientTypeSystem");
         }
+    }
+
+    public class IdType {
+        private static final String ID_ATTRNAME = "guid";
+        private static final String  TYPENAME_ATTRNAME = "typeName";
+        private static final String  TYP_NAME = "__IdType";
+
+        private IdType() {
+            AttributeDefinition idAttr = new AttributeDefinition(ID_ATTRNAME,
+                    DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null);
+            AttributeDefinition typNmAttr =
+                    new AttributeDefinition(TYPENAME_ATTRNAME,
+                            DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null);
+            try {
+                AttributeInfo[] infos = new AttributeInfo[2];
+                infos[0] = new AttributeInfo(TypeSystem.this, idAttr);
+                infos[1] = new AttributeInfo(TypeSystem.this, typNmAttr);
+
+                StructType type = new StructType(TypeSystem.this, TYP_NAME, null, infos);
+                TypeSystem.this.types.put(TYP_NAME, type);
+
+            } catch (MetadataException me) {
+                throw new RuntimeException(me);
+            }
+        }
+
+        public StructType getStructType() throws MetadataException {
+            return getDataType(StructType.class, TYP_NAME);
+        }
+
+        public String getName() { return TYP_NAME; }
+        public String idAttrName() { return ID_ATTRNAME;}
+        public String typeNameAttrName() { return TYPENAME_ATTRNAME;}
     }
 }

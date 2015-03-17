@@ -324,6 +324,8 @@ object Expressions {
 
         def traitInstance() = new TraitInstanceExpression(this)
         def instance() = new InstanceExpression(this)
+
+        def path() = new PathExpression(this)
     }
 
     trait BinaryNode {
@@ -703,7 +705,7 @@ object Expressions {
           throw new ExpressionException(this,
             s"Cannot apply instance on ${child.dataType.getName}, it is not a TraitType")
         }
-        TypeUtils.INSTANCE_ID_TYP
+        typSystem.getIdType.getStructType
       }
 
       override def toString = s"$child traitInstance"
@@ -716,9 +718,22 @@ object Expressions {
         throw new UnresolvedException(this,
           s"datatype. Can not resolve due to unresolved child")
       }
-      TypeUtils.INSTANCE_ID_TYP
+      typSystem.getIdType.getStructType
     }
 
     override def toString = s"$child instance"
+  }
+
+  case class PathExpression(child: Expression)
+    extends Expression with UnaryNode {
+    lazy val dataType = {
+      if (!resolved) {
+        throw new UnresolvedException(this,
+          s"datatype. Can not resolve due to unresolved child")
+      }
+      TypeUtils.ResultWithPathStruct.createType(child.dataType)
+    }
+
+    override def toString = s"$child withPath"
   }
 }

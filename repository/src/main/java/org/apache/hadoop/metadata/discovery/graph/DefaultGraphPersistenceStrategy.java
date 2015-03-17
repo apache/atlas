@@ -29,11 +29,7 @@ import org.apache.hadoop.metadata.repository.graph.GraphBackedMetadataRepository
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.ITypedStruct;
 import org.apache.hadoop.metadata.typesystem.persistence.Id;
-import org.apache.hadoop.metadata.typesystem.types.AttributeInfo;
-import org.apache.hadoop.metadata.typesystem.types.IDataType;
-import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
-import org.apache.hadoop.metadata.typesystem.types.StructType;
-import org.apache.hadoop.metadata.typesystem.types.TraitType;
+import org.apache.hadoop.metadata.typesystem.types.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,10 +105,12 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
                     StructType structType = (StructType) dataType;
                     ITypedStruct structInstance = structType.createInstance();
 
-                    if ( dataType.getName() == TypeUtils.INSTANCE_ID_TYP().getName()) {
-                        structInstance.set(TypeUtils.INSTANCE_ID_TYP_TYPENAME_ATTRNAME(),
+                    TypeSystem.IdType idType = TypeSystem.getInstance().getIdType();
+
+                    if ( dataType.getName() == idType.getName()) {
+                        structInstance.set(idType.typeNameAttrName(),
                                 structVertex.getProperty(typeAttributeName()));
-                        structInstance.set(TypeUtils.INSTANCE_ID_TYP_ID_ATTRNAME(),
+                        structInstance.set(idType.idAttrName(),
                                 structVertex.getProperty(idAttributeName()));
 
                     } else {

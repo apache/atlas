@@ -65,16 +65,18 @@ object TypeUtils {
             aDefs:_*);
     }
 
-    val INSTANCE_ID_TYP_ID_ATTRNAME = "guid"
-    val INSTANCE_ID_TYP_TYPENAME_ATTRNAME = "typeName"
-    val INSTANCE_ID_TYP_NAME = TEMP_STRUCT_NAME_PREFIX + "_IdType"
-    val INSTANCE_ID_TYP = {
-      val idAttr = new AttributeDefinition(INSTANCE_ID_TYP_ID_ATTRNAME,
-        DataTypes.STRING_TYPE.getName, Multiplicity.REQUIRED, false, null)
-      val typNmAttr =
-        new AttributeDefinition(INSTANCE_ID_TYP_TYPENAME_ATTRNAME,
-          DataTypes.STRING_TYPE.getName, Multiplicity.REQUIRED, false, null)
-      typSystem.defineQueryResultType(INSTANCE_ID_TYP_NAME, idAttr, typNmAttr);
+    object ResultWithPathStruct {
+      val pathAttrName = "path"
+      val resultAttrName = "result"
+      val pathAttrType = DataTypes.arrayTypeName(typSystem.getIdType.getStructType)
+
+      val pathAttr = new AttributeDefinition(pathAttrName, pathAttrType, Multiplicity.COLLECTION, false, null)
+
+      def createType(resultType : IDataType[_]) : StructType = {
+        val resultAttr = new AttributeDefinition(resultAttrName, pathAttrType, Multiplicity.REQUIRED, false, null)
+        val typName = s"${TEMP_STRUCT_NAME_PREFIX}${tempStructCounter.getAndIncrement}"
+        typSystem.defineQueryResultType(typName, pathAttr, resultAttr);
+      }
     }
 
     def fieldMapping(iDataType: IDataType[_]) : Option[FieldMapping] = iDataType match {

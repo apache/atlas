@@ -20,6 +20,7 @@ package org.apache.hadoop.metadata.query
 
 import org.apache.hadoop.metadata.query.Expressions._
 import org.apache.hadoop.metadata.typesystem.types.DataTypes.TypeCategory
+import org.apache.hadoop.metadata.typesystem.types.TypeSystem
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -174,9 +175,8 @@ class GremlinTranslator(expr: Expression,
         val theTrait = te.as("theTrait")
         val theInstance = theTrait.traitInstance().as("theInstance")
         val outE =
-          theInstance.select(id("theTrait"),
-            id("theInstance").field(TypeUtils.INSTANCE_ID_TYP_TYPENAME_ATTRNAME).as("instanceTypeName"),
-            id("theInstance").field(TypeUtils.INSTANCE_ID_TYP_ID_ATTRNAME).as("instanceId"))
+          theInstance.select(id("theTrait").as("traitDetails"),
+            id("theInstance").as("instanceInfo"))
         QueryProcessor.validate(outE)
       }
     }
