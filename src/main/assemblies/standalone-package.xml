@@ -77,7 +77,7 @@
 
     <files>
         <file>
-            <source>webapp/target/metadata-governance.war</source>
+            <source>webapp/target/metadata-webapp-${project.version}.war</source>
             <outputDirectory>server/webapp</outputDirectory>
             <destName>metadata.war</destName>
         </file>

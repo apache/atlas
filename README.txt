@@ -16,9 +16,17 @@
 
 Metadata and Governance Overview
 
-This aims to provide a simple repository for storing entities and associated
-relationships among other entities.
+The Data Governance Initiative, DGI, framework is an extensible set of core
+foundational governance services – enabling enterprises to effectively and
+efficiently meet their compliance requirements within Hadoop and allows
+integration with the whole enterprise data ecosystem.
 
-The goal is to capture lineage for both entities and its associated instances.
-It also captures provenance, lineage, classification, etc. associated with each
-of the entities in th metadata repository.
+This will provide true visibility in Hadoop by using both a prescriptive
+and forensic model, along with technical and operational audit as well as
+lineage enriched by business taxonomical metadata.  It also enables any
+metadata consumer to work inter-operably without discrete interfaces to
+each other -- the metadata store is common.
+
+The metadata veracity is maintained by leveraging Apache Ranger to prevent
+non-authorized access paths to data at runtime.
+Security is both role based (RBAC) and attribute based (ABAC).

@@ -18,6 +18,8 @@
 
 package org.apache.hadoop.metadata.web.resources;
 
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONException;
@@ -78,13 +80,20 @@ public class AdminResource {
     public Response getVersion() {
         if (version == null) {
             try {
+                PropertiesConfiguration configProperties =
+                        new PropertiesConfiguration("metadata-buildinfo.properties");
+
                 JSONObject response = new JSONObject();
-                response.put("Version", "v0.1"); // todo: get version
+                response.put("Version", configProperties.getString("build.version", "UNKNOWN"));
+                response.put("Name",
+                        configProperties.getString("project.name", "metadata-governance"));
+                response.put("Description", configProperties.getString("project.description",
+                        "Metadata Management and Data Governance Platform over Hadoop"));
+
                 // todo: add hadoop version?
-                // response.put("Hadoop", VersionInfo.getVersion() + "-r" + VersionInfo
-                // .getRevision());
+                // response.put("Hadoop", VersionInfo.getVersion() + "-r" + VersionInfo.getRevision());
                 version = Response.ok(response).build();
-            } catch (JSONException e) {
+            } catch (JSONException | ConfigurationException e) {
                 throw new WebApplicationException(
                         Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
             }
