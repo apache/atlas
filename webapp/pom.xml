@@ -54,6 +54,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-common</artifactId>
+            <version>${hadoop.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
         </dependency>
@@ -250,7 +256,7 @@
                         </goals>
                     </execution>
                     <execution>
-                        <id>genkey</id>
+                        <id>generateKeyPair</id>
                         <phase>generate-resources</phase>
                         <goals>
                             <goal>generateKeyPair</goal>
@@ -260,8 +266,8 @@
                 <configuration>
                     <dname>cn=metadata.incubator.apache.org</dname>
                     <keystore>${project.build.directory}/metadata.keystore</keystore>
-                    <keypass>metadata-passwd</keypass>
-                    <storepass>metadata-passwd</storepass>
+                    <keypass>keypass</keypass>
+                    <storepass>keypass</storepass>
                     <alias>metadata</alias>
                     <keyalg>RSA</keyalg>
                     <validity>100000</validity>
