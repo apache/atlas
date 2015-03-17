@@ -79,7 +79,7 @@
         <jersey.version>1.9</jersey.version>
         <tinkerpop.version>2.5.0</tinkerpop.version>
         <titan.version>0.5.3</titan.version>
-        <hadoop.version>2.5.0</hadoop.version>
+        <hadoop.version>2.6.0</hadoop.version>
         <hive.version>0.14.0</hive.version>
         <falcon.version>0.6.0.2.2.0.0-2041</falcon.version>
 

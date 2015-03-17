@@ -45,6 +45,11 @@
                     <artifactId>hadoop-client</artifactId>
                     <scope>test</scope>
                 </dependency>
+                <dependency>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-common</artifactId>
+                    <version>${hadoop.version}</version>
+                </dependency>
             </dependencies>
         </profile>
     </profiles>
@@ -96,6 +101,12 @@
         </dependency>
 
         <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>3.1.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.mortbay.jetty</groupId>
             <artifactId>jetty</artifactId>
         </dependency>
@@ -103,6 +114,12 @@
         <dependency>
             <groupId>org.mortbay.jetty</groupId>
             <artifactId>jetty-plus</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mortbay.jetty</groupId>
+            <artifactId>jetty-util</artifactId>
+            <version>6.1.26</version>
         </dependency>
 
         <dependency>
@@ -211,11 +228,12 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${project.build.directory}/webapps</outputDirectory>
+                            <outputDirectory>${basedir}/conf
+                            </outputDirectory>
                             <resources>
                                 <resource>
-                                    <directory>src/conf</directory>
-                                    <filtering>true</filtering>
+                                    <directory>${project.build.directory}/conf</directory>
+                                    <filtering>false</filtering>
                                 </resource>
                             </resources>
                         </configuration>
@@ -252,7 +270,7 @@
                         </goals>
                     </execution>
                     <execution>
-                        <id>genkey</id>
+                        <id>generateKeyPair</id>
                         <phase>generate-resources</phase>
                         <goals>
                             <goal>generateKeyPair</goal>
@@ -261,9 +279,9 @@
                 </executions>
                 <configuration>
                     <dname>cn=metadata.incubator.apache.org</dname>
-                    <keystore>${project.build.directory}/metadata.keystore</keystore>
-                    <keypass>metadata-passwd</keypass>
-                    <storepass>metadata-passwd</storepass>
+                    <keystore>${project.build.directory}/conf/metadata.keystore</keystore>
+                    <keypass>keypass</keypass>
+                    <storepass>keypass</storepass>
                     <alias>metadata</alias>
                     <keyalg>RSA</keyalg>
                     <validity>100000</validity>
@@ -279,22 +297,20 @@
                     <!--only skip int tests -->
                     <connectors>
                         <!--
-                        <connector implementation="org.mortbay.jetty.security.SslSocketConnector">
-                            <port>21443</port>
-                            <maxIdleTime>60000</maxIdleTime>
-                            <keystore>${project.build.directory}/../../webapp/target/metadata.keystore</keystore>
-                            <keyPassword>metadata-passwd</keyPassword>
-                            <password>metadata-passwd</password>
-                        </connector>
+                                                    <connector implementation="org.mortbay.jetty.security.SslSocketConnector">
+                                                        <port>21443</port>
+                                                        <maxIdleTime>60000</maxIdleTime>
+                                                        <keystore>${project.build.directory}/../../webapp/target/metadata.keystore</keystore>
+                                                        <keyPassword>metadata-passwd</keyPassword>
+                                                        <password>metadata-passwd</password>
+                                                    </connector>
                         -->
-                        <connector
-                                implementation="org.mortbay.jetty.nio.SelectChannelConnector">
+                        <connector implementation="org.mortbay.jetty.nio.SelectChannelConnector">
                             <port>21000</port>
                             <maxIdleTime>60000</maxIdleTime>
                         </connector>
                     </connectors>
-                    <webApp>${project.build.directory}/metadata-webapp-${project.version}
-                    </webApp>
+                    <webApp>${project.build.directory}/metadata-webapp-${project.version}</webApp>
                     <contextPath>/</contextPath>
                     <useTestClasspath>true</useTestClasspath>
                     <systemProperties>
@@ -316,15 +332,12 @@
                         </systemProperty>
                         <systemProperty>
                             <name>keystore.file</name>
-                            <value>
-                                ${project.build.directory}/../../webapp/target/metadata.keystore
+                            <value>${project.build.directory}/../../webapp/target/metadata.keystore
                             </value>
                         </systemProperty>
                         <systemProperty>
                             <name>truststore.file</name>
-                            <value>
-                                ${project.build.directory}/../../webapp/target/metadata.keystore
-                            </value>
+                            <value>${project.build.directory}/../../webapp/target/metadata.keystore</value>
                         </systemProperty>
                     </systemProperties>
                     <stopKey>metadata-stop</stopKey>

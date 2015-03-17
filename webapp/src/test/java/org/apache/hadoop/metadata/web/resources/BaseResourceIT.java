@@ -37,13 +37,12 @@ public abstract class BaseResourceIT {
 
     protected TypeSystem typeSystem;
     protected WebResource service;
+    public static String baseUrl = "http://localhost:21000/";;
 
     @BeforeClass
     public void setUp() throws Exception {
         typeSystem = TypeSystem.getInstance();
         typeSystem.reset();
-
-        String baseUrl = "http://localhost:21000/";
 
         DefaultClientConfig config = new DefaultClientConfig();
         Client client = Client.create(config);
