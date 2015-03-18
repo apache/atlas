@@ -23,7 +23,7 @@
 
 <!--
 
-  Checkstyle configuration for Falcon that is based on the sun_checks.xml file
+  Checkstyle configuration for Metadata that is based on the sun_checks.xml file
   that is bundled with Checkstyle and includes checks for:
 
     - the Java Language Specification at
@@ -210,7 +210,7 @@
           This generates too many false-positives on wrapped 'throws' clauses
           to be really useful. Disabled for now.
 
-          Falcon style is:
+          Metadata style is:
           * Spaces, not tabs.
           * Indent by four spaces.
           * Indent by four spaces when wrapping a line.

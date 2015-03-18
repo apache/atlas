@@ -268,7 +268,7 @@
                 <artifactId>maven-jetty-plugin</artifactId>
                 <version>${jetty.version}</version>
                 <configuration>
-                    <skip>${skipTests}</skip>
+                    <skip>${skipITs}</skip>
                     <!--only skip int tests -->
                     <connectors>
                         <!--
@@ -291,6 +291,10 @@
                     <contextPath>/</contextPath>
                     <useTestClasspath>true</useTestClasspath>
                     <systemProperties>
+                        <systemProperty>
+                            <name>metadata.log.dir</name>
+                            <value>${project.build.directory}/logs</value>
+                        </systemProperty>
                         <systemProperty>
                             <name>keystore.file</name>
                             <value>
