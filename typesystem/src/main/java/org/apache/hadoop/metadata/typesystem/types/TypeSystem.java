@@ -168,12 +168,13 @@ public class TypeSystem {
      * @throws MetadataException
      */
     public StructType defineQueryResultType(String name,
+                                            Map<String, IDataType> tempTypes,
                                             AttributeDefinition... attrDefs)
             throws MetadataException {
 
         AttributeInfo[] infos = new AttributeInfo[attrDefs.length];
         for (int i = 0; i < attrDefs.length; i++) {
-            infos[i] = new AttributeInfo(this, attrDefs[i]);
+            infos[i] = new AttributeInfo(this, attrDefs[i], tempTypes);
         }
 
         return new StructType(this, name, null, infos);
@@ -414,7 +415,7 @@ public class TypeSystem {
 
         private AttributeInfo constructAttributeInfo(AttributeDefinition attrDef)
         throws MetadataException {
-            AttributeInfo info = new AttributeInfo(this, attrDef);
+            AttributeInfo info = new AttributeInfo(this, attrDef, null);
             if (transientTypes.contains(attrDef.dataTypeName)) {
                 recursiveRefs.add(info);
             }
@@ -606,8 +607,8 @@ public class TypeSystem {
                             DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null);
             try {
                 AttributeInfo[] infos = new AttributeInfo[2];
-                infos[0] = new AttributeInfo(TypeSystem.this, idAttr);
-                infos[1] = new AttributeInfo(TypeSystem.this, typNmAttr);
+                infos[0] = new AttributeInfo(TypeSystem.this, idAttr, null);
+                infos[1] = new AttributeInfo(TypeSystem.this, typNmAttr, null);
 
                 StructType type = new StructType(TypeSystem.this, TYP_NAME, null, infos);
                 TypeSystem.this.types.put(TYP_NAME, type);

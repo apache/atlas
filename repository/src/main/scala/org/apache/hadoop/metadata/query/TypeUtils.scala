@@ -18,9 +18,11 @@
 
 package org.apache.hadoop.metadata.query
 
+import java.util
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.apache.hadoop.metadata.MetadataException
+import org.apache.hadoop.metadata.query.Expressions.{SelectExpression, PathExpression}
 import org.apache.hadoop.metadata.typesystem.types.DataTypes.{ArrayType, PrimitiveType, TypeCategory}
 import org.apache.hadoop.metadata.typesystem.types._
 
@@ -62,6 +64,7 @@ object TypeUtils {
             aDefs(i) = new AttributeDefinition(e.alias,e.dataType.getName, Multiplicity.OPTIONAL, false, null)
         }
         return typSystem.defineQueryResultType(s"${TEMP_STRUCT_NAME_PREFIX}${tempStructCounter.getAndIncrement}",
+            null,
             aDefs:_*);
     }
 
@@ -72,10 +75,14 @@ object TypeUtils {
 
       val pathAttr = new AttributeDefinition(pathAttrName, pathAttrType, Multiplicity.COLLECTION, false, null)
 
-      def createType(resultType : IDataType[_]) : StructType = {
-        val resultAttr = new AttributeDefinition(resultAttrName, pathAttrType, Multiplicity.REQUIRED, false, null)
+      def createType(pE : PathExpression, resultType : IDataType[_]) : StructType = {
+        val resultAttr = new AttributeDefinition(resultAttrName, resultType.getName, Multiplicity.REQUIRED, false, null)
         val typName = s"${TEMP_STRUCT_NAME_PREFIX}${tempStructCounter.getAndIncrement}"
-        typSystem.defineQueryResultType(typName, pathAttr, resultAttr);
+        val m : java.util.HashMap[String, IDataType[_]] = new util.HashMap[String, IDataType[_]]()
+        if ( pE.child.isInstanceOf[SelectExpression]) {
+          m.put(pE.child.dataType.getName, pE.child.dataType)
+        }
+        typSystem.defineQueryResultType(typName, m, pathAttr, resultAttr);
       }
     }
 

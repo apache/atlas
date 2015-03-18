@@ -20,6 +20,8 @@ package org.apache.hadoop.metadata.typesystem.types;
 
 import org.apache.hadoop.metadata.MetadataException;
 
+import java.util.Map;
+
 public class AttributeInfo {
     public final String name;
     public final Multiplicity multiplicity;
@@ -33,10 +35,11 @@ public class AttributeInfo {
     public final String reverseAttributeName;
     private IDataType dataType;
 
-    AttributeInfo(TypeSystem t, AttributeDefinition def) throws MetadataException {
+    AttributeInfo(TypeSystem t, AttributeDefinition def, Map<String, IDataType> tempTypes) throws MetadataException {
         TypeUtils.validateName(def.name);
         this.name = def.name;
-        this.dataType = t.getDataType(IDataType.class, def.dataTypeName);
+        this.dataType = (tempTypes != null && tempTypes.containsKey(def.dataTypeName)) ?
+                tempTypes.get(def.dataTypeName) : t.getDataType(IDataType.class, def.dataTypeName);
         this.multiplicity = def.multiplicity;
         this.isComposite = def.isComposite;
         this.isUnique = def.isUnique;

@@ -29,6 +29,8 @@ import scala.collection.mutable.ArrayBuffer
 case class GremlinQuery(expr: Expression, queryStr: String, resultMaping: Map[String, (String, Int)]) {
 
     def hasSelectList = resultMaping != null
+
+    def isPathExpresion = expr.isInstanceOf[PathExpression]
 }
 
 trait SelectExpressionHandling {
@@ -270,6 +272,9 @@ class GremlinTranslator(expr: Expression,
         case in@InstanceExpression(child) => {
           s"${genQuery(child, inSelect)}"
         }
+        case pe@PathExpression(child) => {
+          s"${genQuery(child, inSelect)}.path"
+        }
         case x => throw new GremlinTranslationException(x, "expression not yet supported")
     }
 
@@ -288,6 +293,10 @@ class GremlinTranslator(expr: Expression,
             case e1: SelectExpression => {
                 val rMap = buildResultMapping(e1)
                 GremlinQuery(e1, s"g.V.${genQuery(e1, false)}.toList()", rMap)
+            }
+            case pe@PathExpression(se@SelectExpression(child, selectList)) => {
+              val rMap = buildResultMapping(se)
+              GremlinQuery(e1, s"g.V.${genQuery(pe, false)}.toList()", rMap)
             }
             case e1 => GremlinQuery(e1, s"g.V.${genQuery(e1, false)}.toList()", null)
         }

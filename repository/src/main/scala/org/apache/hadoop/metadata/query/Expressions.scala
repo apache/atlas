@@ -731,7 +731,7 @@ object Expressions {
         throw new UnresolvedException(this,
           s"datatype. Can not resolve due to unresolved child")
       }
-      TypeUtils.ResultWithPathStruct.createType(child.dataType)
+      TypeUtils.ResultWithPathStruct.createType(this, child.dataType)
     }
 
     override def toString = s"$child withPath"
