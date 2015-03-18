@@ -56,12 +56,12 @@
 
     <logger name="AUDIT" additivity="false">
         <level value="debug"/>
-        <appender-ref ref="console"/>
+        <appender-ref ref="AUDIT"/>
     </logger>
 
     <logger name="METRIC" additivity="false">
         <level value="debug"/>
-        <appender-ref ref="console"/>
+        <appender-ref ref="METRIC"/>
     </logger>
 
     <logger name="org.apache.hadoop.metadata" additivity="false">
@@ -86,7 +86,7 @@
 
     <root>
         <priority value="debug"/>
-        <appender-ref ref="console"/>
+        <appender-ref ref="FILE"/>
     </root>
 
 </log4j:configuration>

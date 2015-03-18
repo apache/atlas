@@ -156,4 +156,12 @@ public interface MetadataRepository {
      */
     void deleteTrait(String guid,
                      String traitNameToBeDeleted) throws RepositoryException;
+
+    /**
+     * Adds the property to the entity that corresponds to the GUID
+     * @param guid entity id
+     * @param property
+     * @param value
+     */
+    void addProperty(String guid, String property, String value) throws RepositoryException;
 }

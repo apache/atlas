@@ -18,6 +18,7 @@
 
 package org.apache.hadoop.metadata.web.filters;
 
+import com.google.inject.Singleton;
 import org.apache.hadoop.metadata.web.util.DateTimeHelper;
 import org.apache.hadoop.metadata.web.util.Servlets;
 import org.slf4j.Logger;
@@ -39,6 +40,7 @@ import java.util.UUID;
  * This records audit information as part of the filter after processing the request
  * and also introduces a UUID into request and response for tracing requests in logs.
  */
+@Singleton
 public class AuditFilter implements Filter {
 
     private static final Logger AUDIT_LOG = LoggerFactory.getLogger("AUDIT");
@@ -61,10 +63,9 @@ public class AuditFilter implements Filter {
 
         try {
             currentThread.setName(formatName(oldName, requestId));
+            recordAudit(httpRequest, requestTimeISO9601);
             filterChain.doFilter(request, response);
         } finally {
-            recordAudit(httpRequest, requestTimeISO9601);
-
             // put the request id into the response so users can trace logs for this request
             ((HttpServletResponse) response).setHeader(Servlets.REQUEST_ID, requestId);
             currentThread.setName(oldName);

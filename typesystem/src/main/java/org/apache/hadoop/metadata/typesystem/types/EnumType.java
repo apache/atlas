@@ -18,6 +18,8 @@
 
 package org.apache.hadoop.metadata.typesystem.types;
 
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.metadata.MetadataException;
 
@@ -52,11 +54,11 @@ public class EnumType extends AbstractDataType<EnumValue> {
         if (val != null) {
             EnumValue e = null;
             if (val instanceof EnumValue) {
-                e = (EnumValue) val;
+                e = valueMap.get(((EnumValue)val).value);
             } else if ( val instanceof Integer) {
-                e = ordinalMap.get((Integer)val);
+                e = ordinalMap.get(val);
             } else if ( val instanceof  String) {
-                e = valueMap.get((String)val);
+                e = valueMap.get(val);
             } else if ( val instanceof Number ) {
                 e = ordinalMap.get(((Number)val).intValue());
             }
@@ -80,5 +82,9 @@ public class EnumType extends AbstractDataType<EnumValue> {
 
     public EnumValue fromValue(String val) {
         return valueMap.get(val.trim());
+    }
+
+    public ImmutableCollection<EnumValue> values() {
+        return valueMap.values();
     }
 }

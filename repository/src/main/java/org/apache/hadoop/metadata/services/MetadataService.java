@@ -86,6 +86,14 @@ public interface MetadataService {
      */
     List<String> getEntityList(String entityType) throws MetadataException;
 
+    /**
+     * Adds the property to the given entity id(guid)
+     * @param guid entity id
+     * @param property
+     * @param value
+     */
+    void addProperty(String guid, String property, String value) throws MetadataException;
+
     // Trait management functions
     /**
      * Gets the list of trait names for a given entity represented by a guid.

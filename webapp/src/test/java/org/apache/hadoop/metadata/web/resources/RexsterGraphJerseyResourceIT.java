@@ -21,6 +21,7 @@ package org.apache.hadoop.metadata.web.resources;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.HttpMethod;
@@ -32,6 +33,12 @@ import javax.ws.rs.core.Response;
  */
 @Test
 public class RexsterGraphJerseyResourceIT extends BaseResourceIT {
+
+    @BeforeClass
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+    }
 
     @Test(enabled = false)
     public void testGetVertex() throws Exception {

@@ -38,7 +38,6 @@ public abstract class BaseResourceIT {
     protected TypeSystem typeSystem;
     protected WebResource service;
 
-    @BeforeClass
     public void setUp() throws Exception {
         typeSystem = TypeSystem.getInstance();
         typeSystem.reset();

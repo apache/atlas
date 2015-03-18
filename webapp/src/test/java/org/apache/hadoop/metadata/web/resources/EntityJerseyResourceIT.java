@@ -26,6 +26,7 @@ import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.ITypedStruct;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.Struct;
+import org.apache.hadoop.metadata.typesystem.json.Serialization;
 import org.apache.hadoop.metadata.typesystem.json.Serialization$;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization$;
@@ -42,6 +43,7 @@ import org.apache.hadoop.metadata.typesystem.types.TraitType;
 import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
 import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,48 +81,88 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         submitTypes();
     }
 
+    private ClientResponse submit(ITypedReferenceableInstance instance) {
+        String instanceAsJSON = Serialization$.MODULE$.toJson(instance);
+        LOG.debug("instanceAsJSON = " + instanceAsJSON);
+        WebResource resource = service
+                .path("api/metadata/entities/submit")
+                .path(instance.getTypeName());
+        return resource.accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.POST, ClientResponse.class, instanceAsJSON);
+
+    }
+
     @Test
     public void testSubmitEntity() throws Exception {
         tableInstance = createHiveTableInstance();
-        String tableInstanceAsJSON = Serialization$.MODULE$.toJson(tableInstance);
-        LOG.debug("tableInstance = " + tableInstanceAsJSON);
-
-        WebResource resource = service
-                .path("api/metadata/entities/submit")
-                .path(TABLE_TYPE);
-
-        ClientResponse clientResponse = resource
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
-                .method(HttpMethod.POST, ClientResponse.class, tableInstanceAsJSON);
+        ClientResponse clientResponse = submit(tableInstance);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
+        guid = getGuid(clientResponse);
+        try {
+            Assert.assertNotNull(UUID.fromString(guid));
+        } catch (IllegalArgumentException e) {
+            Assert.fail("Response is not a guid, " + clientResponse.getEntity(String.class));
+        }
+    }
+
+    private String getGuid(ClientResponse clientResponse) throws JSONException {
         String responseAsString = clientResponse.getEntity(String.class);
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
         Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
 
-        guid = response.get(Servlets.RESULTS).toString();
+        String guid = response.get(Servlets.RESULTS).toString();
         Assert.assertNotNull(guid);
+        return guid;
+    }
 
-        try {
-            Assert.assertNotNull(UUID.fromString(guid));
-        } catch (IllegalArgumentException e) {
-            Assert.fail("Response is not a guid, " + response);
-        }
+    @Test (dependsOnMethods = "testSubmitEntity")
+    public void testAddProperty() throws Exception {
+        //add property
+        String description = "bar table - new desc";
+        ClientResponse clientResponse = addProperty(guid, "description", description);
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+        ITypedReferenceableInstance entityRef = getEntityDefinition(getEntityDefinition(guid));
+        Assert.assertEquals(entityRef.get("description"), description);
+        tableInstance.set("description", description);
+
+        //invalid property for the type
+        clientResponse = addProperty(guid, "invalid_property", "bar table");
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
+
+        //non-string property, update
+        clientResponse = addProperty(guid, "level", "4");
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+        entityRef = getEntityDefinition(getEntityDefinition(guid));
+        Assert.assertEquals(entityRef.get("level"), 4);
+        tableInstance.set("level", 4);
+    }
+
+    @Test (dependsOnMethods = "testSubmitEntity")
+    public void testAddReferenceProperty() throws Exception {
+        //Create new db instance
+        Referenceable databaseInstance = new Referenceable(DATABASE_TYPE);
+        databaseInstance.set("name", "newdb");
+        databaseInstance.set("description", "new database");
+
+        ClassType classType = typeSystem.getDataType(ClassType.class, DATABASE_TYPE);
+        ITypedReferenceableInstance dbInstance = classType.convert(databaseInstance, Multiplicity.REQUIRED);
+
+        ClientResponse clientResponse = submit(dbInstance);
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+        String dbId = getGuid(clientResponse);
+
+        //Add reference property
+        clientResponse = addProperty(guid, "database", dbId);
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
     }
 
     @Test(dependsOnMethods = "testSubmitEntity")
     public void testGetEntityDefinition() throws Exception {
-        WebResource resource = service
-                .path("api/metadata/entities/definition")
-                .path(guid);
-
-        ClientResponse clientResponse = resource
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
-                .method(HttpMethod.GET, ClientResponse.class);
+        ClientResponse clientResponse = getEntityDefinition(guid);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
         String responseAsString = clientResponse.getEntity(String.class);
@@ -137,6 +179,34 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         ITypedReferenceableInstance tableInstanceAfterGet =
                 Serialization$.MODULE$.fromJson(definition);
         Assert.assertTrue(areEqual(tableInstance, tableInstanceAfterGet));
+    }
+
+    private ClientResponse addProperty(String guid, String property, String value) {
+        WebResource resource = service
+                .path("api/metadata/entities/addProperty")
+                .path(guid);
+
+        return resource.queryParam("property", property).queryParam("value", value)
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.PUT, ClientResponse.class);
+    }
+
+    private ClientResponse getEntityDefinition(String guid) {
+        WebResource resource = service
+                .path("api/metadata/entities/definition")
+                .path(guid);
+        return resource.accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.GET, ClientResponse.class);
+    }
+
+    private ITypedReferenceableInstance getEntityDefinition(ClientResponse clientResponse) throws Exception {
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+        JSONObject response = new JSONObject(clientResponse.getEntity(String.class));
+        final String definition = response.getString(Servlets.RESULTS);
+        Assert.assertNotNull(definition);
+        return Serialization.fromJson(definition);
     }
 
     private boolean areEqual(ITypedInstance actual,
@@ -317,7 +387,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         ClientResponse clientResponse = service
                 .path("api/metadata/entities/traits/add")
-                .path(guid)
+                .path("random")
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
@@ -353,7 +423,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         ClientResponse clientResponse = service
                 .path("api/metadata/entities/traits/delete")
-                .path(guid)
+                .path("random")
                 .path(traitName)
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
@@ -388,8 +458,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 TypesUtil.createClassTypeDef(TABLE_TYPE,
                         ImmutableList.<String>of(),
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE),
+                        TypesUtil.createOptionalAttrDef("description", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE),
+                        TypesUtil.createRequiredAttrDef("level", DataTypes.INT_TYPE),
                         new AttributeDefinition("tableType", "tableType",
                                 Multiplicity.REQUIRED, false, null),
                         new AttributeDefinition("serde1",
@@ -452,6 +523,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         tableInstance.set("name", TABLE_NAME);
         tableInstance.set("description", "bar table");
         tableInstance.set("type", "managed");
+        tableInstance.set("level", 2);
         tableInstance.set("tableType", 1); // enum
         tableInstance.set("database", databaseInstance);
 

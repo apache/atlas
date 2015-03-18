@@ -16,17 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata.typesystem.types.store;
+package org.apache.hadoop.metadata.repository.typestore;
 
 import org.apache.hadoop.metadata.MetadataException;
 
 public class StorageException extends MetadataException {
-    public StorageException(String nameSpace) {
-        super("Failure in typesystem storage - " + nameSpace);
+    public StorageException(String type) {
+        super("Failure in typesystem storage for type " + type);
     }
 
-    public StorageException(String nameSpace, Throwable cause) {
-        super("Failure in typesystem storage - " + nameSpace, cause);
+    public StorageException(String type, Throwable cause) {
+        super("Failure in typesystem storage for type " + type, cause);
     }
 
     public StorageException(Throwable cause) {

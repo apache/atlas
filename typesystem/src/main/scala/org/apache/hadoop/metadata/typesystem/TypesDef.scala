@@ -18,13 +18,16 @@
 
 package org.apache.hadoop.metadata.typesystem
 
+import com.google.common.collect.ImmutableList
 import org.apache.hadoop.metadata.typesystem.types._
+
+import scala.collection.JavaConversions
 
 case class TypesDef(enumTypes: Seq[EnumTypeDefinition],
                     structTypes: Seq[StructTypeDefinition],
                     traitTypes: Seq[HierarchicalTypeDefinition[TraitType]],
                     classTypes: Seq[HierarchicalTypeDefinition[ClassType]]) {
-
+    def this() = this(Seq(), Seq(), Seq(), Seq())
     def this(enumType : EnumTypeDefinition) = this(Seq(enumType), Seq(), Seq(), Seq())
     def this(structType: StructTypeDefinition) = this(Seq(), Seq(structType), Seq(), Seq())
     def this(typ: HierarchicalTypeDefinition[_], isTrait : Boolean) = this(

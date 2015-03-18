@@ -187,6 +187,35 @@ public class EntityResource {
         }
     }
 
+    /**
+     * Adds property to the given entity id
+     * @param guid entity id
+     * @param property property to add
+     * @param value property's value
+     * @return
+     */
+    @PUT
+    @Path("addProperty/{guid}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response addProperty(@PathParam("guid") String guid, @QueryParam("property") String property,
+                                @QueryParam("value") String value) {
+        try {
+            metadataService.addProperty(guid, property, value);
+
+            JSONObject response = new JSONObject();
+            response.put("requestId", Thread.currentThread().getName());
+            return Response.ok(response).build();
+        } catch (MetadataException e) {
+            LOG.error("Unable to add property {} to entity id {}", property, guid, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (JSONException e) {
+            LOG.error("Unable to add property {} to entity id {}", property, guid, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        }
+    }
+
     // Trait management functions
     /**
      * Gets the list of trait names for a given entity represented by a guid.

@@ -18,12 +18,18 @@
 
 package org.apache.hadoop.metadata.typesystem.types;
 
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+
+import java.util.Map;
+
 public final class Multiplicity {
 
     public static final Multiplicity OPTIONAL = new Multiplicity(0, 1, false);
     public static final Multiplicity REQUIRED = new Multiplicity(1, 1, false);
     public static final Multiplicity COLLECTION = new Multiplicity(1, Integer.MAX_VALUE, false);
     public static final Multiplicity SET = new Multiplicity(1, Integer.MAX_VALUE, true);
+
     public final int lower;
     public final int upper;
     public final boolean isUnique;
@@ -41,11 +47,46 @@ public final class Multiplicity {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Multiplicity that = (Multiplicity) o;
+
+        if (isUnique != that.isUnique) return false;
+        if (lower != that.lower) return false;
+        if (upper != that.upper) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = lower;
+        result = 31 * result + upper;
+        result = 31 * result + (isUnique ? 1 : 0);
+        return result;
+    }
+
+    @Override
     public String toString() {
         return "Multiplicity{" +
                 "lower=" + lower +
                 ", upper=" + upper +
                 ", isUnique=" + isUnique +
                 '}';
+    }
+
+    public String toJson() throws JSONException {
+        JSONObject json = new JSONObject();
+        json.put("lower", lower);
+        json.put("upper", upper);
+        json.put("isUnique", isUnique);
+        return json.toString();
+    }
+
+    public static Multiplicity fromJson(String jsonStr) throws JSONException {
+        JSONObject json = new JSONObject(jsonStr);
+        return new Multiplicity(json.getInt("lower"), json.getInt("upper"), json.getBoolean("isUnique"));
     }
 }

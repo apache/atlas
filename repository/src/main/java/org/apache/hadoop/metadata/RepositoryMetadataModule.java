@@ -30,9 +30,11 @@ import org.apache.hadoop.metadata.repository.graph.GraphBackedSearchIndexer;
 import org.apache.hadoop.metadata.repository.graph.GraphProvider;
 import org.apache.hadoop.metadata.repository.graph.GraphService;
 import org.apache.hadoop.metadata.repository.graph.GraphServiceConfigurator;
+import org.apache.hadoop.metadata.repository.typestore.GraphTypeStore;
 import org.apache.hadoop.metadata.repository.graph.TitanGraphProvider;
 import org.apache.hadoop.metadata.services.DefaultMetadataService;
 import org.apache.hadoop.metadata.services.MetadataService;
+import org.apache.hadoop.metadata.repository.typestore.ITypeStore;
 
 /**
  * Guice module for Repository module.
@@ -44,6 +46,7 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
 
     // MetadataRepositoryService implementation class
     private Class<? extends MetadataRepository> metadataRepoClass;
+    private Class<? extends ITypeStore> typeStore;
     private Class<? extends MetadataService> metadataService;
     private Class<? extends DiscoveryService> discoveryService;
     private Class<? extends SearchIndexer> searchIndexer;
@@ -54,6 +57,7 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
         // get the impl classes for the repo and the graph service
         this.graphServiceClass = gsp.getImplClass();
         this.metadataRepoClass = GraphBackedMetadataRepository.class;
+        this.typeStore = GraphTypeStore.class;
         this.metadataService = DefaultMetadataService.class;
         this.discoveryService = GraphBackedDiscoveryService.class;
         this.searchIndexer = GraphBackedSearchIndexer.class;
@@ -70,6 +74,9 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
 
         // bind the MetadataRepositoryService interface to an implementation
         bind(MetadataRepository.class).to(metadataRepoClass);
+
+        // bind the ITypeStore interface to an implementation
+        bind(ITypeStore.class).to(typeStore);
 
         // bind the GraphService interface to an implementation
         bind(GraphService.class).to(graphServiceClass);

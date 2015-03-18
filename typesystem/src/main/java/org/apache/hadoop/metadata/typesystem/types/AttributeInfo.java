@@ -19,6 +19,8 @@
 package org.apache.hadoop.metadata.typesystem.types;
 
 import org.apache.hadoop.metadata.MetadataException;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 
 import java.util.Map;
 
@@ -66,5 +68,28 @@ public class AttributeInfo {
                 ", isIndexable=" + isIndexable +
                 ", reverseAttributeName='" + reverseAttributeName + '\'' +
                 '}';
+    }
+
+    public String toJson() throws JSONException {
+        JSONObject json = new JSONObject();
+        json.put("name", name);
+        json.put("multiplicity", multiplicity.toJson());
+        json.put("isComposite", isComposite);
+        json.put("isUnique", isUnique);
+        json.put("isIndexable", isIndexable);
+        json.put("dataType", dataType.getName());
+        json.put("reverseAttributeName", reverseAttributeName);
+        return json.toString();
+    }
+
+    public static AttributeDefinition fromJson(String jsonStr) throws JSONException {
+        JSONObject json = new JSONObject(jsonStr);
+        String reverseAttr = null;
+        if (json.has("reverseAttributeName")) {
+            reverseAttr = json.getString("reverseAttributeName");
+        }
+        return new AttributeDefinition(json.getString("name"), json.getString("dataType"),
+                Multiplicity.fromJson(json.getString("multiplicity")), json.getBoolean("isComposite"),
+                json.getBoolean("isUnique"), json.getBoolean("isIndexable"), reverseAttr);
     }
 }

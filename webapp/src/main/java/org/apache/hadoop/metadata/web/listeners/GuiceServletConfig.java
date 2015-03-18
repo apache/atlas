@@ -24,10 +24,16 @@ import com.google.inject.servlet.GuiceServletContextListener;
 import com.sun.jersey.api.core.PackagesResourceConfig;
 import com.sun.jersey.guice.JerseyServletModule;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
+import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.RepositoryMetadataModule;
+import org.apache.hadoop.metadata.repository.typestore.ITypeStore;
+import org.apache.hadoop.metadata.typesystem.TypesDef;
+import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
+import org.apache.hadoop.metadata.web.filters.AuditFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.ServletContextEvent;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -51,6 +57,8 @@ public class GuiceServletConfig extends GuiceServletContextListener {
                 new JerseyServletModule() {
                     @Override
                     protected void configureServlets() {
+                        filter("/*").through(AuditFilter.class);
+
                         String packages = getServletContext().getInitParameter(GUICE_CTX_PARAM);
 
                         LOG.info("Jersey loading from packages: " + packages);
@@ -64,5 +72,31 @@ public class GuiceServletConfig extends GuiceServletContextListener {
         LOG.info("Guice modules loaded");
 
         return injector;
+    }
+
+    @Override
+    public void contextInitialized(ServletContextEvent servletContextEvent) {
+        super.contextInitialized(servletContextEvent);
+
+        restoreTypeSystem();
+    }
+
+    private void restoreTypeSystem() {
+        LOG.info("Restoring type system from the store");
+        Injector injector = getInjector();
+        ITypeStore typeStore = injector.getInstance(ITypeStore.class);
+        try {
+            TypesDef typesDef = typeStore.restore();
+            TypeSystem typeSystem = injector.getInstance(TypeSystem.class);
+            typeSystem.defineTypes(typesDef);
+        } catch (MetadataException e) {
+            throw new RuntimeException(e);
+        }
+        LOG.info("Restored type system from the store");
+    }
+
+    @Override
+    public void contextDestroyed(ServletContextEvent servletContextEvent) {
+        super.contextDestroyed(servletContextEvent);
     }
 }

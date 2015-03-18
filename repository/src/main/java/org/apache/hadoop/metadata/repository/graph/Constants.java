@@ -33,6 +33,13 @@ public final class Constants {
     public static final String ENTITY_TYPE_INDEX = "type_index";
 
     /**
+     * Properties for type store graph
+     */
+    public static final String TYPE_CATEGORY_PROPERTY_KEY = "type.category";
+    public static final String VERTEX_TYPE_PROPERTY_KEY = "type";
+    public static final String TYPENAME_PROPERTY_KEY = "type.name";
+
+    /**
      * Trait names property key and index name.
      */
     public static final String TRAIT_NAMES_PROPERTY_KEY = "traitNames";

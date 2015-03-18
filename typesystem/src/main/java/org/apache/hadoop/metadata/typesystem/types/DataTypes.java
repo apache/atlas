@@ -33,12 +33,12 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class DataTypes {
 
     public static BooleanType BOOLEAN_TYPE = new BooleanType();
-
-    ;
     public static ByteType BYTE_TYPE = new ByteType();
     public static ShortType SHORT_TYPE = new ShortType();
     public static IntType INT_TYPE = new IntType();
@@ -78,7 +78,7 @@ public class DataTypes {
         MAP,
         STRUCT,
         TRAIT,
-        CLASS;
+        CLASS
     }
 
     public static abstract class PrimitiveType<T> extends AbstractDataType<T> {
@@ -469,7 +469,6 @@ public class DataTypes {
     }
 
     public static class ArrayType extends AbstractDataType<ImmutableCollection<?>> {
-
         private final String nm;
         private IDataType elemType;
 

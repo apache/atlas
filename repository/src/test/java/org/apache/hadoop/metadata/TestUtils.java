@@ -24,6 +24,9 @@ import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
 import org.apache.hadoop.metadata.typesystem.types.DataTypes;
+import org.apache.hadoop.metadata.typesystem.types.EnumType;
+import org.apache.hadoop.metadata.typesystem.types.EnumTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.EnumValue;
 import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
 import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
@@ -32,6 +35,7 @@ import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.testng.Assert;
 
 import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createClassTypeDef;
+import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
 import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
 import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createTraitTypeDef;
 
@@ -53,9 +57,14 @@ public final class TestUtils {
      */
     public static void defineDeptEmployeeTypes(TypeSystem ts) throws MetadataException {
 
+        EnumTypeDefinition orgLevelEnum =
+                new EnumTypeDefinition("OrgLevel", new EnumValue("L1", 1), new EnumValue("L2", 2));
+        ts.defineEnumType(orgLevelEnum);
+
         HierarchicalTypeDefinition<ClassType> deptTypeDef =
                 createClassTypeDef("Department", ImmutableList.<String>of(),
                         createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        createOptionalAttrDef("orgLevel", ts.getDataType(EnumType.class, "OrgLevel")),
                         new AttributeDefinition("employees",
                                 String.format("array<%s>", "Person"), Multiplicity.COLLECTION, true,
                                 "department")

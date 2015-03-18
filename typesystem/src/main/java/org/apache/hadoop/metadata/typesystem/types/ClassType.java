@@ -179,12 +179,14 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
 
         ImmutableMap.Builder<String, ITypedStruct> b
                 = new ImmutableBiMap.Builder<String, ITypedStruct>();
-        for (String t : traitNames) {
-            TraitType tType = typeSystem.getDataType(TraitType.class, t);
-            IStruct iTraitObject = r == null ? null : r.getTrait(t);
-            ITypedStruct trait = iTraitObject == null ? tType.createInstance() :
-                    tType.convert(iTraitObject, Multiplicity.REQUIRED);
-            b.put(t, trait);
+        if (traitNames != null) {
+            for (String t : traitNames) {
+                TraitType tType = typeSystem.getDataType(TraitType.class, t);
+                IStruct iTraitObject = r == null ? null : r.getTrait(t);
+                ITypedStruct trait = iTraitObject == null ? tType.createInstance() :
+                        tType.convert(iTraitObject, Multiplicity.REQUIRED);
+                b.put(t, trait);
+            }
         }
 
         return new ReferenceableInstance(id == null ? new Id(getName()) : id,

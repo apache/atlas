@@ -297,6 +297,46 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         }
     }
 
+    @Override
+    public void addProperty(String guid, String property, String value) throws RepositoryException {
+        LOG.info("Adding property {} for entity guid {}", property, guid);
+
+        try {
+            titanGraph.rollback();  // clean up before starting a query
+            Vertex instanceVertex = GraphHelper.findVertexByGUID(titanGraph, guid);
+            if (instanceVertex == null) {
+                throw new RepositoryException("Could not find a vertex for guid " + guid);
+            }
+
+            LOG.debug("Found a vertex {} for guid {}", instanceVertex, guid);
+            String typeName = instanceVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY);
+            ClassType type = typeSystem.getDataType(ClassType.class, typeName);
+            AttributeInfo attributeInfo = type.fieldMapping.fields.get(property);
+            if (attributeInfo == null) {
+                throw new MetadataException("Invalid property " + property + " for entity " + typeName);
+            }
+
+            DataTypes.TypeCategory attrTypeCategory = attributeInfo.dataType().getTypeCategory();
+            ITypedReferenceableInstance instance = type.createInstance();
+            if (attrTypeCategory == DataTypes.TypeCategory.PRIMITIVE) {
+                instance.set(property, value);
+            } else if (attrTypeCategory == DataTypes.TypeCategory.CLASS) {
+                Id id = new Id(value, 0, attributeInfo.dataType().getName());
+                instance.set(property, id);
+            } else {
+                throw new RepositoryException("Update of " + attrTypeCategory + " is not supported");
+            }
+
+            instanceToGraphMapper.mapAttributesToVertex(getIdFromVertex(typeName, instanceVertex),
+                    instance, instanceVertex, new HashMap<Id, Vertex>(), attributeInfo, attributeInfo.dataType());
+            titanGraph.commit();
+        } catch (Exception e) {
+            throw new RepositoryException(e);
+        } finally {
+            titanGraph.rollback();
+        }
+    }
+
     public Id getIdFromVertex(String dataTypeName, Vertex vertex) {
         return new Id(
                 vertex.<String>getProperty(Constants.GUID_PROPERTY_KEY),
@@ -383,8 +423,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 throw new RepositoryException("TypeSystem error when walking the ObjectGraph", me);
             }
 
-            List<ITypedReferenceableInstance> newTypedInstances = discoverInstances(
-                    entityProcessor);
+            List<ITypedReferenceableInstance> newTypedInstances = discoverInstances(entityProcessor);
             entityProcessor.createVerticesForClassTypes(newTypedInstances);
             return addDiscoveredInstances(typedInstance, entityProcessor, newTypedInstances);
         }

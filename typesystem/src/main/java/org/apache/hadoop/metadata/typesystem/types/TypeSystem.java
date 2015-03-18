@@ -27,6 +27,7 @@ import java.lang.reflect.Constructor;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,7 +39,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Singleton
 public class TypeSystem {
-
     private static final TypeSystem INSTANCE = new TypeSystem();
     public static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
     private Map<String, IDataType> types;
@@ -49,8 +49,9 @@ public class TypeSystem {
      */
     private List<String> traitTypes;
 
+    private ImmutableList<String> coreTypes;
 
-    private TypeSystem() {
+    public TypeSystem() {
         initialize();
     }
 
@@ -72,6 +73,11 @@ public class TypeSystem {
 
         registerPrimitiveTypes();
         registerCoreTypes();
+        coreTypes = ImmutableList.copyOf(types.keySet());
+    }
+
+    public ImmutableList<String> getCoreTypes() {
+        return coreTypes;
     }
 
     public ImmutableList<String> getTypeNames() {
@@ -233,7 +239,9 @@ public class TypeSystem {
         TransientTypeSystem transientTypes = new TransientTypeSystem(structDefs,
                 traitDefs,
                 classDefs);
-        return transientTypes.defineTypes();
+        Map<String, IDataType> definedTypes = transientTypes.defineTypes();
+//        LOG.debug("Defined new types " + Arrays.toString(definedTypes.keySet().toArray(new String[definedTypes.size()])));
+        return definedTypes;
     }
 
     public DataTypes.ArrayType defineArrayType(IDataType elemType) throws MetadataException {

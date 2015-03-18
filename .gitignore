@@ -31,10 +31,6 @@ target
 .externalToolBuilders
 maven-eclipse.xml
 
-#ActiveMQ
-activemq-data
-build
-
 #log files
 logs
 *.log

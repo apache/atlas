@@ -18,8 +18,11 @@
 
 package org.apache.hadoop.metadata.typesystem.types;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.typesystem.TypesDef;
+import scala.collection.JavaConversions;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -77,4 +80,10 @@ public class TypeUtils {
         return ImmutableMap.copyOf(b);
     }
 
+    public static TypesDef getTypesDef(ImmutableList<EnumTypeDefinition> enums, ImmutableList<StructTypeDefinition> structs,
+                                         ImmutableList<HierarchicalTypeDefinition<TraitType>> traits,
+                                         ImmutableList<HierarchicalTypeDefinition<ClassType>> classes) {
+        return new TypesDef(JavaConversions.asScalaBuffer(enums), JavaConversions.asScalaBuffer(structs),
+                JavaConversions.asScalaBuffer(traits), JavaConversions.asScalaBuffer(classes));
+    }
 }

@@ -19,11 +19,13 @@
 package org.apache.hadoop.metadata.services;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.discovery.SearchIndexer;
 import org.apache.hadoop.metadata.listener.EntityChangeListener;
 import org.apache.hadoop.metadata.listener.TypesChangeListener;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
+import org.apache.hadoop.metadata.repository.typestore.ITypeStore;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.ITypedStruct;
 import org.apache.hadoop.metadata.typesystem.TypesDef;
@@ -57,10 +59,12 @@ public class DefaultMetadataService implements MetadataService {
 
     private final TypeSystem typeSystem;
     private final MetadataRepository repository;
+    private final ITypeStore typeStore;
 
     @Inject
     DefaultMetadataService(MetadataRepository repository,
-                           SearchIndexer searchIndexer) throws MetadataException {
+                           SearchIndexer searchIndexer, ITypeStore typeStore) throws MetadataException {
+        this.typeStore = typeStore;
         this.typeSystem = TypeSystem.getInstance();
         this.repository = repository;
 
@@ -83,6 +87,8 @@ public class DefaultMetadataService implements MetadataService {
 
             TypesDef typesDef = TypesSerialization.fromJson(typeDefinition);
             Map<String, IDataType> typesAdded = typeSystem.defineTypes(typesDef);
+            //TODO how do we handle transaction - store failure??
+            typeStore.store(typeSystem, ImmutableList.copyOf(typesAdded.keySet()));
 
             onTypesAddedToRepo(typesAdded);
 
@@ -160,7 +166,6 @@ public class DefaultMetadataService implements MetadataService {
         final String guid = repository.createEntity(entityInstance, entityType);
 
         onEntityAddedToRepo(entityType, entityInstance);
-
         return guid;
     }
 
@@ -189,6 +194,15 @@ public class DefaultMetadataService implements MetadataService {
         validateTypeExists(entityType);
 
         return repository.getEntityList(entityType);
+    }
+
+    @Override
+    public void addProperty(String guid, String property, String value) throws MetadataException {
+        Preconditions.checkNotNull(guid, "guid cannot be null");
+        Preconditions.checkNotNull(property, "property cannot be null");
+        Preconditions.checkNotNull(value, "property value cannot be null");
+
+        repository.addProperty(guid, property, value);
     }
 
     private void validateTypeExists(String entityType) throws MetadataException {
