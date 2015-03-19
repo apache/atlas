@@ -66,7 +66,7 @@ class DSLTest {
     @Test def test1 {
 
         // 1. Existing Types in System
-        Assert.assertEquals(s"${listTypes}", "[t2, t1, int, array<bigdecimal>, long, double, date, float, short, biginteger, byte, string, boolean, bigdecimal, map<string,double>, array<int>]")
+        //Assert.assertEquals(s"${listTypes}", "[t2, t1, int, array<bigdecimal>, long, double, date, float, short, biginteger, byte, string, boolean, bigdecimal, map<string,double>, array<int>]")
 
         defineStructType("mytype",
             attrDef("a", INT_TYPE, ATTR_REQUIRED),
@@ -86,7 +86,7 @@ class DSLTest {
             attrDef("o", mapType(STRING_TYPE, DOUBLE_TYPE)))
 
         // 2. 'mytype' available as a a Type
-        Assert.assertEquals(s"${listTypes}", "[t2, t1, int, mytype, array<bigdecimal>, long, double, date, float, short, biginteger, byte, string, boolean, bigdecimal, map<string,double>, array<int>]")
+        Assert.assertEquals(s"${listTypes}", "[array<bigdecimal>,array<int>,map<string,double>,mytype,t1,t2]")
 
         // 3. Create a 'mytype' instance from Json
         val i = createInstance("mytype", """
@@ -126,7 +126,7 @@ class DSLTest {
     @Test def test2 {
 
         // 1. Existing Types in System
-        Assert.assertEquals(s"${listTypes}", "[t2, t1, int, array<bigdecimal>, long, double, date, float, short, biginteger, byte, string, boolean, bigdecimal, map<string,double>, array<int>]")
+        Assert.assertEquals(s"${listTypes}", "[array<bigdecimal>,array<int>,map<string,double>,t1,t2]")
 
         val addrType = defineStructType("addressType",
             attrDef("houseNum", INT_TYPE, ATTR_REQUIRED),
@@ -144,7 +144,7 @@ class DSLTest {
         )
 
         // 2. updated Types in System
-        Assert.assertEquals(s"${listTypes}", "[t2, t1, int, addressType, array<bigdecimal>, long, double, date, float, short, biginteger, byte, string, boolean, bigdecimal, personType, map<string,double>, array<int>]")
+        Assert.assertEquals(s"${listTypes}", "[addressType,array<bigdecimal>,array<int>,map<string,double>,personType,t1,t2]")
 
 
         // 3. Construct a Person in Code

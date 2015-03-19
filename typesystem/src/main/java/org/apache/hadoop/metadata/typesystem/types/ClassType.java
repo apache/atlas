@@ -160,7 +160,7 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
 
     @Override
     public ITypedReferenceableInstance createInstance() throws MetadataException {
-        return createInstance(null);
+        return createInstance((String[])null);
     }
 
     public ITypedReferenceableInstance createInstance(String... traitNames)

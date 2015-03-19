@@ -158,7 +158,7 @@ object TypesSerialization {
         def toTyp(nm: String) = ts.getDataType(classOf[IDataType[_]], nm)
 
         val typs: Iterable[IDataType[_]] = ts.getTypeNames.map(toTyp(_)).filter { (typ: IDataType[_]) =>
-            !(typ.getTypeCategory eq TypeCategory.PRIMITIVE) && export(typ)
+            !(ts.getCoreTypes.contains(typ.getName)) && export(typ)
         }
 
         typs.foreach {

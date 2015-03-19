@@ -31,6 +31,7 @@ import org.json4s.native.JsonMethods._
 import org.json4s.native.Serialization.{write => swrite}
 
 import scala.language.implicitConversions
+import scala.collection.JavaConversions._
 
 package object dsl {
 
@@ -71,7 +72,7 @@ package object dsl {
         new AttributeDefinition(name, dT.getName, m, isComposite, reverseAttributeName)
     }
 
-    def listTypes = ts.getTypeNames
+    def listTypes = (ts.getTypeNames -- ts.getCoreTypes).sorted.toList.mkString("[", ",", "]")
 
     def ts = TypeSystem.getInstance
 
