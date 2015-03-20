@@ -200,6 +200,7 @@
 
     <modules>
         <module>typesystem</module>
+        <module>client</module>
         <module>repository</module>
         <module>webapp</module>
         <module>docs</module>
@@ -511,6 +512,12 @@
             <dependency>
                 <groupId>org.apache.hadoop.metadata</groupId>
                 <artifactId>metadata-repository</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.hadoop.metadata</groupId>
+                <artifactId>metadata-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

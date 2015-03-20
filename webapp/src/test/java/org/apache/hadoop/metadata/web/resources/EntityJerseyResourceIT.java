@@ -21,6 +21,8 @@ package org.apache.hadoop.metadata.web.resources;
 import com.google.common.collect.ImmutableList;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import org.apache.hadoop.metadata.MetadataServiceClient;
+import org.apache.hadoop.metadata.MetadataServiceException;
 import org.apache.hadoop.metadata.typesystem.ITypedInstance;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.ITypedStruct;
@@ -81,40 +83,28 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         submitTypes();
     }
 
-    private ClientResponse submit(ITypedReferenceableInstance instance) {
+    private JSONObject submit(ITypedReferenceableInstance instance) throws MetadataServiceException {
         String instanceAsJSON = Serialization$.MODULE$.toJson(instance);
-        LOG.debug("instanceAsJSON = " + instanceAsJSON);
-        WebResource resource = service
-                .path("api/metadata/entities/submit")
-                .path(instance.getTypeName());
-        return resource.accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
-                .method(HttpMethod.POST, ClientResponse.class, instanceAsJSON);
-
+        return serviceClient.createEntity(instance.getTypeName(), instanceAsJSON);
     }
 
     @Test
     public void testSubmitEntity() throws Exception {
         tableInstance = createHiveTableInstance();
-        ClientResponse clientResponse = submit(tableInstance);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+        JSONObject clientResponse = submit(tableInstance);
 
         guid = getGuid(clientResponse);
         try {
             Assert.assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
-            Assert.fail("Response is not a guid, " + clientResponse.getEntity(String.class));
+            Assert.fail("Response is not a guid, " + guid);
         }
     }
 
-    private String getGuid(ClientResponse clientResponse) throws JSONException {
-        String responseAsString = clientResponse.getEntity(String.class);
-        Assert.assertNotNull(responseAsString);
+    private String getGuid(JSONObject response) throws JSONException {
+        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
 
-        JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
-
-        String guid = response.get(Servlets.RESULTS).toString();
+        String guid = response.get(MetadataServiceClient.RESULTS).toString();
         Assert.assertNotNull(guid);
         return guid;
     }
@@ -151,12 +141,11 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         ClassType classType = typeSystem.getDataType(ClassType.class, DATABASE_TYPE);
         ITypedReferenceableInstance dbInstance = classType.convert(databaseInstance, Multiplicity.REQUIRED);
 
-        ClientResponse clientResponse = submit(dbInstance);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
-        String dbId = getGuid(clientResponse);
+        JSONObject json = submit(dbInstance);
+        String dbId = getGuid(json);
 
         //Add reference property
-        clientResponse = addProperty(guid, "database", dbId);
+        ClientResponse clientResponse = addProperty(guid, "database", dbId);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
     }
 
@@ -169,9 +158,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
+        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
 
-        final String definition = response.getString(Servlets.RESULTS);
+        final String definition = response.getString(MetadataServiceClient.RESULTS);
         Assert.assertNotNull(definition);
         LOG.debug("tableInstanceAfterGet = " + definition);
 
@@ -183,7 +172,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     private ClientResponse addProperty(String guid, String property, String value) {
         WebResource resource = service
-                .path("api/metadata/entities/addProperty")
+                .path("api/metadata/entities/update")
                 .path(guid);
 
         return resource.queryParam("property", property).queryParam("value", value)
@@ -204,7 +193,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     private ITypedReferenceableInstance getEntityDefinition(ClientResponse clientResponse) throws Exception {
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
         JSONObject response = new JSONObject(clientResponse.getEntity(String.class));
-        final String definition = response.getString(Servlets.RESULTS);
+        final String definition = response.getString(MetadataServiceClient.RESULTS);
         Assert.assertNotNull(definition);
         return Serialization.fromJson(definition);
     }
@@ -263,9 +252,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
+        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
 
-        final JSONArray list = response.getJSONArray(Servlets.RESULTS);
+        final JSONArray list = response.getJSONArray(MetadataServiceClient.RESULTS);
         Assert.assertNotNull(list);
         Assert.assertEquals(list.length(), 1);
     }
@@ -299,9 +288,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
+        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
 
-        final JSONArray list = response.getJSONArray(Servlets.RESULTS);
+        final JSONArray list = response.getJSONArray(MetadataServiceClient.RESULTS);
         Assert.assertEquals(list.length(), 0);
     }
 
@@ -330,10 +319,10 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
+        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
         Assert.assertNotNull(response.get("GUID"));
 
-        final JSONArray list = response.getJSONArray(Servlets.RESULTS);
+        final JSONArray list = response.getJSONArray(MetadataServiceClient.RESULTS);
         Assert.assertEquals(list.length(), 7);
     }
 
@@ -365,7 +354,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
+        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
         Assert.assertNotNull(response.get("GUID"));
         Assert.assertNotNull(response.get("traitInstance"));
     }
@@ -412,7 +401,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
+        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
         Assert.assertNotNull(response.get("GUID"));
         Assert.assertNotNull(response.get("traitName"));
     }

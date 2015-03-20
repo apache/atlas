@@ -21,6 +21,7 @@ package org.apache.hadoop.metadata.web.resources;
 import com.google.common.collect.ImmutableList;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization$;
 import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
@@ -85,7 +86,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
             JSONObject response = new JSONObject(responseAsString);
             Assert.assertEquals(response.get("typeName"), typeDefinition.typeName);
             Assert.assertNotNull(response.get("types"));
-            Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
+            Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
         }
     }
 
@@ -110,7 +111,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
             JSONObject response = new JSONObject(responseAsString);
             Assert.assertEquals(response.get("typeName"), typeDefinition.typeName);
             Assert.assertNotNull(response.get("definition"));
-            Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
+            Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
         }
     }
 
@@ -142,9 +143,9 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
+        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
 
-        final JSONArray list = response.getJSONArray(Servlets.RESULTS);
+        final JSONArray list = response.getJSONArray(MetadataServiceClient.RESULTS);
         Assert.assertNotNull(list);
     }
 
@@ -165,9 +166,9 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
+        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
 
-        final JSONArray list = response.getJSONArray(Servlets.RESULTS);
+        final JSONArray list = response.getJSONArray(MetadataServiceClient.RESULTS);
         Assert.assertNotNull(list);
         Assert.assertTrue(list.length() >= traitsAdded.length);
     }

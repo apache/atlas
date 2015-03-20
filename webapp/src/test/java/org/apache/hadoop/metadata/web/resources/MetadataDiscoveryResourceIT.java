@@ -21,6 +21,7 @@ package org.apache.hadoop.metadata.web.resources;
 import com.google.common.collect.ImmutableList;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.typesystem.Struct;
 import org.apache.hadoop.metadata.typesystem.json.Serialization$;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
@@ -78,12 +79,12 @@ public class MetadataDiscoveryResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
+        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
 
         Assert.assertEquals(response.getString("query"), dslQuery);
         Assert.assertEquals(response.getString("queryType"), "dsl");
 
-        JSONObject results = response.getJSONObject(Servlets.RESULTS);
+        JSONObject results = response.getJSONObject(MetadataServiceClient.RESULTS);
         Assert.assertNotNull(results);
 
         JSONArray rows = results.getJSONArray("rows");
@@ -122,7 +123,7 @@ public class MetadataDiscoveryResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
+        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
 
         Assert.assertEquals(response.getString("query"), query);
         Assert.assertEquals(response.getString("queryType"), "gremlin");
@@ -145,7 +146,7 @@ public class MetadataDiscoveryResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
+        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
 
         Assert.assertEquals(response.getString("query"), query);
         Assert.assertEquals(response.getString("queryType"), "dsl");
@@ -253,9 +254,9 @@ public class MetadataDiscoveryResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
+        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
 
-        String guid = response.get(Servlets.RESULTS).toString();
+        String guid = response.get(MetadataServiceClient.RESULTS).toString();
         Assert.assertNotNull(guid);
     }
 

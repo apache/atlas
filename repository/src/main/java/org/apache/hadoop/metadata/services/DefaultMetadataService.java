@@ -197,12 +197,12 @@ public class DefaultMetadataService implements MetadataService {
     }
 
     @Override
-    public void addProperty(String guid, String property, String value) throws MetadataException {
+    public void updateEntity(String guid, String property, String value) throws MetadataException {
         Preconditions.checkNotNull(guid, "guid cannot be null");
         Preconditions.checkNotNull(property, "property cannot be null");
         Preconditions.checkNotNull(value, "property value cannot be null");
 
-        repository.addProperty(guid, property, value);
+        repository.updateEntity(guid, property, value);
     }
 
     private void validateTypeExists(String entityType) throws MetadataException {

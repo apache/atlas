@@ -19,6 +19,7 @@
 package org.apache.hadoop.metadata.web.filters;
 
 import com.google.inject.Singleton;
+import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.web.util.DateTimeHelper;
 import org.apache.hadoop.metadata.web.util.Servlets;
 import org.slf4j.Logger;
@@ -67,7 +68,7 @@ public class AuditFilter implements Filter {
             filterChain.doFilter(request, response);
         } finally {
             // put the request id into the response so users can trace logs for this request
-            ((HttpServletResponse) response).setHeader(Servlets.REQUEST_ID, requestId);
+            ((HttpServletResponse) response).setHeader(MetadataServiceClient.REQUEST_ID, requestId);
             currentThread.setName(oldName);
         }
     }

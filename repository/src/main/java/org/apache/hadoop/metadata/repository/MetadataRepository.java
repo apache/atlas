@@ -163,5 +163,5 @@ public interface MetadataRepository {
      * @param property
      * @param value
      */
-    void addProperty(String guid, String property, String value) throws RepositoryException;
+    void updateEntity(String guid, String property, String value) throws RepositoryException;
 }

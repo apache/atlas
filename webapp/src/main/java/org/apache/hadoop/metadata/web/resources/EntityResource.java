@@ -20,6 +20,7 @@ package org.apache.hadoop.metadata.web.resources;
 
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.services.MetadataService;
 import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
@@ -92,8 +93,8 @@ public class EntityResource {
 
             final String guid = metadataService.createEntity(typeName, entity);
             JSONObject response = new JSONObject();
-            response.put(Servlets.REQUEST_ID, Servlets.getRequestId());
-            response.put(Servlets.RESULTS, guid);
+            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
+            response.put(MetadataServiceClient.RESULTS, guid);
 
             return Response.ok(response).build();
         } catch (MetadataException | IOException | IllegalArgumentException e) {
@@ -123,12 +124,12 @@ public class EntityResource {
             final String entityDefinition = metadataService.getEntityDefinition(guid);
 
             JSONObject response = new JSONObject();
-            response.put(Servlets.REQUEST_ID, Servlets.getRequestId());
+            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
             response.put(GUID, guid);
 
             Response.Status status = Response.Status.NOT_FOUND;
             if (entityDefinition != null) {
-                response.put(Servlets.RESULTS, entityDefinition);
+                response.put(MetadataServiceClient.RESULTS, entityDefinition);
                 status = Response.Status.OK;
             }
 
@@ -170,10 +171,10 @@ public class EntityResource {
             final List<String> entityList = metadataService.getEntityList(entityType);
 
             JSONObject response = new JSONObject();
-            response.put(Servlets.REQUEST_ID, Servlets.getRequestId());
+            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
             response.put("type", entityType);
-            response.put(Servlets.RESULTS, new JSONArray(entityList));
-            response.put(Servlets.TOTAL_SIZE, entityList.size());
+            response.put(MetadataServiceClient.RESULTS, new JSONArray(entityList));
+            response.put(MetadataServiceClient.TOTAL_SIZE, entityList.size());
 
             return Response.ok(response).build();
         } catch (MetadataException | IllegalArgumentException e) {
@@ -195,12 +196,12 @@ public class EntityResource {
      * @return
      */
     @PUT
-    @Path("addProperty/{guid}")
+    @Path("update/{guid}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response addProperty(@PathParam("guid") String guid, @QueryParam("property") String property,
-                                @QueryParam("value") String value) {
+    public Response update(@PathParam("guid") String guid, @QueryParam("property") String property,
+                           @QueryParam("value") String value) {
         try {
-            metadataService.addProperty(guid, property, value);
+            metadataService.updateEntity(guid, property, value);
 
             JSONObject response = new JSONObject();
             response.put("requestId", Thread.currentThread().getName());
@@ -234,10 +235,10 @@ public class EntityResource {
             final List<String> traitNames = metadataService.getTraitNames(guid);
 
             JSONObject response = new JSONObject();
-            response.put(Servlets.REQUEST_ID, Servlets.getRequestId());
+            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
             response.put(GUID, guid);
-            response.put(Servlets.RESULTS, new JSONArray(traitNames));
-            response.put(Servlets.TOTAL_SIZE, traitNames.size());
+            response.put(MetadataServiceClient.RESULTS, new JSONArray(traitNames));
+            response.put(MetadataServiceClient.TOTAL_SIZE, traitNames.size());
 
             return Response.ok(response).build();
         } catch (MetadataException | IllegalArgumentException e) {
@@ -270,7 +271,7 @@ public class EntityResource {
             metadataService.addTrait(guid, traitDefinition);
 
             JSONObject response = new JSONObject();
-            response.put(Servlets.REQUEST_ID, Servlets.getRequestId());
+            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
             response.put(GUID, guid);
             response.put("traitInstance", traitDefinition);
 
@@ -307,7 +308,7 @@ public class EntityResource {
             metadataService.deleteTrait(guid, traitName);
 
             JSONObject response = new JSONObject();
-            response.put(Servlets.REQUEST_ID, Servlets.getRequestId());
+            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
             response.put(GUID, guid);
             response.put(TRAIT_NAME, traitName);
 

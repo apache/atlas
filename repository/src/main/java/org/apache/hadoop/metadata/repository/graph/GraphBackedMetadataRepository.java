@@ -298,7 +298,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     }
 
     @Override
-    public void addProperty(String guid, String property, String value) throws RepositoryException {
+    public void updateEntity(String guid, String property, String value) throws RepositoryException {
         LOG.info("Adding property {} for entity guid {}", property, guid);
 
         try {

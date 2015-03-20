@@ -22,6 +22,7 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
+import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONObject;
@@ -37,6 +38,7 @@ public abstract class BaseResourceIT {
 
     protected TypeSystem typeSystem;
     protected WebResource service;
+    protected MetadataServiceClient serviceClient;
 
     public void setUp() throws Exception {
         typeSystem = TypeSystem.getInstance();
@@ -49,6 +51,7 @@ public abstract class BaseResourceIT {
         client.resource(UriBuilder.fromUri(baseUrl).build());
 
         service = client.resource(UriBuilder.fromUri(baseUrl).build());
+        serviceClient = new MetadataServiceClient(baseUrl);
     }
 
     protected void sumbitType(String typesAsJSON, String type) throws Exception {
@@ -68,6 +71,6 @@ public abstract class BaseResourceIT {
         JSONObject response = new JSONObject(responseAsString);
         Assert.assertEquals(response.get("typeName"), type);
         Assert.assertNotNull(response.get("types"));
-        Assert.assertNotNull(response.get(Servlets.REQUEST_ID));
+        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
     }
 }

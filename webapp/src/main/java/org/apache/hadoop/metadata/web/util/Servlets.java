@@ -33,10 +33,6 @@ import java.io.StringWriter;
  */
 public final class Servlets {
 
-    public static final String REQUEST_ID = "requestId";
-    public static final String RESULTS = "results";
-    public static final String TOTAL_SIZE = "totalSize";
-
     private Servlets() {
         /* singleton */
     }

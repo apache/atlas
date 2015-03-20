@@ -92,7 +92,7 @@ public interface MetadataService {
      * @param property
      * @param value
      */
-    void addProperty(String guid, String property, String value) throws MetadataException;
+    void updateEntity(String guid, String property, String value) throws MetadataException;
 
     // Trait management functions
     /**

@@ -19,6 +19,7 @@
 package org.apache.hadoop.metadata.web.resources;
 
 import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.services.MetadataService;
 import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
@@ -84,7 +85,7 @@ public class TypesResource {
             JSONObject response = new JSONObject();
             response.put("typeName", typeName);
             response.put("types", typesAdded);
-            response.put(Servlets.REQUEST_ID, Servlets.getRequestId());
+            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
 
             return Response.ok(response).build();
         } catch (Exception e) {
@@ -110,7 +111,7 @@ public class TypesResource {
             JSONObject response = new JSONObject();
             response.put("typeName", typeName);
             response.put("definition", typeDefinition);
-            response.put(Servlets.REQUEST_ID, Servlets.getRequestId());
+            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
 
             return Response.ok(response).build();
         } catch (MetadataException e) {
@@ -135,9 +136,9 @@ public class TypesResource {
             final List<String> typeNamesList = metadataService.getTypeNamesList();
 
             JSONObject response = new JSONObject();
-            response.put(Servlets.RESULTS, new JSONArray(typeNamesList));
-            response.put(Servlets.TOTAL_SIZE, typeNamesList.size());
-            response.put(Servlets.REQUEST_ID, Servlets.getRequestId());
+            response.put(MetadataServiceClient.RESULTS, new JSONArray(typeNamesList));
+            response.put(MetadataServiceClient.TOTAL_SIZE, typeNamesList.size());
+            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
 
             return Response.ok(response).build();
         } catch (Exception e) {
@@ -158,9 +159,9 @@ public class TypesResource {
             final List<String> traitNamesList = metadataService.getTraitNamesList();
 
             JSONObject response = new JSONObject();
-            response.put(Servlets.RESULTS, new JSONArray(traitNamesList));
-            response.put(Servlets.TOTAL_SIZE, traitNamesList.size());
-            response.put(Servlets.REQUEST_ID, Servlets.getRequestId());
+            response.put(MetadataServiceClient.RESULTS, new JSONArray(traitNamesList));
+            response.put(MetadataServiceClient.TOTAL_SIZE, traitNamesList.size());
+            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
 
             return Response.ok(response).build();
         } catch (Exception e) {
