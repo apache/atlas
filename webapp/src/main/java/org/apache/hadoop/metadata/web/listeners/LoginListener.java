@@ -1,0 +1,139 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.hadoop.metadata.web.listeners;
+
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.security.SecurityUtil;
+import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.util.Shell;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
+import java.io.IOException;
+import java.net.InetAddress;
+
+/**
+ * A listener capable of performing a simple or kerberos login.
+ */
+public class LoginListener implements ServletContextListener {
+
+    private static final Logger LOG = LoggerFactory
+            .getLogger(LoginListener.class);
+    public static final String AUTHENTICATION_METHOD = "authentication.method";
+    public static final String AUTHENTICATION_PRINCIPAL = "authentication.principal";
+    public static final String AUTHENTICATION_KEYTAB = "authentication.keytab";
+
+    @Override
+    public void contextDestroyed(ServletContextEvent servletContextEvent) {
+
+    }
+
+    /**
+     * Perform a SIMPLE login based on established OS identity or a kerberos based login using the configured
+     * principal and keytab (via application.properties).
+     * @param servletContextEvent
+     */
+    @Override
+    public void contextInitialized(ServletContextEvent servletContextEvent) {
+        // first, let's see if we're running in a hadoop cluster and have the env configured
+        boolean isHadoopCluster = isHadoopCluster();
+        Configuration hadoopConfig = isHadoopCluster ? getHadoopConfiguration() : new Configuration(false);
+        PropertiesConfiguration configuration = null;
+        try {
+            configuration = getPropertiesConfiguration();
+        } catch (ConfigurationException e) {
+            LOG.warn("Error reading application configuration", e);
+        }
+        if (!isHadoopCluster) {
+            // need to read the configured authentication choice and create the UGI configuration
+            String authMethod;
+            authMethod = configuration != null ? configuration.getString(AUTHENTICATION_METHOD) : null;
+            // getString may return null, and would like to log the nature of the default setting
+            if (authMethod == null) {
+                LOG.info("No authentication method configured.  Defaulting to simple authentication");
+                authMethod = "simple";
+            }
+            SecurityUtil.setAuthenticationMethod(
+                    UserGroupInformation.AuthenticationMethod.valueOf(authMethod.toUpperCase()),
+                    hadoopConfig);
+        }
+        UserGroupInformation.setConfiguration(hadoopConfig);
+
+        UserGroupInformation ugi = null;
+        UserGroupInformation.AuthenticationMethod authenticationMethod =
+                SecurityUtil.getAuthenticationMethod(hadoopConfig);
+        try {
+            if (authenticationMethod == UserGroupInformation.AuthenticationMethod.SIMPLE) {
+                UserGroupInformation.loginUserFromSubject(null);
+            } else if (authenticationMethod == UserGroupInformation.AuthenticationMethod.KERBEROS) {
+                UserGroupInformation.loginUserFromKeytab(
+                        getServerPrincipal(configuration.getString(AUTHENTICATION_PRINCIPAL)),
+                        configuration.getString(AUTHENTICATION_KEYTAB));
+            }
+
+            LOG.info("Logged in user {}", UserGroupInformation.getLoginUser());
+        } catch (IOException e) {
+            throw new IllegalStateException(String.format("Unable to perform %s login.", authenticationMethod), e);
+        }
+    }
+
+    /**
+     * Return a server (service) principal.  The token "_HOST" in the principal will be replaced with the local host
+     * name (e.g. dgi/_HOST will be changed to dgi/localHostName)
+     * @param principal the input principal containing an option "_HOST" token
+     * @return the service principal.
+     * @throws IOException
+     */
+    private String getServerPrincipal(String principal) throws IOException {
+        return SecurityUtil.getServerPrincipal(principal, InetAddress.getLocalHost().getHostName());
+    }
+
+    /**
+     * Returns a Hadoop configuration instance.
+     * @return the configuration.
+     */
+    protected Configuration getHadoopConfiguration() {
+        return new Configuration();
+    }
+
+    /**
+     * Returns the metadata application configuration.
+     * @return the metadata configuration.
+     * @throws ConfigurationException
+     */
+    protected PropertiesConfiguration getPropertiesConfiguration() throws ConfigurationException {
+        return new PropertiesConfiguration("application.properties");
+    }
+
+    /**
+     * Uses a hadoop shell to discern whether a hadoop cluster is available/configured.
+     * @return  true if a hadoop cluster is detected.
+     */
+    protected boolean isHadoopCluster() {
+        boolean isHadoopCluster = false;
+        try {
+            isHadoopCluster = Shell.getHadoopHome() != null;
+        } catch (IOException e) {
+            // ignore - false is default setting
+        }
+        return isHadoopCluster;
+    }
+}
