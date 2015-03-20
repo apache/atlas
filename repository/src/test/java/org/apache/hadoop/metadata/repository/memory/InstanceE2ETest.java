@@ -152,7 +152,6 @@ public class InstanceE2ETest extends BaseTest {
         Referenceable  r1 = InstanceSerialization$.MODULE$.fromJsonReferenceable(jsonStr, true);
         ClassType tableType = ts.getDataType(ClassType.class, "hive_table");
 
-        /* todo: fix deserialization, so following conver works
         ITypedReferenceableInstance i = tableType.convert(r1, Multiplicity.REQUIRED);
 
         jsonStr = Serialization$.MODULE$.toJson(i);
@@ -160,6 +159,6 @@ public class InstanceE2ETest extends BaseTest {
 
         i = Serialization$.MODULE$.fromJson(jsonStr);
         System.out.println(i);
-        */
+
     }
 }

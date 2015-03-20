@@ -347,7 +347,7 @@ object InstanceSerialization {
 
   val _formats = new DefaultFormats {
     override val dateFormatter = TypeSystem.getInstance().getDateFormat.asInstanceOf[SimpleDateFormat]
-    override val typeHints = NoTypeHints
+    override val typeHints = FullTypeHints(List(classOf[_Id], classOf[_Struct], classOf[_Reference]))
   }
 
   def buildFormat(withBigDecimals : Boolean) = {
