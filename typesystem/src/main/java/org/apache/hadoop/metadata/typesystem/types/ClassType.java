@@ -106,7 +106,7 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
                 Referenceable r = null;
                 Id id = null;
 
-                if (s.typeName != getName()) {
+                if (!s.typeName.equals(getName())) {
                     /*
                      * If val is a subType instance; invoke convert on it.
                      */

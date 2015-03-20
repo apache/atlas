@@ -20,13 +20,11 @@ package org.apache.hadoop.metadata.repository.memory;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.typesystem.TypesDef;
+import org.apache.hadoop.metadata.typesystem.*;
+import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization$;
 import org.apache.hadoop.metadata.typesystem.json.Serialization$;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization$;
 import org.apache.hadoop.metadata.repository.BaseTest;
-import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
-import org.apache.hadoop.metadata.typesystem.Referenceable;
-import org.apache.hadoop.metadata.typesystem.Struct;
 import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
 import org.apache.hadoop.metadata.typesystem.types.DataTypes;
@@ -78,8 +76,8 @@ public class InstanceE2ETest extends BaseTest {
         return typeDefinitions;
     }
 
-    protected ITypedReferenceableInstance createHiveTableInstance(TypeSystem typeSystem)
-    throws MetadataException {
+    protected Referenceable createHiveTableReferenceable()
+            throws MetadataException {
         Referenceable databaseInstance = new Referenceable("hive_database");
         databaseInstance.set("name", "hive_database");
         databaseInstance.set("description", "foo database");
@@ -95,8 +93,13 @@ public class InstanceE2ETest extends BaseTest {
 
         tableInstance.set("hive_fetl", traitInstance);
 
+        return tableInstance;
+    }
+
+    protected ITypedReferenceableInstance createHiveTableInstance(TypeSystem typeSystem)
+    throws MetadataException {
         ClassType tableType = typeSystem.getDataType(ClassType.class, "hive_table");
-        return tableType.convert(tableInstance, Multiplicity.REQUIRED);
+        return tableType.convert(createHiveTableReferenceable(), Multiplicity.REQUIRED);
     }
 
     @Test
@@ -135,5 +138,28 @@ public class InstanceE2ETest extends BaseTest {
 
         i = Serialization$.MODULE$.fromJson(jsonStr);
         System.out.println(i);
+    }
+
+    @Test
+    public void testInstanceSerialization() throws MetadataException {
+
+        TypeSystem ts = getTypeSystem();
+
+        createHiveTypes(ts);
+
+        Referenceable r = createHiveTableReferenceable();
+        String jsonStr = InstanceSerialization$.MODULE$.toJson(r, true);
+        Referenceable  r1 = InstanceSerialization$.MODULE$.fromJsonReferenceable(jsonStr, true);
+        ClassType tableType = ts.getDataType(ClassType.class, "hive_table");
+
+        /* todo: fix deserialization, so following conver works
+        ITypedReferenceableInstance i = tableType.convert(r1, Multiplicity.REQUIRED);
+
+        jsonStr = Serialization$.MODULE$.toJson(i);
+        System.out.println(jsonStr);
+
+        i = Serialization$.MODULE$.fromJson(jsonStr);
+        System.out.println(i);
+        */
     }
 }

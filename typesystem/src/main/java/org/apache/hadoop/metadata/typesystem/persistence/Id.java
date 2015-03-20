@@ -73,6 +73,18 @@ public class Id implements ITypedReferenceableInstance {
                 .format("(type: %s, id: %s)", className, isUnassigned() ? "<unassigned>" : "" + id);
     }
 
+    public String getClassName() {
+        return className;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    public String _getId() {
+        return id;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

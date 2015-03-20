@@ -22,6 +22,7 @@ import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.repository.BaseTest;
 import org.apache.hadoop.metadata.typesystem.ITypedStruct;
 import org.apache.hadoop.metadata.typesystem.Struct;
+import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization$;
 import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
 import org.apache.hadoop.metadata.typesystem.types.StructType;
 import org.junit.Assert;
@@ -79,6 +80,32 @@ public class StructTest extends BaseTest {
                 "\t\ts : <null>\n" +
                 "\n" +
                 "\t}\n" +
+                "}");
+    }
+
+    @Test
+    public void testSerialization() throws MetadataException {
+        Struct s = createStruct();
+        String jsonStr = InstanceSerialization$.MODULE$.toJson(s, true);
+        Struct s1 = InstanceSerialization$.MODULE$.fromJsonStruct(jsonStr, true);
+        ITypedStruct ts = structType.convert(s1, Multiplicity.REQUIRED);
+        Assert.assertEquals(ts.toString(), "{\n" +
+                "\ta : \t1\n" +
+                "\tb : \ttrue\n" +
+                "\tc : \t1\n" +
+                "\td : \t2\n" +
+                "\te : \t1\n" +
+                "\tf : \t1\n" +
+                "\tg : \t1\n" +
+                "\th : \t1.0\n" +
+                "\ti : \t1.0\n" +
+                "\tj : \t1\n" +
+                "\tk : \t1\n" +
+                "\tl : \t2014-12-10\n" +
+                "\tm : \t[1, 1]\n" +
+                "\tn : \t[1.100000000000000088817841970012523233890533447265625, 1" +
+                ".100000000000000088817841970012523233890533447265625]\n" +
+                "\to : \t{b=2.0, a=1.0}\n" +
                 "}");
     }
 

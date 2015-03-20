@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.metadata.typesystem.persistence.Id;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -56,6 +57,21 @@ public class Referenceable extends Struct implements IReferenceableInstance {
         id = new Id(guid, 0, typeName);
         traitNames = ImmutableList.of();
         traits = ImmutableMap.of();
+    }
+
+    /**
+     * @nopublic only use during deserialization
+     * @param guid
+     * @param typeName
+     * @param values
+     */
+    public Referenceable(String guid, String typeName, Map<String, Object> values,
+                         List<String> _traitNames,
+                         Map<String, IStruct> _traits) {
+        super(typeName, values);
+        id = new Id(guid, 0, typeName);
+        traitNames = ImmutableList.copyOf(_traitNames);
+        traits = ImmutableMap.copyOf(_traits);
     }
 
     @Override

@@ -53,7 +53,7 @@ public class TypedStructHandler {
                 return ts;
             } else if (val instanceof Struct) {
                 Struct s = (Struct) val;
-                if (s.typeName != structType.getName()) {
+                if (!s.typeName.equals(structType.getName())) {
                     throw new ValueConversionException(structType, val);
                 }
                 ITypedStruct ts = createInstance();
