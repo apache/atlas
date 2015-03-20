@@ -112,6 +112,7 @@
                             <excludes>
                                 <exclude>*.txt</exclude>
                                 <exclude>**/*.txt</exclude>
+                                <exclude>**/*.json</exclude>
                                 <exclude>.git/**</exclude>
                                 <exclude>.gitignore</exclude>
                                 <exclude>**/.idea/**</exclude>

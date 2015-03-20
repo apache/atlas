@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata.hivetypes;
+package org.apache.hadoop.metadata.hive.hook;
 
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -40,6 +40,7 @@ import org.apache.hadoop.hive.ql.parse.HiveSemanticAnalyzerHook;
 import org.apache.hadoop.hive.ql.parse.HiveSemanticAnalyzerHookContext;
 import org.apache.hadoop.hive.ql.parse.ParseDriver;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
+import org.apache.hadoop.metadata.hivetypes.HiveTypeSystem;
 import org.apache.hadoop.util.StringUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -61,7 +62,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * DgiHook sends lineage information to the DgiSever
+ * DgiHook sends lineage information to the DgiSever.
  */
 public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHook {
 
@@ -75,9 +76,8 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
     private static final String user = "postgres";
     private static final String password = "postgres";
     private static final String insertQuery =
-            "insert into query_info(query_id, query_text, query_plan, start_time, user_name, " +
-                    "query_graph) "
-                    + "values (?, ?, ?, ?, ?, ?";
+            "insert into query_info(query_id, query_text, query_plan, start_time, user_name, "
+                    + "query_graph) values (?, ?, ?, ?, ?, ?";
     private static final String updateQuery =
             "update  query_info set end_time = ? where query_id = ?";
     private static ExecutorService executor;

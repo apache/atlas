@@ -21,10 +21,10 @@ package org.apache.hadoop.metadata.hivetypes;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.MetaException;
-import org.apache.hadoop.metadata.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.typesystem.persistence.Id;
-import org.apache.hadoop.metadata.typesystem.persistence.memory.MemRepository;
+import org.apache.hadoop.metadata.repository.memory.MemRepository;
 import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,7 +105,7 @@ public class HiveTypeSystemTest {
     }
 
     @Test(enabled = true)
-    public void testHiveLineage() throws MetaException, MetadataException, IOException, Exception {
+    public void testHiveLineage() throws Exception {
         Class.forName("org.apache.hive.jdbc.HiveDriver");
         String url = "jdbc:hive2://" + hiveHost + ":" + hivePort;
         Connection con = DriverManager.getConnection(url, "ambari-qa", "");
@@ -114,8 +114,5 @@ public class HiveTypeSystemTest {
         stmt.execute("create table t(a int, b string)");
         stmt.execute("drop table if exists t2");
         stmt.execute("create table t2 as select * from t");
-
     }
-
-
 }

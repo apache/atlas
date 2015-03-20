@@ -21,6 +21,8 @@ package org.apache.hadoop.metadata.typesystem.types.utils;
 import com.google.common.collect.ImmutableList;
 import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
+import org.apache.hadoop.metadata.typesystem.types.EnumTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.EnumValue;
 import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.IDataType;
 import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
@@ -57,15 +59,17 @@ public class TypesUtil {
                 Multiplicity.REQUIRED, false, null);
     }
 
-    @SuppressWarnings("unchecked")
-    public static HierarchicalTypeDefinition<TraitType> createTraitTypeDef(
-            String name, ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
-        return new HierarchicalTypeDefinition(TraitType.class, name, superTypes, attrDefs);
+    public static EnumTypeDefinition createEnumTypeDef(String name, EnumValue... enumValues) {
+        return new EnumTypeDefinition(name, enumValues);
     }
 
-    @SuppressWarnings("unchecked")
+    public static HierarchicalTypeDefinition<TraitType> createTraitTypeDef(
+            String name, ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
+        return new HierarchicalTypeDefinition<>(TraitType.class, name, superTypes, attrDefs);
+    }
+
     public static HierarchicalTypeDefinition<ClassType> createClassTypeDef(
             String name, ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
-        return new HierarchicalTypeDefinition(ClassType.class, name, superTypes, attrDefs);
+        return new HierarchicalTypeDefinition<>(ClassType.class, name, superTypes, attrDefs);
     }
 }

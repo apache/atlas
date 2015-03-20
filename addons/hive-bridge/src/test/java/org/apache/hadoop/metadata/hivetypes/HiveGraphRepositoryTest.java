@@ -25,7 +25,7 @@ import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
-import org.apache.hadoop.metadata.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.repository.graph.GraphBackedMetadataRepository;
 import org.apache.hadoop.metadata.repository.graph.GraphHelper;
@@ -46,8 +46,6 @@ import java.util.List;
 @Test(enabled = false)
 public class HiveGraphRepositoryTest {
 
-    public static final String HIVE_L4J_PROPS = "target/hive-log4j.properties";
-    public static final String HIVE_EXEC_L4J_PROPS = "target/hive-exec-log4j.properties";
     private static final Logger LOG =
             LoggerFactory.getLogger(HiveGraphRepositoryTest.class);
     protected HiveTypeSystem hts;
