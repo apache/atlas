@@ -61,13 +61,16 @@ trait QueryKeywords {
     protected val HAS = Keyword("has")
     protected val AS = Keyword("as")
     protected val TIMES = Keyword("times")
+    protected val WITHPATH = Keyword("withPath")
 }
 
 trait ExpressionUtils {
 
-    def loop(input: Expression, l: (Expression, Option[Literal[Integer]])) = l match {
-        case (c, None) => input.loop(c)
-        case (c, t) => input.loop(c, t.get)
+    def loop(input: Expression, l: (Expression, Option[Literal[Integer]], Option[String])) = l match {
+        case (c, None, None) => input.loop(c)
+        case (c, t, None) => input.loop(c, t.get)
+        case (c, None, Some(a)) => input.loop(c).as(a)
+        case (c, t, Some(a)) => input.loop(c, t.get).as(a)
     }
 
     def select(input: Expression, s: List[(Expression, Option[String])]) = {
@@ -115,11 +118,16 @@ class QueryParser extends StandardTokenParsers with QueryKeywords with Expressio
     override val lexical = new QueryLexer(queryreservedWords, querydelims)
 
     def apply(input: String): Either[NoSuccess, Expression] = {
-        phrase(query)(new lexical.Scanner(input)) match {
+        phrase(queryWithPath)(new lexical.Scanner(input)) match {
             case Success(r, x) => Right(r)
             case f@Failure(m, x) => Left(f)
             case e@Error(m, x) => Left(e)
         }
+    }
+
+    def queryWithPath = query ~ opt(WITHPATH) ^^ {
+      case q ~ None => q
+      case q ~ p => q.path()
     }
 
     def query: Parser[Expression] = rep1sep(singleQuery, opt(COMMA)) ^^ { l => l match {
@@ -173,10 +181,10 @@ class QueryParser extends StandardTokenParsers with QueryKeywords with Expressio
         identifier
 
 
-    def loopExpression: Parser[(Expression, Option[Literal[Integer]])] =
-        LOOP ~ (LPAREN ~> query <~ RPAREN) ~ opt(intConstant <~ TIMES) ^^ {
-            case l ~ e ~ None => (e, None)
-            case l ~ e ~ Some(i) => (e, Some(int(i)))
+    def loopExpression: Parser[(Expression, Option[Literal[Integer]], Option[String])] =
+        LOOP ~ (LPAREN ~> query <~ RPAREN) ~ opt(intConstant <~ TIMES) ~ opt(AS ~> alias) ^^ {
+            case l ~ e ~ None ~ a => (e, None, a)
+            case l ~ e ~ Some(i) ~ a => (e, Some(int(i)), a)
         }
 
     def selectClause: Parser[List[(Expression, Option[String])]] = SELECT ~ rep1sep(selectExpression, COMMA) ^^ {

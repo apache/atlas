@@ -84,4 +84,18 @@ class ParserTest extends BaseTest {
     val x = p("from blah")
     println(p("from blah").left)
   }
+
+    @Test def testPath1: Unit = {
+      val p = new QueryParser
+      println(p("Table loop (LoadProcess outputTable) withPath").right.get.toString)
+    }
+
+    @Test def testPath2: Unit = {
+      val p = new QueryParser
+      println(p(
+        "Table as src loop (LoadProcess outputTable) as dest " +
+          "select src.name as srcTable, dest.name as destTable withPath").right.get.toString
+      )
+    }
+
 }

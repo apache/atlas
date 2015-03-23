@@ -77,4 +77,13 @@ class GremlinTest2 extends FunSuite with BeforeAndAfterAll with BaseGremlinTest 
     validateJson(r)
   }
 
+  test("testLineageAllSelectWithPathFromParser") {
+    val p = new QueryParser
+    val e = p("Table as src loop (LoadProcess outputTable) as dest " +
+      "select src.name as srcTable, dest.name as destTable withPath").right.get
+    //Table as src loop (LoadProcess where LoadProcess.outputTable) as dest select src.name as srcTable, dest.name as destTable withPath
+    val r = QueryProcessor.evaluate(e, g)
+    validateJson(r)
+  }
+
 }
