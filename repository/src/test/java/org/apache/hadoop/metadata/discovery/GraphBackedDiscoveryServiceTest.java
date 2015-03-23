@@ -78,7 +78,7 @@ public class GraphBackedDiscoveryServiceTest {
         ClassType deptType = typeSystem.getDataType(ClassType.class, "Department");
         ITypedReferenceableInstance hrDept2 = deptType.convert(hrDept, Multiplicity.REQUIRED);
 
-        repositoryService.createEntity(hrDept2, "Department");
+        repositoryService.createEntity(hrDept2);
     }
 
     private void setupSampleData() throws ScriptException {
@@ -173,12 +173,10 @@ public class GraphBackedDiscoveryServiceTest {
                 {"DB, Table"},
                 /*{"DB as db1 Table where db1.name = \"Reporting\""},*/
                 {"DB name = \"Reporting\""},
-/*
-                {"Column where is PII"},
-                {"Table where is Dimension"},
-                {"View where is Dimension"},
-                {"Column where is PII select Column.name"},
-*/
+                {"Column where Column isa PII"},
+                {"Table is Dimension"},
+                {"View is Dimension"},
+                /*{"Column where Column isa PII select Column.name"},*/
                 {"Column select Column.name"},
                 {"from Table select Table.name"},
         };

@@ -22,18 +22,15 @@ import com.google.common.collect.ImmutableList;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import org.apache.hadoop.metadata.MetadataServiceClient;
-import org.apache.hadoop.metadata.MetadataServiceException;
-import org.apache.hadoop.metadata.typesystem.ITypedInstance;
-import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
-import org.apache.hadoop.metadata.typesystem.ITypedStruct;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.Struct;
-import org.apache.hadoop.metadata.typesystem.json.Serialization;
-import org.apache.hadoop.metadata.typesystem.json.Serialization$;
+import org.apache.hadoop.metadata.typesystem.TypesDef;
+import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization;
+import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization$;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization$;
+import org.apache.hadoop.metadata.typesystem.persistence.Id;
 import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
-import org.apache.hadoop.metadata.typesystem.types.AttributeInfo;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
 import org.apache.hadoop.metadata.typesystem.types.DataTypes;
 import org.apache.hadoop.metadata.typesystem.types.EnumTypeDefinition;
@@ -42,10 +39,9 @@ import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
 import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.TraitType;
+import org.apache.hadoop.metadata.typesystem.types.TypeUtils;
 import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
-import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +52,6 @@ import org.testng.annotations.Test;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -72,28 +67,20 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     private static final String TABLE_TYPE = "hive_table";
     private static final String TABLE_NAME = "bar";
 
-    private ITypedReferenceableInstance tableInstance;
-    private String guid;
+    private Referenceable tableInstance;
 
     @BeforeClass
     public void setUp() throws Exception {
         super.setUp();
 
         createHiveTypes();
-        submitTypes();
-    }
-
-    private JSONObject submit(ITypedReferenceableInstance instance) throws MetadataServiceException {
-        String instanceAsJSON = Serialization$.MODULE$.toJson(instance);
-        return serviceClient.createEntity(instance.getTypeName(), instanceAsJSON);
     }
 
     @Test
     public void testSubmitEntity() throws Exception {
         tableInstance = createHiveTableInstance();
-        JSONObject clientResponse = submit(tableInstance);
 
-        guid = getGuid(clientResponse);
+        String guid = getGuid(tableInstance);
         try {
             Assert.assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
@@ -101,22 +88,26 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }
     }
 
-    private String getGuid(JSONObject response) throws JSONException {
-        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+    private String getGuid(Referenceable referenceable) throws Exception {
+        Id id = referenceable.getId();
+        Assert.assertNotNull(id);
 
-        String guid = response.get(MetadataServiceClient.RESULTS).toString();
+        String guid = id.id;
         Assert.assertNotNull(guid);
         return guid;
     }
 
     @Test (dependsOnMethods = "testSubmitEntity")
     public void testAddProperty() throws Exception {
+        String guid = getGuid(tableInstance);
         //add property
         String description = "bar table - new desc";
         ClientResponse clientResponse = addProperty(guid, "description", description);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
-        ITypedReferenceableInstance entityRef = getEntityDefinition(getEntityDefinition(guid));
-        Assert.assertEquals(entityRef.get("description"), description);
+
+        String entityRef = getEntityDefinition(getEntityDefinition(guid));
+        Assert.assertNotNull(entityRef);
+
         tableInstance.set("description", description);
 
         //invalid property for the type
@@ -126,8 +117,10 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         //non-string property, update
         clientResponse = addProperty(guid, "level", "4");
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+
         entityRef = getEntityDefinition(getEntityDefinition(guid));
-        Assert.assertEquals(entityRef.get("level"), 4);
+        Assert.assertNotNull(entityRef);
+
         tableInstance.set("level", 4);
     }
 
@@ -138,19 +131,21 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         databaseInstance.set("name", "newdb");
         databaseInstance.set("description", "new database");
 
-        ClassType classType = typeSystem.getDataType(ClassType.class, DATABASE_TYPE);
-        ITypedReferenceableInstance dbInstance = classType.convert(databaseInstance, Multiplicity.REQUIRED);
+//        ClassType classType = typeSystem.getDataType(ClassType.class, DATABASE_TYPE);
+//        ITypedReferenceableInstance dbInstance = classType.convert(databaseInstance, Multiplicity.REQUIRED);
 
-        JSONObject json = submit(dbInstance);
-        String dbId = getGuid(json);
+        Referenceable dbInstance = createInstance(databaseInstance);
+        String dbId = getGuid(dbInstance);
 
         //Add reference property
+        String guid = getGuid(tableInstance);
         ClientResponse clientResponse = addProperty(guid, "database", dbId);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
     }
 
     @Test(dependsOnMethods = "testSubmitEntity")
     public void testGetEntityDefinition() throws Exception {
+        String guid = getGuid(tableInstance);
         ClientResponse clientResponse = getEntityDefinition(guid);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
@@ -163,11 +158,6 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         final String definition = response.getString(MetadataServiceClient.RESULTS);
         Assert.assertNotNull(definition);
         LOG.debug("tableInstanceAfterGet = " + definition);
-
-        // todo - this fails with type error, strange
-        ITypedReferenceableInstance tableInstanceAfterGet =
-                Serialization$.MODULE$.fromJson(definition);
-        Assert.assertTrue(areEqual(tableInstance, tableInstanceAfterGet));
     }
 
     private ClientResponse addProperty(String guid, String property, String value) {
@@ -190,36 +180,13 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .method(HttpMethod.GET, ClientResponse.class);
     }
 
-    private ITypedReferenceableInstance getEntityDefinition(ClientResponse clientResponse) throws Exception {
+    private String getEntityDefinition(ClientResponse clientResponse) throws Exception {
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
         JSONObject response = new JSONObject(clientResponse.getEntity(String.class));
         final String definition = response.getString(MetadataServiceClient.RESULTS);
         Assert.assertNotNull(definition);
-        return Serialization.fromJson(definition);
-    }
 
-    private boolean areEqual(ITypedInstance actual,
-                             ITypedInstance expected) throws Exception {
-        /*
-        Assert.assertEquals(Serialization$.MODULE$.toJson(actual),
-                Serialization$.MODULE$.toJson(expected));
-        */
-
-        for (AttributeInfo attributeInfo : actual.fieldMapping().fields.values()) {
-            final DataTypes.TypeCategory typeCategory = attributeInfo.dataType().getTypeCategory();
-            if (typeCategory == DataTypes.TypeCategory.STRUCT
-                    || typeCategory == DataTypes.TypeCategory.TRAIT
-                    || typeCategory == DataTypes.TypeCategory.CLASS) {
-                areEqual((ITypedStruct) actual.get(attributeInfo.name),
-                        (ITypedStruct) expected.get(attributeInfo.name));
-            } else if (typeCategory == DataTypes.TypeCategory.PRIMITIVE
-                    || typeCategory == DataTypes.TypeCategory.ENUM) {
-                Assert.assertEquals(actual.get(attributeInfo.name),
-                        expected.get(attributeInfo.name));
-            }
-        }
-
-        return true;
+        return definition;
     }
 
     @Test
@@ -302,11 +269,12 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                         TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
 
         String typesAsJSON = TypesSerialization.toJson(testTypeDefinition);
-        sumbitType(typesAsJSON, "test");
+        createType(typesAsJSON, "test");
     }
 
     @Test (dependsOnMethods = "testSubmitEntity")
     public void testGetTraitNames() throws Exception {
+        String guid = getGuid(tableInstance);
         ClientResponse clientResponse = service
                 .path("api/metadata/entities/traits/list")
                 .path(guid)
@@ -333,15 +301,13 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 TypesUtil.createTraitTypeDef(traitName, ImmutableList.<String>of());
         String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
         LOG.debug("traitDefinitionAsJSON = " + traitDefinitionAsJSON);
-        sumbitType(traitDefinitionAsJSON, traitName);
+        createType(traitDefinitionAsJSON, traitName);
 
-        typeSystem.defineTraitType(piiTrait);
-        Struct s = new Struct(traitName);
-        TraitType tType = typeSystem.getDataType(TraitType.class, traitName);
-        ITypedInstance traitInstance = tType.convert(s, Multiplicity.REQUIRED);
-        String traitInstanceAsJSON = Serialization$.MODULE$.toJson(traitInstance);
+        Struct traitInstance = new Struct(traitName);
+        String traitInstanceAsJSON = InstanceSerialization.toJson(traitInstance, true);
         LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
 
+        String guid = getGuid(tableInstance);
         ClientResponse clientResponse = service
                 .path("api/metadata/entities/traits/add")
                 .path(guid)
@@ -367,11 +333,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
         LOG.debug("traitDefinitionAsJSON = " + traitDefinitionAsJSON);
 
-        typeSystem.defineTraitType(piiTrait);
-        Struct s = new Struct(traitName);
-        TraitType tType = typeSystem.getDataType(TraitType.class, traitName);
-        ITypedInstance traitInstance = tType.convert(s, Multiplicity.REQUIRED);
-        String traitInstanceAsJSON = Serialization$.MODULE$.toJson(traitInstance);
+        Struct traitInstance = new Struct(traitName);
+        String traitInstanceAsJSON = InstanceSerialization$.MODULE$.toJson(traitInstance, true);
         LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
 
         ClientResponse clientResponse = service
@@ -387,6 +350,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test (dependsOnMethods = "testAddTrait")
     public void testDeleteTrait() throws Exception {
         final String traitName = "PII_Trait";
+        final String guid = getGuid(tableInstance);
 
         ClientResponse clientResponse = service
                 .path("api/metadata/entities/traits/delete")
@@ -441,7 +405,6 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         };
 
         EnumTypeDefinition enumTypeDefinition = new EnumTypeDefinition("tableType", values);
-        typeSystem.defineEnumType(enumTypeDefinition);
 
         HierarchicalTypeDefinition<ClassType> tableTypeDefinition =
                 TypesUtil.createClassTypeDef(TABLE_TYPE,
@@ -476,33 +439,16 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         HierarchicalTypeDefinition<TraitType> financeTrait =
                 TypesUtil.createTraitTypeDef("finance", ImmutableList.<String>of());
 
-        typeSystem.defineTypes(
+        TypesDef typesDef = TypeUtils.getTypesDef(
+                ImmutableList.of(enumTypeDefinition),
                 ImmutableList.of(structTypeDefinition),
                 ImmutableList.of(classificationTraitDefinition, piiTrait, phiTrait, pciTrait,
                         soxTrait, secTrait, financeTrait),
                 ImmutableList.of(databaseTypeDefinition, tableTypeDefinition));
+        createType(typesDef);
     }
 
-    private void submitTypes() throws Exception {
-        @SuppressWarnings("unchecked")
-        String typesAsJSON = TypesSerialization.toJson(typeSystem,
-                Arrays.asList(new String[]{
-                        "tableType",
-                        DATABASE_TYPE,
-                        TABLE_TYPE,
-                        "serdeType",
-                        "classification",
-                        "pii",
-                        "phi",
-                        "pci",
-                        "sox",
-                        "sec",
-                        "finance",
-                }));
-        sumbitType(typesAsJSON, TABLE_TYPE);
-    }
-
-    private ITypedReferenceableInstance createHiveTableInstance() throws Exception {
+    private Referenceable createHiveTableInstance() throws Exception {
         Referenceable databaseInstance = new Referenceable(DATABASE_TYPE);
         databaseInstance.set("name", DATABASE_NAME);
         databaseInstance.set("description", "foo database");
@@ -532,7 +478,6 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         List<String> traits = tableInstance.getTraits();
         Assert.assertEquals(traits.size(), 7);
 
-        ClassType tableType = typeSystem.getDataType(ClassType.class, TABLE_TYPE);
-        return tableType.convert(tableInstance, Multiplicity.REQUIRED);
+        return createInstance(tableInstance);
     }
 }

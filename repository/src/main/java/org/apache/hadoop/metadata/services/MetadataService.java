@@ -64,11 +64,10 @@ public interface MetadataService {
     /**
      * Creates an entity, instance of the type.
      *
-     * @param entityType type
      * @param entityDefinition definition
      * @return guid
      */
-    String createEntity(String entityType, String entityDefinition) throws MetadataException;
+    String createEntity(String entityDefinition) throws MetadataException;
 
     /**
      * Return the definition for the given guid.
@@ -87,10 +86,11 @@ public interface MetadataService {
     List<String> getEntityList(String entityType) throws MetadataException;
 
     /**
-     * Adds the property to the given entity id(guid)
+     * Adds the property to the given entity id(guid).
+     *
      * @param guid entity id
-     * @param property
-     * @param value
+     * @param property property name
+     * @param value    property value
      */
     void updateEntity(String guid, String property, String value) throws MetadataException;
 

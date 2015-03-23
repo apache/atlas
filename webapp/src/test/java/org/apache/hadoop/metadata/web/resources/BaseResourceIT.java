@@ -23,27 +23,28 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import org.apache.hadoop.metadata.MetadataServiceClient;
-import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
-import org.apache.hadoop.metadata.web.util.Servlets;
+import org.apache.hadoop.metadata.typesystem.Referenceable;
+import org.apache.hadoop.metadata.typesystem.TypesDef;
+import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization;
+import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
+/**
+ * Base class for integration tests.
+ * Sets up the web resource and has helper methods to create type and entity.
+ */
 public abstract class BaseResourceIT {
 
-    protected TypeSystem typeSystem;
     protected WebResource service;
     protected MetadataServiceClient serviceClient;
 
     public void setUp() throws Exception {
-        typeSystem = TypeSystem.getInstance();
-        typeSystem.reset();
-
         String baseUrl = "http://localhost:21000/";
 
         DefaultClientConfig config = new DefaultClientConfig();
@@ -54,10 +55,15 @@ public abstract class BaseResourceIT {
         serviceClient = new MetadataServiceClient(baseUrl);
     }
 
-    protected void sumbitType(String typesAsJSON, String type) throws Exception {
+    protected void createType(TypesDef typesDef) throws Exception {
+        String typesAsJSON = TypesSerialization.toJson(typesDef);
+        createType(typesAsJSON, "removeme");
+    }
+
+    protected void createType(String typesAsJSON, String typeName) throws Exception {
         WebResource resource = service
                 .path("api/metadata/types/submit")
-                .path(type);
+                .path(typeName);
 
         ClientResponse clientResponse = resource
                 .accept(MediaType.APPLICATION_JSON)
@@ -69,8 +75,22 @@ public abstract class BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertEquals(response.get("typeName"), type);
+        Assert.assertEquals(response.get("typeName"), typeName);
         Assert.assertNotNull(response.get("types"));
         Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+    }
+
+    protected Referenceable createInstance(Referenceable referenceable) throws Exception {
+        String typeName = referenceable.getTypeName();
+        System.out.println("creating instance of type " + typeName);
+
+        String entityJSON = InstanceSerialization.toJson(referenceable, true);
+        System.out.println("Submitting new entity= " + entityJSON);
+        JSONObject jsonObject = serviceClient.createEntity(entityJSON);
+        String guid = jsonObject.getString(MetadataServiceClient.RESULTS);
+        System.out.println("created instance for type " + typeName + ", guid: " + guid);
+
+        // return the reference to created instance with guid
+        return new Referenceable(guid, referenceable.getTypeName(), referenceable.getValuesMap());
     }
 }

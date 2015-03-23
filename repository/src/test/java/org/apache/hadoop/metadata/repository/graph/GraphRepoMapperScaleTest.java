@@ -89,14 +89,14 @@ public class GraphRepoMapperScaleTest {
         ClassType dbType = typeSystem.getDataType(ClassType.class, DATABASE_TYPE);
         ITypedReferenceableInstance db = dbType.convert(databaseInstance, Multiplicity.REQUIRED);
 
-        dbGUID = repositoryService.createEntity(db, DATABASE_TYPE);
+        dbGUID = repositoryService.createEntity(db);
 
         Referenceable dbInstance = new Referenceable(
                 dbGUID, DATABASE_TYPE, databaseInstance.getValuesMap());
 
         for (int index = 0; index < 1000; index++) {
             ITypedReferenceableInstance table = createHiveTableInstance(dbInstance, index);
-            repositoryService.createEntity(table, TABLE_TYPE);
+            repositoryService.createEntity(table);
         }
     }
 

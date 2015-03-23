@@ -78,31 +78,28 @@ public class EntityResource {
 
     /**
      * Submits an entity definition (instance) corresponding to a given type.
-     *
-     * @param typeName name of a type which is unique.
      */
     @POST
-    @Path("submit/{typeName}")
+    @Path("submit")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response submit(@Context HttpServletRequest request,
-                           @PathParam("typeName") final String typeName) {
+    public Response submit(@Context HttpServletRequest request) {
         try {
             final String entity = Servlets.getRequestPayload(request);
             LOG.debug("submitting entity {} ", entity);
 
-            final String guid = metadataService.createEntity(typeName, entity);
+            final String guid = metadataService.createEntity(entity);
             JSONObject response = new JSONObject();
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
             response.put(MetadataServiceClient.RESULTS, guid);
 
             return Response.ok(response).build();
         } catch (MetadataException | IOException | IllegalArgumentException e) {
-            LOG.error("Unable to persist instance for type {}", typeName, e);
+            LOG.error("Unable to persist entity instance", e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (JSONException e) {
-            LOG.error("Unable to persist instance for type {}", typeName, e);
+            LOG.error("Unable to persist entity instance", e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
@@ -193,12 +190,13 @@ public class EntityResource {
      * @param guid entity id
      * @param property property to add
      * @param value property's value
-     * @return
+     * @return response payload as json
      */
     @PUT
     @Path("update/{guid}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response update(@PathParam("guid") String guid, @QueryParam("property") String property,
+    public Response update(@PathParam("guid") String guid,
+                           @QueryParam("property") String property,
                            @QueryParam("value") String value) {
         try {
             metadataService.updateEntity(guid, property, value);

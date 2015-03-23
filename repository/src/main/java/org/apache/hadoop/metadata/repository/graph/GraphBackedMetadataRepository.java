@@ -116,9 +116,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     }
 
     @Override
-    public String createEntity(IReferenceableInstance typedInstance,
-                               String typeName) throws RepositoryException {
-        LOG.info("adding entity={} type={}", typedInstance, typeName);
+    public String createEntity(IReferenceableInstance typedInstance) throws RepositoryException {
+        LOG.info("adding entity={}", typedInstance);
 
         try {
             titanGraph.rollback();

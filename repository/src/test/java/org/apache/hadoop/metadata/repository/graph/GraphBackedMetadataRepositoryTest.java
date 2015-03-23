@@ -106,7 +106,7 @@ public class GraphBackedMetadataRepositoryTest {
         ClassType deptType = typeSystem.getDataType(ClassType.class, "Department");
         ITypedReferenceableInstance hrDept2 = deptType.convert(hrDept, Multiplicity.REQUIRED);
 
-        guid = repositoryService.createEntity(hrDept2, ENTITY_TYPE);
+        guid = repositoryService.createEntity(hrDept2);
         Assert.assertNotNull(guid);
     }
 
@@ -154,14 +154,14 @@ public class GraphBackedMetadataRepositoryTest {
         ITypedReferenceableInstance db = dbType.convert(databaseInstance, Multiplicity.REQUIRED);
         System.out.println("db = " + db);
 
-        String dbGUID = repositoryService.createEntity(db, DATABASE_TYPE);
+        String dbGUID = repositoryService.createEntity(db);
         System.out.println("added db = " + dbGUID);
 
         Referenceable dbInstance = new Referenceable(
                 dbGUID, DATABASE_TYPE, databaseInstance.getValuesMap());
 
         ITypedReferenceableInstance table = createHiveTableInstance(dbInstance);
-        String tableGUID = repositoryService.createEntity(table, TABLE_TYPE);
+        String tableGUID = repositoryService.createEntity(table);
         System.out.println("added table = " + tableGUID);
     }
 

@@ -22,6 +22,7 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
+import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
@@ -29,7 +30,12 @@ import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
+import java.util.ArrayList;
+import java.util.List;
 
+/**
+ * Client for metadata.
+ */
 public class MetadataServiceClient {
     public static final String REQUEST_ID = "requestId";
     public static final String RESULTS = "results";
@@ -50,8 +56,8 @@ public class MetadataServiceClient {
         //Type operations
         CREATE_TYPE("api/metadata/types/submit", HttpMethod.POST),
         GET_TYPE("api/metadata/types/definition", HttpMethod.GET),
-        LIST_TYPE("api/metadata/types/list", HttpMethod.GET),
-        LIST_TRAIT_TYPE("api/metadata/types/traits/list", HttpMethod.GET),
+        LIST_TYPES("api/metadata/types/list", HttpMethod.GET),
+        LIST_TRAIT_TYPES("api/metadata/types/traits/list", HttpMethod.GET),
 
         //Entity operations
         CREATE_ENTITY("api/metadata/entities/submit", HttpMethod.POST),
@@ -81,8 +87,28 @@ public class MetadataServiceClient {
         }
     }
 
-    public JSONObject createEntity(String typeName, String entityAsJson) throws MetadataServiceException {
-        return callAPI(API.CREATE_ENTITY, entityAsJson, typeName);
+    public JSONObject createType(String typeName,
+                                 String typeAsJson) throws MetadataServiceException {
+        return callAPI(API.CREATE_TYPE, typeAsJson, typeName);
+    }
+
+    public List<String> listTypes() throws MetadataServiceException {
+        try {
+            final JSONObject jsonObject = callAPI(API.LIST_TYPES, null);
+            final JSONArray list = jsonObject.getJSONArray(MetadataServiceClient.RESULTS);
+            ArrayList<String> types = new ArrayList<>();
+            for (int index = 0; index < list.length(); index++) {
+                types.add(list.getString(index));
+            }
+
+            return types;
+        } catch (JSONException e) {
+            throw new MetadataServiceException(API.LIST_TYPES, e);
+        }
+    }
+
+    public JSONObject createEntity(String entityAsJson) throws MetadataServiceException {
+        return callAPI(API.CREATE_ENTITY, entityAsJson);
     }
 
     public String getRequestId(JSONObject json) throws MetadataServiceException {
@@ -101,7 +127,9 @@ public class MetadataServiceClient {
             }
         }
 
-        ClientResponse clientResponse = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON)
+        ClientResponse clientResponse = resource
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
                 .method(api.getMethod(), ClientResponse.class, requestObject);
 
         if (clientResponse.getStatus() == Response.Status.OK.getStatusCode()) {

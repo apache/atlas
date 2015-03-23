@@ -69,12 +69,10 @@ public interface MetadataRepository {
      * Creates an entity definition (instance) corresponding to a given type.
      *
      * @param entity     entity (typed instance)
-     * @param entityType entity type name
      * @return a globally unique identifier
      * @throws RepositoryException
      */
-    String createEntity(IReferenceableInstance entity,
-                        String entityType) throws RepositoryException;
+    String createEntity(IReferenceableInstance entity) throws RepositoryException;
 
     /**
      * Fetch the complete definition of an entity given its GUID.
@@ -137,17 +135,6 @@ public interface MetadataRepository {
                   ITypedStruct traitInstance) throws RepositoryException;
 
     /**
-     * Adds a list of traits to an existing entity represented by a guid.
-     *
-     * @param guid           globally unique identifier for the entity
-     * @param traitInstances list of trait instances that needs to be added to entity
-     * @return an entity instance with updated traits
-     * @throws RepositoryException
-     */
-    // ITypedReferenceableInstance addTraits(String guid, Map<String, ITypedStruct> traitInstances)
-    //    throws RepositoryException;
-
-    /**
      * Deletes a given trait from an existing entity represented by a guid.
      *
      * @param guid                 globally unique identifier for the entity
@@ -160,8 +147,8 @@ public interface MetadataRepository {
     /**
      * Adds the property to the entity that corresponds to the GUID
      * @param guid entity id
-     * @param property
-     * @param value
+     * @param property property name
+     * @param value    property value
      */
     void updateEntity(String guid, String property, String value) throws RepositoryException;
 }

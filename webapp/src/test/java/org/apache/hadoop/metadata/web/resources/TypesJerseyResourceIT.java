@@ -31,7 +31,6 @@ import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
 import org.apache.hadoop.metadata.typesystem.types.TraitType;
 import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
-import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
@@ -187,7 +186,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
             HierarchicalTypeDefinition<TraitType> traitTypeDef =
                     TypesUtil.createTraitTypeDef(traitName, ImmutableList.<String>of());
             String json = TypesSerialization$.MODULE$.toJson(traitTypeDef, true);
-            sumbitType(json, traitName);
+            createType(json, traitName);
         }
 
         return traitNames;

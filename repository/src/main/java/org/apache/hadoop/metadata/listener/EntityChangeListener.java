@@ -29,12 +29,10 @@ public interface EntityChangeListener {
     /**
      * This is upon adding a new typed instance to the repository.
      *
-     * @param typeName type name
      * @param typedInstance a typed instance
      * @throws org.apache.hadoop.metadata.MetadataException
      */
-    void onEntityAdded(String typeName,
-                       ITypedReferenceableInstance typedInstance) throws MetadataException;
+    void onEntityAdded(ITypedReferenceableInstance typedInstance) throws MetadataException;
 
     /**
      * This is upon adding a new trait to a typed instance.

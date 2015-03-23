@@ -28,10 +28,16 @@ import org.apache.hadoop.metadata.repository.MetadataRepository;
 import org.apache.hadoop.metadata.repository.typestore.ITypeStore;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.ITypedStruct;
+import org.apache.hadoop.metadata.typesystem.Referenceable;
+import org.apache.hadoop.metadata.typesystem.Struct;
 import org.apache.hadoop.metadata.typesystem.TypesDef;
+import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization;
 import org.apache.hadoop.metadata.typesystem.json.Serialization$;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
+import org.apache.hadoop.metadata.typesystem.types.ClassType;
 import org.apache.hadoop.metadata.typesystem.types.IDataType;
+import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
+import org.apache.hadoop.metadata.typesystem.types.TraitType;
 import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -151,22 +157,37 @@ public class DefaultMetadataService implements MetadataService {
     /**
      * Creates an entity, instance of the type.
      *
-     * @param entityType       type
-     * @param entityDefinition definition
+     * @param entityInstanceDefinition definition
      * @return guid
      */
     @Override
-    public String createEntity(String entityType,
-                               String entityDefinition) throws MetadataException {
-        Preconditions.checkNotNull(entityDefinition, "entity cannot be null");
-        Preconditions.checkNotNull(entityType, "entity type cannot be null");
+    public String createEntity(String entityInstanceDefinition) throws MetadataException {
+        Preconditions.checkNotNull(entityInstanceDefinition,
+                "entity instance definition cannot be null");
 
-        ITypedReferenceableInstance entityInstance =
-                Serialization$.MODULE$.fromJson(entityDefinition);
-        final String guid = repository.createEntity(entityInstance, entityType);
+        ITypedReferenceableInstance entityTypedInstance =
+                deserializeClassInstance(entityInstanceDefinition);
 
-        onEntityAddedToRepo(entityType, entityInstance);
+        final String guid = repository.createEntity(entityTypedInstance);
+
+        onEntityAddedToRepo(entityTypedInstance);
         return guid;
+    }
+
+    private ITypedReferenceableInstance deserializeClassInstance(
+            String entityInstanceDefinition) throws MetadataException {
+
+        try {
+            final Referenceable entityInstance = InstanceSerialization.fromJsonReferenceable(
+                    entityInstanceDefinition, true);
+            final String entityTypeName = entityInstance.getTypeName();
+            Preconditions.checkNotNull(entityTypeName, "entity type cannot be null");
+
+            ClassType entityType = typeSystem.getDataType(ClassType.class, entityTypeName);
+            return entityType.convert(entityInstance, Multiplicity.REQUIRED);
+        } catch (Exception e) {
+            throw new MetadataException("Error deserializing trait instance");
+        }
     }
 
     /**
@@ -256,7 +277,14 @@ public class DefaultMetadataService implements MetadataService {
         throws MetadataException {
 
         try {
-            return (ITypedStruct) Serialization$.MODULE$.traitFromJson(traitInstanceDefinition);
+            Struct traitInstance = InstanceSerialization.fromJsonStruct(
+                    traitInstanceDefinition, true);
+            final String entityTypeName = traitInstance.getTypeName();
+            Preconditions.checkNotNull(entityTypeName, "entity type cannot be null");
+
+            TraitType traitType = typeSystem.getDataType(TraitType.class, entityTypeName);
+            return traitType.convert(
+                    traitInstance, Multiplicity.REQUIRED);
         } catch (Exception e) {
             throw new MetadataException("Error deserializing trait instance");
         }
@@ -301,12 +329,11 @@ public class DefaultMetadataService implements MetadataService {
         typesChangeListeners.remove(listener);
     }
 
-    private void onEntityAddedToRepo(String typeName,
-                                     ITypedReferenceableInstance typedInstance)
+    private void onEntityAddedToRepo(ITypedReferenceableInstance typedInstance)
         throws MetadataException {
 
         for (EntityChangeListener listener : entityChangeListeners) {
-            listener.onEntityAdded(typeName, typedInstance);
+            listener.onEntityAdded(typedInstance);
         }
     }
 
