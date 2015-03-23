@@ -1,33 +1,7 @@
 {
   "enumTypes":[
     {
-      "name":"HIVE_FUNCTIONTYPE",
-      "enumValues":[
-        {
-          "value":"JAVA",
-          "ordinal":1
-        }
-      ]
-    },
-    {
-      "name":"HIVE_PRINCIPALTYPE",
-      "enumValues":[
-        {
-          "value":"USER",
-          "ordinal":1
-        },
-        {
-          "value":"ROLE",
-          "ordinal":2
-        },
-        {
-          "value":"GROUP",
-          "ordinal":3
-        }
-      ]
-    },
-    {
-      "name":"HIVE_OBJECTTYPE",
+      "name":"hive_object_type",
       "enumValues":[
         {
           "value":"GLOBAL",
@@ -52,7 +26,7 @@
       ]
     },
     {
-      "name":"HIVE_RESOURCETYPE",
+      "name":"hive_resource_type",
       "enumValues":[
         {
           "value":"JAR",
@@ -67,34 +41,37 @@
           "ordinal":3
         }
       ]
-    }
-  ],
-  "structTypes":[
+    },
     {
-      "typeName":"HIVE_RESOURCEURI",
-      "attributeDefinitions":[
+      "name":"hive_principal_type",
+      "enumValues":[
         {
-          "name":"resourceType",
-          "dataTypeName":"HIVE_RESOURCETYPE",
-          "multiplicity":"required",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
+          "value":"USER",
+          "ordinal":1
         },
         {
-          "name":"uri",
-          "dataTypeName":"string",
-          "multiplicity":"required",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
+          "value":"ROLE",
+          "ordinal":2
+        },
+        {
+          "value":"GROUP",
+          "ordinal":3
         }
       ]
     },
     {
-      "typeName":"HIVE_ORDER",
+      "name":"hive_function_type",
+      "enumValues":[
+        {
+          "value":"JAVA",
+          "ordinal":1
+        }
+      ]
+    }
+  ],
+  "structTypes":[
+    {
+      "typeName":"hive_order",
       "attributeDefinitions":[
         {
           "name":"col",
@@ -117,7 +94,30 @@
       ]
     },
     {
-      "typeName":"HIVE_SERDE",
+      "typeName":"hive_resourceuri",
+      "attributeDefinitions":[
+        {
+          "name":"resourceType",
+          "dataTypeName":"hive_resource_type",
+          "multiplicity":"required",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"uri",
+          "dataTypeName":"string",
+          "multiplicity":"required",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        }
+      ]
+    },
+    {
+      "typeName":"hive_serde",
       "attributeDefinitions":[
         {
           "name":"name",
@@ -158,88 +158,7 @@
 
       ],
       "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
-      "typeName":"HIVE_FUNCTION",
-      "attributeDefinitions":[
-        {
-          "name":"functionName",
-          "dataTypeName":"string",
-          "multiplicity":"required",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        },
-        {
-          "name":"dbName",
-          "dataTypeName":"HIVE_DB",
-          "multiplicity":"required",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        },
-        {
-          "name":"className",
-          "dataTypeName":"int",
-          "multiplicity":"optional",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        },
-        {
-          "name":"ownerName",
-          "dataTypeName":"int",
-          "multiplicity":"optional",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        },
-        {
-          "name":"ownerType",
-          "dataTypeName":"HIVE_PRINCIPALTYPE",
-          "multiplicity":"required",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        },
-        {
-          "name":"createTime",
-          "dataTypeName":"int",
-          "multiplicity":"required",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        },
-        {
-          "name":"functionType",
-          "dataTypeName":"HIVE_FUNCTIONTYPE",
-          "multiplicity":"required",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        },
-        {
-          "name":"resourceUris",
-          "dataTypeName":"HIVE_RESOURCEURI",
-          "multiplicity":"collection",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        }
-      ]
-    },
-    {
-      "superTypes":[
-
-      ],
-      "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
-      "typeName":"HIVE_PROCESS",
+      "typeName":"hive_process",
       "attributeDefinitions":[
         {
           "name":"processName",
@@ -279,7 +198,7 @@
         },
         {
           "name":"sourceTableNames",
-          "dataTypeName":"array<HIVE_TABLE>",
+          "dataTypeName":"array<hive_table>",
           "multiplicity":"optional",
           "isComposite":false,
           "isUnique":false,
@@ -288,7 +207,7 @@
         },
         {
           "name":"targetTableNames",
-          "dataTypeName":"array<HIVE_TABLE>",
+          "dataTypeName":"array<hive_table>",
           "multiplicity":"optional",
           "isComposite":false,
           "isUnique":false,
@@ -338,20 +257,11 @@
 
       ],
       "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
-      "typeName":"HIVE_PARTITION",
+      "typeName":"hive_function",
       "attributeDefinitions":[
         {
-          "name":"values",
+          "name":"functionName",
           "dataTypeName":"string",
-          "multiplicity":"collection",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        },
-        {
-          "name":"dbName",
-          "dataTypeName":"HIVE_DB",
           "multiplicity":"required",
           "isComposite":false,
           "isUnique":false,
@@ -359,8 +269,35 @@
           "reverseAttributeName":null
         },
         {
-          "name":"tableName",
-          "dataTypeName":"HIVE_TABLE",
+          "name":"dbName",
+          "dataTypeName":"hive_db",
+          "multiplicity":"required",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"className",
+          "dataTypeName":"int",
+          "multiplicity":"optional",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"ownerName",
+          "dataTypeName":"int",
+          "multiplicity":"optional",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"ownerType",
+          "dataTypeName":"hive_principal_type",
           "multiplicity":"required",
           "isComposite":false,
           "isUnique":false,
@@ -370,24 +307,6 @@
         {
           "name":"createTime",
           "dataTypeName":"int",
-          "multiplicity":"optional",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        },
-        {
-          "name":"lastAccessTime",
-          "dataTypeName":"int",
-          "multiplicity":"optional",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        },
-        {
-          "name":"sd",
-          "dataTypeName":"HIVE_STORAGEDESC",
           "multiplicity":"required",
           "isComposite":false,
           "isUnique":false,
@@ -395,121 +314,22 @@
           "reverseAttributeName":null
         },
         {
-          "name":"parameters",
-          "dataTypeName":"map<string,string>",
-          "multiplicity":"optional",
+          "name":"functionType",
+          "dataTypeName":"hive_function_type",
+          "multiplicity":"required",
           "isComposite":false,
           "isUnique":false,
           "isIndexable":true,
           "reverseAttributeName":null
-        }
-      ]
-    },
-    {
-      "superTypes":[
-
-      ],
-      "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
-      "typeName":"HIVE_STORAGEDESC",
-      "attributeDefinitions":[
+        },
         {
-          "name":"cols",
-          "dataTypeName":"array<HIVE_COLUMN>",
+          "name":"resourceUris",
+          "dataTypeName":"hive_resourceuri",
           "multiplicity":"collection",
           "isComposite":false,
           "isUnique":false,
           "isIndexable":true,
           "reverseAttributeName":null
-        },
-        {
-          "name":"location",
-          "dataTypeName":"string",
-          "multiplicity":"optional",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        },
-        {
-          "name":"inputFormat",
-          "dataTypeName":"string",
-          "multiplicity":"optional",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        },
-        {
-          "name":"outputFormat",
-          "dataTypeName":"string",
-          "multiplicity":"optional",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        },
-        {
-          "name":"compressed",
-          "dataTypeName":"boolean",
-          "multiplicity":"required",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        },
-        {
-          "name":"numBuckets",
-          "dataTypeName":"int",
-          "multiplicity":"optional",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        },
-        {
-          "name":"serdeInfo",
-          "dataTypeName":"HIVE_SERDE",
-          "multiplicity":"optional",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        },
-        {
-          "name":"bucketCols",
-          "dataTypeName":"array<string>",
-          "multiplicity":"optional",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        },
-        {
-          "name":"sortCols",
-          "dataTypeName":"array<HIVE_ORDER>",
-          "multiplicity":"optional",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        },
-        {
-          "name":"parameters",
-          "dataTypeName":"map<string,string>",
-          "multiplicity":"optional",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        },
-        {
-          "name":"storedAsSubDirectories",
-          "dataTypeName":"boolean",
-          "multiplicity":"optional",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
         }
       ]
     },
@@ -518,7 +338,7 @@
 
       ],
       "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
-      "typeName":"HIVE_TYPE",
+      "typeName":"hive_type",
       "attributeDefinitions":[
         {
           "name":"name",
@@ -549,7 +369,7 @@
         },
         {
           "name":"fields",
-          "dataTypeName":"array<HIVE_COLUMN>",
+          "dataTypeName":"array<hive_column>",
           "multiplicity":"optional",
           "isComposite":false,
           "isUnique":false,
@@ -563,79 +383,7 @@
 
       ],
       "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
-      "typeName":"HIVE_COLUMN",
-      "attributeDefinitions":[
-        {
-          "name":"name",
-          "dataTypeName":"string",
-          "multiplicity":"required",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        },
-        {
-          "name":"type",
-          "dataTypeName":"string",
-          "multiplicity":"required",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        },
-        {
-          "name":"comment",
-          "dataTypeName":"string",
-          "multiplicity":"optional",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        }
-      ]
-    },
-    {
-      "superTypes":[
-
-      ],
-      "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
-      "typeName":"HIVE_ROLE",
-      "attributeDefinitions":[
-        {
-          "name":"roleName",
-          "dataTypeName":"string",
-          "multiplicity":"required",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        },
-        {
-          "name":"createTime",
-          "dataTypeName":"int",
-          "multiplicity":"required",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        },
-        {
-          "name":"ownerName",
-          "dataTypeName":"string",
-          "multiplicity":"required",
-          "isComposite":false,
-          "isUnique":false,
-          "isIndexable":true,
-          "reverseAttributeName":null
-        }
-      ]
-    },
-    {
-      "superTypes":[
-
-      ],
-      "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
-      "typeName":"HIVE_TABLE",
+      "typeName":"hive_table",
       "attributeDefinitions":[
         {
           "name":"tableName",
@@ -648,7 +396,7 @@
         },
         {
           "name":"dbName",
-          "dataTypeName":"HIVE_DB",
+          "dataTypeName":"hive_db",
           "multiplicity":"required",
           "isComposite":false,
           "isUnique":false,
@@ -693,7 +441,7 @@
         },
         {
           "name":"sd",
-          "dataTypeName":"HIVE_STORAGEDESC",
+          "dataTypeName":"hive_storagedesc",
           "multiplicity":"optional",
           "isComposite":false,
           "isUnique":false,
@@ -702,7 +450,7 @@
         },
         {
           "name":"partitionKeys",
-          "dataTypeName":"array<HIVE_COLUMN>",
+          "dataTypeName":"array<hive_column>",
           "multiplicity":"optional",
           "isComposite":false,
           "isUnique":false,
@@ -761,7 +509,187 @@
 
       ],
       "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
-      "typeName":"HIVE_INDEX",
+      "typeName":"hive_partition",
+      "attributeDefinitions":[
+        {
+          "name":"values",
+          "dataTypeName":"string",
+          "multiplicity":"collection",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"dbName",
+          "dataTypeName":"hive_db",
+          "multiplicity":"required",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"tableName",
+          "dataTypeName":"hive_table",
+          "multiplicity":"required",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"createTime",
+          "dataTypeName":"int",
+          "multiplicity":"optional",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"lastAccessTime",
+          "dataTypeName":"int",
+          "multiplicity":"optional",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"sd",
+          "dataTypeName":"hive_storagedesc",
+          "multiplicity":"required",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"parameters",
+          "dataTypeName":"map<string,string>",
+          "multiplicity":"optional",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        }
+      ]
+    },
+    {
+      "superTypes":[
+
+      ],
+      "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
+      "typeName":"hive_storagedesc",
+      "attributeDefinitions":[
+        {
+          "name":"cols",
+          "dataTypeName":"array<hive_column>",
+          "multiplicity":"collection",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"location",
+          "dataTypeName":"string",
+          "multiplicity":"optional",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"inputFormat",
+          "dataTypeName":"string",
+          "multiplicity":"optional",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"outputFormat",
+          "dataTypeName":"string",
+          "multiplicity":"optional",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"compressed",
+          "dataTypeName":"boolean",
+          "multiplicity":"required",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"numBuckets",
+          "dataTypeName":"int",
+          "multiplicity":"optional",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"serdeInfo",
+          "dataTypeName":"hive_serde",
+          "multiplicity":"optional",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"bucketCols",
+          "dataTypeName":"array<string>",
+          "multiplicity":"optional",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"sortCols",
+          "dataTypeName":"array<hive_order>",
+          "multiplicity":"optional",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"parameters",
+          "dataTypeName":"map<string,string>",
+          "multiplicity":"optional",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"storedAsSubDirectories",
+          "dataTypeName":"boolean",
+          "multiplicity":"optional",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        }
+      ]
+    },
+    {
+      "superTypes":[
+
+      ],
+      "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
+      "typeName":"hive_index",
       "attributeDefinitions":[
         {
           "name":"indexName",
@@ -783,7 +711,7 @@
         },
         {
           "name":"dbName",
-          "dataTypeName":"HIVE_DB",
+          "dataTypeName":"hive_db",
           "multiplicity":"required",
           "isComposite":false,
           "isUnique":false,
@@ -810,7 +738,7 @@
         },
         {
           "name":"origTableName",
-          "dataTypeName":"HIVE_TABLE",
+          "dataTypeName":"hive_table",
           "multiplicity":"required",
           "isComposite":false,
           "isUnique":false,
@@ -819,7 +747,7 @@
         },
         {
           "name":"indexTableName",
-          "dataTypeName":"HIVE_TABLE",
+          "dataTypeName":"hive_table",
           "multiplicity":"optional",
           "isComposite":false,
           "isUnique":false,
@@ -828,7 +756,7 @@
         },
         {
           "name":"sd",
-          "dataTypeName":"HIVE_STORAGEDESC",
+          "dataTypeName":"hive_storagedesc",
           "multiplicity":"required",
           "isComposite":false,
           "isUnique":false,
@@ -860,7 +788,43 @@
 
       ],
       "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
-      "typeName":"HIVE_DB",
+      "typeName":"hive_role",
+      "attributeDefinitions":[
+        {
+          "name":"roleName",
+          "dataTypeName":"string",
+          "multiplicity":"required",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"createTime",
+          "dataTypeName":"int",
+          "multiplicity":"required",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"ownerName",
+          "dataTypeName":"string",
+          "multiplicity":"required",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        }
+      ]
+    },
+    {
+      "superTypes":[
+
+      ],
+      "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
+      "typeName":"hive_db",
       "attributeDefinitions":[
         {
           "name":"name",
@@ -909,7 +873,43 @@
         },
         {
           "name":"ownerType",
-          "dataTypeName":"HIVE_PRINCIPALTYPE",
+          "dataTypeName":"hive_principal_type",
+          "multiplicity":"optional",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        }
+      ]
+    },
+    {
+      "superTypes":[
+
+      ],
+      "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
+      "typeName":"hive_column",
+      "attributeDefinitions":[
+        {
+          "name":"name",
+          "dataTypeName":"string",
+          "multiplicity":"required",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"type",
+          "dataTypeName":"string",
+          "multiplicity":"required",
+          "isComposite":false,
+          "isUnique":false,
+          "isIndexable":true,
+          "reverseAttributeName":null
+        },
+        {
+          "name":"comment",
+          "dataTypeName":"string",
           "multiplicity":"optional",
           "isComposite":false,
           "isUnique":false,

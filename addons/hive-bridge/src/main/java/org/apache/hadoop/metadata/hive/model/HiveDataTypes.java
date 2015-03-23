@@ -24,10 +24,10 @@ package org.apache.hadoop.metadata.hive.model;
 public enum HiveDataTypes {
 
     // Enums
-    HIVE_OBJECTTYPE,
-    HIVE_PRINCIPALTYPE,
-    HIVE_RESOURCETYPE,
-    HIVE_FUNCTIONTYPE,
+    HIVE_OBJECT_TYPE,
+    HIVE_PRINCIPAL_TYPE,
+    HIVE_RESOURCE_TYPE,
+    HIVE_FUNCTION_TYPE,
 
     // Structs
     HIVE_SERDE,
@@ -47,4 +47,9 @@ public enum HiveDataTypes {
     HIVE_TYPE,
     HIVE_PROCESS,
     // HIVE_VIEW,
+    ;
+
+    public String getName() {
+        return name().toLowerCase();
+    }
 }

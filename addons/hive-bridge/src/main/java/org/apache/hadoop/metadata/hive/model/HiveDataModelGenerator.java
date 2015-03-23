@@ -127,9 +127,9 @@ public class HiveDataModelGenerator {
         };
 
         EnumTypeDefinition definition = new EnumTypeDefinition(
-                HiveDataTypes.HIVE_OBJECTTYPE.name(), values);
-        enumTypeDefinitionMap.put(HiveDataTypes.HIVE_OBJECTTYPE.name(), definition);
-        LOG.debug("Created definition for " + HiveDataTypes.HIVE_OBJECTTYPE.name());
+                HiveDataTypes.HIVE_OBJECT_TYPE.getName(), values);
+        enumTypeDefinitionMap.put(HiveDataTypes.HIVE_OBJECT_TYPE.getName(), definition);
+        LOG.debug("Created definition for " + HiveDataTypes.HIVE_OBJECT_TYPE.getName());
     }
 
     private void createHivePrincipalTypeEnum() throws MetadataException {
@@ -140,10 +140,10 @@ public class HiveDataModelGenerator {
         };
 
         EnumTypeDefinition definition = new EnumTypeDefinition(
-                HiveDataTypes.HIVE_PRINCIPALTYPE.name(), values);
+                HiveDataTypes.HIVE_PRINCIPAL_TYPE.getName(), values);
 
-        enumTypeDefinitionMap.put(HiveDataTypes.HIVE_PRINCIPALTYPE.name(), definition);
-        LOG.debug("Created definition for " + HiveDataTypes.HIVE_PRINCIPALTYPE.name());
+        enumTypeDefinitionMap.put(HiveDataTypes.HIVE_PRINCIPAL_TYPE.getName(), definition);
+        LOG.debug("Created definition for " + HiveDataTypes.HIVE_PRINCIPAL_TYPE.getName());
     }
 
     private void createFunctionTypeEnum() throws MetadataException {
@@ -152,9 +152,9 @@ public class HiveDataModelGenerator {
         };
 
         EnumTypeDefinition definition = new EnumTypeDefinition(
-                HiveDataTypes.HIVE_FUNCTIONTYPE.name(), values);
-        enumTypeDefinitionMap.put(HiveDataTypes.HIVE_FUNCTIONTYPE.name(), definition);
-        LOG.debug("Created definition for " + HiveDataTypes.HIVE_FUNCTIONTYPE.name());
+                HiveDataTypes.HIVE_FUNCTION_TYPE.getName(), values);
+        enumTypeDefinitionMap.put(HiveDataTypes.HIVE_FUNCTION_TYPE.getName(), definition);
+        LOG.debug("Created definition for " + HiveDataTypes.HIVE_FUNCTION_TYPE.getName());
     }
 
     private void createResourceTypeEnum() throws MetadataException {
@@ -164,9 +164,9 @@ public class HiveDataModelGenerator {
                 new EnumValue("ARCHIVE", 3),
         };
         EnumTypeDefinition definition = new EnumTypeDefinition(
-                HiveDataTypes.HIVE_RESOURCETYPE.name(), values);
-        enumTypeDefinitionMap.put(HiveDataTypes.HIVE_RESOURCETYPE.name(), definition);
-        LOG.debug("Created definition for " + HiveDataTypes.HIVE_RESOURCETYPE.name());
+                HiveDataTypes.HIVE_RESOURCE_TYPE.getName(), values);
+        enumTypeDefinitionMap.put(HiveDataTypes.HIVE_RESOURCE_TYPE.getName(), definition);
+        LOG.debug("Created definition for " + HiveDataTypes.HIVE_RESOURCE_TYPE.getName());
     }
 
     private void createSerDeStruct() throws MetadataException {
@@ -178,10 +178,10 @@ public class HiveDataModelGenerator {
                 new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
         };
-        StructTypeDefinition definition = new StructTypeDefinition(HiveDataTypes.HIVE_SERDE.name(),
-                attributeDefinitions);
-        structTypeDefinitionMap.put(HiveDataTypes.HIVE_SERDE.name(), definition);
-        LOG.debug("Created definition for " + HiveDataTypes.HIVE_SERDE.name());
+        StructTypeDefinition definition = new StructTypeDefinition(
+                HiveDataTypes.HIVE_SERDE.getName(), attributeDefinitions);
+        structTypeDefinitionMap.put(HiveDataTypes.HIVE_SERDE.getName(), definition);
+        LOG.debug("Created definition for " + HiveDataTypes.HIVE_SERDE.getName());
     }
 
     /*
@@ -200,10 +200,10 @@ public class HiveDataModelGenerator {
                         Multiplicity.OPTIONAL, false, null),
         };
         StructTypeDefinition definition = new StructTypeDefinition(
-                DefinedTypes.HIVE_SKEWEDINFO.name(), attributeDefinitions);
+                DefinedTypes.HIVE_SKEWEDINFO.getName(), attributeDefinitions);
 
-        structTypeDefinitionMap.put(DefinedTypes.HIVE_SKEWEDINFO.name(), definition);
-        LOG.debug("Created definition for " + DefinedTypes.HIVE_SKEWEDINFO.name());
+        structTypeDefinitionMap.put(DefinedTypes.HIVE_SKEWEDINFO.getName(), definition);
+        LOG.debug("Created definition for " + DefinedTypes.HIVE_SKEWEDINFO.getName());
     }
     */
 
@@ -216,15 +216,15 @@ public class HiveDataModelGenerator {
         };
 
         StructTypeDefinition definition = new StructTypeDefinition(
-                HiveDataTypes.HIVE_ORDER.name(), attributeDefinitions);
-        structTypeDefinitionMap.put(HiveDataTypes.HIVE_ORDER.name(), definition);
-        LOG.debug("Created definition for " + HiveDataTypes.HIVE_ORDER.name());
+                HiveDataTypes.HIVE_ORDER.getName(), attributeDefinitions);
+        structTypeDefinitionMap.put(HiveDataTypes.HIVE_ORDER.getName(), definition);
+        LOG.debug("Created definition for " + HiveDataTypes.HIVE_ORDER.getName());
     }
 
     private void createStorageDescClass() throws MetadataException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition("cols",
-                        String.format("array<%s>", HiveDataTypes.HIVE_COLUMN.name()),
+                        String.format("array<%s>", HiveDataTypes.HIVE_COLUMN.getName()),
                         Multiplicity.COLLECTION, false, null),
                 new AttributeDefinition("location", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
@@ -236,41 +236,41 @@ public class HiveDataModelGenerator {
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("numBuckets", DataTypes.INT_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("serdeInfo", HiveDataTypes.HIVE_SERDE.name(),
+                new AttributeDefinition("serdeInfo", HiveDataTypes.HIVE_SERDE.getName(),
                         Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("bucketCols",
                         String.format("array<%s>", DataTypes.STRING_TYPE.getName()),
                         Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("sortCols",
-                        String.format("array<%s>", HiveDataTypes.HIVE_ORDER.name()),
+                        String.format("array<%s>", HiveDataTypes.HIVE_ORDER.getName()),
                         Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
-                //new AttributeDefinition("skewedInfo", DefinedTypes.HIVE_SKEWEDINFO.name(),
+                //new AttributeDefinition("skewedInfo", DefinedTypes.HIVE_SKEWEDINFO.getName(),
                 // Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("storedAsSubDirectories", DataTypes.BOOLEAN_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
         };
 
         HierarchicalTypeDefinition<ClassType> definition = new HierarchicalTypeDefinition<>(
-                ClassType.class, HiveDataTypes.HIVE_STORAGEDESC.name(), null, attributeDefinitions);
-        classTypeDefinitions.put(HiveDataTypes.HIVE_STORAGEDESC.name(), definition);
-        LOG.debug("Created definition for " + HiveDataTypes.HIVE_STORAGEDESC.name());
+                ClassType.class, HiveDataTypes.HIVE_STORAGEDESC.getName(), null, attributeDefinitions);
+        classTypeDefinitions.put(HiveDataTypes.HIVE_STORAGEDESC.getName(), definition);
+        LOG.debug("Created definition for " + HiveDataTypes.HIVE_STORAGEDESC.getName());
     }
 
     /** Revisit later after nested array types are handled by the typesystem **/
 
     private void createResourceUriStruct() throws MetadataException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition("resourceType", HiveDataTypes.HIVE_RESOURCETYPE.name(),
+                new AttributeDefinition("resourceType", HiveDataTypes.HIVE_RESOURCE_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("uri", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
         };
         StructTypeDefinition definition = new StructTypeDefinition(
-                HiveDataTypes.HIVE_RESOURCEURI.name(), attributeDefinitions);
-        structTypeDefinitionMap.put(HiveDataTypes.HIVE_RESOURCEURI.name(), definition);
-        LOG.debug("Created definition for " + HiveDataTypes.HIVE_RESOURCEURI.name());
+                HiveDataTypes.HIVE_RESOURCEURI.getName(), attributeDefinitions);
+        structTypeDefinitionMap.put(HiveDataTypes.HIVE_RESOURCEURI.getName(), definition);
+        LOG.debug("Created definition for " + HiveDataTypes.HIVE_RESOURCEURI.getName());
     }
 
     private void createDBClass() throws MetadataException {
@@ -285,15 +285,15 @@ public class HiveDataModelGenerator {
                         Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("ownerName", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("ownerType", HiveDataTypes.HIVE_PRINCIPALTYPE.name(),
+                new AttributeDefinition("ownerType", HiveDataTypes.HIVE_PRINCIPAL_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
         };
 
         HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_DB.name(),
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_DB.getName(),
                         null, attributeDefinitions);
-        classTypeDefinitions.put(HiveDataTypes.HIVE_DB.name(), definition);
-        LOG.debug("Created definition for " + HiveDataTypes.HIVE_DB.name());
+        classTypeDefinitions.put(HiveDataTypes.HIVE_DB.getName(), definition);
+        LOG.debug("Created definition for " + HiveDataTypes.HIVE_DB.getName());
     }
 
     private void createTypeClass() throws MetadataException {
@@ -305,21 +305,21 @@ public class HiveDataModelGenerator {
                 new AttributeDefinition("type2", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("fields", String.format("array<%s>",
-                        HiveDataTypes.HIVE_COLUMN.name()), Multiplicity.OPTIONAL, false, null),
+                        HiveDataTypes.HIVE_COLUMN.getName()), Multiplicity.OPTIONAL, false, null),
         };
         HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_TYPE.name(),
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_TYPE.getName(),
                         null, attributeDefinitions);
 
-        classTypeDefinitions.put(HiveDataTypes.HIVE_TYPE.name(), definition);
-        LOG.debug("Created definition for " + HiveDataTypes.HIVE_TYPE.name());
+        classTypeDefinitions.put(HiveDataTypes.HIVE_TYPE.getName(), definition);
+        LOG.debug("Created definition for " + HiveDataTypes.HIVE_TYPE.getName());
     }
 
     private void createColumnClass() throws MetadataException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition("name", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
-                //new AttributeDefinition("type", DefinedTypes.HIVE_TYPE.name(), Multiplicity
+                //new AttributeDefinition("type", DefinedTypes.HIVE_TYPE.getName(), Multiplicity
                 // .REQUIRED, false, null),
                 new AttributeDefinition("type", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
@@ -327,11 +327,11 @@ public class HiveDataModelGenerator {
                         Multiplicity.OPTIONAL, false, null),
         };
         HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_COLUMN.name(),
+                new HierarchicalTypeDefinition<>(
+                        ClassType.class, HiveDataTypes.HIVE_COLUMN.getName(),
                         null, attributeDefinitions);
-        classTypeDefinitions.put(HiveDataTypes.HIVE_COLUMN.name(), definition);
-
-        LOG.debug("Created definition for " + HiveDataTypes.HIVE_COLUMN.name());
+        classTypeDefinitions.put(HiveDataTypes.HIVE_COLUMN.getName(), definition);
+        LOG.debug("Created definition for " + HiveDataTypes.HIVE_COLUMN.getName());
     }
 
     private void createPartitionClass() throws MetadataException {
@@ -339,36 +339,34 @@ public class HiveDataModelGenerator {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition("values", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.COLLECTION, false, null),
-                new AttributeDefinition("dbName", HiveDataTypes.HIVE_DB.name(),
+                new AttributeDefinition("dbName", HiveDataTypes.HIVE_DB.getName(),
                         Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("tableName", HiveDataTypes.HIVE_TABLE.name(),
+                new AttributeDefinition("tableName", HiveDataTypes.HIVE_TABLE.getName(),
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("createTime", DataTypes.INT_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("lastAccessTime", DataTypes.INT_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("sd", HiveDataTypes.HIVE_STORAGEDESC.name(),
+                new AttributeDefinition("sd", HiveDataTypes.HIVE_STORAGEDESC.getName(),
                         Multiplicity.REQUIRED, false, null),
                 //new AttributeDefinition("columns", String.format("array<%s>", DefinedTypes
-                // .HIVE_COLUMN.name()),
-                //        Multiplicity.COLLECTION, true, null),
+                // .HIVE_COLUMN.getName()), Multiplicity.COLLECTION, true, null),
                 new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
 
         };
         HierarchicalTypeDefinition<ClassType> definition =
                 new HierarchicalTypeDefinition<>(ClassType.class,
-                        HiveDataTypes.HIVE_PARTITION.name(),
-                        null, attributeDefinitions);
-        classTypeDefinitions.put(HiveDataTypes.HIVE_PARTITION.name(), definition);
-        LOG.debug("Created definition for " + HiveDataTypes.HIVE_PARTITION.name());
+                        HiveDataTypes.HIVE_PARTITION.getName(), null, attributeDefinitions);
+        classTypeDefinitions.put(HiveDataTypes.HIVE_PARTITION.getName(), definition);
+        LOG.debug("Created definition for " + HiveDataTypes.HIVE_PARTITION.getName());
     }
 
     private void createTableClass() throws MetadataException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition("tableName", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("dbName", HiveDataTypes.HIVE_DB.name(),
+                new AttributeDefinition("dbName", HiveDataTypes.HIVE_DB.getName(),
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("owner", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
@@ -378,13 +376,13 @@ public class HiveDataModelGenerator {
                         Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("retention", DataTypes.INT_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("sd", HiveDataTypes.HIVE_STORAGEDESC.name(),
+                new AttributeDefinition("sd", HiveDataTypes.HIVE_STORAGEDESC.getName(),
                         Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("partitionKeys",
-                        String.format("array<%s>", HiveDataTypes.HIVE_COLUMN.name()),
+                        String.format("array<%s>", HiveDataTypes.HIVE_COLUMN.getName()),
                         Multiplicity.OPTIONAL, false, null),
-                //new AttributeDefinition("columns", String.format("array<%s>", DefinedTypes
-                // .HIVE_COLUMN.name()),
+                // new AttributeDefinition("columns", // todo - ask venkat
+                //        String.format("array<%s>", HiveDataTypes.HIVE_COLUMN.getName()),
                 //        Multiplicity.COLLECTION, true, null),
                 new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
@@ -398,10 +396,10 @@ public class HiveDataModelGenerator {
                         Multiplicity.OPTIONAL, false, null),
         };
         HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_TABLE.name(),
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_TABLE.getName(),
                         null, attributeDefinitions);
-        classTypeDefinitions.put(HiveDataTypes.HIVE_TABLE.name(), definition);
-        LOG.debug("Created definition for " + HiveDataTypes.HIVE_TABLE.name());
+        classTypeDefinitions.put(HiveDataTypes.HIVE_TABLE.getName(), definition);
+        LOG.debug("Created definition for " + HiveDataTypes.HIVE_TABLE.getName());
     }
 
     private void createIndexClass() throws MetadataException {
@@ -410,17 +408,17 @@ public class HiveDataModelGenerator {
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("indexHandlerClass", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("dbName", HiveDataTypes.HIVE_DB.name(),
+                new AttributeDefinition("dbName", HiveDataTypes.HIVE_DB.getName(),
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("createTime", DataTypes.INT_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("lastAccessTime", DataTypes.INT_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("origTableName", HiveDataTypes.HIVE_TABLE.name(),
+                new AttributeDefinition("origTableName", HiveDataTypes.HIVE_TABLE.getName(),
                         Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("indexTableName", HiveDataTypes.HIVE_TABLE.name(),
+                new AttributeDefinition("indexTableName", HiveDataTypes.HIVE_TABLE.getName(),
                         Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("sd", HiveDataTypes.HIVE_STORAGEDESC.name(),
+                new AttributeDefinition("sd", HiveDataTypes.HIVE_STORAGEDESC.getName(),
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
@@ -429,37 +427,36 @@ public class HiveDataModelGenerator {
         };
 
         HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_INDEX.name(),
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_INDEX.getName(),
                         null, attributeDefinitions);
-        classTypeDefinitions.put(HiveDataTypes.HIVE_INDEX.name(), definition);
-        LOG.debug("Created definition for " + HiveDataTypes.HIVE_INDEX.name());
+        classTypeDefinitions.put(HiveDataTypes.HIVE_INDEX.getName(), definition);
+        LOG.debug("Created definition for " + HiveDataTypes.HIVE_INDEX.getName());
     }
 
     private void createFunctionClass() throws MetadataException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition("functionName", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("dbName", HiveDataTypes.HIVE_DB.name(),
+                new AttributeDefinition("dbName", HiveDataTypes.HIVE_DB.getName(),
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("className", DataTypes.INT_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("ownerName", DataTypes.INT_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("ownerType", HiveDataTypes.HIVE_PRINCIPALTYPE.name(),
+                new AttributeDefinition("ownerType", HiveDataTypes.HIVE_PRINCIPAL_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("createTime", DataTypes.INT_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("functionType", HiveDataTypes.HIVE_FUNCTIONTYPE.name(),
+                new AttributeDefinition("functionType", HiveDataTypes.HIVE_FUNCTION_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("resourceUris", HiveDataTypes.HIVE_RESOURCEURI.name(),
+                new AttributeDefinition("resourceUris", HiveDataTypes.HIVE_RESOURCEURI.getName(),
                         Multiplicity.COLLECTION, false, null),
         };
 
-        HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_FUNCTION.name(),
-                        null, attributeDefinitions);
-        classTypeDefinitions.put(HiveDataTypes.HIVE_FUNCTION.name(), definition);
-        LOG.debug("Created definition for " + HiveDataTypes.HIVE_FUNCTION.name());
+        HierarchicalTypeDefinition<ClassType> definition = new HierarchicalTypeDefinition<>(
+                ClassType.class, HiveDataTypes.HIVE_FUNCTION.getName(), null, attributeDefinitions);
+        classTypeDefinitions.put(HiveDataTypes.HIVE_FUNCTION.getName(), definition);
+        LOG.debug("Created definition for " + HiveDataTypes.HIVE_FUNCTION.getName());
     }
 
     private void createRoleClass() throws MetadataException {
@@ -471,12 +468,11 @@ public class HiveDataModelGenerator {
                 new AttributeDefinition("ownerName", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
         };
-        HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_ROLE.name(),
-                        null, attributeDefinitions);
+        HierarchicalTypeDefinition<ClassType> definition = new HierarchicalTypeDefinition<>(
+                ClassType.class, HiveDataTypes.HIVE_ROLE.getName(), null, attributeDefinitions);
 
-        classTypeDefinitions.put(HiveDataTypes.HIVE_ROLE.name(), definition);
-        LOG.debug("Created definition for " + HiveDataTypes.HIVE_ROLE.name());
+        classTypeDefinitions.put(HiveDataTypes.HIVE_ROLE.getName(), definition);
+        LOG.debug("Created definition for " + HiveDataTypes.HIVE_ROLE.getName());
     }
 
     private void createProcessClass() throws MetadataException {
@@ -490,10 +486,10 @@ public class HiveDataModelGenerator {
                 new AttributeDefinition("userName", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("sourceTableNames",
-                        String.format("array<%s>", HiveDataTypes.HIVE_TABLE.name()),
+                        String.format("array<%s>", HiveDataTypes.HIVE_TABLE.getName()),
                         Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("targetTableNames",
-                        String.format("array<%s>", HiveDataTypes.HIVE_TABLE.name()),
+                        String.format("array<%s>", HiveDataTypes.HIVE_TABLE.getName()),
                         Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("queryText", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
@@ -506,9 +502,9 @@ public class HiveDataModelGenerator {
         };
 
         HierarchicalTypeDefinition<ClassType> definition = new HierarchicalTypeDefinition<>(
-                ClassType.class, HiveDataTypes.HIVE_PROCESS.name(), null, attributeDefinitions);
-        classTypeDefinitions.put(HiveDataTypes.HIVE_PROCESS.name(), definition);
-        LOG.debug("Created definition for " + HiveDataTypes.HIVE_PROCESS.name());
+                ClassType.class, HiveDataTypes.HIVE_PROCESS.getName(), null, attributeDefinitions);
+        classTypeDefinitions.put(HiveDataTypes.HIVE_PROCESS.getName(), definition);
+        LOG.debug("Created definition for " + HiveDataTypes.HIVE_PROCESS.getName());
     }
 
     public static void main(String[] args) throws Exception {

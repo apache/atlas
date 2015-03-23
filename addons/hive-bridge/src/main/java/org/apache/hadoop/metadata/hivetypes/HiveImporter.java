@@ -46,6 +46,10 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * todo - this needs to be removed.
+ */
+@Deprecated
 public class HiveImporter {
 
     private static final Logger LOG =
@@ -158,7 +162,7 @@ public class HiveImporter {
             LOG.debug("creating instance of type " + typeName + " dataType " + dataType);
             ITypedReferenceableInstance instance =
                     (ITypedReferenceableInstance) dataType.convert(ref, Multiplicity.OPTIONAL);
-            String guid = graphRepository.createEntity(instance, typeName);
+            String guid = graphRepository.createEntity(instance);
             System.out.println("creating instance of type " + typeName + " dataType " + dataType
                     + ", guid: " + guid);
 
