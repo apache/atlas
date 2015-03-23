@@ -19,6 +19,7 @@
 package org.apache.hadoop.metadata.typesystem.types;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.hadoop.metadata.classification.InterfaceAudience;
 
 public class HierarchicalTypeDefinition<T extends HierarchicalType> extends StructTypeDefinition {
 
@@ -26,14 +27,15 @@ public class HierarchicalTypeDefinition<T extends HierarchicalType> extends Stru
     public final String hierarchicalMetaTypeName;
 
     /**
-     * Used for json deserialization only
-     * @nopublic
+     * Used for json deserialization only.
+     * not intended public consumption
      * @param hierarchicalMetaTypeName
      * @param typeName
      * @param superTypes
      * @param attributeDefinitions
      * @throws ClassNotFoundException
      */
+    @InterfaceAudience.Private
     public HierarchicalTypeDefinition(String hierarchicalMetaTypeName,
                                       String typeName, String[] superTypes,
                                       AttributeDefinition[] attributeDefinitions)

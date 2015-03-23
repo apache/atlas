@@ -18,6 +18,8 @@
 
 package org.apache.hadoop.metadata.typesystem;
 
+import org.apache.hadoop.metadata.classification.InterfaceAudience;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,12 +30,10 @@ public class Struct implements IStruct {
 
     public Struct(String typeName) {
         this.typeName = typeName;
-        values = new HashMap<String, Object>();
+        values = new HashMap<>();
     }
 
-    /**
-     @nopublic
-     */
+    @InterfaceAudience.Private
     public Struct(String typeName, Map<String, Object> values) {
         this(typeName);
         this.values.putAll(values);
@@ -54,10 +54,7 @@ public class Struct implements IStruct {
         values.put(attrName, value);
     }
 
-    /**
-     * @nopublic
-     * @return
-     */
+    @InterfaceAudience.Private
     public Map<String, Object> getValuesMap() {
         return values;
     }

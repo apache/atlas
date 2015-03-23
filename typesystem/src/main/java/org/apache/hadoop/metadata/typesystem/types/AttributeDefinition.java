@@ -18,6 +18,8 @@
 
 package org.apache.hadoop.metadata.typesystem.types;
 
+import com.google.common.base.Preconditions;
+
 public final class AttributeDefinition {
 
     public final String name;
@@ -42,6 +44,9 @@ public final class AttributeDefinition {
     public AttributeDefinition(String name, String dataTypeName,
                                Multiplicity multiplicity, boolean isComposite, boolean isUnique,
                                boolean isIndexable, String reverseAttributeName) {
+        Preconditions.checkNotNull(name);
+        Preconditions.checkNotNull(dataTypeName);
+
         this.name = name;
         this.dataTypeName = dataTypeName;
         this.multiplicity = multiplicity;
@@ -64,9 +69,9 @@ public final class AttributeDefinition {
         if (!dataTypeName.equals(that.dataTypeName)) return false;
         if (!multiplicity.equals(that.multiplicity)) return false;
         if (!name.equals(that.name)) return false;
-        if (reverseAttributeName != null ? !reverseAttributeName.equals(that.reverseAttributeName)
-                : that
-                        .reverseAttributeName != null)
+        if (reverseAttributeName != null
+                ? !reverseAttributeName.equals(that.reverseAttributeName)
+                : that.reverseAttributeName != null)
             return false;
 
         return true;

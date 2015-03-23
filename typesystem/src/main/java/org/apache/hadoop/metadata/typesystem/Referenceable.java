@@ -20,6 +20,7 @@ package org.apache.hadoop.metadata.typesystem;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import org.apache.hadoop.metadata.classification.InterfaceAudience;
 import org.apache.hadoop.metadata.typesystem.persistence.Id;
 
 import java.util.List;
@@ -60,11 +61,12 @@ public class Referenceable extends Struct implements IReferenceableInstance {
     }
 
     /**
-     * @nopublic only use during deserialization
+     * Not public - only use during deserialization
      * @param guid
      * @param typeName
      * @param values
      */
+    @InterfaceAudience.Private
     public Referenceable(String guid, String typeName, Map<String, Object> values,
                          List<String> _traitNames,
                          Map<String, IStruct> _traits) {

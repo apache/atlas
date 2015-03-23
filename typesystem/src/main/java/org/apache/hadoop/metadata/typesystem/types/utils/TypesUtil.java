@@ -47,6 +47,11 @@ public class TypesUtil {
         return new AttributeDefinition(name, dataType, Multiplicity.OPTIONAL, false, null);
     }
 
+    public static AttributeDefinition createRequiredAttrDef(String name,
+                                                            String dataType) {
+        return new AttributeDefinition(name, dataType, Multiplicity.REQUIRED, false, null);
+    }
+
     public static AttributeDefinition createUniqueRequiredAttrDef(String name,
                                                                   IDataType dataType) {
         return new AttributeDefinition(name, dataType.getName(),

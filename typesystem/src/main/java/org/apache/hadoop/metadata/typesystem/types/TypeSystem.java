@@ -20,6 +20,7 @@ package org.apache.hadoop.metadata.typesystem.types;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.classification.InterfaceAudience;
 import org.apache.hadoop.metadata.typesystem.TypesDef;
 
 import javax.inject.Singleton;
@@ -37,6 +38,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Singleton
+@InterfaceAudience.Private
 public class TypeSystem {
     private static final TypeSystem INSTANCE = new TypeSystem();
     public static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -59,9 +61,9 @@ public class TypeSystem {
     }
 
     /**
-     * This is only used for testing prurposes.
-     * @nonpublic
+     * This is only used for testing purposes. Not intended for public use.
      */
+    @InterfaceAudience.Private
     public void reset() {
         initialize();
     }
