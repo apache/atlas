@@ -74,6 +74,6 @@ export METADATA_HOME_DIR
 
 JAVA_PROPERTIES="$METADATA_OPTS $METADATA_PROPERTIES -Dmetadata.log.dir=$METADATA_LOG_DIR -Dmetadata.home=${METADATA_HOME_DIR}"
 
-${JAVA_BIN} ${JAVA_PROPERTIES} -cp ${METADATACPPATH} org.apache.hadoop.metadata.TestDataDriver
+${JAVA_BIN} ${JAVA_PROPERTIES} -cp ${METADATACPPATH} org.apache.hadoop.metadata.examples.QuickStart
 
-echo Test data added to Metadata Server!!!
+echo Example data added to Metadata Server!!!
