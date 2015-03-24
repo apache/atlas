@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata.repository.graph;
+package org.apache.hadoop.metadata.repository;
 
 public final class Constants {
 

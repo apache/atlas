@@ -28,13 +28,11 @@ import org.apache.hadoop.metadata.repository.MetadataRepository;
 import org.apache.hadoop.metadata.repository.graph.GraphBackedMetadataRepository;
 import org.apache.hadoop.metadata.repository.graph.GraphBackedSearchIndexer;
 import org.apache.hadoop.metadata.repository.graph.GraphProvider;
-import org.apache.hadoop.metadata.repository.graph.GraphService;
-import org.apache.hadoop.metadata.repository.graph.GraphServiceConfigurator;
-import org.apache.hadoop.metadata.repository.typestore.GraphTypeStore;
 import org.apache.hadoop.metadata.repository.graph.TitanGraphProvider;
+import org.apache.hadoop.metadata.repository.typestore.GraphTypeStore;
+import org.apache.hadoop.metadata.repository.typestore.ITypeStore;
 import org.apache.hadoop.metadata.services.DefaultMetadataService;
 import org.apache.hadoop.metadata.services.MetadataService;
-import org.apache.hadoop.metadata.repository.typestore.ITypeStore;
 
 /**
  * Guice module for Repository module.
@@ -42,7 +40,7 @@ import org.apache.hadoop.metadata.repository.typestore.ITypeStore;
 public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
 
     // Graph Service implementation class
-    private Class<? extends GraphService> graphServiceClass;
+    // private Class<? extends GraphService> graphServiceClass;
 
     // MetadataRepositoryService implementation class
     private Class<? extends MetadataRepository> metadataRepoClass;
@@ -52,10 +50,10 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
     private Class<? extends SearchIndexer> searchIndexer;
 
     public RepositoryMetadataModule() {
-        GraphServiceConfigurator gsp = new GraphServiceConfigurator();
+        // GraphServiceConfigurator gsp = new GraphServiceConfigurator();
 
         // get the impl classes for the repo and the graph service
-        this.graphServiceClass = gsp.getImplClass();
+        // this.graphServiceClass = gsp.getImplClass();
         this.metadataRepoClass = GraphBackedMetadataRepository.class;
         this.typeStore = GraphTypeStore.class;
         this.metadataService = DefaultMetadataService.class;
@@ -79,7 +77,7 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
         bind(ITypeStore.class).to(typeStore);
 
         // bind the GraphService interface to an implementation
-        bind(GraphService.class).to(graphServiceClass);
+        // bind(GraphService.class).to(graphServiceClass);
 
         // bind the MetadataService interface to an implementation
         bind(MetadataService.class).to(metadataService);

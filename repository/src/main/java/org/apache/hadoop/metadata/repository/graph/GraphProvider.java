@@ -20,10 +20,9 @@ package org.apache.hadoop.metadata.repository.graph;
 
 import com.google.inject.throwingproviders.CheckedProvider;
 import com.tinkerpop.blueprints.Graph;
-import org.apache.commons.configuration.ConfigurationException;
 
 public interface GraphProvider<T extends Graph> extends CheckedProvider<T> {
 
     @Override
-    T get() throws ConfigurationException;
+    T get();
 }

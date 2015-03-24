@@ -18,6 +18,7 @@
 
 package org.apache.hadoop.metadata.web.resources;
 
+import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -28,7 +29,7 @@ import com.tinkerpop.blueprints.util.io.graphson.GraphSONMode;
 import com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.metadata.MetadataServiceClient;
-import org.apache.hadoop.metadata.repository.graph.GraphService;
+import org.apache.hadoop.metadata.repository.graph.GraphProvider;
 import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -75,11 +76,12 @@ public class RexsterGraphResource {
     public static final String IN_IDS = "inIds";
     public static final String BOTH_IDS = "bothIds";
     private static final Logger LOG = LoggerFactory.getLogger(RexsterGraphResource.class);
-    private final GraphService graphService;
+
+    private TitanGraph graph;
 
     @Inject
-    public RexsterGraphResource(GraphService graphService) {
-        this.graphService = graphService;
+    public RexsterGraphResource(GraphProvider<TitanGraph> graphProvider) {
+        this.graph = graphProvider.get();
     }
 
     private static void validateInputs(String errorMsg, String... inputs) {
@@ -94,15 +96,15 @@ public class RexsterGraphResource {
     }
 
     protected Graph getGraph() {
-        return graphService.getBlueprintsGraph();
+        return graph;
     }
 
     protected Set<String> getVertexIndexedKeys() {
-        return graphService.getVertexIndexedKeys();
+        return graph.getIndexedKeys(Vertex.class);
     }
 
     protected Set<String> getEdgeIndexedKeys() {
-        return graphService.getEdgeIndexedKeys();
+        return graph.getIndexedKeys(Edge.class);
     }
 
     /**

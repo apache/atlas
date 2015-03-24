@@ -27,6 +27,7 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.repository.Constants;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
 import org.apache.hadoop.metadata.repository.RepositoryException;
 import org.apache.hadoop.metadata.typesystem.IReferenceableInstance;
@@ -74,17 +75,14 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     private final GraphToTypedInstanceMapper graphToInstanceMapper
             = new GraphToTypedInstanceMapper();
 
-    private final GraphService graphService;
     private final TypeSystem typeSystem;
-
     private final TitanGraph titanGraph;
 
     @Inject
-    public GraphBackedMetadataRepository(GraphService graphService) throws MetadataException {
-        this.graphService = graphService;
+    public GraphBackedMetadataRepository(GraphProvider<TitanGraph> graphProvider) throws MetadataException {
         this.typeSystem = TypeSystem.getInstance();
 
-        this.titanGraph = ((TitanGraphService) graphService).getTitanGraph();
+        this.titanGraph = graphProvider.get();
     }
 
     public GraphToTypedInstanceMapper getGraphToInstanceMapper() {
@@ -161,7 +159,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     @Override
     public List<String> getEntityList(String entityType) throws RepositoryException {
         LOG.info("Retrieving entity list for type={}", entityType);
-        GraphQuery query = graphService.getBlueprintsGraph().query()
+        GraphQuery query = titanGraph.query()
                 .has(Constants.ENTITY_TYPE_PROPERTY_KEY, entityType);
         Iterator<Vertex> results = query.vertices().iterator();
         if (!results.hasNext()) {
@@ -688,7 +686,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         throws MetadataException {
             // add a new vertex for the struct or trait instance
             Vertex structInstanceVertex = GraphHelper.createVertexWithoutIdentity(
-                    graphService.getBlueprintsGraph(), structInstance.getTypeName(), id);
+                    titanGraph, structInstance.getTypeName(), id);
             LOG.debug("created vertex {} for struct {}", structInstanceVertex, attributeInfo.name);
 
             // map all the attributes to this newly created vertex
@@ -716,7 +714,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             // add a new vertex for the struct or trait instance
             final String traitName = traitInstance.getTypeName();
             Vertex traitInstanceVertex = GraphHelper.createVertexWithoutIdentity(
-                    graphService.getBlueprintsGraph(), traitInstance.getTypeName(), typedInstanceId);
+                    titanGraph, traitInstance.getTypeName(), typedInstanceId);
             LOG.debug("created vertex {} for trait {}", traitInstanceVertex, traitName);
 
             // map all the attributes to this newly created vertex

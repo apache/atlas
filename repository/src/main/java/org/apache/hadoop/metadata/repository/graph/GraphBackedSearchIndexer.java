@@ -30,6 +30,8 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.discovery.SearchIndexer;
+import org.apache.hadoop.metadata.repository.Constants;
+import org.apache.hadoop.metadata.repository.RepositoryException;
 import org.apache.hadoop.metadata.typesystem.types.AttributeInfo;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
 import org.apache.hadoop.metadata.typesystem.types.DataTypes;
@@ -55,8 +57,10 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
     private final TitanGraph titanGraph;
 
     @Inject
-    public GraphBackedSearchIndexer(GraphService graphService) throws MetadataException {
-        this.titanGraph = ((TitanGraphService) graphService).getTitanGraph();
+    public GraphBackedSearchIndexer(GraphProvider<TitanGraph> graphProvider)
+        throws RepositoryException {
+
+        this.titanGraph = graphProvider.get();
 
         initialize();
     }

@@ -25,6 +25,7 @@ import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.metadata.RepositoryMetadataModule;
+import org.apache.hadoop.metadata.repository.Constants;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.Struct;
@@ -59,7 +60,7 @@ public class GraphRepoMapperScaleTest {
     private static final String TABLE_NAME = "bar";
 
     @Inject
-    private TitanGraphService titanGraphService;
+    private GraphProvider<TitanGraph> graphProvider;
     @Inject
     private GraphBackedMetadataRepository repositoryService;
 
@@ -69,10 +70,7 @@ public class GraphRepoMapperScaleTest {
 
     @BeforeClass
     public void setUp() throws Exception {
-        // start the injected graph service
-        titanGraphService.initialize();
-
-        searchIndexer = new GraphBackedSearchIndexer(titanGraphService);
+        searchIndexer = new GraphBackedSearchIndexer(graphProvider);
 
         typeSystem = TypeSystem.getInstance();
 
@@ -115,7 +113,7 @@ public class GraphRepoMapperScaleTest {
     }
 
     private void searchWithOutIndex(String key, String value) {
-        TitanGraph graph = titanGraphService.getTitanGraph();
+        TitanGraph graph = graphProvider.get();
         long start = System.currentTimeMillis();
         int count = 0;
         try {
@@ -131,7 +129,7 @@ public class GraphRepoMapperScaleTest {
     }
 
     private void searchWithIndex(String key, String value) {
-        TitanGraph graph = titanGraphService.getTitanGraph();
+        TitanGraph graph = graphProvider.get();
         long start = System.currentTimeMillis();
         int count = 0;
         try {

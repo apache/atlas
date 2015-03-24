@@ -27,7 +27,7 @@ import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.RepositoryMetadataModule;
 import org.apache.hadoop.metadata.TestUtils;
 import org.apache.hadoop.metadata.repository.graph.GraphHelper;
-import org.apache.hadoop.metadata.repository.graph.TitanGraphService;
+import org.apache.hadoop.metadata.repository.graph.GraphProvider;
 import org.apache.hadoop.metadata.typesystem.TypesDef;
 import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
@@ -46,7 +46,8 @@ import java.util.List;
 @Guice(modules = RepositoryMetadataModule.class)
 public class GraphTypeStoreTest {
     @Inject
-    private TitanGraphService titanGraphService;
+    private GraphProvider<TitanGraph> graphProvider;
+
     @Inject
     private ITypeStore typeStore;
 
@@ -54,9 +55,6 @@ public class GraphTypeStoreTest {
 
     @BeforeClass
     public void setUp() throws Exception {
-        // start the injected graph service
-        titanGraphService.initialize();
-
         ts = TypeSystem.getInstance();
         ts.reset();
         TestUtils.defineDeptEmployeeTypes(ts);
@@ -69,7 +67,7 @@ public class GraphTypeStoreTest {
     }
 
     private void dumpGraph() {
-        TitanGraph graph = titanGraphService.getTitanGraph();
+        TitanGraph graph = graphProvider.get();
         for (Vertex v : graph.getVertices()) {
             System.out.println("****v = " + GraphHelper.vertexString(v));
             for (Edge e : v.getEdges(Direction.OUT)) {

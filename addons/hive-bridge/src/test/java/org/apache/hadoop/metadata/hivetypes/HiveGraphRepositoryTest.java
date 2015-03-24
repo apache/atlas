@@ -19,19 +19,17 @@
 package org.apache.hadoop.metadata.hivetypes;
 
 
+import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
-import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.repository.graph.GraphBackedMetadataRepository;
 import org.apache.hadoop.metadata.repository.graph.GraphHelper;
-import org.apache.hadoop.metadata.repository.graph.GraphService;
 import org.apache.hadoop.metadata.repository.graph.TitanGraphProvider;
-import org.apache.hadoop.metadata.repository.graph.TitanGraphService;
+import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterClass;
@@ -50,19 +48,19 @@ public class HiveGraphRepositoryTest {
             LoggerFactory.getLogger(HiveGraphRepositoryTest.class);
     protected HiveTypeSystem hts;
     private GraphBackedMetadataRepository repository;
-    private GraphService gs;
+    private TitanGraph graph;
 
     @BeforeClass
     public void setup() throws ConfigurationException, MetadataException {
 
-        gs = new TitanGraphService(new TitanGraphProvider());
-        repository = new GraphBackedMetadataRepository(gs);
+        final TitanGraphProvider titanGraphProvider = new TitanGraphProvider();
+        graph = titanGraphProvider.get();
+        repository = new GraphBackedMetadataRepository(titanGraphProvider);
         hts = HiveTypeSystem.getInstance();
     }
 
     @AfterClass
     public void tearDown() {
-        Graph graph = gs.getBlueprintsGraph();
         System.out.println("*******************Graph Dump****************************");
         System.out.println("Vertices of " + graph);
         for (Vertex vertex : graph.getVertices()) {

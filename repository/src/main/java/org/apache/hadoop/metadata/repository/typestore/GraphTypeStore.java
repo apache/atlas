@@ -26,9 +26,8 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.repository.graph.Constants;
-import org.apache.hadoop.metadata.repository.graph.GraphService;
-import org.apache.hadoop.metadata.repository.graph.TitanGraphService;
+import org.apache.hadoop.metadata.repository.Constants;
+import org.apache.hadoop.metadata.repository.graph.GraphProvider;
 import org.apache.hadoop.metadata.typesystem.TypesDef;
 import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.AttributeInfo;
@@ -52,7 +51,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 public class GraphTypeStore implements ITypeStore {
     private static final String PROPERTY_PREFIX = "type.";
@@ -67,8 +65,8 @@ public class GraphTypeStore implements ITypeStore {
     private final TitanGraph titanGraph;
 
     @Inject
-    public GraphTypeStore(GraphService graphService) {
-        titanGraph = ((TitanGraphService)graphService).getTitanGraph();
+    public GraphTypeStore(GraphProvider<TitanGraph> graphProvider) {
+        titanGraph = graphProvider.get();
     }
 
     @Override

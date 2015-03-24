@@ -31,16 +31,13 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -185,121 +182,5 @@ public class MetadataDiscoveryResource {
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
-    }
-
-    /**
-     * Return a list of Vertices and Edges that emanate from the provided GUID to the depth
-     * specified.
-     *
-     * GET http://host/api/metadata/discovery/search/relationships/{guid}
-     *
-     * edgesToFollow = comma-separated list of Labels to follow.  Sample query:
-     * http://host/api/metadata/discovery/search/relationships/1?depth=3&edgesToFollow=Likes,Has
-     */
-    @GET
-    @Path("/search/relationships/{guid}")
-    @Produces({MediaType.APPLICATION_JSON})
-    public Response getLineageResults(@PathParam("guid") final String guid,
-                                      @DefaultValue("1") @QueryParam("depth") final int depth,
-                                      @QueryParam("edgesToFollow") final String edgesToFollow) {
-
-        LOG.info("Performing GUID lineage search for guid= {}", guid);
-        Preconditions.checkNotNull(guid, "Invalid argument: \"guid\" cannot be null.");
-        Preconditions
-                .checkNotNull(edgesToFollow, "Invalid argument: \"edgesToFollow\" cannot be null.");
-
-        // Parent JSON Object
-        JSONObject response = new JSONObject();
-        Map<String, HashMap<String, JSONObject>> resultMap = discoveryService
-                .relationshipWalk(guid, depth, edgesToFollow);
-
-        try {
-            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            if (resultMap.containsKey("vertices")) {
-                response.put("vertices", new JSONObject(resultMap.get("vertices")));
-            }
-            if (resultMap.containsKey("edges")) {
-                response.put("edges", new JSONObject(resultMap.get("edges")));
-            }
-        } catch (JSONException e) {
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse("Search: Error building JSON result set.",
-                            Response.Status.INTERNAL_SERVER_ERROR));
-        }
-        LOG.debug("JSON result:" + response.toString());
-        return Response.ok(response).build();
-    }
-
-    /**
-     * Return a list of Vertices and Edges that match the given query.
-     *
-     * GET http://host/api/metadata/discovery/search/fulltext
-     *
-     * Sample query:
-     * http://host/api/metadata/discovery/search/fulltext?depth=1&property=Name&text=Zack
-     *
-     * Comma separated list of types as qeury.
-     */
-    @GET
-    @Path("/search/fulltext")
-    @Produces({MediaType.APPLICATION_JSON})
-    public Response getFullTextResults(@QueryParam("text") final String searchText,
-                                       @DefaultValue("1") @QueryParam("depth") final int depth,
-                                       @DefaultValue("guid") @QueryParam("property") final String
-                                               prop) {
-
-        LOG.info("Performing full text search for vertices with property {} matching= {}", prop,
-                searchText);
-        Preconditions.checkNotNull(searchText, "Invalid argument: \"text\" cannot be null.");
-        Preconditions.checkNotNull(prop, "Invalid argument: \"prop\" cannot be null.");
-
-        // Parent JSON Object
-        JSONObject response = new JSONObject();
-
-        Map<String, HashMap<String, JSONObject>> resultMap = discoveryService.textSearch(
-                searchText, depth, prop);
-
-        try {
-            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            if (resultMap.containsKey("vertices")) {
-                response.put("vertices", resultMap.get("vertices"));
-            }
-            if (resultMap.containsKey("edges")) {
-                response.put("edges", resultMap.get("edges"));
-            }
-        } catch (JSONException e) {
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse("Search: Error building JSON result set.",
-                            Response.Status.INTERNAL_SERVER_ERROR));
-        }
-
-        LOG.debug("JSON result:" + response.toString());
-        return Response.ok(response).build();
-
-    }
-
-    /**
-     * Return a list Vertices and Edges in the index.
-     *
-     * GET http://host/api/metadata/discovery/getIndexedFields
-     *
-     * No parameters taken.
-     */
-    @GET
-    @Path("/getIndexedFields")
-    @Produces({MediaType.APPLICATION_JSON})
-    public Response getLineageResults() {
-        JSONObject response = new JSONObject();
-
-        try {
-            response.put("indexed_fields:", discoveryService.getGraphIndexedFields());
-        } catch (JSONException e) {
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse("Search: Error building JSON result set.",
-                            Response.Status.INTERNAL_SERVER_ERROR));
-        }
-
-        LOG.debug("JSON result:" + response.toString());
-        return Response.ok(response).build();
     }
 }

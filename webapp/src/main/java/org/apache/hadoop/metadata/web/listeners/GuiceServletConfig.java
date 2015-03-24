@@ -39,8 +39,8 @@ import java.util.Map;
 
 public class GuiceServletConfig extends GuiceServletContextListener {
 
-    private static final Logger LOG = LoggerFactory
-            .getLogger(GuiceServletConfig.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GuiceServletConfig.class);
+
     private static final String GUICE_CTX_PARAM = "guice.packages";
 
     @Override

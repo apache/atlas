@@ -24,7 +24,7 @@ import org.apache.hadoop.metadata.query.Expressions;
 import org.apache.hadoop.metadata.query.GraphPersistenceStrategies;
 import org.apache.hadoop.metadata.query.TypeUtils;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
-import org.apache.hadoop.metadata.repository.graph.Constants;
+import org.apache.hadoop.metadata.repository.Constants;
 import org.apache.hadoop.metadata.repository.graph.GraphBackedMetadataRepository;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.ITypedStruct;

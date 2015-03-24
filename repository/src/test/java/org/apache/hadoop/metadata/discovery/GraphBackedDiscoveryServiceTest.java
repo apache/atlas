@@ -29,8 +29,7 @@ import org.apache.hadoop.metadata.query.HiveTitanSample;
 import org.apache.hadoop.metadata.query.QueryTestsUtils;
 import org.apache.hadoop.metadata.repository.graph.GraphBackedMetadataRepository;
 import org.apache.hadoop.metadata.repository.graph.GraphHelper;
-import org.apache.hadoop.metadata.repository.graph.GraphService;
-import org.apache.hadoop.metadata.repository.graph.TitanGraphService;
+import org.apache.hadoop.metadata.repository.graph.GraphProvider;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
@@ -56,7 +55,7 @@ import java.io.File;
 public class GraphBackedDiscoveryServiceTest {
 
     @Inject
-    private GraphService graphService;
+    private GraphProvider<TitanGraph> graphProvider;
 
     @Inject
     private GraphBackedMetadataRepository repositoryService;
@@ -82,7 +81,7 @@ public class GraphBackedDiscoveryServiceTest {
     }
 
     private void setupSampleData() throws ScriptException {
-        TitanGraph titanGraph = ((TitanGraphService) graphService).getTitanGraph();
+        TitanGraph titanGraph = graphProvider.get();
 
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName("gremlin-groovy");

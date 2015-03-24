@@ -18,10 +18,9 @@
 
 package org.apache.hadoop.metadata;
 
-import junit.framework.Assert;
-import org.apache.hadoop.metadata.repository.graph.GraphService;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
+import com.thinkaurelius.titan.core.TitanGraph;
+import org.apache.hadoop.metadata.repository.graph.GraphProvider;
+import org.testng.Assert;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
@@ -37,18 +36,11 @@ import javax.inject.Inject;
 public class RepositoryServiceLoadingTest {
 
     @Inject
-    GraphService gs;
-
-    @BeforeClass
-    public void setUp() throws Exception {
-    }
-
-    @AfterClass
-    public void tearDown() throws Exception {
-    }
+    private GraphProvider<TitanGraph> graphProvider;
 
     @Test
     public void testGetGraphService() throws Exception {
-        Assert.assertNotNull(gs);
+        Assert.assertNotNull(graphProvider);
+        Assert.assertNotNull(graphProvider.get());
     }
 }

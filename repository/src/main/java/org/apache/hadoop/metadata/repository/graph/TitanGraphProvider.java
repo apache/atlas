@@ -25,35 +25,48 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 
 import javax.inject.Singleton;
+import java.util.Iterator;
 
+/**
+ * Default implementation for Graph Provider that doles out Titan Graph.
+ */
 public class TitanGraphProvider implements GraphProvider<TitanGraph> {
-    private static final String SYSTEM_PROP = "";
-    private static final String DEFAULT_PATH = "graph.properties";
 
-    private final String configPath;
+    private static final String CONFIG_PATH = "application.properties";
 
-    public TitanGraphProvider() {
-        configPath = System.getProperties().getProperty(SYSTEM_PROP,
-                DEFAULT_PATH);
-    }
+    /**
+     * Constant for the configuration property that indicates the prefix.
+     */
+    private static final String METADATA_PREFIX = "metadata.graph.";
 
-    public Configuration getConfiguration() throws ConfigurationException {
-        return new PropertiesConfiguration(configPath);
+    private static Configuration getConfiguration() throws ConfigurationException {
+        PropertiesConfiguration configProperties = new PropertiesConfiguration(CONFIG_PATH);
+
+        Configuration graphConfig = new PropertiesConfiguration();
+
+        final Iterator<String> iterator = configProperties.getKeys();
+        while (iterator.hasNext()) {
+            String key = iterator.next();
+            if (key.startsWith(METADATA_PREFIX)) {
+                String value = (String) configProperties.getProperty(key);
+                key = key.substring(METADATA_PREFIX.length());
+                graphConfig.setProperty(key, value);
+            }
+        }
+
+        return graphConfig;
     }
 
     @Override
     @Singleton
-    public TitanGraph get() throws ConfigurationException {
-        TitanGraph graph = null;
-
+    public TitanGraph get() {
         Configuration config;
         try {
             config = getConfiguration();
         } catch (ConfigurationException e) {
             throw new RuntimeException(e);
         }
-        graph = TitanFactory.open(config);
 
-        return graph;
+        return TitanFactory.open(config);
     }
 }

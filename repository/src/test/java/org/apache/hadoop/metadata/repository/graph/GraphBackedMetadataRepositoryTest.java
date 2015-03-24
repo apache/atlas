@@ -25,6 +25,7 @@ import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.metadata.RepositoryMetadataModule;
 import org.apache.hadoop.metadata.TestUtils;
+import org.apache.hadoop.metadata.repository.Constants;
 import org.apache.hadoop.metadata.repository.RepositoryException;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.ITypedStruct;
@@ -72,7 +73,8 @@ public class GraphBackedMetadataRepositoryTest {
     private static final String PII = "PII";
 
     @Inject
-    private TitanGraphService titanGraphService;
+    private GraphProvider<TitanGraph> graphProvider;
+
     @Inject
     private GraphBackedMetadataRepository repositoryService;
 
@@ -84,10 +86,7 @@ public class GraphBackedMetadataRepositoryTest {
         typeSystem = TypeSystem.getInstance();
         typeSystem.reset();
 
-        // start the injected graph service
-        titanGraphService.initialize();
-
-        new GraphBackedSearchIndexer(titanGraphService);
+        new GraphBackedSearchIndexer(graphProvider);
 
         TestUtils.defineDeptEmployeeTypes(typeSystem);
         createHiveTypes();
@@ -184,7 +183,7 @@ public class GraphBackedMetadataRepositoryTest {
     }
 
     private Vertex getTableEntityVertex() {
-        TitanGraph graph = titanGraphService.getTitanGraph();
+        TitanGraph graph = graphProvider.get();
         GraphQuery query = graph.query()
                 .has(Constants.ENTITY_TYPE_PROPERTY_KEY, Compare.EQUAL, TABLE_TYPE);
         Iterator<Vertex> results = query.vertices().iterator();
