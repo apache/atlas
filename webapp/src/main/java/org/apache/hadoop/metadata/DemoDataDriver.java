@@ -98,7 +98,7 @@ public class DemoDataDriver {
         //Returned the Saved Table Objects
         JsonParser jp = new JsonParser();
         JsonObject jo = (JsonObject) jp.parse(driver.getEntityReturnList());
-        JsonArray ja = jo.getAsJsonArray("list");
+        JsonArray ja = jo.getAsJsonArray("results");
         for (JsonElement e : ja) {
             JsonObject joInner = (JsonObject) jp
                     .parse(driver.getTableEntityByGUID(e.getAsString()));
@@ -315,8 +315,7 @@ public class DemoDataDriver {
 
     private void sumbitType(String typesAsJSON, String type)
     throws JSONException {
-        WebResource resource = service.path("api/metadata/types/submit").path(
-                type);
+        WebResource resource = service.path("api/metadata/types/submit");
 
         ClientResponse clientResponse = resource
                 .accept(MediaType.APPLICATION_JSON)

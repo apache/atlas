@@ -185,8 +185,7 @@ public class TestDataDriver {
 
     private void sumbitType(String typesAsJSON, String type) throws JSONException {
         WebResource resource = service
-                .path("api/metadata/types/submit")
-                .path(type);
+                .path("api/metadata/types/submit");
 
         ClientResponse clientResponse = resource
                 .accept(MediaType.APPLICATION_JSON)
