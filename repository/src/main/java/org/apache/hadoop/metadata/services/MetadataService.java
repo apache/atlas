@@ -32,12 +32,10 @@ public interface MetadataService {
      * Creates a new type based on the type system to enable adding
      * entities (instances for types).
      *
-     * @param typeName       name for this type, must be unique
      * @param typeDefinition definition as json
      * @return a unique id for this type
      */
-    JSONObject createType(String typeName,
-                          String typeDefinition) throws MetadataException;
+    JSONObject createType(String typeDefinition) throws MetadataException;
 
     /**
      * Return the definition for the given type.

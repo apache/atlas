@@ -67,29 +67,25 @@ public class TypesResource {
     /**
      * Submits a type definition corresponding to a given type representing a meta model of a
      * domain. Could represent things like Hive Database, Hive Table, etc.
-     *
-     * @param typeName name of a type, should be unique.
      */
     @POST
-    @Path("submit/{typeName}")
+    @Path("submit")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response submit(@Context HttpServletRequest request,
-                           @PathParam("typeName") String typeName) {
+    public Response submit(@Context HttpServletRequest request) {
         try {
             final String typeDefinition = Servlets.getRequestPayload(request);
-            LOG.debug("creating type {} with definition {} ", typeName, typeDefinition);
+            LOG.debug("creating type with definition {} ", typeDefinition);
 
-            JSONObject typesAdded = metadataService.createType(typeName, typeDefinition);
+            JSONObject typesAdded = metadataService.createType(typeDefinition);
 
             JSONObject response = new JSONObject();
-            response.put("typeName", typeName);
             response.put("types", typesAdded);
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
 
             return Response.ok(response).build();
         } catch (Exception e) {
-            LOG.error("Unable to persist type {}", typeName, e);
+            LOG.error("Unable to persist types", e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         }

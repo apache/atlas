@@ -70,8 +70,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
             System.out.println("typesAsJSON = " + typesAsJSON);
 
             WebResource resource = service
-                    .path("api/metadata/types/submit")
-                    .path(typeDefinition.typeName);
+                    .path("api/metadata/types/submit");
 
             ClientResponse clientResponse = resource
                     .accept(MediaType.APPLICATION_JSON)
@@ -83,7 +82,6 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
             Assert.assertNotNull(responseAsString);
 
             JSONObject response = new JSONObject(responseAsString);
-            Assert.assertEquals(response.get("typeName"), typeDefinition.typeName);
             Assert.assertNotNull(response.get("types"));
             Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
         }
@@ -108,7 +106,6 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
             Assert.assertNotNull(responseAsString);
 
             JSONObject response = new JSONObject(responseAsString);
-            Assert.assertEquals(response.get("typeName"), typeDefinition.typeName);
             Assert.assertNotNull(response.get("definition"));
             Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
         }
@@ -186,7 +183,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
             HierarchicalTypeDefinition<TraitType> traitTypeDef =
                     TypesUtil.createTraitTypeDef(traitName, ImmutableList.<String>of());
             String json = TypesSerialization$.MODULE$.toJson(traitTypeDef, true);
-            createType(json, traitName);
+            createType(json);
         }
 
         return traitNames;

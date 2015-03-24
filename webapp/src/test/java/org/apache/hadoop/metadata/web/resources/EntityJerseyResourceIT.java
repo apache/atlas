@@ -269,7 +269,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                         TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
 
         String typesAsJSON = TypesSerialization.toJson(testTypeDefinition);
-        createType(typesAsJSON, "test");
+        createType(typesAsJSON);
     }
 
     @Test (dependsOnMethods = "testSubmitEntity")
@@ -301,7 +301,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 TypesUtil.createTraitTypeDef(traitName, ImmutableList.<String>of());
         String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
         LOG.debug("traitDefinitionAsJSON = " + traitDefinitionAsJSON);
-        createType(traitDefinitionAsJSON, traitName);
+        createType(traitDefinitionAsJSON);
 
         Struct traitInstance = new Struct(traitName);
         String traitInstanceAsJSON = InstanceSerialization.toJson(traitInstance, true);

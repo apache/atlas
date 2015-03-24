@@ -57,13 +57,12 @@ public abstract class BaseResourceIT {
 
     protected void createType(TypesDef typesDef) throws Exception {
         String typesAsJSON = TypesSerialization.toJson(typesDef);
-        createType(typesAsJSON, "removeme");
+        createType(typesAsJSON);
     }
 
-    protected void createType(String typesAsJSON, String typeName) throws Exception {
+    protected void createType(String typesAsJSON) throws Exception {
         WebResource resource = service
-                .path("api/metadata/types/submit")
-                .path(typeName);
+                .path("api/metadata/types/submit");
 
         ClientResponse clientResponse = resource
                 .accept(MediaType.APPLICATION_JSON)
@@ -75,7 +74,6 @@ public abstract class BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertEquals(response.get("typeName"), typeName);
         Assert.assertNotNull(response.get("types"));
         Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
     }

@@ -81,15 +81,13 @@ public class DefaultMetadataService implements MetadataService {
      * Creates a new type based on the type system to enable adding
      * entities (instances for types).
      *
-     * @param typeName       name for this type, must be unique
      * @param typeDefinition definition as json
      * @return a unique id for this type
      */
     @Override
-    public JSONObject createType(String typeName,
-                                 String typeDefinition) throws MetadataException {
+    public JSONObject createType(String typeDefinition) throws MetadataException {
         try {
-            validateTypeDoesNotExist(typeName, typeDefinition);
+            Preconditions.checkNotNull(typeDefinition, "type definition cannot be null");
 
             TypesDef typesDef = TypesSerialization.fromJson(typeDefinition);
             Map<String, IDataType> typesAdded = typeSystem.defineTypes(typesDef);
@@ -105,20 +103,8 @@ public class DefaultMetadataService implements MetadataService {
 
             return response;
         } catch (JSONException e) {
-            LOG.error("Unable to persist type {}", typeName, e);
-            throw new MetadataException("Unable to create response for: " + typeName);
-        }
-    }
-
-    private void validateTypeDoesNotExist(String typeName,
-                                          String typeDefinition) throws MetadataException {
-        Preconditions.checkNotNull(typeName, "type name cannot be null");
-        Preconditions.checkNotNull(typeDefinition, "type definition cannot be null");
-
-        // verify if the type already exists
-        if (typeSystem.isRegistered(typeName)) {
-            LOG.error("type is already defined for {}", typeName);
-            throw new MetadataException("type is already defined for : " + typeName);
+            LOG.error("Unable to create response for types={}", typeDefinition, e);
+            throw new MetadataException("Unable to create response");
         }
     }
 
@@ -186,7 +172,7 @@ public class DefaultMetadataService implements MetadataService {
             ClassType entityType = typeSystem.getDataType(ClassType.class, entityTypeName);
             return entityType.convert(entityInstance, Multiplicity.REQUIRED);
         } catch (Exception e) {
-            throw new MetadataException("Error deserializing trait instance");
+            throw new MetadataException("Error deserializing class instance", e);
         }
     }
 
@@ -286,7 +272,7 @@ public class DefaultMetadataService implements MetadataService {
             return traitType.convert(
                     traitInstance, Multiplicity.REQUIRED);
         } catch (Exception e) {
-            throw new MetadataException("Error deserializing trait instance");
+            throw new MetadataException("Error deserializing trait instance", e);
         }
     }
 

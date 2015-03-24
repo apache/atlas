@@ -87,9 +87,8 @@ public class MetadataServiceClient {
         }
     }
 
-    public JSONObject createType(String typeName,
-                                 String typeAsJson) throws MetadataServiceException {
-        return callAPI(API.CREATE_TYPE, typeAsJson, typeName);
+    public JSONObject createType(String typeAsJson) throws MetadataServiceException {
+        return callAPI(API.CREATE_TYPE, typeAsJson);
     }
 
     public List<String> listTypes() throws MetadataServiceException {
