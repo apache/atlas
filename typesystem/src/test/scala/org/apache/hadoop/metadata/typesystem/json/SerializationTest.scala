@@ -182,4 +182,64 @@ class SerializationTest extends BaseTest {
         println(s"HR Dept Object Graph read from JSON:${read[ReferenceableInstance](ser)}\n")
     }
 
+  @Test def testReference {
+
+    val ts: TypeSystem = getTypeSystem
+
+    val deptTypeDef: HierarchicalTypeDefinition[ClassType] = TypesUtil.createClassTypeDef(
+      "Department",
+      ImmutableList.of[String],
+      TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+      new AttributeDefinition("employees", String.format("array<%s>", "Person"),
+        Multiplicity.COLLECTION, true, "department"))
+    val personTypeDef: HierarchicalTypeDefinition[ClassType] = TypesUtil.createClassTypeDef(
+      "Person", ImmutableList.of[String],
+      TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+      new AttributeDefinition("department", "Department", Multiplicity.REQUIRED, false, "employees"),
+      new AttributeDefinition("manager", "Manager", Multiplicity.OPTIONAL, false, "subordinates")
+      )
+    val managerTypeDef: HierarchicalTypeDefinition[ClassType] = TypesUtil.createClassTypeDef(
+      "Manager", ImmutableList.of[String]("Person"),
+      new AttributeDefinition("subordinates", String.format("array<%s>", "Person"),
+        Multiplicity.COLLECTION, false, "manager"))
+    val securityClearanceTypeDef: HierarchicalTypeDefinition[TraitType] =
+      TypesUtil.createTraitTypeDef("SecurityClearance", ImmutableList.of[String],
+        TypesUtil.createRequiredAttrDef("level", DataTypes.INT_TYPE))
+
+    ts.defineTypes(ImmutableList.of[StructTypeDefinition],
+      ImmutableList.of[HierarchicalTypeDefinition[TraitType]](securityClearanceTypeDef),
+      ImmutableList.of[HierarchicalTypeDefinition[ClassType]](deptTypeDef, personTypeDef, managerTypeDef)
+    )
+
+    val hrDept: Referenceable = new Referenceable("Department")
+    val john: Referenceable = new Referenceable("Person")
+    val jane: Referenceable = new Referenceable("Manager", "SecurityClearance")
+    hrDept.set("name", "hr")
+    john.set("name", "John")
+    john.set("department", hrDept.getId)
+    jane.set("name", "Jane")
+    jane.set("department", hrDept.getId)
+    john.set("manager", jane.getId)
+    hrDept.set("employees", ImmutableList.of[Referenceable](john, jane))
+    jane.set("subordinates", ImmutableList.of[Referenceable](john))
+    jane.getTrait("SecurityClearance").set("level", 1)
+
+
+    val jsonStr = InstanceSerialization.toJson(hrDept)
+    val hrDept2 = InstanceSerialization.fromJsonReferenceable(jsonStr)
+
+    val deptType: ClassType = ts.getDataType(classOf[ClassType], "Department")
+    val hrDept3: ITypedReferenceableInstance = deptType.convert(hrDept2, Multiplicity.REQUIRED)
+
+    println(s"HR Dept Object Graph:\n${hrDept3}\n")
+
+    implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new TypedStructSerializer +
+      new TypedReferenceableInstanceSerializer + new BigDecimalSerializer + new BigIntegerSerializer
+
+    val ser = swrite(hrDept3)
+    println(s"HR Dept JSON:\n${pretty(render(parse(ser)))}\n")
+
+    println(s"HR Dept Object Graph read from JSON:${read[ReferenceableInstance](ser)}\n")
+  }
+
 }

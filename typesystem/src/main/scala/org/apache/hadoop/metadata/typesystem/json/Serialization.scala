@@ -18,10 +18,8 @@
 
 package org.apache.hadoop.metadata.typesystem.json
 
-import java.text.SimpleDateFormat
-
 import org.apache.hadoop.metadata.typesystem._
-import org.apache.hadoop.metadata.typesystem.persistence.{StructInstance, Id, ReferenceableInstance}
+import org.apache.hadoop.metadata.typesystem.persistence.{Id, ReferenceableInstance, StructInstance}
 import org.apache.hadoop.metadata.typesystem.types.DataTypes.{ArrayType, MapType, TypeCategory}
 import org.apache.hadoop.metadata.typesystem.types._
 import org.json4s.JsonAST.JInt
@@ -302,82 +300,4 @@ object Serialization {
   }
 }
 
-object InstanceSerialization {
 
-  case class _Id(id : String, version : Int, typeName : String)
-  case class _Struct(typeName : String, values : Map[String, AnyRef])
-  case class _Reference(id : _Id,
-                        typeName : String,
-                        values : Map[String, AnyRef],
-                        traitNames : List[String],
-                        traits : Map[String, _Struct])
-
-  def asJava(v : Any) : Any = v match {
-    case i : _Id => new Id(i.id, i.version, i.typeName)
-    case s : _Struct => new Struct(s.typeName, asJava(s.values).asInstanceOf[java.util.Map[String, Object]])
-    case r : _Reference => {
-      new Referenceable(r.id.asInstanceOf[_Id].id,
-        r.typeName,
-        asJava(r.values).asInstanceOf[java.util.Map[String, Object]],
-        asJava(r.traitNames).asInstanceOf[java.util.List[String]],
-        asJava(r.traits).asInstanceOf[java.util.Map[String, IStruct]])
-    }
-    case l : List[_] => l.map(e => asJava(e)).asJava
-    case m : Map[_, _] => m.mapValues(v => asJava(v)).asJava
-    case _ => v
-  }
-
-  def asScala(v : Any) : Any = v match {
-    case i : Id => _Id(i._getId(), i.getVersion, i.getClassName)
-    case r : Referenceable => {
-      val traits = r.getTraits.map { tName =>
-        val t = r.getTrait(tName).asInstanceOf[Struct]
-        (tName -> _Struct(t.getTypeName, asScala(t.getValuesMap).asInstanceOf[Map[String, AnyRef]]))
-      }.toMap
-      _Reference(asScala(r.getId).asInstanceOf[_Id],
-        r.typeName, asScala(r.getValuesMap).asInstanceOf[Map[String, AnyRef]],
-        asScala(r.getTraits).asInstanceOf[List[String]],
-        traits.asInstanceOf[Map[String, _Struct]])
-    }
-    case s : Struct => _Struct(s.typeName, asScala(s.getValuesMap).asInstanceOf[Map[String, AnyRef]])
-    case l : java.util.List[_] => l.asScala.map(e => asScala(e)).toList
-    case m : java.util.Map[_, _] => m.asScala.mapValues(v => asScala(v)).toMap
-    case _ => v
-  }
-
-  val _formats = new DefaultFormats {
-    override val dateFormatter = TypeSystem.getInstance().getDateFormat.asInstanceOf[SimpleDateFormat]
-    override val typeHints = FullTypeHints(List(classOf[_Id], classOf[_Struct], classOf[_Reference]))
-  }
-
-  def buildFormat(withBigDecimals : Boolean) = {
-    if (withBigDecimals)
-      _formats + new BigDecimalSerializer + new BigIntegerSerializer
-    else
-      _formats
-  }
-
-  def _toJson(value: AnyRef, withBigDecimals : Boolean = false): String = {
-    implicit val formats = buildFormat(withBigDecimals)
-
-    val _s : AnyRef = asScala(value).asInstanceOf[AnyRef]
-    writePretty(_s)
-  }
-
-  def toJson(value: Struct, withBigDecimals : Boolean = false): String = {
-    _toJson(value, withBigDecimals)
-  }
-
-  def fromJsonStruct(jsonStr: String, withBigDecimals : Boolean = false): Struct = {
-    implicit val formats = buildFormat(withBigDecimals)
-    val _s = read[_Struct](jsonStr)
-    asJava(_s).asInstanceOf[Struct]
-  }
-
-  //def toJsonReferenceable(value: Referenceable, withBigDecimals : Boolean = false): String = _toJson(value, withBigDecimals)
-  def fromJsonReferenceable(jsonStr: String, withBigDecimals : Boolean = false): Referenceable = {
-    implicit val formats = buildFormat(withBigDecimals)
-    val _s = read[_Reference](jsonStr)
-    asJava(_s).asInstanceOf[Referenceable]
-  }
-}
