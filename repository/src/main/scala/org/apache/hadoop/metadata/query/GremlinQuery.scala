@@ -213,12 +213,12 @@ class GremlinTranslator(expr: Expression,
           }
         }
         case c@ComparisonExpression(symb, f@FieldExpression(fieldName, fInfo, ch), l) => {
+          val fieldGremlinExpr = s"${gPersistenceBehavior.fieldNameInVertex(fInfo.dataType, fInfo.attrInfo)}"
             ch match {
                 case Some(child) => {
-                  val fieldGremlinExpr = s"${gPersistenceBehavior.fieldNameInVertex(fInfo.dataType, fInfo.attrInfo)}"
                   s"""${genQuery(child, inSelect)}.has("$fieldGremlinExpr", ${gPersistenceBehavior.gremlinCompOp(c)}, $l)"""
                 }
-                case None => s"""has("$fieldName", ${gPersistenceBehavior.gremlinCompOp(c)}, $l)"""
+                case None => s"""has("$fieldGremlinExpr", ${gPersistenceBehavior.gremlinCompOp(c)}, $l)"""
             }
         }
         case fil@FilterExpression(child, condExpr) => {
