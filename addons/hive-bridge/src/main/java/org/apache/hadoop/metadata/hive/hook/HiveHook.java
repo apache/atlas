@@ -15,6 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.apache.hadoop.metadata.hive.hook;
 
@@ -23,16 +40,15 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.antlr.runtime.tree.Tree;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.QueryPlan;
-import org.apache.hadoop.hive.ql.exec.ExplainTask;
 import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.hooks.ExecuteWithHookContext;
 import org.apache.hadoop.hive.ql.hooks.HookContext;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
+import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.BaseSemanticAnalyzer;
 import org.apache.hadoop.hive.ql.parse.HiveParser;
@@ -40,18 +56,21 @@ import org.apache.hadoop.hive.ql.parse.HiveSemanticAnalyzerHook;
 import org.apache.hadoop.hive.ql.parse.HiveSemanticAnalyzerHookContext;
 import org.apache.hadoop.hive.ql.parse.ParseDriver;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
-import org.apache.hadoop.metadata.hivetypes.HiveTypeSystem;
-import org.apache.hadoop.util.StringUtils;
-import org.json.JSONException;
-import org.json.JSONObject;
+import org.apache.hadoop.hive.ql.plan.HiveOperation;
+import org.apache.hadoop.metadata.MetadataServiceClient;
+import org.apache.hadoop.metadata.MetadataServiceException;
+import org.apache.hadoop.metadata.hive.bridge.HiveMetaStoreBridge;
+import org.apache.hadoop.metadata.hive.model.HiveDataTypes;
+import org.apache.hadoop.metadata.typesystem.Referenceable;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.Serializable;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -67,19 +86,9 @@ import java.util.concurrent.TimeUnit;
 public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHook {
 
     private static final Log LOG = LogFactory.getLog(HiveHook.class.getName());
-    private static final String dgcDumpDir = "/tmp/dgcfiles";
     // wait time determines how long we wait before we exit the jvm on
     // shutdown. Pending requests after that will not be sent.
     private static final int WAIT_TIME = 3;
-    private static final String dbHost = "10.11.4.125";
-    private static final String url = "jdbc:postgres://" + dbHost + "/dgctest";
-    private static final String user = "postgres";
-    private static final String password = "postgres";
-    private static final String insertQuery =
-            "insert into query_info(query_id, query_text, query_plan, start_time, user_name, "
-                    + "query_graph) values (?, ?, ?, ?, ?, ?";
-    private static final String updateQuery =
-            "update  query_info set end_time = ? where query_id = ?";
     private static ExecutorService executor;
 
     static {
@@ -115,24 +124,9 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
         } catch (IllegalStateException is) {
             LOG.info("Attempting to send msg while shutdown in progress.");
         }
-        LOG.info("Created DgiHook");
-    }
 
-    Connection connection = null;
-    PreparedStatement insertStatement = null;
-    PreparedStatement updateStatement = null;
-    private HiveTypeSystem hiveTypeSystem;
-
-    public HiveHook() {
-        try {
-            File dgcDumpFile = new File(dgcDumpDir);
-            dgcDumpFile.mkdirs();
-            connection = DriverManager.getConnection(url, user, password);
-            insertStatement = connection.prepareStatement(insertQuery);
-            updateStatement = connection.prepareStatement(updateQuery);
-        } catch (Exception e) {
-            LOG.error("Exception initializing HiveHook " + e);
-        }
+        LOG.info("Created DGI Hook");
+        executor.shutdown();
     }
 
     @Override
@@ -142,162 +136,176 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
             return;
         }
 
-        final long currentTime = System.currentTimeMillis();
-
         // clone to avoid concurrent access
         final HiveConf conf = new HiveConf(hookContext.getConf());
+        boolean debug = conf.get("debug", "false").equals("true");
 
-        executor.submit(
+        if (debug) {
+            fireAndForget(hookContext, conf);
+        } else {
+            executor.submit(
                 new Runnable() {
                     @Override
                     public void run() {
                         try {
-
-                            QueryPlan plan = hookContext.getQueryPlan();
-                            if (plan == null) {
-                                LOG.info("no plan in callback.");
-                                return;
-                            }
-
-                            String queryId = plan.getQueryId();
-                            long queryStartTime = plan.getQueryStartTime();
-                            String user = hookContext.getUgi().getUserName();
-                            String operationType = hookContext.getOperationName();
-                            Set<WriteEntity> outputs = plan.getOutputs();
-                            Set<ReadEntity> inputs = plan.getInputs();
-
-                            switch (hookContext.getHookType()) {
-
-                                case PRE_EXEC_HOOK: // command about to execute
-                                    ExplainTask explain = new ExplainTask();
-                                    explain.initialize(conf, plan, null);
-                                    String query = plan.getQueryStr();
-                                    List<Task<?>> rootTasks = plan.getRootTasks();
-
-                                    //We need to somehow get the sem associated with the plan and
-                                    // use it here.
-                                    //MySemanticAnaylzer sem = new MySemanticAnaylzer(conf);
-                                    //sem.setInputs(plan.getInputs());
-                                    //ExplainWork ew = new ExplainWork(null, null, rootTasks,
-                                    // plan.getFetchTask(), null, sem,
-                                    //        false, true, false, false, false);
-                                    //JSONObject explainPlan =
-                                    //        explain.getJSONLogicalPlan(null, ew);
-                                    String graph = "";
-                                    if (plan.getQuery().getStageGraph() != null) {
-                                        graph = plan.getQuery().getStageGraph().toString();
-                                    }
-                                    JSONObject explainPlan =
-                                            explain.getJSONPlan(null, null, rootTasks,
-                                                    plan.getFetchTask(), true, false, false);
-                                    fireAndForget(conf,
-                                            createPreHookEvent(queryId, query,
-                                                    explainPlan, queryStartTime,
-                                                    user, inputs, outputs, graph));
-                                    break;
-                                case POST_EXEC_HOOK: // command succeeded successfully
-                                    fireAndForget(conf,
-                                            createPostHookEvent(queryId, currentTime, user,
-                                                    true, inputs, outputs));
-                                    break;
-                                case ON_FAILURE_HOOK: // command failed
-                                    fireAndForget(conf,
-                                            createPostHookEvent(queryId, currentTime, user,
-                                                    false, inputs, outputs));
-                                    break;
-                                default:
-                                    //ignore
-                                    LOG.info("unknown hook type");
-                                    break;
-                            }
-                        } catch (Exception e) {
-                            LOG.info("Failed to submit plan: " + StringUtils.stringifyException(e));
+                            fireAndForget(hookContext, conf);
+                        } catch (Throwable e) {
+                            LOG.info("DGI hook failed", e);
                         }
                     }
                 }
-        );
+            );
+        }
     }
 
-    private void appendEntities(JSONObject obj, String key,
-                                Set<? extends Entity> entities)
-    throws JSONException {
+    private void fireAndForget(HookContext hookContext, HiveConf conf) throws Exception {
+        LOG.info("Entered DGI hook for query hook " + hookContext.getHookType());
+        if (hookContext.getHookType() != HookContext.HookType.POST_EXEC_HOOK) {
+            LOG.debug("No-op for query hook " + hookContext.getHookType());
+        }
 
-        for (Entity e : entities) {
-            if (e != null) {
-                JSONObject entityObj = new JSONObject();
-                entityObj.put("type", e.getType().toString());
-                entityObj.put("name", e.toString());
+        HiveMetaStoreBridge dgiBridge = new HiveMetaStoreBridge(conf);
 
-                obj.append(key, entityObj);
+        HiveOperation operation = HiveOperation.valueOf(hookContext.getOperationName());
+        Set<ReadEntity> inputs = hookContext.getInputs();
+        Set<WriteEntity> outputs = hookContext.getOutputs();
+        String user = hookContext.getUserName();
+        String queryId = null;
+        String queryStr = null;
+        long queryStartTime = 0;
+
+        QueryPlan plan = hookContext.getQueryPlan();
+        if (plan != null) {
+            queryId = plan.getQueryId();
+            queryStr = plan.getQueryString();
+            queryStartTime = plan.getQueryStartTime();
+        }
+
+        System.out.println(String .format("%s - %s", queryStr, hookContext.getOperationName()));
+        StringBuffer stringBuffer = new StringBuffer("Inputs - ");
+        for (ReadEntity entity : inputs) {
+            stringBuffer = stringBuffer.append(" ").append(entity.getType());
+            if (entity.getType() == Entity.Type.TABLE) {
+                stringBuffer = stringBuffer.append(" ").append(entity.getTable().getTableName());
+            } else if (entity.getType() == Entity.Type.DATABASE) {
+                stringBuffer = stringBuffer.append(" ").append(entity.getDatabase().getName());
             }
         }
-    }
-
-    private JSONObject createPreHookEvent(String queryId, String query,
-                                          JSONObject explainPlan, long startTime, String user,
-                                          Set<ReadEntity> inputs, Set<WriteEntity> outputs,
-                                          String graph)
-    throws JSONException {
-
-        JSONObject queryObj = new JSONObject();
-
-        queryObj.put("queryText", query);
-        queryObj.put("queryPlan", explainPlan);
-        queryObj.put("queryId", queryId);
-        queryObj.put("startTime", startTime);
-        queryObj.put("user", user);
-        queryObj.put("graph", graph);
-
-        appendEntities(queryObj, "inputs", inputs);
-        appendEntities(queryObj, "output", outputs);
-
-        LOG.info("Received pre-hook notification for :" + queryId);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("DGI Info: " + queryObj.toString(2));
+        stringBuffer = stringBuffer.append(" Outputs - ");
+        for (WriteEntity entity : outputs) {
+            stringBuffer = stringBuffer.append(" ").append(entity.getType());
+            if (entity.getType() == Entity.Type.TABLE) {
+                stringBuffer = stringBuffer.append(" ").append(entity.getTable().getTableName());
+            } else if (entity.getType() == Entity.Type.DATABASE) {
+                stringBuffer = stringBuffer.append(" ").append(entity.getDatabase().getName());
+            }
         }
+        System.out.println(stringBuffer.toString());
 
-        return queryObj;
-    }
+        switch (operation) {
+            case CREATEDATABASE:
+                String dbName = queryStr.split(" ")[2].trim();
+                dgiBridge.registerDatabase(dbName);
+                break;
 
-    private JSONObject createPostHookEvent(String queryId, long stopTime,
-                                           String user, boolean success, Set<ReadEntity> inputs,
-                                           Set<WriteEntity> outputs)
-    throws JSONException {
+            case CREATETABLE:
+                for (WriteEntity entity : outputs) {
+                    if (entity.getType() == Entity.Type.TABLE) {
+                        Table table = entity.getTable();
+                        //TODO table.getDbName().toLowerCase() is required as hive stores in lowercase, but table.getDbName() is not lowercase
+                        Referenceable dbReferenceable = getDatabaseReference(dgiBridge, table.getDbName().toLowerCase());
+                        dgiBridge.registerTable(dbReferenceable, table.getDbName(), table.getTableName());
+                    }
+                }
+                break;
 
-        JSONObject completionObj = new JSONObject();
+            case CREATETABLE_AS_SELECT:
+                Referenceable processReferenceable = new Referenceable(HiveDataTypes.HIVE_PROCESS.name());
+                processReferenceable.set("processName", operation.getOperationName());
+                processReferenceable.set("startTime", queryStartTime);
+                processReferenceable.set("endTime", 0);
+                processReferenceable.set("userName", user);
+                List<Referenceable> source = new ArrayList<>();
+                for (ReadEntity readEntity : inputs) {
+                    if (readEntity.getTyp() == Entity.Type.TABLE) {
+                        source.add(getTableReference(dgiBridge, readEntity.getTable().getTableName()));
+                    }
+                }
+                processReferenceable.set("sourceTableNames", source);
+                List<Referenceable> target = new ArrayList<>();
+                for (WriteEntity writeEntity : outputs) {
+                    if (writeEntity.getTyp() == Entity.Type.TABLE) {
+                        target.add(getTableReference(dgiBridge, writeEntity.getTable().getTableName()));
+                    }
+                }
+                processReferenceable.set("targetTableNames", target);
+                processReferenceable.set("queryText", queryStr);
+                processReferenceable.set("queryId", queryId);
+                //TODO set
+                processReferenceable.set("queryPlan", "");
+                processReferenceable.set("queryGraph", "");
+                dgiBridge.createInstance(processReferenceable);
+                break;
 
-        completionObj.put("queryId", queryId);
-        completionObj.put("stopTime", stopTime);
-        completionObj.put("user", user);
-        completionObj.put("result", success);
-
-        appendEntities(completionObj, "inputs", inputs);
-        appendEntities(completionObj, "output", outputs);
-
-        LOG.info("Received post-hook notification for :" + queryId);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("DGI Info: " + completionObj.toString(2));
-        }
-
-        return completionObj;
-    }
-
-    private synchronized void fireAndForget(Configuration conf, JSONObject obj) throws Exception {
-
-        LOG.info("Submitting: " + obj.toString(2));
-
-        String queryId = (String) obj.get("queryId");
-
-        try {
-            BufferedWriter fw = new BufferedWriter(
-                    new FileWriter(new File(dgcDumpDir, queryId), true));
-            fw.write(obj.toString(2));
-            fw.flush();
-            fw.close();
-        } catch (Exception e) {
-            LOG.error("Unable to log logical plan to file", e);
+            default:
         }
     }
+
+    /**
+     * Gets reference for the database. Creates new instance if it doesn't exist
+     * @param dgiBridge
+     * @param dbName database name
+     * @return Reference for database
+     * @throws Exception
+     */
+    private Referenceable getDatabaseReference(HiveMetaStoreBridge dgiBridge, String dbName) throws Exception {
+        String typeName = HiveDataTypes.HIVE_DB.getName();
+        MetadataServiceClient dgiClient = dgiBridge.getMetadataServiceClient();
+
+        JSONObject result = dgiClient.search(typeName, "name", dbName);
+        JSONArray results = (JSONArray) result.get("results");
+        if (results.length() == 0) {
+            //Create new instance
+            return dgiBridge.registerDatabase(dbName);
+        } else {
+            String guid = (String) ((JSONObject) results.get(0)).get("guid");
+            return new Referenceable(guid, typeName, null);
+        }
+    }
+
+    /**
+     * Gets reference for the table. Throws up if table instance doesn't exist
+     * @param dgiBridge
+     * @param tableName table name
+     * @return table reference
+     * @throws MetadataServiceException
+     * @throws JSONException
+     */
+    private Referenceable getTableReference(HiveMetaStoreBridge dgiBridge, String tableName) throws MetadataServiceException, JSONException {
+        String typeName = HiveDataTypes.HIVE_TABLE.getName();
+        MetadataServiceClient dgiClient = dgiBridge.getMetadataServiceClient();
+        JSONObject result = dgiClient.search(typeName, "tableName", tableName);
+        JSONArray results = (JSONArray) new JSONObject((String) result.get("results")).get("results");
+        if (results.length() == 0) {
+            throw new IllegalArgumentException("There is no entity for " + typeName + " where tableName=" + tableName);
+        }
+
+        //There should be just one instance with the given name
+        String guid = (String) new JSONObject((String) results.get(0)).get("guid");
+        return new Referenceable(guid, typeName, null);
+    }
+
+
+    //TODO Do we need this??
+    //We need to somehow get the sem associated with the plan and
+    // use it here.
+    //MySemanticAnaylzer sem = new MySemanticAnaylzer(conf);
+    //sem.setInputs(plan.getInputs());
+    //ExplainWork ew = new ExplainWork(null, null, rootTasks,
+    // plan.getFetchTask(), null, sem,
+    //        false, true, false, false, false);
+    //JSONObject explainPlan =
+    //        explain.getJSONLogicalPlan(null, ew);
 
     private void analyzeHiveParseTree(ASTNode ast) {
         String astStr = ast.dump();
@@ -319,7 +327,7 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
         try {
 
             BufferedWriter fw = new BufferedWriter(
-                    new FileWriter(new File(dgcDumpDir, "ASTDump"), true));
+                    new FileWriter(new File("/tmp/dgi/", "ASTDump"), true));
 
             fw.write("Full AST Dump" + astStr);
 

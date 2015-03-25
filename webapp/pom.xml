@@ -273,7 +273,7 @@
                 <artifactId>maven-jetty-plugin</artifactId>
                 <version>${jetty.version}</version>
                 <configuration>
-                    <skip>${skipITs}</skip>
+                    <skip>${skipTests}</skip>
                     <!--only skip int tests -->
                     <connectors>
                         <!--

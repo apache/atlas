@@ -36,7 +36,9 @@ public class Struct implements IStruct {
     @InterfaceAudience.Private
     public Struct(String typeName, Map<String, Object> values) {
         this(typeName);
-        this.values.putAll(values);
+        if (values != null) {
+            this.values.putAll(values);
+        }
     }
 
     @Override

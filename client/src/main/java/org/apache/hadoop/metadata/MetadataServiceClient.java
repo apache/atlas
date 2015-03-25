@@ -68,7 +68,12 @@ public class MetadataServiceClient {
         //Trait operations
         ADD_TRAITS("api/metadata/traits/add", HttpMethod.POST),
         DELETE_TRAITS("api/metadata/traits/delete", HttpMethod.PUT),
-        LIST_TRAITS("api/metadata/traits/list", HttpMethod.GET);
+        LIST_TRAITS("api/metadata/traits/list", HttpMethod.GET),
+
+        //Search operations
+        SEARCH("api/metadata/discovery/search", HttpMethod.GET),
+        SEARCH_DSL("api/metadata/discovery/search/dsl", HttpMethod.GET),
+        SEARCH_GREMLIN("api/metadata/discovery/search/gremlin", HttpMethod.GET);
 
         private final String method;
         private final String path;
@@ -87,10 +92,6 @@ public class MetadataServiceClient {
         }
     }
 
-    public JSONObject createType(String typeAsJson) throws MetadataServiceException {
-        return callAPI(API.CREATE_TYPE, typeAsJson);
-    }
-
     public List<String> listTypes() throws MetadataServiceException {
         try {
             final JSONObject jsonObject = callAPI(API.LIST_TYPES, null);
@@ -106,8 +107,73 @@ public class MetadataServiceClient {
         }
     }
 
+    /**
+     * Register the given type(meta model)
+     * @param typeAsJson type definition a jaon
+     * @return result json object
+     * @throws MetadataServiceException
+     */
+    public JSONObject createType(String typeAsJson) throws MetadataServiceException {
+        return callAPI(API.CREATE_TYPE, typeAsJson);
+    }
+
+    /**
+     * Create the given entity
+     * @param entityAsJson entity(type instance) as json
+     * @return result json object
+     * @throws MetadataServiceException
+     */
     public JSONObject createEntity(String entityAsJson) throws MetadataServiceException {
         return callAPI(API.CREATE_ENTITY, entityAsJson);
+    }
+
+    /**
+     * Get an entity given the entity id
+     * @param guid entity id
+     * @return result json object
+     * @throws MetadataServiceException
+     */
+    public JSONObject getEntity(String guid) throws MetadataServiceException {
+        return callAPI(API.GET_ENTITY, null, guid);
+    }
+
+    /**
+     * Search given type name, an attribute and its value. Uses search dsl
+     * @param typeName name of the entity type
+     * @param attributeName attribute name
+     * @param attributeValue attribute value
+     * @return result json object
+     * @throws MetadataServiceException
+     */
+    public JSONObject search(String typeName, String attributeName, Object attributeValue) throws MetadataServiceException {
+        //TODO replace with DSL when DSL works
+        String gremlinQuery = String.format("g.V.has(\"typeName\",\"%s\").and(_().has(\"%s.%s\", T.eq, \"%s\")).toList()",
+                typeName, typeName, attributeName, attributeValue);
+        return search(gremlinQuery);
+    }
+
+    /**
+     * Search given query DSL
+     * @param query DSL query
+     * @return result json object
+     * @throws MetadataServiceException
+     */
+    public JSONObject searchByDSL(String query) throws MetadataServiceException {
+        WebResource resource = getResource(API.SEARCH_DSL);
+        resource = resource.queryParam("query", query);
+        return callAPIWithResource(API.SEARCH_DSL, resource);
+    }
+
+    /**
+     * Search given gremlin query
+     * @param gremlinQuery Gremlin query
+     * @return result json object
+     * @throws MetadataServiceException
+     */
+    public JSONObject search(String gremlinQuery) throws MetadataServiceException {
+        WebResource resource = getResource(API.SEARCH);
+        resource = resource.queryParam("query", gremlinQuery);
+        return callAPIWithResource(API.SEARCH, resource);
     }
 
     public String getRequestId(JSONObject json) throws MetadataServiceException {
@@ -118,17 +184,23 @@ public class MetadataServiceClient {
         }
     }
 
-    private JSONObject callAPI(API api, Object requestObject, String... pathParams) throws MetadataServiceException {
+    private WebResource getResource(API api, String... pathParams) {
         WebResource resource = service.path(api.getPath());
         if (pathParams != null) {
             for (String pathParam : pathParams) {
                 resource = resource.path(pathParam);
             }
         }
+        return resource;
+    }
 
-        ClientResponse clientResponse = resource
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+    private JSONObject callAPIWithResource(API api, WebResource resource) throws MetadataServiceException {
+        return callAPIWithResource(api, resource, null);
+    }
+
+    private JSONObject callAPIWithResource(API api, WebResource resource, Object requestObject)
+            throws MetadataServiceException {
+        ClientResponse clientResponse = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON)
                 .method(api.getMethod(), ClientResponse.class, requestObject);
 
         if (clientResponse.getStatus() == Response.Status.OK.getStatusCode()) {
@@ -140,5 +212,10 @@ public class MetadataServiceClient {
             }
         }
         throw new MetadataServiceException(api, clientResponse.getClientResponseStatus());
+    }
+
+    private JSONObject callAPI(API api, Object requestObject, String... pathParams) throws MetadataServiceException {
+        WebResource resource = getResource(api, pathParams);
+        return callAPIWithResource(api, resource, requestObject);
     }
 }

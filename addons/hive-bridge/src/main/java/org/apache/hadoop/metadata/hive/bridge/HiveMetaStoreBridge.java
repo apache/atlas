@@ -45,6 +45,21 @@ import java.util.List;
  * and registers then in DGI.
  */
 public class HiveMetaStoreBridge {
+    static class Pair<S, T> {
+        public S first;
+        public T second;
+
+        public Pair(S first, T second) {
+            this.first = first;
+            this.second = second;
+        }
+
+        public static <S, T> Pair of(S first, T second) {
+            return new Pair(first, second);
+        }
+    }
+
+    public static final String DGI_URL_PROPERTY = "hive.dgi.url";
 
     private static final Logger LOG = LoggerFactory.getLogger(HiveMetaStoreBridge.class);
 
@@ -53,16 +68,15 @@ public class HiveMetaStoreBridge {
 
     /**
      * Construct a HiveMetaStoreBridge.
-     * @param baseUrl metadata service url
+     * @param hiveConf
      */
-    public HiveMetaStoreBridge(String baseUrl) throws Exception {
-        hiveMetaStoreClient = createHiveMetaStoreClient();
-        metadataServiceClient = new MetadataServiceClient(baseUrl);
+    public HiveMetaStoreBridge(HiveConf hiveConf) throws Exception {
+        hiveMetaStoreClient = new HiveMetaStoreClient(hiveConf);
+        metadataServiceClient = new MetadataServiceClient(hiveConf.get(DGI_URL_PROPERTY));
     }
 
-    private HiveMetaStoreClient createHiveMetaStoreClient() throws Exception {
-        HiveConf conf = new HiveConf();
-        return new HiveMetaStoreClient(conf);
+    public MetadataServiceClient getMetadataServiceClient() {
+        return metadataServiceClient;
     }
 
     public void importHiveMetadata() throws Exception {
@@ -73,16 +87,18 @@ public class HiveMetaStoreBridge {
     private void importDatabases() throws Exception {
         List<String> databases = hiveMetaStoreClient.getAllDatabases();
         for (String databaseName : databases) {
-            importDatabase(databaseName);
+            Referenceable dbReference = registerDatabase(databaseName);
+
+            importTables(databaseName, dbReference);
         }
     }
 
-    private void importDatabase(String databaseName) throws Exception {
+    public Referenceable registerDatabase(String databaseName) throws Exception {
         LOG.info("Importing objects from databaseName : " + databaseName);
 
         Database hiveDB = hiveMetaStoreClient.getDatabase(databaseName);
 
-        Referenceable dbRef = new Referenceable(HiveDataTypes.HIVE_DB.name());
+        Referenceable dbRef = new Referenceable(HiveDataTypes.HIVE_DB.getName());
         dbRef.set("name", hiveDB.getName());
         dbRef.set("description", hiveDB.getDescription());
         dbRef.set("locationUri", hiveDB.getLocationUri());
@@ -90,12 +106,10 @@ public class HiveMetaStoreBridge {
         dbRef.set("ownerName", hiveDB.getOwnerName());
         dbRef.set("ownerType", hiveDB.getOwnerType().getValue());
 
-        Referenceable databaseReferenceable = createInstance(dbRef);
-
-        importTables(databaseName, databaseReferenceable);
+        return createInstance(dbRef);
     }
 
-    private Referenceable createInstance(Referenceable referenceable) throws Exception {
+    public Referenceable createInstance(Referenceable referenceable) throws Exception {
         String typeName = referenceable.getTypeName();
         LOG.debug("creating instance of type " + typeName);
 
@@ -108,22 +122,26 @@ public class HiveMetaStoreBridge {
         return new Referenceable(guid, referenceable.getTypeName(), referenceable.getValuesMap());
     }
 
-    private void importTables(String databaseName,
-                              Referenceable databaseReferenceable) throws Exception {
+    private void importTables(String databaseName, Referenceable databaseReferenceable) throws Exception {
         List<String> hiveTables = hiveMetaStoreClient.getAllTables(databaseName);
 
         for (String tableName : hiveTables) {
-            importTable(databaseName, tableName, databaseReferenceable);
+            Pair<Referenceable, Referenceable> tableReferenceable = registerTable(databaseReferenceable, databaseName, tableName);
+
+            // Import Partitions
+            importPartitions(databaseName, tableName, databaseReferenceable, tableReferenceable.first, tableReferenceable.second);
+
+            // Import Indexes
+            importIndexes(databaseName, tableName, databaseReferenceable, tableReferenceable.first);
         }
     }
 
-    private void importTable(String db, String tableName,
-                             Referenceable databaseReferenceable) throws Exception {
-        LOG.info("Importing objects from " + db + "." + tableName);
+    public Pair<Referenceable, Referenceable> registerTable(Referenceable dbReference, String dbName, String tableName) throws Exception {
+        LOG.info("Importing objects from " + dbName + "." + tableName);
 
-        Table hiveTable = hiveMetaStoreClient.getTable(db, tableName);
+        Table hiveTable = hiveMetaStoreClient.getTable(dbName, tableName);
 
-        Referenceable tableRef = new Referenceable(HiveDataTypes.HIVE_TABLE.name());
+        Referenceable tableRef = new Referenceable(HiveDataTypes.HIVE_TABLE.getName());
         tableRef.set("tableName", hiveTable.getTableName());
         tableRef.set("owner", hiveTable.getOwner());
         tableRef.set("createTime", hiveTable.getCreateTime());
@@ -131,7 +149,7 @@ public class HiveMetaStoreBridge {
         tableRef.set("retention", hiveTable.getRetention());
 
         // add reference to the database
-        tableRef.set("dbName", databaseReferenceable);
+        tableRef.set("dbName", dbReference);
 
         // add reference to the StorageDescriptor
         StorageDescriptor storageDesc = hiveTable.getSd();
@@ -143,7 +161,7 @@ public class HiveMetaStoreBridge {
         Referenceable colRef;
         if (hiveTable.getPartitionKeysSize() > 0) {
             for (FieldSchema fs : hiveTable.getPartitionKeys()) {
-                colRef = new Referenceable(HiveDataTypes.HIVE_COLUMN.name());
+                colRef = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
                 colRef.set("name", fs.getName());
                 colRef.set("type", fs.getType());
                 colRef.set("comment", fs.getComment());
@@ -168,12 +186,7 @@ public class HiveMetaStoreBridge {
         tableRef.set("temporary", hiveTable.isTemporary());
 
         Referenceable tableReferenceable = createInstance(tableRef);
-
-        // Import Partitions
-        importPartitions(db, tableName, databaseReferenceable, tableReferenceable, sdReferenceable);
-
-        // Import Indexes
-        importIndexes(db, tableName, databaseReferenceable, tableRef);
+        return Pair.of(tableReferenceable, sdReferenceable);
     }
 
     private void importPartitions(String db, String table,
@@ -194,7 +207,7 @@ public class HiveMetaStoreBridge {
                                           Referenceable dbReferenceable,
                                           Referenceable tableReferenceable,
                                           Referenceable sdReferenceable) throws Exception {
-        Referenceable partRef = new Referenceable(HiveDataTypes.HIVE_PARTITION.name());
+        Referenceable partRef = new Referenceable(HiveDataTypes.HIVE_PARTITION.getName());
         partRef.set("values", hivePart.getValues());
 
         partRef.set("dbName", dbReferenceable);
@@ -227,7 +240,7 @@ public class HiveMetaStoreBridge {
     private void importIndex(Index index,
                              Referenceable dbReferenceable,
                              Referenceable tableReferenceable) throws Exception {
-        Referenceable indexRef = new Referenceable(HiveDataTypes.HIVE_INDEX.name());
+        Referenceable indexRef = new Referenceable(HiveDataTypes.HIVE_INDEX.getName());
 
         indexRef.set("indexName", index.getIndexName());
         indexRef.set("indexHandlerClass", index.getIndexHandlerClass());
@@ -252,13 +265,13 @@ public class HiveMetaStoreBridge {
     private Referenceable fillStorageDescStruct(StorageDescriptor storageDesc) throws Exception {
         LOG.debug("Filling storage descriptor information for " + storageDesc);
 
-        Referenceable sdReferenceable = new Referenceable(HiveDataTypes.HIVE_STORAGEDESC.name());
+        Referenceable sdReferenceable = new Referenceable(HiveDataTypes.HIVE_STORAGEDESC.getName());
 
         SerDeInfo serdeInfo = storageDesc.getSerdeInfo();
         LOG.debug("serdeInfo = " + serdeInfo);
         // SkewedInfo skewedInfo = storageDesc.getSkewedInfo();
 
-        String serdeInfoName = HiveDataTypes.HIVE_SERDE.name();
+        String serdeInfoName = HiveDataTypes.HIVE_SERDE.getName();
         Struct serdeInfoStruct = new Struct(serdeInfoName);
 
         serdeInfoStruct.set("name", serdeInfo.getName());
@@ -288,7 +301,7 @@ public class HiveMetaStoreBridge {
         Referenceable colReferenceable;
         for (FieldSchema fs : storageDesc.getCols()) {
             LOG.debug("Processing field " + fs);
-            colReferenceable = new Referenceable(HiveDataTypes.HIVE_COLUMN.name());
+            colReferenceable = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
             colReferenceable.set("name", fs.getName());
             colReferenceable.set("type", fs.getType());
             colReferenceable.set("comment", fs.getComment());
@@ -299,7 +312,7 @@ public class HiveMetaStoreBridge {
 
         List<Struct> sortColsStruct = new ArrayList<>();
         for (Order sortcol : storageDesc.getSortCols()) {
-            String hiveOrderName = HiveDataTypes.HIVE_ORDER.name();
+            String hiveOrderName = HiveDataTypes.HIVE_ORDER.getName();
             Struct colStruct = new Struct(hiveOrderName);
             colStruct.set("col", sortcol.getCol());
             colStruct.set("order", sortcol.getOrder());
@@ -325,18 +338,8 @@ public class HiveMetaStoreBridge {
         return createInstance(sdReferenceable);
     }
 
-    static String getServerUrl(String[] args) {
-        String baseUrl = "http://localhost:21000";
-        if (args.length > 0) {
-            baseUrl = args[0];
-        }
-
-        return baseUrl;
-    }
-
     public static void main(String[] argv) throws Exception {
-        String baseUrl = getServerUrl(argv);
-        HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(baseUrl);
+        HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(new HiveConf());
         hiveMetaStoreBridge.importHiveMetadata();
     }
 }

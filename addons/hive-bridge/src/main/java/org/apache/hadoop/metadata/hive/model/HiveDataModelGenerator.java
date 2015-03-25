@@ -507,10 +507,13 @@ public class HiveDataModelGenerator {
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_PROCESS.getName());
     }
 
+    public String getModelAsJson() throws MetadataException {
+        createDataModel();
+        return getDataModelAsJSON();
+    }
+
     public static void main(String[] args) throws Exception {
         HiveDataModelGenerator hiveDataModelGenerator = new HiveDataModelGenerator();
-        hiveDataModelGenerator.createDataModel();
-        String hiveDataModelAsJSON = hiveDataModelGenerator.getDataModelAsJSON();
-        System.out.println("hiveDataModelAsJSON = " + hiveDataModelAsJSON);
+        System.out.println("hiveDataModelAsJSON = " + hiveDataModelGenerator.getModelAsJson());
     }
 }
