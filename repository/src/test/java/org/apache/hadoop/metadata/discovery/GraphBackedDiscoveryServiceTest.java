@@ -165,19 +165,57 @@ public class GraphBackedDiscoveryServiceTest {
     @DataProvider(name = "dslQueriesProvider")
     private Object[][] createDSLQueries() {
         return new String[][] {
-                {"from DB"},
-                {"DB"},
-                {"from Table"},
-                {"Table"},
-                {"DB, Table"},
-                /*{"DB as db1 Table where db1.name = \"Reporting\""},*/
-                {"DB name = \"Reporting\""},
-                {"Column where Column isa PII"},
-                {"Table is Dimension"},
-                {"View is Dimension"},
-                /*{"Column where Column isa PII select Column.name"},*/
-                {"Column select Column.name"},
-                {"from Table select Table.name"},
+            {"from DB"},
+            {"DB"},
+            {"DB where DB.name=\"Reporting\""},
+            {"DB DB.name = \"Reporting\""},
+            {"DB where DB.name=\"Reporting\" select name, owner"},
+            {"DB has name"},
+            {"DB, Table"},
+            {"DB is JdbcAccess"},
+            /*
+            {"DB, LoadProcess has name"},
+            {"DB as db1, Table where db1.name = \"Reporting\""},
+            {"DB where DB.name=\"Reporting\" and DB.createTime < " + System.currentTimeMillis()},
+            */
+            {"from Table"},
+            {"Table"},
+            {"Table is Dimension"},
+            {"Column where Column isa PII"},
+            {"View is Dimension"},
+            /*{"Column where Column isa PII select Column.name"},*/
+            {"Column select Column.name"},
+            {"Column select name"},
+            {"Column where Column.name=\"customer_id\""},
+            {"from Table select Table.name"},
+            {"DB where (name = \"Reporting\")"},
+            {"DB where (name = \"Reporting\") select name as _col_0, owner as _col_1"},
+            {"DB where DB is JdbcAccess"},
+            {"DB where DB has name"},
+            {"DB Table"},
+            {"DB where DB has name"},
+            {"DB as db1 Table where (db1.name = \"Reporting\")"},
+            {"DB where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 "},
+            /*
+            todo: does not work
+            {"DB where (name = \"Reporting\") and ((createTime + 1) > 0)"},
+            {"DB as db1 Table as tab where ((db1.createTime + 1) > 0) and (db1.name = \"Reporting\") select db1.name as dbName, tab.name as tabName"},
+            {"DB as db1 Table as tab where ((db1.createTime + 1) > 0) or (db1.name = \"Reporting\") select db1.name as dbName, tab.name as tabName"},
+            {"DB as db1 Table as tab where ((db1.createTime + 1) > 0) and (db1.name = \"Reporting\") or db1 has owner select db1.name as dbName, tab.name as tabName"},
+            {"DB as db1 Table as tab where ((db1.createTime + 1) > 0) and (db1.name = \"Reporting\") or db1 has owner select db1.name as dbName, tab.name as tabName"},
+            */
+            // trait searches
+            {"Dimension"},
+            /*{"Fact"}, - todo: does not work*/
+            {"JdbcAccess"},
+            {"ETL"},
+            {"Metric"},
+            {"PII"},
+            // Lineage
+            {"Table LoadProcess outputTable"},
+            {"Table loop (LoadProcess outputTable)"},
+            {"Table as _loop0 loop (LoadProcess outputTable) withPath"},
+            {"Table as src loop (LoadProcess outputTable) as dest select src.name as srcTable, dest.name as destTable withPath"},
         };
     }
 
@@ -201,7 +239,24 @@ public class GraphBackedDiscoveryServiceTest {
 
         JSONArray rows = results.getJSONArray("rows");
         Assert.assertNotNull(rows);
-        Assert.assertTrue(rows.length() > 0);
+        Assert.assertTrue(rows.length() >= 0); // some queries may not have any results
+        System.out.println("query [" + dslQuery + "] returned [" + rows.length() + "] rows");
+    }
+
+    @DataProvider(name = "invalidDslQueriesProvider")
+    private Object[][] createInvalidDSLQueries() {
+        return new String[][] {
+            {"from Unknown"},
+            {"Unknown"},
+            {"Unknown is Blah"},
+        };
+    }
+
+    @Test (dataProvider = "invalidDslQueriesProvider", expectedExceptions = DiscoveryException.class)
+    public void testSearchByDSLInvalidQueries(String dslQuery) throws Exception {
+        System.out.println("Executing dslQuery = " + dslQuery);
+        discoveryService.searchByDSL(dslQuery);
+        Assert.fail();
     }
 
     @Test

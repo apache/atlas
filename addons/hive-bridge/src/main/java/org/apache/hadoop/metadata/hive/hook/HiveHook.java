@@ -58,12 +58,10 @@ import org.apache.hadoop.hive.ql.parse.ParseDriver;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.metadata.MetadataServiceClient;
-import org.apache.hadoop.metadata.MetadataServiceException;
 import org.apache.hadoop.metadata.hive.bridge.HiveMetaStoreBridge;
 import org.apache.hadoop.metadata.hive.model.HiveDataTypes;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 import java.io.BufferedWriter;
@@ -258,7 +256,7 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
         String typeName = HiveDataTypes.HIVE_DB.getName();
         MetadataServiceClient dgiClient = dgiBridge.getMetadataServiceClient();
 
-        JSONObject result = dgiClient.search(typeName, "name", dbName);
+        JSONObject result = dgiClient.rawSearch(typeName, "name", dbName);
         JSONArray results = (JSONArray) result.get("results");
 
         if (results.length() == 0) {
@@ -283,7 +281,7 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
         String typeName = HiveDataTypes.HIVE_TABLE.getName();
         MetadataServiceClient dgiClient = dgiBridge.getMetadataServiceClient();
 
-        JSONObject result = dgiClient.search(typeName, "tableName", tableName);
+        JSONObject result = dgiClient.rawSearch(typeName, "tableName", tableName);
         JSONArray results = (JSONArray) result.get("results");
 
         if (results.length() == 0) {

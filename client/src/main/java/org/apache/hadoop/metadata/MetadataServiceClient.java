@@ -137,6 +137,12 @@ public class MetadataServiceClient {
         return callAPI(API.GET_ENTITY, null, guid);
     }
 
+    public JSONObject searchEntity(String searchQuery) throws MetadataServiceException {
+        WebResource resource = getResource(API.SEARCH);
+        resource = resource.queryParam("query", searchQuery);
+        return callAPIWithResource(API.SEARCH, resource);
+    }
+
     /**
      * Search given type name, an attribute and its value. Uses search dsl
      * @param typeName name of the entity type
@@ -145,10 +151,12 @@ public class MetadataServiceClient {
      * @return result json object
      * @throws MetadataServiceException
      */
-    public JSONObject search(String typeName, String attributeName, Object attributeValue) throws MetadataServiceException {
-        String gremlinQuery = String.format("g.V.has(\"typeName\",\"%s\").and(_().has(\"%s.%s\", T.eq, \"%s\")).toList()",
+    public JSONObject rawSearch(String typeName, String attributeName,
+                                Object attributeValue) throws MetadataServiceException {
+        String gremlinQuery = String.format(
+                "g.V.has(\"typeName\",\"%s\").and(_().has(\"%s.%s\", T.eq, \"%s\")).toList()",
                 typeName, typeName, attributeName, attributeValue);
-        return search(gremlinQuery);
+        return searchByGremlin(gremlinQuery);
     }
 
     /**
@@ -169,10 +177,10 @@ public class MetadataServiceClient {
      * @return result json object
      * @throws MetadataServiceException
      */
-    public JSONObject search(String gremlinQuery) throws MetadataServiceException {
-        WebResource resource = getResource(API.SEARCH);
+    public JSONObject searchByGremlin(String gremlinQuery) throws MetadataServiceException {
+        WebResource resource = getResource(API.SEARCH_GREMLIN);
         resource = resource.queryParam("query", gremlinQuery);
-        return callAPIWithResource(API.SEARCH, resource);
+        return callAPIWithResource(API.SEARCH_GREMLIN, resource);
     }
 
     public String getRequestId(JSONObject json) throws MetadataServiceException {
@@ -193,13 +201,16 @@ public class MetadataServiceClient {
         return resource;
     }
 
-    private JSONObject callAPIWithResource(API api, WebResource resource) throws MetadataServiceException {
+    private JSONObject callAPIWithResource(API api,
+                                           WebResource resource) throws MetadataServiceException {
         return callAPIWithResource(api, resource, null);
     }
 
     private JSONObject callAPIWithResource(API api, WebResource resource, Object requestObject)
             throws MetadataServiceException {
-        ClientResponse clientResponse = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON)
+        ClientResponse clientResponse = resource
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
                 .method(api.getMethod(), ClientResponse.class, requestObject);
 
         if (clientResponse.getStatus() == Response.Status.OK.getStatusCode()) {
@@ -213,7 +224,8 @@ public class MetadataServiceClient {
         throw new MetadataServiceException(api, clientResponse.getClientResponseStatus());
     }
 
-    private JSONObject callAPI(API api, Object requestObject, String... pathParams) throws MetadataServiceException {
+    private JSONObject callAPI(API api, Object requestObject,
+                               String... pathParams) throws MetadataServiceException {
         WebResource resource = getResource(api, pathParams);
         return callAPIWithResource(api, resource, requestObject);
     }

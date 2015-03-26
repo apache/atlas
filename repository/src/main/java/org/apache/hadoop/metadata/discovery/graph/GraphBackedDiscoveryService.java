@@ -47,6 +47,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Graph backed implementation of Search.
+ */
 public class GraphBackedDiscoveryService implements DiscoveryService {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphBackedDiscoveryService.class);
@@ -69,12 +72,17 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
      */
     @Override
     public String searchByDSL(String dslQuery) throws DiscoveryException {
-        QueryParser queryParser = new QueryParser();
-        Either<Parsers.NoSuccess, Expressions.Expression> either = queryParser.apply(dslQuery);
-        if (either.isRight()) {
-            Expressions.Expression expression = either.right().get();
-            GremlinQueryResult queryResult = evaluate(expression);
-            return queryResult.toJson();
+        LOG.info("Executing dsl query={}", dslQuery);
+        try {
+            QueryParser queryParser = new QueryParser();
+            Either<Parsers.NoSuccess, Expressions.Expression> either = queryParser.apply(dslQuery);
+            if (either.isRight()) {
+                Expressions.Expression expression = either.right().get();
+                GremlinQueryResult queryResult = evaluate(expression);
+                return queryResult.toJson();
+            }
+        } catch (Exception e) { // unable to catch ExpressionException
+            throw new DiscoveryException("Invalid expression : " + dslQuery);
         }
 
         throw new DiscoveryException("Invalid expression : " + dslQuery);
@@ -102,6 +110,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
     @Override
     public List<Map<String, String>> searchByGremlin(String gremlinQuery)
             throws DiscoveryException {
+        LOG.info("Executing gremlin query={}", gremlinQuery);
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName("gremlin-groovy");
         Bindings bindings = engine.createBindings();

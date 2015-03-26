@@ -20,7 +20,6 @@ package org.apache.hadoop.metadata.hive.hook;
 
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.hive.ql.CommandNeedRetryException;
 import org.apache.hadoop.hive.ql.Driver;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.metadata.MetadataServiceClient;
@@ -29,7 +28,6 @@ import org.apache.hadoop.metadata.hive.model.HiveDataModelGenerator;
 import org.apache.hadoop.metadata.hive.model.HiveDataTypes;
 import org.apache.hadoop.metadata.typesystem.TypesDef;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
-import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
@@ -130,7 +128,7 @@ public class HiveHookIT {
     }
 
     private void assertInstanceIsRegistered(String typeName, String colName, String colValue) throws Exception{
-        JSONObject result = dgiCLient.search(typeName, colName, colValue);
+        JSONObject result = dgiCLient.rawSearch(typeName, colName, colValue);
         JSONArray results = (JSONArray) result.get("results");
         Assert.assertEquals(results.length(), 1);
         JSONObject resultRow = (JSONObject) results.get(0);

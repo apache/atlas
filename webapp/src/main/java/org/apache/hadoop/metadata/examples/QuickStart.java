@@ -36,15 +36,16 @@ import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.TraitType;
 import org.apache.hadoop.metadata.typesystem.types.TypeUtils;
 import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
+import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
  * A driver that sets up sample types and data for testing purposes.
- * todo - move this to examples module. Fix collections as well.
+ * Please take a look at QueryDSL in docs for the Meta Model.
+ * todo - move this to examples module. Fix failing collections.
  */
 public class QuickStart {
 
@@ -52,13 +53,14 @@ public class QuickStart {
         String baseUrl = getServerUrl(args);
         QuickStart quickStart = new QuickStart(baseUrl);
 
+        // Shows how to create types in DGI for your meta model
         quickStart.createTypes();
-        // verify types created
-        quickStart.verifyTypesCreated();
 
+        // Shows how to create entities (instances) for the added types in DGI
         quickStart.createEntities();
-        // verify entity created
-        quickStart.verifyEntityCreated();
+
+        // Shows some search queries using DSL based on types
+        quickStart.search();
     }
 
     static String getServerUrl(String[] args) {
@@ -89,12 +91,16 @@ public class QuickStart {
     }
 
     void createTypes() throws Exception {
-        TypesDef typesDef = setupTypes();
+        TypesDef typesDef = createTypeDefinitions();
+
         String typesAsJSON = TypesSerialization.toJson(typesDef);
         metadataServiceClient.createType(typesAsJSON);
+
+        // verify types created
+        verifyTypesCreated();
     }
 
-    TypesDef setupTypes() throws Exception {
+    TypesDef createTypeDefinitions() throws Exception {
         HierarchicalTypeDefinition<ClassType> dbClsDef
                 = TypesUtil.createClassTypeDef(DATABASE_TYPE, null,
                 attrDef("name", DataTypes.STRING_TYPE),
@@ -119,9 +125,9 @@ public class QuickStart {
                         attrDef("dataType", DataTypes.STRING_TYPE),
                         attrDef("comment", DataTypes.STRING_TYPE),
                         new AttributeDefinition("sd", STORAGE_DESC_TYPE,
-                                Multiplicity.OPTIONAL, false, null),
-                        new AttributeDefinition("table", "Table",
-                                 Multiplicity.OPTIONAL, false, null)
+                                Multiplicity.REQUIRED, false, null)
+//                        new AttributeDefinition("table", DataTypes.STRING_TYPE.getName(),
+//                                 Multiplicity.REQUIRED, false, null)
                 );
 
         HierarchicalTypeDefinition<ClassType> tblClsDef =
@@ -140,10 +146,10 @@ public class QuickStart {
                         attrDef("viewExpandedText", DataTypes.STRING_TYPE),
                         attrDef("tableType", DataTypes.STRING_TYPE),
                         attrDef("temporary", DataTypes.BOOLEAN_TYPE),
+                        // todo - fix this post serialization support for collections
                         new AttributeDefinition("columns",
                                 DataTypes.arrayTypeName(DataTypes.STRING_TYPE.getName()),
                                 Multiplicity.COLLECTION, false, null)
-                        // todo - fix this post serialization support for collections
 //                        new AttributeDefinition("columns", DataTypes.arrayTypeName(COLUMN_TYPE),
 //                                Multiplicity.COLLECTION, true, null)
                 );
@@ -233,35 +239,35 @@ public class QuickStart {
 
 
         ArrayList<Referenceable> salesFactColumns = new ArrayList<>();
-        Referenceable column = column("time_id", "int", "time id", null);
+        Referenceable column = column("time_id", "int", "time id", sd);
         salesFactColumns.add(column);
-        column = column("product_id", "int", "product id", null);
+        column = column("product_id", "int", "product id", sd);
         salesFactColumns.add(column);
-        column = column("customer_id", "int", "customer id", null, "PII");
+        column = column("customer_id", "int", "customer id", sd, "PII");
         salesFactColumns.add(column);
-        column = column("sales", "double", "product id", null, "Metric");
+        column = column("sales", "double", "product id", sd, "Metric");
         salesFactColumns.add(column);
 
         Referenceable salesFact = table("sales_fact", "sales fact table",
                 salesDB, sd, "Joe", "Managed", salesFactColumns, "Fact");
 
         ArrayList<Referenceable> productDimColumns = new ArrayList<>();
-        column = column("product_id", "int", "product id", null);
+        column = column("product_id", "int", "product id", sd);
         productDimColumns.add(column);
-        column = column("product_name", "string", "product name", null);
+        column = column("product_name", "string", "product name", sd);
         productDimColumns.add(column);
-        column = column("brand_name", "int", "brand name", null);
+        column = column("brand_name", "int", "brand name", sd);
         productDimColumns.add(column);
 
         Referenceable productDim = table("product_dim", "product dimension table",
                 salesDB, sd, "John Doe", "Managed", productDimColumns, "Dimension");
 
         ArrayList<Referenceable> timeDimColumns = new ArrayList<>();
-        column = column("time_id", "int", "time id", null);
+        column = column("time_id", "int", "time id", sd);
         timeDimColumns.add(column);
-        column = column("dayOfYear", "int", "day Of Year", null);
+        column = column("dayOfYear", "int", "day Of Year", sd);
         timeDimColumns.add(column);
-        column = column("weekDay", "int", "week Day", null);
+        column = column("weekDay", "int", "week Day", sd);
         timeDimColumns.add(column);
 
         Referenceable timeDim = table("time_dim", "time dimension table",
@@ -269,14 +275,14 @@ public class QuickStart {
 
 
         ArrayList<Referenceable> customerDimColumns = new ArrayList<>();
-        column = column("customer_id", "int", "customer id", null, "PII");
+        column = column("customer_id", "int", "customer id", sd, "PII");
         customerDimColumns.add(column);
-        column = column("name", "string", "customer name", null, "PII");
+        column = column("name", "string", "customer name", sd, "PII");
         customerDimColumns.add(column);
-        column = column("address", "string", "customer address", null, "PII");
+        column = column("address", "string", "customer address", sd, "PII");
         customerDimColumns.add(column);
 
-        Referenceable customerDim = table("customer_dim", "customer dimension table", 
+        Referenceable customerDim = table("customer_dim", "customer dimension table",
                 salesDB, sd, "fetl", "External", customerDimColumns, "Dimension");
 
 
@@ -288,17 +294,17 @@ public class QuickStart {
                 "Joe BI", "Managed", salesFactColumns, "Metric");
 
         Referenceable loadSalesFactDaily = loadProcess("loadSalesDaily", "John ETL",
-                Arrays.asList(salesFact, timeDim), salesFactDaily,
+                ImmutableList.of(salesFact, timeDim), salesFactDaily,
                 "create table as select ", "plan", "id", "graph",
                 "ETL");
         System.out.println("added loadSalesFactDaily = " + loadSalesFactDaily);
 
         Referenceable productDimView = view("product_dim_view", reportingDB,
-                Arrays.asList(productDim), "Dimension", "JdbcAccess");
+                ImmutableList.of(productDim), "Dimension", "JdbcAccess");
         System.out.println("added productDimView = " + productDimView);
 
         Referenceable customerDimView = view("customer_dim_view", reportingDB,
-                Arrays.asList(customerDim), "Dimension", "JdbcAccess");
+                ImmutableList.of(customerDim), "Dimension", "JdbcAccess");
         System.out.println("added customerDimView = " + customerDimView);
 
         Referenceable salesFactMonthly = table("sales_fact_monthly_mv",
@@ -306,7 +312,7 @@ public class QuickStart {
                 reportingDB, sd, "Jane BI", "Managed", salesFactColumns, "Metric");
 
         Referenceable loadSalesFactMonthly = loadProcess("loadSalesMonthly", "John ETL",
-                Arrays.asList(salesFactDaily), salesFactMonthly,
+                ImmutableList.of(salesFactDaily), salesFactMonthly,
                 "create table as select ", "plan", "id", "graph",
                 "ETL");
         System.out.println("added loadSalesFactMonthly = " + loadSalesFactMonthly);
@@ -314,7 +320,6 @@ public class QuickStart {
 
     private Referenceable createInstance(Referenceable referenceable) throws Exception {
         String typeName = referenceable.getTypeName();
-        System.out.println("creating instance of type " + typeName);
 
         String entityJSON = InstanceSerialization.toJson(referenceable, true);
         System.out.println("Submitting new entity= " + entityJSON);
@@ -380,6 +385,7 @@ public class QuickStart {
         referenceable.set("sd", sd);
 
         // todo - fix this post serialization support for collections
+        // referenceable.set("columns", columns);
         ArrayList<String> columnNames = new ArrayList<>(columns.size());
         for (Referenceable column : columns) {
             columnNames.add(String.valueOf(column.get("name")));
@@ -402,6 +408,10 @@ public class QuickStart {
         referenceable.set("endTime", System.currentTimeMillis() + 10000);
 
         // todo - fix this post serialization support for collections
+        /*
+        referenceable.set("inputTables", inputTables);
+        referenceable.set("outputTable", outputTable);
+        */
         ArrayList<String> inputTableNames = new ArrayList<>(inputTables.size());
         for (Referenceable inputTable : inputTables) {
             inputTableNames.add(String.valueOf(inputTable.get("name")));
@@ -442,7 +452,78 @@ public class QuickStart {
         }
     }
 
-    private void verifyEntityCreated() {
-        // todo
+    private String[] getDSLQueries() {
+        return new String[]{
+            "from DB",
+            "DB",
+            "DB where name=\"Reporting\"",
+            "DB where DB.name=\"Reporting\"",
+            "DB name = \"Reporting\"",
+            "DB DB.name = \"Reporting\"",
+            "DB where name=\"Reporting\" select name, owner",
+            "DB where DB.name=\"Reporting\" select name, owner",
+            "DB has name",
+            "DB where DB has name",
+            "DB, Table",
+            "DB is JdbcAccess",
+            /*
+            "DB, LoadProcess has name",
+            "DB as db1, Table where db1.name = \"Reporting\"",
+            "DB where DB.name=\"Reporting\" and DB.createTime < " + System.currentTimeMillis()},
+            */
+            "from Table",
+            "Table",
+            "Table is Dimension",
+            "Column where Column isa PII",
+            "View is Dimension",
+            /*"Column where Column isa PII select Column.name",*/
+            "Column select Column.name",
+            "Column select name",
+            "Column where Column.name=\"customer_id\"",
+            "from Table select Table.name",
+            "DB where (name = \"Reporting\")",
+            "DB where (name = \"Reporting\") select name as _col_0, owner as _col_1",
+            "DB where DB is JdbcAccess",
+            "DB where DB has name",
+            "DB Table",
+            "DB where DB has name",
+            "DB as db1 Table where (db1.name = \"Reporting\")",
+            "DB where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 ",
+            /*
+            todo: does not work
+            "DB where (name = \"Reporting\") and ((createTime + 1) > 0)",
+            "DB as db1 Table as tab where ((db1.createTime + 1) > 0) and (db1.name = \"Reporting\") select db1.name as dbName, tab.name as tabName",
+            "DB as db1 Table as tab where ((db1.createTime + 1) > 0) or (db1.name = \"Reporting\") select db1.name as dbName, tab.name as tabName",
+            "DB as db1 Table as tab where ((db1.createTime + 1) > 0) and (db1.name = \"Reporting\") or db1 has owner select db1.name as dbName, tab.name as tabName",
+            "DB as db1 Table as tab where ((db1.createTime + 1) > 0) and (db1.name = \"Reporting\") or db1 has owner select db1.name as dbName, tab.name as tabName",
+            */
+            // trait searches
+            "Dimension",
+            /*"Fact", - todo: does not work*/
+            "JdbcAccess",
+            "ETL",
+            "Metric",
+            "PII",
+            /*
+            // Lineage - todo - fix this, its not working
+            "Table LoadProcess outputTable",
+            "Table loop (LoadProcess outputTable)",
+            "Table as _loop0 loop (LoadProcess outputTable) withPath",
+            "Table as src loop (LoadProcess outputTable) as dest select src.name as srcTable, dest.name as destTable withPath",
+            */
+        };
+    }
+
+    private void search() throws Exception {
+        for (String dslQuery : getDSLQueries()) {
+            JSONObject response = metadataServiceClient.searchEntity(dslQuery);
+            JSONObject results = response.getJSONObject(MetadataServiceClient.RESULTS);
+            if (!results.isNull("rows")) {
+                JSONArray rows = results.getJSONArray("rows");
+                System.out.println("query [" + dslQuery + "] returned [" + rows.length() + "] rows");
+            } else {
+                System.out.println("query [" + dslQuery + "] failed, results:" + results.toString());
+            }
+        }
     }
 }

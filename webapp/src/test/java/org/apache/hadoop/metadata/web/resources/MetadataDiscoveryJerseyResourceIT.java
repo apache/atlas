@@ -44,7 +44,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.List;
 
-
+/**
+ * Search Integration Tests.
+ */
 public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
 
     @BeforeClass
@@ -96,7 +98,7 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(),
-                Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+                Response.Status.BAD_REQUEST.getStatusCode());
     }
 
     @Test
