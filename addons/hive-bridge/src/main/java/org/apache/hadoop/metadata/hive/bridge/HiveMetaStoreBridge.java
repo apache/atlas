@@ -45,7 +45,7 @@ import java.util.List;
  * and registers then in DGI.
  */
 public class HiveMetaStoreBridge {
-    static class Pair<S, T> {
+    public static class Pair<S, T> {
         public S first;
         public T second;
 
@@ -119,7 +119,7 @@ public class HiveMetaStoreBridge {
         String guid = jsonObject.getString(MetadataServiceClient.RESULTS);
         LOG.debug("created instance for type " + typeName + ", guid: " + guid);
 
-        return new Referenceable(guid, referenceable.getTypeName(), referenceable.getValuesMap());
+        return new Referenceable(guid, referenceable.getTypeName(), null);
     }
 
     private void importTables(String databaseName, Referenceable databaseReferenceable) throws Exception {

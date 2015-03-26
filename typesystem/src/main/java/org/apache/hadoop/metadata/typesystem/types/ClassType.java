@@ -126,6 +126,10 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
                         createInstanceWithTraits(id, r, r.getTraits().toArray(new String[0]))
                         : createInstance(id);
 
+                if (id != null && id.isAssigned()) {
+                    return tr;
+                }
+
                 for (Map.Entry<String, AttributeInfo> e : fieldMapping.fields.entrySet()) {
                     String attrKey = e.getKey();
                     AttributeInfo i = e.getValue();

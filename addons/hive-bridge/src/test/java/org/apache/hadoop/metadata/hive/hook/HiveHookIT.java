@@ -59,8 +59,8 @@ public class HiveHookIT {
         //Set-up hive session
         HiveConf conf = getHiveConf();
         driver = new Driver(conf);
-        ss = new SessionState(conf);
-        ss = ss.start(conf);
+        ss = new SessionState(conf, System.getProperty("user.name"));
+        ss = SessionState.start(ss);
         SessionState.setCurrentSessionState(ss);
 
         dgiCLient = new MetadataServiceClient(DGI_URL);
@@ -87,37 +87,53 @@ public class HiveHookIT {
         String dbName = "db" + RandomStringUtils.randomAlphanumeric(5).toLowerCase();
         runCommand("create database " + dbName);
 
-        String typeName = HiveDataTypes.HIVE_DB.getName();
-        JSONObject result = dgiCLient.search(typeName, "name", dbName);
-        JSONArray results = (JSONArray) result.get("results");
-        Assert.assertEquals(results.length(), 1);
-        JSONObject resultRow = (JSONObject) results.get(0);
-        Assert.assertEquals(resultRow.get(typeName + ".name"), dbName);
+        assertDatabaseIsRegistered(dbName);
     }
 
-    @Test(enabled = false)
+    @Test
     public void testCreateTable() throws Exception {
         String dbName = "db" + RandomStringUtils.randomAlphanumeric(5).toLowerCase();
         runCommand("create database " + dbName);
 
-        String tableName = "table" + RandomStringUtils.randomAlphanumeric(5);
-        String queryStr = String.format("create table %s.%s(id int, name string)", dbName, tableName);
-        runCommand(queryStr);
+        String tableName = "table" + RandomStringUtils.randomAlphanumeric(5).toLowerCase();
+        runCommand("create table " + dbName + "." + tableName + "(id int, name string)");
+        assertTableIsRegistered(tableName);
 
-        String defaultTableName = "table" + RandomStringUtils.randomAlphanumeric(5);
-        runCommand("create table " + defaultTableName + "(id int, name string)");
+        tableName = "table" + RandomStringUtils.randomAlphanumeric(5).toLowerCase();
+        runCommand("create table " + tableName + "(id int, name string)");
+        assertTableIsRegistered(tableName);
 
-        runCommand("select * from " + defaultTableName);
+        //Create table where database doesn't exist, will create database instance as well
+        assertDatabaseIsRegistered("default");
 
-        runCommand("select * from " + dbName + "." + tableName);
+    }
 
-        String newTableName = "table" + RandomStringUtils.randomAlphanumeric(5);
+    @Test
+    public void testCTAS() throws Exception {
+        String tableName = "table" + RandomStringUtils.randomAlphanumeric(5).toLowerCase();
+        runCommand("create table " + tableName + "(id int, name string)");
 
-        runCommand("create table " + newTableName + " as select * from " + defaultTableName);
+        String newTableName = "table" + RandomStringUtils.randomAlphanumeric(5).toLowerCase();
+        String query = "create table " + newTableName + " as select * from " + tableName;
+        runCommand(query);
 
-        runCommand("create table " + dbName + "." + newTableName + " as select * from " + dbName + "." + tableName);
+        assertTableIsRegistered(newTableName);
+        assertInstanceIsRegistered(HiveDataTypes.HIVE_PROCESS.getName(), "queryText", query);
+    }
 
-        newTableName = "table" + RandomStringUtils.randomAlphanumeric(5);
-        runCommand("create table " + newTableName + " as select count(*) from " + defaultTableName);
+    private void assertTableIsRegistered(String tableName) throws Exception {
+        assertInstanceIsRegistered(HiveDataTypes.HIVE_TABLE.getName(), "tableName", tableName);
+    }
+
+    private void assertDatabaseIsRegistered(String dbName) throws Exception {
+        assertInstanceIsRegistered(HiveDataTypes.HIVE_DB.getName(), "name", dbName);
+    }
+
+    private void assertInstanceIsRegistered(String typeName, String colName, String colValue) throws Exception{
+        JSONObject result = dgiCLient.search(typeName, colName, colValue);
+        JSONArray results = (JSONArray) result.get("results");
+        Assert.assertEquals(results.length(), 1);
+        JSONObject resultRow = (JSONObject) results.get(0);
+        Assert.assertEquals(resultRow.get(typeName + "." + colName), colValue);
     }
 }

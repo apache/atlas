@@ -146,7 +146,6 @@ public class MetadataServiceClient {
      * @throws MetadataServiceException
      */
     public JSONObject search(String typeName, String attributeName, Object attributeValue) throws MetadataServiceException {
-        //TODO replace with DSL when DSL works
         String gremlinQuery = String.format("g.V.has(\"typeName\",\"%s\").and(_().has(\"%s.%s\", T.eq, \"%s\")).toList()",
                 typeName, typeName, attributeName, attributeValue);
         return search(gremlinQuery);

@@ -84,11 +84,9 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
         Expressions.Expression validatedExpression = QueryProcessor.validate(expression);
         GremlinQuery gremlinQuery =
                 new GremlinTranslator(validatedExpression, graphPersistenceStrategy).translate();
-        System.out.println("---------------------");
-        System.out.println("Query = " + validatedExpression);
-        System.out.println("Expression Tree = " + validatedExpression.treeString());
-        System.out.println("Gremlin Query = " + gremlinQuery.queryStr());
-        System.out.println("---------------------");
+        LOG.debug("Query = " + validatedExpression);
+        LOG.debug("Expression Tree = " + validatedExpression.treeString());
+        LOG.debug("Gremlin Query = " + gremlinQuery.queryStr());
         return new GremlinEvaluator(gremlinQuery, graphPersistenceStrategy, titanGraph).evaluate();
     }
 

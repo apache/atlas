@@ -167,9 +167,43 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
         HiveMetaStoreBridge dgiBridge = new HiveMetaStoreBridge(conf);
 
         HiveOperation operation = HiveOperation.valueOf(hookContext.getOperationName());
+
+        switch (operation) {
+            case CREATEDATABASE:
+                Set<WriteEntity> outputs = hookContext.getOutputs();
+                for (WriteEntity entity : outputs) {
+                    if (entity.getType() == Entity.Type.DATABASE) {
+                        dgiBridge.registerDatabase(entity.getDatabase().getName());
+                    }
+                }
+                break;
+
+            case CREATETABLE:
+                outputs = hookContext.getOutputs();
+                for (WriteEntity entity : outputs) {
+                    if (entity.getType() == Entity.Type.TABLE) {
+
+                        Table table = entity.getTable();
+                        //TODO table.getDbName().toLowerCase() is required as hive stores in lowercase, but table.getDbName() is not lowercase
+                        Referenceable dbReferenceable = getDatabaseReference(dgiBridge, table.getDbName().toLowerCase());
+                        dgiBridge.registerTable(dbReferenceable, table.getDbName(), table.getTableName());
+                    }
+                }
+                break;
+
+            case CREATETABLE_AS_SELECT:
+                registerCTAS(dgiBridge, hookContext);
+                break;
+
+            default:
+        }
+    }
+
+    private void registerCTAS(HiveMetaStoreBridge dgiBridge, HookContext hookContext) throws Exception {
         Set<ReadEntity> inputs = hookContext.getInputs();
         Set<WriteEntity> outputs = hookContext.getOutputs();
         String user = hookContext.getUserName();
+        HiveOperation operation = HiveOperation.valueOf(hookContext.getOperationName());
         String queryId = null;
         String queryStr = null;
         long queryStartTime = 0;
@@ -181,74 +215,36 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
             queryStartTime = plan.getQueryStartTime();
         }
 
-        System.out.println(String .format("%s - %s", queryStr, hookContext.getOperationName()));
-        StringBuffer stringBuffer = new StringBuffer("Inputs - ");
-        for (ReadEntity entity : inputs) {
-            stringBuffer = stringBuffer.append(" ").append(entity.getType());
-            if (entity.getType() == Entity.Type.TABLE) {
-                stringBuffer = stringBuffer.append(" ").append(entity.getTable().getTableName());
-            } else if (entity.getType() == Entity.Type.DATABASE) {
-                stringBuffer = stringBuffer.append(" ").append(entity.getDatabase().getName());
+
+        Referenceable processReferenceable = new Referenceable(HiveDataTypes.HIVE_PROCESS.getName());
+        processReferenceable.set("processName", operation.getOperationName());
+        processReferenceable.set("startTime", queryStartTime);
+        processReferenceable.set("userName", user);
+        List<Referenceable> source = new ArrayList<>();
+        for (ReadEntity readEntity : inputs) {
+            if (readEntity.getTyp() == Entity.Type.TABLE) {
+                Table table = readEntity.getTable();
+                String dbName = table.getDbName().toLowerCase();
+                source.add(getTableReference(dgiBridge, dbName, table.getTableName()));
             }
         }
-        stringBuffer = stringBuffer.append(" Outputs - ");
-        for (WriteEntity entity : outputs) {
-            stringBuffer = stringBuffer.append(" ").append(entity.getType());
-            if (entity.getType() == Entity.Type.TABLE) {
-                stringBuffer = stringBuffer.append(" ").append(entity.getTable().getTableName());
-            } else if (entity.getType() == Entity.Type.DATABASE) {
-                stringBuffer = stringBuffer.append(" ").append(entity.getDatabase().getName());
+        processReferenceable.set("sourceTableNames", source);
+        List<Referenceable> target = new ArrayList<>();
+        for (WriteEntity writeEntity : outputs) {
+            if (writeEntity.getTyp() == Entity.Type.TABLE) {
+                Table table = writeEntity.getTable();
+                String dbName = table.getDbName().toLowerCase();
+                target.add(getTableReference(dgiBridge, dbName, table.getTableName()));
             }
         }
-        System.out.println(stringBuffer.toString());
-
-        switch (operation) {
-            case CREATEDATABASE:
-                String dbName = queryStr.split(" ")[2].trim();
-                dgiBridge.registerDatabase(dbName);
-                break;
-
-            case CREATETABLE:
-                for (WriteEntity entity : outputs) {
-                    if (entity.getType() == Entity.Type.TABLE) {
-                        Table table = entity.getTable();
-                        //TODO table.getDbName().toLowerCase() is required as hive stores in lowercase, but table.getDbName() is not lowercase
-                        Referenceable dbReferenceable = getDatabaseReference(dgiBridge, table.getDbName().toLowerCase());
-                        dgiBridge.registerTable(dbReferenceable, table.getDbName(), table.getTableName());
-                    }
-                }
-                break;
-
-            case CREATETABLE_AS_SELECT:
-                Referenceable processReferenceable = new Referenceable(HiveDataTypes.HIVE_PROCESS.name());
-                processReferenceable.set("processName", operation.getOperationName());
-                processReferenceable.set("startTime", queryStartTime);
-                processReferenceable.set("endTime", 0);
-                processReferenceable.set("userName", user);
-                List<Referenceable> source = new ArrayList<>();
-                for (ReadEntity readEntity : inputs) {
-                    if (readEntity.getTyp() == Entity.Type.TABLE) {
-                        source.add(getTableReference(dgiBridge, readEntity.getTable().getTableName()));
-                    }
-                }
-                processReferenceable.set("sourceTableNames", source);
-                List<Referenceable> target = new ArrayList<>();
-                for (WriteEntity writeEntity : outputs) {
-                    if (writeEntity.getTyp() == Entity.Type.TABLE) {
-                        target.add(getTableReference(dgiBridge, writeEntity.getTable().getTableName()));
-                    }
-                }
-                processReferenceable.set("targetTableNames", target);
-                processReferenceable.set("queryText", queryStr);
-                processReferenceable.set("queryId", queryId);
-                //TODO set
-                processReferenceable.set("queryPlan", "");
-                processReferenceable.set("queryGraph", "");
-                dgiBridge.createInstance(processReferenceable);
-                break;
-
-            default:
-        }
+        processReferenceable.set("targetTableNames", target);
+        processReferenceable.set("queryText", queryStr);
+        processReferenceable.set("queryId", queryId);
+        //TODO set
+        processReferenceable.set("endTime", queryStartTime);
+        processReferenceable.set("queryPlan", "queryPlan");
+        processReferenceable.set("queryGraph", "queryGraph");
+        dgiBridge.createInstance(processReferenceable);
     }
 
     /**
@@ -264,9 +260,11 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
 
         JSONObject result = dgiClient.search(typeName, "name", dbName);
         JSONArray results = (JSONArray) result.get("results");
+
         if (results.length() == 0) {
             //Create new instance
             return dgiBridge.registerDatabase(dbName);
+
         } else {
             String guid = (String) ((JSONObject) results.get(0)).get("guid");
             return new Referenceable(guid, typeName, null);
@@ -274,25 +272,29 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
     }
 
     /**
-     * Gets reference for the table. Throws up if table instance doesn't exist
+     * Gets reference for the table. Creates new instance if it doesn't exist
      * @param dgiBridge
+     * @param dbName
      * @param tableName table name
      * @return table reference
-     * @throws MetadataServiceException
-     * @throws JSONException
+     * @throws Exception
      */
-    private Referenceable getTableReference(HiveMetaStoreBridge dgiBridge, String tableName) throws MetadataServiceException, JSONException {
+    private Referenceable getTableReference(HiveMetaStoreBridge dgiBridge, String dbName, String tableName) throws Exception {
         String typeName = HiveDataTypes.HIVE_TABLE.getName();
         MetadataServiceClient dgiClient = dgiBridge.getMetadataServiceClient();
-        JSONObject result = dgiClient.search(typeName, "tableName", tableName);
-        JSONArray results = (JSONArray) new JSONObject((String) result.get("results")).get("results");
-        if (results.length() == 0) {
-            throw new IllegalArgumentException("There is no entity for " + typeName + " where tableName=" + tableName);
-        }
 
-        //There should be just one instance with the given name
-        String guid = (String) new JSONObject((String) results.get(0)).get("guid");
-        return new Referenceable(guid, typeName, null);
+        JSONObject result = dgiClient.search(typeName, "tableName", tableName);
+        JSONArray results = (JSONArray) result.get("results");
+
+        if (results.length() == 0) {
+            Referenceable dbRererence = getDatabaseReference(dgiBridge, dbName);
+            return dgiBridge.registerTable(dbRererence, dbName, tableName).first;
+
+        } else {
+            //There should be just one instance with the given name
+            String guid = (String) ((JSONObject) results.get(0)).get("guid");
+            return new Referenceable(guid, typeName, null);
+        }
     }
 
 
