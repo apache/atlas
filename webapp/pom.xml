@@ -215,11 +215,12 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${project.build.directory}/webapps</outputDirectory>
+                            <outputDirectory>${basedir}/conf
+                            </outputDirectory>
                             <resources>
                                 <resource>
-                                    <directory>src/conf</directory>
-                                    <filtering>true</filtering>
+                                    <directory>${project.build.directory}/conf</directory>
+                                    <filtering>false</filtering>
                                 </resource>
                             </resources>
                         </configuration>
@@ -291,14 +292,12 @@
                             <password>metadata-passwd</password>
                         </connector>
                         -->
-                        <connector
-                                implementation="org.mortbay.jetty.nio.SelectChannelConnector">
+                        <connector implementation="org.mortbay.jetty.nio.SelectChannelConnector">
                             <port>21000</port>
                             <maxIdleTime>60000</maxIdleTime>
                         </connector>
                     </connectors>
-                    <webApp>${project.build.directory}/metadata-webapp-${project.version}
-                    </webApp>
+                    <webApp>${project.build.directory}/metadata-webapp-${project.version}</webApp>
                     <contextPath>/</contextPath>
                     <useTestClasspath>true</useTestClasspath>
                     <systemProperties>
@@ -308,15 +307,12 @@
                         </systemProperty>
                         <systemProperty>
                             <name>keystore.file</name>
-                            <value>
-                                ${project.build.directory}/../../webapp/target/metadata.keystore
+                            <value>${project.build.directory}/../../webapp/target/metadata.keystore
                             </value>
                         </systemProperty>
                         <systemProperty>
                             <name>truststore.file</name>
-                            <value>
-                                ${project.build.directory}/../../webapp/target/metadata.keystore
-                            </value>
+                            <value>${project.build.directory}/../../webapp/target/metadata.keystore</value>
                         </systemProperty>
                     </systemProperties>
                     <stopKey>metadata-stop</stopKey>
