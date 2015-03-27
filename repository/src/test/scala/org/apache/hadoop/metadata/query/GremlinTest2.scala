@@ -86,4 +86,22 @@ class GremlinTest2 extends FunSuite with BeforeAndAfterAll with BaseGremlinTest 
     validateJson(r)
   }
 
+//  test("testLineageAllSelectWithPathFromParser2") {
+//    val p = new QueryParser
+//    val e = p("Table as src loop (LoadProcess inputTables) as dest " +
+//      "select src.name as srcTable, dest.name as destTable withPath").right.get
+//    //Table as src loop (LoadProcess where LoadProcess.outputTable) as dest select src.name as srcTable, dest.name as destTable withPath
+//    val r = QueryProcessor.evaluate(e, g)
+//    validateJson(r)
+//  }
+//
+//  test("testHighLevelLineage") {
+//        val r = HiveLineageQuery("Table", "sales_daily_mv",
+//          "LoadProcess",
+//          "inputTables",
+//          "outputTable",
+//        None, Some(List("name")), true, GraphPersistenceStrategy1, g).evaluate()
+//    validateJson(r)
+//  }
+
 }

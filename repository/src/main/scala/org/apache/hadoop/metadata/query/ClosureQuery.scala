@@ -18,7 +18,10 @@
 
 package org.apache.hadoop.metadata.query
 
+import Expressions._
 import com.thinkaurelius.titan.core.TitanGraph
+import org.apache.hadoop.metadata.typesystem.types.DataTypes
+import org.apache.hadoop.metadata.typesystem.types.DataTypes.PrimitiveType
 
 /**
  * Represents a Query to compute the closure based on a relationship between entities of a particular type.
@@ -59,9 +62,20 @@ import com.thinkaurelius.titan.core.TitanGraph
  */
 trait ClosureQuery {
 
-  sealed trait PathAttribute
-  case class ReverseRelation(typeName : String, attributeName : String)
-  case class Relation(attributeName : String)
+  sealed trait PathAttribute {
+
+    def toExpr : Expression = this match {
+      case r : Relation => id(r.attributeName)
+      case rr : ReverseRelation => id(rr.typeName)
+    }
+
+    def toFieldName : String = this match {
+      case r : Relation => r.attributeName
+      case rr : ReverseRelation => rr.typeName
+    }
+  }
+  case class ReverseRelation(typeName : String, attributeName : String) extends PathAttribute
+  case class Relation(attributeName : String) extends PathAttribute
 
   /**
    * Type on whose instances the closure needs to be computed
@@ -71,9 +85,8 @@ trait ClosureQuery {
 
   /**
    * specify how instances are related.
-   * @param attributePath
    */
-  def closureRelation(attributePath : List[PathAttribute])
+  def closureRelation  : List[PathAttribute]
 
   /**
    * The maximum hops between related instances. A [[None]] implies there is maximum.
@@ -97,7 +110,54 @@ trait ClosureQuery {
   def persistenceStrategy: GraphPersistenceStrategies
   def g: TitanGraph
 
-  def evaluate(): GremlinQueryResult = ???
+  def pathExpr : Expressions.Expression = {
+    closureRelation.tail.foldLeft(closureRelation.head.toExpr)((b,a) => b.field(a.toFieldName))
+  }
+
+  def selectExpr(alias : String) : List[Expression] = {
+    selectAttributes.map { _.map { a =>
+      id(alias).field(a).as(s"${alias}_$a")
+    }
+    }.getOrElse(List(id(alias)))
+  }
+
+  /**
+   * hook to allow a filter to be added for the closureType
+   * @param expr
+   * @return
+   */
+  def srcCondition(expr : Expression) : Expression = expr
+
+  def expr : Expressions.Expression = {
+    val e = srcCondition(Expressions._class(closureType)).as("src").loop(pathExpr).as("dest").
+      select((selectExpr("src") ++ selectExpr("dest")):_*)
+    if (withPath) e.path else e
+  }
+
+  def evaluate(): GremlinQueryResult = {
+    var e = expr
+    QueryProcessor.evaluate(e, g, persistenceStrategy)
+  }
+}
+
+/**
+ * Closure for a single instance. Instance is specified by an ''attributeToSelectInstance'' and the value
+ * for the attribute.
+ *
+ * @tparam T
+ */
+trait SingleInstanceClosureQuery[T] extends ClosureQuery {
+
+  def attributeToSelectInstance : String
+
+  def attributeTyp : PrimitiveType[T]
+  def instanceValue : T
+
+  override  def srcCondition(expr : Expression) : Expression = {
+    expr.where(
+      Expressions.id(attributeToSelectInstance).`=`(Expressions.literal(attributeTyp, instanceValue))
+    )
+  }
 }
 
 /**
@@ -115,6 +175,7 @@ trait ClosureQuery {
  * @param g as needed to evaluate the Closure Query.
  */
 case class HiveLineageQuery(tableTypeName : String,
+                           tableName : String,
                         ctasTypeName : String,
                       ctasInputTableAttribute : String,
                       ctasOutputTableAttribute : String,
@@ -123,11 +184,16 @@ case class HiveLineageQuery(tableTypeName : String,
                       withPath : Boolean,
                         persistenceStrategy: GraphPersistenceStrategies,
                         g: TitanGraph
-                        ) extends ClosureQuery {
+                        ) extends SingleInstanceClosureQuery[String] {
 
-  def closureType : String = tableTypeName
+  val closureType : String = tableTypeName
 
-  def closureRelation(attributePath : List[PathAttribute]) = List(
+  val attributeToSelectInstance = "name"
+  val attributeTyp = DataTypes.STRING_TYPE
+
+  val instanceValue = tableName
+
+  lazy val closureRelation = List(
     ReverseRelation(ctasTypeName, ctasOutputTableAttribute),
     Relation(ctasInputTableAttribute)
   )
@@ -149,6 +215,7 @@ case class HiveLineageQuery(tableTypeName : String,
  * @param g as needed to evaluate the Closure Query.
  */
 case class HiveWhereUsedQuery(tableTypeName : String,
+                              tableName : String,
                             ctasTypeName : String,
                             ctasInputTableAttribute : String,
                             ctasOutputTableAttribute : String,
@@ -157,11 +224,16 @@ case class HiveWhereUsedQuery(tableTypeName : String,
                             withPath : Boolean,
                             persistenceStrategy: GraphPersistenceStrategies,
                             g: TitanGraph
-                             ) extends ClosureQuery {
+                             ) extends SingleInstanceClosureQuery[String] {
 
-  def closureType : String = tableTypeName
+  val closureType : String = tableTypeName
 
-  def closureRelation(attributePath : List[PathAttribute]) = List(
+  val attributeToSelectInstance = "name"
+  val attributeTyp = DataTypes.STRING_TYPE
+
+  val instanceValue = tableName
+
+  lazy val closureRelation = List(
     ReverseRelation(ctasTypeName, ctasInputTableAttribute),
     Relation(ctasOutputTableAttribute)
   )

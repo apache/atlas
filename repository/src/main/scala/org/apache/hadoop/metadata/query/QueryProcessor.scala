@@ -23,15 +23,15 @@ import org.apache.hadoop.metadata.query.Expressions._
 
 object QueryProcessor {
 
-    def evaluate(e: Expression, g: TitanGraph): GremlinQueryResult = {
-        val gP = GraphPersistenceStrategy1
+    def evaluate(e: Expression, g: TitanGraph, gP : GraphPersistenceStrategies = GraphPersistenceStrategy1):
+    GremlinQueryResult = {
         val e1 = validate(e)
         val q = new GremlinTranslator(e1, gP).translate()
-        //    println("---------------------")
-        //    println("Query: " + e1)
-        //    println("Expression Tree:\n" + e1.treeString)
-        //    println("Gremlin Query: " + q.queryStr)
-        //    println("---------------------")
+//            println("---------------------")
+//            println("Query: " + e1)
+//            println("Expression Tree:\n" + e1.treeString)
+//            println("Gremlin Query: " + q.queryStr)
+//            println("---------------------")
         new GremlinEvaluator(q, gP, g).evaluate()
     }
 
