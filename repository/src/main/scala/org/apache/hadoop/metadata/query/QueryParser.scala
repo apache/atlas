@@ -317,7 +317,7 @@ class QueryLexer(val keywords: Seq[String], val delims: Seq[String]) extends Std
     override def identChar = letter | elem('_')
 
     def identifier = identChar ~ (identChar | digit).* ^^ { case first ~ rest => (first :: rest).mkString} |
-        '`' ~> chrExcept('\n', EofCh).* <~ '`' ^^ {
+        '`' ~> chrExcept('`', '\n', EofCh).* <~ '`' ^^ {
             _ mkString ""
         }
 

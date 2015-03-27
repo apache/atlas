@@ -115,6 +115,8 @@ object TypeUtils {
         }
     }
 
+    val FIELD_QUALIFIER = "(.*?)(->.*)?".r
+
     /**
      * Given a ComposedType `t` and a name resolve using the following rules:
      * - if `id` is a field in `t` resolve to the field
@@ -142,8 +144,18 @@ object TypeUtils {
             }
 
             try {
-                val idTyp = typSystem.getDataType(classOf[IDataType[_]], id)
+              val FIELD_QUALIFIER(clsNm, rest) = id
+                val idTyp = typSystem.getDataType(classOf[IDataType[_]], clsNm)
                 val idTypFMap = fieldMapping(idTyp)
+
+                if (rest != null ) {
+                  val attrNm = rest.substring(2)
+
+                  if (idTypFMap.get.fields.containsKey(attrNm)) {
+                    return Some(FieldInfo(typ,idTypFMap.get.fields.get(attrNm), idTyp))
+                  }
+                }
+
                 if (idTypFMap.isDefined) {
                     import scala.collection.JavaConversions._
                     val fields: Seq[AttributeInfo] = idTypFMap.get.fields.values().filter { aInfo =>

@@ -66,7 +66,7 @@ trait ClosureQuery {
 
     def toExpr : Expression = this match {
       case r : Relation => id(r.attributeName)
-      case rr : ReverseRelation => id(rr.typeName)
+      case rr : ReverseRelation => id(s"${rr.typeName}->${rr.attributeName}")
     }
 
     def toFieldName : String = this match {
