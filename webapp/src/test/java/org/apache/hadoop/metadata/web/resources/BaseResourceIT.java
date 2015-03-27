@@ -29,6 +29,7 @@ import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MediaType;
@@ -43,9 +44,10 @@ public abstract class BaseResourceIT {
 
     protected WebResource service;
     protected MetadataServiceClient serviceClient;
+    public static String baseUrl = "http://localhost:21000/";;
 
+    @BeforeClass
     public void setUp() throws Exception {
-        String baseUrl = "http://localhost:21000/";
 
         DefaultClientConfig config = new DefaultClientConfig();
         Client client = Client.create(config);

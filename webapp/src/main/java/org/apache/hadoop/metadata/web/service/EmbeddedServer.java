@@ -25,6 +25,8 @@ import org.mortbay.jetty.Server;
 import org.mortbay.jetty.bio.SocketConnector;
 import org.mortbay.jetty.webapp.WebAppContext;
 
+import java.io.IOException;
+
 /**
  * This class embeds a Jetty server and a connector.
  */
@@ -33,7 +35,7 @@ public class EmbeddedServer {
 
     protected final Server server = new Server();
 
-    public EmbeddedServer(int port, String path) {
+    public EmbeddedServer(int port, String path) throws IOException {
         Connector connector = getConnector(port);
         server.addConnector(connector);
 
@@ -41,7 +43,7 @@ public class EmbeddedServer {
         server.setHandler(application);
     }
 
-    public static EmbeddedServer newServer(int port, String path, boolean secure) {
+    public static EmbeddedServer newServer(int port, String path, boolean secure) throws IOException {
         if (secure) {
             return new SecureEmbeddedServer(port, path);
         } else {
@@ -49,7 +51,7 @@ public class EmbeddedServer {
         }
     }
 
-    protected Connector getConnector(int port) {
+    protected Connector getConnector(int port) throws IOException {
         Connector connector = new SocketConnector();
         connector.setPort(port);
         connector.setHost("0.0.0.0");

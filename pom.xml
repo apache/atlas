@@ -79,7 +79,7 @@
         <jersey.version>1.9</jersey.version>
         <tinkerpop.version>2.5.0</tinkerpop.version>
         <titan.version>0.5.3</titan.version>
-        <hadoop.version>2.5.0</hadoop.version>
+        <hadoop.version>2.6.0</hadoop.version>
 
         <!-- scala versions -->
         <scala.version>2.10.4</scala.version>
@@ -915,7 +915,7 @@
                 <version>2.16</version>
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                    <argLine>-Djava.security.krb5.realm= -Djava.security.krb5.kdc=
+                    <argLine>-Dproject.version=${project.version}
                         -Dhadoop.tmp.dir=${project.build.directory}/tmp-hadoop-${user.name}
                     </argLine>
                     <parallel>none</parallel>
