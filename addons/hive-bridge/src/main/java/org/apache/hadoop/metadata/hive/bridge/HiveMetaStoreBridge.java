@@ -29,6 +29,7 @@ import org.apache.hadoop.hive.metastore.api.SerDeInfo;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hadoop.metadata.MetadataServiceClient;
+import org.apache.hadoop.metadata.hive.model.HiveDataModelGenerator;
 import org.apache.hadoop.metadata.hive.model.HiveDataTypes;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.Struct;
@@ -45,6 +46,8 @@ import java.util.List;
  * and registers then in DGI.
  */
 public class HiveMetaStoreBridge {
+    private static final String DEFAULT_DGI_URL = "http://localhost:21000/";
+
     public static class Pair<S, T> {
         public S first;
         public T second;
@@ -72,7 +75,7 @@ public class HiveMetaStoreBridge {
      */
     public HiveMetaStoreBridge(HiveConf hiveConf) throws Exception {
         hiveMetaStoreClient = new HiveMetaStoreClient(hiveConf);
-        metadataServiceClient = new MetadataServiceClient(hiveConf.get(DGI_URL_PROPERTY));
+        metadataServiceClient = new MetadataServiceClient(hiveConf.get(DGI_URL_PROPERTY, DEFAULT_DGI_URL));
     }
 
     public MetadataServiceClient getMetadataServiceClient() {
@@ -104,7 +107,9 @@ public class HiveMetaStoreBridge {
         dbRef.set("locationUri", hiveDB.getLocationUri());
         dbRef.set("parameters", hiveDB.getParameters());
         dbRef.set("ownerName", hiveDB.getOwnerName());
-        dbRef.set("ownerType", hiveDB.getOwnerType().getValue());
+        if (hiveDB.getOwnerType() != null) {
+            dbRef.set("ownerType", hiveDB.getOwnerType().getValue());
+        }
 
         return createInstance(dbRef);
     }
@@ -114,7 +119,7 @@ public class HiveMetaStoreBridge {
         LOG.debug("creating instance of type " + typeName);
 
         String entityJSON = InstanceSerialization.toJson(referenceable, true);
-        LOG.debug("Submitting new entity= " + entityJSON);
+        LOG.debug("Submitting new entity {} = {}", referenceable.getTypeName(), entityJSON);
         JSONObject jsonObject = metadataServiceClient.createEntity(entityJSON);
         String guid = jsonObject.getString(MetadataServiceClient.RESULTS);
         LOG.debug("created instance for type " + typeName + ", guid: " + guid);
@@ -338,8 +343,19 @@ public class HiveMetaStoreBridge {
         return createInstance(sdReferenceable);
     }
 
+    private void registerHiveDataModel() throws Exception {
+        HiveDataModelGenerator dataModelGenerator = new HiveDataModelGenerator();
+        try {
+            getMetadataServiceClient().createType(dataModelGenerator.getModelAsJson());
+        } catch (Exception e) {
+            //Ignore if type is already registered
+            //TODO make createType idempotent
+        }
+    }
+
     public static void main(String[] argv) throws Exception {
         HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(new HiveConf());
+        hiveMetaStoreBridge.registerHiveDataModel();
         hiveMetaStoreBridge.importHiveMetadata();
     }
 }

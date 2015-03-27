@@ -44,9 +44,7 @@ public class HiveHookIT {
     public void setUp() throws Exception {
         //Register hive types
         HiveDataModelGenerator hiveModel = new HiveDataModelGenerator();
-        hiveModel.createDataModel();
-        TypesDef typesDef = hiveModel.getTypesDef();
-        String typesAsJson = TypesSerialization.toJson(typesDef);
+        String typesAsJson = hiveModel.getModelAsJson();
         MetadataServiceClient dgiClient = new MetadataServiceClient(DGI_URL);
         try {
             dgiClient.createType(typesAsJson);

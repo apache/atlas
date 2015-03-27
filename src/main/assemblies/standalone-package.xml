@@ -48,6 +48,13 @@
         </fileSet>
 
         <fileSet>
+            <directory>addons/hive-bridge/src/main/bin</directory>
+            <outputDirectory>bin</outputDirectory>
+            <fileMode>0755</fileMode>
+            <directoryMode>0755</directoryMode>
+        </fileSet>
+
+        <fileSet>
             <directory>logs</directory>
             <outputDirectory>logs</outputDirectory>
             <directoryMode>0777</directoryMode>
@@ -72,6 +79,16 @@
         <fileSet>
             <directory>src/main/examples</directory>
             <outputDirectory>examples</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>addons/hive-bridge/target/dependency/bridge</directory>
+            <outputDirectory>bridge</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>addons/hive-bridge/target/dependency/hook</directory>
+            <outputDirectory>hook</outputDirectory>
         </fileSet>
     </fileSets>
 

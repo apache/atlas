@@ -42,6 +42,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.QueryPlan;
+import org.apache.hadoop.hive.ql.exec.ExplainTask;
 import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.hooks.ExecuteWithHookContext;
@@ -56,6 +57,7 @@ import org.apache.hadoop.hive.ql.parse.HiveSemanticAnalyzerHook;
 import org.apache.hadoop.hive.ql.parse.HiveSemanticAnalyzerHookContext;
 import org.apache.hadoop.hive.ql.parse.ParseDriver;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
+import org.apache.hadoop.hive.ql.plan.ExplainWork;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.hive.bridge.HiveMetaStoreBridge;
@@ -124,7 +126,6 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
         }
 
         LOG.info("Created DGI Hook");
-        executor.shutdown();
     }
 
     @Override
@@ -142,16 +143,16 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
             fireAndForget(hookContext, conf);
         } else {
             executor.submit(
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            fireAndForget(hookContext, conf);
-                        } catch (Throwable e) {
-                            LOG.info("DGI hook failed", e);
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                fireAndForget(hookContext, conf);
+                            } catch (Throwable e) {
+                                LOG.info("DGI hook failed", e);
+                            }
                         }
                     }
-                }
             );
         }
     }
@@ -190,14 +191,14 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
                 break;
 
             case CREATETABLE_AS_SELECT:
-                registerCTAS(dgiBridge, hookContext);
+                registerCTAS(dgiBridge, hookContext, conf);
                 break;
 
             default:
         }
     }
 
-    private void registerCTAS(HiveMetaStoreBridge dgiBridge, HookContext hookContext) throws Exception {
+    private void registerCTAS(HiveMetaStoreBridge dgiBridge, HookContext hookContext, HiveConf conf) throws Exception {
         Set<ReadEntity> inputs = hookContext.getInputs();
         Set<WriteEntity> outputs = hookContext.getOutputs();
         String user = hookContext.getUserName();
@@ -238,17 +239,19 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
         processReferenceable.set("targetTableNames", target);
         processReferenceable.set("queryText", queryStr);
         processReferenceable.set("queryId", queryId);
+        processReferenceable.set("queryPlan", getQueryPlan(hookContext, conf));
+        processReferenceable.set("endTime", System.currentTimeMillis());
+
         //TODO set
-        processReferenceable.set("endTime", queryStartTime);
-        processReferenceable.set("queryPlan", "queryPlan");
         processReferenceable.set("queryGraph", "queryGraph");
         dgiBridge.createInstance(processReferenceable);
     }
 
     /**
      * Gets reference for the database. Creates new instance if it doesn't exist
+     *
      * @param dgiBridge
-     * @param dbName database name
+     * @param dbName    database name
      * @return Reference for database
      * @throws Exception
      */
@@ -271,6 +274,7 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
 
     /**
      * Gets reference for the table. Creates new instance if it doesn't exist
+     *
      * @param dgiBridge
      * @param dbName
      * @param tableName table name
@@ -296,16 +300,20 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
     }
 
 
-    //TODO Do we need this??
-    //We need to somehow get the sem associated with the plan and
-    // use it here.
-    //MySemanticAnaylzer sem = new MySemanticAnaylzer(conf);
-    //sem.setInputs(plan.getInputs());
-    //ExplainWork ew = new ExplainWork(null, null, rootTasks,
-    // plan.getFetchTask(), null, sem,
-    //        false, true, false, false, false);
-    //JSONObject explainPlan =
-    //        explain.getJSONLogicalPlan(null, ew);
+    private String getQueryPlan(HookContext hookContext, HiveConf conf) throws Exception {
+        //We need to somehow get the sem associated with the plan and use it here.
+        MySemanticAnaylzer sem = new MySemanticAnaylzer(conf);
+        QueryPlan queryPlan = hookContext.getQueryPlan();
+        sem.setInputs(queryPlan.getInputs());
+        ExplainWork ew = new ExplainWork(null, null, queryPlan.getRootTasks(), queryPlan.getFetchTask(), null, sem,
+                false, true, false, false, false);
+
+        ExplainTask explain = new ExplainTask();
+        explain.initialize(conf, queryPlan, null);
+
+        org.json.JSONObject explainPlan = explain.getJSONLogicalPlan(null, ew);
+        return explainPlan.toString();
+    }
 
     private void analyzeHiveParseTree(ASTNode ast) {
         String astStr = ast.dump();
@@ -486,7 +494,7 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
 
     /**
      * This is  an attempt to use the parser.  Sematnic issues are not handled here.
-     *
+     * <p/>
      * Trying to recompile the query runs into some issues in the preExec
      * hook but we need to make sure all the semantic issues are handled.  May be we should save the AST in the
      * Semantic analyzer and have it available in the preExec hook so that we walk with it freely.
