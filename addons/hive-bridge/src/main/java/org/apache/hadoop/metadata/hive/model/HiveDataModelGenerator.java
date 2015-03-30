@@ -25,16 +25,19 @@ import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
 import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
 import org.apache.hadoop.metadata.typesystem.types.DataTypes;
+import org.apache.hadoop.metadata.typesystem.types.EnumType;
 import org.apache.hadoop.metadata.typesystem.types.EnumTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.EnumValue;
 import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
+import org.apache.hadoop.metadata.typesystem.types.StructType;
 import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.TraitType;
 import org.apache.hadoop.metadata.typesystem.types.TypeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -515,5 +518,23 @@ public class HiveDataModelGenerator {
     public static void main(String[] args) throws Exception {
         HiveDataModelGenerator hiveDataModelGenerator = new HiveDataModelGenerator();
         System.out.println("hiveDataModelAsJSON = " + hiveDataModelGenerator.getModelAsJson());
+
+        TypesDef typesDef = hiveDataModelGenerator.getTypesDef();
+        for (EnumTypeDefinition enumType : typesDef.enumTypesAsJavaList()) {
+            System.out.println(String.format("%s(%s) - %s", enumType.name, EnumType.class.getSimpleName(),
+                    Arrays.toString(enumType.enumValues)));
+        }
+        for (StructTypeDefinition structType : typesDef.structTypesAsJavaList()) {
+            System.out.println(String.format("%s(%s) - %s", structType.typeName, StructType.class.getSimpleName(),
+                    Arrays.toString(structType.attributeDefinitions)));
+        }
+        for (HierarchicalTypeDefinition<ClassType> classType : typesDef.classTypesAsJavaList()) {
+            System.out.println(String.format("%s(%s) - %s", classType.typeName, ClassType.class.getSimpleName(),
+                    Arrays.toString(classType.attributeDefinitions)));
+        }
+        for (HierarchicalTypeDefinition<TraitType> traitType : typesDef.traitTypesAsJavaList()) {
+            System.out.println(String.format("%s(%s) - %s", traitType.typeName, TraitType.class.getSimpleName(),
+                    Arrays.toString(traitType.attributeDefinitions)));
+        }
     }
 }

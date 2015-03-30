@@ -81,6 +81,7 @@
             <outputDirectory>examples</outputDirectory>
         </fileSet>
 
+        <!-- addons/hive -->
         <fileSet>
             <directory>addons/hive-bridge/target/dependency/bridge</directory>
             <outputDirectory>bridge</outputDirectory>
@@ -90,6 +91,12 @@
             <directory>addons/hive-bridge/target/dependency/hook</directory>
             <outputDirectory>hook</outputDirectory>
         </fileSet>
+
+        <fileSet>
+            <directory>addons/hive-bridge/target/site</directory>
+            <outputDirectory>docs/hive</outputDirectory>
+        </fileSet>
+
     </fileSets>
 
     <files>

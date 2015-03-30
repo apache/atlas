@@ -88,4 +88,9 @@ public final class AttributeDefinition {
         result = 31 * result + (reverseAttributeName != null ? reverseAttributeName.hashCode() : 0);
         return result;
     }
+
+    @Override
+    public String toString() {
+        return name;
+    }
 }
