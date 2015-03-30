@@ -53,10 +53,10 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
         infoToNameMap = null;
     }
 
-    ClassType(TypeSystem typeSystem, String name, ImmutableList<String> superTraits,
+    ClassType(TypeSystem typeSystem, String name, ImmutableList<String> superTypes,
               AttributeInfo... fields)
     throws MetadataException {
-        super(typeSystem, ClassType.class, name, superTraits, fields);
+        super(typeSystem, ClassType.class, name, superTypes, fields);
         infoToNameMap = TypeUtils.buildAttrInfoToNameMap(fieldMapping);
     }
 
