@@ -25,34 +25,26 @@ import org.apache.hadoop.util.Shell;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
 import java.io.IOException;
 import java.net.InetAddress;
 
 /**
- * A listener capable of performing a simple or kerberos login.
+ * A class capable of performing a simple or kerberos login.
  */
-public class LoginListener implements ServletContextListener {
+public class LoginProcessor  {
 
     private static final Logger LOG = LoggerFactory
-            .getLogger(LoginListener.class);
-    public static final String AUTHENTICATION_METHOD = "authentication.method";
-    public static final String AUTHENTICATION_PRINCIPAL = "authentication.principal";
-    public static final String AUTHENTICATION_KEYTAB = "authentication.keytab";
-
-    @Override
-    public void contextDestroyed(ServletContextEvent servletContextEvent) {
-
-    }
+            .getLogger(LoginProcessor.class);
+    public static final String METADATA_AUTHENTICATION_PREFIX = "metadata.authentication.";
+    public static final String AUTHENTICATION_METHOD = METADATA_AUTHENTICATION_PREFIX + "method";
+    public static final String AUTHENTICATION_PRINCIPAL = METADATA_AUTHENTICATION_PREFIX + "principal";
+    public static final String AUTHENTICATION_KEYTAB = METADATA_AUTHENTICATION_PREFIX + "keytab";
 
     /**
      * Perform a SIMPLE login based on established OS identity or a kerberos based login using the configured
      * principal and keytab (via application.properties).
-     * @param servletContextEvent
      */
-    @Override
-    public void contextInitialized(ServletContextEvent servletContextEvent) {
+    public void login() {
         // first, let's see if we're running in a hadoop cluster and have the env configured
         boolean isHadoopCluster = isHadoopCluster();
         Configuration hadoopConfig = isHadoopCluster ? getHadoopConfiguration() : new Configuration(false);
@@ -64,17 +56,12 @@ public class LoginListener implements ServletContextListener {
         }
         if (!isHadoopCluster) {
             // need to read the configured authentication choice and create the UGI configuration
-            String authMethod;
-            authMethod = configuration != null ? configuration.getString(AUTHENTICATION_METHOD) : null;
-            // getString may return null, and would like to log the nature of the default setting
-            if (authMethod == null) {
-                LOG.info("No authentication method configured.  Defaulting to simple authentication");
-                authMethod = "simple";
-            }
-            SecurityUtil.setAuthenticationMethod(
-                    UserGroupInformation.AuthenticationMethod.valueOf(authMethod.toUpperCase()),
-                    hadoopConfig);
+            setupHadoopConfiguration(hadoopConfig, configuration);
         }
+        doServiceLogin(hadoopConfig, configuration);
+    }
+
+    protected void doServiceLogin(Configuration hadoopConfig, PropertiesConfiguration configuration) {
         UserGroupInformation.setConfiguration(hadoopConfig);
 
         UserGroupInformation ugi = null;
@@ -93,6 +80,19 @@ public class LoginListener implements ServletContextListener {
         } catch (IOException e) {
             throw new IllegalStateException(String.format("Unable to perform %s login.", authenticationMethod), e);
         }
+    }
+
+    protected void setupHadoopConfiguration(Configuration hadoopConfig, PropertiesConfiguration configuration) {
+        String authMethod;
+        authMethod = configuration != null ? configuration.getString(AUTHENTICATION_METHOD) : null;
+        // getString may return null, and would like to log the nature of the default setting
+        if (authMethod == null) {
+            LOG.info("No authentication method configured.  Defaulting to simple authentication");
+            authMethod = "simple";
+        }
+        SecurityUtil.setAuthenticationMethod(
+                UserGroupInformation.AuthenticationMethod.valueOf(authMethod.toUpperCase()),
+                hadoopConfig);
     }
 
     /**

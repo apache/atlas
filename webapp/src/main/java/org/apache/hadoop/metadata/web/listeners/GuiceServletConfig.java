@@ -78,6 +78,10 @@ public class GuiceServletConfig extends GuiceServletContextListener {
     public void contextInitialized(ServletContextEvent servletContextEvent) {
         super.contextInitialized(servletContextEvent);
 
+        // perform login operations
+        LoginProcessor loginProcessor = new LoginProcessor();
+        loginProcessor.login();
+
         restoreTypeSystem();
     }
 

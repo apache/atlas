@@ -35,7 +35,7 @@ import java.util.Properties;
 /**
  *
  */
-public class LoginListenerIT {
+public class LoginProcessorIT {
 
     private static final String JAAS_ENTRY =
             "%s { \n"
@@ -56,13 +56,13 @@ public class LoginListenerIT {
 
     @Test
     public void testDefaultSimpleLogin() throws Exception {
-        LoginListener listener = new LoginListener() {
+        LoginProcessor processor = new LoginProcessor() {
             @Override
             protected PropertiesConfiguration getPropertiesConfiguration() throws ConfigurationException {
                 return new PropertiesConfiguration();
             }
         };
-        listener.contextInitialized(null);
+        processor.login();
 
         assert UserGroupInformation.getCurrentUser() != null;
         assert !UserGroupInformation.isLoginKeytabBased();
@@ -73,13 +73,13 @@ public class LoginListenerIT {
     public void testKerberosLogin() throws Exception {
         final File keytab = setupKDCAndPrincipals();
 
-        LoginListener listener = new LoginListener() {
+        LoginProcessor processor = new LoginProcessor() {
             @Override
             protected PropertiesConfiguration getPropertiesConfiguration() throws ConfigurationException {
                 PropertiesConfiguration config = new PropertiesConfiguration();
-                config.setProperty("authentication.method", "kerberos");
-                config.setProperty("authentication.principal", "dgi@EXAMPLE.COM");
-                config.setProperty("authentication.keytab", keytab.getAbsolutePath());
+                config.setProperty("metadata.authentication.method", "kerberos");
+                config.setProperty("metadata.authentication.principal", "dgi@EXAMPLE.COM");
+                config.setProperty("metadata.authentication.keytab", keytab.getAbsolutePath());
                 return config;
             }
 
@@ -98,7 +98,7 @@ public class LoginListenerIT {
                 return true;
             }
         };
-        listener.contextInitialized(null);
+        processor.login();
 
         assert UserGroupInformation.getLoginUser().getShortUserName().endsWith("dgi");
         assert UserGroupInformation.getCurrentUser() != null;
