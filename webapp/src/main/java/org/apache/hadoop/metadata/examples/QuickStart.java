@@ -21,6 +21,7 @@ package org.apache.hadoop.metadata.examples;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.apache.hadoop.metadata.MetadataServiceClient;
+import org.apache.hadoop.metadata.typesystem.IStruct;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.TypesDef;
 import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization;
@@ -40,7 +41,9 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A driver that sets up sample types and data for testing purposes.
@@ -116,18 +119,17 @@ public class QuickStart {
                         attrDef("inputFormat", DataTypes.STRING_TYPE),
                         attrDef("outputFormat", DataTypes.STRING_TYPE),
                         attrDef("compressed", DataTypes.STRING_TYPE,
-                                Multiplicity.REQUIRED, false, null)
+                                Multiplicity.REQUIRED, false, null),
+                        new AttributeDefinition("columns",
+                                DataTypes.arrayTypeName(COLUMN_TYPE),
+                                Multiplicity.COLLECTION, true, null)
                 );
 
         HierarchicalTypeDefinition<ClassType> columnClsDef =
                 TypesUtil.createClassTypeDef(COLUMN_TYPE, null,
                         attrDef("name", DataTypes.STRING_TYPE),
                         attrDef("dataType", DataTypes.STRING_TYPE),
-                        attrDef("comment", DataTypes.STRING_TYPE),
-                        new AttributeDefinition("sd", STORAGE_DESC_TYPE,
-                                Multiplicity.REQUIRED, false, null)
-//                        new AttributeDefinition("table", DataTypes.STRING_TYPE.getName(),
-//                                 Multiplicity.REQUIRED, false, null)
+                        attrDef("comment", DataTypes.STRING_TYPE)
                 );
 
         HierarchicalTypeDefinition<ClassType> tblClsDef =
@@ -145,13 +147,7 @@ public class QuickStart {
                         attrDef("viewOriginalText", DataTypes.STRING_TYPE),
                         attrDef("viewExpandedText", DataTypes.STRING_TYPE),
                         attrDef("tableType", DataTypes.STRING_TYPE),
-                        attrDef("temporary", DataTypes.BOOLEAN_TYPE),
-                        // todo - fix this post serialization support for collections
-                        new AttributeDefinition("columns",
-                                DataTypes.arrayTypeName(DataTypes.STRING_TYPE.getName()),
-                                Multiplicity.COLLECTION, false, null)
-//                        new AttributeDefinition("columns", DataTypes.arrayTypeName(COLUMN_TYPE),
-//                                Multiplicity.COLLECTION, true, null)
+                        attrDef("temporary", DataTypes.BOOLEAN_TYPE)
                 );
 
         HierarchicalTypeDefinition<ClassType> loadProcessClsDef =
@@ -160,15 +156,11 @@ public class QuickStart {
                         attrDef("userName", DataTypes.STRING_TYPE),
                         attrDef("startTime", DataTypes.INT_TYPE),
                         attrDef("endTime", DataTypes.INT_TYPE),
-                        // todo - fix this post serialization support for collections
-//                        new AttributeDefinition("inputTables", DataTypes.arrayTypeName(TABLE_TYPE),
-//                                Multiplicity.COLLECTION, false, null),
-//                        new AttributeDefinition("outputTable", TABLE_TYPE,
-//                                Multiplicity.REQUIRED, false, null),
-                        new AttributeDefinition("inputTables", DataTypes.STRING_TYPE.getName(),
+                        new AttributeDefinition("inputTables",
+                                DataTypes.arrayTypeName(TABLE_TYPE),
                                 Multiplicity.COLLECTION, false, null),
-                        new AttributeDefinition("outputTable", DataTypes.STRING_TYPE.getName(),
-                                Multiplicity.REQUIRED, false, null),
+                        new AttributeDefinition("outputTable", TABLE_TYPE,
+                                Multiplicity.OPTIONAL, false, null),
                         attrDef("queryText", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
                         attrDef("queryPlan", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
                         attrDef("queryId", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
@@ -180,10 +172,8 @@ public class QuickStart {
                         attrDef("name", DataTypes.STRING_TYPE),
                         new AttributeDefinition("db", DATABASE_TYPE,
                                 Multiplicity.REQUIRED, false, null),
-                        // todo - fix this post serialization support for collections
-//                        new AttributeDefinition("inputTables", TABLE_TYPE, Multiplicity.COLLECTION,
-//                                false, null)
-                        new AttributeDefinition("inputTables", DataTypes.STRING_TYPE.getName(),
+                        new AttributeDefinition("inputTables",
+                                DataTypes.arrayTypeName(TABLE_TYPE),
                                 Multiplicity.COLLECTION, false, null)
                 );
 
@@ -234,62 +224,49 @@ public class QuickStart {
         Referenceable salesDB = database(
                 "Sales", "Sales Database", "John ETL", "hdfs://host:8000/apps/warehouse/sales");
 
-        Referenceable sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales",
+
+        Referenceable sd = rawStorageDescriptor("hdfs://host:8000/apps/warehouse/sales",
                 "TextInputFormat", "TextOutputFormat", true);
 
-
         ArrayList<Referenceable> salesFactColumns = new ArrayList<>();
-        Referenceable column = column("time_id", "int", "time id", sd);
-        salesFactColumns.add(column);
-        column = column("product_id", "int", "product id", sd);
-        salesFactColumns.add(column);
-        column = column("customer_id", "int", "customer id", sd, "PII");
-        salesFactColumns.add(column);
-        column = column("sales", "double", "product id", sd, "Metric");
-        salesFactColumns.add(column);
+        salesFactColumns.add(rawColumn("time_id", "int", "time id"));
+        salesFactColumns.add(rawColumn("product_id", "int", "product id"));
+        salesFactColumns.add(rawColumn("customer_id", "int", "customer id", "PII"));
+        salesFactColumns.add(rawColumn("sales", "double", "product id", "Metric"));
 
-        Referenceable salesFact = table("sales_fact", "sales fact table",
+        Referenceable salesFact = tableDefinition("sales_fact", "sales fact table",
                 salesDB, sd, "Joe", "Managed", salesFactColumns, "Fact");
 
         ArrayList<Referenceable> productDimColumns = new ArrayList<>();
-        column = column("product_id", "int", "product id", sd);
-        productDimColumns.add(column);
-        column = column("product_name", "string", "product name", sd);
-        productDimColumns.add(column);
-        column = column("brand_name", "int", "brand name", sd);
-        productDimColumns.add(column);
+        productDimColumns.add(rawColumn("product_id", "int", "product id"));
+        productDimColumns.add(rawColumn("product_name", "string", "product name"));
+        productDimColumns.add(rawColumn("brand_name", "int", "brand name"));
 
-        Referenceable productDim = table("product_dim", "product dimension table",
+        Referenceable productDim = tableDefinition("product_dim", "product dimension table",
                 salesDB, sd, "John Doe", "Managed", productDimColumns, "Dimension");
 
         ArrayList<Referenceable> timeDimColumns = new ArrayList<>();
-        column = column("time_id", "int", "time id", sd);
-        timeDimColumns.add(column);
-        column = column("dayOfYear", "int", "day Of Year", sd);
-        timeDimColumns.add(column);
-        column = column("weekDay", "int", "week Day", sd);
-        timeDimColumns.add(column);
+        timeDimColumns.add(rawColumn("time_id", "int", "time id"));
+        timeDimColumns.add(rawColumn("dayOfYear", "int", "day Of Year"));
+        timeDimColumns.add(rawColumn("weekDay", "int", "week Day"));
 
-        Referenceable timeDim = table("time_dim", "time dimension table",
+        Referenceable timeDim = tableDefinition("time_dim", "time dimension table",
                 salesDB, sd, "John Doe", "External", timeDimColumns, "Dimension");
 
 
         ArrayList<Referenceable> customerDimColumns = new ArrayList<>();
-        column = column("customer_id", "int", "customer id", sd, "PII");
-        customerDimColumns.add(column);
-        column = column("name", "string", "customer name", sd, "PII");
-        customerDimColumns.add(column);
-        column = column("address", "string", "customer address", sd, "PII");
-        customerDimColumns.add(column);
+        customerDimColumns.add(rawColumn("customer_id", "int", "customer id", "PII"));
+        customerDimColumns.add(rawColumn("name", "string", "customer name", "PII"));
+        customerDimColumns.add(rawColumn("address", "string", "customer address", "PII"));
 
-        Referenceable customerDim = table("customer_dim", "customer dimension table",
+        Referenceable customerDim = tableDefinition("customer_dim", "customer dimension table",
                 salesDB, sd, "fetl", "External", customerDimColumns, "Dimension");
 
 
         Referenceable reportingDB = database("Reporting", "reporting database", "Jane BI",
                 "hdfs://host:8000/apps/warehouse/reporting");
 
-        Referenceable salesFactDaily = table("sales_fact_daily_mv",
+        Referenceable salesFactDaily = tableDefinition("sales_fact_daily_mv",
                 "sales fact daily materialized view", reportingDB, sd,
                 "Joe BI", "Managed", salesFactColumns, "Metric");
 
@@ -307,7 +284,7 @@ public class QuickStart {
                 ImmutableList.of(customerDim), "Dimension", "JdbcAccess");
         System.out.println("added customerDimView = " + customerDimView);
 
-        Referenceable salesFactMonthly = table("sales_fact_monthly_mv",
+        Referenceable salesFactMonthly = tableDefinition("sales_fact_monthly_mv",
                 "sales fact monthly materialized view",
                 reportingDB, sd, "Jane BI", "Managed", salesFactColumns, "Metric");
 
@@ -328,7 +305,19 @@ public class QuickStart {
         System.out.println("created instance for type " + typeName + ", guid: " + guid);
 
         // return the reference to created instance with guid
-        return new Referenceable(guid, referenceable.getTypeName(), referenceable.getValuesMap());
+        final ImmutableList<String> traitNames = referenceable.getTraits();
+        if (traitNames.isEmpty()) {
+            return new Referenceable(guid, referenceable.getTypeName(),
+                    referenceable.getValuesMap());
+        } else {
+            Map<String, IStruct> traits = new HashMap<>();
+            for (String traitName : traitNames) {
+                traits.put(traitName, referenceable.getTrait(traitName));
+            }
+
+            return new Referenceable(guid, referenceable.getTypeName(),
+                    referenceable.getValuesMap(), traitNames, traits);
+        }
     }
 
     Referenceable database(String name, String description,
@@ -344,34 +333,49 @@ public class QuickStart {
         return createInstance(referenceable);
     }
 
-    Referenceable storageDescriptor(String location, String inputFormat,
-                                    String outputFormat,
-                                    boolean compressed) throws Exception {
+    Referenceable rawStorageDescriptor(String location, String inputFormat,
+                                       String outputFormat,
+                                       boolean compressed) throws Exception {
         Referenceable referenceable = new Referenceable(STORAGE_DESC_TYPE);
         referenceable.set("location", location);
         referenceable.set("inputFormat", inputFormat);
         referenceable.set("outputFormat", outputFormat);
         referenceable.set("compressed", compressed);
 
-        return createInstance(referenceable);
+        return referenceable;
     }
 
-    Referenceable column(String name, String dataType,
-                         String comment, Referenceable sd,
-                         String... traitNames) throws Exception {
+    Referenceable rawColumn(String name, String dataType, String comment,
+                            String... traitNames) throws Exception {
         Referenceable referenceable = new Referenceable(COLUMN_TYPE, traitNames);
         referenceable.set("name", name);
         referenceable.set("dataType", dataType);
         referenceable.set("comment", comment);
-        referenceable.set("sd", sd);
 
-        return createInstance(referenceable);
+        return referenceable;
+    }
+
+    Referenceable tableDefinition(String name, String description,
+                                  Referenceable db, Referenceable sdReferenceable,
+                                  String owner, String tableType,
+                                  List<Referenceable> columnsList,
+                                  String... traitNames) throws Exception {
+
+        List<Referenceable> columns = new ArrayList<>();
+        for (Referenceable columnReferenceable : columnsList) {
+            columns.add(createInstance(columnReferenceable));
+        }
+
+        sdReferenceable.set("columns", columns);
+        Referenceable sd = createInstance(sdReferenceable);
+
+        return table(name, description, db, sd, owner, tableType, traitNames);
     }
 
     Referenceable table(String name, String description,
                         Referenceable db, Referenceable sd,
                         String owner, String tableType,
-                        List<Referenceable> columns,
+                        // List<Referenceable> columns,
                         String... traitNames) throws Exception {
         Referenceable referenceable = new Referenceable(TABLE_TYPE, traitNames);
         referenceable.set("name", name);
@@ -383,14 +387,6 @@ public class QuickStart {
         referenceable.set("retention", System.currentTimeMillis());
         referenceable.set("db", db);
         referenceable.set("sd", sd);
-
-        // todo - fix this post serialization support for collections
-        // referenceable.set("columns", columns);
-        ArrayList<String> columnNames = new ArrayList<>(columns.size());
-        for (Referenceable column : columns) {
-            columnNames.add(String.valueOf(column.get("name")));
-        }
-        referenceable.set("columns", columnNames);
 
         return createInstance(referenceable);
     }
@@ -407,17 +403,8 @@ public class QuickStart {
         referenceable.set("startTime", System.currentTimeMillis());
         referenceable.set("endTime", System.currentTimeMillis() + 10000);
 
-        // todo - fix this post serialization support for collections
-        /*
         referenceable.set("inputTables", inputTables);
         referenceable.set("outputTable", outputTable);
-        */
-        ArrayList<String> inputTableNames = new ArrayList<>(inputTables.size());
-        for (Referenceable inputTable : inputTables) {
-            inputTableNames.add(String.valueOf(inputTable.get("name")));
-        }
-        referenceable.set("inputTables", inputTableNames);
-        referenceable.set("outputTable", outputTable.get("name"));
 
         referenceable.set("queryText", queryText);
         referenceable.set("queryPlan", queryPlan);
@@ -434,13 +421,7 @@ public class QuickStart {
         referenceable.set("name", name);
         referenceable.set("db", db);
 
-        // todo - fix this post serialization support for collections
-        // referenceable.set("inputTables", inputTables);
-        ArrayList<String> inputTableNames = new ArrayList<>(inputTables.size());
-        for (Referenceable inputTable : inputTables) {
-            inputTableNames.add(String.valueOf(inputTable.get("name")));
-        }
-        referenceable.set("inputTables", inputTableNames);
+        referenceable.set("inputTables", inputTables);
 
         return createInstance(referenceable);
     }
@@ -511,6 +492,7 @@ public class QuickStart {
             "Table as _loop0 loop (LoadProcess outputTable) withPath",
             "Table as src loop (LoadProcess outputTable) as dest select src.name as srcTable, dest.name as destTable withPath",
             */
+            "Table as t, sd, columns where t.name=\"sales_fact\"",
         };
     }
 

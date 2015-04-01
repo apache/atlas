@@ -1,17 +1,42 @@
----+ Data Governance and Metadata platform for Hadoop
+---+ Data Governance and Metadata framework for Hadoop
 
 
 ---++ Overview
 
+DGI is a scalable and extensible set of core foundational governance services – enabling
+enterprises to effectively and efficiently meet their compliance requirements within Hadoop and
+allows integration with the whole enterprise data ecosystem.
 
----++ Use Cases
+---++ Features
 
-   * Enables modeling
+---+++ Data Classification
+   * Import or define taxonomy business-oriented annotations for data
+   * Define, annotate, and automate capture of relationships between data sets and underlying
+   elements including source, target, and derivation processes
+   * Export metadata to third-party systems
 
-   * Captures Lineage information for data sets and processes
+---+++ Centralized Auditing
+   * Capture security access information for every application, process, and interaction with data
+   * Capture the operational information for execution, steps, and activities
+
+---+++ Search & Lineage (Browse)
+   * Pre-defined navigation paths to explore the data classification and audit information
+   * Text-based search features locates relevant data and audit event across Data Lake quickly
+   and accurately
+   * Browse visualization of data set lineage allowing users to drill-down into operational,
+   security, and provenance related information
+
+---+++ Security & Policy Engine
+   * Rationalize compliance policy at runtime based on data classification schemes, attributes
+   and roles.
+   * Advanced definition of policies for preventing data derivation based on classification
+   (i.e. re-identification) – Prohibitions
+   * Column and Row level masking based on cell values and attibutes.
 
 
 ---++ Getting Started
+
+   * [[QuickStart][Quick Start Guide]]
 
 
 ---++ Documentation
@@ -19,7 +44,7 @@
    * [[Architecture][High Level Architecture]]
    * [[TypeSystem][Type System]]
    * [[Repository][Metadata Repository]]
-   * [[Discovery][Metadata Discovery]]
+   * [[Discovery][Search]]
 
 
 ---++ API Documentation

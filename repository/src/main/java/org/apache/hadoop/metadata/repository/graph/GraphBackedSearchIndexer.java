@@ -36,7 +36,6 @@ import org.apache.hadoop.metadata.typesystem.types.AttributeInfo;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
 import org.apache.hadoop.metadata.typesystem.types.DataTypes;
 import org.apache.hadoop.metadata.typesystem.types.IDataType;
-import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
 import org.apache.hadoop.metadata.typesystem.types.StructType;
 import org.apache.hadoop.metadata.typesystem.types.TraitType;
 import org.slf4j.Logger;
@@ -162,20 +161,17 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
         final String propertyName = typeName + "." + field.name;
         switch (field.dataType().getTypeCategory()) {
             case PRIMITIVE:
-                createVertexMixedIndex(propertyName,
-                        getPrimitiveClass(field.dataType()), getCardinality(field.multiplicity));
+                createVertexMixedIndex(propertyName, getPrimitiveClass(field.dataType()));
                 break;
 
             case ENUM:
-                createVertexMixedIndex(
-                        propertyName, Integer.class, getCardinality(field.multiplicity));
+                createVertexMixedIndex(propertyName, Integer.class);
                 break;
 
             case ARRAY:
             case MAP:
-                // index the property holder for element names
-                createVertexMixedIndex(
-                        propertyName, String.class, getCardinality(field.multiplicity));
+                // todo - how do we overcome this limitation?
+                // IGNORE: Can only index single-valued property keys on vertices in Mixed Index
                 break;
 
             case STRUCT:
@@ -223,6 +219,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
         throw new IllegalArgumentException("unknown data type " + dataType);
     }
 
+/*
     private Cardinality getCardinality(Multiplicity multiplicity) {
         if (multiplicity == Multiplicity.OPTIONAL || multiplicity == Multiplicity.REQUIRED) {
             return Cardinality.SINGLE;
@@ -235,12 +232,13 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
         // todo - default to LIST as this is the most forgiving
         return Cardinality.LIST;
     }
+*/
 
     private void createCompositeAndMixedIndex(String indexName,
                                               String propertyName, Class propertyClass,
                                               boolean isUnique, Cardinality cardinality) {
         createCompositeIndex(indexName, propertyName, propertyClass, isUnique, cardinality);
-        createVertexMixedIndex(propertyName, propertyClass, cardinality);
+        createVertexMixedIndex(propertyName, propertyClass);
     }
 
     private PropertyKey createCompositeIndex(String indexName,
@@ -272,15 +270,14 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
         return propertyKey;
     }
 
-    private PropertyKey createVertexMixedIndex(String propertyName, Class propertyClass,
-                                               Cardinality cardinality) {
+    private PropertyKey createVertexMixedIndex(String propertyName, Class propertyClass) {
         TitanManagement management = titanGraph.getManagementSystem();
         PropertyKey propertyKey = management.getPropertyKey(propertyName);
         if (propertyKey == null) {
+            // ignored cardinality as Can only index single-valued property keys on vertices
             propertyKey = management
                     .makePropertyKey(propertyName)
                     .dataType(propertyClass)
-                    .cardinality(cardinality)
                     .make();
 
             TitanGraphIndex vertexIndex = management.getGraphIndex(Constants.VERTEX_INDEX);

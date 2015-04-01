@@ -1,0 +1,28 @@
+---+ Quick Start Guide
+
+---++ Introduction
+This quick start user guide is a simple client that adds a few sample type definitions modeled
+after the example as shown below. It also adds example entities along with traits as shown in the
+instance graph below.
+
+
+---+++ Example Type Definitions
+
+<img src="guide-class-diagram.png"/>
+
+
+---+++ Example Instance Graph
+
+<img src="guide-instance-graph.png"/>
+
+
+---++ Running the example
+
+This will add sample types and instances along with traits as shown in the instance graph above.
+
+   * bin/quick-start.sh
+
+---++ Dashboard
+A simple dashboard with search is available.
+
+   * http://localhost:21000/dashboard

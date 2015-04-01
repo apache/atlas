@@ -216,6 +216,7 @@ public class GraphBackedDiscoveryServiceTest {
             {"Table loop (LoadProcess outputTable)"},
             {"Table as _loop0 loop (LoadProcess outputTable) withPath"},
             {"Table as src loop (LoadProcess outputTable) as dest select src.name as srcTable, dest.name as destTable withPath"},
+            {"Table as t, sd, Column as c where t.name=\"sales_fact\" select c.name as colName, c.dataType as colType"},
         };
     }
 

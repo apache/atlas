@@ -82,7 +82,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
                 return queryResult.toJson();
             }
         } catch (Exception e) { // unable to catch ExpressionException
-            throw new DiscoveryException("Invalid expression : " + dslQuery);
+            throw new DiscoveryException("Invalid expression : " + dslQuery, e);
         }
 
         throw new DiscoveryException("Invalid expression : " + dslQuery);
