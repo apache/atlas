@@ -18,9 +18,15 @@
 
 package org.apache.hadoop.metadata.discovery.graph;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.TitanGraphQuery;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.core.attribute.Text;
+import com.tinkerpop.blueprints.Vertex;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.metadata.discovery.DiscoveryException;
 import org.apache.hadoop.metadata.discovery.DiscoveryService;
 import org.apache.hadoop.metadata.query.Expressions;
@@ -30,8 +36,12 @@ import org.apache.hadoop.metadata.query.GremlinQueryResult;
 import org.apache.hadoop.metadata.query.GremlinTranslator;
 import org.apache.hadoop.metadata.query.QueryParser;
 import org.apache.hadoop.metadata.query.QueryProcessor;
+import org.apache.hadoop.metadata.repository.Constants;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
 import org.apache.hadoop.metadata.repository.graph.GraphProvider;
+import org.apache.hadoop.metadata.typesystem.Referenceable;
+import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization;
+import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.util.Either;
@@ -44,8 +54,11 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Graph backed implementation of Search.
@@ -62,6 +75,23 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
                                 MetadataRepository metadataRepository) throws DiscoveryException {
         this.titanGraph = graphProvider.get();
         this.graphPersistenceStrategy = new DefaultGraphPersistenceStrategy(metadataRepository);
+    }
+
+    @Override
+    public String searchByFullText(String query) throws DiscoveryException {
+        Iterator iterator = titanGraph.query().has(Constants.ENTITY_TEXT_PROPERTY_KEY, Text.CONTAINS, query).vertices().iterator();
+        JsonArray results = new JsonArray();
+        while (iterator.hasNext()) {
+            Vertex vertex = (Vertex) iterator.next();
+            JsonObject row = new JsonObject();
+            row.addProperty("guid", vertex.<String>getProperty(Constants.GUID_PROPERTY_KEY));
+            row.addProperty("typeName", vertex.<String>getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY));
+            results.add(row);
+        }
+        JsonObject response = new JsonObject();
+        response.addProperty("query", query);
+        response.add("results", results);
+        return response.toString();
     }
 
     /**
@@ -118,47 +148,48 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
 
         try {
             Object o = engine.eval(gremlinQuery, bindings);
-            if (!(o instanceof List)) {
-                throw new DiscoveryException(
-                        String.format("Cannot process gremlin result %s", o.toString()));
-            }
-
-            List l = (List) o;
-            List<Map<String, String>> result = new ArrayList<>();
-            for (Object r : l) {
-
-                Map<String, String> oRow = new HashMap<>();
-                if (r instanceof Map) {
-                    @SuppressWarnings("unchecked")
-                    Map<Object, Object> iRow = (Map) r;
-                    for (Map.Entry e : iRow.entrySet()) {
-                        Object k = e.getKey();
-                        Object v = e.getValue();
-                        oRow.put(k.toString(), v.toString());
-                    }
-                } else if (r instanceof TitanVertex) {
-                    Iterable<TitanProperty> ps = ((TitanVertex) r).getProperties();
-                    for (TitanProperty tP : ps) {
-                        String pName = tP.getPropertyKey().getName();
-                        Object pValue = ((TitanVertex) r).getProperty(pName);
-                        if (pValue != null) {
-                            oRow.put(pName, pValue.toString());
-                        }
-                    }
-
-                } else if (r instanceof String) {
-                    oRow.put("", r.toString());
-                } else {
-                    throw new DiscoveryException(
-                            String.format("Cannot process gremlin result %s", o.toString()));
-                }
-
-                result.add(oRow);
-            }
-            return result;
-
+            return extractResult(o);
         } catch (ScriptException se) {
             throw new DiscoveryException(se);
         }
+    }
+
+    private List<Map<String, String>> extractResult(Object o) throws DiscoveryException {
+        if (!(o instanceof List)) {
+            throw new DiscoveryException(String.format("Cannot process result %s", o.toString()));
+        }
+
+        List l = (List) o;
+        List<Map<String, String>> result = new ArrayList<>();
+        for (Object r : l) {
+
+            Map<String, String> oRow = new HashMap<>();
+            if (r instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<Object, Object> iRow = (Map) r;
+                for (Map.Entry e : iRow.entrySet()) {
+                    Object k = e.getKey();
+                    Object v = e.getValue();
+                    oRow.put(k.toString(), v.toString());
+                }
+            } else if (r instanceof TitanVertex) {
+                Iterable<TitanProperty> ps = ((TitanVertex) r).getProperties();
+                for (TitanProperty tP : ps) {
+                    String pName = tP.getPropertyKey().getName();
+                    Object pValue = ((TitanVertex) r).getProperty(pName);
+                    if (pValue != null) {
+                        oRow.put(pName, pValue.toString());
+                    }
+                }
+
+            } else if (r instanceof String) {
+                oRow.put("", r.toString());
+            } else {
+                throw new DiscoveryException(String.format("Cannot process result %s", o.toString()));
+            }
+
+            result.add(oRow);
+        }
+        return result;
     }
 }

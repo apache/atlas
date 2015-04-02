@@ -52,7 +52,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class GraphTypeStore implements ITypeStore {
+public class GraphBackedTypeStore implements ITypeStore {
+    public static final String VERTEX_TYPE = "typeSystem";
     private static final String PROPERTY_PREFIX = "type.";
     public static final String SUPERTYPE_EDGE_LABEL = PROPERTY_PREFIX + ".supertype";
     public static final String SUBTYPE_EDGE_LABEL = PROPERTY_PREFIX + ".subtype";
@@ -60,12 +61,12 @@ public class GraphTypeStore implements ITypeStore {
     private static final ImmutableList META_PROPERTIES = ImmutableList.of(Constants.VERTEX_TYPE_PROPERTY_KEY,
             Constants.TYPE_CATEGORY_PROPERTY_KEY, Constants.TYPENAME_PROPERTY_KEY);
 
-    private static Logger LOG = LoggerFactory.getLogger(GraphTypeStore.class);
+    private static Logger LOG = LoggerFactory.getLogger(GraphBackedTypeStore.class);
 
     private final TitanGraph titanGraph;
 
     @Inject
-    public GraphTypeStore(GraphProvider<TitanGraph> graphProvider) {
+    public GraphBackedTypeStore(GraphProvider<TitanGraph> graphProvider) {
         titanGraph = graphProvider.get();
     }
 
@@ -82,7 +83,7 @@ public class GraphTypeStore implements ITypeStore {
             for (String typeName : typeNames) {
                 if (!coreTypes.contains(typeName)) {
                     IDataType dataType = typeSystem.getDataType(IDataType.class, typeName);
-                    LOG.debug("Adding {}.{} to type store", dataType.getTypeCategory(), dataType.getName());
+                    LOG.debug("Processing {}.{} in type store", dataType.getTypeCategory(), dataType.getName());
                     switch (dataType.getTypeCategory()) {
                         case ENUM:
                             storeInGraph((EnumType)dataType);
@@ -207,7 +208,7 @@ public class GraphTypeStore implements ITypeStore {
     @Override
     public TypesDef restore() throws MetadataException {
         //Get all vertices for type system
-        Iterator vertices = titanGraph.query().has(Constants.VERTEX_TYPE_PROPERTY_KEY, PROPERTY_PREFIX).vertices().iterator();
+        Iterator vertices = titanGraph.query().has(Constants.VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE).vertices().iterator();
 
         ImmutableList.Builder<EnumTypeDefinition> enums = ImmutableList.builder();
         ImmutableList.Builder<StructTypeDefinition> structs = ImmutableList.builder();
@@ -294,10 +295,9 @@ public class GraphTypeStore implements ITypeStore {
      * @return vertex
      */
     private Vertex findVertex(DataTypes.TypeCategory category, String typeName) {
-        LOG.debug("Finding vertex for ({} - {}), ({} - {})", Constants.TYPE_CATEGORY_PROPERTY_KEY, category,
-                Constants.TYPENAME_PROPERTY_KEY, typeName);
+        LOG.debug("Finding vertex for {}.{}", category, typeName);
 
-        Iterator results = titanGraph.query().has(Constants.VERTEX_TYPE_PROPERTY_KEY, PROPERTY_PREFIX)
+        Iterator results = titanGraph.query().has(Constants.VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE)
                 .has(Constants.TYPENAME_PROPERTY_KEY, typeName).vertices().iterator();
         Vertex vertex = null;
         if (results != null && results.hasNext()) {
@@ -312,7 +312,7 @@ public class GraphTypeStore implements ITypeStore {
         if (vertex == null) {
             LOG.debug("Adding vertex {}{}", PROPERTY_PREFIX, typeName);
             vertex = titanGraph.addVertex(null);
-            vertex.setProperty(Constants.VERTEX_TYPE_PROPERTY_KEY, PROPERTY_PREFIX);  //Mark as type vertex
+            vertex.setProperty(Constants.VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE);  //Mark as type vertex
             vertex.setProperty(Constants.TYPE_CATEGORY_PROPERTY_KEY, category);
             vertex.setProperty(Constants.TYPENAME_PROPERTY_KEY, typeName);
         }

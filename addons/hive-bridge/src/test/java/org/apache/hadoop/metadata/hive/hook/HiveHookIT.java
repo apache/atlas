@@ -69,6 +69,7 @@ public class HiveHookIT {
         hiveConf.setBoolVar(HiveConf.ConfVars.HIVE_SUPPORT_CONCURRENCY, false);
         hiveConf.setVar(HiveConf.ConfVars.METASTOREWAREHOUSE, System.getProperty("user.dir") + "/target/metastore");
         hiveConf.set(HiveMetaStoreBridge.DGI_URL_PROPERTY, DGI_URL);
+        hiveConf.set("javax.jdo.option.ConnectionURL", "jdbc:derby:./target/metastore_db;create=true");
         hiveConf.set("debug", "true");
         return hiveConf;
     }

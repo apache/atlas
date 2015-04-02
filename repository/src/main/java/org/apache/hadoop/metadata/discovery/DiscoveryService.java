@@ -27,6 +27,11 @@ import java.util.Map;
 public interface DiscoveryService {
 
     /**
+     * Full text search
+     */
+    String searchByFullText(String query) throws DiscoveryException;
+
+    /**
      * Search using query DSL.
      *
      * @param dslQuery query in DSL format.

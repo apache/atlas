@@ -95,7 +95,28 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
         createCompositeAndMixedIndex(Constants.TRAIT_NAMES_INDEX,
                 Constants.TRAIT_NAMES_PROPERTY_KEY, String.class, false, Cardinality.SET);
 
+        //Index for full text search
+        createVertexMixedIndex(Constants.ENTITY_TEXT_PROPERTY_KEY, String.class, Cardinality.SINGLE);
+
+        //Indexes for graph backed type system store
+        createTypeStoreIndexes();
+
         LOG.info("Index creation for global keys complete.");
+    }
+
+    private void createTypeStoreIndexes() {
+        //Create unique index on typeName
+        createCompositeIndex(Constants.TYPENAME_PROPERTY_KEY, Constants.TYPENAME_PROPERTY_KEY, String.class,
+                true, Cardinality.SINGLE);
+
+        //Create index on vertex type + typeName
+        //todo doesn't work, review
+        TitanManagement management = titanGraph.getManagementSystem();
+        PropertyKey vertexType = management.makePropertyKey(Constants.VERTEX_TYPE_PROPERTY_KEY).dataType(String.class).make();
+        PropertyKey typeName = management.getPropertyKey(Constants.TYPENAME_PROPERTY_KEY);
+        management.buildIndex("byTypeName", Vertex.class).addKey(vertexType).addKey(typeName).buildCompositeIndex();
+        management.commit();
+        LOG.debug("Created composite index on {} and {}", Constants.VERTEX_TYPE_PROPERTY_KEY, Constants.TYPENAME_PROPERTY_KEY);
     }
 
     /**

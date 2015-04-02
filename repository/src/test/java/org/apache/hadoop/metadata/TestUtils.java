@@ -37,6 +37,7 @@ import org.testng.Assert;
 import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createClassTypeDef;
 import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
 import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
+import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createStructTypeDef;
 import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createTraitTypeDef;
 
 /**
@@ -61,10 +62,13 @@ public final class TestUtils {
                 new EnumTypeDefinition("OrgLevel", new EnumValue("L1", 1), new EnumValue("L2", 2));
         ts.defineEnumType(orgLevelEnum);
 
+        StructTypeDefinition addressDetails = createStructTypeDef("Address",
+                createRequiredAttrDef("street", DataTypes.STRING_TYPE),
+                createRequiredAttrDef("city", DataTypes.STRING_TYPE));
+
         HierarchicalTypeDefinition<ClassType> deptTypeDef =
                 createClassTypeDef("Department", ImmutableList.<String>of(),
                         createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        createOptionalAttrDef("orgLevel", ts.getDataType(EnumType.class, "OrgLevel")),
                         new AttributeDefinition("employees",
                                 String.format("array<%s>", "Person"), Multiplicity.COLLECTION, true,
                                 "department")
@@ -73,6 +77,8 @@ public final class TestUtils {
         HierarchicalTypeDefinition<ClassType> personTypeDef = createClassTypeDef("Person",
                 ImmutableList.<String>of(),
                 createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                createOptionalAttrDef("orgLevel", ts.getDataType(EnumType.class, "OrgLevel")),
+                createOptionalAttrDef("address", "Address"),
                 new AttributeDefinition("department",
                         "Department", Multiplicity.REQUIRED, false, "employees"),
                 new AttributeDefinition("manager",
@@ -92,7 +98,7 @@ public final class TestUtils {
                 createRequiredAttrDef("level", DataTypes.INT_TYPE)
         );
 
-        ts.defineTypes(ImmutableList.<StructTypeDefinition>of(),
+        ts.defineTypes(ImmutableList.of(addressDetails),
                 ImmutableList.of(securityClearanceTypeDef),
                 ImmutableList.of(deptTypeDef, personTypeDef, managerTypeDef));
     }
@@ -101,12 +107,21 @@ public final class TestUtils {
         Referenceable hrDept = new Referenceable("Department");
         Referenceable john = new Referenceable("Person");
         Referenceable jane = new Referenceable("Manager", "SecurityClearance");
+        Referenceable johnAddr = new Referenceable("Address");
+        Referenceable janeAddr = new Referenceable("Address");
 
         hrDept.set("name", "hr");
         john.set("name", "John");
         john.set("department", hrDept);
+        johnAddr.set("street", "Stewart Drive");
+        johnAddr.set("city", "Sunnyvale");
+        john.set("address", johnAddr);
+
         jane.set("name", "Jane");
         jane.set("department", hrDept);
+        janeAddr.set("street", "Great Americal Parkway");
+        janeAddr.set("city", "Santa Clara");
+        jane.set("address", janeAddr);
 
         john.set("manager", jane);
 

@@ -32,6 +32,8 @@ public final class Constants {
     public static final String ENTITY_TYPE_PROPERTY_KEY = "typeName";
     public static final String ENTITY_TYPE_INDEX = "type_index";
 
+    public static final String ENTITY_TEXT_PROPERTY_KEY = "entityText";
+
     /**
      * Properties for type store graph
      */
