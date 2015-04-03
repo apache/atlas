@@ -1,0 +1,62 @@
+---+ Security Features of the Data Governance and Metadata platform for Hadoop
+
+
+---++ Overview
+
+The following features are available for enhancing the security of the platform:
+   * SSL 
+   * Service Authentication
+   * SPNEGO-based HTTP Authentication
+
+---+++ SSL
+
+Both SSL one-way (server authentication) and two-way (server and client authentication) are supported.  The following application properties (properties configured in the application.properties file) are available for configuring SSL:
+
+   * <code>metadata.enableTLS</code> (false|true) [default: false] - enable/disable the SSL listener
+   * <code>keystore.file</code> - the path to the keystore file leveraged by the server.  This file contains the server certificate.
+   * <code>truststore.file</code> - the path to the truststore file. This file contains the certificates of other trusted entities (e.g. the certificates for client processes if two-way SSL is enabled).  In most instances this can be set to the same value as the keystore.file property (especially if one-way SSL is enabled).
+   * <code>client.auth.enabled</code> (false|true) [default: false] - enable/disable client authentication.  If enabled, the client will have to authenticate to the server during the transport session key creation process (i.e. two-way SSL is in effect).
+   * <code>cert.stores.credential.provider.path</code> - the path to the Credential Provider store file.  The passwords for the keystore, truststore, and server certificate are maintained in this secure file.  Utilize the cputil script in the 'bin' directoy (see below) to populate this file with the passwords required. 
+	
+---++++ Credential Provider Utility Script
+
+In order to prevent the use of clear-text passwords, the DGI platofrm makes use of the Credential Provider facility for secure password storage (see [[http://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/CommandsManual.html#credential][Hadoop Credential Command Reference]] for more information about this facility).  The cputil script in the 'bin' directory can be leveraged to create the password store required.  
+
+To create the credential provdier for DGI:
+
+   * cd to the '<code>bin</code>' directory
+   * type '<code>./cputil.sh</code>'
+   * Enter the path for the generated credential provider.  The format for the path is:
+      * jceks://file/local/file/path/file.jceks or jceks://hdfs@namenodehost:port/path/in/hdfs/to/file.jceks.  The files generally use the ".jceks" extension (e.g. test.jceks)
+   * Enter the passwords for the keystore, truststore, and server key (these passwords need to match the ones utilized for actually creating the associated certificate store files).
+	
+	The credential provider will be generated and saved to the path provided.
+
+---+++ Service Authentication
+
+The DGI platform, upon startup, is associated to an authenticated identity.  By default, in an insecure environment, that identity is the same as the OS authenticated user launching the server.  However, in a secure cluster leveraging kerberos, it is considered a best practice to configure a keytab and principal in order for the platform to authenticate to the KDC. This allows the service to subsequently interact with other secure cluster services (e.g. HDFS).
+
+The properties for configuring service authentication are:
+
+   * <code>metadata.authentication.method</code> (simple|kerberos) [default: simple] - the authentication method to utilize.  Simple will leverage the OS authenticated identity and is the default mechanism.  'kerberos' indicates that the service is required to authenticate to the KDC leveraging the configured keytab and principal.
+   * <code>metadata.authentication.keytab</code> - the path to the keytab file.
+   * <code>metadata.authentication.principal</code> - the principal to use for authenticating to the KDC.  The principal is generally of the form "user/host@realm".  You may use the '_HOST' token for the hostname and the local hostname will be substituted in by the runtime (e.g. "dgi/_HOST@EXAMPLE.COM").
+
+---+++ SPNEGO-based HTTP Authentication
+
+HTTP access to the DGI platform can be secured by enabling the platform's SPNEGO support.  There are currently two supported authentication mechanisms:
+
+   * <code>simple</code> - authentication is performed via a provided user name
+   * <code>kerberos</code> - the KDC authenticated identity of the client is leveraged to authenticate to the server
+	
+The kerberos support requires the client accessing the server to first authenticate to the KDC (usually this is done via the 'kinit' command).  Once authenticated, the user may access the server (the authenticated identity will be related to the server via the SPNEGO negotiation mechanism).
+
+The properties for configuring the SPNEGO support are:
+
+   * <code>metadata.http.authentication.enabled</code> (true|false) [default: false] - a property indicating whether to enable HTTP authentication
+   * <code>metadata.http.authentication.type</code> (simple|kerberos) [default: simple] - the authentication type
+   * <code>metadata.http.authentication.kerberos.principal</code> - the web-application Kerberos principal name. The Kerberos principal name must start with "HTTP/...". For example: "HTTP/localhost@LOCALHOST". There is no default value.
+   * <code>metadata.http.authentication.kerberos.keytab</code> - the path to the keytab file containing the credentials for the kerberos principal.
+	
+For a more detailed discussion of the HTTP authentication mechanism refer to [[http://hadoop.apache.org/docs/stable/hadoop-auth/Configuration.html][Hadoop Auth, Java HTTP SPNEGO 2.6.0 - Server Side Configuration]].  The prefix that document references is "metadata.http.authentication" in the case of the DGI authentication implementation.
+

@@ -115,6 +115,8 @@ public class SecureEmbeddedServerIT {
             Assert.fail("Should have thrown an exception");
         } catch (IOException e) {
             assert e.getMessage().equals("No credential provider path configured for storage of certificate store passwords");
+        } finally {
+            secureEmbeddedServer.server.stop();
         }
     }
 
@@ -126,27 +128,30 @@ public class SecureEmbeddedServerIT {
         // setup the credential provider
         setupCredentials();
 
-        secureEmbeddedServer = new SecureEmbeddedServer(21443, "webapp/target/metadata-governance") {
-            @Override
-            protected PropertiesConfiguration getConfiguration() {
-                return configuration;
-            }
-        };
-        WebAppContext webapp = new WebAppContext();
-        webapp.setContextPath("/");
-        webapp.setWar(System.getProperty("user.dir") + getWarPath());
-        secureEmbeddedServer.server.setHandler(webapp);
+        try {
+            secureEmbeddedServer = new SecureEmbeddedServer(21443, "webapp/target/metadata-governance") {
+                @Override
+                protected PropertiesConfiguration getConfiguration() {
+                    return configuration;
+                }
+            };
+            WebAppContext webapp = new WebAppContext();
+            webapp.setContextPath("/");
+            webapp.setWar(System.getProperty("user.dir") + getWarPath());
+            secureEmbeddedServer.server.setHandler(webapp);
 
-        secureEmbeddedServer.server.start();
+            secureEmbeddedServer.server.start();
 
-        URL url = new URL("https://localhost:21443/");
-        HttpURLConnection connection = (HttpURLConnection)url.openConnection();
-        connection.setRequestMethod("GET");
-        connection.connect();
+            URL url = new URL("https://localhost:21443/");
+            HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.connect();
 
-        // test to see whether server is up and root page can be served
-        assert connection.getResponseCode() == 200;
-        secureEmbeddedServer.server.stop();
+            // test to see whether server is up and root page can be served
+            assert connection.getResponseCode() == 200;
+        } finally {
+            secureEmbeddedServer.server.stop();
+        }
 
     }
 
@@ -166,6 +171,8 @@ public class SecureEmbeddedServerIT {
             Assert.fail("No entries should generate an exception");
         } catch (IOException e) {
             assert e.getMessage().startsWith("No credential entry found for");
+        } finally {
+            secureEmbeddedServer.server.stop();
         }
 
     }
@@ -181,27 +188,30 @@ public class SecureEmbeddedServerIT {
         // setup the credential provider
         setupCredentials();
 
-        secureEmbeddedServer = new SecureEmbeddedServer(21443, "webapp/target/metadata-governance") {
-            @Override
-            protected PropertiesConfiguration getConfiguration() {
-                return configuration;
-            }
-        };
-        WebAppContext webapp = new WebAppContext();
-        webapp.setContextPath("/");
-        webapp.setWar(System.getProperty("user.dir") + getWarPath());
-        secureEmbeddedServer.server.setHandler(webapp);
+        try {
+            secureEmbeddedServer = new SecureEmbeddedServer(21443, "webapp/target/metadata-governance") {
+                @Override
+                protected PropertiesConfiguration getConfiguration() {
+                    return configuration;
+                }
+            };
+            WebAppContext webapp = new WebAppContext();
+            webapp.setContextPath("/");
+            webapp.setWar(System.getProperty("user.dir") + getWarPath());
+            secureEmbeddedServer.server.setHandler(webapp);
 
-        secureEmbeddedServer.server.start();
+            secureEmbeddedServer.server.start();
 
-        TestListenerAdapter tla = new TestListenerAdapter();
-        TestNG testng = new TestNG();
-        testng.setTestClasses(new Class[] { AdminJerseyResourceIT.class, EntityJerseyResourceIT.class,
-                MetadataDiscoveryJerseyResourceIT.class, RexsterGraphJerseyResourceIT.class, TypesJerseyResourceIT.class});
-        testng.addListener(tla);
-        testng.run();
+            TestListenerAdapter tla = new TestListenerAdapter();
+            TestNG testng = new TestNG();
+            testng.setTestClasses(new Class[] { AdminJerseyResourceIT.class, EntityJerseyResourceIT.class,
+                    MetadataDiscoveryJerseyResourceIT.class, RexsterGraphJerseyResourceIT.class, TypesJerseyResourceIT.class});
+            testng.addListener(tla);
+            testng.run();
 
-        secureEmbeddedServer.server.stop();
+        } finally {
+            secureEmbeddedServer.server.stop();
+        }
 
     }
 
