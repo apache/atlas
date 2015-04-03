@@ -78,6 +78,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -91,6 +93,14 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
     private static final int WAIT_TIME = 3;
     private static ExecutorService executor;
 
+    private static final String MIN_THREADS = "hive.hook.dgi.minThreads";
+    private static final String MAX_THREADS = "hive.hook.dgi.maxThreads";
+    private static final String KEEP_ALIVE_TIME = "hive.hook.dgi.keepAliveTime";
+
+    private static final int minThreadsDefault = 5;
+    private static final int maxThreadsDefault = 5;
+    private static final long keepAliveTimeDefault = 10;
+
     static {
         // anything shared should be initialized here and destroyed in the
         // shutdown hook The hook contract is weird in that it creates a
@@ -99,7 +109,14 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
         // initialize the async facility to process hook calls. We don't
         // want to do this inline since it adds plenty of overhead for the
         // query.
-        executor = Executors.newSingleThreadExecutor(
+        HiveConf hiveConf = new HiveConf();
+        int minThreads = hiveConf.getInt(MIN_THREADS, minThreadsDefault);
+        int maxThreads = hiveConf.getInt(MAX_THREADS, maxThreadsDefault);
+        long keepAliveTime = hiveConf.getLong(KEEP_ALIVE_TIME, keepAliveTimeDefault);
+
+        executor = new ThreadPoolExecutor(minThreads, maxThreads,
+                keepAliveTime, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<Runnable>(),
                 new ThreadFactoryBuilder()
                         .setDaemon(true)
                         .setNameFormat("DGI Logger %d")
@@ -199,8 +216,16 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
     }
 
     private void registerCTAS(HiveMetaStoreBridge dgiBridge, HookContext hookContext, HiveConf conf) throws Exception {
+        LOG.debug("Registering CTAS");
+
         Set<ReadEntity> inputs = hookContext.getInputs();
         Set<WriteEntity> outputs = hookContext.getOutputs();
+
+        //Even explain CTAS has operation name as CREATETABLE_AS_SELECT
+        if (inputs.isEmpty() && outputs.isEmpty()) {
+            LOG.info("Explain statement. Skipping...");
+        }
+
         String user = hookContext.getUserName();
         HiveOperation operation = HiveOperation.valueOf(hookContext.getOperationName());
         String queryId = null;
@@ -213,7 +238,6 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
             queryStr = plan.getQueryString();
             queryStartTime = plan.getQueryStartTime();
         }
-
 
         Referenceable processReferenceable = new Referenceable(HiveDataTypes.HIVE_PROCESS.getName());
         processReferenceable.set("processName", operation.getOperationName());
@@ -311,7 +335,7 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
         ExplainTask explain = new ExplainTask();
         explain.initialize(conf, queryPlan, null);
 
-        org.json.JSONObject explainPlan = explain.getJSONLogicalPlan(null, ew);
+        org.json.JSONObject explainPlan = explain.getJSONPlan(null, ew);
         return explainPlan.toString();
     }
 

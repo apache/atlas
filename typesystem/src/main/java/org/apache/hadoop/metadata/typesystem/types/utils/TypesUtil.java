@@ -26,6 +26,7 @@ import org.apache.hadoop.metadata.typesystem.types.EnumValue;
 import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.IDataType;
 import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
+import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.TraitType;
 
 /**
@@ -71,6 +72,10 @@ public class TypesUtil {
     public static HierarchicalTypeDefinition<TraitType> createTraitTypeDef(
             String name, ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
         return new HierarchicalTypeDefinition<>(TraitType.class, name, superTypes, attrDefs);
+    }
+
+    public static StructTypeDefinition createStructTypeDef(String name, AttributeDefinition... attrDefs) {
+        return new StructTypeDefinition(name, attrDefs);
     }
 
     public static HierarchicalTypeDefinition<ClassType> createClassTypeDef(

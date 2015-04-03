@@ -36,9 +36,12 @@ import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.ITypedStruct;
 import org.apache.hadoop.metadata.typesystem.persistence.Id;
 import org.apache.hadoop.metadata.typesystem.persistence.MapIds;
+import org.apache.hadoop.metadata.typesystem.persistence.StructInstance;
 import org.apache.hadoop.metadata.typesystem.types.AttributeInfo;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
 import org.apache.hadoop.metadata.typesystem.types.DataTypes;
+import org.apache.hadoop.metadata.typesystem.types.EnumType;
+import org.apache.hadoop.metadata.typesystem.types.EnumValue;
 import org.apache.hadoop.metadata.typesystem.types.IDataType;
 import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
 import org.apache.hadoop.metadata.typesystem.types.ObjectGraphWalker;
@@ -67,6 +70,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
     private static final Logger LOG =
             LoggerFactory.getLogger(GraphBackedMetadataRepository.class);
+    private static final String FULL_TEXT_DELIMITER = " ";
 
     private final AtomicInteger ID_SEQ = new AtomicInteger(0);
 
@@ -422,7 +426,71 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
             List<ITypedReferenceableInstance> newTypedInstances = discoverInstances(entityProcessor);
             entityProcessor.createVerticesForClassTypes(newTypedInstances);
-            return addDiscoveredInstances(typedInstance, entityProcessor, newTypedInstances);
+            String guid = addDiscoveredInstances(typedInstance, entityProcessor, newTypedInstances);
+            addFullTextProperty(entityProcessor, newTypedInstances);
+            return guid;
+        }
+
+        private void addFullTextProperty(EntityProcessor entityProcessor, List<ITypedReferenceableInstance> newTypedInstances) throws MetadataException {
+            for (ITypedReferenceableInstance typedInstance : newTypedInstances) { // Traverse
+                Id id = typedInstance.getId();
+                Vertex instanceVertex = entityProcessor.idToVertexMap.get(id);
+                String fullText = getFullText(instanceVertex, true);
+                instanceVertex.setProperty(Constants.ENTITY_TEXT_PROPERTY_KEY, fullText);
+            }
+        }
+
+        private String getFullText(Vertex instanceVertex, boolean followReferences) throws MetadataException {
+            String guid = instanceVertex.getProperty(Constants.GUID_PROPERTY_KEY);
+            ITypedReferenceableInstance typedReference = graphToInstanceMapper.mapGraphToTypedInstance(guid, instanceVertex);
+            return getFullText(typedReference, followReferences);
+        }
+
+        private String getFullText(ITypedInstance typedInstance, boolean followReferences) throws MetadataException {
+            StringBuilder fullText = new StringBuilder();
+            for (AttributeInfo attributeInfo : typedInstance.fieldMapping().fields.values()) {
+                Object attrValue = typedInstance.get(attributeInfo.name);
+                if (attrValue == null) {
+                    continue;
+                }
+
+                String attrFullText = null;
+                switch(attributeInfo.dataType().getTypeCategory()) {
+                    case PRIMITIVE:
+                        attrFullText = String.valueOf(attrValue);
+                        break;
+
+                    case ENUM:
+                        attrFullText = ((EnumValue)attrValue).value;
+                        break;
+
+                    case ARRAY:
+                        break;
+
+                    case MAP:
+                        break;
+
+                    case CLASS:
+                        if (followReferences) {
+                            String refGuid = ((ITypedReferenceableInstance) attrValue).getId()._getId();
+                            Vertex refVertex = getVertexForGUID(refGuid);
+                            attrFullText = getFullText(refVertex, false);
+                        }
+                        break;
+
+                    case STRUCT:
+                    case TRAIT:
+                        if (followReferences) {
+                            attrFullText = getFullText((ITypedInstance) attrValue, false);
+                        }
+                        break;
+                }
+                if (attrFullText != null) {
+                    fullText = fullText.append(FULL_TEXT_DELIMITER).append(attributeInfo.name)
+                            .append(FULL_TEXT_DELIMITER).append(attrFullText);
+                }
+            }
+            return fullText.toString();
         }
 
         /**
@@ -518,6 +586,9 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                                            IDataType dataType) throws MetadataException {
             LOG.debug("mapping attributeInfo {}", attributeInfo);
             final String propertyName = typedInstance.getTypeName() + "." + attributeInfo.name;
+            if (typedInstance.get(attributeInfo.name) == null) {
+                return;
+            }
 
             switch (dataType.getTypeCategory()) {
                 case PRIMITIVE:
@@ -824,8 +895,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                                          AttributeInfo attributeInfo) throws MetadataException {
             LOG.debug("mapping attributeInfo = " + attributeInfo);
             final IDataType dataType = attributeInfo.dataType();
-            final String vertexPropertyName =
-                    typedInstance.getTypeName() + "." + attributeInfo.name;
+            final String vertexPropertyName = typedInstance.getTypeName() + "." + attributeInfo.name;
 
             switch (dataType.getTypeCategory()) {
                 case PRIMITIVE:
@@ -833,6 +903,10 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                     break;  // add only if vertex has this attribute
 
                 case ENUM:
+                    if (instanceVertex.getProperty(vertexPropertyName) == null) {
+                        return;
+                    }
+
                     typedInstance.setInt(attributeInfo.name,
                             instanceVertex.<Integer>getProperty(vertexPropertyName));
                     break;
@@ -1060,8 +1134,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                                           ITypedInstance typedInstance,
                                           AttributeInfo attributeInfo) throws MetadataException {
             LOG.debug("Adding primitive {} from vertex {}", attributeInfo, instanceVertex);
-            final String vertexPropertyName = typedInstance.getTypeName() + "." +
-                    attributeInfo.name;
+            final String vertexPropertyName = typedInstance.getTypeName() + "." + attributeInfo.name;
             if (instanceVertex.getProperty(vertexPropertyName) == null) {
                 return;
             }

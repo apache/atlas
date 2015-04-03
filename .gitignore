@@ -34,3 +34,4 @@ maven-eclipse.xml
 #log files
 logs
 *.log
+test-output

@@ -35,13 +35,22 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Singleton
 @InterfaceAudience.Private
 public class TypeSystem {
     private static final TypeSystem INSTANCE = new TypeSystem();
-    public static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    public static ThreadLocal<DateFormat> dateFormat = new ThreadLocal() {
+        @Override
+        public DateFormat initialValue() {
+            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+            return dateFormat;
+        }
+    };
+
     private Map<String, IDataType> types;
     private IdType idType;
 
@@ -277,7 +286,7 @@ public class TypeSystem {
     }
 
     public DateFormat getDateFormat() {
-        return dateFormat;
+        return dateFormat.get();
     }
 
     public boolean allowNullsInCollections() {

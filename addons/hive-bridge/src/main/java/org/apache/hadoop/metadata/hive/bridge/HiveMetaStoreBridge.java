@@ -62,7 +62,7 @@ public class HiveMetaStoreBridge {
         }
     }
 
-    public static final String DGI_URL_PROPERTY = "hive.dgi.url";
+    public static final String DGI_URL_PROPERTY = "hive.hook.dgi.url";
 
     private static final Logger LOG = LoggerFactory.getLogger(HiveMetaStoreBridge.class);
 

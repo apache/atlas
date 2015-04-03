@@ -34,6 +34,7 @@ import org.apache.hadoop.metadata.typesystem.types.ClassType;
 import org.apache.hadoop.metadata.typesystem.types.DataTypes;
 import org.apache.hadoop.metadata.typesystem.types.EnumTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.TraitType;
 import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.testng.annotations.BeforeClass;
@@ -44,7 +45,7 @@ import javax.inject.Inject;
 import java.util.List;
 
 @Guice(modules = RepositoryMetadataModule.class)
-public class GraphTypeStoreTest {
+public class GraphBackedTypeStoreTest {
     @Inject
     private GraphProvider<TitanGraph> graphProvider;
 
@@ -85,7 +86,9 @@ public class GraphTypeStoreTest {
         Assert.assertEquals(1, enumTypes.size());
 
         //validate class
-        Assert.assertTrue(types.structTypesAsJavaList().isEmpty());
+        List<StructTypeDefinition> structTypes = types.structTypesAsJavaList();
+        Assert.assertEquals(1, structTypes.size());
+
         List<HierarchicalTypeDefinition<ClassType>> classTypes = types.classTypesAsJavaList();
         Assert.assertEquals(3, classTypes.size());
         for (HierarchicalTypeDefinition<ClassType> classType : classTypes) {

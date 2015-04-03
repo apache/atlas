@@ -20,12 +20,13 @@ Hive metadata can be modelled in DGI using its Type System. The default modellin
 
 
 ---++ Importing Hive Metadata
-org.apache.hadoop.metadata.hive.bridge.HiveMetaStoreBridge imports the hive metadata into DGI using the typesystem defined in org.apache.hadoop.metadata.hive.model.HiveDataModelGenerator. import-hive.sh command can be used to facilitate this. Set-up the following configs in <dgi package>/conf/hive-site.xml:
+org.apache.hadoop.metadata.hive.bridge.HiveMetaStoreBridge imports the hive metadata into DGI using the typesystem defined in org.apache.hadoop.metadata.hive.model.HiveDataModelGenerator. import-hive.sh command can be used to facilitate this.
+Set-up the following configs in <dgi package>/conf/hive-site.xml:
    * Hive metastore configuration - Refer [[https://cwiki.apache.org/confluence/display/Hive/AdminManual+MetastoreAdmin][Hive Metastore Configuration documentation]]
    * DGI endpoint - Add the following property with the DGI endpoint for your set-up
 <verbatim>
 <property>
-  <name>hive.dgi.url</name>
+  <name>hive.hook.dgi.url</name>
   <value>http://localhost:21000/</value>
 </property>
 </verbatim>
@@ -34,13 +35,26 @@ Usage: <dgi package>/bin/import-hive.sh
 
 
 ---++ Hive Hook
-Hive supports listeners on hive command execution using hive hooks. This can be used to add/update/remove entities in DGI. Follow the following instructions in your hive set-up
-   * Add org.apache.hadoop.metadata.hive.hook.HiveHook as post execution hook in hive-ste.xml
+Hive supports listeners on hive command execution using hive hooks. This is used to add/update/remove entities in DGI using the model defined in org.apache.hadoop.metadata.hive.model.HiveDataModelGenerator.
+The hook submits the request to a thread pool executor to avoid blocking the command execution. Follow the these instructions in your hive set-up to add hive hook for DGI:
+   * Add org.apache.hadoop.metadata.hive.hook.HiveHook as post execution hook in hive-site.xml
 <verbatim>
 <property>
   <name>hive.exec.post.hooks</name>
   <value>org.apache.hadoop.metadata.hive.hook.HiveHook</value>
 </property>
 </verbatim>
+   * Add the following property in hive-ste.xml with the DGI endpoint for your set-up
+<verbatim>
+<property>
+  <name>hive.hook.dgi.url</name>
+  <value>http://localhost:21000/</value>
+</property>
+</verbatim>
    * Add 'export HIVE_AUX_JARS_PATH=<dgi package>/hook/hive' in hive-env.sh
-   * Restart hive-server2
+
+The following properties in hive-site.xml control the thread pool details:
+   * hive.hook.dgi.minThreads - core number of threads. default 5
+   * hive.hook.dgi.maxThreads - maximum number of threads. default 5
+   * hive.hook.dgi.keepAliveTime - keep alive time in msecs. default 10
+

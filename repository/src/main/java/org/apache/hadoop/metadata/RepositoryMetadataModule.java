@@ -29,7 +29,7 @@ import org.apache.hadoop.metadata.repository.graph.GraphBackedMetadataRepository
 import org.apache.hadoop.metadata.repository.graph.GraphBackedSearchIndexer;
 import org.apache.hadoop.metadata.repository.graph.GraphProvider;
 import org.apache.hadoop.metadata.repository.graph.TitanGraphProvider;
-import org.apache.hadoop.metadata.repository.typestore.GraphTypeStore;
+import org.apache.hadoop.metadata.repository.typestore.GraphBackedTypeStore;
 import org.apache.hadoop.metadata.repository.typestore.ITypeStore;
 import org.apache.hadoop.metadata.services.DefaultMetadataService;
 import org.apache.hadoop.metadata.services.MetadataService;
@@ -55,7 +55,7 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
         // get the impl classes for the repo and the graph service
         // this.graphServiceClass = gsp.getImplClass();
         this.metadataRepoClass = GraphBackedMetadataRepository.class;
-        this.typeStore = GraphTypeStore.class;
+        this.typeStore = GraphBackedTypeStore.class;
         this.metadataService = DefaultMetadataService.class;
         this.discoveryService = GraphBackedDiscoveryService.class;
         this.searchIndexer = GraphBackedSearchIndexer.class;
