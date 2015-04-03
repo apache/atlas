@@ -94,8 +94,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
         createCompositeAndMixedIndex(Constants.TRAIT_NAMES_INDEX,
                 Constants.TRAIT_NAMES_PROPERTY_KEY, String.class, false, Cardinality.SET);
 
-        //Index for full text search
-        createVertexMixedIndex(Constants.ENTITY_TEXT_PROPERTY_KEY, String.class, Cardinality.SINGLE);
+        // Index for full text search
+        createVertexMixedIndex(Constants.ENTITY_TEXT_PROPERTY_KEY, String.class);
 
         //Indexes for graph backed type system store
         createTypeStoreIndexes();

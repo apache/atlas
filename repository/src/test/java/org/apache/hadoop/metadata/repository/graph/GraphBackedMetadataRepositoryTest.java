@@ -51,6 +51,7 @@ import scala.actors.threadpool.Arrays;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
@@ -378,6 +379,21 @@ public class GraphBackedMetadataRepositoryTest {
                         new AttributeDefinition("partitions",
                                 String.format("array<%s>", "partition_type"),
                                 Multiplicity.COLLECTION, true, null),
+                        // map of primitives
+                        new AttributeDefinition("parametersMap",
+                                DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),
+                                        DataTypes.STRING_TYPE.getName()),
+                                Multiplicity.COLLECTION, true, null),
+                        // map of classes - todo - enable this
+//                        new AttributeDefinition("columnsMap",
+//                                DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),
+//                                        "column_type"),
+//                                Multiplicity.COLLECTION, true, null),
+                        // map of structs   todo - enable this
+//                        new AttributeDefinition("partitionsMap",
+//                                DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),
+//                                        "partition_type"),
+//                                Multiplicity.COLLECTION, true, null),
                         // struct reference
                         new AttributeDefinition("serde1",
                                 "serdeType", Multiplicity.REQUIRED, false, null),
@@ -385,7 +401,8 @@ public class GraphBackedMetadataRepositoryTest {
                                 "serdeType", Multiplicity.REQUIRED, false, null),
                         // class reference
                         new AttributeDefinition("database",
-                                DATABASE_TYPE, Multiplicity.REQUIRED, true, null));
+                                DATABASE_TYPE, Multiplicity.REQUIRED, true, null)
+                );
 
         HierarchicalTypeDefinition<TraitType> classificationTypeDefinition =
                 TypesUtil.createTraitTypeDef(CLASSIFICATION,
@@ -427,22 +444,38 @@ public class GraphBackedMetadataRepositoryTest {
         serde2Instance.set("serde", "serde2");
         tableInstance.set("serde2", serde2Instance);
 
+        // HashMap<String, Referenceable> columnsMap = new HashMap<>();
         ArrayList<Referenceable> columns = new ArrayList<>();
         for (int index = 0; index < 5; index++) {
             Referenceable columnInstance = new Referenceable("column_type");
-            columnInstance.set("name", "column_" + index);
+            final String name = "column_" + index;
+            columnInstance.set("name", name);
             columnInstance.set("type", "string");
+
             columns.add(columnInstance);
+            // columnsMap.put(name, columnInstance);
         }
         tableInstance.set("columns", columns);
+        // tableInstance.set("columnsMap", columnsMap);
 
+//        HashMap<String, Struct> partitionsMap = new HashMap<>();
         ArrayList<Struct> partitions = new ArrayList<>();
         for (int index = 0; index < 5; index++) {
             Struct partitionInstance = new Struct("partition_type");
-            partitionInstance.set("name", "partition_" + index);
+            final String name = "partition_" + index;
+            partitionInstance.set("name", name);
+
             partitions.add(partitionInstance);
+//            partitionsMap.put(name, partitionInstance);
         }
         tableInstance.set("partitions", partitions);
+//        tableInstance.set("partitionsMap", partitionsMap);
+
+        HashMap<String, String> parametersMap = new HashMap<>();
+        parametersMap.put("foo", "bar");
+        parametersMap.put("bar", "baz");
+        parametersMap.put("some", "thing");
+        tableInstance.set("parametersMap", parametersMap);
 
         ClassType tableType = typeSystem.getDataType(ClassType.class, TABLE_TYPE);
         return tableType.convert(tableInstance, Multiplicity.REQUIRED);

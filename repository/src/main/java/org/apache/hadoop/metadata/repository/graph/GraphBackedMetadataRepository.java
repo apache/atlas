@@ -36,11 +36,9 @@ import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.ITypedStruct;
 import org.apache.hadoop.metadata.typesystem.persistence.Id;
 import org.apache.hadoop.metadata.typesystem.persistence.MapIds;
-import org.apache.hadoop.metadata.typesystem.persistence.StructInstance;
 import org.apache.hadoop.metadata.typesystem.types.AttributeInfo;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
 import org.apache.hadoop.metadata.typesystem.types.DataTypes;
-import org.apache.hadoop.metadata.typesystem.types.EnumType;
 import org.apache.hadoop.metadata.typesystem.types.EnumValue;
 import org.apache.hadoop.metadata.typesystem.types.IDataType;
 import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
@@ -1047,18 +1045,25 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 return;
             }
             DataTypes.MapType mapType = (DataTypes.MapType) attributeInfo.dataType();
-            final IDataType elementType = mapType.getValueType();
+            final IDataType keyType = mapType.getKeyType();
+            final IDataType valueType = mapType.getValueType();
 
             HashMap values = new HashMap();
             for (String propertyNameWithSuffix : keys.split(",")) {
-                final String key = propertyNameWithSuffix.substring(
-                        propertyNameWithSuffix.lastIndexOf(".") + 1,
-                        propertyNameWithSuffix.lastIndexOf(":"));
+                final String key = extractKey(propertyNameWithSuffix, keyType);
                 values.put(key, mapVertexToCollectionEntry(instanceVertex, attributeInfo,
-                        elementType, propertyName, propertyNameWithSuffix));
+                        valueType, propertyName, propertyNameWithSuffix));
             }
 
             typedInstance.set(attributeInfo.name, values);
+        }
+
+        private String extractKey(String propertyNameWithSuffix, IDataType keyType) {
+            return propertyNameWithSuffix.substring(
+                    propertyNameWithSuffix.lastIndexOf(".") + 1,
+                    keyType.getTypeCategory() == DataTypes.TypeCategory.PRIMITIVE
+                            ? propertyNameWithSuffix.length()
+                            : propertyNameWithSuffix.lastIndexOf(":"));
         }
 
         private ITypedStruct getStructInstanceFromVertex(Vertex instanceVertex,
