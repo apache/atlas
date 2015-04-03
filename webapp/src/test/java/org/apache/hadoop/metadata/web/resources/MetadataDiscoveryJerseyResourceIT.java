@@ -147,6 +147,16 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         Assert.assertEquals(response.getString("queryType"), "dsl");
     }
 
+    @Test(enabled = false)
+    public void testSearchUsingFullText() throws Exception {
+        String query = "foo bar";
+        JSONObject response = serviceClient.searchByFullText(query);
+        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+
+        Assert.assertEquals(response.getString("query"), query);
+        Assert.assertEquals(response.getString("queryType"), "full-text");
+    }
+
     private void createTypes() throws Exception {
         HierarchicalTypeDefinition<ClassType> dslTestTypeDefinition =
                 TypesUtil.createClassTypeDef("dsl_test_type",

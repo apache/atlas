@@ -92,16 +92,24 @@ public class MetadataDiscoveryResource {
             } catch (Throwable throwable) {
                 LOG.error("Unable to get entity list for query {} using dsl", query, throwable);
 
-                // todo: fall back to full text search
-                response.put("queryType", "full-text");
-                response.put(MetadataServiceClient.RESULTS, new JSONObject());
+                try {   //fall back to full-text
+                    final String jsonResult = discoveryService.searchByFullText(query);
+                    response.put("queryType", "full-text");
+                    response.put(MetadataServiceClient.RESULTS, new JSONObject(jsonResult));
+                } catch (DiscoveryException e) {
+                    LOG.error("Unable to get entity list for query {}", query, e);
+                    throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+                } catch (JSONException e) {
+                    LOG.error("Unable to get entity list for query {}", query, e);
+                    throw new WebApplicationException(
+                            Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+                }
             }
 
             return Response.ok(response).build();
         } catch (JSONException e) {
             LOG.error("Unable to get entity list for query {}", query, e);
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
 
@@ -176,5 +184,37 @@ public class MetadataDiscoveryResource {
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
+    }
+
+    /**
+     * Search using full text search.
+     *
+     * @param query search query.
+     * @return JSON representing the type and results.
+     */
+    @GET
+    @Path("search/fulltext")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response searchUsingFullText(@QueryParam("query") String query) {
+        Preconditions.checkNotNull(query, "query cannot be null");
+
+        try {
+            final String jsonResult = discoveryService.searchByFullText(query);
+
+            JSONObject response = new JSONObject();
+            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
+            response.put("query", query);
+            response.put("queryType", "full-text");
+            response.put(MetadataServiceClient.RESULTS, new JSONObject(jsonResult));
+
+            return Response.ok(response).build();
+        } catch (DiscoveryException e) {
+            LOG.error("Unable to get entity list for query {}", query, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (JSONException e) {
+            LOG.error("Unable to get entity list for query {}", query, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        }
+
     }
 }

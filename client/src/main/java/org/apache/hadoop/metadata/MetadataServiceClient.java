@@ -73,7 +73,8 @@ public class MetadataServiceClient {
         //Search operations
         SEARCH("api/metadata/discovery/search", HttpMethod.GET),
         SEARCH_DSL("api/metadata/discovery/search/dsl", HttpMethod.GET),
-        SEARCH_GREMLIN("api/metadata/discovery/search/gremlin", HttpMethod.GET);
+        SEARCH_GREMLIN("api/metadata/discovery/search/gremlin", HttpMethod.GET),
+        SEARCH_FULL_TEXT("api/metadata/discovery/search/fulltext", HttpMethod.GET);
 
         private final String method;
         private final String path;
@@ -157,6 +158,8 @@ public class MetadataServiceClient {
                 "g.V.has(\"typeName\",\"%s\").and(_().has(\"%s.%s\", T.eq, \"%s\")).toList()",
                 typeName, typeName, attributeName, attributeValue);
         return searchByGremlin(gremlinQuery);
+//        String dslQuery = String.format("%s where %s = \"%s\"", typeName, attributeName, attributeValue);
+//        return searchByDSL(dslQuery);
     }
 
     /**
@@ -181,6 +184,18 @@ public class MetadataServiceClient {
         WebResource resource = getResource(API.SEARCH_GREMLIN);
         resource = resource.queryParam("query", gremlinQuery);
         return callAPIWithResource(API.SEARCH_GREMLIN, resource);
+    }
+
+    /**
+     * Search given full text search
+     * @param query Query
+     * @return result json object
+     * @throws MetadataServiceException
+     */
+    public JSONObject searchByFullText(String query) throws MetadataServiceException {
+        WebResource resource = getResource(API.SEARCH_FULL_TEXT);
+        resource = resource.queryParam("query", query);
+        return callAPIWithResource(API.SEARCH_FULL_TEXT, resource);
     }
 
     public String getRequestId(JSONObject json) throws MetadataServiceException {
