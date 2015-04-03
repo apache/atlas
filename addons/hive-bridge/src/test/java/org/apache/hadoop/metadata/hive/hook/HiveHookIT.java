@@ -26,8 +26,6 @@ import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.hive.bridge.HiveMetaStoreBridge;
 import org.apache.hadoop.metadata.hive.model.HiveDataModelGenerator;
 import org.apache.hadoop.metadata.hive.model.HiveDataTypes;
-import org.apache.hadoop.metadata.typesystem.TypesDef;
-import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;

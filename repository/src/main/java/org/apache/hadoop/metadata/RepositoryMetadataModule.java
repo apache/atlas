@@ -22,6 +22,8 @@ import com.google.inject.Scopes;
 import com.google.inject.throwingproviders.ThrowingProviderBinder;
 import com.thinkaurelius.titan.core.TitanGraph;
 import org.apache.hadoop.metadata.discovery.DiscoveryService;
+import org.apache.hadoop.metadata.discovery.HiveLineageService;
+import org.apache.hadoop.metadata.discovery.LineageService;
 import org.apache.hadoop.metadata.discovery.SearchIndexer;
 import org.apache.hadoop.metadata.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
@@ -48,6 +50,7 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
     private Class<? extends MetadataService> metadataService;
     private Class<? extends DiscoveryService> discoveryService;
     private Class<? extends SearchIndexer> searchIndexer;
+    private Class<? extends LineageService> lineageService;
 
     public RepositoryMetadataModule() {
         // GraphServiceConfigurator gsp = new GraphServiceConfigurator();
@@ -59,6 +62,7 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
         this.metadataService = DefaultMetadataService.class;
         this.discoveryService = GraphBackedDiscoveryService.class;
         this.searchIndexer = GraphBackedSearchIndexer.class;
+        this.lineageService = HiveLineageService.class;
     }
 
     protected void configure() {
@@ -86,5 +90,7 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
         bind(DiscoveryService.class).to(discoveryService);
 
         bind(SearchIndexer.class).to(searchIndexer);
+
+        bind(LineageService.class).to(lineageService);
     }
 }

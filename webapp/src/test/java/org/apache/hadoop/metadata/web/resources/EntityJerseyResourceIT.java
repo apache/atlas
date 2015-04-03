@@ -64,7 +64,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     private static final String DATABASE_TYPE = "hive_database";
     private static final String DATABASE_NAME = "foo";
-    private static final String TABLE_TYPE = "hive_table";
+    private static final String TABLE_TYPE = "hive_table_type";
     private static final String TABLE_NAME = "bar";
 
     private Referenceable tableInstance;

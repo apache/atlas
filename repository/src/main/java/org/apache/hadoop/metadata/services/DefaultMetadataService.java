@@ -45,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +55,7 @@ import java.util.Set;
  * Simple wrapper over TypeSystem and MetadataRepository services with hooks
  * for listening to changes to the repository.
  */
+@Singleton
 public class DefaultMetadataService implements MetadataService {
 
     private static final Logger LOG =

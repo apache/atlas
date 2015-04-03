@@ -243,8 +243,7 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${basedir}/conf
-                            </outputDirectory>
+                            <outputDirectory>${basedir}/conf</outputDirectory>
                             <resources>
                                 <resource>
                                     <directory>${project.build.directory}/conf</directory>

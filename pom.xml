@@ -692,7 +692,6 @@
                 <filtering>false</filtering>
                 <includes>
                     <include>application.properties</include>
-                    <include>graph.properties</include>
                     <include>log4j.xml</include>
                 </includes>
             </resource>
@@ -893,6 +892,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.7.2</version>
                 <configuration>
+                    <!--<skipTests>true</skipTests>-->
                     <forkMode>always</forkMode>
                 </configuration>
                 <dependencies>

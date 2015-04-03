@@ -84,8 +84,13 @@
         <appender-ref ref="FILE"/>
     </logger>
 
+    <logger name="com.google" additivity="false">
+        <level value="info"/>
+        <appender-ref ref="FILE"/>
+    </logger>
+
     <root>
-        <priority value="debug"/>
+        <priority value="info"/>
         <appender-ref ref="FILE"/>
     </root>
 
