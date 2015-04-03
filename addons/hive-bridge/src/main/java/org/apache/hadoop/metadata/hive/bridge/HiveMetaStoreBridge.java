@@ -190,6 +190,9 @@ public class HiveMetaStoreBridge {
         tableRef.set("tableType", hiveTable.getTableType());
         tableRef.set("temporary", hiveTable.isTemporary());
 
+        // List<Referenceable> fieldsList = getColumns(storageDesc);
+        // tableRef.set("columns", fieldsList);
+
         Referenceable tableReferenceable = createInstance(tableRef);
         return Pair.of(tableReferenceable, sdReferenceable);
     }
@@ -302,17 +305,7 @@ public class HiveMetaStoreBridge {
         }
         */
 
-        List<Referenceable> fieldsList = new ArrayList<>();
-        Referenceable colReferenceable;
-        for (FieldSchema fs : storageDesc.getCols()) {
-            LOG.debug("Processing field " + fs);
-            colReferenceable = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
-            colReferenceable.set("name", fs.getName());
-            colReferenceable.set("type", fs.getType());
-            colReferenceable.set("comment", fs.getComment());
-
-            fieldsList.add(createInstance(colReferenceable));
-        }
+        List<Referenceable> fieldsList = getColumns(storageDesc);
         sdReferenceable.set("cols", fieldsList);
 
         List<Struct> sortColsStruct = new ArrayList<>();
@@ -341,6 +334,21 @@ public class HiveMetaStoreBridge {
         sdReferenceable.set("storedAsSubDirectories", storageDesc.isStoredAsSubDirectories());
 
         return createInstance(sdReferenceable);
+    }
+
+    private List<Referenceable> getColumns(StorageDescriptor storageDesc) throws Exception {
+        List<Referenceable> fieldsList = new ArrayList<>();
+        Referenceable colReferenceable;
+        for (FieldSchema fs : storageDesc.getCols()) {
+            LOG.debug("Processing field " + fs);
+            colReferenceable = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
+            colReferenceable.set("name", fs.getName());
+            colReferenceable.set("type", fs.getType());
+            colReferenceable.set("comment", fs.getComment());
+
+            fieldsList.add(createInstance(colReferenceable));
+        }
+        return fieldsList;
     }
 
     private void registerHiveDataModel() throws Exception {
