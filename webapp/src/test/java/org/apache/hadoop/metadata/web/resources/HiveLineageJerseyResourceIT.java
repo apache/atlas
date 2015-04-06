@@ -86,6 +86,10 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
 
         JSONArray rows = results.getJSONArray("rows");
         Assert.assertTrue(rows.length() > 0);
+
+        final JSONObject row = rows.getJSONObject(0);
+        JSONArray paths = row.getJSONArray("path");
+        Assert.assertTrue(paths.length() > 0);
     }
 
     @Test
@@ -112,6 +116,10 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
 
         JSONArray rows = results.getJSONArray("rows");
         Assert.assertTrue(rows.length() > 0);
+
+        final JSONObject row = rows.getJSONObject(0);
+        JSONArray paths = row.getJSONArray("path");
+        Assert.assertTrue(paths.length() > 0);
     }
 
     private void setUpTypes() throws Exception {

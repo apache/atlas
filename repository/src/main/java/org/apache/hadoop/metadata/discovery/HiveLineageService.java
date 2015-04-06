@@ -50,6 +50,9 @@ public class HiveLineageService implements LineageService {
     private static final String HIVE_PROCESS_INPUT_ATTRIBUTE_NAME = "inputTables";
     private static final String HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME = "outputTables";
 
+    private static final Option<List<String>> SELECT_ATTRIBUTES =
+            Option.<List<String>>apply(List.<String>fromArray(new String[]{"name"}));
+
     private final TitanGraph titanGraph;
     private final DefaultGraphPersistenceStrategy graphPersistenceStrategy;
 
@@ -74,7 +77,7 @@ public class HiveLineageService implements LineageService {
             HiveWhereUsedQuery outputsQuery = new HiveWhereUsedQuery(
                     HIVE_TABLE_TYPE_NAME, tableName, HIVE_PROCESS_TYPE_NAME,
                     HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME,
-                    Option.empty(), Option.<List<String>>empty(), true,
+                    Option.empty(), SELECT_ATTRIBUTES, true,
                     graphPersistenceStrategy, titanGraph);
 
             Expressions.Expression expression = outputsQuery.expr();
@@ -107,7 +110,7 @@ public class HiveLineageService implements LineageService {
             HiveLineageQuery inputsQuery = new HiveLineageQuery(
                     HIVE_TABLE_TYPE_NAME, tableName, HIVE_PROCESS_TYPE_NAME,
                     HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME,
-                    Option.empty(), Option.<List<String>>empty(), true,
+                    Option.empty(), SELECT_ATTRIBUTES, true,
                     graphPersistenceStrategy, titanGraph);
 
             Expressions.Expression expression = inputsQuery.expr();

@@ -21,12 +21,10 @@ package org.apache.hadoop.metadata.discovery.graph;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanGraphQuery;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.attribute.Text;
 import com.tinkerpop.blueprints.Vertex;
-import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.metadata.discovery.DiscoveryException;
 import org.apache.hadoop.metadata.discovery.DiscoveryService;
 import org.apache.hadoop.metadata.query.Expressions;
@@ -39,9 +37,6 @@ import org.apache.hadoop.metadata.query.QueryProcessor;
 import org.apache.hadoop.metadata.repository.Constants;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
 import org.apache.hadoop.metadata.repository.graph.GraphProvider;
-import org.apache.hadoop.metadata.typesystem.Referenceable;
-import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization;
-import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.util.Either;
@@ -54,11 +49,9 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Graph backed implementation of Search.
