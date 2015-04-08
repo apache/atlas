@@ -31,6 +31,7 @@ import org.apache.hadoop.metadata.repository.graph.GraphProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Option;
+import scala.Some;
 import scala.collection.immutable.List;
 
 import javax.inject.Inject;
@@ -51,7 +52,7 @@ public class HiveLineageService implements LineageService {
     private static final String HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME = "outputTables";
 
     private static final Option<List<String>> SELECT_ATTRIBUTES =
-            Option.<List<String>>apply(List.<String>fromArray(new String[]{"name"}));
+            Some.<List<String>>apply(List.<String>fromArray(new String[]{"name"}));
 
     private final TitanGraph titanGraph;
     private final DefaultGraphPersistenceStrategy graphPersistenceStrategy;

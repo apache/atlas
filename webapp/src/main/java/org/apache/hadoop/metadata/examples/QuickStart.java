@@ -464,7 +464,7 @@ public class QuickStart {
             "Table as _loop0 loop (hive_process outputTables) withPath",
             "Table as src loop (hive_process outputTables) as dest select src.name as srcTable, dest.name as destTable withPath",
             */
-            "Table as t, columns where t.name=\"sales_fact\"",
+            "Table where name=\"sales_fact\", columns as column select column.name, column.dataType, column.comment",
         };
     }
 

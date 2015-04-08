@@ -187,9 +187,10 @@ class GremlinTranslator(expr: Expression,
         case ClassExpression(clsName) => s"""has("${gPersistenceBehavior.typeAttributeName}","$clsName")"""
         case TraitExpression(clsName) => s"""has("${gPersistenceBehavior.typeAttributeName}","$clsName")"""
         case fe@FieldExpression(fieldName, fInfo, child) if fe.dataType.getTypeCategory == TypeCategory.PRIMITIVE => {
+            val fN = "\"" + gPersistenceBehavior.fieldNameInVertex(fInfo.dataType, fInfo.attrInfo) + "\""
             child match {
-                case Some(e) => s"${genQuery(e, inSelect)}.$fieldName"
-                case None => fieldName
+                case Some(e) => s"${genQuery(e, inSelect)}.$fN"
+                case None => s"$fN"
             }
         }
         case fe@FieldExpression(fieldName, fInfo, child)
