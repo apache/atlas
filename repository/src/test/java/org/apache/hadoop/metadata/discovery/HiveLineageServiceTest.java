@@ -20,14 +20,8 @@ package org.apache.hadoop.metadata.discovery;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.blueprints.util.io.graphson.GraphSONWriter;
 import org.apache.hadoop.metadata.RepositoryMetadataModule;
 import org.apache.hadoop.metadata.discovery.graph.GraphBackedDiscoveryService;
-import org.apache.hadoop.metadata.repository.graph.GraphHelper;
-import org.apache.hadoop.metadata.repository.graph.GraphProvider;
 import org.apache.hadoop.metadata.services.DefaultMetadataService;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.TypesDef;
@@ -55,8 +49,6 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
-import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -74,8 +66,8 @@ public class HiveLineageServiceTest {
     @Inject
     private HiveLineageService hiveLineageService;
 
-    @Inject
-    private GraphProvider<TitanGraph> graphProvider;
+//    @Inject
+//    private GraphProvider<TitanGraph> graphProvider;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -84,24 +76,7 @@ public class HiveLineageServiceTest {
         setUpTypes();
         setupInstances();
 
-        // dumpGraph();
-    }
-
-    private void dumpGraph() throws Exception {
-        TitanGraph titanGraph = graphProvider.get();
-        File tempFile = File.createTempFile("graph", ".gson");
-        System.out.println("tempFile.getPath() = " + tempFile.getPath());
-        GraphSONWriter.outputGraph(titanGraph, tempFile.getPath());
-
-        System.out.println("Vertices:");
-        for (Vertex vertex : titanGraph.getVertices()) {
-            System.out.println(GraphHelper.vertexString(vertex));
-        }
-
-        System.out.println("Edges:");
-        for (Edge edge : titanGraph.getEdges()) {
-            System.out.println(GraphHelper.edgeString(edge));
-        }
+         // TestUtils.dumpGraph(graphProvider.get());
     }
 
     @DataProvider(name = "dslQueriesProvider")
@@ -204,6 +179,34 @@ public class HiveLineageServiceTest {
         Assert.assertTrue(paths.length() > 0);
     }
 
+    @DataProvider(name = "tableNamesProvider")
+    private Object[][] tableNames() {
+        return new String[][] {
+            {"sales_fact", "4"},
+            {"time_dim", "3"},
+            {"sales_fact_daily_mv", "4"},
+            {"sales_fact_monthly_mv", "4"}
+        };
+    }
+
+    @Test (dataProvider = "tableNamesProvider")
+    public void testGetSchema(String tableName, String expected) throws Exception {
+        JSONObject results = new JSONObject(hiveLineageService.getSchema(tableName));
+        Assert.assertNotNull(results);
+        System.out.println("columns = " + results);
+
+        JSONArray rows = results.getJSONArray("rows");
+        Assert.assertEquals(rows.length(), Integer.parseInt(expected));
+
+        for (int index = 0; index < rows.length(); index++) {
+            final JSONObject row = rows.getJSONObject(index);
+            Assert.assertNotNull(row.getString("name"));
+            Assert.assertNotNull(row.getString("comment"));
+            Assert.assertNotNull(row.getString("dataType"));
+            Assert.assertEquals(row.getString("$typeName$"), "hive_column");
+        }
+    }
+
     private void setUpTypes() throws Exception {
         TypesDef typesDef = createTypeDefinitions();
         String typesAsJSON = TypesSerialization.toJson(typesDef);
@@ -214,6 +217,8 @@ public class HiveLineageServiceTest {
     private static final String HIVE_TABLE_TYPE = "hive_table";
     private static final String COLUMN_TYPE = "hive_column";
     private static final String HIVE_PROCESS_TYPE = "hive_process";
+    private static final String STORAGE_DESC_TYPE = "StorageDesc";
+    private static final String VIEW_TYPE = "View";
 
     private TypesDef createTypeDefinitions() {
         HierarchicalTypeDefinition<ClassType> dbClsDef
@@ -224,6 +229,15 @@ public class HiveLineageServiceTest {
                 attrDef("owner", DataTypes.STRING_TYPE),
                 attrDef("createTime", DataTypes.INT_TYPE)
         );
+
+        HierarchicalTypeDefinition<ClassType> storageDescClsDef =
+                TypesUtil.createClassTypeDef(STORAGE_DESC_TYPE, null,
+                        attrDef("location", DataTypes.STRING_TYPE),
+                        attrDef("inputFormat", DataTypes.STRING_TYPE),
+                        attrDef("outputFormat", DataTypes.STRING_TYPE),
+                        attrDef("compressed", DataTypes.STRING_TYPE,
+                                Multiplicity.REQUIRED, false, null)
+                );
 
         HierarchicalTypeDefinition<ClassType> columnClsDef =
                 TypesUtil.createClassTypeDef(COLUMN_TYPE, null,
@@ -241,6 +255,10 @@ public class HiveLineageServiceTest {
                         attrDef("lastAccessTime", DataTypes.INT_TYPE),
                         attrDef("tableType", DataTypes.STRING_TYPE),
                         attrDef("temporary", DataTypes.BOOLEAN_TYPE),
+                        new AttributeDefinition("db", DATABASE_TYPE,
+                                Multiplicity.REQUIRED, false, null),
+                        new AttributeDefinition("sd", STORAGE_DESC_TYPE,
+                                Multiplicity.REQUIRED, false, null),
                         new AttributeDefinition("columns",
                                 DataTypes.arrayTypeName(COLUMN_TYPE),
                                 Multiplicity.COLLECTION, true, null)
@@ -264,6 +282,16 @@ public class HiveLineageServiceTest {
                         attrDef("queryGraph", DataTypes.STRING_TYPE, Multiplicity.REQUIRED)
                 );
 
+        HierarchicalTypeDefinition<ClassType> viewClsDef =
+                TypesUtil.createClassTypeDef(VIEW_TYPE, null,
+                        attrDef("name", DataTypes.STRING_TYPE),
+                        new AttributeDefinition("db", DATABASE_TYPE,
+                                Multiplicity.REQUIRED, false, null),
+                        new AttributeDefinition("inputTables",
+                                DataTypes.arrayTypeName(HIVE_TABLE_TYPE),
+                                Multiplicity.COLLECTION, false, null)
+                );
+
         HierarchicalTypeDefinition<TraitType> dimTraitDef =
                 TypesUtil.createTraitTypeDef("Dimension", null);
 
@@ -279,11 +307,16 @@ public class HiveLineageServiceTest {
         HierarchicalTypeDefinition<TraitType> piiTraitDef =
                 TypesUtil.createTraitTypeDef("PII", null);
 
+        HierarchicalTypeDefinition<TraitType> jdbcTraitDef =
+                TypesUtil.createTraitTypeDef("JdbcAccess", null);
+
         return TypeUtils.getTypesDef(
             ImmutableList.<EnumTypeDefinition>of(),
             ImmutableList.<StructTypeDefinition>of(),
-            ImmutableList.of(dimTraitDef, factTraitDef, metricTraitDef, etlTraitDef, piiTraitDef),
-            ImmutableList.of(dbClsDef, columnClsDef, tblClsDef, loadProcessClsDef)
+            ImmutableList.of(dimTraitDef, factTraitDef,
+                    piiTraitDef, metricTraitDef, etlTraitDef, jdbcTraitDef),
+            ImmutableList.of(dbClsDef, storageDescClsDef, columnClsDef,
+                    tblClsDef, loadProcessClsDef, viewClsDef)
         );
     }
 
@@ -306,45 +339,72 @@ public class HiveLineageServiceTest {
         Id salesDB = database(
                 "Sales", "Sales Database", "John ETL", "hdfs://host:8000/apps/warehouse/sales");
 
-        ArrayList<Referenceable> salesFactColumns = new ArrayList<>();
-        salesFactColumns.add(column("time_id", "int", "time id"));
-        salesFactColumns.add(column("product_id", "int", "product id"));
-        salesFactColumns.add(column("customer_id", "int", "customer id", "PII"));
-        salesFactColumns.add(column("sales", "double", "product id", "Metric"));
+        Referenceable sd = storageDescriptor("hdfs://host:8000/apps/warehouse/sales",
+                "TextInputFormat", "TextOutputFormat", true);
+
+        List<Referenceable> salesFactColumns = ImmutableList.of(
+            column("time_id", "int", "time id"),
+            column("product_id", "int", "product id"),
+            column("customer_id", "int", "customer id", "PII"),
+            column("sales", "double", "product id", "Metric")
+        );
 
         Id salesFact = table("sales_fact", "sales fact table",
-                salesDB, "Joe", "Managed", salesFactColumns, "Fact");
+                salesDB, sd, "Joe", "Managed", salesFactColumns, "Fact");
 
-        ArrayList<Referenceable> timeDimColumns = new ArrayList<>();
-        timeDimColumns.add(column("time_id", "int", "time id"));
-        timeDimColumns.add(column("dayOfYear", "int", "day Of Year"));
-        timeDimColumns.add(column("weekDay", "int", "week Day"));
+        List<Referenceable> timeDimColumns = ImmutableList.of(
+            column("time_id", "int", "time id"),
+            column("dayOfYear", "int", "day Of Year"),
+            column("weekDay", "int", "week Day")
+        );
 
         Id timeDim = table("time_dim", "time dimension table",
-                salesDB, "John Doe", "External", timeDimColumns, "Dimension");
+                salesDB, sd, "John Doe", "External", timeDimColumns, "Dimension");
 
         Id reportingDB = database("Reporting", "reporting database", "Jane BI",
                 "hdfs://host:8000/apps/warehouse/reporting");
 
         Id salesFactDaily = table("sales_fact_daily_mv",
                 "sales fact daily materialized view",
-                reportingDB, "Joe BI", "Managed", salesFactColumns, "Metric");
+                reportingDB, sd, "Joe BI", "Managed", salesFactColumns, "Metric");
 
-        Id loadSalesFactDaily = loadProcess("loadSalesDaily", "John ETL",
+        loadProcess("loadSalesDaily", "John ETL",
                 ImmutableList.of(salesFact, timeDim), ImmutableList.of(salesFactDaily),
                 "create table as select ", "plan", "id", "graph",
                 "ETL");
-        System.out.println("added loadSalesFactDaily = " + loadSalesFactDaily);
+
+        List<Referenceable> productDimColumns = ImmutableList.of(
+            column("product_id", "int", "product id"),
+            column("product_name", "string", "product name"),
+            column("brand_name", "int", "brand name")
+        );
+
+        Id productDim = table("product_dim", "product dimension table",
+                salesDB, sd, "John Doe", "Managed", productDimColumns, "Dimension");
+
+        view("product_dim_view", reportingDB,
+                ImmutableList.of(productDim), "Dimension", "JdbcAccess");
+
+        List<Referenceable> customerDimColumns = ImmutableList.of(
+            column("customer_id", "int", "customer id", "PII"),
+            column("name", "string", "customer name", "PII"),
+            column("address", "string", "customer address", "PII")
+        );
+
+        Id customerDim = table("customer_dim", "customer dimension table",
+                salesDB, sd, "fetl", "External", customerDimColumns, "Dimension");
+
+        view("customer_dim_view", reportingDB,
+                ImmutableList.of(customerDim), "Dimension", "JdbcAccess");
 
         Id salesFactMonthly = table("sales_fact_monthly_mv",
                 "sales fact monthly materialized view",
-                reportingDB, "Jane BI", "Managed", salesFactColumns, "Metric");
+                reportingDB, sd, "Jane BI", "Managed", salesFactColumns, "Metric");
 
-        Id loadSalesFactMonthly = loadProcess("loadSalesMonthly", "John ETL",
+        loadProcess("loadSalesMonthly", "John ETL",
                 ImmutableList.of(salesFactDaily), ImmutableList.of(salesFactMonthly),
                 "create table as select ", "plan", "id", "graph",
                 "ETL");
-        System.out.println("added loadSalesFactMonthly = " + loadSalesFactMonthly);
     }
 
     Id database(String name, String description,
@@ -360,6 +420,18 @@ public class HiveLineageServiceTest {
         return createInstance(referenceable);
     }
 
+    Referenceable storageDescriptor(String location, String inputFormat,
+                                    String outputFormat,
+                                    boolean compressed) throws Exception {
+        Referenceable referenceable = new Referenceable(STORAGE_DESC_TYPE);
+        referenceable.set("location", location);
+        referenceable.set("inputFormat", inputFormat);
+        referenceable.set("outputFormat", outputFormat);
+        referenceable.set("compressed", compressed);
+
+        return referenceable;
+    }
+
     Referenceable column(String name, String dataType, String comment,
                          String... traitNames) throws Exception {
         Referenceable referenceable = new Referenceable(COLUMN_TYPE, traitNames);
@@ -370,7 +442,8 @@ public class HiveLineageServiceTest {
         return referenceable;
     }
 
-    Id table(String name, String description, Id dbId,
+    Id table(String name, String description,
+             Id dbId, Referenceable sd,
              String owner, String tableType,
              List<Referenceable> columns,
              String... traitNames) throws Exception {
@@ -384,6 +457,9 @@ public class HiveLineageServiceTest {
         referenceable.set("retention", System.currentTimeMillis());
 
         referenceable.set("db", dbId);
+        // todo: fix this bug with object walker
+//         referenceable.set("sd", sd);
+        referenceable.set("sd", createInstance(sd));
         referenceable.set("columns", columns);
 
         return createInstance(referenceable);
@@ -408,6 +484,18 @@ public class HiveLineageServiceTest {
         referenceable.set("queryPlan", queryPlan);
         referenceable.set("queryId", queryId);
         referenceable.set("queryGraph", queryGraph);
+
+        return createInstance(referenceable);
+    }
+
+    Id view(String name, Id dbId,
+            List<Id> inputTables,
+            String... traitNames) throws Exception {
+        Referenceable referenceable = new Referenceable(VIEW_TYPE, traitNames);
+        referenceable.set("name", name);
+        referenceable.set("db", dbId);
+
+        referenceable.set("inputTables", inputTables);
 
         return createInstance(referenceable);
     }

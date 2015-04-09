@@ -40,7 +40,6 @@ import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -77,7 +76,7 @@ public class QuickStart {
     private static final String COLUMN_TYPE = "Column";
     private static final String TABLE_TYPE = "Table";
     private static final String VIEW_TYPE = "View";
-    private static final String LOAD_PROCESS_TYPE = "hive_process";
+    private static final String LOAD_PROCESS_TYPE = "LoadProcess";
     private static final String STORAGE_DESC_TYPE = "StorageDesc";
 
     private static final String[] TYPES = {
@@ -135,7 +134,7 @@ public class QuickStart {
                         new AttributeDefinition("db", DATABASE_TYPE,
                                 Multiplicity.REQUIRED, false, null),
                         new AttributeDefinition("sd", STORAGE_DESC_TYPE,
-                                Multiplicity.REQUIRED, false, null),
+                                Multiplicity.OPTIONAL, false, null),
                         attrDef("owner", DataTypes.STRING_TYPE),
                         attrDef("createTime", DataTypes.INT_TYPE),
                         attrDef("lastAccessTime", DataTypes.INT_TYPE),
@@ -228,36 +227,40 @@ public class QuickStart {
         Referenceable sd = rawStorageDescriptor("hdfs://host:8000/apps/warehouse/sales",
                 "TextInputFormat", "TextOutputFormat", true);
 
-        ArrayList<Referenceable> salesFactColumns = new ArrayList<>();
-        salesFactColumns.add(rawColumn("time_id", "int", "time id"));
-        salesFactColumns.add(rawColumn("product_id", "int", "product id"));
-        salesFactColumns.add(rawColumn("customer_id", "int", "customer id", "PII"));
-        salesFactColumns.add(rawColumn("sales", "double", "product id", "Metric"));
+        List<Referenceable> salesFactColumns = ImmutableList.of(
+            rawColumn("time_id", "int", "time id"),
+            rawColumn("product_id", "int", "product id"),
+            rawColumn("customer_id", "int", "customer id", "PII"),
+            rawColumn("sales", "double", "product id", "Metric")
+        );
 
         Id salesFact = table("sales_fact", "sales fact table",
                 salesDB, sd, "Joe", "Managed", salesFactColumns, "Fact");
 
-        ArrayList<Referenceable> productDimColumns = new ArrayList<>();
-        productDimColumns.add(rawColumn("product_id", "int", "product id"));
-        productDimColumns.add(rawColumn("product_name", "string", "product name"));
-        productDimColumns.add(rawColumn("brand_name", "int", "brand name"));
+        List<Referenceable> productDimColumns = ImmutableList.of(
+            rawColumn("product_id", "int", "product id"),
+            rawColumn("product_name", "string", "product name"),
+            rawColumn("brand_name", "int", "brand name")
+        );
 
         Id productDim = table("product_dim", "product dimension table",
                 salesDB, sd, "John Doe", "Managed", productDimColumns, "Dimension");
 
-        ArrayList<Referenceable> timeDimColumns = new ArrayList<>();
-        timeDimColumns.add(rawColumn("time_id", "int", "time id"));
-        timeDimColumns.add(rawColumn("dayOfYear", "int", "day Of Year"));
-        timeDimColumns.add(rawColumn("weekDay", "int", "week Day"));
+        List<Referenceable> timeDimColumns = ImmutableList.of(
+            rawColumn("time_id", "int", "time id"),
+            rawColumn("dayOfYear", "int", "day Of Year"),
+            rawColumn("weekDay", "int", "week Day")
+        );
 
         Id timeDim = table("time_dim", "time dimension table",
                 salesDB, sd, "John Doe", "External", timeDimColumns, "Dimension");
 
 
-        ArrayList<Referenceable> customerDimColumns = new ArrayList<>();
-        customerDimColumns.add(rawColumn("customer_id", "int", "customer id", "PII"));
-        customerDimColumns.add(rawColumn("name", "string", "customer name", "PII"));
-        customerDimColumns.add(rawColumn("address", "string", "customer address", "PII"));
+        List<Referenceable> customerDimColumns = ImmutableList.of(
+            rawColumn("customer_id", "int", "customer id", "PII"),
+            rawColumn("name", "string", "customer name", "PII"),
+            rawColumn("address", "string", "customer address", "PII")
+        );
 
         Id customerDim = table("customer_dim", "customer dimension table",
                 salesDB, sd, "fetl", "External", customerDimColumns, "Dimension");
@@ -270,29 +273,25 @@ public class QuickStart {
                 "sales fact daily materialized view", reportingDB, sd,
                 "Joe BI", "Managed", salesFactColumns, "Metric");
 
-        Id loadSalesFactDaily = loadProcess("loadSalesDaily", "John ETL",
+        loadProcess("loadSalesDaily", "John ETL",
                 ImmutableList.of(salesFact, timeDim), ImmutableList.of(salesFactDaily),
                 "create table as select ", "plan", "id", "graph",
                 "ETL");
-        System.out.println("added loadSalesFactDaily = " + loadSalesFactDaily);
 
-        Id productDimView = view("product_dim_view", reportingDB,
+        view("product_dim_view", reportingDB,
                 ImmutableList.of(productDim), "Dimension", "JdbcAccess");
-        System.out.println("added productDimView = " + productDimView);
 
-        Id customerDimView = view("customer_dim_view", reportingDB,
+        view("customer_dim_view", reportingDB,
                 ImmutableList.of(customerDim), "Dimension", "JdbcAccess");
-        System.out.println("added customerDimView = " + customerDimView);
 
         Id salesFactMonthly = table("sales_fact_monthly_mv",
                 "sales fact monthly materialized view",
                 reportingDB, sd, "Jane BI", "Managed", salesFactColumns, "Metric");
 
-        Id loadSalesFactMonthly = loadProcess("loadSalesMonthly", "John ETL",
+        loadProcess("loadSalesMonthly", "John ETL",
                 ImmutableList.of(salesFactDaily), ImmutableList.of(salesFactMonthly),
                 "create table as select ", "plan", "id", "graph",
                 "ETL");
-        System.out.println("added loadSalesFactMonthly = " + loadSalesFactMonthly);
     }
 
     private Id createInstance(Referenceable referenceable) throws Exception {
@@ -357,7 +356,8 @@ public class QuickStart {
         referenceable.set("lastAccessTime", System.currentTimeMillis());
         referenceable.set("retention", System.currentTimeMillis());
         referenceable.set("db", dbId);
-        referenceable.set("sd", sd);
+        // todo: fix this bug with object walker
+        // referenceable.set("sd", sd);
         referenceable.set("columns", columns);
 
         return createInstance(referenceable);
@@ -464,6 +464,7 @@ public class QuickStart {
             "Table as _loop0 loop (hive_process outputTables) withPath",
             "Table as src loop (hive_process outputTables) as dest select src.name as srcTable, dest.name as destTable withPath",
             */
+            "Table where name=\"sales_fact\", columns",
             "Table where name=\"sales_fact\", columns as column select column.name, column.dataType, column.comment",
         };
     }

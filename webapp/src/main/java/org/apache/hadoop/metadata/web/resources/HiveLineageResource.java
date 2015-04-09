@@ -130,4 +130,38 @@ public class HiveLineageResource {
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
+
+    /**
+     * Return the schema for the given tableName.
+     *
+     * @param tableName table name
+     */
+    @GET
+    @Path("schema/{tableName}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response schema(@Context HttpServletRequest request,
+                           @PathParam("tableName") String tableName) {
+        Preconditions.checkNotNull(tableName, "table name cannot be null");
+        LOG.info("Fetching schema for tableName={}", tableName);
+
+        try {
+            final String jsonResult = lineageService.getSchema(tableName);
+
+            JSONObject response = new JSONObject();
+            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
+            response.put("tableName", tableName);
+            response.put(MetadataServiceClient.RESULTS, new JSONObject(jsonResult));
+
+            return Response.ok(response).build();
+        } catch (DiscoveryException e) {
+            LOG.error("Unable to get schema for table {}", tableName, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (JSONException e) {
+            LOG.error("Unable to get schema for table {}", tableName, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        }
+    }
 }

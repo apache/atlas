@@ -19,6 +19,11 @@
 package org.apache.hadoop.metadata;
 
 import com.google.common.collect.ImmutableList;
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.io.graphson.GraphSONWriter;
+import org.apache.hadoop.metadata.repository.graph.GraphHelper;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
@@ -34,6 +39,8 @@ import org.apache.hadoop.metadata.typesystem.types.TraitType;
 import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.testng.Assert;
 
+import java.io.File;
+
 import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createClassTypeDef;
 import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
 import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
@@ -46,6 +53,31 @@ import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.create
 public final class TestUtils {
 
     private TestUtils() {
+    }
+
+    /**
+     * Dumps the graph in GSON format in the path returned.
+     *
+     * @param titanGraph handle to graph
+     * @return path to the dump file
+     * @throws Exception
+     */
+    public static String dumpGraph(TitanGraph titanGraph) throws Exception {
+        File tempFile = File.createTempFile("graph", ".gson");
+        System.out.println("tempFile.getPath() = " + tempFile.getPath());
+        GraphSONWriter.outputGraph(titanGraph, tempFile.getPath());
+
+        System.out.println("Vertices:");
+        for (Vertex vertex : titanGraph.getVertices()) {
+            System.out.println(GraphHelper.vertexString(vertex));
+        }
+
+        System.out.println("Edges:");
+        for (Edge edge : titanGraph.getEdges()) {
+            System.out.println(GraphHelper.edgeString(edge));
+        }
+
+        return tempFile.getPath();
     }
 
     /**

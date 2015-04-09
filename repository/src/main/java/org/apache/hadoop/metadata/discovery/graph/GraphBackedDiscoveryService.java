@@ -43,6 +43,7 @@ import scala.util.Either;
 import scala.util.parsing.combinator.Parsers;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -56,6 +57,7 @@ import java.util.Map;
 /**
  * Graph backed implementation of Search.
  */
+@Singleton
 public class GraphBackedDiscoveryService implements DiscoveryService {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphBackedDiscoveryService.class);
@@ -72,7 +74,10 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
 
     @Override
     public String searchByFullText(String query) throws DiscoveryException {
-        Iterator iterator = titanGraph.query().has(Constants.ENTITY_TEXT_PROPERTY_KEY, Text.CONTAINS, query).vertices().iterator();
+        Iterator iterator = titanGraph.query()
+                .has(Constants.ENTITY_TEXT_PROPERTY_KEY, Text.CONTAINS, query)
+                .vertices()
+                .iterator();
         JsonArray results = new JsonArray();
         while (iterator.hasNext()) {
             Vertex vertex = (Vertex) iterator.next();
@@ -111,13 +116,13 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
         throw new DiscoveryException("Invalid expression : " + dslQuery);
     }
 
-    private GremlinQueryResult evaluate(Expressions.Expression expression) {
+    public GremlinQueryResult evaluate(Expressions.Expression expression) {
         Expressions.Expression validatedExpression = QueryProcessor.validate(expression);
         GremlinQuery gremlinQuery =
                 new GremlinTranslator(validatedExpression, graphPersistenceStrategy).translate();
-        LOG.debug("Query = " + validatedExpression);
-        LOG.debug("Expression Tree = " + validatedExpression.treeString());
-        LOG.debug("Gremlin Query = " + gremlinQuery.queryStr());
+        LOG.debug("Query = {}", validatedExpression);
+        LOG.debug("Expression Tree = {}", validatedExpression.treeString());
+        LOG.debug("Gremlin Query = {}", gremlinQuery.queryStr());
         return new GremlinEvaluator(gremlinQuery, graphPersistenceStrategy, titanGraph).evaluate();
     }
 

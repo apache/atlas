@@ -50,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -64,6 +65,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * An implementation backed by a Graph database provided
  * as a Graph Service.
  */
+@Singleton
 public class GraphBackedMetadataRepository implements MetadataRepository {
 
     private static final Logger LOG =
@@ -431,7 +433,10 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             return guid;
         }
 
-        private void addFullTextProperty(EntityProcessor entityProcessor, List<ITypedReferenceableInstance> newTypedInstances) throws MetadataException {
+        private void addFullTextProperty(EntityProcessor entityProcessor,
+                                         List<ITypedReferenceableInstance> newTypedInstances)
+            throws MetadataException {
+
             for (ITypedReferenceableInstance typedInstance : newTypedInstances) { // Traverse
                 Id id = typedInstance.getId();
                 Vertex instanceVertex = entityProcessor.idToVertexMap.get(id);
@@ -440,13 +445,16 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             }
         }
 
-        private String getFullText(Vertex instanceVertex, boolean followReferences) throws MetadataException {
+        private String getFullText(Vertex instanceVertex,
+                                   boolean followReferences) throws MetadataException {
             String guid = instanceVertex.getProperty(Constants.GUID_PROPERTY_KEY);
-            ITypedReferenceableInstance typedReference = graphToInstanceMapper.mapGraphToTypedInstance(guid, instanceVertex);
+            ITypedReferenceableInstance typedReference =
+                    graphToInstanceMapper.mapGraphToTypedInstance(guid, instanceVertex);
             return getFullText(typedReference, followReferences);
         }
 
-        private String getFullText(ITypedInstance typedInstance, boolean followReferences) throws MetadataException {
+        private String getFullText(ITypedInstance typedInstance,
+                                   boolean followReferences) throws MetadataException {
             StringBuilder fullText = new StringBuilder();
             for (AttributeInfo attributeInfo : typedInstance.fieldMapping().fields.values()) {
                 Object attrValue = typedInstance.get(attributeInfo.name);
@@ -502,8 +510,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         private List<ITypedReferenceableInstance> discoverInstances(EntityProcessor entityProcessor)
                 throws RepositoryException {
             List<ITypedReferenceableInstance> newTypedInstances = new ArrayList<>();
-            for (IReferenceableInstance transientInstance : entityProcessor.idToInstanceMap
-                    .values()) {
+            for (IReferenceableInstance transientInstance : entityProcessor.idToInstanceMap.values()) {
                 LOG.debug("Discovered instance {}", transientInstance.getTypeName());
                 try {
                     ClassType cT = typeSystem.getDataType(
@@ -529,10 +536,10 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         private String addDiscoveredInstances(IReferenceableInstance entity,
                                               EntityProcessor entityProcessor,
                                               List<ITypedReferenceableInstance> newTypedInstances)
-        throws MetadataException {
+            throws MetadataException {
+
             String typedInstanceGUID = null;
-            for (ITypedReferenceableInstance typedInstance : newTypedInstances) { // Traverse
-            // over newInstances
+            for (ITypedReferenceableInstance typedInstance : newTypedInstances) { // Traverse over newInstances
                 LOG.debug("Adding typed instance {}", typedInstance.getTypeName());
 
                 Id id = typedInstance.getId();

@@ -27,6 +27,7 @@ import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.TypesDef;
 import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
+import org.apache.hadoop.metadata.typesystem.persistence.Id;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
@@ -44,7 +45,7 @@ public abstract class BaseResourceIT {
 
     protected WebResource service;
     protected MetadataServiceClient serviceClient;
-    public static String baseUrl = "http://localhost:21000/";;
+    public static String baseUrl = "http://localhost:21000/";
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -80,7 +81,7 @@ public abstract class BaseResourceIT {
         Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
     }
 
-    protected Referenceable createInstance(Referenceable referenceable) throws Exception {
+    protected Id createInstance(Referenceable referenceable) throws Exception {
         String typeName = referenceable.getTypeName();
         System.out.println("creating instance of type " + typeName);
 
@@ -91,6 +92,6 @@ public abstract class BaseResourceIT {
         System.out.println("created instance for type " + typeName + ", guid: " + guid);
 
         // return the reference to created instance with guid
-        return new Referenceable(guid, referenceable.getTypeName(), referenceable.getValuesMap());
+        return new Id(guid, 0, referenceable.getTypeName());
     }
 }

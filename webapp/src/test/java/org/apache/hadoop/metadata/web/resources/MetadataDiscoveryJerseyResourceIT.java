@@ -25,6 +25,7 @@ import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.Struct;
 import org.apache.hadoop.metadata.typesystem.TypesDef;
+import org.apache.hadoop.metadata.typesystem.persistence.Id;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
 import org.apache.hadoop.metadata.typesystem.types.DataTypes;
 import org.apache.hadoop.metadata.typesystem.types.EnumTypeDefinition;
@@ -169,7 +170,7 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
                         ImmutableList.<String>of(),
                         TypesUtil.createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
         HierarchicalTypeDefinition<TraitType> piiTrait =
-                TypesUtil.createTraitTypeDef("PII", ImmutableList.<String>of());
+                TypesUtil.createTraitTypeDef("PII_TYPE", ImmutableList.<String>of());
         HierarchicalTypeDefinition<TraitType> phiTrait =
                 TypesUtil.createTraitTypeDef("PHI", ImmutableList.<String>of());
         HierarchicalTypeDefinition<TraitType> pciTrait =
@@ -190,9 +191,9 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         createType(typesDef);
     }
 
-    private Referenceable createInstance() throws Exception {
+    private Id createInstance() throws Exception {
         Referenceable entityInstance = new Referenceable("dsl_test_type",
-                "Classification", "PII", "PHI", "PCI", "SOX", "SEC", "Finance");
+                "Classification", "PII_TYPE", "PHI", "PCI", "SOX", "SEC", "Finance");
         entityInstance.set("name", "foo name");
         entityInstance.set("description", "bar description");
 

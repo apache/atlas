@@ -46,7 +46,6 @@ import org.testng.annotations.Test;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -122,15 +121,67 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
         Assert.assertTrue(paths.length() > 0);
     }
 
+    @Test
+    public void testSchema() throws Exception {
+        WebResource resource = service
+                .path("api/metadata/lineage/hive/schema")
+                .path("sales_fact");
+
+        ClientResponse clientResponse = resource
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.GET, ClientResponse.class);
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+
+        String responseAsString = clientResponse.getEntity(String.class);
+        Assert.assertNotNull(responseAsString);
+        System.out.println("schema = " + responseAsString);
+
+        JSONObject response = new JSONObject(responseAsString);
+        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+
+        JSONObject results = response.getJSONObject(MetadataServiceClient.RESULTS);
+        Assert.assertNotNull(results);
+
+        JSONArray rows = results.getJSONArray("rows");
+        Assert.assertEquals(rows.length(), 4);
+
+        for (int index = 0; index < rows.length(); index++) {
+            final JSONObject row = rows.getJSONObject(index);
+            Assert.assertNotNull(row.getString("name"));
+            Assert.assertNotNull(row.getString("comment"));
+            Assert.assertNotNull(row.getString("dataType"));
+            Assert.assertEquals(row.getString("$typeName$"), "hive_column");
+        }
+    }
+
     private void setUpTypes() throws Exception {
         TypesDef typesDef = createTypeDefinitions();
         createType(typesDef);
     }
 
+    private static final String DATABASE_TYPE = "hive_db";
     private static final String HIVE_TABLE_TYPE = "hive_table";
+    private static final String COLUMN_TYPE = "hive_column";
     private static final String HIVE_PROCESS_TYPE = "hive_process";
 
     private TypesDef createTypeDefinitions() {
+        HierarchicalTypeDefinition<ClassType> dbClsDef
+                = TypesUtil.createClassTypeDef(DATABASE_TYPE, null,
+                attrDef("name", DataTypes.STRING_TYPE),
+                attrDef("description", DataTypes.STRING_TYPE),
+                attrDef("locationUri", DataTypes.STRING_TYPE),
+                attrDef("owner", DataTypes.STRING_TYPE),
+                attrDef("createTime", DataTypes.INT_TYPE)
+        );
+
+        HierarchicalTypeDefinition<ClassType> columnClsDef =
+                TypesUtil.createClassTypeDef(COLUMN_TYPE, null,
+                        attrDef("name", DataTypes.STRING_TYPE),
+                        attrDef("dataType", DataTypes.STRING_TYPE),
+                        attrDef("comment", DataTypes.STRING_TYPE)
+                );
+
         HierarchicalTypeDefinition<ClassType> tblClsDef =
                 TypesUtil.createClassTypeDef(HIVE_TABLE_TYPE, null,
                         attrDef("name", DataTypes.STRING_TYPE),
@@ -139,7 +190,12 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
                         attrDef("createTime", DataTypes.INT_TYPE),
                         attrDef("lastAccessTime", DataTypes.INT_TYPE),
                         attrDef("tableType", DataTypes.STRING_TYPE),
-                        attrDef("temporary", DataTypes.BOOLEAN_TYPE)
+                        attrDef("temporary", DataTypes.BOOLEAN_TYPE),
+                        new AttributeDefinition("db", DATABASE_TYPE,
+                                Multiplicity.REQUIRED, false, null),
+                        new AttributeDefinition("columns",
+                                DataTypes.arrayTypeName(COLUMN_TYPE),
+                                Multiplicity.COLLECTION, true, null)
                 );
 
         HierarchicalTypeDefinition<ClassType> loadProcessClsDef =
@@ -172,11 +228,15 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
         HierarchicalTypeDefinition<TraitType> etlTraitDef =
                 TypesUtil.createTraitTypeDef("ETL", null);
 
+
+        HierarchicalTypeDefinition<TraitType> piiTraitDef =
+                TypesUtil.createTraitTypeDef("PII", null);
+
         return TypeUtils.getTypesDef(
                 ImmutableList.<EnumTypeDefinition>of(),
                 ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.of(dimTraitDef, factTraitDef, metricTraitDef, etlTraitDef),
-                ImmutableList.of(tblClsDef, loadProcessClsDef)
+                ImmutableList.of(dimTraitDef, factTraitDef, metricTraitDef, etlTraitDef, piiTraitDef),
+                ImmutableList.of(dbClsDef, columnClsDef, tblClsDef, loadProcessClsDef)
         );
     }
 
@@ -196,36 +256,77 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
     }
 
     private void setupInstances() throws Exception {
-        Referenceable salesFact = table("sales_fact", "sales fact table",
-                "Joe", "Managed", "Fact");
+        Id salesDB = database(
+                "Sales", "Sales Database", "John ETL", "hdfs://host:8000/apps/warehouse/sales");
 
-        Referenceable timeDim = table("time_dim", "time dimension table",
-                "John Doe", "External", "Dimension");
+        List<Referenceable> salesFactColumns = ImmutableList.of(
+                column("time_id", "int", "time id"),
+                column("product_id", "int", "product id"),
+                column("customer_id", "int", "customer id", "PII"),
+                column("sales", "double", "product id", "Metric")
+        );
 
-        Referenceable salesFactDaily = table("sales_fact_daily_mv",
+        Id salesFact = table("sales_fact", "sales fact table",
+                salesDB, "Joe", "Managed", salesFactColumns, "Fact");
+
+        List<Referenceable> timeDimColumns = ImmutableList.of(
+                column("time_id", "int", "time id"),
+                column("dayOfYear", "int", "day Of Year"),
+                column("weekDay", "int", "week Day")
+        );
+
+        Id timeDim = table("time_dim", "time dimension table",
+                salesDB, "John Doe", "External", timeDimColumns, "Dimension");
+
+        Id reportingDB = database("Reporting", "reporting database", "Jane BI",
+                "hdfs://host:8000/apps/warehouse/reporting");
+
+        Id salesFactDaily = table("sales_fact_daily_mv",
                 "sales fact daily materialized view",
-                "Joe BI", "Managed", "Metric");
+                reportingDB, "Joe BI", "Managed", salesFactColumns, "Metric");
 
-        Referenceable loadSalesFactDaily = loadProcess("loadSalesDaily", "John ETL",
+        loadProcess("loadSalesDaily", "John ETL",
                 ImmutableList.of(salesFact, timeDim), ImmutableList.of(salesFactDaily),
                 "create table as select ", "plan", "id", "graph",
                 "ETL");
-        System.out.println("added loadSalesFactDaily = " + loadSalesFactDaily);
 
-        Referenceable salesFactMonthly = table("sales_fact_monthly_mv",
+        Id salesFactMonthly = table("sales_fact_monthly_mv",
                 "sales fact monthly materialized view",
-                "Jane BI", "Managed", "Metric");
+                reportingDB, "Jane BI", "Managed", salesFactColumns, "Metric");
 
-        Referenceable loadSalesFactMonthly = loadProcess("loadSalesMonthly", "John ETL",
+        loadProcess("loadSalesMonthly", "John ETL",
                 ImmutableList.of(salesFactDaily), ImmutableList.of(salesFactMonthly),
                 "create table as select ", "plan", "id", "graph",
                 "ETL");
-        System.out.println("added loadSalesFactMonthly = " + loadSalesFactMonthly);
     }
 
-    Referenceable table(String name, String description,
-                        String owner, String tableType,
-                        String... traitNames) throws Exception {
+    Id database(String name, String description,
+                String owner, String locationUri,
+                String... traitNames) throws Exception {
+        Referenceable referenceable = new Referenceable(DATABASE_TYPE, traitNames);
+        referenceable.set("name", name);
+        referenceable.set("description", description);
+        referenceable.set("owner", owner);
+        referenceable.set("locationUri", locationUri);
+        referenceable.set("createTime", System.currentTimeMillis());
+
+        return createInstance(referenceable);
+    }
+
+    Referenceable column(String name, String dataType, String comment,
+                         String... traitNames) throws Exception {
+        Referenceable referenceable = new Referenceable(COLUMN_TYPE, traitNames);
+        referenceable.set("name", name);
+        referenceable.set("dataType", dataType);
+        referenceable.set("comment", comment);
+
+        return referenceable;
+    }
+
+    Id table(String name, String description, Id dbId,
+             String owner, String tableType,
+             List<Referenceable> columns,
+             String... traitNames) throws Exception {
         Referenceable referenceable = new Referenceable(HIVE_TABLE_TYPE, traitNames);
         referenceable.set("name", name);
         referenceable.set("description", description);
@@ -235,32 +336,26 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
         referenceable.set("lastAccessTime", System.currentTimeMillis());
         referenceable.set("retention", System.currentTimeMillis());
 
+        referenceable.set("db", dbId);
+        referenceable.set("columns", columns);
+
         return createInstance(referenceable);
     }
 
-    Referenceable loadProcess(String name, String user,
-                              List<Referenceable> inputTables,
-                              List<Referenceable> outputTables,
-                              String queryText, String queryPlan,
-                              String queryId, String queryGraph,
-                              String... traitNames) throws Exception {
+    Id loadProcess(String name, String user,
+                   List<Id> inputTables,
+                   List<Id> outputTables,
+                   String queryText, String queryPlan,
+                   String queryId, String queryGraph,
+                   String... traitNames) throws Exception {
         Referenceable referenceable = new Referenceable(HIVE_PROCESS_TYPE, traitNames);
         referenceable.set("name", name);
         referenceable.set("user", user);
         referenceable.set("startTime", System.currentTimeMillis());
         referenceable.set("endTime", System.currentTimeMillis() + 10000);
 
-        ArrayList<Id> inputTableIds = new ArrayList<>();
-        for (Referenceable inputTable : inputTables) {
-            inputTableIds.add(inputTable.getId());
-        }
-        referenceable.set("inputTables", inputTableIds);
-
-        ArrayList<Id> outputTableIds = new ArrayList<>();
-        for (Referenceable outputTable : outputTables) {
-            outputTableIds.add(outputTable.getId());
-        }
-        referenceable.set("outputTables", outputTableIds);
+        referenceable.set("inputTables", inputTables);
+        referenceable.set("outputTables", outputTables);
 
         referenceable.set("queryText", queryText);
         referenceable.set("queryPlan", queryPlan);

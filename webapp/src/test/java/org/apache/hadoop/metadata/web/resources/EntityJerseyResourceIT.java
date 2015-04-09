@@ -68,6 +68,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     private static final String TABLE_NAME = "bar";
 
     private Referenceable tableInstance;
+    private Id tableId;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -79,8 +80,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testSubmitEntity() throws Exception {
         tableInstance = createHiveTableInstance();
+        tableId = createInstance(tableInstance);
 
-        String guid = getGuid(tableInstance);
+        final String guid = tableId._getId();
         try {
             Assert.assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
@@ -88,18 +90,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }
     }
 
-    private String getGuid(Referenceable referenceable) throws Exception {
-        Id id = referenceable.getId();
-        Assert.assertNotNull(id);
-
-        String guid = id.id;
-        Assert.assertNotNull(guid);
-        return guid;
-    }
-
     @Test (dependsOnMethods = "testSubmitEntity")
     public void testAddProperty() throws Exception {
-        String guid = getGuid(tableInstance);
+        final String guid = tableId._getId();
         //add property
         String description = "bar table - new desc";
         ClientResponse clientResponse = addProperty(guid, "description", description);
@@ -131,21 +124,18 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         databaseInstance.set("name", "newdb");
         databaseInstance.set("description", "new database");
 
-//        ClassType classType = typeSystem.getDataType(ClassType.class, DATABASE_TYPE);
-//        ITypedReferenceableInstance dbInstance = classType.convert(databaseInstance, Multiplicity.REQUIRED);
-
-        Referenceable dbInstance = createInstance(databaseInstance);
-        String dbId = getGuid(dbInstance);
+        Id dbInstance = createInstance(databaseInstance);
+        String dbId = dbInstance._getId();
 
         //Add reference property
-        String guid = getGuid(tableInstance);
+        final String guid = tableId._getId();
         ClientResponse clientResponse = addProperty(guid, "database", dbId);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
     }
 
     @Test(dependsOnMethods = "testSubmitEntity")
     public void testGetEntityDefinition() throws Exception {
-        String guid = getGuid(tableInstance);
+        final String guid = tableId._getId();
         ClientResponse clientResponse = getEntityDefinition(guid);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
@@ -274,7 +264,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test (dependsOnMethods = "testSubmitEntity")
     public void testGetTraitNames() throws Exception {
-        String guid = getGuid(tableInstance);
+        final String guid = tableId._getId();
         ClientResponse clientResponse = service
                 .path("api/metadata/entities/traits/list")
                 .path(guid)
@@ -307,7 +297,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         String traitInstanceAsJSON = InstanceSerialization.toJson(traitInstance, true);
         LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
 
-        String guid = getGuid(tableInstance);
+        final String guid = tableId._getId();
         ClientResponse clientResponse = service
                 .path("api/metadata/entities/traits/add")
                 .path(guid)
@@ -350,7 +340,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test (dependsOnMethods = "testAddTrait")
     public void testDeleteTrait() throws Exception {
         final String traitName = "PII_Trait";
-        final String guid = getGuid(tableInstance);
+        final String guid = tableId._getId();
 
         ClientResponse clientResponse = service
                 .path("api/metadata/entities/traits/delete")
@@ -478,6 +468,6 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         List<String> traits = tableInstance.getTraits();
         Assert.assertEquals(traits.size(), 7);
 
-        return createInstance(tableInstance);
+        return tableInstance;
     }
 }

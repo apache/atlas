@@ -38,4 +38,12 @@ public interface LineageService {
      * @return Inputs as JSON
      */
     String getInputs(String tableName) throws DiscoveryException;
+
+    /**
+     * Return the schema for the given tableName.
+     *
+     * @param tableName tableName
+     * @return Schema as JSON
+     */
+    String getSchema(String tableName) throws DiscoveryException;
 }

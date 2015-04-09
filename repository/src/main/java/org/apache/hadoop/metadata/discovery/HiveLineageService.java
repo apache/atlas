@@ -19,13 +19,13 @@
 package org.apache.hadoop.metadata.discovery;
 
 import com.thinkaurelius.titan.core.TitanGraph;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.metadata.discovery.graph.DefaultGraphPersistenceStrategy;
+import org.apache.hadoop.metadata.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.hadoop.metadata.query.Expressions;
-import org.apache.hadoop.metadata.query.GremlinQuery;
-import org.apache.hadoop.metadata.query.GremlinTranslator;
 import org.apache.hadoop.metadata.query.HiveLineageQuery;
 import org.apache.hadoop.metadata.query.HiveWhereUsedQuery;
-import org.apache.hadoop.metadata.query.QueryProcessor;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
 import org.apache.hadoop.metadata.repository.graph.GraphProvider;
 import org.slf4j.Logger;
@@ -45,23 +45,47 @@ public class HiveLineageService implements LineageService {
 
     private static final Logger LOG = LoggerFactory.getLogger(HiveLineageService.class);
 
-    // todo - externalize these into configuration
-    private static final String HIVE_TABLE_TYPE_NAME = "hive_table";
-    private static final String HIVE_PROCESS_TYPE_NAME = "hive_process";
-    private static final String HIVE_PROCESS_INPUT_ATTRIBUTE_NAME = "inputTables";
-    private static final String HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME = "outputTables";
-
     private static final Option<List<String>> SELECT_ATTRIBUTES =
             Some.<List<String>>apply(List.<String>fromArray(new String[]{"name"}));
 
+    private static final String HIVE_TABLE_TYPE_NAME;
+    private static final String HIVE_TABLE_COLUMNS_ATTRIBUTE_NAME;
+    private static final String HIVE_PROCESS_TYPE_NAME;
+    private static final String HIVE_PROCESS_INPUT_ATTRIBUTE_NAME;
+    private static final String HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME;
+
+    static {
+        // todo - externalize this using type system - dog food
+        try {
+            PropertiesConfiguration conf = new PropertiesConfiguration("application.properties");
+            HIVE_TABLE_TYPE_NAME =
+                    conf.getString("metadata.lineage.hive.table.type.name",  "hive_table");
+            HIVE_TABLE_COLUMNS_ATTRIBUTE_NAME =
+                    conf.getString("metadata.lineage.hive.table.column.name",  "columns");
+
+            HIVE_PROCESS_TYPE_NAME =
+                    conf.getString("metadata.lineage.hive.process.type.name", "hive_process");
+            HIVE_PROCESS_INPUT_ATTRIBUTE_NAME =
+                    conf.getString("metadata.lineage.hive.process.inputs.name", "inputTables");
+            HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME =
+                    conf.getString("metadata.lineage.hive.process.outputs.name", "outputTables");
+        } catch (ConfigurationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
     private final TitanGraph titanGraph;
     private final DefaultGraphPersistenceStrategy graphPersistenceStrategy;
+    private final GraphBackedDiscoveryService discoveryService;
 
     @Inject
     HiveLineageService(GraphProvider<TitanGraph> graphProvider,
-                       MetadataRepository metadataRepository) throws DiscoveryException {
+                       MetadataRepository metadataRepository,
+                       GraphBackedDiscoveryService discoveryService) throws DiscoveryException {
         this.titanGraph = graphProvider.get();
         this.graphPersistenceStrategy = new DefaultGraphPersistenceStrategy(metadataRepository);
+        this.discoveryService = discoveryService;
     }
 
     /**
@@ -82,16 +106,7 @@ public class HiveLineageService implements LineageService {
                     graphPersistenceStrategy, titanGraph);
 
             Expressions.Expression expression = outputsQuery.expr();
-            Expressions.Expression validatedExpression = QueryProcessor.validate(expression);
-            GremlinQuery gremlinQuery = new GremlinTranslator(
-                    validatedExpression, graphPersistenceStrategy).translate();
-            if (LOG.isDebugEnabled()) {
-                System.out.println("Query = " + validatedExpression);
-                System.out.println("Expression Tree = " + validatedExpression.treeString());
-                System.out.println("Gremlin Query = " + gremlinQuery.queryStr());
-            }
-
-            return outputsQuery.evaluate().toJson();
+            return discoveryService.evaluate(expression).toJson();
         } catch (Exception e) { // unable to catch ExpressionException
             throw new DiscoveryException("Invalid expression", e);
         }
@@ -115,18 +130,25 @@ public class HiveLineageService implements LineageService {
                     graphPersistenceStrategy, titanGraph);
 
             Expressions.Expression expression = inputsQuery.expr();
-            Expressions.Expression validatedExpression = QueryProcessor.validate(expression);
-            GremlinQuery gremlinQuery =
-                    new GremlinTranslator(validatedExpression, graphPersistenceStrategy).translate();
-            if (LOG.isDebugEnabled()) {
-                System.out.println("Query = " + validatedExpression);
-                System.out.println("Expression Tree = " + validatedExpression.treeString());
-                System.out.println("Gremlin Query = " + gremlinQuery.queryStr());
-            }
-
-            return inputsQuery.evaluate().toJson();
+            return discoveryService.evaluate(expression).toJson();
         } catch (Exception e) { // unable to catch ExpressionException
             throw new DiscoveryException("Invalid expression", e);
         }
+    }
+
+    /**
+     * Return the schema for the given tableName.
+     *
+     * @param tableName tableName
+     * @return Schema as JSON
+     */
+    @Override
+    public String getSchema(String tableName) throws DiscoveryException {
+        // todo - validate if indeed this is a table type and exists
+        String schemaQuery = HIVE_TABLE_TYPE_NAME
+                + " where name=\"" + tableName + "\", "
+                + HIVE_TABLE_COLUMNS_ATTRIBUTE_NAME;
+                // + " as column select column.name, column.dataType, column.comment";
+        return discoveryService.searchByDSL(schemaQuery);
     }
 }
