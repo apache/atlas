@@ -258,7 +258,7 @@ public class HiveLineageServiceTest {
                         new AttributeDefinition("db", DATABASE_TYPE,
                                 Multiplicity.REQUIRED, false, null),
                         new AttributeDefinition("sd", STORAGE_DESC_TYPE,
-                                Multiplicity.REQUIRED, false, null),
+                                Multiplicity.REQUIRED, true, null),
                         new AttributeDefinition("columns",
                                 DataTypes.arrayTypeName(COLUMN_TYPE),
                                 Multiplicity.COLLECTION, true, null)
@@ -457,9 +457,7 @@ public class HiveLineageServiceTest {
         referenceable.set("retention", System.currentTimeMillis());
 
         referenceable.set("db", dbId);
-        // todo: fix this bug with object walker
-//         referenceable.set("sd", sd);
-        referenceable.set("sd", createInstance(sd));
+        referenceable.set("sd", sd);
         referenceable.set("columns", columns);
 
         return createInstance(referenceable);

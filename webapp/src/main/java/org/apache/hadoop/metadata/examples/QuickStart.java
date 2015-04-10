@@ -134,7 +134,7 @@ public class QuickStart {
                         new AttributeDefinition("db", DATABASE_TYPE,
                                 Multiplicity.REQUIRED, false, null),
                         new AttributeDefinition("sd", STORAGE_DESC_TYPE,
-                                Multiplicity.OPTIONAL, false, null),
+                                Multiplicity.REQUIRED, true, null),
                         attrDef("owner", DataTypes.STRING_TYPE),
                         attrDef("createTime", DataTypes.INT_TYPE),
                         attrDef("lastAccessTime", DataTypes.INT_TYPE),
@@ -356,8 +356,7 @@ public class QuickStart {
         referenceable.set("lastAccessTime", System.currentTimeMillis());
         referenceable.set("retention", System.currentTimeMillis());
         referenceable.set("db", dbId);
-        // todo: fix this bug with object walker
-        // referenceable.set("sd", sd);
+        referenceable.set("sd", sd);
         referenceable.set("columns", columns);
 
         return createInstance(referenceable);
