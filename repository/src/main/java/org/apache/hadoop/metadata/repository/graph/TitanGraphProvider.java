@@ -23,6 +23,7 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.hadoop.metadata.PropertiesUtil;
 
 import javax.inject.Singleton;
 import java.util.Iterator;
@@ -32,15 +33,13 @@ import java.util.Iterator;
  */
 public class TitanGraphProvider implements GraphProvider<TitanGraph> {
 
-    private static final String CONFIG_PATH = "application.properties";
-
     /**
      * Constant for the configuration property that indicates the prefix.
      */
     private static final String METADATA_PREFIX = "metadata.graph.";
 
     private static Configuration getConfiguration() throws ConfigurationException {
-        PropertiesConfiguration configProperties = new PropertiesConfiguration(CONFIG_PATH);
+        PropertiesConfiguration configProperties = PropertiesUtil.getApplicationProperties();
 
         Configuration graphConfig = new PropertiesConfiguration();
 

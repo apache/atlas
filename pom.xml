@@ -17,8 +17,8 @@
   -->
 
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd"
-        xmlns="http://maven.apache.org/POM/4.0.0">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd"
+         xmlns="http://maven.apache.org/POM/4.0.0">
 
     <parent>
         <groupId>org.apache</groupId>
@@ -94,110 +94,6 @@
         <PermGen>64m</PermGen>
         <MaxPermGen>512m</MaxPermGen>
     </properties>
-
-    <profiles>
-        <profile>
-            <id>test-patch</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.rat</groupId>
-                        <artifactId>apache-rat-plugin</artifactId>
-                        <configuration>
-                            <useDefaultExcludes>true</useDefaultExcludes>
-                            <useMavenDefaultExcludes>true</useMavenDefaultExcludes>
-                            <useIdeaDefaultExcludes>true</useIdeaDefaultExcludes>
-                            <useEclipseDefaultExcludes>true</useEclipseDefaultExcludes>
-                            <excludeSubProjects>true</excludeSubProjects>
-                            <excludes>
-                                <exclude>*.txt</exclude>
-                                <exclude>**/*.txt</exclude>
-                                <exclude>**/*.json</exclude>
-                                <exclude>.git/**</exclude>
-                                <exclude>.gitignore</exclude>
-                                <exclude>**/.idea/**</exclude>
-                                <exclude>**/*.twiki</exclude>
-                                <exclude>**/*.iml</exclude>
-                                <exclude>**/*.json</exclude>
-                                <exclude>**/*.uml</exclude>
-                                <exclude>**/target/**</exclude>
-                                <exclude>**/build/**</exclude>
-                                <exclude>**/*.patch</exclude>
-                                <exclude>derby.log</exclude>
-                                <exclude>**/logs/**</exclude>
-                                <exclude>**/.classpath</exclude>
-                                <exclude>**/.project</exclude>
-                                <exclude>**/.settings/**</exclude>
-                                <exclude>**/test-output/**</exclude>
-                                <exclude>**/data.txt</exclude>
-                                <exclude>**/maven-eclipse.xml</exclude>
-                                <exclude>**/.externalToolBuilders/**</exclude>
-                                <exclude>dashboard/**</exclude>
-                            </excludes>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>rat-check</id>
-                                <goals>
-                                    <goal>check</goal>
-                                </goals>
-                                <phase>verify</phase>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-checkstyle-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>checkstyle-check</id>
-                                <goals>
-                                    <goal>check</goal>
-                                </goals>
-                                <phase>verify</phase>
-                                <configuration>
-                                    <consoleOutput>true</consoleOutput>
-                                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                                    <configLocation>src/build/checkstyle.xml</configLocation>
-                                    <headerLocation>src/build/checkstyle-java-header.txt</headerLocation>
-                                    <failOnViolation>false</failOnViolation>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>findbugs-maven-plugin</artifactId>
-                        <configuration>
-                            <!--debug>true</debug -->
-                            <xmlOutput>true</xmlOutput>
-                            <failOnError>false</failOnError>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>findbugs-check</id>
-                                <goals>
-                                    <goal>check</goal>
-                                </goals>
-                                <phase>verify</phase>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <!-- Source code metrics: mvn javancss:report or mvn site -->
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>javancss-maven-plugin</artifactId>
-                    </plugin>
-                </plugins>
-            </build>
-            <properties>
-                <excluded.test.groups/>
-            </properties>
-        </profile>
-    </profiles>
 
     <modules>
         <module>typesystem</module>
@@ -686,17 +582,6 @@
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
-                <includes>
-                    <include>metadata-buildinfo.properties</include>
-                </includes>
-            </resource>
-            <resource>
-                <directory>src/conf</directory>
-                <filtering>false</filtering>
-                <includes>
-                    <include>application.properties</include>
-                    <include>log4j.xml</include>
-                </includes>
             </resource>
             <resource>
                 <directory>..</directory>
@@ -893,21 +778,23 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.7.2</version>
+                <version>2.16</version>
                 <configuration>
                     <!--<skipTests>true</skipTests>-->
                     <forkMode>always</forkMode>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                    <groups></groups>
                 </configuration>
                 <dependencies>
                     <dependency>
                         <groupId>org.apache.maven.surefire</groupId>
-                        <artifactId>surefire-junit4</artifactId>
-                        <version>2.7.2</version>
+                        <artifactId>surefire-testng</artifactId>
+                        <version>2.18.1</version>
                     </dependency>
                     <dependency>
                         <groupId>org.apache.maven.surefire</groupId>
-                        <artifactId>surefire-testng</artifactId>
-                        <version>2.7.2</version>
+                        <artifactId>surefire-junit4</artifactId>
+                        <version>2.18.1</version>
                     </dependency>
                 </dependencies>
             </plugin>
@@ -979,8 +866,98 @@
                     <doUpdate>false</doUpdate>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.rat</groupId>
+                <artifactId>apache-rat-plugin</artifactId>
+                <configuration>
+                    <useDefaultExcludes>true</useDefaultExcludes>
+                    <useMavenDefaultExcludes>true</useMavenDefaultExcludes>
+                    <useIdeaDefaultExcludes>true</useIdeaDefaultExcludes>
+                    <useEclipseDefaultExcludes>true</useEclipseDefaultExcludes>
+                    <excludeSubProjects>true</excludeSubProjects>
+                    <excludes>
+                        <exclude>*.txt</exclude>
+                        <exclude>**/*.txt</exclude>
+                        <exclude>**/*.json</exclude>
+                        <exclude>.git/**</exclude>
+                        <exclude>.gitignore</exclude>
+                        <exclude>**/.idea/**</exclude>
+                        <exclude>**/*.twiki</exclude>
+                        <exclude>**/*.iml</exclude>
+                        <exclude>**/*.json</exclude>
+                        <exclude>**/*.uml</exclude>
+                        <exclude>**/target/**</exclude>
+                        <exclude>**/build/**</exclude>
+                        <exclude>**/*.patch</exclude>
+                        <exclude>derby.log</exclude>
+                        <exclude>**/logs/**</exclude>
+                        <exclude>**/.classpath</exclude>
+                        <exclude>**/.project</exclude>
+                        <exclude>**/.settings/**</exclude>
+                        <exclude>**/test-output/**</exclude>
+                        <exclude>**/data.txt</exclude>
+                        <exclude>**/maven-eclipse.xml</exclude>
+                        <exclude>**/.externalToolBuilders/**</exclude>
+                        <exclude>dashboard/**</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>rat-check</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <phase>verify</phase>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>checkstyle-check</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <phase>verify</phase>
+                        <configuration>
+                            <consoleOutput>true</consoleOutput>
+                            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                            <configLocation>src/build/checkstyle.xml</configLocation>
+                            <headerLocation>src/build/checkstyle-java-header.txt</headerLocation>
+                            <failOnViolation>false</failOnViolation>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+                <configuration>
+                    <!--debug>true</debug -->
+                    <xmlOutput>true</xmlOutput>
+                    <failOnError>false</failOnError>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>findbugs-check</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <phase>verify</phase>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Source code metrics: mvn javancss:report or mvn site -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>javancss-maven-plugin</artifactId>
+            </plugin>
         </plugins>
     </build>
-
-    <reporting/>
 </project>

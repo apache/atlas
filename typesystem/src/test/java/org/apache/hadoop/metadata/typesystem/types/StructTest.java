@@ -33,8 +33,8 @@ public class StructTest extends BaseTest {
     @Before
     public void setup() throws Exception {
         super.setup();
-        structType = (StructType) getTypeSystem().getDataType(StructType.class, STRUCT_TYPE_1);
-        recursiveStructType = (StructType) getTypeSystem()
+        structType = getTypeSystem().getDataType(StructType.class, STRUCT_TYPE_1);
+        recursiveStructType = getTypeSystem()
                 .getDataType(StructType.class, STRUCT_TYPE_2);
     }
 
@@ -54,7 +54,7 @@ public class StructTest extends BaseTest {
                 "\ti : \t1.0\n" +
                 "\tj : \t1\n" +
                 "\tk : \t1\n" +
-                "\tl : \t2014-12-10\n" +
+                "\tl : \t2014-12-11\n" +
                 "\tm : \t[1, 1]\n" +
                 "\tn : \t[1.1, 1.1]\n" +
                 "\to : \t{b=2.0, a=1.0}\n" +

@@ -70,8 +70,7 @@ public final class Main {
             appPath = cmd.getOptionValue(APP_PATH);
         }
 
-        PropertiesConfiguration configuration =
-                new PropertiesConfiguration("application.properties");
+        PropertiesConfiguration configuration = PropertiesUtil.getApplicationProperties();
         final String enableTLSFlag = configuration.getString("metadata.enableTLS");
         final int appPort = getApplicationPort(cmd, enableTLSFlag);
         final boolean enableTLS = isTLSEnabled(enableTLSFlag, appPort);

@@ -45,7 +45,7 @@ class SerializationTest extends BaseTest {
         val s: Struct = BaseTest.createStruct()
         val ts: ITypedStruct = structType.convert(s, Multiplicity.REQUIRED)
 
-        Assert.assertEquals(ts.toString, "{\n\ta : \t1\n\tb : \ttrue\n\tc : \t1\n\td : \t2\n\te : \t1\n\tf : \t1\n\tg : \t1\n\th : \t1.0\n\ti : \t1.0\n\tj : \t1\n\tk : \t1\n\tl : \t2014-12-10\n\tm : \t[1, 1]\n\tn : \t[1.1, 1.1]\n\to : \t{b=2.0, a=1.0}\n}")
+        Assert.assertEquals(ts.toString, "{\n\ta : \t1\n\tb : \ttrue\n\tc : \t1\n\td : \t2\n\te : \t1\n\tf : \t1\n\tg : \t1\n\th : \t1.0\n\ti : \t1.0\n\tj : \t1\n\tk : \t1\n\tl : \t2014-12-11\n\tm : \t[1, 1]\n\tn : \t[1.1, 1.1]\n\to : \t{b=2.0, a=1.0}\n}")
 
         implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new TypedStructSerializer +
             new BigDecimalSerializer + new BigIntegerSerializer
