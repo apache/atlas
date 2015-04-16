@@ -95,6 +95,30 @@
         <MaxPermGen>512m</MaxPermGen>
     </properties>
 
+    <profiles>
+        <profile>
+            <id>Windows</id>
+            <activation>
+                <os><family>windows</family></os>
+            </activation>
+            <properties>
+                <!--executable.python>python</executable.python-->
+                <python.path.l>${project.basedir}\src\bin;${project.basedir}\src\test\python\scripts;${project.basedir}\src\test\mock</python.path.l>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>Linux</id>
+            <activation>
+                <os><family>!windows</family></os>
+            </activation>
+            <properties>
+                <!--executable.python>${project.basedir}/../slider-agent/src/test/python/python-wrap</executable.python-->
+                <python.path.l>${project.basedir}/src/bin:${project.basedir}/src/test/mock:${project.basedir}/src/test/python/scripts</python.path.l>
+            </properties>
+        </profile>
+    </profiles>
+
     <modules>
         <module>typesystem</module>
         <module>client</module>
@@ -896,6 +920,8 @@
                         <exclude>**/.project</exclude>
                         <exclude>**/.settings/**</exclude>
                         <exclude>**/test-output/**</exclude>
+                        <exclude>**/mock/**</exclude>
+                        <exclude>**/data/**</exclude>
                         <exclude>**/data.txt</exclude>
                         <exclude>**/maven-eclipse.xml</exclude>
                         <exclude>**/.externalToolBuilders/**</exclude>
@@ -958,6 +984,33 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>javancss-maven-plugin</artifactId>
             </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.2.1</version>
+                <inherited>false</inherited>
+                <executions>
+                    <execution>
+                        <configuration>
+                            <executable>python</executable>
+                            <workingDirectory>src/test/python</workingDirectory>
+                            <arguments>
+                                <argument>unitTests.py</argument>
+                            </arguments>
+                            <environmentVariables>
+                                <PYTHONPATH>${python.path.l}</PYTHONPATH>
+                            </environmentVariables>
+                        </configuration>
+                        <id>python-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 </project>
