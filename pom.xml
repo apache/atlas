@@ -102,7 +102,6 @@
                 <os><family>windows</family></os>
             </activation>
             <properties>
-                <!--executable.python>python</executable.python-->
                 <python.path.l>${project.basedir}\src\bin;${project.basedir}\src\test\python\scripts;${project.basedir}\src\test\mock</python.path.l>
             </properties>
         </profile>
@@ -113,7 +112,6 @@
                 <os><family>!windows</family></os>
             </activation>
             <properties>
-                <!--executable.python>${project.basedir}/../slider-agent/src/test/python/python-wrap</executable.python-->
                 <python.path.l>${project.basedir}/src/bin:${project.basedir}/src/test/mock:${project.basedir}/src/test/python/scripts</python.path.l>
             </properties>
         </profile>

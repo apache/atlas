@@ -157,36 +157,6 @@ def runProcess(commandline):
     debug ("Executing : %s" % commandline)
     return subprocess.Popen(commandline)
 
-
-    # exe = subprocess.Popen(commandline,
-    #                        stdin=subprocess.PIPE,
-    #                        stdout=subprocess.PIPE,
-    #                        stderr=subprocess.PIPE,
-    #                        shell=False,
-    #                        bufsize=1,
-    #                        close_fds=ON_POSIX)
-    #
-    # t = Thread(target=print_output, args=("stdout", exe.stdout, False))
-    # t.daemon = True
-    # t.start()
-    # t2 = Thread(target=print_output, args=("stderr", exe.stderr, True))
-    # t2.daemon = True
-    # t2.start()
-    # t3 = Thread(target=read_input, args=("stdin", exe))
-    # t3.daemon = True
-    # t3.start()
-    #
-    # debug("Waiting for completion")
-    # while exe.poll() is None:
-    #     # process is running; grab output and echo every line
-    #     time.sleep(1)
-    # debug("completed with exit code : %d" % exe.returncode)
-    # finished = True
-    # t.join()
-    # t2.join()
-    # t3.join()
-    # return exe.returncode
-
 def print_output(name, src, toStdErr):
     """
     Relay the output stream to stdout line by line
