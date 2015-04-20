@@ -70,7 +70,7 @@ while [[ ${1} =~ ^\-D ]]; do
 done
 TIME=`date +%Y%m%d%H%M%s`
 
-${JAVA_BIN} ${JAVA_PROPERTIES} -cp ${METADATACPPATH} org.apache.hadoop.metadata.hive.bridge.HiveMetaStoreBridge
+${JAVA_BIN} ${JAVA_PROPERTIES} -cp /etc/hive/conf:${METADATACPPATH} org.apache.hadoop.metadata.hive.bridge.HiveMetaStoreBridge
 
 RETVAL=$?
 [ $RETVAL -eq 0 ] && echo Hive Data Model Imported!!!
