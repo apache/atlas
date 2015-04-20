@@ -19,7 +19,6 @@
 package org.apache.hadoop.metadata.typesystem.types;
 
 import com.google.common.collect.ImmutableCollection;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.metadata.MetadataException;
 

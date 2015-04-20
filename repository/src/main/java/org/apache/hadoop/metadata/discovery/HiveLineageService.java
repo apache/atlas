@@ -21,6 +21,7 @@ package org.apache.hadoop.metadata.discovery;
 import com.thinkaurelius.titan.core.TitanGraph;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.hadoop.metadata.PropertiesUtil;
 import org.apache.hadoop.metadata.discovery.graph.DefaultGraphPersistenceStrategy;
 import org.apache.hadoop.metadata.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.hadoop.metadata.query.Expressions;
@@ -57,7 +58,7 @@ public class HiveLineageService implements LineageService {
     static {
         // todo - externalize this using type system - dog food
         try {
-            PropertiesConfiguration conf = new PropertiesConfiguration("application.properties");
+            PropertiesConfiguration conf = PropertiesUtil.getApplicationProperties();
             HIVE_TABLE_TYPE_NAME =
                     conf.getString("metadata.lineage.hive.table.type.name",  "hive_table");
             HIVE_TABLE_COLUMNS_ATTRIBUTE_NAME =

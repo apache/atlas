@@ -25,6 +25,7 @@ import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.metadata.RepositoryMetadataModule;
 import org.apache.hadoop.metadata.TestUtils;
+import org.apache.hadoop.metadata.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.hadoop.metadata.repository.Constants;
 import org.apache.hadoop.metadata.repository.RepositoryException;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
@@ -43,6 +44,8 @@ import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.TraitType;
 import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
@@ -78,6 +81,9 @@ public class GraphBackedMetadataRepositoryTest {
 
     @Inject
     private GraphBackedMetadataRepository repositoryService;
+
+    @Inject
+    private GraphBackedDiscoveryService discoveryService;
 
     private TypeSystem typeSystem;
     private String guid;
@@ -138,8 +144,8 @@ public class GraphBackedMetadataRepositoryTest {
 
     @Test (dependsOnMethods = "testSubmitEntity")
     public void testGetTraitLabel() throws Exception {
-        Assert.assertEquals(repositoryService.getTraitLabel(
-                    typeSystem.getDataType(ClassType.class, TABLE_TYPE), CLASSIFICATION),
+        Assert.assertEquals(repositoryService.getTraitLabel(typeSystem.getDataType(ClassType.class, TABLE_TYPE),
+                        CLASSIFICATION),
                 TABLE_TYPE + "." + CLASSIFICATION);
     }
 
@@ -297,14 +303,56 @@ public class GraphBackedMetadataRepositoryTest {
 
         Id expected = new Id(guid,
                 tableVertex.<Integer>getProperty(Constants.VERSION_PROPERTY_KEY), TABLE_TYPE);
-        Assert.assertEquals(repositoryService.getIdFromVertex(TABLE_TYPE, tableVertex),
-                expected);
+        Assert.assertEquals(repositoryService.getIdFromVertex(TABLE_TYPE, tableVertex), expected);
     }
 
     @Test (dependsOnMethods = "testCreateEntity")
     public void testGetTypeName() throws Exception {
         Vertex tableVertex = getTableEntityVertex();
         Assert.assertEquals(repositoryService.getTypeName(tableVertex), TABLE_TYPE);
+    }
+
+    /**
+      * Full text search requires GraphBackedSearchIndexer, and GraphBackedSearchIndexer can't be enabled in
+      * GraphBackedDiscoveryServiceTest because of its test data. So, test for full text search is in
+      * GraphBackedMetadataRepositoryTest:(
+      */
+    @Test(dependsOnMethods = "testSubmitEntity")
+    public void testFullTextSearch() throws Exception {
+        //todo fix this
+        //Weird: with lucene, the test passes without sleep
+        //but with elasticsearch, doesn't work without sleep. why??
+        long sleepInterval = 1000;
+
+        //person in hr department whose name is john
+        Thread.sleep(sleepInterval);
+        String response = discoveryService.searchByFullText("john");
+        Assert.assertNotNull(response);
+        JSONArray results = new JSONArray(response);
+        System.out.println("Found the following results");
+        for (int i = 0 ; i < results.length(); i++) {
+            JSONObject myrow = results.getJSONObject(i);
+            System.out.println(myrow.toString());
+        }
+        Assert.assertEquals(results.length(), 1);
+        JSONObject row = (JSONObject) results.get(0);
+        Assert.assertEquals(row.get("typeName"), "Person");
+
+        //person in hr department who lives in santa clara
+        response = discoveryService.searchByFullText("hr AND santa AND clara");
+        Assert.assertNotNull(response);
+        results = new JSONArray(response);
+        Assert.assertEquals(results.length(), 1);
+        row = (JSONObject) results.get(0);
+        Assert.assertEquals(row.get("typeName"), "Manager");
+
+        //search for person in hr department whose name starts is john/jahn
+        response = discoveryService.searchByFullText("hr AND (john OR jahn)");
+        Assert.assertNotNull(response);
+        results = new JSONArray(response);
+        Assert.assertEquals(results.length(), 1);
+        row = (JSONObject) results.get(0);
+        Assert.assertEquals(row.get("typeName"), "Person");
     }
 
 /*

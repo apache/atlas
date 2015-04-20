@@ -18,6 +18,8 @@
 
 package org.apache.hadoop.metadata.discovery;
 
+import org.apache.hadoop.metadata.MetadataException;
+
 import java.util.List;
 import java.util.Map;
 

@@ -219,6 +219,7 @@ public class GraphBackedTypeStore implements ITypeStore {
             Vertex vertex = (Vertex) vertices.next();
             DataTypes.TypeCategory typeCategory = vertex.getProperty(Constants.TYPE_CATEGORY_PROPERTY_KEY);
             String typeName = vertex.getProperty(Constants.TYPENAME_PROPERTY_KEY);
+            LOG.info("Restoring type {}.{}", typeCategory, typeName);
             switch(typeCategory) {
             case ENUM:
                 enums.add(getEnumType(vertex));
@@ -297,8 +298,7 @@ public class GraphBackedTypeStore implements ITypeStore {
     private Vertex findVertex(DataTypes.TypeCategory category, String typeName) {
         LOG.debug("Finding vertex for {}.{}", category, typeName);
 
-        Iterator results = titanGraph.query().has(Constants.VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE)
-                .has(Constants.TYPENAME_PROPERTY_KEY, typeName).vertices().iterator();
+        Iterator results = titanGraph.query().has(Constants.TYPENAME_PROPERTY_KEY, typeName).vertices().iterator();
         Vertex vertex = null;
         if (results != null && results.hasNext()) {
             //There should be just one vertex with the given typeName

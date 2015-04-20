@@ -33,12 +33,10 @@ import org.apache.hadoop.metadata.typesystem.TypesDef;
 import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.apache.hadoop.metadata.web.filters.AuditFilter;
 import org.apache.hadoop.metadata.web.filters.MetadataAuthenticationFilter;
-import org.apache.hadoop.security.authentication.server.AuthenticationFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletException;
 import java.util.HashMap;
 import java.util.Map;
 

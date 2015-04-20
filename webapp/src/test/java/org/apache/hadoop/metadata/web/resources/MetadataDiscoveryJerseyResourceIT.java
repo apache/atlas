@@ -150,12 +150,20 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
 
     @Test(enabled = false)
     public void testSearchUsingFullText() throws Exception {
-        String query = "foo bar";
+        String query = "foundation_etl";
         JSONObject response = serviceClient.searchByFullText(query);
         Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
 
         Assert.assertEquals(response.getString("query"), query);
         Assert.assertEquals(response.getString("queryType"), "full-text");
+
+        JSONArray results = response.getJSONArray(MetadataServiceClient.RESULTS);
+        Assert.assertEquals(results.length(), 1);
+
+        JSONObject row = results.getJSONObject(0);
+        Assert.assertNotNull(row.get("guid"));
+        Assert.assertEquals(row.getString("typeName"), "dsl_test_type");
+        Assert.assertNotNull(row.get("score"));
     }
 
     private void createTypes() throws Exception {

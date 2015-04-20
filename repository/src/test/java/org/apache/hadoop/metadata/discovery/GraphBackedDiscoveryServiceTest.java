@@ -292,32 +292,4 @@ public class GraphBackedDiscoveryServiceTest {
             Assert.assertNotEquals(name, "null");
         }
     }
-
-    @Test
-    public void testFullTextSearch() throws Exception {
-        //person in hr department whose name is john
-        String response = discoveryService.searchByFullText("john hr");
-        Assert.assertNotNull(response);
-        JSONObject jsonResponse = new JSONObject(response);
-        JSONArray results = jsonResponse.getJSONArray("results");
-        Assert.assertEquals(results.length(), 1);
-        JSONObject row = (JSONObject) results.get(0);
-        Assert.assertEquals(row.get("typeName"), "Person");
-
-        //person in hr department who lives in santa clara
-        response = discoveryService.searchByFullText("hr santa clara");
-        Assert.assertNotNull(response);
-        jsonResponse = new JSONObject(response);
-        results = jsonResponse.getJSONArray("results");
-        Assert.assertEquals(results.length(), 1);
-        row = (JSONObject) results.get(0);
-        Assert.assertEquals(row.get("typeName"), "Manager");
-
-        //search for hr should return - hr department and its 2 employess
-        response = discoveryService.searchByFullText("hr");
-        Assert.assertNotNull(response);
-        jsonResponse = new JSONObject(response);
-        results = jsonResponse.getJSONArray("results");
-        Assert.assertEquals(results.length(), 3);
-    }
 }
