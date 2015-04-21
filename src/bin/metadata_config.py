@@ -127,7 +127,8 @@ def jar(path):
     commandline = [prg]
     commandline.append("-xf")
     commandline.append(path)
-    return runProcess(commandline)
+    process = runProcess(commandline)
+    process.wait()
 
 def is_exe(fpath):
     return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
