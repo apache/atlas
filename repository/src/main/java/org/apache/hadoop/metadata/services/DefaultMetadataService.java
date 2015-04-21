@@ -93,6 +93,11 @@ public class DefaultMetadataService implements MetadataService {
 
             TypesDef typesDef = TypesSerialization.fromJson(typeDefinition);
             Map<String, IDataType> typesAdded = typeSystem.defineTypes(typesDef);
+
+            //TODO A more elegant way to detect failures?
+            if (typesAdded.size() == 0)
+                throw new MetadataException("Invalid type definition");
+
             //TODO how do we handle transaction - store failure??
             typeStore.store(typeSystem, ImmutableList.copyOf(typesAdded.keySet()));
 
