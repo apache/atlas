@@ -21,10 +21,17 @@ package org.apache.hadoop.metadata;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 
+import java.io.File;
+
 public class PropertiesUtil {
-    private static final String APPLICATION_PROPERTIES = "/application.properties";
+    private static final String APPLICATION_PROPERTIES = "application.properties";
 
     public static final PropertiesConfiguration getApplicationProperties() throws ConfigurationException {
-        return new PropertiesConfiguration(PropertiesUtil.class.getResource(APPLICATION_PROPERTIES));
+        String proprtiesLocation = System.getProperty("metadata.properties.location");
+        if (proprtiesLocation == null) {
+            return new PropertiesConfiguration(PropertiesUtil.class.getResource("/" + APPLICATION_PROPERTIES));
+        } else {
+            return new PropertiesConfiguration(new File(proprtiesLocation, APPLICATION_PROPERTIES));
+        }
     }
 }
