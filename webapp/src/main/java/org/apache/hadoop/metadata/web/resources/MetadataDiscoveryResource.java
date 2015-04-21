@@ -205,7 +205,7 @@ public class MetadataDiscoveryResource {
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
             response.put("query", query);
             response.put("queryType", "full-text");
-            response.put(MetadataServiceClient.RESULTS, new JSONObject(jsonResult));
+            response.put(MetadataServiceClient.RESULTS, new JSONArray(jsonResult));
 
             return Response.ok(response).build();
         } catch (DiscoveryException e) {

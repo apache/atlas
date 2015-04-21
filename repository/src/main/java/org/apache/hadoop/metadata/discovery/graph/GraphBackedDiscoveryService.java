@@ -18,13 +18,13 @@
 
 package org.apache.hadoop.metadata.discovery.graph;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.TitanIndexQuery;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.core.attribute.Text;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.discovery.DiscoveryException;
 import org.apache.hadoop.metadata.discovery.DiscoveryService;
 import org.apache.hadoop.metadata.query.Expressions;
@@ -37,6 +37,9 @@ import org.apache.hadoop.metadata.query.QueryProcessor;
 import org.apache.hadoop.metadata.repository.Constants;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
 import org.apache.hadoop.metadata.repository.graph.GraphProvider;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.util.Either;
@@ -49,6 +52,7 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -72,23 +76,36 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
         this.graphPersistenceStrategy = new DefaultGraphPersistenceStrategy(metadataRepository);
     }
 
+    //Refer http://s3.thinkaurelius.com/docs/titan/0.5.0/index-backends.html for indexed query
+    //http://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query
+    // .html#query-string-syntax for query syntax
     @Override
     public String searchByFullText(String query) throws DiscoveryException {
-        Iterator iterator = titanGraph.query()
-                .has(Constants.ENTITY_TEXT_PROPERTY_KEY, Text.CONTAINS, query)
-                .vertices()
-                .iterator();
-        JsonArray results = new JsonArray();
-        while (iterator.hasNext()) {
-            Vertex vertex = (Vertex) iterator.next();
-            JsonObject row = new JsonObject();
-            row.addProperty("guid", vertex.<String>getProperty(Constants.GUID_PROPERTY_KEY));
-            row.addProperty("typeName", vertex.<String>getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY));
-            results.add(row);
+        String graphQuery = String.format("v.%s:(%s)", Constants.ENTITY_TEXT_PROPERTY_KEY, query);
+        LOG.debug("Full text query: {}", graphQuery);
+        Iterator<TitanIndexQuery.Result<Vertex>> results =
+                        titanGraph.indexQuery(Constants.FULLTEXT_INDEX, graphQuery).vertices().iterator();
+        JSONArray response = new JSONArray();
+
+        while (results.hasNext()) {
+            TitanIndexQuery.Result<Vertex> result = results.next();
+            Vertex vertex = result.getElement();
+
+            JSONObject row = new JSONObject();
+            String guid = vertex.getProperty(Constants.GUID_PROPERTY_KEY);
+            if (guid != null) { //Filter non-class entities
+                try {
+                    row.put("guid", guid);
+                    row.put("typeName", vertex.<String>getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY));
+                    row.put("score", result.getScore());
+                } catch (JSONException e) {
+                    LOG.error("Unable to create response", e);
+                    throw new DiscoveryException("Unable to create response");
+                }
+
+                response.put(row);
+            }
         }
-        JsonObject response = new JsonObject();
-        response.addProperty("query", query);
-        response.add("results", results);
         return response.toString();
     }
 

@@ -21,8 +21,6 @@ package org.apache.hadoop.metadata.typesystem.types;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
-import java.util.Map;
-
 public final class Multiplicity {
 
     public static final Multiplicity OPTIONAL = new Multiplicity(0, 1, false);

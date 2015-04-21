@@ -54,7 +54,6 @@ public final class Constants {
      * search backing index name.
      */
     public static final String BACKING_INDEX = "search";
-    public static final String INDEX_NAME = "metadata";
 
     /**
      * search backing index name for vertex keys.
@@ -65,6 +64,8 @@ public final class Constants {
      * search backing index name for edge labels.
      */
     public static final String EDGE_INDEX = "edge_index";
+
+    public static final String FULLTEXT_INDEX = "fulltext_index";
 
     private Constants() {
     }

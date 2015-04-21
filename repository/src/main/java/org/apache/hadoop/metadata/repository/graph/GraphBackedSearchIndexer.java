@@ -23,6 +23,7 @@ import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.tinkerpop.blueprints.Direction;
@@ -91,11 +92,11 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
 
         // create a composite and mixed index for traitNames since it can be combined with other
         // keys. Traits must be a set and not a list.
-        createCompositeAndMixedIndex(Constants.TRAIT_NAMES_INDEX,
-                Constants.TRAIT_NAMES_PROPERTY_KEY, String.class, false, Cardinality.SET);
+        createCompositeAndMixedIndex(Constants.TRAIT_NAMES_INDEX, Constants.TRAIT_NAMES_PROPERTY_KEY, String.class,
+                false, Cardinality.SET);
 
         // Index for full text search
-        createVertexMixedIndex(Constants.ENTITY_TEXT_PROPERTY_KEY, String.class);
+        createFullTextIndex();
 
         //Indexes for graph backed type system store
         createTypeStoreIndexes();
@@ -103,19 +104,27 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
         LOG.info("Index creation for global keys complete.");
     }
 
+    private void createFullTextIndex() {
+        TitanManagement management = titanGraph.getManagementSystem();
+        PropertyKey fullText =
+                management.makePropertyKey(Constants.ENTITY_TEXT_PROPERTY_KEY).dataType(String.class).make();
+
+        management.buildIndex(Constants.FULLTEXT_INDEX, Vertex.class)
+                .addKey(fullText, com.thinkaurelius.titan.core.schema.Parameter.of("mapping", Mapping.TEXT))
+                .buildMixedIndex(Constants.BACKING_INDEX);
+        management.commit();
+        LOG.info("Created mixed index for {}", Constants.ENTITY_TEXT_PROPERTY_KEY);
+    }
+
     private void createTypeStoreIndexes() {
         //Create unique index on typeName
         createCompositeIndex(Constants.TYPENAME_PROPERTY_KEY, Constants.TYPENAME_PROPERTY_KEY, String.class,
                 true, Cardinality.SINGLE);
 
-        //Create index on vertex type + typeName
-        //todo doesn't work, review
-        TitanManagement management = titanGraph.getManagementSystem();
-        PropertyKey vertexType = management.makePropertyKey(Constants.VERTEX_TYPE_PROPERTY_KEY).dataType(String.class).make();
-        PropertyKey typeName = management.getPropertyKey(Constants.TYPENAME_PROPERTY_KEY);
-        management.buildIndex("byTypeName", Vertex.class).addKey(vertexType).addKey(typeName).buildCompositeIndex();
-        management.commit();
-        LOG.debug("Created composite index on {} and {}", Constants.VERTEX_TYPE_PROPERTY_KEY, Constants.TYPENAME_PROPERTY_KEY);
+        //create index on vertex type
+        createCompositeIndex(Constants.VERTEX_TYPE_PROPERTY_KEY, Constants.VERTEX_TYPE_PROPERTY_KEY, String.class,
+                false, Cardinality.SINGLE);
+
     }
 
     /**

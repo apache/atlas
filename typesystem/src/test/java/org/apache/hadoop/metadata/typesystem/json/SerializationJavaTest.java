@@ -19,10 +19,13 @@
 package org.apache.hadoop.metadata.typesystem.json;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.hadoop.metadata.typesystem.types.BaseTest;
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.typesystem.*;
+import org.apache.hadoop.metadata.typesystem.ITypedInstance;
+import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.typesystem.Referenceable;
+import org.apache.hadoop.metadata.typesystem.Struct;
 import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.BaseTest;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
 import org.apache.hadoop.metadata.typesystem.types.DataTypes;
 import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;

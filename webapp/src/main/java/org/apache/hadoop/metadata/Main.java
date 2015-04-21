@@ -38,6 +38,7 @@ public final class Main {
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
     private static final String APP_PATH = "app";
     private static final String APP_PORT = "port";
+    private static final String METADATA_HOME = "metadata.home";
 
     /**
      * Prevent users from constructing this.
@@ -70,6 +71,7 @@ public final class Main {
             appPath = cmd.getOptionValue(APP_PATH);
         }
 
+        setApplicationHome();
         PropertiesConfiguration configuration = PropertiesUtil.getApplicationProperties();
         final String enableTLSFlag = configuration.getString("metadata.enableTLS");
         final int appPort = getApplicationPort(cmd, enableTLSFlag);
@@ -81,7 +83,13 @@ public final class Main {
         server.start();
     }
 
-    private static String getProjectVersion(PropertiesConfiguration buildConfiguration) {
+    private static void setApplicationHome() {
+        if (System.getProperty(METADATA_HOME) == null) {
+            System.setProperty(METADATA_HOME, "target");
+        }
+    }
+
+    public static String getProjectVersion(PropertiesConfiguration buildConfiguration) {
         return buildConfiguration.getString("project.version");
     }
 

@@ -26,6 +26,7 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.repository.Constants;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
@@ -59,6 +60,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -226,8 +228,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
             // add the trait instance as a new vertex
             final String typeName = getTypeName(instanceVertex);
-            instanceToGraphMapper.mapTraitInstanceToVertex(
-                    traitInstance, getIdFromVertex(typeName, instanceVertex),
+            instanceToGraphMapper.mapTraitInstanceToVertex(traitInstance, getIdFromVertex(typeName, instanceVertex),
                     typeName, instanceVertex, Collections.<Id, Vertex>emptyMap());
 
             // update the traits in entity once adding trait instance is successful
@@ -330,8 +331,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 throw new RepositoryException("Update of " + attrTypeCategory + " is not supported");
             }
 
-            instanceToGraphMapper.mapAttributesToVertex(getIdFromVertex(typeName, instanceVertex),
-                    instance, instanceVertex, new HashMap<Id, Vertex>(), attributeInfo, attributeInfo.dataType());
+            instanceToGraphMapper.mapAttributesToVertex(getIdFromVertex(typeName, instanceVertex), instance,
+                    instanceVertex, new HashMap<Id, Vertex>(), attributeInfo, attributeInfo.dataType());
             titanGraph.commit();
         } catch (Exception e) {
             throw new RepositoryException(e);
@@ -440,21 +441,92 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             for (ITypedReferenceableInstance typedInstance : newTypedInstances) { // Traverse
                 Id id = typedInstance.getId();
                 Vertex instanceVertex = entityProcessor.idToVertexMap.get(id);
-                String fullText = getFullText(instanceVertex, true);
+                String fullText = getFullTextForVertex(instanceVertex, true);
                 instanceVertex.setProperty(Constants.ENTITY_TEXT_PROPERTY_KEY, fullText);
+                LOG.debug("Adding {} for {} = {}", Constants.ENTITY_TEXT_PROPERTY_KEY, instanceVertex, fullText);
             }
         }
 
-        private String getFullText(Vertex instanceVertex,
-                                   boolean followReferences) throws MetadataException {
+        private String getFullTextForVertex(Vertex instanceVertex, boolean followReferences) throws MetadataException {
             String guid = instanceVertex.getProperty(Constants.GUID_PROPERTY_KEY);
             ITypedReferenceableInstance typedReference =
                     graphToInstanceMapper.mapGraphToTypedInstance(guid, instanceVertex);
-            return getFullText(typedReference, followReferences);
+            String fullText = getFullTextForInstance(typedReference, followReferences);
+            StringBuilder fullTextBuilder =
+                    new StringBuilder(typedReference.getTypeName()).append(FULL_TEXT_DELIMITER).append(fullText);
+
+            List<String> traits = typedReference.getTraits();
+            for (String traitName : traits) {
+                String traitText = getFullTextForInstance((ITypedInstance) typedReference.getTrait(traitName), false);
+                fullTextBuilder.append(FULL_TEXT_DELIMITER).append(traitName).append(FULL_TEXT_DELIMITER)
+                        .append(traitText);
+            }
+            return fullTextBuilder.toString();
         }
 
-        private String getFullText(ITypedInstance typedInstance,
-                                   boolean followReferences) throws MetadataException {
+        private String getFullTextForAttribute(IDataType type, Object value, boolean followReferences)
+        throws MetadataException {
+            switch (type.getTypeCategory()) {
+            case PRIMITIVE:
+                return String.valueOf(value);
+
+            case ENUM:
+                return ((EnumValue)value).value;
+
+            case ARRAY:
+                StringBuilder fullText = new StringBuilder();
+                IDataType elemType = ((DataTypes.ArrayType) type).getElemType();
+                List list = (List) value;
+
+                for (Object element : list) {
+                    String elemFullText = getFullTextForAttribute(elemType, element, false);
+                    if (StringUtils.isNotEmpty(elemFullText))
+                        fullText = fullText.append(FULL_TEXT_DELIMITER).append(elemFullText);
+                }
+                return fullText.toString();
+
+            case MAP:
+                fullText = new StringBuilder();
+                IDataType keyType = ((DataTypes.MapType) type).getKeyType();
+                IDataType valueType = ((DataTypes.MapType) type).getValueType();
+                Map map = (Map) value;
+
+                for (Object entryObj : map.entrySet()) {
+                    Map.Entry entry = (Map.Entry) entryObj;
+                    String keyFullText = getFullTextForAttribute(keyType, entry.getKey(), false);
+                    if (StringUtils.isNotEmpty(keyFullText)) {
+                        fullText = fullText.append(FULL_TEXT_DELIMITER).append(keyFullText);
+                    }
+                    String valueFullText = getFullTextForAttribute(valueType, entry.getValue(), false);
+                    if (StringUtils.isNotEmpty(valueFullText)) {
+                        fullText = fullText.append(FULL_TEXT_DELIMITER).append(valueFullText);
+                    }
+                }
+                return fullText.toString();
+
+            case CLASS:
+                if (followReferences) {
+                    String refGuid = ((ITypedReferenceableInstance) value).getId()._getId();
+                    Vertex refVertex = getVertexForGUID(refGuid);
+                    return getFullTextForVertex(refVertex, false);
+                }
+                break;
+
+            case STRUCT:
+                if (followReferences) {
+                    return getFullTextForInstance((ITypedInstance) value, false);
+                }
+                break;
+
+            default:
+                throw new IllegalStateException("Unhandled type category " + type.getTypeCategory());
+
+            }
+            return null;
+        }
+
+        private String getFullTextForInstance(ITypedInstance typedInstance, boolean followReferences) throws
+            MetadataException {
             StringBuilder fullText = new StringBuilder();
             for (AttributeInfo attributeInfo : typedInstance.fieldMapping().fields.values()) {
                 Object attrValue = typedInstance.get(attributeInfo.name);
@@ -462,38 +534,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                     continue;
                 }
 
-                String attrFullText = null;
-                switch(attributeInfo.dataType().getTypeCategory()) {
-                    case PRIMITIVE:
-                        attrFullText = String.valueOf(attrValue);
-                        break;
-
-                    case ENUM:
-                        attrFullText = ((EnumValue)attrValue).value;
-                        break;
-
-                    case ARRAY:
-                        break;
-
-                    case MAP:
-                        break;
-
-                    case CLASS:
-                        if (followReferences) {
-                            String refGuid = ((ITypedReferenceableInstance) attrValue).getId()._getId();
-                            Vertex refVertex = getVertexForGUID(refGuid);
-                            attrFullText = getFullText(refVertex, false);
-                        }
-                        break;
-
-                    case STRUCT:
-                    case TRAIT:
-                        if (followReferences) {
-                            attrFullText = getFullText((ITypedInstance) attrValue, false);
-                        }
-                        break;
-                }
-                if (attrFullText != null) {
+                String attrFullText = getFullTextForAttribute(attributeInfo.dataType(), attrValue, followReferences);
+                if (StringUtils.isNotEmpty(attrFullText)) {
                     fullText = fullText.append(FULL_TEXT_DELIMITER).append(attributeInfo.name)
                             .append(FULL_TEXT_DELIMITER).append(attrFullText);
                 }
@@ -1012,8 +1054,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             throws MetadataException {
 
             final String edgeLabel = EDGE_LABEL_PREFIX + propertyName;
-            final String edgeId = propertyNameWithSuffix.substring(
-                    propertyNameWithSuffix.lastIndexOf(":") + 1, propertyNameWithSuffix.length());
+            final String edgeId = propertyNameWithSuffix
+                    .substring(propertyNameWithSuffix.lastIndexOf(":") + 1, propertyNameWithSuffix.length());
             switch (elementType.getTypeCategory()) {
                 case PRIMITIVE:
                     return instanceVertex.getProperty(propertyNameWithSuffix);
@@ -1123,8 +1165,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                             return mapGraphToTypedInstance(guid, referenceVertex);
                         } else {
                             Id referenceId = new Id(guid,
-                                    referenceVertex
-                                            .<Integer>getProperty(Constants.VERSION_PROPERTY_KEY),
+                                    referenceVertex.<Integer>getProperty(Constants.VERSION_PROPERTY_KEY),
                                     dataType.getName());
                             LOG.debug("Found non-composite, adding id {} ", referenceId);
                             return referenceId;

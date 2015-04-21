@@ -317,6 +317,10 @@
                             <name>truststore.file</name>
                             <value>${project.build.directory}/../../webapp/target/metadata.keystore</value>
                         </systemProperty>
+                        <systemProperty>
+                            <name>metadata.home</name>
+                            <value>${project.build.directory}</value>
+                        </systemProperty>
                     </systemProperties>
                     <stopKey>metadata-stop</stopKey>
                     <stopPort>41001</stopPort>
