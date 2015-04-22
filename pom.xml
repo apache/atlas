@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <!--
   ~ Licensed to the Apache Software Foundation (ASF) under one
   ~ or more contributor license agreements.  See the NOTICE file
@@ -93,6 +94,12 @@
 
         <PermGen>64m</PermGen>
         <MaxPermGen>512m</MaxPermGen>
+        <SnapshotsId>apache.snapshots.repo</SnapshotsId>
+        <SnapshotsName>Apache Snapshot Repository</SnapshotsName>
+        <SnapshotsUrl> https://repository.apache.org/content/groups/snapshots</SnapshotsUrl>
+        <StagingId>apache-staging</StagingId>
+        <StagingName>Apache Release Distribution Repository</StagingName>
+        <StagingUrl>https://repository.apache.org/content/groups/staging</StagingUrl>
     </properties>
 
     <profiles>
@@ -182,7 +189,18 @@
             <url>http://repo.typesafe.com/typesafe/releases/</url>
         </repository>
     </repositories>
-
+     <distributionManagement>
+          <repository>
+              <id>${StagingId}</id>
+             <name>${StagingName}</name>
+             <url>${StagingUrl}</url>
+           </repository>
+         <snapshotRepository>
+             <id>${SnapshotsId}</id>
+             <name>${SnapshotsName}</name>
+             <url>${SnapshotsUrl}</url>
+           </snapshotRepository>
+       </distributionManagement>
     <dependencyManagement>
         <dependencies>
             <dependency>
