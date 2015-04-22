@@ -22,6 +22,7 @@ import org.apache.hadoop.hdfs.web.URLConnectionFactory;
 import org.apache.hadoop.metadata.web.BaseSecurityTest;
 import org.apache.hadoop.metadata.web.service.EmbeddedServer;
 import org.mortbay.jetty.Server;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import javax.security.auth.Subject;
@@ -78,7 +79,7 @@ public class MetadataAuthenticationKerberosFilterIT extends BaseSecurityTest {
             connection.setRequestMethod("GET");
             connection.connect();
 
-            assert connection.getResponseCode() == 401;
+            Assert.assertEquals(connection.getResponseCode(), 401);
 
             // need to populate the ticket cache with a local user, so logging in...
             Subject subject = loginTestUser();
@@ -92,7 +93,7 @@ public class MetadataAuthenticationKerberosFilterIT extends BaseSecurityTest {
                     connection.setRequestMethod("GET");
                     connection.connect();
 
-                    assert connection.getResponseCode() == 200;
+                    Assert.assertEquals(connection.getResponseCode(), 200);
 
                     return null;
                 }

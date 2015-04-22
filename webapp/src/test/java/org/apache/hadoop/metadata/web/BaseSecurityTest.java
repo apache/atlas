@@ -22,6 +22,7 @@ import org.apache.hadoop.minikdc.MiniKdc;
 import org.apache.zookeeper.Environment;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.webapp.WebAppContext;
+import org.testng.Assert;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -83,7 +84,7 @@ public class BaseSecurityTest {
         kdc = new MiniKdc(kdcConf, kdcWorkDir);
         kdc.start();
 
-        assert kdc.getRealm() != null;
+        Assert.assertNotNull(kdc.getRealm());
         return kdcWorkDir;
     }
 

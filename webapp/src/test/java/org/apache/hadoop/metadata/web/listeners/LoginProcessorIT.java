@@ -24,6 +24,7 @@ import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.metadata.web.BaseSecurityTest;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.Shell;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -46,9 +47,9 @@ public class LoginProcessorIT extends BaseSecurityTest {
         };
         processor.login();
 
-        assert UserGroupInformation.getCurrentUser() != null;
-        assert !UserGroupInformation.isLoginKeytabBased();
-        assert !UserGroupInformation.isSecurityEnabled();
+        Assert.assertNotNull(UserGroupInformation.getCurrentUser());
+        Assert.assertFalse(UserGroupInformation.isLoginKeytabBased());
+        Assert.assertFalse(UserGroupInformation.isSecurityEnabled());
     }
 
     @Test
@@ -82,10 +83,10 @@ public class LoginProcessorIT extends BaseSecurityTest {
         };
         processor.login();
 
-        assert UserGroupInformation.getLoginUser().getShortUserName().endsWith("dgi");
-        assert UserGroupInformation.getCurrentUser() != null;
-        assert UserGroupInformation.isLoginKeytabBased();
-        assert UserGroupInformation.isSecurityEnabled();
+        Assert.assertTrue(UserGroupInformation.getLoginUser().getShortUserName().endsWith("dgi"));
+        Assert.assertNotNull(UserGroupInformation.getCurrentUser());
+        Assert.assertTrue(UserGroupInformation.isLoginKeytabBased());
+        Assert.assertTrue(UserGroupInformation.isSecurityEnabled());
 
         kdc.stop();
 
@@ -95,7 +96,7 @@ public class LoginProcessorIT extends BaseSecurityTest {
         // set up the KDC
         File kdcWorkDir = startKDC();
 
-        assert kdc.getRealm() != null;
+        Assert.assertNotNull(kdc.getRealm());
 
         File keytabFile = createKeytab(kdc, kdcWorkDir, "dgi", "dgi.keytab");
         String dgiServerPrincipal = Shell.WINDOWS ? "dgi/127.0.0.1" : "dgi/localhost";

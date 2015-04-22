@@ -20,6 +20,7 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.hadoop.metadata.web.BaseSecurityTest;
 import org.apache.hadoop.metadata.web.service.EmbeddedServer;
 import org.mortbay.jetty.Server;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -57,7 +58,7 @@ public class MetadataAuthenticationSimpleFilterIT extends BaseSecurityTest {
             connection.connect();
 
             try {
-                assert connection.getResponseCode() == 403;
+                Assert.assertEquals(connection.getResponseCode(), 403);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -67,7 +68,7 @@ public class MetadataAuthenticationSimpleFilterIT extends BaseSecurityTest {
             connection.setRequestMethod("GET");
             connection.connect();
 
-            assert connection.getResponseCode() == 200;
+            Assert.assertEquals(connection.getResponseCode(), 200);
         } finally {
             server.getServer().stop();
         }

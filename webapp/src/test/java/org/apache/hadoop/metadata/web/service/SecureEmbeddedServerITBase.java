@@ -112,7 +112,7 @@ public class SecureEmbeddedServerITBase {
 
             Assert.fail("Should have thrown an exception");
         } catch (IOException e) {
-            assert e.getMessage().equals("No credential provider path configured for storage of certificate store passwords");
+            Assert.assertEquals("No credential provider path configured for storage of certificate store passwords", e.getMessage());
         } finally {
             secureEmbeddedServer.server.stop();
         }
@@ -133,7 +133,7 @@ public class SecureEmbeddedServerITBase {
             };
             Assert.fail("No entries should generate an exception");
         } catch (IOException e) {
-            assert e.getMessage().startsWith("No credential entry found for");
+            Assert.assertTrue(e.getMessage().startsWith("No credential entry found for"));
         } finally {
             secureEmbeddedServer.server.stop();
         }

@@ -23,6 +23,7 @@ import org.apache.hadoop.metadata.web.service.SecureEmbeddedServer;
 import org.apache.hadoop.security.alias.CredentialProvider;
 import org.apache.hadoop.security.alias.CredentialProviderFactory;
 import org.apache.hadoop.security.alias.JavaKeyStoreProvider;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -75,11 +76,20 @@ public class CredentialProviderUtilityIT {
 
         CredentialProvider.CredentialEntry entry =
                 provider.getCredentialEntry(SecureEmbeddedServer.KEYSTORE_PASSWORD_KEY);
-        assert entry != null && Arrays.equals(entry.getCredential(), defaultPass);
+        assertCredentialEntryCorrect(entry);
         entry = provider.getCredentialEntry(SecureEmbeddedServer.TRUSTSTORE_PASSWORD_KEY);
-        assert entry != null && Arrays.equals(entry.getCredential(), defaultPass);
+        assertCredentialEntryCorrect(entry);
         entry = provider.getCredentialEntry(SecureEmbeddedServer.SERVER_CERT_PASSWORD_KEY);
-        assert entry != null && Arrays.equals(entry.getCredential(), defaultPass);
+        assertCredentialEntryCorrect(entry);
+    }
+
+    protected void assertCredentialEntryCorrect(CredentialProvider.CredentialEntry entry) {
+        assertCredentialEntryCorrect(entry, defaultPass);
+    }
+
+    protected void assertCredentialEntryCorrect(CredentialProvider.CredentialEntry entry, char[] password) {
+        Assert.assertNotNull(entry);
+        Assert.assertEquals(entry.getCredential(), password);
     }
 
     @Test
@@ -129,11 +139,11 @@ public class CredentialProviderUtilityIT {
 
         CredentialProvider.CredentialEntry entry =
                 provider.getCredentialEntry(SecureEmbeddedServer.KEYSTORE_PASSWORD_KEY);
-        assert entry != null && Arrays.equals(entry.getCredential(), defaultPass);
+        assertCredentialEntryCorrect(entry);
         entry = provider.getCredentialEntry(SecureEmbeddedServer.TRUSTSTORE_PASSWORD_KEY);
-        assert entry != null && Arrays.equals(entry.getCredential(), defaultPass);
+        assertCredentialEntryCorrect(entry);
         entry = provider.getCredentialEntry(SecureEmbeddedServer.SERVER_CERT_PASSWORD_KEY);
-        assert entry != null && Arrays.equals(entry.getCredential(), defaultPass);
+        assertCredentialEntryCorrect(entry);
     }
 
     @Test
@@ -183,11 +193,11 @@ public class CredentialProviderUtilityIT {
 
         CredentialProvider.CredentialEntry entry =
                 provider.getCredentialEntry(SecureEmbeddedServer.KEYSTORE_PASSWORD_KEY);
-        assert entry != null && Arrays.equals(entry.getCredential(), defaultPass);
+        assertCredentialEntryCorrect(entry);
         entry = provider.getCredentialEntry(SecureEmbeddedServer.TRUSTSTORE_PASSWORD_KEY);
-        assert entry != null && Arrays.equals(entry.getCredential(), defaultPass);
+        assertCredentialEntryCorrect(entry);
         entry = provider.getCredentialEntry(SecureEmbeddedServer.SERVER_CERT_PASSWORD_KEY);
-        assert entry != null && Arrays.equals(entry.getCredential(), defaultPass);
+        assertCredentialEntryCorrect(entry);
     }
 
     @Test
@@ -251,10 +261,10 @@ public class CredentialProviderUtilityIT {
         char[] newpass = "newpass".toCharArray();
         CredentialProvider.CredentialEntry entry =
                 provider.getCredentialEntry(SecureEmbeddedServer.KEYSTORE_PASSWORD_KEY);
-        assert entry != null && Arrays.equals(entry.getCredential(), newpass);
+        assertCredentialEntryCorrect(entry, newpass);
         entry = provider.getCredentialEntry(SecureEmbeddedServer.TRUSTSTORE_PASSWORD_KEY);
-        assert entry != null && Arrays.equals(entry.getCredential(), newpass);
+        assertCredentialEntryCorrect(entry, newpass);
         entry = provider.getCredentialEntry(SecureEmbeddedServer.SERVER_CERT_PASSWORD_KEY);
-        assert entry != null && Arrays.equals(entry.getCredential(), newpass);
+        assertCredentialEntryCorrect(entry, newpass);
     }
 }
