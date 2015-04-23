@@ -98,7 +98,7 @@ public class DefaultMetadataService implements MetadataService {
                 throw new MetadataException("Invalid type definition");
 
             Map<String, IDataType> typesAdded = typeSystem.defineTypes(typesDef);
-
+            
             //TODO how do we handle transaction - store failure??
             typeStore.store(typeSystem, ImmutableList.copyOf(typesAdded.keySet()));
 
