@@ -70,7 +70,20 @@ while [[ ${1} =~ ^\-D ]]; do
 done
 TIME=`date +%Y%m%d%H%M%s`
 
-${JAVA_BIN} ${JAVA_PROPERTIES} -cp /etc/hive/conf:${METADATACPPATH} org.apache.hadoop.metadata.hive.bridge.HiveMetaStoreBridge
+if [ ! -z "$HIVE_CONF_DIR" ]; then
+    HIVE_CP=$HIVE_CONF_DIR
+elif [ ! -z "$HIVE_HOME" ]; then
+    HIVE_CP="$HIVE_HOME/conf"
+elif [ -e /usr/hdp/current/hive-client/conf ]; then
+    HIVE_CP="/usr/hdp/current/hive-client/conf"
+else
+    echo "Could not find a valid HIVE configuration"
+    exit 1
+fi
+export HIVE_CP
+echo Using Hive configuration directory [$HIVE_CP]
+
+${JAVA_BIN} ${JAVA_PROPERTIES} -cp ${HIVE_CP}:${METADATACPPATH} org.apache.hadoop.metadata.hive.bridge.HiveMetaStoreBridge
 
 RETVAL=$?
 [ $RETVAL -eq 0 ] && echo Hive Data Model Imported!!!
