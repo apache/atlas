@@ -58,4 +58,8 @@ case class TypesDef(enumTypes: Seq[EnumTypeDefinition],
         import scala.collection.JavaConverters._
         classTypes.asJava
     }
+
+    def isEmpty() = {
+      enumTypes.isEmpty & structTypes.isEmpty & traitTypes.isEmpty & classTypes.isEmpty
+    }
 }

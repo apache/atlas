@@ -94,7 +94,7 @@ public class DefaultMetadataService implements MetadataService {
             Preconditions.checkArgument(!typeDefinition.equals(""), "type definition cannot be an empty string");
 
             TypesDef typesDef = TypesSerialization.fromJson(typeDefinition);
-            if(typesDef.classTypesAsJavaList().size() == 0)
+            if(typesDef.isEmpty())
                 throw new MetadataException("Invalid type definition");
 
             Map<String, IDataType> typesAdded = typeSystem.defineTypes(typesDef);
