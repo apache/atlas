@@ -75,7 +75,7 @@ if [ ! -z "$HIVE_CONF_DIR" ]; then
 elif [ ! -z "$HIVE_HOME" ]; then
     HIVE_CP="$HIVE_HOME/conf"
 elif [ -e /usr/hdp/current/hive-client/conf ]; then
-    HIVE_CP="/usr/hdp/current/hive-client/conf"
+    HIVE_CP="/etc/hive/conf"
 else
     echo "Could not find a valid HIVE configuration"
     exit 1
