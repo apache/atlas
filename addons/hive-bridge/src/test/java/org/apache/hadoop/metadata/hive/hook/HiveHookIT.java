@@ -40,16 +40,6 @@ public class HiveHookIT {
 
     @BeforeClass
     public void setUp() throws Exception {
-        //Register hive types
-        HiveDataModelGenerator hiveModel = new HiveDataModelGenerator();
-        String typesAsJson = hiveModel.getModelAsJson();
-        MetadataServiceClient dgiClient = new MetadataServiceClient(DGI_URL);
-        try {
-            dgiClient.createType(typesAsJson);
-        } catch (Exception e) {
-            //ignore if types are already defined
-        }
-
         //Set-up hive session
         HiveConf conf = getHiveConf();
         driver = new Driver(conf);
@@ -100,7 +90,6 @@ public class HiveHookIT {
 
         //Create table where database doesn't exist, will create database instance as well
         assertDatabaseIsRegistered("default");
-
     }
 
     @Test

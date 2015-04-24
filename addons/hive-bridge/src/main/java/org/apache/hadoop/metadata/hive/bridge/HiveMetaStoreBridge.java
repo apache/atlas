@@ -351,13 +351,15 @@ public class HiveMetaStoreBridge {
         return fieldsList;
     }
 
-    private void registerHiveDataModel() throws Exception {
+    public synchronized void registerHiveDataModel() throws Exception {
         HiveDataModelGenerator dataModelGenerator = new HiveDataModelGenerator();
-        try {
-            getMetadataServiceClient().createType(dataModelGenerator.getModelAsJson());
-        } catch (Exception e) {
-            //Ignore if type is already registered
-            //TODO make createType idempotent
+        MetadataServiceClient dgiClient = getMetadataServiceClient();
+
+        //Register hive data model if its not already registered
+        if (dgiClient.getType(HiveDataTypes.HIVE_PROCESS.getName()) == null ) {
+            dgiClient.createType(dataModelGenerator.getModelAsJson());
+        } else {
+            LOG.debug("Hive data model is already registered!");
         }
     }
 

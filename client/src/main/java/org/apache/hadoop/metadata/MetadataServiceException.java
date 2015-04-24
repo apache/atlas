@@ -21,6 +21,8 @@ package org.apache.hadoop.metadata;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class MetadataServiceException extends Exception {
+    private ClientResponse.Status status;
+
     public MetadataServiceException(MetadataServiceClient.API api, Exception e) {
         super("Metadata service API " + api + " failed", e);
     }
@@ -28,9 +30,14 @@ public class MetadataServiceException extends Exception {
     public MetadataServiceException(MetadataServiceClient.API api, ClientResponse.Status status) {
         super("Metadata service API " + api + " failed with status " + status.getStatusCode()
                 + "(" + status.getReasonPhrase() + ")");
+        this.status = status;
     }
 
     public MetadataServiceException(Exception e) {
         super(e);
+    }
+
+    public ClientResponse.Status getStatus() {
+        return status;
     }
 }

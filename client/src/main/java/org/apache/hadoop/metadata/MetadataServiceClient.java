@@ -108,6 +108,21 @@ public class MetadataServiceClient {
         }
     }
 
+    public String getType(String typeName) throws MetadataServiceException {
+        WebResource resource = getResource(API.GET_TYPE, typeName);
+        try {
+            JSONObject response = callAPIWithResource(API.GET_TYPE, resource);
+            return response.getString("definition");
+        } catch (MetadataServiceException e) {
+            if (e.getStatus() == ClientResponse.Status.NOT_FOUND) {
+                return null;
+            }
+            throw e;
+        } catch (JSONException e) {
+            throw new MetadataServiceException(e);
+        }
+    }
+
     /**
      * Register the given type(meta model)
      * @param typeAsJson type definition a jaon
@@ -216,8 +231,7 @@ public class MetadataServiceClient {
         return resource;
     }
 
-    private JSONObject callAPIWithResource(API api,
-                                           WebResource resource) throws MetadataServiceException {
+    private JSONObject callAPIWithResource(API api, WebResource resource) throws MetadataServiceException {
         return callAPIWithResource(api, resource, null);
     }
 

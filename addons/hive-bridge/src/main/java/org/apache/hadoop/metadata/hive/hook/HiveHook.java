@@ -38,8 +38,6 @@ package org.apache.hadoop.metadata.hive.hook;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.antlr.runtime.tree.Tree;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.QueryPlan;
 import org.apache.hadoop.hive.ql.exec.ExplainTask;
@@ -65,6 +63,8 @@ import org.apache.hadoop.metadata.hive.model.HiveDataTypes;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -86,7 +86,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHook {
 
-    private static final Log LOG = LogFactory.getLog(HiveHook.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(HiveHook.class);
+
     // wait time determines how long we wait before we exit the jvm on
     // shutdown. Pending requests after that will not be sent.
     private static final int WAIT_TIME = 3;
@@ -99,6 +100,7 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
     private static final int minThreadsDefault = 5;
     private static final int maxThreadsDefault = 5;
     private static final long keepAliveTimeDefault = 10;
+    private static boolean typesRegistered = false;
 
     static {
         // anything shared should be initialized here and destroyed in the
@@ -174,14 +176,17 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
     }
 
     private void fireAndForget(HookContext hookContext, HiveConf conf) throws Exception {
-        LOG.info("Entered DGI hook for query hook " + hookContext.getHookType());
-        if (hookContext.getHookType() != HookContext.HookType.POST_EXEC_HOOK) {
-            LOG.debug("No-op for query hook " + hookContext.getHookType());
-        }
+        assert hookContext.getHookType() == HookContext.HookType.POST_EXEC_HOOK : "Non-POST_EXEC_HOOK not supported!";
+
+        HiveOperation operation = HiveOperation.valueOf(hookContext.getOperationName());
+        LOG.info("Entered DGI hook for hook type {} operation {}", hookContext.getHookType(), operation);
 
         HiveMetaStoreBridge dgiBridge = new HiveMetaStoreBridge(conf);
 
-        HiveOperation operation = HiveOperation.valueOf(hookContext.getOperationName());
+        if (!typesRegistered) {
+            dgiBridge.registerHiveDataModel();
+            typesRegistered = true;
+        }
 
         switch (operation) {
             case CREATEDATABASE:
@@ -199,7 +204,8 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
                     if (entity.getType() == Entity.Type.TABLE) {
 
                         Table table = entity.getTable();
-                        //TODO table.getDbName().toLowerCase() is required as hive stores in lowercase, but table.getDbName() is not lowercase
+                        //TODO table.getDbName().toLowerCase() is required as hive stores in lowercase,
+                        // but table.getDbName() is not lowercase
                         Referenceable dbReferenceable = getDatabaseReference(dgiBridge, table.getDbName().toLowerCase());
                         dgiBridge.registerTable(dbReferenceable, table.getDbName(), table.getTableName());
                     }
@@ -215,8 +221,6 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
     }
 
     private void registerCTAS(HiveMetaStoreBridge dgiBridge, HookContext hookContext, HiveConf conf) throws Exception {
-        LOG.debug("Registering CTAS");
-
         Set<ReadEntity> inputs = hookContext.getInputs();
         Set<WriteEntity> outputs = hookContext.getOutputs();
 
@@ -238,6 +242,7 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
             queryStartTime = plan.getQueryStartTime();
         }
 
+        LOG.debug("Registering CTAS query: {}", queryStr);
         Referenceable processReferenceable = new Referenceable(HiveDataTypes.HIVE_PROCESS.getName());
         processReferenceable.set("processName", operation.getOperationName());
         processReferenceable.set("startTime", queryStartTime);
