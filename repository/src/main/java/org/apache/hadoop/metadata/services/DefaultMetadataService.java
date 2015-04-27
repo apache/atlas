@@ -43,6 +43,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.tools.cmd.Meta;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -90,9 +91,14 @@ public class DefaultMetadataService implements MetadataService {
     public JSONObject createType(String typeDefinition) throws MetadataException {
         try {
             Preconditions.checkNotNull(typeDefinition, "type definition cannot be null");
+            Preconditions.checkArgument(!typeDefinition.equals(""), "type definition cannot be an empty string");
 
             TypesDef typesDef = TypesSerialization.fromJson(typeDefinition);
+            if(typesDef.isEmpty())
+                throw new MetadataException("Invalid type definition");
+
             Map<String, IDataType> typesAdded = typeSystem.defineTypes(typesDef);
+            
             //TODO how do we handle transaction - store failure??
             typeStore.store(typeSystem, ImmutableList.copyOf(typesAdded.keySet()));
 
