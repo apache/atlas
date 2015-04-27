@@ -18,6 +18,8 @@
 
 package org.apache.hadoop.metadata.typesystem.json
 
+import java.text.SimpleDateFormat
+
 import com.google.common.collect.ImmutableList
 import org.apache.hadoop.metadata.typesystem.TypesDef
 import org.apache.hadoop.metadata.typesystem.types.DataTypes.{ArrayType, MapType, TypeCategory}
@@ -85,8 +87,13 @@ object TypesSerialization {
         toJson(ts, typNames.toIndexedSeq: _*)
     }
 
+    val _formats = new DefaultFormats {
+        override val dateFormatter = TypeSystem.getInstance().getDateFormat.asInstanceOf[SimpleDateFormat]
+        override val typeHints = NoTypeHints
+    }
+
     def toJson(ts: TypeSystem, export: IDataType[_] => Boolean): String = {
-        implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new MultiplicitySerializer
+        implicit val formats = _formats + new MultiplicitySerializer
 
         val typsDef = convertToTypesDef(ts, export)
 
@@ -94,13 +101,13 @@ object TypesSerialization {
     }
 
     def fromJson(jsonStr: String): TypesDef = {
-        implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new MultiplicitySerializer
+        implicit val formats = _formats + new MultiplicitySerializer
 
         read[TypesDef](jsonStr)
     }
 
     def toJson(typesDef : TypesDef) : String = {
-      implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new MultiplicitySerializer
+      implicit val formats = _formats + new MultiplicitySerializer
       writePretty(typesDef)
 
     }
