@@ -35,3 +35,6 @@ maven-eclipse.xml
 logs
 *.log
 test-output
+
+#Python
+*.pyc
