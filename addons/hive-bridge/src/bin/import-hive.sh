@@ -55,7 +55,7 @@ fi
 
 METADATACPPATH="$METADATA_CONF"
 
-for i in "${BASEDIR}/lib-bridge/"*.jar; do
+for i in "${BASEDIR}/bridge/hive/"*.jar; do
   METADATACPPATH="${METADATACPPATH}:$i"
 done
 
