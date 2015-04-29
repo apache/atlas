@@ -21,6 +21,7 @@ package org.apache.hadoop.metadata.discovery;
 import com.thinkaurelius.titan.core.TitanGraph;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.PropertiesUtil;
 import org.apache.hadoop.metadata.discovery.graph.DefaultGraphPersistenceStrategy;
 import org.apache.hadoop.metadata.discovery.graph.GraphBackedDiscoveryService;
@@ -70,7 +71,7 @@ public class HiveLineageService implements LineageService {
                     conf.getString("metadata.lineage.hive.process.inputs.name", "inputTables");
             HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME =
                     conf.getString("metadata.lineage.hive.process.outputs.name", "outputTables");
-        } catch (ConfigurationException e) {
+        } catch (MetadataException e) {
             throw new RuntimeException(e);
         }
     }

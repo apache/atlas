@@ -208,7 +208,7 @@
                             <value>${project.build.directory}/logs</value>
                         </systemProperty>
                         <systemProperty>
-                            <name>metadata.properties.location</name>
+                            <name>metadata.conf</name>
                             <value>addons/hive-bridge/src/test/resources</value>
                         </systemProperty>
                     </systemProperties>
