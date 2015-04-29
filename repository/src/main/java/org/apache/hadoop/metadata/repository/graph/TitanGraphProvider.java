@@ -23,6 +23,7 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.PropertiesUtil;
 
 import javax.inject.Singleton;
@@ -38,7 +39,7 @@ public class TitanGraphProvider implements GraphProvider<TitanGraph> {
      */
     private static final String METADATA_PREFIX = "metadata.graph.";
 
-    private static Configuration getConfiguration() throws ConfigurationException {
+    private static Configuration getConfiguration() throws MetadataException {
         PropertiesConfiguration configProperties = PropertiesUtil.getApplicationProperties();
 
         Configuration graphConfig = new PropertiesConfiguration();
@@ -62,7 +63,7 @@ public class TitanGraphProvider implements GraphProvider<TitanGraph> {
         Configuration config;
         try {
             config = getConfiguration();
-        } catch (ConfigurationException e) {
+        } catch (MetadataException e) {
             throw new RuntimeException(e);
         }
 

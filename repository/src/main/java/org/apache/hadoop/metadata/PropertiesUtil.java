@@ -20,18 +20,31 @@ package org.apache.hadoop.metadata;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 public class PropertiesUtil {
+    private static final Logger LOG = LoggerFactory.getLogger(PropertiesUtil.class);
+
     private static final String APPLICATION_PROPERTIES = "application.properties";
 
-    public static final PropertiesConfiguration getApplicationProperties() throws ConfigurationException {
-        String proprtiesLocation = System.getProperty("metadata.properties.location");
-        if (proprtiesLocation == null) {
-            return new PropertiesConfiguration(PropertiesUtil.class.getResource("/" + APPLICATION_PROPERTIES));
-        } else {
-            return new PropertiesConfiguration(new File(proprtiesLocation, APPLICATION_PROPERTIES));
+    public static final PropertiesConfiguration getApplicationProperties() throws MetadataException {
+        String confLocation = System.getProperty("metadata.conf");
+        URL url;
+        try {
+            if (confLocation == null) {
+                url = PropertiesUtil.class.getResource("/" + APPLICATION_PROPERTIES);
+            } else {
+                url = new File(confLocation, APPLICATION_PROPERTIES).toURI().toURL();
+            }
+            LOG.info("Loading {} from {}", APPLICATION_PROPERTIES, url);
+            return new PropertiesConfiguration(url);
+        } catch (Exception e) {
+            throw new MetadataException("Failed to load application properties", e);
         }
     }
 }

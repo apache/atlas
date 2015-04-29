@@ -99,7 +99,7 @@ mkdir -p $METADATA_LOG_DIR
 
 pushd ${BASEDIR} > /dev/null
 
-JAVA_PROPERTIES="$METADATA_OPTS $METADATA_PROPERTIES -Dmetadata.log.dir=$METADATA_LOG_DIR -Dmetadata.home=${METADATA_HOME_DIR}"
+JAVA_PROPERTIES="$METADATA_OPTS $METADATA_PROPERTIES -Dmetadata.log.dir=$METADATA_LOG_DIR -Dmetadata.home=${METADATA_HOME_DIR} -Dmetadata.conf=${METADATA_CONF}"
 shift
 
 while [[ ${1} =~ ^\-D ]]; do
