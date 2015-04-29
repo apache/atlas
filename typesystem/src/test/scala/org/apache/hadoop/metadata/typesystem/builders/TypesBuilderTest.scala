@@ -20,59 +20,15 @@ package org.apache.hadoop.metadata.typesystem.builders
 
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization
 import org.apache.hadoop.metadata.typesystem.types.{TypeSystem, BaseTest}
-import org.junit.Test
+import org.junit.runner.RunWith
+import org.scalatest.{BeforeAndAfter, FunSuite}
+import org.scalatest.junit.JUnitRunner
 
-class TypesBuilderTest {
+@RunWith(classOf[JUnitRunner])
+class TypesBuilderTest extends BuilderTest {
 
 
-  @Test def test1: Unit = {
-    val b = new TypesBuilder
-    import b._
-
-    val tDef = types {
-
-      _trait("Dimension") {}
-      _trait("PII") {}
-      _trait("Metric") {}
-      _trait("ETL") {}
-      _trait("JdbcAccess") {}
-
-      _class("DB") {
-        "name" ~ (string, required, indexed, unique)
-        "owner" ~ (string)
-        "createTime" ~ (int)
-      }
-
-      _class("StorageDesc") {
-        "inputFormat" ~ (string, required)
-        "outputFormat" ~ (string, required)
-      }
-
-      _class("Column") {
-        "name" ~ (string, required)
-        "dataType" ~ (string, required)
-        "sd" ~ ("StorageDesc", required)
-      }
-
-      _class("Table", List()) {
-        "name" ~ (string,  required,  indexed)
-        "db" ~ ("DB", required)
-        "sd" ~ ("StorageDesc", required)
-      }
-
-      _class("LoadProcess") {
-        "name" ~ (string, required)
-        "inputTables" ~ (array("Table"), collection)
-        "outputTable" ~ ("Table", required)
-
-      }
-
-      _class("View") {
-        "name" ~ (string, required)
-        "inputTables" ~ (array("Table"), collection)
-      }
-    }
-
+  test("test1") {
     TypeSystem.getInstance().defineTypes(tDef)
 
     println(TypesSerialization.toJson(TypeSystem.getInstance(), x => true))
