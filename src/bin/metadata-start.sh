@@ -16,7 +16,7 @@
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source ${DIR}/metadata-config.sh
 
-nohup ${JAVA_BIN} ${JAVA_PROPERTIES} -cp ${METADATACPPATH} org.apache.hadoop.metadata.Main -app ${BASEDIR}/server/webapp/metadata $* > "${METADATA_LOG_DIR}/metadata-server.$TIME.out" 2>&1 &
+nohup ${JAVA_BIN} ${JAVA_PROPERTIES} -cp ${METADATACPPATH} org.apache.hadoop.metadata.Main -app ${METADATA_EXPANDED_WEBAPP_DIR}/metadata $* > "${METADATA_LOG_DIR}/metadata-server.$TIME.out" 2>&1 &
 echo $! > $METADATA_PID_FILE
 popd > /dev/null
 
