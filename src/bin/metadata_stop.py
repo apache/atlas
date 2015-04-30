@@ -28,7 +28,7 @@ def main():
     piddir = mc.dirMustExist(mc.logDir(metadata_home))
     mc.executeEnvSh(confdir)
 
-    metadata_pid_file = os.path.join(piddir, "metadata.pid")
+    metadata_pid_file = mc.pidFile(metadata_home)
 
     try:
         pf = file(metadata_pid_file, 'r')

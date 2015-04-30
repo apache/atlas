@@ -30,9 +30,10 @@ CONF = "conf"
 LOG="logs"
 WEBAPP="server" + os.sep + "webapp"
 DATA="data"
-ENV_KEYS = ["JAVA_HOME", "METADATA_OPTS", "METADATA_LOG_DIR", "METADATA_CONF", "METADATACPPATH", "METADATA_DATA_DIR", "METADATA_HOME_DIR", "METADATA_EXPANDED_WEBAPP_DIR"]
+ENV_KEYS = ["JAVA_HOME", "METADATA_OPTS", "METADATA_LOG_DIR", "METADATA_PID_DIR", "METADATA_CONF", "METADATACPPATH", "METADATA_DATA_DIR", "METADATA_HOME_DIR", "METADATA_EXPANDED_WEBAPP_DIR"]
 METADATA_CONF = "METADATA_CONF"
 METADATA_LOG = "METADATA_LOG_DIR"
+METADATA_PID = "METADATA_PID_DIR"
 METADATA_WEBAPP = "METADATA_EXPANDED_WEBAPP_DIR"
 METADATA_OPTS = "METADATA_OPTS"
 METADATA_DATA = "METADATA_DATA_DIR"
@@ -61,6 +62,10 @@ def confDir(dir):
 def logDir(dir):
     localLog = os.path.join(dir, LOG)
     return os.environ.get(METADATA_LOG, localLog)
+
+def pidFile(dir):
+    localPid = os.path.join(dir, LOG)
+    return os.path.join(os.environ.get(METADATA_PID, localPid), 'metadata.pid')
 
 def dataDir(dir):
     data = os.path.join(dir, DATA)

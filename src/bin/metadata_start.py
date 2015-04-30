@@ -51,7 +51,7 @@ def main():
                        + os.path.join(web_app_dir, "metadata", "WEB-INF", "lib", "*" )  + p \
                        + os.path.join(metadata_home, "libext", "*")
 
-    metadata_pid_file = os.path.join(logdir, "metadata.pid")
+    metadata_pid_file = mc.pidFile(metadata_home)
 
     if os.path.isfile(metadata_pid_file):
         print "%s already exists, exiting" % metadata_pid_file
