@@ -40,6 +40,7 @@ if [ -f $METADATA_PID_FILE ]
 then
    kill -15 `cat $METADATA_PID_FILE`
    echo Metadata Server stopped
+   rm -rf $METADATA_PID_FILE
 else
    echo "pid file $METADATA_PID_FILE not present"
 fi
