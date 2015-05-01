@@ -27,6 +27,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
 import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
 import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createTraitTypeDef;
@@ -75,6 +78,25 @@ public class TraitTest extends BaseTest {
         defineTraits(A, B, C, D);
 
         TraitType DType = (TraitType) getTypeSystem().getDataType(TraitType.class, "D");
+
+//        for(String aName : DType.fieldMapping().fields.keySet()) {
+//            System.out.println(String.format("nameToQualifiedName.put(\"%s\", \"%s\");", aName, DType.getQualifiedName(aName)));
+//        }
+
+        Map<String,String> nameToQualifiedName = new HashMap();
+        {
+            nameToQualifiedName.put("d", "D.d");
+            nameToQualifiedName.put("b", "B.b");
+            nameToQualifiedName.put("c", "C.c");
+            nameToQualifiedName.put("a", "A.a");
+            nameToQualifiedName.put("A.B.D.b", "A.B.D.b");
+            nameToQualifiedName.put("A.B.D.c", "A.B.D.c");
+            nameToQualifiedName.put("A.B.D.d", "A.B.D.d");
+            nameToQualifiedName.put("A.C.D.a", "A.C.D.a");
+            nameToQualifiedName.put("A.C.D.b", "A.C.D.b");
+            nameToQualifiedName.put("A.C.D.c", "A.C.D.c");
+            nameToQualifiedName.put("A.C.D.d", "A.C.D.d");
+        }
 
         Struct s1 = new Struct("D");
         s1.set("d", 1);

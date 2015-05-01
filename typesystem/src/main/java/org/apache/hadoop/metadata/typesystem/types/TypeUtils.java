@@ -86,4 +86,14 @@ public class TypeUtils {
         return new TypesDef(JavaConversions.asScalaBuffer(enums), JavaConversions.asScalaBuffer(structs),
                 JavaConversions.asScalaBuffer(traits), JavaConversions.asScalaBuffer(classes));
     }
+
+    protected static class Pair<L,R> {
+        protected L left;
+        protected R right;
+
+        public Pair(L left, R right) {
+            this.left = left;
+            this.right = right;
+        }
+    }
 }
