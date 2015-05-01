@@ -250,7 +250,8 @@ public class MetadataServiceClient {
                 throw new MetadataServiceException(api, e);
             }
         }
-        throw new MetadataServiceException(api, clientResponse.getClientResponseStatus());
+
+        throw new MetadataServiceException(api, clientResponse);
     }
 
     private JSONObject callAPI(API api, Object requestObject,
