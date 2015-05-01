@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+
+.node circle {
+  cursor: pointer;
+  stroke-width: 0px;
+}
+
+.node text {
+  font: 13px sans-serif;
+  
+  pointer-events: none;
+  text-anchor: middle;
+}
+
+line.link {
+  fill: none;
+  stroke: green;
+  stroke-width: 5.5px;
+}
+
+</style>
+</head>
+<body>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script>
+
+var width = 760,
+    height = 500,
+    root;
+
+var force = d3.layout.force()
+    .linkDistance(220)
+    .charge(-120)
+    .gravity(.05)
+    .size([width, height])
+    .on("tick", tick);
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+var link = svg.selectAll(".link"),
+    node = svg.selectAll(".node");
+
+d3.json("graph.json", function(error, json) {
+  root = json;
+  update();
+});
+
+function update() {
+  var nodes = flatten(root),
+      links = d3.layout.tree().links(nodes);
+
+  // Restart the force layout.
+  force
+      .nodes(nodes)
+      .links(links)
+      .start();
+
+  // Update links.
+  link = link.data(links, function(d) { return d.target.id; });
+
+  link.exit().remove();
+
+  link.enter().insert("line", ".node")
+      .attr("class", "link");
+
+  // Update nodes.
+  node = node.data(nodes, function(d) { return d.id; });
+
+  node.exit().remove();
+
+    svg.append("svg:pattern").attr("id","processICO").attr("width",1).attr("height",1)
+                        .append("svg:image").attr("xlink:href","../img/process.png").attr("x",-5.5).attr("y",-4).attr("width",42).attr("height",42);
+                    svg.append("svg:pattern").attr("id","textICO").attr("width",1).attr("height",1)
+                        .append("svg:image").attr("xlink:href","../img/tableicon.png").attr("x",2).attr("y",2).attr("width",25).attr("height",25);
+
+
+//arrow
+ svg.append("svg:defs").append("svg:marker").attr("id", "arrow").attr("viewBox", "0 0 10 10").attr("refX", 16).attr("refY", 5).attr("markerUnits", "strokeWidth").attr("markerWidth", 4).attr("markerHeight", 8).attr("orient", "auto").append("svg:path").attr("d", "M 0 0 L 10 5 L 0 10 z");
+//arrow
+  var nodeEnter = node.enter().append("g")
+      .attr("class", "node")
+      .on("click", click)
+      .call(force.drag);
+
+
+  nodeEnter.append("circle")
+      .attr("r", function(d) { return 15; });
+
+    link.attr("marker-end", "url(#arrow)"); //also added attribute for arrow at end
+
+  nodeEnter.append("text")
+      .attr("dy", "-1em")
+      .text(function(d) { return d.name; });
+
+  node.select("circle")
+      .style("fill", function(d, i) {
+                            if(d.size==3938){
+                                return "url('#processICO')";
+                            }else{
+                                return "url('#textICO')";
+                            }
+                            return colors(i);
+                        });
+
+
+}
+
+function tick() {
+  link.attr("x1", function(d) { return d.source.x; })
+      .attr("y1", function(d) { return d.source.y; })
+      .attr("x2", function(d) { return d.target.x; })
+      .attr("y2", function(d) { return d.target.y; });
+
+  node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+}
+
+function color(d) {
+  return d._children ? "#3182bd" // collapsed package
+      : d.children ? "#c6dbef" // expanded package
+      : "#fd8d3c"; // leaf node
+}
+
+// Toggle children on click.
+function click(d) {
+  if (d3.event.defaultPrevented) return; // ignore drag
+  if (d.children) {
+    d._children = d.children;
+    d.children = null;
+  } else {
+    d.children = d._children;
+    d._children = null;
+  }
+  update();
+}
+
+// Returns a list of all nodes  the root.
+function flatten(root) {
+  var nodes = [], i = 0;
+
+  function recurse(node) {
+    if (node.children) node.children.forEach(recurse);
+    if (!node.id) node.id = ++i;
+    nodes.push(node);
+  }
+
+  recurse(root);
+  return nodes;
+}
+
+</script>
+</body>
+</html>

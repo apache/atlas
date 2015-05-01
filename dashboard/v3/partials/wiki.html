@@ -1,0 +1,257 @@
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+    <!--right panel-->
+    <div class="col-lg-8 mrgl45">
+     
+        <tabset justified="true" class="col-lg-12 greyt">
+            <tab heading="DETAILS">
+        <div class="col-lg-12 rightpanal">
+            <!--1-->
+
+            <div class="col-xs-12">
+                <div class="row">
+
+                    <div>
+                      <!-- name and desc -->
+             
+                  <div>
+                   
+                    <div ng-repeat="(key, value) in details" ng-if="value && (key==='name')">
+                      <br/>
+                      <br/>
+                         <p style="font-weight:1000;font-size:18px;color:#333;">  {{value }}</p>
+                        
+                         <!--  <h4><b>  {{value}}</b></h4> -->
+
+
+                     </div>
+                   
+                  
+                  
+                     <div ng-repeat="(key, value) in details" ng-if="value && (key==='description')">
+                          <!-- <h4> <b>{{value}} </b> </h4> -->
+
+                         <p style="font-weight:bold;">     {{value}}</p>
+                     </div>
+                     <div class="sm-txt2">
+                       
+                                 
+                                       <p ng-repeat="(keytag, valtag) in details['$traits$']">Tags:
+                                       <a ng-click="updateDetailsVariable($event)" ui-sref="Search({ searchid: keytag })" style="color: #636364 !important;">
+                                           {{keytag}} </a></p>
+                       
+                                    
+                      </div>
+                 
+                     </div>
+            <p ><b> Additional Details</b></p>
+         
+            <!-- name and desc -->
+					<table class="table table-bordered table-hover" style="margin-top: 20px">
+					<thead>
+          
+					<tr>
+					<th style="border:2px solid #C9CBCC !important;">Key</th>
+					<th style="border:2px solid #C9CBCC !important;">Value</th>
+					</tr>
+					</thead>
+                        <tbody>
+                    <!--  <tr ng-repeat="(key, value) in details" ng-if="value && (key==='name')">
+                         <td>{{key}}</td>
+                               <td>
+                                   {{value}}</td>
+                     </tr>
+                     <tr ng-repeat="(key, value) in details" ng-if="value && (key==='description')">
+                         <td>{{key}}</td>
+                         <td>
+                             {{value}}</td>
+                     </tr> -->
+
+
+					<tr ng-repeat="(key, value) in details" ng-if="value && !(key==='columns') && !(key==='name') && !(key==='description')">
+
+
+					<td>{{key}}</td>
+					<td ng-if="isString(value)">
+					{{value | date:'medium'}}</td>
+
+					<td ng-if="isObject(value)">
+					<div ng-repeat="(key1, value1) in value">
+					<p ng-if="key1==='id'">
+                        <a ng-click="updateVariable($event)"  href="#/details/{{value1}}" style="color: #636364 !important;" ng-init="getGuidName(value1)">{{ gname.name }}</a></p>
+					<p ng-if="!(key1==='id')" class="sm-txt2"><b>{{ key1}} :  </b>
+					{{ value.version}}
+                    </div>
+					</td>
+
+					</tr>
+                        <!-- <tr>
+
+                                   <td>
+                                       <p class="sm-txt2">Tags:</p>
+                                   </td>
+                                   <td>
+                                       <p ng-repeat="(keytag, valtag) in details['$traits$']">
+                                       <a ng-click="updateVariable($event)" ui-sref="Search({ searchid: keytag })" style="color: #636364 !important;">
+                                           {{keytag}} </a></p>
+                                    </td>
+
+                        </tr>
+ -->
+					</tbody>
+					
+					</table>
+					
+					</div>
+
+
+
+
+
+                    <div class="col-lg-12 img2" align="right"><img src="img/img2.png"></div>
+                </div>
+            </div>
+
+        </div>
+            </tab>
+
+            <tab heading="SCHEMA" ng-if="datatype1==='Table'">
+                <div class="col-lg-12 rightpanal">
+                    <!--1-->
+                    <div class="col-xs-12">
+                        <div class="row">
+
+
+                    <table class="table table-bordered table-hover" style="margin-top: 20px">
+                      <!--  <thead>
+                        <tr>
+                            <th style="border:2px solid #C9CBCC !important;">Value</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr ng-repeat="(key, value) in schema.columns">
+                        <td>{{value}}</td>
+                        </tr>
+                        </tbody>-->
+
+
+                        <thead>
+
+                        <tr >
+                             <th style="border:2px solid #C9CBCC !important;">Name</th>
+                             <th style="border:2px solid #C9CBCC !important;">DataType</th>
+                             <th style="border:2px solid #C9CBCC !important;">Comment</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="s in schema track by $index" >
+                                          <td>{{s.name }}</td>
+
+                                     
+                                      
+                                       <td> {{s.dataType }}</td>
+
+                                       <td> {{s.comment }}</td>
+                             </tr>
+                       <!--  <tr ng-repeat="(key, value) in schema" ng-if="value">
+                         
+                            <td ng-if="isString(value)">
+                                {{value | date:'medium'}}</td>
+
+                            <td ng-if="isObject(value)">
+                                <div ng-repeat="(key1, value1) in value">
+                                    <p ng-if="key1==='id'">
+                                        <a ng-click="updateVariable($event)"  href="#/details/{{value1}}" style="color: #636364 !important;" ng-init="getGuidName(value1)">{{ gname.name }}</a>
+                                      </p>
+                                    
+                                     <p ng-if="!(key1==='id')" class="sm-txt2" >
+                                         <td><b>{{ key1 }} :  </b></td>
+
+
+                                      
+                                         <td>  {{ value1 | date:'medium'    }}</td>
+                                     </tr>
+                                     </p>
+
+                                   
+                                </div>
+                            </td>
+
+                        </tr> -->
+                        </tbody>
+
+                    </table>
+
+                        </div>
+                        <div class="col-lg-12 img2" align="right"><img src="img/img2.png"></div>
+                    </div>
+                </div>
+            </tab>
+            <tab heading="OUTPUTS"  ng-show="datatype1==='Table'">
+                <div class="col-lg-12 rightpanal" >
+                    <div class="col-xs-12">
+                        <div class="row">
+                            <div ng-if="errornodata"><h1>{{errornodata}}</h1></div>
+                            <!--<svg ng-attr-width="{{width}}"-->
+                                 <!--ng-attr-height="{{height}}">-->
+
+                            <!--</svg>-->
+
+
+                            <svg
+                                 width="700px" height="600px"  overflow="hidden" style="margin:auto;vertical-align: middle;" preserveAspectRatio="none">
+
+                            </svg>
+
+
+            <!--<div id="mybounce"  style="text-align:center;">-->
+
+
+            <!--</div>-->
+
+                            <div class="col-lg-12 img2" align="right"><img src="img/img2.png"></div>
+                        </div>
+                    </div>
+                </div>
+            </tab>
+            <tab heading="INPUTS" ng-show="datatype1==='Table'">
+                <div class="col-lg-12 rightpanal">
+                    <div class="col-xs-12">
+                        <div class="row">
+						     <div ng-if="errornodata1"><h1>{{errornodata1}}</h1></div>
+                         <svg1 ng-attr-width="{{width}}"
+                               ng-attr-height="{{height}}" width="700px" height="600px"  overflow="hidden" style="margin:auto;vertical-align: middle;" preserveAspectRatio="none">
+
+                         </svg1>
+                            <!--<iframe src="partials/sample.html"style=" width:630px;height:500px;overflow-x: hidden;overflow: hidden; overflow-y='scroll';" frameborder="0" scrolling="no"></iframe>-->
+
+
+
+                            <div class="col-lg-12 img2" align="right"><img src="img/img2.png"></div>
+                        </div>
+                    </div>
+                </div>
+            </tab>
+        </tabset>
+        <div>
+            <!--<a ui-sref="Search"  ng-click="goBack()" style="color: #636364 !important;   margin-left: 15px;">Back To Results(old)</a>-->
+            <a  ui-sref="Search" onClick="javascript:history.go(-1);" style="color: #636364 !important;   margin-left: 15px;">Back To Results</a>
+        </div>
+
+    </div>

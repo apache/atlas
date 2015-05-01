@@ -1,0 +1,195 @@
+
+    <!DOCTYPE html>
+    <!--
+      ~ Licensed to the Apache Software Foundation (ASF) under one
+      ~ or more contributor license agreements.  See the NOTICE file
+      ~ distributed with this work for additional information
+      ~ regarding copyright ownership.  The ASF licenses this file
+      ~ to you under the Apache License, Version 2.0 (the
+      ~ "License"); you may not use this file except in compliance
+      ~ with the License.  You may obtain a copy of the License at
+      ~
+      ~     http://www.apache.org/licenses/LICENSE-2.0
+      ~
+      ~ Unless required by applicable law or agreed to in writing, software
+      ~ distributed under the License is distributed on an "AS IS" BASIS,
+      ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+      ~ See the License for the specific language governing permissions and
+      ~ limitations under the License.
+      -->
+
+    <html ng-app="DgcApp" lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="">
+        <meta name="author" content="">
+
+        <title ng-bind="windowTitle">search</title>
+
+        <!-- Bootstrap Core CSS -->
+        <link href="css/bootstrap.min.css" rel="stylesheet">
+        <!-- Custom CSS -->
+        <link href="css/heroic-features.css" rel="stylesheet">
+        <link href="css/sticky-footer-navbar.css" rel="stylesheet">
+
+
+        <link href="css/style.css" rel="stylesheet">
+
+        <!-- Custom styles for this template -->
+        <link href="css/sticky-footer-navbar.css" rel="stylesheet">
+        <link href="css/style.css" rel="stylesheet">
+        <link type="text/css" rel="stylesheet" href="css/pagination.css" />
+
+        <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+        <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+        <script src="js/ie-emulation-modes-warning.js"></script>
+
+        <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+        <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <script src="lib/angular.js" type="text/javascript" ></script>
+        <script src="lib/angular-ui-router.js" type="text/javascript" ></script>
+        <script src="lib/angular-ui-router.min.js" type="text/javascript" ></script>
+        <script src="http://angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.6.0.js" type="text/javascript"></script>
+        <script type="text/javascript" src="http://d3js.org/d3.v3.min.js"></script>
+        <script src="lib/d3.tip.v0.6.3.js"></script>
+        <script src="js/app.js" type="text/javascript" ></script>
+        <script src="js/controllers.js" type="text/javascript" ></script>
+
+        <style type="text/css">
+            .node {
+                font: 15px sans-serif;
+                opacity: 1.5;
+                stroke-width: 0.5px;
+
+            }
+            .nodeTrans{
+           position: relative;
+            float:left;
+            left:20px;
+
+            }
+            .node a{
+                text-decoration:none;
+            pointer-events: none;
+            text-anchor: middle;
+            }
+            .link {
+                stroke: #23A410;
+                stroke-opacity: 1.6;
+
+            }
+            svg { margin:20px; }
+            #mybounce  {
+            position:fixed; top:0; bottom:0; left:0; right:0
+
+
+            }
+            #suit{
+                stroke: #23A410;
+                background: #23A410;
+            }
+            path.link {
+                fill: none;
+                stroke: #23A410;
+                stroke-width: 4px;
+                cursor: default;
+            }
+
+            svg:not(.active):not(.ctrl) path.link {
+                cursor: pointer;
+            }
+
+            path.link.selected {
+                stroke-dasharray: 10,2;
+            }
+
+            path.link.dragline {
+                pointer-events: none;
+            }
+
+            path.link.hidden {
+                stroke-width: 0;
+            }
+
+
+            .navbar-bottom{
+                background-color:#fafafa;
+                border-top:solid 4px #5cbb5a;
+                position:absolute;
+                width:100%;
+                height:60px;
+            }
+        </style>
+
+    </head>
+	
+    <body>
+
+    <a ui-sref="Home">
+	<div class="col-lg-12" style="margin-left:-15px;margin-top: -70px;background-image:url(img/topbg.jpg); width:1349px; height:187px">
+    <div class="col-lg-12" style=" padding-top:45px; padding-left:1050px" >
+        <p style="color:#ffffff"> Hello John Morgan  |  Help  |  Logout</p>
+    </div>
+	</div>
+    </a>
+
+	
+<!--SEARCH-->
+<div class="col-lg-12" >
+    <div class="col-lg-4"></div>
+    <div class="col-lg-6" style="margin-top:-80px; margin-left:-55px;" ng-controller="headerController">
+        <div class="input-group" >
+            <input type="text" ng-model="query" ng-keyup="$event.keyCode == 13 && executeSearch()"  class="form-control  search_table" placeholder="">
+            <p style="color:#939598"> search: Table, DB, Column </p>
+      <span class="input-group-btn" >
+          <button type="submit" class="search_btn" ng-click="executeSearch()" style="margin-bottom: 30px;"></button>
+
+      </span> </div>
+    </div>
+    <div class="col-lg-4"></div>
+</div>
+<!--table main-->
+<div class="col-lg-1"></div>
+<div class="col-lg-10">
+ <div class="col-lg-3" ng-controller="NavController">
+        <div class="row" >
+            <!--nav1-->
+            <h4 class="greyt ">Tags</h4>
+            <div class="leftpanal" >
+                <div class="row">
+
+                    <div class="litag" ng-repeat="nav in leftnav" style="margin-top: 10px;">
+                    <a ng-click="updateVar($event)" ui-sref="Search({ searchid: nav })" style="color: #636364 !important;">{{nav}} </a>
+
+
+
+            </div>
+        </div>
+            <!--end nav3-->
+        </div>
+    </div>
+ </div>
+	
+    <div class="main" ui-view="content">
+    </div>
+
+<div class="col-lg-2"></div>
+
+</div>
+    <!--<div class="col-lg-12" ng-controller="footerController" style="margin-top: 50px;"><pre><h4>API Version - {{apiVersion}}</h4></pre></div>-->
+
+    </body>
+
+    </html>
+
+
+
+
+
+

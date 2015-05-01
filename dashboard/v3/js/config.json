@@ -1,0 +1,54 @@
+{ "Search": {
+        "Table": [
+          { "$id$":["id"] },
+                "name",
+               { "description": ["description"] },
+                "owner",
+                "createTime",
+          { "$traits$":[""]}
+        ],
+        "DB": [
+          { "$id$":["id"] },
+                "name",
+               { "description": ["description"] },
+                "locationUri",
+                "owner",
+          { "$traits$":[""]}
+        ],
+      "Column": [
+        { "$id$":["id"] },
+                "name",
+                "dataType",
+                "comment",
+                "table",
+        { "$traits$":[""]}
+            ],
+  "__tempQueryResultStruct": [
+    { "instanceInfo": ["guid","typeName"] }
+  ],
+  "StorageDesc": [
+    { "$id$":["id"] },
+    "compressed",
+    "outputFormat",
+    "location",
+    "inputFormat",
+    { "$traits$":[""]}
+  ],
+  "LoadProcess": [
+    { "$id$":["id"] },
+{ "inputTables":["id"] },
+    "name",
+    "queryText",
+    "startTime",
+	"endTime",
+    { "$traits$":[""]}
+  ],
+  "View": [
+    { "$id$":["id"] },
+    "inputTables",
+    "name",
+    { "$traits$":[""]}
+  ]
+
+    }
+}
