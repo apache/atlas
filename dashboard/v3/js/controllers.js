@@ -588,12 +588,12 @@ if(arrmyalias.length>1){
 //image intitializer
  var mitharr=["img/tableicon.png","img/process.png","img/tableicon.png","img/process.png","img/tableicon.png"];
 
-
+//getlinageoutput
 
                  var force = d3.layout.force()
                      .gravity(0)
                      .friction(0.7)
-                     .charge(-90)
+                     .charge(-50)
 					 .linkDistance(120)
 					 .size([width, height])
                       .on("tick", tick);
@@ -601,6 +601,8 @@ if(arrmyalias.length>1){
                  var svg = d3.select("svg")
 //                 .attr("transform", "translate(" + (width/2) +
 //                          "," + (height/2) + ")")
+                         .attr("id", "playgraph")
+                                     //better to keep the viewBox dimensions with variables
 
                           .attr('transform-origin', '-419 -530')
                           .attr("viewBox", "10 -300 1000 1000")
@@ -717,6 +719,8 @@ if(arrmyalias.length>1){
 
 //force.stop();
 function tick() {
+  node[0].x = width / 10;
+    node[0].y = height / 10;
   link.attr("x1", function(d) { return d.source.x; })
       .attr("y1", function(d) { return d.source.y; })
       .attr("x2", function(d) { return d.target.x; })
@@ -724,6 +728,8 @@ function tick() {
 
 
     node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")  " });
+
+
 
 }
 
@@ -985,7 +991,7 @@ if(arrmyalias.length>1){
                  var force = d3.layout.force()
                      .gravity(0)
                      .friction(0.7)
-                     .charge(-90)
+                     .charge(-100)
 					 .linkDistance(120)
 					 .size([width, height])
                       .on("tick", tick);
@@ -993,6 +999,8 @@ if(arrmyalias.length>1){
                  var svg = d3.select("svg1").append("svg")
 //                 .attr("transform", "translate(" + (width/2) +
 //                          "," + (height/2) + ")")
+                         .attr("id", "playgraph")
+                                     //better to keep the viewBox dimensions with variables
 
                           .attr('transform-origin', '-419 -530')
                           .attr("viewBox", "10 -300 1000 1000")
@@ -1113,6 +1121,9 @@ if(arrmyalias.length>1){
 
 //force.stop();
 function tick() {
+
+  node[0].x = width / 10;
+    node[0].y = height / 10;
   link.attr("x1", function(d) { return d.source.x; })
       .attr("y1", function(d) { return d.source.y; })
       .attr("x2", function(d) { return d.target.x; })
@@ -1120,6 +1131,7 @@ function tick() {
 
 
     node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")  " });
+
 
 }
 
