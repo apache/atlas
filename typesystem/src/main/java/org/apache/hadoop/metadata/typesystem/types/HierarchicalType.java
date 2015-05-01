@@ -35,6 +35,8 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
+import org.apache.hadoop.metadata.typesystem.types.TypeUtils.Pair;
+
 /**
  * Represents a Type that can have SuperTypes. An Instance of the HierarchicalType can be
  * downcast to a SuperType.
@@ -53,6 +55,7 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
     public final int numFields;
     public final ImmutableList<String> superTypes;
     public final ImmutableList<AttributeInfo> immediateAttrs;
+    public final ImmutableMap<String, String> attributeNameToType;
     protected ImmutableMap<String, List<Path>> superTypePaths;
     protected ImmutableMap<String, Path> pathNameToPathMap;
 
@@ -68,6 +71,7 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
         this.numFields = numFields;
         this.superTypes = superTypes;
         this.immediateAttrs = null;
+        this.attributeNameToType = null;
     }
 
     HierarchicalType(TypeSystem typeSystem, Class<ST> superTypeClass,
@@ -76,8 +80,10 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
         this.typeSystem = typeSystem;
         this.superTypeClass = superTypeClass;
         this.name = name;
-        this.fieldMapping = constructFieldMapping(superTypes,
+        Pair<FieldMapping, ImmutableMap<String, String>> p = constructFieldMapping(superTypes,
                 fields);
+        this.fieldMapping = p.left;
+        this.attributeNameToType = p.right;
         this.numFields = this.fieldMapping.fields.size();
         this.superTypes = superTypes == null ? ImmutableList.<String>of() : superTypes;
         this.immediateAttrs = ImmutableList.<AttributeInfo>copyOf(fields);
@@ -143,13 +149,15 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
 
     }
 
-    protected FieldMapping constructFieldMapping(ImmutableList<String> superTypes,
+    protected Pair<FieldMapping, ImmutableMap<String, String>> constructFieldMapping(ImmutableList<String> superTypes,
                                                  AttributeInfo... fields)
     throws MetadataException {
 
         Map<String, AttributeInfo> fieldsMap = new LinkedHashMap<String, AttributeInfo>();
         Map<String, Integer> fieldPos = new HashMap<String, Integer>();
         Map<String, Integer> fieldNullPos = new HashMap<String, Integer>();
+        Map<String, String> attributeNameToType = new HashMap<>();
+
         int numBools = 0;
         int numBytes = 0;
         int numShorts = 0;
@@ -196,6 +204,7 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
                 if (fieldsMap.containsKey(attrName)) {
                     attrName = currentPath.addOverrideAttr(attrName);
                 }
+                attributeNameToType.put(attrName, superType.getName());
 
                 fieldsMap.put(attrName, i);
                 fieldNullPos.put(attrName, fieldNullPos.size());
@@ -257,7 +266,7 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
         this.superTypePaths = ImmutableMap.copyOf(superTypePaths);
         this.pathNameToPathMap = ImmutableMap.copyOf(pathNameToPathMap);
 
-        return new FieldMapping(fieldsMap,
+        FieldMapping fm =  new FieldMapping(fieldsMap,
                 fieldPos,
                 fieldNullPos,
                 numBools,
@@ -275,6 +284,8 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
                 numMaps,
                 numStructs,
                 numReferenceables);
+
+        return new Pair(fm, ImmutableMap.copyOf(attributeNameToType));
     }
 
     public IStruct castAs(IStruct s, String superTypeName) throws MetadataException {
@@ -309,6 +320,22 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
         }
 
         return null;
+    }
+
+    public ST getDefinedType(String attrName) throws MetadataException {
+        if (!attributeNameToType.containsKey(attrName)) {
+            throw new MetadataException(String.format("Unknown attribute %s in type %s", attrName, getName()));
+        }
+        return typeSystem.getDataType(superTypeClass, attributeNameToType.get(attrName));
+    }
+
+    public String getDefinedTypeName(String attrName) throws MetadataException {
+        return getDefinedType(attrName).getName();
+    }
+
+    public String getQualifiedName(String attrName) throws MetadataException {
+        String attrTypeName = getDefinedTypeName(attrName);
+        return attrName.contains(".") ? attrName : String.format("%s.%s", attrTypeName, attrName);
     }
 
     protected Map<String, String> constructDowncastFieldMap(ST subType, Path pathToSubType) {
