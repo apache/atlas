@@ -225,6 +225,15 @@ public class TypeSystem {
         return transientTypes.defineTypes();
     }
 
+    public Map<String, IDataType> defineClassTypes(
+            HierarchicalTypeDefinition<ClassType>... classDefs) throws MetadataException {
+        TransientTypeSystem transientTypes = new TransientTypeSystem(
+                ImmutableList.<StructTypeDefinition>of(),
+                ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
+                ImmutableList.copyOf(classDefs));
+        return transientTypes.defineTypes();
+    }
+
     public Map<String, IDataType> defineTypes(TypesDef typesDef)
     throws MetadataException {
 

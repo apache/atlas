@@ -106,6 +106,11 @@ public abstract class BaseTest {
         return getTypeSystem().defineTraitTypes(tDefs);
     }
 
+    protected Map<String, IDataType> defineClasses(
+            HierarchicalTypeDefinition<ClassType>... classDefs) throws MetadataException {
+        return getTypeSystem().defineClassTypes(classDefs);
+    }
+
     /*
      * Class Hierarchy is:
      *   Department(name : String, employees : Array[Person])
@@ -152,7 +157,7 @@ public abstract class BaseTest {
                 ImmutableList.of(deptTypeDef, personTypeDef,
                         managerTypeDef));
 
-        ImmutableList<HierarchicalType> types = ImmutableList.of(
+        ImmutableList.of(
                 ts.getDataType(HierarchicalType.class, "SecurityClearance"),
                 ts.getDataType(ClassType.class, "Department"),
                 ts.getDataType(ClassType.class, "Person"),
@@ -180,7 +185,7 @@ public abstract class BaseTest {
         jane.getTrait("SecurityClearance").set("level", 1);
 
         ClassType deptType = ts.getDataType(ClassType.class, "Department");
-        ITypedReferenceableInstance hrDept2 = deptType.convert(hrDept, Multiplicity.REQUIRED);
+        deptType.convert(hrDept, Multiplicity.REQUIRED);
 
         return hrDept;
     }
