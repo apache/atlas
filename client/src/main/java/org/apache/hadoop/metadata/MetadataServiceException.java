@@ -27,10 +27,12 @@ public class MetadataServiceException extends Exception {
         super("Metadata service API " + api + " failed", e);
     }
 
-    public MetadataServiceException(MetadataServiceClient.API api, ClientResponse.Status status) {
-        super("Metadata service API " + api + " failed with status " + status.getStatusCode()
-                + "(" + status.getReasonPhrase() + ")");
-        this.status = status;
+    public MetadataServiceException(MetadataServiceClient.API api, ClientResponse response) {
+        super("Metadata service API " + api + " failed with status " +
+                response.getClientResponseStatus().getStatusCode() + "(" +
+                response.getClientResponseStatus().getReasonPhrase() + ") Response Body (" +
+                response.getEntity(String.class) + ")");
+        this.status = response.getClientResponseStatus();
     }
 
     public MetadataServiceException(Exception e) {
