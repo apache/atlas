@@ -36,7 +36,7 @@ import scala.collection.JavaConversions._
 package object dsl {
 
     val defFormat = new DefaultFormats {
-        override protected def dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
+        override protected def dateFormatter = TypeSystem.getInstance().getDateFormat;
 
         override val typeHints = NoTypeHints
     }

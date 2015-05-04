@@ -334,11 +334,6 @@ public class GraphBackedMetadataRepositoryTest {
         String response = discoveryService.searchByFullText("john");
         Assert.assertNotNull(response);
         JSONArray results = new JSONArray(response);
-        System.out.println("Found the following results");
-        for (int i = 0 ; i < results.length(); i++) {
-            JSONObject myrow = results.getJSONObject(i);
-            System.out.println(myrow.toString());
-        }
         Assert.assertEquals(results.length(), 1);
         JSONObject row = (JSONObject) results.get(0);
         Assert.assertEquals(row.get("typeName"), "Person");
@@ -346,11 +341,10 @@ public class GraphBackedMetadataRepositoryTest {
         //person in hr department who lives in santa clara
         response = discoveryService.searchByFullText("Jane AND santa AND clara");
         Assert.assertNotNull(response);
-        // todo: enable this - temporarily commented this as its failing
-//        results = new JSONArray(response);
-//        Assert.assertEquals(results.length(), 1);
-//        row = (JSONObject) results.get(0);
-//        Assert.assertEquals(row.get("typeName"), "Manager");
+        results = new JSONArray(response);
+        Assert.assertEquals(results.length(), 1);
+        row = (JSONObject) results.get(0);
+        Assert.assertEquals(row.get("typeName"), "Manager");
 
         //search for person in hr department whose name starts is john/jahn
         response = discoveryService.searchByFullText("hr AND (john OR jahn)");

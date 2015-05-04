@@ -85,7 +85,7 @@ public final class GraphHelper {
 
     public static Edge addEdge(TitanGraph titanGraph, Vertex fromVertex, Vertex toVertex,
                                String edgeLabel) {
-        LOG.debug("Adding edge for {} -> struct label {} -> v{}",
+        LOG.debug("Adding edge for {} -> label {} -> {}",
                 fromVertex, edgeLabel, toVertex);
 
         return titanGraph.addEdge(null, fromVertex, toVertex, edgeLabel);
