@@ -155,7 +155,7 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
 
         // clone to avoid concurrent access
         final HiveConf conf = new HiveConf(hookContext.getConf());
-        boolean debug = conf.get("debug", "false").equals("true");
+        boolean debug = conf.get("hive.hook.dgi.synchronous", "false").equals("true");
 
         if (debug) {
             fireAndForget(hookContext, conf);
@@ -178,8 +178,9 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
     private void fireAndForget(HookContext hookContext, HiveConf conf) throws Exception {
         assert hookContext.getHookType() == HookContext.HookType.POST_EXEC_HOOK : "Non-POST_EXEC_HOOK not supported!";
 
+        LOG.info("Entered DGI hook for hook type {} operation {}", hookContext.getHookType(),
+                hookContext.getOperationName());
         HiveOperation operation = HiveOperation.valueOf(hookContext.getOperationName());
-        LOG.info("Entered DGI hook for hook type {} operation {}", hookContext.getHookType(), operation);
 
         HiveMetaStoreBridge dgiBridge = new HiveMetaStoreBridge(conf);
 

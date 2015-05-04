@@ -19,15 +19,15 @@
 package org.apache.hadoop.metadata.hive.bridge;
 
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.Index;
 import org.apache.hadoop.hive.metastore.api.Order;
-import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.metastore.api.SerDeInfo;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
-import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.hadoop.hive.ql.metadata.Hive;
+import org.apache.hadoop.hive.ql.metadata.Partition;
+import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.hive.model.HiveDataModelGenerator;
 import org.apache.hadoop.metadata.hive.model.HiveDataTypes;
@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * A Bridge Utility that imports metadata from the Hive Meta Store
@@ -66,7 +67,7 @@ public class HiveMetaStoreBridge {
 
     private static final Logger LOG = LoggerFactory.getLogger(HiveMetaStoreBridge.class);
 
-    private final HiveMetaStoreClient hiveMetaStoreClient;
+    private final Hive hiveClient;
     private final MetadataServiceClient metadataServiceClient;
 
     /**
@@ -74,7 +75,7 @@ public class HiveMetaStoreBridge {
      * @param hiveConf
      */
     public HiveMetaStoreBridge(HiveConf hiveConf) throws Exception {
-        hiveMetaStoreClient = new HiveMetaStoreClient(hiveConf);
+        hiveClient = Hive.get(hiveConf);
         metadataServiceClient = new MetadataServiceClient(hiveConf.get(DGI_URL_PROPERTY, DEFAULT_DGI_URL));
     }
 
@@ -88,7 +89,7 @@ public class HiveMetaStoreBridge {
     }
 
     private void importDatabases() throws Exception {
-        List<String> databases = hiveMetaStoreClient.getAllDatabases();
+        List<String> databases = hiveClient.getAllDatabases();
         for (String databaseName : databases) {
             Referenceable dbReference = registerDatabase(databaseName);
 
@@ -99,7 +100,7 @@ public class HiveMetaStoreBridge {
     public Referenceable registerDatabase(String databaseName) throws Exception {
         LOG.info("Importing objects from databaseName : " + databaseName);
 
-        Database hiveDB = hiveMetaStoreClient.getDatabase(databaseName);
+        Database hiveDB = hiveClient.getDatabase(databaseName);
 
         Referenceable dbRef = new Referenceable(HiveDataTypes.HIVE_DB.getName());
         dbRef.set("name", hiveDB.getName());
@@ -128,7 +129,7 @@ public class HiveMetaStoreBridge {
     }
 
     private void importTables(String databaseName, Referenceable databaseReferenceable) throws Exception {
-        List<String> hiveTables = hiveMetaStoreClient.getAllTables(databaseName);
+        List<String> hiveTables = hiveClient.getAllTables(databaseName);
 
         for (String tableName : hiveTables) {
             Pair<Referenceable, Referenceable> tableReferenceable = registerTable(databaseReferenceable, databaseName, tableName);
@@ -144,12 +145,13 @@ public class HiveMetaStoreBridge {
     public Pair<Referenceable, Referenceable> registerTable(Referenceable dbReference, String dbName, String tableName) throws Exception {
         LOG.info("Importing objects from " + dbName + "." + tableName);
 
-        Table hiveTable = hiveMetaStoreClient.getTable(dbName, tableName);
+        Table hiveTable = hiveClient.getTable(dbName, tableName);
 
         Referenceable tableRef = new Referenceable(HiveDataTypes.HIVE_TABLE.getName());
         tableRef.set("tableName", hiveTable.getTableName());
         tableRef.set("owner", hiveTable.getOwner());
-        tableRef.set("createTime", hiveTable.getCreateTime());
+        //todo fix
+        tableRef.set("createTime", hiveTable.getLastAccessTime());
         tableRef.set("lastAccessTime", hiveTable.getLastAccessTime());
         tableRef.set("retention", hiveTable.getRetention());
 
@@ -164,7 +166,7 @@ public class HiveMetaStoreBridge {
         // add reference to the Partition Keys
         List<Referenceable> partKeys = new ArrayList<>();
         Referenceable colRef;
-        if (hiveTable.getPartitionKeysSize() > 0) {
+        if (hiveTable.getPartitionKeys().size() > 0) {
             for (FieldSchema fs : hiveTable.getPartitionKeys()) {
                 colRef = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
                 colRef.set("name", fs.getName());
@@ -179,11 +181,11 @@ public class HiveMetaStoreBridge {
 
         tableRef.set("parameters", hiveTable.getParameters());
 
-        if (hiveTable.isSetViewOriginalText()) {
+        if (hiveTable.getViewOriginalText() != null) {
             tableRef.set("viewOriginalText", hiveTable.getViewOriginalText());
         }
 
-        if (hiveTable.isSetViewExpandedText()) {
+        if (hiveTable.getViewExpandedText() != null) {
             tableRef.set("viewExpandedText", hiveTable.getViewExpandedText());
         }
 
@@ -197,12 +199,14 @@ public class HiveMetaStoreBridge {
         return Pair.of(tableReferenceable, sdReferenceable);
     }
 
-    private void importPartitions(String db, String table,
+    private void importPartitions(String db, String tableName,
                                   Referenceable dbReferenceable,
                                   Referenceable tableReferenceable,
                                   Referenceable sdReferenceable) throws Exception {
-        List<Partition> tableParts = hiveMetaStoreClient.listPartitions(
-                db, table, Short.MAX_VALUE);
+        Table table = new Table();
+        table.setDbName(db);
+        table.setTableName(tableName);
+        Set<Partition> tableParts = hiveClient.getAllPartitionsOf(table);
 
         if (tableParts.size() > 0) {
             for (Partition hivePart : tableParts) {
@@ -221,7 +225,8 @@ public class HiveMetaStoreBridge {
         partRef.set("dbName", dbReferenceable);
         partRef.set("tableName", tableReferenceable);
 
-        partRef.set("createTime", hivePart.getCreateTime());
+        //todo fix
+        partRef.set("createTime", hivePart.getLastAccessTime());
         partRef.set("lastAccessTime", hivePart.getLastAccessTime());
 
         // sdStruct = fillStorageDescStruct(hivePart.getSd());
@@ -237,7 +242,7 @@ public class HiveMetaStoreBridge {
     private void importIndexes(String db, String table,
                                Referenceable dbReferenceable,
                                Referenceable tableReferenceable) throws Exception {
-        List<Index> indexes = hiveMetaStoreClient.listIndexes(db, table, Short.MAX_VALUE);
+        List<Index> indexes = hiveClient.getIndexes(db, table, Short.MAX_VALUE);
         if (indexes.size() > 0) {
             for (Index index : indexes) {
                 importIndex(index, dbReferenceable, tableReferenceable);
