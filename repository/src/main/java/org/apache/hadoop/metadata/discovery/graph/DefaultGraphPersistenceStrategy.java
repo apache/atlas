@@ -55,6 +55,11 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
     }
 
     @Override
+    public String superTypeAttributeName() {
+        return metadataRepository.getSuperTypeAttributeName();
+    }
+
+    @Override
     public String edgeLabel(IDataType<?> dataType, AttributeInfo aInfo) {
         return metadataRepository.getEdgeLabel(dataType, aInfo);
     }
@@ -107,7 +112,7 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
 
                     TypeSystem.IdType idType = TypeSystem.getInstance().getIdType();
 
-                    if ( dataType.getName() == idType.getName()) {
+                    if (dataType.getName().equals(idType.getName())) {
                         structInstance.set(idType.typeNameAttrName(),
                                 structVertex.getProperty(typeAttributeName()));
                         structInstance.set(idType.idAttrName(),

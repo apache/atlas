@@ -42,10 +42,10 @@ import java.util.concurrent.ConcurrentHashMap;
 @InterfaceAudience.Private
 public class TypeSystem {
     private static final TypeSystem INSTANCE = new TypeSystem();
-    public static ThreadLocal<DateFormat> dateFormat = new ThreadLocal() {
+    private static ThreadLocal<SimpleDateFormat> dateFormat = new ThreadLocal() {
         @Override
-        public DateFormat initialValue() {
-            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        public SimpleDateFormat initialValue() {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
             dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
             return dateFormat;
         }
@@ -225,6 +225,15 @@ public class TypeSystem {
         return transientTypes.defineTypes();
     }
 
+    public Map<String, IDataType> defineClassTypes(
+            HierarchicalTypeDefinition<ClassType>... classDefs) throws MetadataException {
+        TransientTypeSystem transientTypes = new TransientTypeSystem(
+                ImmutableList.<StructTypeDefinition>of(),
+                ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
+                ImmutableList.copyOf(classDefs));
+        return transientTypes.defineTypes();
+    }
+
     public Map<String, IDataType> defineTypes(TypesDef typesDef)
     throws MetadataException {
 
@@ -285,7 +294,7 @@ public class TypeSystem {
         return eT;
     }
 
-    public DateFormat getDateFormat() {
+    public SimpleDateFormat getDateFormat() {
         return dateFormat.get();
     }
 

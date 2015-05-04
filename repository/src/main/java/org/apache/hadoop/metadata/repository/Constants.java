@@ -32,6 +32,15 @@ public final class Constants {
     public static final String ENTITY_TYPE_PROPERTY_KEY = "typeName";
     public static final String ENTITY_TYPE_INDEX = "type_index";
 
+    /**
+     * Entity type's super types property key.
+     */
+    public static final String SUPER_TYPES_PROPERTY_KEY = "superTypeNames";
+    public static final String SUPER_TYPES_INDEX = "super_types_index";
+
+    /**
+     * Full-text for the entity for enabling full-text search.
+     */
     public static final String ENTITY_TEXT_PROPERTY_KEY = "entityText";
 
     /**

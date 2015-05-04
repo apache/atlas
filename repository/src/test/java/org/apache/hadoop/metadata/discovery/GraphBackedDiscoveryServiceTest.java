@@ -18,6 +18,7 @@
 
 package org.apache.hadoop.metadata.discovery;
 
+import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -33,6 +34,8 @@ import org.apache.hadoop.metadata.repository.graph.GraphProvider;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
+import org.apache.hadoop.metadata.typesystem.types.DataTypes;
+import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
 import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.codehaus.jettison.json.JSONArray;
@@ -50,6 +53,10 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.io.File;
+
+import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createClassTypeDef;
+import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
+import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
 
 @Guice(modules = RepositoryMetadataModule.class)
 public class GraphBackedDiscoveryServiceTest {
@@ -291,5 +298,55 @@ public class GraphBackedDiscoveryServiceTest {
             String name = row.getString("name");
             Assert.assertNotEquals(name, "null");
         }
+    }
+
+    @Test
+    public void testSearchForTypeInheritance() throws Exception {
+        createTypesWithMultiLevelInheritance();
+        createInstances();
+
+        String dslQuery = "from D where a = 1";
+        String jsonResults = discoveryService.searchByDSL(dslQuery);
+        Assert.assertNotNull(jsonResults);
+
+        JSONObject results = new JSONObject(jsonResults);
+        System.out.println("results = " + results);
+    }
+
+    /*
+     * Type Hierarchy is:
+     *   A(a)
+     *   B(b) extends A
+     *   C(c) extends B
+     *   D(d) extends C
+     */
+    private void createTypesWithMultiLevelInheritance() throws Exception {
+        HierarchicalTypeDefinition A = createClassTypeDef("A", null,
+                createRequiredAttrDef("a", DataTypes.INT_TYPE));
+
+        HierarchicalTypeDefinition B = createClassTypeDef("B", ImmutableList.of("A"),
+                createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE));
+
+        HierarchicalTypeDefinition C = createClassTypeDef("C", ImmutableList.of("B"),
+                createOptionalAttrDef("c", DataTypes.BYTE_TYPE));
+
+        HierarchicalTypeDefinition D = createClassTypeDef("D", ImmutableList.of("C"),
+                createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
+
+        TypeSystem.getInstance().defineClassTypes(A, B, C, D);
+    }
+
+    private void createInstances() throws Exception {
+        Referenceable instance = new Referenceable("D");
+        instance.set("d", 1);
+        instance.set("c", 1);
+        instance.set("b", true);
+        instance.set("a", 1);
+
+        ClassType deptType = TypeSystem.getInstance().getDataType(ClassType.class, "D");
+        ITypedReferenceableInstance typedInstance =
+                deptType.convert(instance, Multiplicity.REQUIRED);
+
+        repositoryService.createEntity(typedInstance);
     }
 }

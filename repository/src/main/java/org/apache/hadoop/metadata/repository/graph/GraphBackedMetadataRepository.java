@@ -41,6 +41,7 @@ import org.apache.hadoop.metadata.typesystem.types.AttributeInfo;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
 import org.apache.hadoop.metadata.typesystem.types.DataTypes;
 import org.apache.hadoop.metadata.typesystem.types.EnumValue;
+import org.apache.hadoop.metadata.typesystem.types.HierarchicalType;
 import org.apache.hadoop.metadata.typesystem.types.IDataType;
 import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
 import org.apache.hadoop.metadata.typesystem.types.ObjectGraphWalker;
@@ -60,7 +61,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -100,6 +100,16 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     @Override
     public String getTypeAttributeName() {
         return Constants.ENTITY_TYPE_PROPERTY_KEY;
+    }
+
+    /**
+     * Returns the property key used to store super type names.
+     *
+     * @return property key used to store super type names.
+     */
+    @Override
+    public String getSuperTypeAttributeName() {
+        return Constants.SUPER_TYPES_PROPERTY_KEY;
     }
 
     public String getIdAttributeName() {
@@ -228,7 +238,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
             // add the trait instance as a new vertex
             final String typeName = getTypeName(instanceVertex);
-            instanceToGraphMapper.mapTraitInstanceToVertex(traitInstance, getIdFromVertex(typeName, instanceVertex),
+            instanceToGraphMapper.mapTraitInstanceToVertex(traitInstance,
+                    getIdFromVertex(typeName, instanceVertex),
                     typeName, instanceVertex, Collections.<Id, Vertex>emptyMap());
 
             // update the traits in entity once adding trait instance is successful
@@ -352,6 +363,22 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         return instanceVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY);
     }
 
+
+    String getQualifiedName(ITypedInstance typedInstance,
+                            AttributeInfo attributeInfo) throws MetadataException {
+        IDataType dataType = typeSystem.getDataType(
+                IDataType.class, typedInstance.getTypeName());
+        return getQualifiedName(dataType, attributeInfo.name);
+    }
+
+    String getQualifiedName(IDataType dataType,
+                            String attributeName) throws MetadataException {
+        return dataType.getTypeCategory() == DataTypes.TypeCategory.STRUCT
+                ? dataType.getName() + "." + attributeName
+                // else class or trait
+                : ((HierarchicalType) dataType).getQualifiedName(attributeName);
+    }
+
     private final class EntityProcessor implements ObjectGraphWalker.NodeProcessor {
 
         public final Map<Id, Id> idToNewIdMap;
@@ -396,7 +423,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             }
         }
 
-        public void createVerticesForClassTypes(List<ITypedReferenceableInstance> newInstances) {
+        public void createVerticesForClassTypes(
+                List<ITypedReferenceableInstance> newInstances) throws MetadataException {
             for (ITypedReferenceableInstance typedInstance : newInstances) {
                 final Id id = typedInstance.getId();
                 if (!idToVertexMap.containsKey(id)) {
@@ -404,8 +432,11 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                     if (id.isAssigned()) {  // has a GUID
                         instanceVertex = GraphHelper.findVertexByGUID(titanGraph, id.id);
                     } else {
-                        instanceVertex =
-                                GraphHelper.createVertexWithIdentity(titanGraph, typedInstance);
+                        ClassType classType = typeSystem.getDataType(
+                                ClassType.class, typedInstance.getTypeName());
+                        instanceVertex = GraphHelper.createVertexWithIdentity(
+                                titanGraph, typedInstance,
+                                classType.getAllSuperTypeNames());
                     }
 
                     idToVertexMap.put(id, instanceVertex);
@@ -442,30 +473,33 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 Id id = typedInstance.getId();
                 Vertex instanceVertex = entityProcessor.idToVertexMap.get(id);
                 String fullText = getFullTextForVertex(instanceVertex, true);
-                instanceVertex.setProperty(Constants.ENTITY_TEXT_PROPERTY_KEY, fullText);
-                LOG.debug("Adding {} for {} = {}", Constants.ENTITY_TEXT_PROPERTY_KEY, instanceVertex, fullText);
+                addProperty(instanceVertex, Constants.ENTITY_TEXT_PROPERTY_KEY, fullText);
             }
         }
 
-        private String getFullTextForVertex(Vertex instanceVertex, boolean followReferences) throws MetadataException {
+        private String getFullTextForVertex(Vertex instanceVertex,
+                                            boolean followReferences) throws MetadataException {
             String guid = instanceVertex.getProperty(Constants.GUID_PROPERTY_KEY);
             ITypedReferenceableInstance typedReference =
                     graphToInstanceMapper.mapGraphToTypedInstance(guid, instanceVertex);
             String fullText = getFullTextForInstance(typedReference, followReferences);
-            StringBuilder fullTextBuilder =
-                    new StringBuilder(typedReference.getTypeName()).append(FULL_TEXT_DELIMITER).append(fullText);
+            StringBuilder fullTextBuilder = new StringBuilder(
+                    typedReference.getTypeName()).append(FULL_TEXT_DELIMITER).append(fullText);
 
             List<String> traits = typedReference.getTraits();
             for (String traitName : traits) {
-                String traitText = getFullTextForInstance((ITypedInstance) typedReference.getTrait(traitName), false);
-                fullTextBuilder.append(FULL_TEXT_DELIMITER).append(traitName).append(FULL_TEXT_DELIMITER)
+                String traitText = getFullTextForInstance(
+                        (ITypedInstance) typedReference.getTrait(traitName), false);
+                fullTextBuilder.append(FULL_TEXT_DELIMITER)
+                        .append(traitName)
+                        .append(FULL_TEXT_DELIMITER)
                         .append(traitText);
             }
             return fullTextBuilder.toString();
         }
 
-        private String getFullTextForAttribute(IDataType type, Object value, boolean followReferences)
-        throws MetadataException {
+        private String getFullTextForAttribute(IDataType type, Object value,
+                                               boolean followReferences) throws MetadataException {
             switch (type.getTypeCategory()) {
             case PRIMITIVE:
                 return String.valueOf(value);
@@ -525,8 +559,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             return null;
         }
 
-        private String getFullTextForInstance(ITypedInstance typedInstance, boolean followReferences) throws
-            MetadataException {
+        private String getFullTextForInstance(ITypedInstance typedInstance,
+                                              boolean followReferences) throws MetadataException {
             StringBuilder fullText = new StringBuilder();
             for (AttributeInfo attributeInfo : typedInstance.fieldMapping().fields.values()) {
                 Object attrValue = typedInstance.get(attributeInfo.name);
@@ -534,7 +568,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                     continue;
                 }
 
-                String attrFullText = getFullTextForAttribute(attributeInfo.dataType(), attrValue, followReferences);
+                String attrFullText = getFullTextForAttribute(
+                        attributeInfo.dataType(), attrValue, followReferences);
                 if (StringUtils.isNotEmpty(attrFullText)) {
                     fullText = fullText.append(FULL_TEXT_DELIMITER).append(attributeInfo.name)
                             .append(FULL_TEXT_DELIMITER).append(attrFullText);
@@ -592,7 +627,9 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 Vertex instanceVertex = entityProcessor.idToVertexMap.get(id);
 
                 // add the attributes for the instance
-                final Map<String, AttributeInfo> fields = typedInstance.fieldMapping().fields;
+                ClassType classType = typeSystem.getDataType(
+                        ClassType.class, typedInstance.getTypeName());
+                final Map<String, AttributeInfo> fields = classType.fieldMapping().fields;
 
                 mapInstanceToVertex(
                         id, typedInstance, instanceVertex, fields, entityProcessor.idToVertexMap);
@@ -619,8 +656,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         private void mapInstanceToVertex(Id id, ITypedInstance typedInstance, Vertex instanceVertex,
                                          Map<String, AttributeInfo> fields,
                                          Map<Id, Vertex> idToVertexMap) throws MetadataException {
-            LOG.debug("Mapping instance {} to vertex {} for fields {}",
-                    typedInstance.getTypeName(), instanceVertex, fields);
+            LOG.debug("Mapping instance {} of {} to vertex {}",
+                    typedInstance, typedInstance.getTypeName(), instanceVertex);
             for (AttributeInfo attributeInfo : fields.values()) {
                 final IDataType dataType = attributeInfo.dataType();
                 mapAttributesToVertex(id, typedInstance, instanceVertex,
@@ -633,9 +670,10 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                                            Map<Id, Vertex> idToVertexMap,
                                            AttributeInfo attributeInfo,
                                            IDataType dataType) throws MetadataException {
-            LOG.debug("mapping attributeInfo {}", attributeInfo);
-            final String propertyName = typedInstance.getTypeName() + "." + attributeInfo.name;
-            if (typedInstance.get(attributeInfo.name) == null) {
+            Object attrValue = typedInstance.get(attributeInfo.name);
+            LOG.debug("mapping attribute {} = {}", attributeInfo.name, attrValue);
+            final String propertyName = getQualifiedName(typedInstance, attributeInfo);
+            if (attrValue == null) {
                 return;
             }
 
@@ -645,8 +683,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                     break;
 
                 case ENUM:
-                    instanceVertex.setProperty(propertyName,
-                            typedInstance.getInt(attributeInfo.name));
+                    addProperty(instanceVertex, propertyName, typedInstance.getInt(attributeInfo.name));
                     break;
 
                 case ARRAY:
@@ -675,8 +712,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 case CLASS:
                     Id referenceId = (Id) typedInstance.get(attributeInfo.name);
                     mapClassReferenceAsEdge(
-                            instanceVertex, idToVertexMap, propertyName, referenceId
-                    );
+                            instanceVertex, idToVertexMap, propertyName, referenceId);
                     break;
 
                 default:
@@ -697,7 +733,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 return;
             }
 
-            String propertyName = typedInstance.getTypeName() + "." + attributeInfo.name;
+            String propertyName = getQualifiedName(typedInstance, attributeInfo);
             IDataType elementType = ((DataTypes.ArrayType) attributeInfo.dataType()).getElemType();
 
             StringBuilder buffer = new StringBuilder();
@@ -711,7 +747,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
             buffer.setLength(buffer.length() - 1);
             // for dereference on way out
-            instanceVertex.setProperty(propertyName, buffer.toString());
+            addProperty(instanceVertex, propertyName, buffer.toString());
         }
 
         private void mapMapCollectionToVertex(Id id, ITypedInstance typedInstance,
@@ -728,7 +764,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 return;
             }
 
-            String propertyName = typedInstance.getTypeName() + "." + attributeInfo.name;
+            String propertyName = getQualifiedName(typedInstance, attributeInfo);
             StringBuilder buffer = new StringBuilder();
             IDataType elementType = ((DataTypes.MapType) attributeInfo.dataType()).getValueType();
             for (Map.Entry entry : collection.entrySet()) {
@@ -740,7 +776,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
             buffer.setLength(buffer.length() - 1);
             // for dereference on way out
-            instanceVertex.setProperty(propertyName, buffer.toString());
+            addProperty(instanceVertex, propertyName, buffer.toString());
         }
 
         private String mapCollectionEntryToVertex(Id id, Vertex instanceVertex,
@@ -754,7 +790,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             switch (elementType.getTypeCategory()) {
                 case PRIMITIVE:
                 case ENUM:
-                    instanceVertex.setProperty(propertyNameWithSuffix, value);
+                    addProperty(instanceVertex, propertyNameWithSuffix, value);
                     return propertyNameWithSuffix;
 
                 case ARRAY:
@@ -811,8 +847,10 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         throws MetadataException {
             // add a new vertex for the struct or trait instance
             Vertex structInstanceVertex = GraphHelper.createVertexWithoutIdentity(
-                    titanGraph, structInstance.getTypeName(), id);
-            LOG.debug("created vertex {} for struct {}", structInstanceVertex, attributeInfo.name);
+                    titanGraph, structInstance.getTypeName(), id,
+                    Collections.<String>emptySet()); // no super types for struct type
+            LOG.debug("created vertex {} for struct {} value {}", structInstanceVertex, attributeInfo.name,
+                    structInstance);
 
             // map all the attributes to this newly created vertex
             mapInstanceToVertex(id, structInstance, structInstanceVertex,
@@ -839,7 +877,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             // add a new vertex for the struct or trait instance
             final String traitName = traitInstance.getTypeName();
             Vertex traitInstanceVertex = GraphHelper.createVertexWithoutIdentity(
-                    titanGraph, traitInstance.getTypeName(), typedInstanceId);
+                    titanGraph, traitInstance.getTypeName(), typedInstanceId,
+                    typeSystem.getDataType(TraitType.class, traitName).getAllSuperTypeNames());
             LOG.debug("created vertex {} for trait {}", traitInstanceVertex, traitName);
 
             // map all the attributes to this newly created vertex
@@ -855,47 +894,41 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         private void mapPrimitiveToVertex(ITypedInstance typedInstance,
                                           Vertex instanceVertex,
                                           AttributeInfo attributeInfo) throws MetadataException {
-            LOG.debug("Adding primitive {} to v {}", attributeInfo, instanceVertex);
-            if (typedInstance.get(attributeInfo.name) ==
-                    null) { // add only if instance has this attribute
-                return;
+            Object attrValue = typedInstance.get(attributeInfo.name);
+            if (attrValue == null) {
+                return; // add only if instance has this attribute
             }
 
-            final String vertexPropertyName = typedInstance.getTypeName() + "." +
-                    attributeInfo.name;
-
+            final String vertexPropertyName = getQualifiedName(typedInstance, attributeInfo);
+            Object propertyValue = null;
             if (attributeInfo.dataType() == DataTypes.STRING_TYPE) {
-                instanceVertex.setProperty(vertexPropertyName,
-                        typedInstance.getString(attributeInfo.name));
+                propertyValue = typedInstance.getString(attributeInfo.name);
             } else if (attributeInfo.dataType() == DataTypes.SHORT_TYPE) {
-                instanceVertex.setProperty(vertexPropertyName,
-                        typedInstance.getShort(attributeInfo.name));
+                propertyValue = typedInstance.getShort(attributeInfo.name);
             } else if (attributeInfo.dataType() == DataTypes.INT_TYPE) {
-                instanceVertex.setProperty(vertexPropertyName,
-                        typedInstance.getInt(attributeInfo.name));
+                propertyValue = typedInstance.getInt(attributeInfo.name);
             } else if (attributeInfo.dataType() == DataTypes.BIGINTEGER_TYPE) {
-                instanceVertex.setProperty(vertexPropertyName,
-                        typedInstance.getBigInt(attributeInfo.name));
+                propertyValue = typedInstance.getBigInt(attributeInfo.name);
             } else if (attributeInfo.dataType() == DataTypes.BOOLEAN_TYPE) {
-                instanceVertex.setProperty(vertexPropertyName,
-                        typedInstance.getBoolean(attributeInfo.name));
+                propertyValue = typedInstance.getBoolean(attributeInfo.name);
             } else if (attributeInfo.dataType() == DataTypes.BYTE_TYPE) {
-                instanceVertex.setProperty(vertexPropertyName,
-                        typedInstance.getByte(attributeInfo.name));
+                propertyValue = typedInstance.getByte(attributeInfo.name);
             } else if (attributeInfo.dataType() == DataTypes.LONG_TYPE) {
-                instanceVertex.setProperty(vertexPropertyName,
-                        typedInstance.getLong(attributeInfo.name));
+                propertyValue = typedInstance.getLong(attributeInfo.name);
             } else if (attributeInfo.dataType() == DataTypes.FLOAT_TYPE) {
-                instanceVertex.setProperty(vertexPropertyName,
-                        typedInstance.getFloat(attributeInfo.name));
+                propertyValue = typedInstance.getFloat(attributeInfo.name);
             } else if (attributeInfo.dataType() == DataTypes.DOUBLE_TYPE) {
-                instanceVertex.setProperty(vertexPropertyName,
-                        typedInstance.getDouble(attributeInfo.name));
+                propertyValue = typedInstance.getDouble(attributeInfo.name);
             } else if (attributeInfo.dataType() == DataTypes.BIGDECIMAL_TYPE) {
-                instanceVertex.setProperty(vertexPropertyName,
-                        typedInstance.getBigDecimal(attributeInfo.name));
+                propertyValue = typedInstance.getBigDecimal(attributeInfo.name);
             }
+            addProperty(instanceVertex, vertexPropertyName, propertyValue);
         }
+    }
+
+    private void addProperty(Vertex vertex, String propertyName, Object value) {
+        LOG.debug("Setting property {} = \"{}\" to vertex {}", propertyName, value, vertex);
+        vertex.setProperty(propertyName, value);
     }
 
     public final class GraphToTypedInstanceMapper {
@@ -947,9 +980,9 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
         public void mapVertexToAttribute(Vertex instanceVertex, ITypedInstance typedInstance,
                                          AttributeInfo attributeInfo) throws MetadataException {
-            LOG.debug("mapping attributeInfo = " + attributeInfo);
+            LOG.debug("mapping attributeInfo {}", attributeInfo.name);
             final IDataType dataType = attributeInfo.dataType();
-            final String vertexPropertyName = typedInstance.getTypeName() + "." + attributeInfo.name;
+            final String vertexPropertyName = getQualifiedName(typedInstance, attributeInfo);
 
             switch (dataType.getTypeCategory()) {
                 case PRIMITIVE:
@@ -984,8 +1017,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                     break;
 
                 case CLASS:
-                    String relationshipLabel = typedInstance.getTypeName() + "." +
-                            attributeInfo.name;
+                    String relationshipLabel = getQualifiedName(typedInstance, attributeInfo);
                     Object idOrInstance = mapClassReferenceToVertex(instanceVertex,
                             attributeInfo, relationshipLabel, attributeInfo.dataType());
                     typedInstance.set(attributeInfo.name, idOrInstance);
@@ -1189,7 +1221,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             ITypedStruct structInstance = structType.createInstance();
             typedInstance.set(attributeInfo.name, structInstance);
 
-            String relationshipLabel = typedInstance.getTypeName() + "." + attributeInfo.name;
+            String relationshipLabel = getQualifiedName(typedInstance, attributeInfo);
             LOG.debug("Finding edge for {} -> label {} ", instanceVertex, relationshipLabel);
             for (Edge edge : instanceVertex.getEdges(Direction.OUT, relationshipLabel)) {
                 final Vertex structInstanceVertex = edge.getVertex(Direction.IN);
@@ -1234,7 +1266,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                                           ITypedInstance typedInstance,
                                           AttributeInfo attributeInfo) throws MetadataException {
             LOG.debug("Adding primitive {} from vertex {}", attributeInfo, instanceVertex);
-            final String vertexPropertyName = typedInstance.getTypeName() + "." + attributeInfo.name;
+            final String vertexPropertyName = getQualifiedName(typedInstance, attributeInfo);
             if (instanceVertex.getProperty(vertexPropertyName) == null) {
                 return;
             }

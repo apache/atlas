@@ -45,6 +45,11 @@ trait GraphPersistenceStrategies {
     def typeAttributeName: String
 
     /**
+     * Name of attribute used to store super type names in vertex.
+     */
+    def superTypeAttributeName: String
+
+    /**
      * Name of attribute used to store guid in vertex
      */
     def idAttributeName : String
@@ -113,6 +118,7 @@ trait GraphPersistenceStrategies {
 
 object GraphPersistenceStrategy1 extends GraphPersistenceStrategies {
     val typeAttributeName = "typeName"
+    val superTypeAttributeName = "superTypeNames"
     val idAttributeName = "guid"
 
     def edgeLabel(dataType: IDataType[_], aInfo: AttributeInfo) = s"${dataType.getName}.${aInfo.name}"

@@ -90,10 +90,14 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
         createCompositeAndMixedIndex(Constants.ENTITY_TYPE_INDEX,
                 Constants.ENTITY_TYPE_PROPERTY_KEY, String.class, false, Cardinality.SINGLE);
 
+        // create a composite and mixed index for type since it can be combined with other keys
+        createCompositeAndMixedIndex(Constants.SUPER_TYPES_INDEX,
+                Constants.SUPER_TYPES_PROPERTY_KEY, String.class, false, Cardinality.SET);
+
         // create a composite and mixed index for traitNames since it can be combined with other
         // keys. Traits must be a set and not a list.
-        createCompositeAndMixedIndex(Constants.TRAIT_NAMES_INDEX, Constants.TRAIT_NAMES_PROPERTY_KEY, String.class,
-                false, Cardinality.SET);
+        createCompositeAndMixedIndex(Constants.TRAIT_NAMES_INDEX,
+                Constants.TRAIT_NAMES_PROPERTY_KEY, String.class, false, Cardinality.SET);
 
         // Index for full text search
         createFullTextIndex();

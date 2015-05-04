@@ -39,6 +39,13 @@ public interface MetadataRepository {
     String getTypeAttributeName();
 
     /**
+     * Returns the property key used to store super type names.
+     *
+     * @return property key used to store super type names.
+     */
+    String getSuperTypeAttributeName();
+
+    /**
      * Return the property key used to store a given traitName in the repository.
      *
      * @param dataType  data type

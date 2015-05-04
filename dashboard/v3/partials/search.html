@@ -1,0 +1,127 @@
+<!--
+~ Licensed to the Apache Software Foundation (ASF) under one
+~ or more contributor license agreements.  See the NOTICE file
+~ distributed with this work for additional information
+~ regarding copyright ownership.  The ASF licenses this file
+~ to you under the Apache License, Version 2.0 (the
+~ "License"); you may not use this file except in compliance
+~ with the License.  You may obtain a copy of the License at
+~
+~     http://www.apache.org/licenses/LICENSE-2.0
+~
+~ Unless required by applicable law or agreed to in writing, software
+~ distributed under the License is distributed on an "AS IS" BASIS,
+~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+~ See the License for the specific language governing permissions and
+~ limitations under the License.
+-->       <!-- Page Content -->
+   
+    <!--right panel-->
+    <div class="col-lg-8 mrgl45">
+        <div class="col-lg-12">
+            <h4 class="greyt" ng-hide="isUndefined(SearchQuery)" style="font: 15px sans-serif">{{itemlength}} results found for {{SearchQuery}}</h4>
+            <h4 ng-show="isUndefined(SearchQuery)">Results</h4>
+        </div>
+        <div class="col-lg-12 rightpanal">
+            <!--1-->
+            <div class="col-lg-12 div_ex" style="margin-top:30px" ng-repeat="(key, value) in pagedItems[currentPage]">
+                <div class="row">
+
+                    <div ng-repeat="(k, v) in configdata">
+                    <div class="col-xs-10" ng-if="datatype === k">
+                            <span ng-repeat="(key1, value1) in v">
+
+                                <span ng-if="isString(value1)">
+                                    <span  class="resulttxt" ng-if="!(value1=='name')">
+                                    <b> {{value1}} : </b> {{value[value1] | date:'medium'}}<span ng-show=" ! $last ">,</span>
+
+                                    </span>
+
+                                </span>
+								
+								  <span ng-if="value1.inputTables">
+                                    <span  class="resulttxt">
+                                    <b> inputTables : </b> <span ng-repeat="(inkey, invalue) in value.inputTables"> <span ng-controller="GuidController"> <span ng-init="getGuidName(invalue.id)"> <span ng-repeat="x in gnew track by $index">{{x}}</span>, </span>  </span>  </span>
+
+                                    </span>
+
+                                </span>
+								
+                                <div ng-if="value1.$id$">
+
+                                        <div  class="col-lg-12" style="margin-left:-40px;">
+                                            <img src="img/arrow.png"> <span class="guidtxt">
+                                            <a ui-sref="details({ Id: value['$id$'].id })" style="color: #636364 !important;">{{value['name']}}</a></span>
+                                         </div>
+										 </br>
+                                </div>
+                                 <div ng-if="value1.instanceInfo" ng-controller="GuidController">
+
+                                    <div  class="col-lg-12" style="margin-left:-40px;">
+                                        <img src="img/arrow.png"> <span class="guidtxt" ui-sref="details({ Id: value['instanceInfo'].guid })" style="color: #636364 !important;" ng-init="getGuidName(value['instanceInfo'].guid)">
+                                           
+                                            <a  ui-sref="details({ Id: value['instanceInfo'].guid })" style="color: #636364 !important;" ng-repeat="x in gnew track by $index">{{x}}</a>
+
+                                        </span>
+                                    </div>
+                                    </br>
+                                    <div  class="col-lg-12" style="margin-left: -15px;">
+                                        <p>{{value['instanceInfo'].typeName}}</p>
+                                    </div>
+                                </div>
+
+
+								 <div ng-if="value1.description">
+
+                                        <div  class="col-lg-12" style="margin-left: -15px;">                                            
+                                           <p>{{value['description']}}</p>
+                                         </div>
+										 </br>
+                                </div>
+                                <div  ng-if="value1.$traits$" class="col-lg-12 guidtxt2" style="margin-left: -15px;">Tags:
+                                    <b ng-if="isObject(value['$traits$'])">
+                                        <u ng-repeat="(keytag, valtag) in value['$traits$']">
+                                    <a ng-click="updateVars($event)"  ui-sref="Search({ searchid: keytag })" style="color: #636364 !important;">{{keytag}}</a>
+                                        </u>
+                                </b>
+                            </div>
+							
+                        </span>
+                    </div>
+
+                    <!--1-->
+
+                    </div>
+                         </div>
+                     </div>
+        <div class="col-lg-12 img2" align="right"><img src="img/img2.png"></div>
+<br/>
+ <br/>
+   <br/>
+        <div class="col-lg-12" >
+
+
+            <!-- DC Pagination:A1 Start -->
+            <ul class="tsc_pagination tsc_paginationA tsc_paginationA01" style="margin-top:-30px" ng-show="Showpaging(pagedItems.length)">
+
+                <li ng-class="{disabled: currentPage == 0}"><a href ng-click="firstPage()" class="first">First</a></li>
+                <li><a href ng-click="prevPage()" class="previous">Previous</a></li>
+                <li ng-repeat="n in range(pagedItems.length)" nd-class="{current: n == currentPage}" ng-click="setPage()"><a href ng-bind="n+1">1</a></li>
+                <li ng-class="{disabled: currentPage == pagedItems.length-1}"><a href ng-click="nextPage()"  class="next">Next</a></li>
+                <li ng-class="{disabled: currentPage == pagedItems.length-1}"><a href ng-click="lastPage()" class="last">Last</a></li>
+
+
+
+
+            </ul>
+        </div>
+                 </div>
+</div>
+
+
+
+
+
+
+
+

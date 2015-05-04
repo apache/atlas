@@ -120,7 +120,7 @@ class DSLTest {
         Assert.assertEquals(s"${i.o.asInstanceOf[java.util.Map[_, _]].keySet}", "[b, a]")
 
         // 5. Serialize mytype instance to Json
-        Assert.assertEquals(s"${pretty(render(i))}", "{\n  \"$typeName$\":\"mytype\",\n  \"e\":1,\n  \"n\":[1,1.100000000000000088817841970012523233890533447265625],\n  \"h\":1.0,\n  \"b\":true,\n  \"k\":1,\n  \"j\":1,\n  \"d\":2,\n  \"m\":[1,1],\n  \"g\":1,\n  \"a\":1,\n  \"i\":1.0,\n  \"c\":1,\n  \"l\":\"2014-12-03\",\n  \"f\":1,\n  \"o\":{\n    \"b\":2.0,\n    \"a\":1.0\n  }\n}")
+        Assert.assertEquals(s"${pretty(render(i))}", "{\n  \"$typeName$\":\"mytype\",\n  \"e\":1," + "\n  \"n\":[1,1.100000000000000088817841970012523233890533447265625],\n  \"h\":1.0,\n  \"b\":true,\n  \"k\":1,\n  \"j\":1,\n  \"d\":2,\n  \"m\":[1,1],\n  \"g\":1,\n  \"a\":1,\n  \"i\":1.0,\n  \"c\":1,\n  \"l\":\"2014-12-03\",\n  \"f\":1,\n  \"o\":{\n    \"b\":2.0,\n    \"a\":1.0\n  }\n}")
     }
 
     @Test def test2 {

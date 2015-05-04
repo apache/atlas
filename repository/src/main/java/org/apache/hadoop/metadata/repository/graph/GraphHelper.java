@@ -19,6 +19,7 @@
 package org.apache.hadoop.metadata.repository.graph;
 
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.TitanVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
@@ -31,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -44,9 +46,10 @@ public final class GraphHelper {
     }
 
     public static Vertex createVertexWithIdentity(Graph graph,
-                                                  ITypedReferenceableInstance typedInstance) {
+                                                  ITypedReferenceableInstance typedInstance,
+                                                  Set<String> superTypeNames) {
         final Vertex vertexWithIdentity = createVertexWithoutIdentity(
-                graph, typedInstance.getTypeName(), typedInstance.getId());
+                graph, typedInstance.getTypeName(), typedInstance.getId(), superTypeNames);
 
         // add identity
         final String guid = UUID.randomUUID().toString();
@@ -57,11 +60,18 @@ public final class GraphHelper {
 
     public static Vertex createVertexWithoutIdentity(Graph graph,
                                                      String typeName,
-                                                     Id typedInstanceId) {
+                                                     Id typedInstanceId,
+                                                     Set<String> superTypeNames) {
         final Vertex vertexWithoutIdentity = graph.addVertex(null);
 
         // add type information
         vertexWithoutIdentity.setProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, typeName);
+
+        // add super types
+        for (String superTypeName : superTypeNames) {
+            ((TitanVertex) vertexWithoutIdentity).addProperty(
+                    Constants.SUPER_TYPES_PROPERTY_KEY, superTypeName);
+        }
 
         // add version information
         vertexWithoutIdentity.setProperty(Constants.VERSION_PROPERTY_KEY, typedInstanceId.version);
@@ -75,7 +85,7 @@ public final class GraphHelper {
 
     public static Edge addEdge(TitanGraph titanGraph, Vertex fromVertex, Vertex toVertex,
                                String edgeLabel) {
-        LOG.debug("Adding edge for {} -> struct label {} -> v{}",
+        LOG.debug("Adding edge for {} -> label {} -> {}",
                 fromVertex, edgeLabel, toVertex);
 
         return titanGraph.addEdge(null, fromVertex, toVertex, edgeLabel);

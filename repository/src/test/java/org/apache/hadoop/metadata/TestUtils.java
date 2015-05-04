@@ -151,7 +151,7 @@ public final class TestUtils {
 
         jane.set("name", "Jane");
         jane.set("department", hrDept);
-        janeAddr.set("street", "Great Americal Parkway");
+        janeAddr.set("street", "Great America Parkway");
         janeAddr.set("city", "Santa Clara");
         jane.set("address", janeAddr);
 
