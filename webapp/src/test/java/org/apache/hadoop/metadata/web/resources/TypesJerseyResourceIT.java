@@ -70,7 +70,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
             System.out.println("typesAsJSON = " + typesAsJSON);
 
             WebResource resource = service
-                    .path("api/metadata/types/submit");
+                    .path("api/metadata/types");
 
             ClientResponse clientResponse = resource
                     .accept(MediaType.APPLICATION_JSON)
@@ -93,7 +93,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
             System.out.println("typeName = " + typeDefinition.typeName);
 
             WebResource resource = service
-                    .path("api/metadata/types/definition")
+                    .path("api/metadata/types")
                     .path(typeDefinition.typeName);
 
             ClientResponse clientResponse = resource
@@ -114,7 +114,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testGetDefinitionForNonexistentType() throws Exception {
         WebResource resource = service
-                .path("api/metadata/types/definition")
+                .path("api/metadata/types")
                 .path("blah");
 
         ClientResponse clientResponse = resource
@@ -127,7 +127,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
     @Test(dependsOnMethods = "testSubmit")
     public void testGetTypeNames() throws Exception {
         WebResource resource = service
-                .path("api/metadata/types/list");
+                .path("api/metadata/types");
 
         ClientResponse clientResponse = resource
                 .accept(MediaType.APPLICATION_JSON)
@@ -150,9 +150,10 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         String[] traitsAdded = addTraits();
 
         WebResource resource = service
-                .path("api/metadata/types/traits/list");
+                .path("api/metadata/types");
 
         ClientResponse clientResponse = resource
+                .queryParam("type", TypesResource.TRAIT)
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.GET, ClientResponse.class);

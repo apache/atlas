@@ -69,7 +69,7 @@ public class HiveLineageResource {
      * @param tableName table name
      */
     @GET
-    @Path("inputs/{tableName}")
+    @Path("table/{tableName}/inputs")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response inputs(@Context HttpServletRequest request,
@@ -103,7 +103,7 @@ public class HiveLineageResource {
      * @param tableName table name
      */
     @GET
-    @Path("outputs/{tableName}")
+    @Path("table/{tableName}/outputs")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response outputs(@Context HttpServletRequest request,
@@ -137,7 +137,7 @@ public class HiveLineageResource {
      * @param tableName table name
      */
     @GET
-    @Path("schema/{tableName}")
+    @Path("table/{tableName}/schema")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response schema(@Context HttpServletRequest request,

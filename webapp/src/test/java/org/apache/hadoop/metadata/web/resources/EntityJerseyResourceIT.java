@@ -152,7 +152,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     private ClientResponse addProperty(String guid, String property, String value) {
         WebResource resource = service
-                .path("api/metadata/entities/update")
+                .path("api/metadata/entities")
                 .path(guid);
 
         return resource.queryParam("property", property).queryParam("value", value)
@@ -163,7 +163,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     private ClientResponse getEntityDefinition(String guid) {
         WebResource resource = service
-                .path("api/metadata/entities/definition")
+                .path("api/metadata/entities")
                 .path(guid);
         return resource.accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
@@ -182,7 +182,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testGetInvalidEntityDefinition() throws Exception {
         WebResource resource = service
-                .path("api/metadata/entities/definition")
+                .path("api/metadata/entities")
                 .path("blah");
 
         ClientResponse clientResponse = resource
@@ -198,8 +198,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test(dependsOnMethods = "testSubmitEntity")
     public void testGetEntityList() throws Exception {
         ClientResponse clientResponse = service
-                .path("api/metadata/entities/list/")
-                .path(TABLE_TYPE)
+                .path("api/metadata/entities")
+                .queryParam("type", TABLE_TYPE)
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.GET, ClientResponse.class);
@@ -219,7 +219,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testGetEntityListForBadEntityType() throws Exception {
         ClientResponse clientResponse = service
-                .path("api/metadata/entities/list/blah")
+                .path("api/metadata/entities/blah")
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.GET, ClientResponse.class);
@@ -235,7 +235,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         addNewType();
 
         ClientResponse clientResponse = service
-                .path("api/metadata/entities/list/test")
+                .path("api/metadata/entities/test")
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.GET, ClientResponse.class);
@@ -266,8 +266,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     public void testGetTraitNames() throws Exception {
         final String guid = tableId._getId();
         ClientResponse clientResponse = service
-                .path("api/metadata/entities/traits/list")
+                .path("api/metadata/entities")
                 .path(guid)
+                .path("traits")
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.GET, ClientResponse.class);
@@ -299,8 +300,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         final String guid = tableId._getId();
         ClientResponse clientResponse = service
-                .path("api/metadata/entities/traits/add")
+                .path("api/metadata/entities")
                 .path(guid)
+                .path("traits")
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
@@ -328,8 +330,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
 
         ClientResponse clientResponse = service
-                .path("api/metadata/entities/traits/add")
+                .path("api/metadata/entities")
                 .path("random")
+                .path("traits")
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
@@ -343,12 +346,13 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         final String guid = tableId._getId();
 
         ClientResponse clientResponse = service
-                .path("api/metadata/entities/traits/delete")
+                .path("api/metadata/entities")
                 .path(guid)
+                .path("traits")
                 .path(traitName)
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
-                .method(HttpMethod.PUT, ClientResponse.class);
+                .method(HttpMethod.DELETE, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
         String responseAsString = clientResponse.getEntity(String.class);
@@ -365,12 +369,13 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         final String traitName = "blah_trait";
 
         ClientResponse clientResponse = service
-                .path("api/metadata/entities/traits/delete")
+                .path("api/metadata/entities")
                 .path("random")
+                .path("traits")
                 .path(traitName)
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
-                .method(HttpMethod.PUT, ClientResponse.class);
+                .method(HttpMethod.DELETE, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(),
                 Response.Status.BAD_REQUEST.getStatusCode());
     }
