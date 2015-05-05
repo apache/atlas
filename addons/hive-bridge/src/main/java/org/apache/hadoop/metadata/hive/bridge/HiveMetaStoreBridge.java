@@ -203,10 +203,7 @@ public class HiveMetaStoreBridge {
                                   Referenceable dbReferenceable,
                                   Referenceable tableReferenceable,
                                   Referenceable sdReferenceable) throws Exception {
-        Table table = new Table();
-        table.setDbName(db);
-        table.setTableName(tableName);
-        Set<Partition> tableParts = hiveClient.getAllPartitionsOf(table);
+        Set<Partition> tableParts = hiveClient.getAllPartitionsOf(new Table(Table.getEmptyTable(db, tableName)));
 
         if (tableParts.size() > 0) {
             for (Partition hivePart : tableParts) {
