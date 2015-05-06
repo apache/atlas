@@ -219,7 +219,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testGetEntityListForBadEntityType() throws Exception {
         ClientResponse clientResponse = service
-                .path("api/metadata/entities/blah")
+                .path("api/metadata/entities")
+                .queryParam("type", "blah")
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.GET, ClientResponse.class);
@@ -235,7 +236,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         addNewType();
 
         ClientResponse clientResponse = service
-                .path("api/metadata/entities/test")
+                .path("api/metadata/entities")
+                .queryParam("type", "test")
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.GET, ClientResponse.class);

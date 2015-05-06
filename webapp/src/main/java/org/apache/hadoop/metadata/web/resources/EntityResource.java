@@ -150,7 +150,7 @@ public class EntityResource {
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getEntityList(@QueryParam("type") String entityType,
+    public Response getEntityListByType(@QueryParam("type") String entityType,
                                   @DefaultValue("0") @QueryParam("offset") Integer offset,
                                   @QueryParam("numResults") Integer resultsPerPage) {
         Preconditions.checkNotNull(entityType, "Entity type cannot be null");

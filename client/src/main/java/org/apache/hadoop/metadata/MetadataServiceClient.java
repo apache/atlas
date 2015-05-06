@@ -52,29 +52,31 @@ public class MetadataServiceClient {
         service = client.resource(UriBuilder.fromUri(baseUrl).build());
     }
 
+    private static final String BASE_URI = "api/metadata/";
+
     static enum API {
         //Type operations
-        CREATE_TYPE("api/metadata/types/submit", HttpMethod.POST),
-        GET_TYPE("api/metadata/types/definition", HttpMethod.GET),
-        LIST_TYPES("api/metadata/types/list", HttpMethod.GET),
-        LIST_TRAIT_TYPES("api/metadata/types/traits/list", HttpMethod.GET),
+        CREATE_TYPE(BASE_URI + "types", HttpMethod.POST),
+        GET_TYPE(BASE_URI + "types", HttpMethod.GET),
+        LIST_TYPES(BASE_URI + "types", HttpMethod.GET),
+        LIST_TRAIT_TYPES(BASE_URI + "types?type=trait", HttpMethod.GET),
 
         //Entity operations
-        CREATE_ENTITY("api/metadata/entities/submit", HttpMethod.POST),
-        GET_ENTITY("api/metadata/entities/definition", HttpMethod.GET),
-        UPDATE_ENTITY("api/metadata/entities/update", HttpMethod.PUT),
-        LIST_ENTITY("api/metadata/entities/list", HttpMethod.GET),
+        CREATE_ENTITY(BASE_URI + "entities", HttpMethod.POST),
+        GET_ENTITY(BASE_URI + "entities", HttpMethod.GET),
+        UPDATE_ENTITY(BASE_URI + "entities", HttpMethod.PUT),
+        LIST_ENTITY(BASE_URI + "entities", HttpMethod.GET),
 
         //Trait operations
-        ADD_TRAITS("api/metadata/traits/add", HttpMethod.POST),
-        DELETE_TRAITS("api/metadata/traits/delete", HttpMethod.PUT),
-        LIST_TRAITS("api/metadata/traits/list", HttpMethod.GET),
+        ADD_TRAITS(BASE_URI + "traits", HttpMethod.POST),
+        DELETE_TRAITS(BASE_URI + "traits", HttpMethod.DELETE),
+        LIST_TRAITS(BASE_URI + "traits", HttpMethod.GET),
 
         //Search operations
-        SEARCH("api/metadata/discovery/search", HttpMethod.GET),
-        SEARCH_DSL("api/metadata/discovery/search/dsl", HttpMethod.GET),
-        SEARCH_GREMLIN("api/metadata/discovery/search/gremlin", HttpMethod.GET),
-        SEARCH_FULL_TEXT("api/metadata/discovery/search/fulltext", HttpMethod.GET);
+        SEARCH(BASE_URI + "discovery/search", HttpMethod.GET),
+        SEARCH_DSL(BASE_URI + "discovery/search/dsl", HttpMethod.GET),
+        SEARCH_GREMLIN(BASE_URI + "discovery/search/gremlin", HttpMethod.GET),
+        SEARCH_FULL_TEXT(BASE_URI + "discovery/search/fulltext", HttpMethod.GET);
 
         private final String method;
         private final String path;
