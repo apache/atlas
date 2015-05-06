@@ -54,9 +54,10 @@ public class TypesResource {
 
     private final MetadataService metadataService;
 
-    static final String TRAIT = "trait";
-    static final String CLASS = "class";
-    static final String STRUCT = "struct";
+    static final String TYPE_ALL = "all";
+    static final String TYPE_TRAIT = "trait";
+    static final String TYPE_CLASS = "class";
+    static final String TYPE_STRUCT = "struct";
 
     @Inject
     public TypesResource(MetadataService metadataService) {
@@ -120,44 +121,28 @@ public class TypesResource {
     }
 
     /**
-     * Gets the list of type names registered in the type system.
-     */
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getTypeNames(@Context HttpServletRequest request) {
-        try {
-            final List<String> typeNamesList = metadataService.getTypeNamesList();
-
-            JSONObject response = new JSONObject();
-            response.put(MetadataServiceClient.RESULTS, new JSONArray(typeNamesList));
-            response.put(MetadataServiceClient.TOTAL_SIZE, typeNamesList.size());
-            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-
-            return Response.ok(response).build();
-        } catch (Exception e) {
-            LOG.error("Unable to get types list", e);
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        }
-    }
-
-    /**
      * Gets the list of trait type names registered in the type system.
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response getTypesByFilter(@Context HttpServletRequest request,
-                                  @DefaultValue(TRAIT) @QueryParam("type") String type) {
+                                  @DefaultValue(TYPE_ALL) @QueryParam("type") String type) {
         try {
-            Preconditions.checkNotNull(type, "type cannot be null");
             List<String> result = null;
             switch(type) {
-                case TRAIT :
+                case TYPE_ALL :
+                    result = metadataService.getTypeNamesList();
+                    break;
+                case TYPE_TRAIT :
                     result = metadataService.getTraitNamesList();
-                case STRUCT :
-                case CLASS :
-                    //TBD for ÇLASS, STRUCT
-                    throw new UnsupportedOperationException("Unsupported operation on " + type);
+                    break;
+                case TYPE_STRUCT :
+                case TYPE_CLASS :
+                    //TODO for ÇLASS, STRUCT
+                default:
+                    LOG.error("Unsupported typeName while retrieving type list {}", type);
+                    throw new WebApplicationException(
+                        Servlets.getErrorResponse("Unsupported type " + type, Response.Status.BAD_REQUEST));
             }
 
             JSONObject response = new JSONObject();

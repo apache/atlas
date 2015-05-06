@@ -65,7 +65,7 @@ public abstract class BaseResourceIT {
 
     protected void createType(String typesAsJSON) throws Exception {
         WebResource resource = service
-                .path("api/metadata/types/submit");
+                .path("api/metadata/types");
 
         ClientResponse clientResponse = resource
                 .accept(MediaType.APPLICATION_JSON)

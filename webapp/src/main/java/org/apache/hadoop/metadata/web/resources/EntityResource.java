@@ -53,6 +53,8 @@ public class EntityResource {
 
     private static final String GUID = "GUID";
     private static final String TRAIT_NAME = "traitName";
+    static final String TRAITS = "traits";
+    static final String TRAIT = "trait";
 
     private final MetadataService metadataService;
 
@@ -281,7 +283,7 @@ public class EntityResource {
      * @param traitName name of the trait
      */
     @DELETE
-    @Path("{guid}/traits/{traitName}")
+    @Path("{guid}/trait/{traitName}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response deleteTrait(@Context HttpServletRequest request,
@@ -301,11 +303,11 @@ public class EntityResource {
 
             return Response.ok(response).build();
         } catch (MetadataException | IllegalArgumentException e) {
-            LOG.error("Unable to add trait name={} for entity={}", traitName, guid, e);
+            LOG.error("Unable to delete trait name={} for entity={}", traitName, guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (JSONException e) {
-            LOG.error("Unable to add trait name={} for entity={}", traitName, guid, e);
+            LOG.error("Unable to delete trait name={} for entity={}", traitName, guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }

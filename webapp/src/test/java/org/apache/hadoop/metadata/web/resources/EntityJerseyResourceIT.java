@@ -268,7 +268,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         ClientResponse clientResponse = service
                 .path("api/metadata/entities")
                 .path(guid)
-                .path("traits")
+                .path(EntityResource.TRAITS)
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.GET, ClientResponse.class);
@@ -302,7 +302,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         ClientResponse clientResponse = service
                 .path("api/metadata/entities")
                 .path(guid)
-                .path("traits")
+                .path(EntityResource.TRAITS)
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
@@ -332,7 +332,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         ClientResponse clientResponse = service
                 .path("api/metadata/entities")
                 .path("random")
-                .path("traits")
+                .path(EntityResource.TRAITS)
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
@@ -348,7 +348,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         ClientResponse clientResponse = service
                 .path("api/metadata/entities")
                 .path(guid)
-                .path("traits")
+                .path(EntityResource.TRAIT)
                 .path(traitName)
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
@@ -371,7 +371,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         ClientResponse clientResponse = service
                 .path("api/metadata/entities")
                 .path("random")
-                .path("traits")
+                .path(EntityResource.TRAIT)
                 .path(traitName)
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
