@@ -59,9 +59,11 @@ for i in "${BASEDIR}/bridge/hive/"*.jar; do
   METADATACPPATH="${METADATACPPATH}:$i"
 done
 
-echo $METADATACPPATH
+# log dir for applications
+METADATA_LOG_DIR="${METADATA_LOG_DIR:-$BASEDIR/logs}"
+export METADATA_LOG_DIR
 
-JAVA_PROPERTIES="$METADATA_OPTS"
+JAVA_PROPERTIES="$METADATA_OPTS -Dmetadata.log.dir=$METADATA_LOG_DIR -Dmetadata.log.file=import-hive.log"
 shift
 
 while [[ ${1} =~ ^\-D ]]; do
@@ -70,6 +72,7 @@ while [[ ${1} =~ ^\-D ]]; do
 done
 TIME=`date +%Y%m%d%H%M%s`
 
+#Add hive conf in classpath
 if [ ! -z "$HIVE_CONF_DIR" ]; then
     HIVE_CP=$HIVE_CONF_DIR
 elif [ ! -z "$HIVE_HOME" ]; then
@@ -86,5 +89,5 @@ echo Using Hive configuration directory [$HIVE_CP]
 ${JAVA_BIN} ${JAVA_PROPERTIES} -cp ${HIVE_CP}:${METADATACPPATH} org.apache.hadoop.metadata.hive.bridge.HiveMetaStoreBridge
 
 RETVAL=$?
-[ $RETVAL -eq 0 ] && echo Hive Data Model Imported!!!
-[ $RETVAL -ne 0 ] && echo Failure in Hive Data Model import!!!
+[ $RETVAL -eq 0 ] && echo Hive Data Model imported successfully!!!
+[ $RETVAL -ne 0 ] && echo Failed to import Hive Data Model!!!

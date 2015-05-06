@@ -22,6 +22,10 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
+import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.typesystem.Referenceable;
+import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization;
+import org.apache.hadoop.metadata.typesystem.json.Serialization;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -149,8 +153,14 @@ public class MetadataServiceClient {
      * @return result json object
      * @throws MetadataServiceException
      */
-    public JSONObject getEntity(String guid) throws MetadataServiceException {
-        return callAPI(API.GET_ENTITY, null, guid);
+    public ITypedReferenceableInstance getEntity(String guid) throws MetadataServiceException {
+        JSONObject jsonResponse = callAPI(API.GET_ENTITY, null, guid);
+        try {
+            String entityInstanceDefinition = jsonResponse.getString(MetadataServiceClient.RESULTS);
+            return Serialization.fromJson(entityInstanceDefinition);
+        } catch (JSONException e) {
+            throw new MetadataServiceException(e);
+        }
     }
 
     public JSONObject searchEntity(String searchQuery) throws MetadataServiceException {
@@ -167,14 +177,14 @@ public class MetadataServiceClient {
      * @return result json object
      * @throws MetadataServiceException
      */
-    public JSONObject rawSearch(String typeName, String attributeName,
-                                Object attributeValue) throws MetadataServiceException {
-        String gremlinQuery = String.format(
-                "g.V.has(\"typeName\",\"%s\").and(_().has(\"%s.%s\", T.eq, \"%s\")).toList()",
-                typeName, typeName, attributeName, attributeValue);
-        return searchByGremlin(gremlinQuery);
-//        String dslQuery = String.format("%s where %s = \"%s\"", typeName, attributeName, attributeValue);
-//        return searchByDSL(dslQuery);
+    public JSONArray rawSearch(String typeName, String attributeName, Object attributeValue) throws
+            MetadataServiceException {
+//        String gremlinQuery = String.format(
+//                "g.V.has(\"typeName\",\"%s\").and(_().has(\"%s.%s\", T.eq, \"%s\")).toList()",
+//                typeName, typeName, attributeName, attributeValue);
+//        return searchByGremlin(gremlinQuery);
+        String dslQuery = String.format("%s where %s = \"%s\"", typeName, attributeName, attributeValue);
+        return searchByDSL(dslQuery);
     }
 
     /**
@@ -183,10 +193,15 @@ public class MetadataServiceClient {
      * @return result json object
      * @throws MetadataServiceException
      */
-    public JSONObject searchByDSL(String query) throws MetadataServiceException {
+    public JSONArray searchByDSL(String query) throws MetadataServiceException {
         WebResource resource = getResource(API.SEARCH_DSL);
         resource = resource.queryParam("query", query);
-        return callAPIWithResource(API.SEARCH_DSL, resource);
+        JSONObject result = callAPIWithResource(API.SEARCH_DSL, resource);
+        try {
+            return result.getJSONObject("results").getJSONArray("rows");
+        } catch (JSONException e) {
+            throw new MetadataServiceException(e);
+        }
     }
 
     /**
