@@ -53,8 +53,6 @@ public class EntityResource {
 
     private static final String GUID = "GUID";
     private static final String TRAIT_NAME = "traitName";
-    static final String TRAITS = "traits";
-    static final String TRAIT = "trait";
 
     private final MetadataService metadataService;
 
