@@ -104,7 +104,6 @@ class GremlinEvaluator(qry: GremlinQuery, persistenceStrategy: GraphPersistenceS
                     val v = rV.getColumn(src).get(idx)
                     sInstance.set(cName, persistenceStrategy.constructInstance(aE.dataType, v))
                 }
-                sInstance
               addPathStruct(r, sInstance)
             }
             GremlinQueryResult(qry.expr.toString, rType, rows.toList)
