@@ -69,7 +69,7 @@ public class MetadataServiceClient {
         CREATE_ENTITY(BASE_URI + URI_ENTITIES, HttpMethod.POST),
         GET_ENTITY(BASE_URI + URI_ENTITIES, HttpMethod.GET),
         UPDATE_ENTITY(BASE_URI + URI_ENTITIES, HttpMethod.PUT),
-        LIST_ENTITY(BASE_URI + URI_ENTITIES, HttpMethod.GET),
+        LIST_ENTITY(BASE_URI + URI_ENTITIES + "?type=", HttpMethod.GET),
 
         //Trait operations
         ADD_TRAITS(BASE_URI + URI_TRAITS, HttpMethod.POST),
