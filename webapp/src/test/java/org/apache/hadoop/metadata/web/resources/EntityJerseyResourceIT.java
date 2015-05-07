@@ -66,6 +66,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     private static final String DATABASE_NAME = "foo";
     private static final String TABLE_TYPE = "hive_table_type";
     private static final String TABLE_NAME = "bar";
+    private static final String TRAITS = "traits";
+    private static final String TRAIT = "trait";
 
     private Referenceable tableInstance;
     private Id tableId;
@@ -270,7 +272,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         ClientResponse clientResponse = service
                 .path("api/metadata/entities")
                 .path(guid)
-                .path(EntityResource.TRAITS)
+                .path(TRAITS)
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.GET, ClientResponse.class);
@@ -304,7 +306,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         ClientResponse clientResponse = service
                 .path("api/metadata/entities")
                 .path(guid)
-                .path(EntityResource.TRAITS)
+                .path(TRAITS)
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
@@ -334,7 +336,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         ClientResponse clientResponse = service
                 .path("api/metadata/entities")
                 .path("random")
-                .path(EntityResource.TRAITS)
+                .path(TRAITS)
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
@@ -350,7 +352,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         ClientResponse clientResponse = service
                 .path("api/metadata/entities")
                 .path(guid)
-                .path(EntityResource.TRAIT)
+                .path(TRAIT)
                 .path(traitName)
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
@@ -373,7 +375,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         ClientResponse clientResponse = service
                 .path("api/metadata/entities")
                 .path("random")
-                .path(EntityResource.TRAIT)
+                .path(TRAIT)
                 .path(traitName)
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)

@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.services.MetadataService;
+import org.apache.hadoop.metadata.typesystem.types.DataTypes;
 import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -55,9 +56,6 @@ public class TypesResource {
     private final MetadataService metadataService;
 
     static final String TYPE_ALL = "all";
-    static final String TYPE_TRAIT = "trait";
-    static final String TYPE_CLASS = "class";
-    static final String TYPE_STRUCT = "struct";
 
     @Inject
     public TypesResource(MetadataService metadataService) {
@@ -129,20 +127,11 @@ public class TypesResource {
                                   @DefaultValue(TYPE_ALL) @QueryParam("type") String type) {
         try {
             List<String> result = null;
-            switch(type) {
-                case TYPE_ALL :
-                    result = metadataService.getTypeNamesList();
-                    break;
-                case TYPE_TRAIT :
-                    result = metadataService.getTraitNamesList();
-                    break;
-                case TYPE_STRUCT :
-                case TYPE_CLASS :
-                    //TODO for ÇLASS, STRUCT
-                default:
-                    LOG.error("Unsupported typeName while retrieving type list {}", type);
-                    throw new WebApplicationException(
-                        Servlets.getErrorResponse("Unsupported type " + type, Response.Status.BAD_REQUEST));
+            if (TYPE_ALL.equals(type)) {
+                result = metadataService.getTypeNamesList();
+            } else {
+                DataTypes.TypeCategory typeCategory = DataTypes.TypeCategory.valueOf(type);
+                result = metadataService.getTypeNamesByCategory(typeCategory);
             }
 
             JSONObject response = new JSONObject();
@@ -151,6 +140,10 @@ public class TypesResource {
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
 
             return Response.ok(response).build();
+        } catch(IllegalArgumentException ie) {
+            LOG.error("Unsupported typeName while retrieving type list {}", type);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse("Unsupported type " + type, Response.Status.BAD_REQUEST));
         } catch (Exception e) {
             LOG.error("Unable to get types list", e);
             throw new WebApplicationException(

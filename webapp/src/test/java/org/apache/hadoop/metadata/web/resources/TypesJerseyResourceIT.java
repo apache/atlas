@@ -153,7 +153,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
                 .path("api/metadata/types");
 
         ClientResponse clientResponse = resource
-                .queryParam("type", TypesResource.TYPE_TRAIT)
+                .queryParam("type", DataTypes.TypeCategory.TRAIT.name())
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.GET, ClientResponse.class);
