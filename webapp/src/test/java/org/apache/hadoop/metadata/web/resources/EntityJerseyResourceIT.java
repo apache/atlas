@@ -410,7 +410,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                         new AttributeDefinition("serde2",
                                 "serdeType", Multiplicity.REQUIRED, false, null),
                         new AttributeDefinition("database",
-                                DATABASE_TYPE, Multiplicity.REQUIRED, true, null));
+                                DATABASE_TYPE, Multiplicity.REQUIRED, true, null),
+                        new AttributeDefinition("compressed",
+                                DataTypes.BOOLEAN_TYPE.getName(), Multiplicity.OPTIONAL, true, null));
 
         HierarchicalTypeDefinition<TraitType> classificationTraitDefinition =
                 TypesUtil.createTraitTypeDef("classification",
@@ -451,6 +453,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         tableInstance.set("level", 2);
         tableInstance.set("tableType", 1); // enum
         tableInstance.set("database", databaseInstance);
+        tableInstance.set("compressed", false);
 
         Struct traitInstance = (Struct) tableInstance.getTrait("classification");
         traitInstance.set("tag", "foundation_etl");
