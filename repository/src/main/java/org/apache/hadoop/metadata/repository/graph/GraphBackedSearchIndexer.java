@@ -314,9 +314,16 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
                     .dataType(propertyClass)
                     .make();
 
-            TitanGraphIndex vertexIndex = management.getGraphIndex(Constants.VERTEX_INDEX);
-            management.addIndexKey(vertexIndex, propertyKey);
-            management.commit();
+            if (propertyClass == Boolean.class) {
+                //Use standard index as backing index only supports string, int and geo types
+                management.buildIndex(propertyName, Vertex.class).addKey(propertyKey).buildCompositeIndex();
+                management.commit();
+            } else {
+                //Use backing index
+                TitanGraphIndex vertexIndex = management.getGraphIndex(Constants.VERTEX_INDEX);
+                management.addIndexKey(vertexIndex, propertyKey);
+                management.commit();
+            }
             LOG.info("Created mixed vertex index for property {}", propertyName);
         }
 
