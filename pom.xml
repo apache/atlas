@@ -823,7 +823,9 @@
                     <!--<skipTests>true</skipTests>-->
                     <forkMode>always</forkMode>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                    <argLine>-Djava.awt.headless=true</argLine>
+                    <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}
+                        -Dhadoop.tmp.dir=${project.build.directory}/tmp-hadoop-${user.name}
+                        -Xmx1024m -XX:MaxPermSize=512m</argLine>
                 </configuration>
                 <dependencies>
                     <dependency>

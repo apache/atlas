@@ -31,6 +31,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.*;
 
+import static org.apache.hadoop.metadata.security.SecurityProperties.*;
+
 /**
  *
  */
@@ -75,11 +77,11 @@ public class CredentialProviderUtilityIT {
                 CredentialProviderFactory.getProviders(conf).get(0);
 
         CredentialProvider.CredentialEntry entry =
-                provider.getCredentialEntry(SecureEmbeddedServer.KEYSTORE_PASSWORD_KEY);
+                provider.getCredentialEntry(KEYSTORE_PASSWORD_KEY);
         assertCredentialEntryCorrect(entry);
-        entry = provider.getCredentialEntry(SecureEmbeddedServer.TRUSTSTORE_PASSWORD_KEY);
+        entry = provider.getCredentialEntry(TRUSTSTORE_PASSWORD_KEY);
         assertCredentialEntryCorrect(entry);
-        entry = provider.getCredentialEntry(SecureEmbeddedServer.SERVER_CERT_PASSWORD_KEY);
+        entry = provider.getCredentialEntry(SERVER_CERT_PASSWORD_KEY);
         assertCredentialEntryCorrect(entry);
     }
 
@@ -138,11 +140,11 @@ public class CredentialProviderUtilityIT {
                 CredentialProviderFactory.getProviders(conf).get(0);
 
         CredentialProvider.CredentialEntry entry =
-                provider.getCredentialEntry(SecureEmbeddedServer.KEYSTORE_PASSWORD_KEY);
+                provider.getCredentialEntry(KEYSTORE_PASSWORD_KEY);
         assertCredentialEntryCorrect(entry);
-        entry = provider.getCredentialEntry(SecureEmbeddedServer.TRUSTSTORE_PASSWORD_KEY);
+        entry = provider.getCredentialEntry(TRUSTSTORE_PASSWORD_KEY);
         assertCredentialEntryCorrect(entry);
-        entry = provider.getCredentialEntry(SecureEmbeddedServer.SERVER_CERT_PASSWORD_KEY);
+        entry = provider.getCredentialEntry(SERVER_CERT_PASSWORD_KEY);
         assertCredentialEntryCorrect(entry);
     }
 
@@ -192,11 +194,11 @@ public class CredentialProviderUtilityIT {
                 CredentialProviderFactory.getProviders(conf).get(0);
 
         CredentialProvider.CredentialEntry entry =
-                provider.getCredentialEntry(SecureEmbeddedServer.KEYSTORE_PASSWORD_KEY);
+                provider.getCredentialEntry(KEYSTORE_PASSWORD_KEY);
         assertCredentialEntryCorrect(entry);
-        entry = provider.getCredentialEntry(SecureEmbeddedServer.TRUSTSTORE_PASSWORD_KEY);
+        entry = provider.getCredentialEntry(TRUSTSTORE_PASSWORD_KEY);
         assertCredentialEntryCorrect(entry);
-        entry = provider.getCredentialEntry(SecureEmbeddedServer.SERVER_CERT_PASSWORD_KEY);
+        entry = provider.getCredentialEntry(SERVER_CERT_PASSWORD_KEY);
         assertCredentialEntryCorrect(entry);
     }
 
@@ -260,11 +262,11 @@ public class CredentialProviderUtilityIT {
 
         char[] newpass = "newpass".toCharArray();
         CredentialProvider.CredentialEntry entry =
-                provider.getCredentialEntry(SecureEmbeddedServer.KEYSTORE_PASSWORD_KEY);
+                provider.getCredentialEntry(KEYSTORE_PASSWORD_KEY);
         assertCredentialEntryCorrect(entry, newpass);
-        entry = provider.getCredentialEntry(SecureEmbeddedServer.TRUSTSTORE_PASSWORD_KEY);
+        entry = provider.getCredentialEntry(TRUSTSTORE_PASSWORD_KEY);
         assertCredentialEntryCorrect(entry, newpass);
-        entry = provider.getCredentialEntry(SecureEmbeddedServer.SERVER_CERT_PASSWORD_KEY);
+        entry = provider.getCredentialEntry(SERVER_CERT_PASSWORD_KEY);
         assertCredentialEntryCorrect(entry, newpass);
     }
 }

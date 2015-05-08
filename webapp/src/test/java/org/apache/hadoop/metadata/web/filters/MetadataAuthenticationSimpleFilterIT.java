@@ -17,7 +17,7 @@
 package org.apache.hadoop.metadata.web.filters;
 
 import org.apache.commons.configuration.ConfigurationException;
-import org.apache.hadoop.metadata.web.BaseSecurityTest;
+import org.apache.hadoop.metadata.security.BaseSecurityTest;
 import org.apache.hadoop.metadata.web.service.EmbeddedServer;
 import org.mortbay.jetty.Server;
 import org.testng.Assert;
@@ -45,6 +45,8 @@ public class MetadataAuthenticationSimpleFilterIT extends BaseSecurityTest {
 
     @Test
     public void testSimpleLogin() throws Exception {
+        String originalConf = System.getProperty("metadata.conf");
+        System.setProperty("metadata.conf", System.getProperty("user.dir"));
         generateSimpleLoginConfiguration();
 
         TestEmbeddedServer server = new TestEmbeddedServer(23001, "webapp/target/metadata-governance");
@@ -71,6 +73,11 @@ public class MetadataAuthenticationSimpleFilterIT extends BaseSecurityTest {
             Assert.assertEquals(connection.getResponseCode(), 200);
         } finally {
             server.getServer().stop();
+            if (originalConf != null) {
+                System.setProperty("metadata.conf", originalConf);
+            } else {
+                System.clearProperty("metadata.conf");
+            }
         }
 
 

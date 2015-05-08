@@ -27,6 +27,7 @@ import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.PropertiesUtil;
 import org.apache.hadoop.metadata.RepositoryMetadataModule;
 import org.apache.hadoop.metadata.repository.typestore.ITypeStore;
 import org.apache.hadoop.metadata.typesystem.TypesDef;
@@ -80,10 +81,13 @@ public class GuiceServletConfig extends GuiceServletContextListener {
                         }
 
                         private void configureAuthenticationFilter() throws ConfigurationException {
-                            PropertiesConfiguration configuration =
-                                    new PropertiesConfiguration("application.properties");
-                            if (Boolean.valueOf(configuration.getString(HTTP_AUTHENTICATION_ENABLED))) {
-                                filter("/*").through(MetadataAuthenticationFilter.class);
+                            try {
+                                PropertiesConfiguration configuration = PropertiesUtil.getApplicationProperties();
+                                if (Boolean.valueOf(configuration.getString(HTTP_AUTHENTICATION_ENABLED))) {
+                                    filter("/*").through(MetadataAuthenticationFilter.class);
+                                }
+                            } catch (MetadataException e) {
+                                LOG.warn("Error loading configuration and initializing authentication filter", e);
                             }
                         }
                     });

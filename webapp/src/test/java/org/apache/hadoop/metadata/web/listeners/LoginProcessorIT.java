@@ -18,12 +18,10 @@ package org.apache.hadoop.metadata.web.listeners;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
-import org.apache.hadoop.metadata.web.BaseSecurityTest;
+import org.apache.hadoop.metadata.security.BaseSecurityTest;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.hadoop.util.Shell;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -99,15 +97,6 @@ public class LoginProcessorIT extends BaseSecurityTest {
         Assert.assertNotNull(kdc.getRealm());
 
         File keytabFile = createKeytab(kdc, kdcWorkDir, "dgi", "dgi.keytab");
-        String dgiServerPrincipal = Shell.WINDOWS ? "dgi/127.0.0.1" : "dgi/localhost";
-
-        StringBuilder jaas = new StringBuilder(1024);
-        jaas.append(createJAASEntry("Client", "dgi", keytabFile));
-        jaas.append(createJAASEntry("Server", dgiServerPrincipal, keytabFile));
-
-        File jaasFile = new File(kdcWorkDir, "jaas.txt");
-        FileUtils.write(jaasFile, jaas.toString());
-        bindJVMtoJAASFile(jaasFile);
 
         return keytabFile;
     }
