@@ -26,13 +26,15 @@ import org.apache.hadoop.security.alias.JavaKeyStoreProvider;
 import java.io.*;
 import java.util.Arrays;
 
+import static org.apache.hadoop.metadata.security.SecurityProperties.*;
+
 /**
  * A utility class for generating a credential provider containing the entries required for supporting the SSL implementation
  * of the DGC server.
  */
 public class CredentialProviderUtility {
-    private static final String[] KEYS = new String[] {SecureEmbeddedServer.KEYSTORE_PASSWORD_KEY,
-            SecureEmbeddedServer.TRUSTSTORE_PASSWORD_KEY, SecureEmbeddedServer.SERVER_CERT_PASSWORD_KEY};
+    private static final String[] KEYS = new String[] {KEYSTORE_PASSWORD_KEY,
+            TRUSTSTORE_PASSWORD_KEY, SERVER_CERT_PASSWORD_KEY};
 
     public static abstract class TextDevice {
         public abstract void printf(String fmt, Object... params);

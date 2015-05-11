@@ -24,12 +24,14 @@ import org.testng.annotations.Test;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import static org.apache.hadoop.metadata.security.SecurityProperties.*;
+
 public class SecureEmbeddedServerIT extends SecureEmbeddedServerITBase{
     @Test
     public void testServerConfiguredUsingCredentialProvider() throws Exception {
         // setup the configuration
         final PropertiesConfiguration configuration = new PropertiesConfiguration();
-        configuration.setProperty(SecureEmbeddedServer.CERT_STORES_CREDENTIAL_PROVIDER_PATH, providerUrl);
+        configuration.setProperty(CERT_STORES_CREDENTIAL_PROVIDER_PATH, providerUrl);
         // setup the credential provider
         setupCredentials();
 

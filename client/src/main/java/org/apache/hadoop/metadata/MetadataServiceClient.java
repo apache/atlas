@@ -22,13 +22,16 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
+import com.sun.jersey.client.urlconnection.URLConnectionClientHandler;
+import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.hadoop.metadata.security.SecureClientUtils;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
-import org.apache.hadoop.metadata.typesystem.Referenceable;
-import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization;
 import org.apache.hadoop.metadata.typesystem.json.Serialization;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MediaType;
@@ -37,23 +40,43 @@ import javax.ws.rs.core.UriBuilder;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.apache.hadoop.metadata.security.SecurityProperties.TLS_ENABLED;
+
 /**
  * Client for metadata.
  */
 public class MetadataServiceClient {
+    private static final Logger LOG = LoggerFactory.getLogger(MetadataServiceClient.class);
     public static final String REQUEST_ID = "requestId";
     public static final String RESULTS = "results";
     public static final String TOTAL_SIZE = "totalSize";
 
 
-    private final WebResource service;
+    private WebResource service;
 
     public MetadataServiceClient(String baseUrl) {
         DefaultClientConfig config = new DefaultClientConfig();
-        Client client = Client.create(config);
+        PropertiesConfiguration clientConfig = null;
+        try {
+            clientConfig = getClientProperties();
+            if (clientConfig.getBoolean(TLS_ENABLED)  || clientConfig.getString("metadata.http.authentication.type") != null) {
+                // create an SSL properties configuration if one doesn't exist.  SSLFactory expects a file, so forced to create a
+                // configuration object, persist it, then subsequently pass in an empty configuration to SSLFactory
+                SecureClientUtils.persistSSLClientConfiguration(clientConfig);
+            }
+        } catch (Exception e) {
+            LOG.info("Error processing client configuration.", e);
+        }
+        URLConnectionClientHandler handler = SecureClientUtils.getClientConnectionHandler(config, clientConfig);
+
+        Client client = new Client(handler, config);
         client.resource(UriBuilder.fromUri(baseUrl).build());
 
         service = client.resource(UriBuilder.fromUri(baseUrl).build());
+    }
+
+    protected PropertiesConfiguration getClientProperties() throws MetadataException {
+        return PropertiesUtil.getClientProperties();
     }
 
     static enum API {

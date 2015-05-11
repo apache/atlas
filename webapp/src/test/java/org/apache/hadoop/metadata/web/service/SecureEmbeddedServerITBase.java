@@ -45,6 +45,8 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.util.List;
 
+import static org.apache.hadoop.metadata.security.SecurityProperties.*;
+
 /**
  *
  */
@@ -69,7 +71,7 @@ public class SecureEmbeddedServerITBase {
                         return false;
                     }
                 });
-        System.setProperty("javax.net.ssl.trustStore", SecureEmbeddedServer.DEFAULT_KEYSTORE_FILE_LOCATION);
+        System.setProperty("javax.net.ssl.trustStore", DEFAULT_KEYSTORE_FILE_LOCATION);
         System.setProperty("javax.net.ssl.trustStorePassword", "keypass");
         System.setProperty("javax.net.ssl.trustStoreType", "JKS");
     }
@@ -122,7 +124,7 @@ public class SecureEmbeddedServerITBase {
     public void testMissingEntriesInCredentialProvider() throws Exception {
         // setup the configuration
         final PropertiesConfiguration configuration = new PropertiesConfiguration();
-        configuration.setProperty(SecureEmbeddedServer.CERT_STORES_CREDENTIAL_PROVIDER_PATH, providerUrl);
+        configuration.setProperty(CERT_STORES_CREDENTIAL_PROVIDER_PATH, providerUrl);
 
         try {
             secureEmbeddedServer = new SecureEmbeddedServer(21443, "webapp/target/metadata-governance") {
@@ -147,7 +149,7 @@ public class SecureEmbeddedServerITBase {
     @Test
     public void runOtherSuitesAgainstSecureServer() throws Exception {
         final PropertiesConfiguration configuration = new PropertiesConfiguration();
-        configuration.setProperty(SecureEmbeddedServer.CERT_STORES_CREDENTIAL_PROVIDER_PATH, providerUrl);
+        configuration.setProperty(CERT_STORES_CREDENTIAL_PROVIDER_PATH, providerUrl);
         // setup the credential provider
         setupCredentials();
 
@@ -198,15 +200,15 @@ public class SecureEmbeddedServerITBase {
 
             char[] storepass = {'k', 'e', 'y', 'p', 'a', 's', 's'};
             provider.createCredentialEntry(
-                    SecureEmbeddedServer.KEYSTORE_PASSWORD_KEY, storepass);
+                    KEYSTORE_PASSWORD_KEY, storepass);
 
             char[] trustpass = {'k', 'e', 'y', 'p', 'a', 's', 's'};
             provider.createCredentialEntry(
-                    SecureEmbeddedServer.TRUSTSTORE_PASSWORD_KEY, trustpass);
+                    TRUSTSTORE_PASSWORD_KEY, trustpass);
 
             char[] certpass = {'k', 'e', 'y', 'p', 'a', 's', 's'};
             provider.createCredentialEntry(
-                    SecureEmbeddedServer.SERVER_CERT_PASSWORD_KEY, certpass);
+                    SERVER_CERT_PASSWORD_KEY, certpass);
 
             // write out so that it can be found in checks
             provider.flush();
