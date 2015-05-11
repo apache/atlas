@@ -480,7 +480,7 @@ public class HiveDataModelGenerator {
 
     private void createProcessClass() throws MetadataException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition("processName", DataTypes.STRING_TYPE.getName(),
+                new AttributeDefinition("name", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("startTime", DataTypes.INT_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),

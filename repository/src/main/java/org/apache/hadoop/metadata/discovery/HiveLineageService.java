@@ -100,17 +100,18 @@ public class HiveLineageService implements LineageService {
     public String getOutputs(String tableName) throws DiscoveryException {
         LOG.info("Fetching lineage outputs for tableName={}", tableName);
 
-        try {
-            HiveWhereUsedQuery outputsQuery = new HiveWhereUsedQuery(
-                    HIVE_TABLE_TYPE_NAME, tableName, HIVE_PROCESS_TYPE_NAME,
-                    HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME,
-                    Option.empty(), SELECT_ATTRIBUTES, true,
-                    graphPersistenceStrategy, titanGraph);
+        HiveWhereUsedQuery outputsQuery = new HiveWhereUsedQuery(
+                HIVE_TABLE_TYPE_NAME, tableName, HIVE_PROCESS_TYPE_NAME,
+                HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME,
+                Option.empty(), SELECT_ATTRIBUTES, true,
+                graphPersistenceStrategy, titanGraph);
 
-            Expressions.Expression expression = outputsQuery.expr();
+        Expressions.Expression expression = outputsQuery.expr();
+        LOG.debug("Expression is [" + expression.toString() +"]");
+        try {
             return discoveryService.evaluate(expression).toJson();
         } catch (Exception e) { // unable to catch ExpressionException
-            throw new DiscoveryException("Invalid expression", e);
+            throw new DiscoveryException("Invalid expression [" + expression.toString() + "]", e);
         }
     }
 
@@ -124,17 +125,18 @@ public class HiveLineageService implements LineageService {
     public String getInputs(String tableName) throws DiscoveryException {
         LOG.info("Fetching lineage inputs for tableName={}", tableName);
 
-        try {
-            HiveLineageQuery inputsQuery = new HiveLineageQuery(
-                    HIVE_TABLE_TYPE_NAME, tableName, HIVE_PROCESS_TYPE_NAME,
-                    HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME,
-                    Option.empty(), SELECT_ATTRIBUTES, true,
-                    graphPersistenceStrategy, titanGraph);
+        HiveLineageQuery inputsQuery = new HiveLineageQuery(
+                HIVE_TABLE_TYPE_NAME, tableName, HIVE_PROCESS_TYPE_NAME,
+                HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME,
+                Option.empty(), SELECT_ATTRIBUTES, true,
+                graphPersistenceStrategy, titanGraph);
 
-            Expressions.Expression expression = inputsQuery.expr();
+        Expressions.Expression expression = inputsQuery.expr();
+        LOG.debug("Expression is [" + expression.toString() +"]");
+        try {
             return discoveryService.evaluate(expression).toJson();
         } catch (Exception e) { // unable to catch ExpressionException
-            throw new DiscoveryException("Invalid expression", e);
+            throw new DiscoveryException("Invalid expression [" + expression.toString() + "]", e);
         }
     }
 
