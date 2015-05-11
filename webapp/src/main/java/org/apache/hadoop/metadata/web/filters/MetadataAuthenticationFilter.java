@@ -21,6 +21,7 @@ package org.apache.hadoop.metadata.web.filters;
 import com.google.inject.Singleton;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.hadoop.metadata.PropertiesUtil;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.authentication.server.AuthenticationFilter;
 import org.apache.hadoop.security.authentication.server.KerberosAuthenticationHandler;
@@ -49,8 +50,8 @@ public class MetadataAuthenticationFilter extends AuthenticationFilter {
     protected Properties getConfiguration(String configPrefix, FilterConfig filterConfig) throws ServletException {
         PropertiesConfiguration configuration;
         try {
-            configuration = new PropertiesConfiguration("application.properties");
-        } catch (ConfigurationException e) {
+            configuration = PropertiesUtil.getApplicationProperties();
+        } catch (Exception e) {
             throw new ServletException(e);
         }
 
@@ -94,6 +95,8 @@ public class MetadataAuthenticationFilter extends AuthenticationFilter {
             }
             config.put(KerberosAuthenticationHandler.PRINCIPAL, principal);
         }
+
+        LOG.info("AuthenticationFilterConfig: {}", config);
 
         return config;
     }

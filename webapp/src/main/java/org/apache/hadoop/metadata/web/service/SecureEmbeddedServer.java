@@ -28,22 +28,15 @@ import org.mortbay.jetty.security.SslSocketConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 import java.io.IOException;
+
+import static org.apache.hadoop.metadata.security.SecurityProperties.*;
 
 /**
  * This is a jetty server which requires client auth via certificates.
  */
 public class SecureEmbeddedServer extends EmbeddedServer {
-
-    public static final String KEYSTORE_FILE_KEY = "keystore.file";
-    public static final String DEFAULT_KEYSTORE_FILE_LOCATION = "target/metadata.keystore";
-    public static final String KEYSTORE_PASSWORD_KEY = "keystore.password";
-    public static final String TRUSTSTORE_FILE_KEY = "truststore.file";
-    public static final String DEFATULT_TRUSTORE_FILE_LOCATION = "target/metadata.keystore";
-    public static final String TRUSTSTORE_PASSWORD_KEY = "truststore.password";
-    public static final String SERVER_CERT_PASSWORD_KEY = "password";
-    public static final String CLIENT_AUTH_KEY = "client.auth.enabled";
-    public static final String CERT_STORES_CREDENTIAL_PROVIDER_PATH = "cert.stores.credential.provider.path";
 
     private static final Logger LOG = LoggerFactory.getLogger(SecureEmbeddedServer.class);
 

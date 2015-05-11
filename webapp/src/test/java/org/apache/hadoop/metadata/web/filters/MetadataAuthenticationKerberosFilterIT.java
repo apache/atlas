@@ -19,7 +19,7 @@ package org.apache.hadoop.metadata.web.filters;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.hdfs.web.URLConnectionFactory;
-import org.apache.hadoop.metadata.web.BaseSecurityTest;
+import org.apache.hadoop.metadata.security.BaseSecurityTest;
 import org.apache.hadoop.metadata.web.service.EmbeddedServer;
 import org.mortbay.jetty.Server;
 import org.testng.Assert;
@@ -59,6 +59,9 @@ public class MetadataAuthenticationKerberosFilterIT extends BaseSecurityTest {
 
     @Test
     public void testKerberosBasedLogin() throws Exception {
+        String originalConf = System.getProperty("metadata.conf");
+        System.setProperty("metadata.conf", System.getProperty("user.dir"));
+
         setupKDCAndPrincipals();
         TestEmbeddedServer server = null;
 
@@ -101,6 +104,12 @@ public class MetadataAuthenticationKerberosFilterIT extends BaseSecurityTest {
         } finally {
             server.getServer().stop();
             kdc.stop();
+
+            if (originalConf != null) {
+                System.setProperty("metadata.conf", originalConf);
+            } else {
+                System.clearProperty("metadata.conf");
+            }
 
         }
 

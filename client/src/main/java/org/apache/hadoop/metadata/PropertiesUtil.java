@@ -31,20 +31,30 @@ public class PropertiesUtil {
     private static final Logger LOG = LoggerFactory.getLogger(PropertiesUtil.class);
 
     private static final String APPLICATION_PROPERTIES = "application.properties";
+    public static final String CLIENT_PROPERTIES = "client.properties";
 
     public static final PropertiesConfiguration getApplicationProperties() throws MetadataException {
+        return getPropertiesConfiguration(APPLICATION_PROPERTIES);
+    }
+
+    public static final PropertiesConfiguration getClientProperties() throws MetadataException {
+        return getPropertiesConfiguration(CLIENT_PROPERTIES);
+    }
+
+    private static PropertiesConfiguration getPropertiesConfiguration(String name) throws MetadataException {
         String confLocation = System.getProperty("metadata.conf");
         URL url;
         try {
             if (confLocation == null) {
-                url = PropertiesUtil.class.getResource("/" + APPLICATION_PROPERTIES);
+                url = PropertiesUtil.class.getResource("/" + name);
             } else {
-                url = new File(confLocation, APPLICATION_PROPERTIES).toURI().toURL();
+                url = new File(confLocation, name).toURI().toURL();
             }
-            LOG.info("Loading {} from {}", APPLICATION_PROPERTIES, url);
+            LOG.info("Loading {} from {}", name, url);
             return new PropertiesConfiguration(url);
         } catch (Exception e) {
             throw new MetadataException("Failed to load application properties", e);
         }
     }
+
 }
