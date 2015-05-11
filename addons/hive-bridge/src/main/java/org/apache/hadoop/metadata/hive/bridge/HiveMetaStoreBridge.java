@@ -192,7 +192,7 @@ public class HiveMetaStoreBridge {
         //todo DSL support for reference doesn't work. is the usage right?
 //        String query = String.format("%s where dbName = \"%s\" and tableName = \"%s\"", typeName, dbRef.getId().id,
 //                tableName);
-        String query = String.format("%s where tableName = \"%s\"", typeName, tableName);
+        String query = String.format("%s where name = \"%s\"", typeName, tableName);
         JSONArray results = dgiClient.searchByDSL(query);
         if (results.length() == 0) {
             return null;
@@ -223,6 +223,7 @@ public class HiveMetaStoreBridge {
     }
 
     public Referenceable registerTable(Referenceable dbReference, String dbName, String tableName) throws Exception {
+        LOG.info("Attempting to register table [" + tableName + "]");
         Referenceable tableRef = getTableReference(dbReference, tableName);
         if (tableRef == null) {
             LOG.info("Importing objects from " + dbName + "." + tableName);
@@ -230,7 +231,7 @@ public class HiveMetaStoreBridge {
             Table hiveTable = hiveClient.getTable(dbName, tableName);
 
             tableRef = new Referenceable(HiveDataTypes.HIVE_TABLE.getName());
-            tableRef.set("tableName", hiveTable.getTableName());
+            tableRef.set("name", hiveTable.getTableName());
             tableRef.set("owner", hiveTable.getOwner());
             //todo fix
             tableRef.set("createTime", hiveTable.getLastAccessTime());
@@ -274,8 +275,8 @@ public class HiveMetaStoreBridge {
             tableRef.set("tableType", hiveTable.getTableType());
             tableRef.set("temporary", hiveTable.isTemporary());
 
-            // List<Referenceable> fieldsList = getColumns(storageDesc);
-            // tableRef.set("columns", fieldsList);
+            List<Referenceable> colList = getColumns(hiveTable.getAllCols());
+            tableRef.set("columns", colList);
 
             tableRef = createInstance(tableRef);
         } else {
@@ -397,7 +398,7 @@ public class HiveMetaStoreBridge {
         }
         */
 
-        List<Referenceable> fieldsList = getColumns(storageDesc);
+        List<Referenceable> fieldsList = getColumns(storageDesc.getCols());
         sdReferenceable.set("cols", fieldsList);
 
         List<Struct> sortColsStruct = new ArrayList<>();
@@ -428,19 +429,19 @@ public class HiveMetaStoreBridge {
         return createInstance(sdReferenceable);
     }
 
-    private List<Referenceable> getColumns(StorageDescriptor storageDesc) throws Exception {
-        List<Referenceable> fieldsList = new ArrayList<>();
-        Referenceable colReferenceable;
-        for (FieldSchema fs : storageDesc.getCols()) {
+    private List<Referenceable> getColumns(List<FieldSchema> schemaList) throws Exception
+    {
+        List<Referenceable> colList = new ArrayList<>();
+        for (FieldSchema fs : schemaList) {
             LOG.debug("Processing field " + fs);
-            colReferenceable = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
+            Referenceable colReferenceable = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
             colReferenceable.set("name", fs.getName());
             colReferenceable.set("type", fs.getType());
             colReferenceable.set("comment", fs.getComment());
 
-            fieldsList.add(createInstance(colReferenceable));
+            colList.add(createInstance(colReferenceable));
         }
-        return fieldsList;
+        return colList;
     }
 
     public synchronized void registerHiveDataModel() throws Exception {

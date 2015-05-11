@@ -148,9 +148,10 @@ public class HiveLineageService implements LineageService {
     public String getSchema(String tableName) throws DiscoveryException {
         // todo - validate if indeed this is a table type and exists
         String schemaQuery = HIVE_TABLE_TYPE_NAME
-                + " where name=\"" + tableName + "\", "
-                + HIVE_TABLE_COLUMNS_ATTRIBUTE_NAME;
-                // + " as column select column.name, column.dataType, column.comment";
+                + " where name=\"" + tableName + "\""
+                + ", " + HIVE_TABLE_COLUMNS_ATTRIBUTE_NAME
+                // + " as column select column.name, column.dataType, column.comment"
+        ;
         return discoveryService.searchByDSL(schemaQuery);
     }
 }
