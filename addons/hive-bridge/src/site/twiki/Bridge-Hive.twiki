@@ -7,7 +7,7 @@ Hive metadata can be modelled in DGI using its Type System. The default modellin
    * hive_order(StructType) - [col, order]
    * hive_resourceuri(StructType) - [resourceType, uri]
    * hive_serde(StructType) - [name, serializationLib, parameters]
-   * hive_process(ClassType) - [processName, startTime, endTime, userName, sourceTableNames, targetTableNames, queryText, queryPlan, queryId, queryGraph]
+   * hive_process(ClassType) - [name, startTime, endTime, userName, sourceTableNames, targetTableNames, queryText, queryPlan, queryId, queryGraph]
    * hive_function(ClassType) - [functionName, dbName, className, ownerName, ownerType, createTime, functionType, resourceUris]
    * hive_type(ClassType) - [name, type1, type2, fields]
    * hive_partition(ClassType) - [values, dbName, tableName, createTime, lastAccessTime, sd, parameters]
@@ -16,7 +16,7 @@ Hive metadata can be modelled in DGI using its Type System. The default modellin
    * hive_role(ClassType) - [roleName, createTime, ownerName]
    * hive_column(ClassType) - [name, type, comment]
    * hive_db(ClassType) - [name, description, locationUri, parameters, ownerName, ownerType]
-   * hive_table(ClassType) - [tableName, dbName, owner, createTime, lastAccessTime, retention, sd, partitionKeys, parameters, viewOriginalText, viewExpandedText, tableType, temporary]
+   * hive_table(ClassType) - [name, dbName, owner, createTime, lastAccessTime, retention, sd, partitionKeys, parameters, viewOriginalText, viewExpandedText, tableType, temporary]
 
 
 ---++ Importing Hive Metadata
