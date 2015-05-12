@@ -281,7 +281,7 @@ public class EntityResource {
      * @param traitName name of the trait
      */
     @DELETE
-    @Path("{guid}/trait/{traitName}")
+    @Path("{guid}/traits/{traitName}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response deleteTrait(@Context HttpServletRequest request,
