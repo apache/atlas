@@ -352,7 +352,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         ClientResponse clientResponse = service
                 .path("api/metadata/entities")
                 .path(guid)
-                .path(TRAIT)
+                .path(TRAITS)
                 .path(traitName)
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
@@ -375,7 +375,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         ClientResponse clientResponse = service
                 .path("api/metadata/entities")
                 .path("random")
-                .path(TRAIT)
+                .path(TRAITS)
                 .path(traitName)
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
