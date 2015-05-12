@@ -945,6 +945,7 @@
                         <exclude>**/maven-eclipse.xml</exclude>
                         <exclude>**/.externalToolBuilders/**</exclude>
                         <exclude>dashboard/**</exclude>
+                        <exclude>**/build.log</exclude>
                     </excludes>
                 </configuration>
                 <executions>
