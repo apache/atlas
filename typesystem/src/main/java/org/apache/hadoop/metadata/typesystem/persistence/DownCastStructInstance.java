@@ -22,6 +22,9 @@ import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.typesystem.IStruct;
 import org.apache.hadoop.metadata.typesystem.types.DownCastFieldMapping;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class DownCastStructInstance implements IStruct {
 
     public final String typeName;
@@ -48,6 +51,20 @@ public class DownCastStructInstance implements IStruct {
     @Override
     public void set(String attrName, Object val) throws MetadataException {
         fieldMapping.set(this, attrName, val);
+    }
+
+    /*
+     * Use only for json serialization
+     * @nonpublic
+     */
+    @Override
+    public Map<String, Object> getValuesMap() throws MetadataException {
+
+        Map<String,Object> m = new HashMap<>();
+        for (String attr : fieldMapping.fieldNameMap.keySet()) {
+            m.put(attr, get(attr));
+        }
+        return m;
     }
 }
 
