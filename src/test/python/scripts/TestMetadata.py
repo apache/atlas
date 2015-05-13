@@ -50,13 +50,13 @@ class TestMetadata(unittest.TestCase):
         'org.apache.hadoop.metadata.Main',
         ['-app', 'metadata_home/server/webapp/metadata'],
         'metadata_home/conf:metadata_home/server/webapp/metadata/WEB-INF/classes:metadata_home/server/webapp/metadata/WEB-INF/lib\\*:metadata_home/libext\\*',
-        ['-Dmetadata.log.dir=metadata_home/logs', '-Dmetadata.home=metadata_home', '-Xmx1024m'])
+        ['-Dmetadata.log.dir=metadata_home/logs', '-Dmetadata.home=metadata_home', '-Dmetadata.conf=metadata_home/conf', '-Xmx1024m'])
     else:
       java_mock.assert_called_with(
         'org.apache.hadoop.metadata.Main',
         ['-app', 'metadata_home/server/webapp/metadata'],
         'metadata_home/conf:metadata_home/server/webapp/metadata/WEB-INF/classes:metadata_home/server/webapp/metadata/WEB-INF/lib/*:metadata_home/libext/*',
-        ['-Dmetadata.log.dir=metadata_home/logs', '-Dmetadata.home=metadata_home', '-Xmx1024m'])
+        ['-Dmetadata.log.dir=metadata_home/logs', '-Dmetadata.home=metadata_home', '-Dmetadata.conf=metadata_home/conf', '-Xmx1024m'])
     pass
 
 
