@@ -27,6 +27,7 @@ import org.apache.hadoop.metadata.typesystem.types.FieldMapping;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
+import java.util.Map;
 import java.util.UUID;
 
 public class Id implements ITypedReferenceableInstance {
@@ -140,6 +141,11 @@ public class Id implements ITypedReferenceableInstance {
     @Override
     public FieldMapping fieldMapping() {
         return null;
+    }
+
+    @Override
+    public Map<String, Object> getValuesMap() throws MetadataException {
+        throw new MetadataException("Get/Set not supported on an Id object");
     }
 
     public void setNull(String attrName) throws MetadataException {

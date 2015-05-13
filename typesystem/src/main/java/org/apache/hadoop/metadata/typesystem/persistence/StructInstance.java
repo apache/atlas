@@ -36,6 +36,7 @@ import org.apache.hadoop.metadata.typesystem.types.ValueConversionException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 public class StructInstance implements ITypedStruct {
@@ -231,6 +232,20 @@ public class StructInstance implements ITypedStruct {
         }
         int nullPos = fieldMapping.fieldNullPos.get(attrName);
         nullFlags[nullPos] = true;
+    }
+
+    /*
+     * Use only for json serialization
+     * @nonpublic
+     */
+    @Override
+    public Map<String, Object> getValuesMap() throws MetadataException {
+
+        Map<String,Object> m = new HashMap<>();
+        for (String attr : fieldMapping.fields.keySet()) {
+            m.put(attr, get(attr));
+        }
+        return m;
     }
 
     public boolean getBoolean(String attrName) throws MetadataException {

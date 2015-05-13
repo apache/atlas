@@ -56,7 +56,7 @@ public class Struct implements IStruct {
         values.put(attrName, value);
     }
 
-    @InterfaceAudience.Private
+    @Override
     public Map<String, Object> getValuesMap() {
         return values;
     }
