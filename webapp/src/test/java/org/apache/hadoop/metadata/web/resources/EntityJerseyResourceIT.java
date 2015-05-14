@@ -148,6 +148,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         final String definition = response.getString(MetadataServiceClient.RESULTS);
         Assert.assertNotNull(definition);
         LOG.debug("tableInstanceAfterGet = " + definition);
+        InstanceSerialization.fromJsonReferenceable(definition, true);
     }
 
     private ClientResponse addProperty(String guid, String property, String value) {

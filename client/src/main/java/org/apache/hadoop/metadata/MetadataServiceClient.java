@@ -26,6 +26,8 @@ import com.sun.jersey.client.urlconnection.URLConnectionClientHandler;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.metadata.security.SecureClientUtils;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.typesystem.Referenceable;
+import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization;
 import org.apache.hadoop.metadata.typesystem.json.Serialization;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -176,11 +178,11 @@ public class MetadataServiceClient {
      * @return result json object
      * @throws MetadataServiceException
      */
-    public ITypedReferenceableInstance getEntity(String guid) throws MetadataServiceException {
+    public Referenceable getEntity(String guid) throws MetadataServiceException {
         JSONObject jsonResponse = callAPI(API.GET_ENTITY, null, guid);
         try {
             String entityInstanceDefinition = jsonResponse.getString(MetadataServiceClient.RESULTS);
-            return Serialization.fromJson(entityInstanceDefinition);
+            return InstanceSerialization.fromJsonReferenceable(entityInstanceDefinition, true);
         } catch (JSONException e) {
             throw new MetadataServiceException(e);
         }

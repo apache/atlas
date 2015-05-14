@@ -28,6 +28,8 @@ import org.apache.hadoop.metadata.typesystem.TypesDef;
 import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
 import org.apache.hadoop.metadata.typesystem.persistence.Id;
+import org.apache.hadoop.metadata.typesystem.types.ClassType;
+import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
@@ -59,8 +61,11 @@ public abstract class BaseResourceIT {
     }
 
     protected void createType(TypesDef typesDef) throws Exception {
-        String typesAsJSON = TypesSerialization.toJson(typesDef);
-        createType(typesAsJSON);
+        HierarchicalTypeDefinition<ClassType> sampleType = typesDef.classTypesAsJavaList().get(0);
+        if (serviceClient.getType(sampleType.typeName) == null ) {
+            String typesAsJSON = TypesSerialization.toJson(typesDef);
+            createType(typesAsJSON);
+        }
     }
 
     protected void createType(String typesAsJSON) throws Exception {
