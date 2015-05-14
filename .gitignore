@@ -39,5 +39,6 @@ test-output
 #Python
 *.pyc
 
-# mac files
+# other files
 .DS_Store
+*.swp
