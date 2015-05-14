@@ -40,6 +40,7 @@ import org.apache.hadoop.metadata.typesystem.json.Serialization;
 import org.apache.hadoop.metadata.typesystem.persistence.Id;
 import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,7 +120,7 @@ public class HiveMetaStoreBridge {
         if (results.length() == 0) {
             return null;
         } else {
-            String guid = results.getJSONObject(0).getJSONObject("$id$").getString("id");
+            String guid = getGuidFromDSLResponse(results.getJSONObject(0));
             return new Referenceable(guid, typeName, null);
         }
     }
@@ -198,10 +199,14 @@ public class HiveMetaStoreBridge {
             return null;
         } else {
             //There should be just one instance with the given name
-            String guid = results.getJSONObject(0).getJSONObject("$id$").getString("id");
+            String guid = getGuidFromDSLResponse(results.getJSONObject(0));
             LOG.debug("Got reference for table {}.{} = {}", dbRef, tableName, guid);
             return new Referenceable(guid, typeName, null);
         }
+    }
+
+    private String getGuidFromDSLResponse(JSONObject jsonObject) throws JSONException {
+        return jsonObject.getJSONObject("$id$").getString("id");
     }
 
     private Referenceable getSDForTable(Referenceable dbRef, String tableName) throws Exception {
