@@ -20,6 +20,8 @@ package org.apache.atlas.regression.tests;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import org.apache.atlas.regression.request.BaseRequest;
+import org.apache.atlas.regression.request.RequestKeys;
+import org.apache.atlas.regression.util.TestUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
@@ -37,8 +39,6 @@ public class AdminResourceTest extends BaseTest {
             throws Exception {
         BaseRequest req = new BaseRequest(baseReqUrl + "/version");
         HttpResponse response = req.run();
-        softassert.assertEquals(200, response.getStatusLine().getStatusCode(), "Status code " +
-                "mismatch");
         String json = EntityUtils.toString(response.getEntity());
         Object document = Configuration.defaultConfiguration().jsonProvider().parse(json);
         String version = JsonPath.read(document, "$.Version");
@@ -46,10 +46,20 @@ public class AdminResourceTest extends BaseTest {
         String description = JsonPath.read(document, "$.Description");
         softassert.assertTrue(null != version && !version.isEmpty(), "Version is empty");
         softassert.assertEquals(name, "metadata-governance", "Name does not match");
-        softassert.assertEquals(name, "metadata-governance", "Name does not match");
         softassert.assertEquals(description,
                 "Metadata Management and Data Governance Platform over " +
                         "Hadoop", "Description does not match");
+        TestUtils.assert200(softassert, RequestKeys.JSON_CONTENT_TYPE, response);
+        softassert.assertAll();
+    }
+
+    @Test
+    public void testStack()
+            throws Exception {
+        BaseRequest req = new BaseRequest(baseReqUrl + "/stack");
+        HttpResponse response = req.run();
+        TestUtils.assert200(softassert, RequestKeys.TEXT_CONTENT_TYPE, response);
+        softassert.assertNotNull(EntityUtils.toString(response.getEntity()), "Content is not null");
         softassert.assertAll();
     }
 }

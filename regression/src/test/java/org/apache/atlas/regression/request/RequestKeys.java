@@ -24,6 +24,7 @@ public class RequestKeys {
 
     public static final String CONTENT_TYPE_HEADER = "Content-Type";
     public static final String JSON_CONTENT_TYPE = "application/json";
+    public static final String TEXT_CONTENT_TYPE = "text/plain";
 
     public static final String AUTH_COOKIE = "hadoop.auth";
     public static final String AUTH_COOKIE_EQ = AUTH_COOKIE + "=";
