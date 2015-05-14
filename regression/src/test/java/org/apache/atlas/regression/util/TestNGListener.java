@@ -29,13 +29,15 @@ import java.util.Arrays;
 public class TestNGListener implements ITestListener {
     private static final Logger LOGGER = Logger.getLogger(TestNGListener.class);
     private final String header = StringUtils.repeat("-", 80);
+    private final String sep = StringUtils.repeat("-", 5);
     private final String footer = StringUtils.repeat("#", 80);
     private enum resultStatus {SUCCESS, FAILED, SKIPPED, TestFailedButWithinSuccessPercentage }
 
     public void onTestStart(ITestResult iTestResult) {
         LOGGER.info(header);
         LOGGER.info(
-                String.format("Testing going to start for: %s.%s(%s)", iTestResult.getTestClass().getName(),
+                String.format("Testing going to start for: %s.%s(%s)", iTestResult.getTestClass
+                                ().getName(),
                         iTestResult.getName(), Arrays.toString(iTestResult.getParameters())));
         NDC.push(iTestResult.getName());
     }
@@ -69,8 +71,9 @@ public class TestNGListener implements ITestListener {
 
     private void endOfTestHook(ITestResult result, resultStatus outcome) {
         LOGGER.info(
-                String.format("Testing going to end for: %s.%s(%s) %s", result.getTestClass().getName(),
-                        result.getName(), Arrays.toString(result.getParameters()), outcome));
+                String.format("Testing going to end for: %s.%s(%s) %s Status: %s", result
+                                .getTestClass().getName(),
+                        result.getName(), Arrays.toString(result.getParameters()), sep, outcome));
         LOGGER.info(footer);
         NDC.pop();
     }
