@@ -14,6 +14,7 @@
     <properties>
         <atlas.url>http://localhost:21000</atlas.url>
         <surefire.version>2.18.1</surefire.version>
+        <hadoop.version>2.6.0</hadoop.version>
         <testng.groups>admin</testng.groups>
         <testng.exclude.groups></testng.exclude.groups>
     </properties>
@@ -53,7 +54,7 @@
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-auth</artifactId>
-            <version>2.6.0</version>
+            <version>${hadoop.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
