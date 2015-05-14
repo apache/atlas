@@ -246,7 +246,7 @@ public class HiveHook implements ExecuteWithHookContext, HiveSemanticAnalyzerHoo
 
         LOG.debug("Registering CTAS query: {}", queryStr);
         Referenceable processReferenceable = new Referenceable(HiveDataTypes.HIVE_PROCESS.getName());
-        processReferenceable.set("processName", operation.getOperationName());
+        processReferenceable.set("name", operation.getOperationName());
         processReferenceable.set("startTime", queryStartTime);
         processReferenceable.set("userName", user);
         List<Referenceable> source = new ArrayList<>();

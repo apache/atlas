@@ -236,7 +236,7 @@ public class SSLAndKerberosHiveHookIT extends BaseSSLAndKerberosTest {
     }
 
     private void assertTableIsRegistered(String tableName) throws Exception {
-        assertInstanceIsRegistered(HiveDataTypes.HIVE_TABLE.getName(), "tableName", tableName);
+        assertInstanceIsRegistered(HiveDataTypes.HIVE_TABLE.getName(), "name", tableName);
     }
 
     private void assertDatabaseIsRegistered(String dbName) throws Exception {
