@@ -32,16 +32,7 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -80,7 +71,6 @@ public class EntityResource {
      * Submits an entity definition (instance) corresponding to a given type.
      */
     @POST
-    @Path("submit")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response submit(@Context HttpServletRequest request) {
@@ -111,7 +101,7 @@ public class EntityResource {
      * @param guid GUID for the entity
      */
     @GET
-    @Path("definition/{guid}")
+    @Path("{guid}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getEntityDefinition(@PathParam("guid") String guid) {
         Preconditions.checkNotNull(guid, "Entity GUID cannot be null");
@@ -157,9 +147,8 @@ public class EntityResource {
      * @param resultsPerPage number of results for pagination
      */
     @GET
-    @Path("list/{entityType}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getEntityList(@PathParam("entityType") String entityType,
+    public Response getEntityListByType(@QueryParam("type") String entityType,
                                   @DefaultValue("0") @QueryParam("offset") Integer offset,
                                   @QueryParam("numResults") Integer resultsPerPage) {
         Preconditions.checkNotNull(entityType, "Entity type cannot be null");
@@ -193,7 +182,7 @@ public class EntityResource {
      * @return response payload as json
      */
     @PUT
-    @Path("update/{guid}")
+    @Path("{guid}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response update(@PathParam("guid") String guid,
                            @QueryParam("property") String property,
@@ -223,7 +212,7 @@ public class EntityResource {
      * @return a list of trait names for the given entity guid
      */
     @GET
-    @Path("traits/list/{guid}")
+    @Path("{guid}/traits")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getTraitNames(@PathParam("guid") String guid) {
         Preconditions.checkNotNull(guid, "Entity GUID cannot be null");
@@ -256,7 +245,7 @@ public class EntityResource {
      * @param guid globally unique identifier for the entity
      */
     @POST
-    @Path("traits/add/{guid}")
+    @Path("{guid}/traits")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response addTrait(@Context HttpServletRequest request,
@@ -291,8 +280,8 @@ public class EntityResource {
      * @param guid      globally unique identifier for the entity
      * @param traitName name of the trait
      */
-    @PUT
-    @Path("traits/delete/{guid}/{traitName}")
+    @DELETE
+    @Path("{guid}/traits/{traitName}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response deleteTrait(@Context HttpServletRequest request,
@@ -312,11 +301,11 @@ public class EntityResource {
 
             return Response.ok(response).build();
         } catch (MetadataException | IllegalArgumentException e) {
-            LOG.error("Unable to add trait name={} for entity={}", traitName, guid, e);
+            LOG.error("Unable to delete trait name={} for entity={}", traitName, guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (JSONException e) {
-            LOG.error("Unable to add trait name={} for entity={}", traitName, guid, e);
+            LOG.error("Unable to delete trait name={} for entity={}", traitName, guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }

@@ -52,7 +52,11 @@ public class MetadataServiceClient {
     public static final String REQUEST_ID = "requestId";
     public static final String RESULTS = "results";
     public static final String TOTAL_SIZE = "totalSize";
-
+    private static final String BASE_URI = "api/metadata/";
+    private static final String URI_TYPES = "types";
+    private static final String URI_ENTITIES = "entities";
+    private static final String URI_TRAITS = "traits";
+    private static final String URI_SEARCH = "discovery/search";
 
     private WebResource service;
 
@@ -83,27 +87,27 @@ public class MetadataServiceClient {
 
     static enum API {
         //Type operations
-        CREATE_TYPE("api/metadata/types/submit", HttpMethod.POST),
-        GET_TYPE("api/metadata/types/definition", HttpMethod.GET),
-        LIST_TYPES("api/metadata/types/list", HttpMethod.GET),
-        LIST_TRAIT_TYPES("api/metadata/types/traits/list", HttpMethod.GET),
+        CREATE_TYPE(BASE_URI + URI_TYPES, HttpMethod.POST),
+        GET_TYPE(BASE_URI + URI_TYPES, HttpMethod.GET),
+        LIST_TYPES(BASE_URI + URI_TYPES, HttpMethod.GET),
+        LIST_TRAIT_TYPES(BASE_URI + URI_TYPES + "?type=trait", HttpMethod.GET),
 
         //Entity operations
-        CREATE_ENTITY("api/metadata/entities/submit", HttpMethod.POST),
-        GET_ENTITY("api/metadata/entities/definition", HttpMethod.GET),
-        UPDATE_ENTITY("api/metadata/entities/update", HttpMethod.PUT),
-        LIST_ENTITY("api/metadata/entities/list", HttpMethod.GET),
+        CREATE_ENTITY(BASE_URI + URI_ENTITIES, HttpMethod.POST),
+        GET_ENTITY(BASE_URI + URI_ENTITIES, HttpMethod.GET),
+        UPDATE_ENTITY(BASE_URI + URI_ENTITIES, HttpMethod.PUT),
+        LIST_ENTITY(BASE_URI + URI_ENTITIES + "?type=", HttpMethod.GET),
 
         //Trait operations
-        ADD_TRAITS("api/metadata/traits/add", HttpMethod.POST),
-        DELETE_TRAITS("api/metadata/traits/delete", HttpMethod.PUT),
-        LIST_TRAITS("api/metadata/traits/list", HttpMethod.GET),
+        ADD_TRAITS(BASE_URI + URI_TRAITS, HttpMethod.POST),
+        DELETE_TRAITS(BASE_URI + URI_TRAITS, HttpMethod.DELETE),
+        LIST_TRAITS(BASE_URI + URI_TRAITS, HttpMethod.GET),
 
         //Search operations
-        SEARCH("api/metadata/discovery/search", HttpMethod.GET),
-        SEARCH_DSL("api/metadata/discovery/search/dsl", HttpMethod.GET),
-        SEARCH_GREMLIN("api/metadata/discovery/search/gremlin", HttpMethod.GET),
-        SEARCH_FULL_TEXT("api/metadata/discovery/search/fulltext", HttpMethod.GET);
+        SEARCH(BASE_URI + URI_SEARCH, HttpMethod.GET),
+        SEARCH_DSL(BASE_URI + URI_SEARCH + "/dsl", HttpMethod.GET),
+        SEARCH_GREMLIN(BASE_URI + URI_SEARCH + "/gremlin", HttpMethod.GET),
+        SEARCH_FULL_TEXT(BASE_URI + URI_SEARCH + "/fulltext", HttpMethod.GET);
 
         private final String method;
         private final String path;

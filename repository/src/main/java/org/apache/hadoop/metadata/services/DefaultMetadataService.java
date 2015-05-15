@@ -34,11 +34,7 @@ import org.apache.hadoop.metadata.typesystem.TypesDef;
 import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization;
 import org.apache.hadoop.metadata.typesystem.json.Serialization$;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
-import org.apache.hadoop.metadata.typesystem.types.ClassType;
-import org.apache.hadoop.metadata.typesystem.types.IDataType;
-import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
-import org.apache.hadoop.metadata.typesystem.types.TraitType;
-import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
+import org.apache.hadoop.metadata.typesystem.types.*;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
@@ -144,8 +140,8 @@ public class DefaultMetadataService implements MetadataService {
      * @return list of trait type names in the type system
      */
     @Override
-    public List<String> getTraitNamesList() throws MetadataException {
-        return typeSystem.getTraitsNames();
+    public List<String> getTypeNamesByCategory(DataTypes.TypeCategory typeCategory) throws MetadataException {
+        return typeSystem.getTypeNamesByCategory(typeCategory);
     }
 
     /**

@@ -53,6 +53,8 @@ import java.util.List;
  */
 public class HiveLineageJerseyResourceIT extends BaseResourceIT {
 
+    private static final String BASE_URI = "api/metadata/lineage/hive/table/";
+
     @BeforeClass
     public void setUp() throws Exception {
         super.setUp();
@@ -64,8 +66,9 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testInputs() throws Exception {
         WebResource resource = service
-                .path("api/metadata/lineage/hive/inputs")
-                .path("sales_fact_monthly_mv");
+                .path(BASE_URI)
+                .path("sales_fact_monthly_mv")
+                .path("inputs");
 
         ClientResponse clientResponse = resource
                 .accept(MediaType.APPLICATION_JSON)
@@ -94,8 +97,9 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testOutputs() throws Exception {
         WebResource resource = service
-                .path("api/metadata/lineage/hive/outputs")
-                .path("sales_fact");
+                .path(BASE_URI)
+                .path("sales_fact")
+                .path("outputs");
 
         ClientResponse clientResponse = resource
                 .accept(MediaType.APPLICATION_JSON)
@@ -124,8 +128,9 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testSchema() throws Exception {
         WebResource resource = service
-                .path("api/metadata/lineage/hive/schema")
-                .path("sales_fact");
+                .path(BASE_URI)
+                .path("sales_fact")
+                .path("schema");
 
         ClientResponse clientResponse = resource
                 .accept(MediaType.APPLICATION_JSON)

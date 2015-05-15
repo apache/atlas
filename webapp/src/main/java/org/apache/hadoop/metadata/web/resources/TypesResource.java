@@ -18,9 +18,11 @@
 
 package org.apache.hadoop.metadata.web.resources;
 
+import com.google.common.base.Preconditions;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.services.MetadataService;
+import org.apache.hadoop.metadata.typesystem.types.DataTypes;
 import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -31,13 +33,7 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -59,6 +55,8 @@ public class TypesResource {
 
     private final MetadataService metadataService;
 
+    static final String TYPE_ALL = "all";
+
     @Inject
     public TypesResource(MetadataService metadataService) {
         this.metadataService = metadataService;
@@ -69,7 +67,6 @@ public class TypesResource {
      * domain. Could represent things like Hive Database, Hive Table, etc.
      */
     @POST
-    @Path("submit")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response submit(@Context HttpServletRequest request) {
@@ -97,7 +94,7 @@ public class TypesResource {
      * @param typeName name of a type which is unique.
      */
     @GET
-    @Path("definition/{typeName}")
+    @Path("{typeName}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getDefinition(@Context HttpServletRequest request,
                                   @PathParam("typeName") String typeName) {
@@ -122,44 +119,31 @@ public class TypesResource {
     }
 
     /**
-     * Gets the list of type names registered in the type system.
-     */
-    @GET
-    @Path("list")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getTypeNames(@Context HttpServletRequest request) {
-        try {
-            final List<String> typeNamesList = metadataService.getTypeNamesList();
-
-            JSONObject response = new JSONObject();
-            response.put(MetadataServiceClient.RESULTS, new JSONArray(typeNamesList));
-            response.put(MetadataServiceClient.TOTAL_SIZE, typeNamesList.size());
-            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-
-            return Response.ok(response).build();
-        } catch (Exception e) {
-            LOG.error("Unable to get types list", e);
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        }
-    }
-
-    /**
      * Gets the list of trait type names registered in the type system.
      */
     @GET
-    @Path("traits/list")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getTraitNames(@Context HttpServletRequest request) {
+    public Response getTypesByFilter(@Context HttpServletRequest request,
+                                  @DefaultValue(TYPE_ALL) @QueryParam("type") String type) {
         try {
-            final List<String> traitNamesList = metadataService.getTraitNamesList();
+            List<String> result = null;
+            if (TYPE_ALL.equals(type)) {
+                result = metadataService.getTypeNamesList();
+            } else {
+                DataTypes.TypeCategory typeCategory = DataTypes.TypeCategory.valueOf(type);
+                result = metadataService.getTypeNamesByCategory(typeCategory);
+            }
 
             JSONObject response = new JSONObject();
-            response.put(MetadataServiceClient.RESULTS, new JSONArray(traitNamesList));
-            response.put(MetadataServiceClient.TOTAL_SIZE, traitNamesList.size());
+            response.put(MetadataServiceClient.RESULTS, new JSONArray(result));
+            response.put(MetadataServiceClient.TOTAL_SIZE, result.size());
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
 
             return Response.ok(response).build();
+        } catch(IllegalArgumentException ie) {
+            LOG.error("Unsupported typeName while retrieving type list {}", type);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse("Unsupported type " + type, Response.Status.BAD_REQUEST));
         } catch (Exception e) {
             LOG.error("Unable to get types list", e);
             throw new WebApplicationException(

@@ -86,7 +86,7 @@ public class TypeSystemTest extends BaseTest {
                         soxTrait, secTrait, financeTrait),
                 ImmutableList.<HierarchicalTypeDefinition<ClassType>>of());
 
-        final ImmutableList<String> traitsNames = getTypeSystem().getTraitsNames();
+        final ImmutableList<String> traitsNames = getTypeSystem().getTypeNamesByCategory(DataTypes.TypeCategory.TRAIT);
         Assert.assertEquals(traitsNames.size(), 7);
         List traits = Arrays.asList(new String[]{
                 "Classification",
