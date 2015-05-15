@@ -17,13 +17,16 @@
  */
 package org.apache.atlas.regression.request;
 
+import org.apache.atlas.regression.security.AtlasAuthenticationToken;
 import org.apache.commons.net.util.TrustManagerUtils;
+import org.apache.hadoop.security.authentication.client.AuthenticatedURL;
 import org.apache.hadoop.security.authentication.client.PseudoAuthenticator;
 import org.apache.http.Header;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 import org.apache.http.auth.AuthenticationException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
@@ -160,28 +163,25 @@ public class BaseRequest {
                     header.getValue()));
         }
         HttpResponse response = client.execute(target, request);
-        // TODO: Determine appropriate call for when running secure atlas.
-//        /*incase the cookie is expired and we get a negotiate error back, generate the token again
-//        and send the request*/
-//        if ((response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED)) {
-//            Header[] wwwAuthHeaders = response.getHeaders(RequestKeys.WWW_AUTHENTICATE);
-//            if (wwwAuthHeaders != null && wwwAuthHeaders.length != 0
-//                    && wwwAuthHeaders[0].getValue().trim().startsWith(RequestKeys.NEGOTIATE)) {
-//                if (AbstractEntityHelper.AUTHENTICATE) {
-//                    token = FalconAuthorizationToken.getToken(user, uri.getScheme(),
-//                            uri.getHost(), uri.getPort(), true);
-//                    request.removeHeaders(RequestKeys.COOKIE);
-//                    request.addHeader(RequestKeys.COOKIE, RequestKeys.AUTH_COOKIE_EQ + token);
-//                }
-//                LOGGER.info("Request Url: " + request.getRequestLine().getUri());
-//                LOGGER.info("Request Method: " + request.getRequestLine().getMethod());
-//                for (Header header : request.getAllHeaders()) {
-//                    LOGGER.info(String.format("Request Header: Name=%s Value=%s", header.getName(),
-//                            header.getValue()));
-//                }
-//                response = client.execute(target, request);
-//            }
-//        }
+        // add token to the request in case we get a 401 back with negotiate.
+        if ((response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED)) {
+            Header[] wwwAuthHeaders = response.getHeaders(RequestKeys.WWW_AUTHENTICATE);
+            if (wwwAuthHeaders != null && wwwAuthHeaders.length != 0
+                    && wwwAuthHeaders[0].getValue().trim().startsWith(RequestKeys.NEGOTIATE)) {
+                AuthenticatedURL.Token token = AtlasAuthenticationToken.getToken(user, uri
+                                .getScheme(),
+                        uri.getHost(), uri.getPort(), true);
+                request.removeHeaders(RequestKeys.COOKIE);
+                request.addHeader(RequestKeys.COOKIE, RequestKeys.AUTH_COOKIE_EQ + token);
+                LOGGER.info("Request Url: " + request.getRequestLine().getUri());
+                LOGGER.info("Request Method: " + request.getRequestLine().getMethod());
+                for (Header header : request.getAllHeaders()) {
+                    LOGGER.info(String.format("Request Header: Name=%s Value=%s", header.getName(),
+                            header.getValue()));
+                }
+                response = client.execute(target, request);
+            }
+        }
         LOGGER.info("Response Status: " + response.getStatusLine());
         for (Header header : response.getAllHeaders()) {
             LOGGER.info(String.format("Response Header: Name=%s Value=%s", header.getName(),

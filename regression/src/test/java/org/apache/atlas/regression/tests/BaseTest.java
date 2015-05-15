@@ -17,7 +17,16 @@
  */
 package org.apache.atlas.regression.tests;
 
+import org.testng.annotations.BeforeClass;
+import org.testng.asserts.SoftAssert;
+
 public class BaseTest {
     public static final String ATLAS_URL = System.getProperty("atlas.url",
             "http://localhost:21000") ;
+    public SoftAssert SOFT_ASSERT;
+
+    @BeforeClass
+    public void beforeClass() {
+        SOFT_ASSERT = new SoftAssert();
+    }
 }

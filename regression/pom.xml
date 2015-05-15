@@ -31,7 +31,7 @@
     <properties>
         <atlas.url>http://localhost:21000</atlas.url>
         <surefire.version>2.18.1</surefire.version>
-        <hadoop.version>2.6.0</hadoop.version>
+        <hadoop.version>2.7.0</hadoop.version>
         <testng.groups>admin</testng.groups>
         <testng.exclude.groups></testng.exclude.groups>
     </properties>
@@ -74,6 +74,11 @@
             <version>${hadoop.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-common</artifactId>
+            <version>${hadoop.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpcore</artifactId>
             <version>4.2.5</version>
@@ -99,6 +104,15 @@
             </properties>
           </configuration>
         </plugin>
+        <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.3</version>
+        <configuration>
+          <source>1.7</source>
+          <target>1.7</target>
+        </configuration>
+      </plugin>
       </plugins>
     </pluginManagement>
   </build>

@@ -26,13 +26,11 @@ import org.apache.http.HttpResponse;
 import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
 import org.testng.annotations.Test;
-import org.testng.asserts.SoftAssert;
 
 @Test(groups = "admin")
 public class AdminResourceTest extends BaseTest {
     private static final Logger logger = Logger.getLogger(AdminResourceTest.class);
     private static String baseReqUrl = ATLAS_URL + "/api/metadata/admin";
-    public SoftAssert softassert = new SoftAssert();
 
     @Test
     public void testVersion()
@@ -44,13 +42,13 @@ public class AdminResourceTest extends BaseTest {
         String version = JsonPath.read(document, "$.Version");
         String name = JsonPath.read(document, "$.Name");
         String description = JsonPath.read(document, "$.Description");
-        softassert.assertTrue(null != version && !version.isEmpty(), "Version is empty");
-        softassert.assertEquals(name, "metadata-governance", "Name does not match");
-        softassert.assertEquals(description,
+        SOFT_ASSERT.assertTrue(null != version && !version.isEmpty(), "Version is empty");
+        SOFT_ASSERT.assertEquals(name, "metadata-governance", "Name does not match");
+        SOFT_ASSERT.assertEquals(description,
                 "Metadata Management and Data Governance Platform over " +
                         "Hadoop", "Description does not match");
-        TestUtils.assert200(softassert, RequestKeys.JSON_CONTENT_TYPE, response);
-        softassert.assertAll();
+        TestUtils.assert200(SOFT_ASSERT, RequestKeys.JSON_CONTENT_TYPE, response);
+        SOFT_ASSERT.assertAll();
     }
 
     @Test
@@ -58,8 +56,8 @@ public class AdminResourceTest extends BaseTest {
             throws Exception {
         BaseRequest req = new BaseRequest(baseReqUrl + "/stack");
         HttpResponse response = req.run();
-        TestUtils.assert200(softassert, RequestKeys.TEXT_CONTENT_TYPE, response);
-        softassert.assertNotNull(EntityUtils.toString(response.getEntity()), "Content is not null");
-        softassert.assertAll();
+        TestUtils.assert200(SOFT_ASSERT, RequestKeys.TEXT_CONTENT_TYPE, response);
+        SOFT_ASSERT.assertNotNull(EntityUtils.toString(response.getEntity()), "Content is not null");
+        SOFT_ASSERT.assertAll();
     }
 }
