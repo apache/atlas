@@ -25,7 +25,8 @@ public class BaseTest {
             "http://localhost:21000") ;
     public SoftAssert SOFT_ASSERT;
 
-    @BeforeClass
+    // without this we get NPE
+    @BeforeClass(alwaysRun = true)
     public void beforeClass() {
         SOFT_ASSERT = new SoftAssert();
     }
