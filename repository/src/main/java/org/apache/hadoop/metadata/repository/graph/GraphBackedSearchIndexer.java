@@ -219,7 +219,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
 
             case CLASS:
                 // this is only A reference, index the attribute for edge
-                createEdgeMixedIndex(propertyName);
+                // Commenting this out since we do not need an index for edge here
+                //createEdgeMixedIndex(propertyName);
                 break;
 
             default:
@@ -330,6 +331,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
         return propertyKey;
     }
 
+    /* Commenting this out since we do not need an index for edge label here
     private void createEdgeMixedIndex(String propertyName) {
         TitanManagement management = titanGraph.getManagementSystem();
         EdgeLabel edgeLabel = management.getEdgeLabel(propertyName);
@@ -339,5 +341,5 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
             management.commit();
             LOG.info("Created index for edge label {}", propertyName);
         }
-    }
+    } */
 }
