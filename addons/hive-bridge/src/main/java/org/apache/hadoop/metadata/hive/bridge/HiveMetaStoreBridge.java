@@ -40,6 +40,7 @@ import org.apache.hadoop.metadata.typesystem.json.Serialization;
 import org.apache.hadoop.metadata.typesystem.persistence.Id;
 import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,8 +120,8 @@ public class HiveMetaStoreBridge {
         if (results.length() == 0) {
             return null;
         } else {
-            ITypedReferenceableInstance reference = Serialization.fromJson(results.get(0).toString());
-            return new Referenceable(reference.getId().id, typeName, null);
+            String guid = getGuidFromDSLResponse(results.getJSONObject(0));
+            return new Referenceable(guid, typeName, null);
         }
     }
 
@@ -198,11 +199,14 @@ public class HiveMetaStoreBridge {
             return null;
         } else {
             //There should be just one instance with the given name
-            ITypedReferenceableInstance reference = Serialization.fromJson(results.get(0).toString());
-            String guid = reference.getId().id;
+            String guid = getGuidFromDSLResponse(results.getJSONObject(0));
             LOG.debug("Got reference for table {}.{} = {}", dbRef, tableName, guid);
             return new Referenceable(guid, typeName, null);
         }
+    }
+
+    private String getGuidFromDSLResponse(JSONObject jsonObject) throws JSONException {
+        return jsonObject.getJSONObject("$id$").getString("id");
     }
 
     private Referenceable getSDForTable(Referenceable dbRef, String tableName) throws Exception {
@@ -212,7 +216,7 @@ public class HiveMetaStoreBridge {
         }
 
         MetadataServiceClient dgiClient = getMetadataServiceClient();
-        ITypedReferenceableInstance tableInstance = dgiClient.getEntity(tableRef.getId().id);
+        Referenceable tableInstance = dgiClient.getEntity(tableRef.getId().id);
         Id sdId = (Id) tableInstance.get("sd");
         return new Referenceable(sdId.id, sdId.getTypeName(), null);
     }
@@ -455,10 +459,6 @@ public class HiveMetaStoreBridge {
         } else {
             LOG.info("Hive data model is already registered!");
         }
-
-        //todo remove when fromJson(entityJson) is supported on client
-        dataModelGenerator.createDataModel();
-        TypeSystem.getInstance().defineTypes(dataModelGenerator.getTypesDef());
     }
 
     public static void main(String[] argv) throws Exception {
