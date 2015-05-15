@@ -145,9 +145,8 @@ public class GraphBackedMetadataRepositoryTest {
 
     @Test (dependsOnMethods = "testSubmitEntity")
     public void testGetTraitLabel() throws Exception {
-        Assert.assertEquals(repositoryService.getTraitLabel(
-                        typeSystem.getDataType(ClassType.class, TABLE_TYPE),
-                        CLASSIFICATION), TABLE_TYPE + "." + CLASSIFICATION);
+        Assert.assertEquals(repositoryService.getTraitLabel(typeSystem.getDataType(ClassType.class, TABLE_TYPE),
+                CLASSIFICATION), TABLE_TYPE + "." + CLASSIFICATION);
     }
 
     @Test
@@ -315,6 +314,39 @@ public class GraphBackedMetadataRepositoryTest {
     public void testGetTypeName() throws Exception {
         Vertex tableVertex = getTableEntityVertex();
         Assert.assertEquals(repositoryService.getTypeName(tableVertex), TABLE_TYPE);
+    }
+
+    @Test(dependsOnMethods = "testCreateEntity")
+    public void testSearchByDSLQuery() throws Exception {
+        String dslQuery = "hive_database as PII";
+        System.out.println("Executing dslQuery = " + dslQuery);
+        String jsonResults = discoveryService.searchByDSL(dslQuery);
+        Assert.assertNotNull(jsonResults);
+
+        JSONObject results = new JSONObject(jsonResults);
+        Assert.assertEquals(results.length(), 3);
+        System.out.println("results = " + results);
+
+        Object query = results.get("query");
+        Assert.assertNotNull(query);
+
+        JSONObject dataType = results.getJSONObject("dataType");
+        Assert.assertNotNull(dataType);
+        String typeName = dataType.getString("typeName");
+        Assert.assertNotNull(typeName);
+
+        JSONArray rows = results.getJSONArray("rows");
+        Assert.assertNotNull(rows);
+        Assert.assertTrue(rows.length() > 0);
+
+        for (int index = 0; index < rows.length(); index++) {
+            JSONObject row = rows.getJSONObject(index);
+            String type = row.getString("$typeName$");
+            Assert.assertEquals(type, "hive_database");
+
+            String name = row.getString("name");
+            Assert.assertEquals(name, DATABASE_NAME);
+        }
     }
 
     /**
