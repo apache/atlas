@@ -22,9 +22,18 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
+import com.sun.jersey.client.urlconnection.URLConnectionClientHandler;
+import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.hadoop.metadata.security.SecureClientUtils;
+import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
+import org.apache.hadoop.metadata.typesystem.Referenceable;
+import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization;
+import org.apache.hadoop.metadata.typesystem.json.Serialization;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MediaType;
@@ -33,30 +42,48 @@ import javax.ws.rs.core.UriBuilder;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.apache.hadoop.metadata.security.SecurityProperties.TLS_ENABLED;
+
 /**
  * Client for metadata.
  */
 public class MetadataServiceClient {
+    private static final Logger LOG = LoggerFactory.getLogger(MetadataServiceClient.class);
     public static final String REQUEST_ID = "requestId";
     public static final String RESULTS = "results";
     public static final String TOTAL_SIZE = "totalSize";
-
-
-    private final WebResource service;
-
-    public MetadataServiceClient(String baseUrl) {
-        DefaultClientConfig config = new DefaultClientConfig();
-        Client client = Client.create(config);
-        client.resource(UriBuilder.fromUri(baseUrl).build());
-
-        service = client.resource(UriBuilder.fromUri(baseUrl).build());
-    }
-
     private static final String BASE_URI = "api/metadata/";
     private static final String URI_TYPES = "types";
     private static final String URI_ENTITIES = "entities";
     private static final String URI_TRAITS = "traits";
     private static final String URI_SEARCH = "discovery/search";
+
+    private WebResource service;
+
+    public MetadataServiceClient(String baseUrl) {
+        DefaultClientConfig config = new DefaultClientConfig();
+        PropertiesConfiguration clientConfig = null;
+        try {
+            clientConfig = getClientProperties();
+            if (clientConfig.getBoolean(TLS_ENABLED)  || clientConfig.getString("metadata.http.authentication.type") != null) {
+                // create an SSL properties configuration if one doesn't exist.  SSLFactory expects a file, so forced to create a
+                // configuration object, persist it, then subsequently pass in an empty configuration to SSLFactory
+                SecureClientUtils.persistSSLClientConfiguration(clientConfig);
+            }
+        } catch (Exception e) {
+            LOG.info("Error processing client configuration.", e);
+        }
+        URLConnectionClientHandler handler = SecureClientUtils.getClientConnectionHandler(config, clientConfig);
+
+        Client client = new Client(handler, config);
+        client.resource(UriBuilder.fromUri(baseUrl).build());
+
+        service = client.resource(UriBuilder.fromUri(baseUrl).build());
+    }
+
+    protected PropertiesConfiguration getClientProperties() throws MetadataException {
+        return PropertiesUtil.getClientProperties();
+    }
 
     static enum API {
         //Type operations
@@ -155,8 +182,14 @@ public class MetadataServiceClient {
      * @return result json object
      * @throws MetadataServiceException
      */
-    public JSONObject getEntity(String guid) throws MetadataServiceException {
-        return callAPI(API.GET_ENTITY, null, guid);
+    public Referenceable getEntity(String guid) throws MetadataServiceException {
+        JSONObject jsonResponse = callAPI(API.GET_ENTITY, null, guid);
+        try {
+            String entityInstanceDefinition = jsonResponse.getString(MetadataServiceClient.RESULTS);
+            return InstanceSerialization.fromJsonReferenceable(entityInstanceDefinition, true);
+        } catch (JSONException e) {
+            throw new MetadataServiceException(e);
+        }
     }
 
     public JSONObject searchEntity(String searchQuery) throws MetadataServiceException {
@@ -173,14 +206,14 @@ public class MetadataServiceClient {
      * @return result json object
      * @throws MetadataServiceException
      */
-    public JSONObject rawSearch(String typeName, String attributeName,
-                                Object attributeValue) throws MetadataServiceException {
-        String gremlinQuery = String.format(
-                "g.V.has(\"typeName\",\"%s\").and(_().has(\"%s.%s\", T.eq, \"%s\")).toList()",
-                typeName, typeName, attributeName, attributeValue);
-        return searchByGremlin(gremlinQuery);
-//        String dslQuery = String.format("%s where %s = \"%s\"", typeName, attributeName, attributeValue);
-//        return searchByDSL(dslQuery);
+    public JSONArray rawSearch(String typeName, String attributeName, Object attributeValue) throws
+            MetadataServiceException {
+//        String gremlinQuery = String.format(
+//                "g.V.has(\"typeName\",\"%s\").and(_().has(\"%s.%s\", T.eq, \"%s\")).toList()",
+//                typeName, typeName, attributeName, attributeValue);
+//        return searchByGremlin(gremlinQuery);
+        String dslQuery = String.format("%s where %s = \"%s\"", typeName, attributeName, attributeValue);
+        return searchByDSL(dslQuery);
     }
 
     /**
@@ -189,10 +222,15 @@ public class MetadataServiceClient {
      * @return result json object
      * @throws MetadataServiceException
      */
-    public JSONObject searchByDSL(String query) throws MetadataServiceException {
+    public JSONArray searchByDSL(String query) throws MetadataServiceException {
         WebResource resource = getResource(API.SEARCH_DSL);
         resource = resource.queryParam("query", query);
-        return callAPIWithResource(API.SEARCH_DSL, resource);
+        JSONObject result = callAPIWithResource(API.SEARCH_DSL, resource);
+        try {
+            return result.getJSONObject("results").getJSONArray("rows");
+        } catch (JSONException e) {
+            throw new MetadataServiceException(e);
+        }
     }
 
     /**

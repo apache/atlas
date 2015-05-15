@@ -19,6 +19,8 @@ package org.apache.hadoop.metadata.web.listeners;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.PropertiesUtil;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.Shell;
@@ -120,7 +122,11 @@ public class LoginProcessor  {
      * @throws ConfigurationException
      */
     protected PropertiesConfiguration getPropertiesConfiguration() throws ConfigurationException {
-        return new PropertiesConfiguration("application.properties");
+        try {
+            return PropertiesUtil.getApplicationProperties();
+        } catch (MetadataException e) {
+            throw new ConfigurationException(e);
+        }
     }
 
     /**

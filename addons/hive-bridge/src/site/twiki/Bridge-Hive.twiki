@@ -7,7 +7,7 @@ Hive metadata can be modelled in DGI using its Type System. The default modellin
    * hive_order(StructType) - [col, order]
    * hive_resourceuri(StructType) - [resourceType, uri]
    * hive_serde(StructType) - [name, serializationLib, parameters]
-   * hive_process(ClassType) - [processName, startTime, endTime, userName, sourceTableNames, targetTableNames, queryText, queryPlan, queryId, queryGraph]
+   * hive_process(ClassType) - [name, startTime, endTime, userName, sourceTableNames, targetTableNames, queryText, queryPlan, queryId, queryGraph]
    * hive_function(ClassType) - [functionName, dbName, className, ownerName, ownerType, createTime, functionType, resourceUris]
    * hive_type(ClassType) - [name, type1, type2, fields]
    * hive_partition(ClassType) - [values, dbName, tableName, createTime, lastAccessTime, sd, parameters]
@@ -16,13 +16,13 @@ Hive metadata can be modelled in DGI using its Type System. The default modellin
    * hive_role(ClassType) - [roleName, createTime, ownerName]
    * hive_column(ClassType) - [name, type, comment]
    * hive_db(ClassType) - [name, description, locationUri, parameters, ownerName, ownerType]
-   * hive_table(ClassType) - [tableName, dbName, owner, createTime, lastAccessTime, retention, sd, partitionKeys, parameters, viewOriginalText, viewExpandedText, tableType, temporary]
+   * hive_table(ClassType) - [name, dbName, owner, createTime, lastAccessTime, retention, sd, partitionKeys, columns, parameters, viewOriginalText, viewExpandedText, tableType, temporary]
 
 
 ---++ Importing Hive Metadata
 org.apache.hadoop.metadata.hive.bridge.HiveMetaStoreBridge imports the hive metadata into DGI using the typesystem defined in org.apache.hadoop.metadata.hive.model.HiveDataModelGenerator. import-hive.sh command can be used to facilitate this.
-Set-up the following configs in <dgi package>/conf/hive-site.xml:
-   * Hive metastore configuration - Refer [[https://cwiki.apache.org/confluence/display/Hive/AdminManual+MetastoreAdmin][Hive Metastore Configuration documentation]]
+Set-up the following configs in hive-site.xml of your hive set-up and set environment variable HIVE_CONFIG to the
+hive conf directory:
    * DGI endpoint - Add the following property with the DGI endpoint for your set-up
 <verbatim>
 <property>
@@ -31,7 +31,7 @@ Set-up the following configs in <dgi package>/conf/hive-site.xml:
 </property>
 </verbatim>
 
-Usage: <dgi package>/bin/import-hive.sh
+Usage: <dgi package>/bin/import-hive.sh. The logs are in <dgi package>/logs/import-hive.log
 
 
 ---++ Hive Hook
@@ -57,4 +57,5 @@ The following properties in hive-site.xml control the thread pool details:
    * hive.hook.dgi.minThreads - core number of threads. default 5
    * hive.hook.dgi.maxThreads - maximum number of threads. default 5
    * hive.hook.dgi.keepAliveTime - keep alive time in msecs. default 10
+   * hive.hook.dgi.synchronous - boolean, true to run the hook synchronously. default false
 

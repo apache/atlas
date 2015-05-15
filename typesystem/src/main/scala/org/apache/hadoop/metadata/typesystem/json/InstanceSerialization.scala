@@ -266,17 +266,17 @@ object InstanceSerialization {
 
   def asScala(v : Any) : Any = v match {
     case i : Id => _Id(i._getId(), i.getVersion, i.getClassName)
-    case r : Referenceable => {
+    case r : IReferenceableInstance => {
       val traits = r.getTraits.map { tName =>
-        val t = r.getTrait(tName).asInstanceOf[Struct]
+        val t = r.getTrait(tName).asInstanceOf[IStruct]
         (tName -> _Struct(t.getTypeName, asScala(t.getValuesMap).asInstanceOf[Map[String, AnyRef]]))
       }.toMap
       _Reference(asScala(r.getId).asInstanceOf[_Id],
-        r.typeName, asScala(r.getValuesMap).asInstanceOf[Map[String, AnyRef]],
+        r.getTypeName, asScala(r.getValuesMap).asInstanceOf[Map[String, AnyRef]],
         asScala(r.getTraits).asInstanceOf[List[String]],
         traits.asInstanceOf[Map[String, _Struct]])
     }
-    case s : Struct => _Struct(s.typeName, asScala(s.getValuesMap).asInstanceOf[Map[String, AnyRef]])
+    case s : IStruct => _Struct(s.getTypeName, asScala(s.getValuesMap).asInstanceOf[Map[String, AnyRef]])
     case l : java.util.List[_] => l.asScala.map(e => asScala(e)).toList
     case m : java.util.Map[_, _] => m.asScala.mapValues(v => asScala(v)).toMap
     case _ => v
@@ -301,7 +301,7 @@ object InstanceSerialization {
     writePretty(_s)
   }
 
-  def toJson(value: Struct, withBigDecimals : Boolean = false): String = {
+  def toJson(value: IStruct, withBigDecimals : Boolean = false): String = {
     _toJson(value, withBigDecimals)
   }
 

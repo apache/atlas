@@ -191,7 +191,7 @@ public class DefaultMetadataService implements MetadataService {
         Preconditions.checkNotNull(guid, "guid cannot be null");
 
         final ITypedReferenceableInstance instance = repository.getEntityDefinition(guid);
-        return Serialization$.MODULE$.toJson(instance);
+        return InstanceSerialization.toJson(instance, true);
     }
 
     /**

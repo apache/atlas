@@ -20,6 +20,8 @@ package org.apache.hadoop.metadata.typesystem;
 
 import org.apache.hadoop.metadata.MetadataException;
 
+import java.util.Map;
+
 /**
  * Represents a Struct or Trait or Object.
  */
@@ -30,5 +32,7 @@ public interface IInstance {
     Object get(String attrName) throws MetadataException;
 
     void set(String attrName, Object val) throws MetadataException;
+
+    Map<String, Object> getValuesMap() throws MetadataException;
 
 }

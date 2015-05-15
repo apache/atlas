@@ -106,7 +106,7 @@ public class HiveHookIT {
     }
 
     private void assertTableIsRegistered(String tableName) throws Exception {
-        assertInstanceIsRegistered(HiveDataTypes.HIVE_TABLE.getName(), "tableName", tableName);
+        assertInstanceIsRegistered(HiveDataTypes.HIVE_TABLE.getName(), "name", tableName);
     }
 
     private void assertDatabaseIsRegistered(String dbName) throws Exception {
@@ -114,10 +114,7 @@ public class HiveHookIT {
     }
 
     private void assertInstanceIsRegistered(String typeName, String colName, String colValue) throws Exception{
-        JSONObject result = dgiCLient.rawSearch(typeName, colName, colValue);
-        JSONArray results = (JSONArray) result.get("results");
+        JSONArray results = dgiCLient.rawSearch(typeName, colName, colValue);
         Assert.assertEquals(results.length(), 1);
-        JSONObject resultRow = (JSONObject) results.get(0);
-        Assert.assertEquals(resultRow.get(typeName + "." + colName), colValue);
     }
 }

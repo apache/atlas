@@ -340,8 +340,8 @@ public class HiveDataModelGenerator {
     private void createPartitionClass() throws MetadataException {
 
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition("values", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.COLLECTION, false, null),
+                new AttributeDefinition("values", DataTypes.arrayTypeName(DataTypes.STRING_TYPE.getName()),
+                        Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("dbName", HiveDataTypes.HIVE_DB.getName(),
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("tableName", HiveDataTypes.HIVE_TABLE.getName(),
@@ -354,10 +354,9 @@ public class HiveDataModelGenerator {
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("columns",
                         DataTypes.arrayTypeName(HiveDataTypes.HIVE_COLUMN.getName()),
-                        Multiplicity.COLLECTION, true, null),
+                        Multiplicity.OPTIONAL, true, null),
                 new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
-
         };
         HierarchicalTypeDefinition<ClassType> definition =
                 new HierarchicalTypeDefinition<>(ClassType.class,
@@ -368,7 +367,7 @@ public class HiveDataModelGenerator {
 
     private void createTableClass() throws MetadataException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition("tableName", DataTypes.STRING_TYPE.getName(),
+                new AttributeDefinition("name", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("dbName", HiveDataTypes.HIVE_DB.getName(),
                         Multiplicity.REQUIRED, false, null),
@@ -385,9 +384,9 @@ public class HiveDataModelGenerator {
                 new AttributeDefinition("partitionKeys",
                         DataTypes.arrayTypeName(HiveDataTypes.HIVE_COLUMN.getName()),
                         Multiplicity.OPTIONAL, false, null),
-                // new AttributeDefinition("columns",
-                //         DataTypes.arrayTypeName(HiveDataTypes.HIVE_COLUMN.getName()),
-                //         Multiplicity.COLLECTION, true, null),
+                new AttributeDefinition("columns",
+                        DataTypes.arrayTypeName(HiveDataTypes.HIVE_COLUMN.getName()),
+                        Multiplicity.OPTIONAL, true, null),
                 new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("viewOriginalText", DataTypes.STRING_TYPE.getName(),
@@ -481,7 +480,7 @@ public class HiveDataModelGenerator {
 
     private void createProcessClass() throws MetadataException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition("processName", DataTypes.STRING_TYPE.getName(),
+                new AttributeDefinition("name", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("startTime", DataTypes.INT_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),

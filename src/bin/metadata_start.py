@@ -20,8 +20,9 @@ import sys
 
 import metadata_config as mc
 
-METADATA_LOG_OPTS="-Dmetadata.log.dir=%s"
+METADATA_LOG_OPTS="-Dmetadata.log.dir=%s -Dmetadata.log.file=application.log"
 METADATA_COMMAND_OPTS="-Dmetadata.home=%s"
+METADATA_CONFIG_OPTS="-Dmetadata.conf=%s"
 DEFAULT_JVM_OPTS="-Xmx1024m"
 
 def main():
@@ -36,6 +37,9 @@ def main():
 
     cmd_opts = (METADATA_COMMAND_OPTS % metadata_home)
     jvm_opts_list.extend(cmd_opts.split())
+
+    config_opts = (METADATA_CONFIG_OPTS % confdir)
+    jvm_opts_list.extend(config_opts.split())
 
     default_jvm_opts = DEFAULT_JVM_OPTS
     metadata_jvm_opts = os.environ.get(mc.METADATA_OPTS, default_jvm_opts)
