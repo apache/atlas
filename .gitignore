@@ -38,3 +38,7 @@ test-output
 
 #Python
 *.pyc
+
+# other files
+.DS_Store
+*.swp
