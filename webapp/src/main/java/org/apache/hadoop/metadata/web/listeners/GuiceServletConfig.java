@@ -49,6 +49,8 @@ public class GuiceServletConfig extends GuiceServletContextListener {
     static final String HTTP_AUTHENTICATION_ENABLED = "metadata.http.authentication.enabled";
     private Injector injector;
 
+    public static final String BASE_URI = "/api/metadata/";
+
     @Override
     protected Injector getInjector() {
         LOG.info("Loading Guice modules");
@@ -77,7 +79,7 @@ public class GuiceServletConfig extends GuiceServletContextListener {
 
                             Map<String, String> params = new HashMap<>();
                             params.put(PackagesResourceConfig.PROPERTY_PACKAGES, packages);
-                            serve("/api/metadata/*").with(GuiceContainer.class, params);
+                            serve(BASE_URI + "*").with(GuiceContainer.class, params);
                         }
 
                         private void configureAuthenticationFilter() throws ConfigurationException {

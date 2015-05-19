@@ -93,18 +93,15 @@ public class DefaultMetadataService implements MetadataService {
             if(typesDef.isEmpty())
                 throw new MetadataException("Invalid type definition");
 
-            Map<String, IDataType> typesAdded = typeSystem.defineTypes(typesDef);
+            final Map<String, IDataType> typesAdded = typeSystem.defineTypes(typesDef);
             
             //TODO how do we handle transaction - store failure??
             typeStore.store(typeSystem, ImmutableList.copyOf(typesAdded.keySet()));
 
             onTypesAddedToRepo(typesAdded);
-
-            JSONObject response = new JSONObject();
-            for (Map.Entry<String, IDataType> entry : typesAdded.entrySet()) {
-                response.put(entry.getKey(), entry.getValue().getName());
-            }
-
+            JSONObject response = new JSONObject() {{
+                put("types", typesAdded.keySet());
+            }};
             return response;
         } catch (JSONException e) {
             LOG.error("Unable to create response for types={}", typeDefinition, e);

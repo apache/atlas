@@ -49,13 +49,18 @@ import static org.apache.hadoop.metadata.security.SecurityProperties.TLS_ENABLED
  */
 public class MetadataServiceClient {
     private static final Logger LOG = LoggerFactory.getLogger(MetadataServiceClient.class);
+    public static final String NAME = "name";
+    public static final String URI = "id";
+    public static final String GUID = "GUID";
+    public static final String DEFINITION = "definition";
+    public static final String ERROR = "error";
     public static final String REQUEST_ID = "requestId";
     public static final String RESULTS = "results";
     public static final String TOTAL_SIZE = "totalSize";
-    private static final String BASE_URI = "api/metadata/";
-    private static final String URI_TYPES = "types";
-    private static final String URI_ENTITIES = "entities";
-    private static final String URI_TRAITS = "traits";
+    public static final String BASE_URI = "api/metadata/";
+    public static final String URI_TYPES = "types";
+    public static final String URI_ENTITIES = "entities";
+    public static final String URI_TRAITS = "traits";
     private static final String URI_SEARCH = "discovery/search";
 
     private WebResource service;
@@ -86,6 +91,7 @@ public class MetadataServiceClient {
     }
 
     static enum API {
+
         //Type operations
         CREATE_TYPE(BASE_URI + URI_TYPES, HttpMethod.POST),
         GET_TYPE(BASE_URI + URI_TYPES, HttpMethod.GET),
@@ -96,7 +102,7 @@ public class MetadataServiceClient {
         CREATE_ENTITY(BASE_URI + URI_ENTITIES, HttpMethod.POST),
         GET_ENTITY(BASE_URI + URI_ENTITIES, HttpMethod.GET),
         UPDATE_ENTITY(BASE_URI + URI_ENTITIES, HttpMethod.PUT),
-        LIST_ENTITY(BASE_URI + URI_ENTITIES + "?type=", HttpMethod.GET),
+        LIST_ENTITY(BASE_URI + URI_ENTITIES, HttpMethod.GET),
 
         //Trait operations
         ADD_TRAITS(BASE_URI + URI_TRAITS, HttpMethod.POST),
@@ -128,7 +134,7 @@ public class MetadataServiceClient {
 
     public List<String> listTypes() throws MetadataServiceException {
         try {
-            final JSONObject jsonObject = callAPI(API.LIST_TYPES, null);
+            final JSONObject jsonObject = callAPI(API.LIST_TYPES, Response.Status.OK, null);
             final JSONArray list = jsonObject.getJSONArray(MetadataServiceClient.RESULTS);
             ArrayList<String> types = new ArrayList<>();
             for (int index = 0; index < list.length(); index++) {
@@ -144,7 +150,7 @@ public class MetadataServiceClient {
     public String getType(String typeName) throws MetadataServiceException {
         WebResource resource = getResource(API.GET_TYPE, typeName);
         try {
-            JSONObject response = callAPIWithResource(API.GET_TYPE, resource);
+            JSONObject response = callAPIWithResource(API.GET_TYPE, resource, Response.Status.OK);
             return response.getString("definition");
         } catch (MetadataServiceException e) {
             if (e.getStatus() == ClientResponse.Status.NOT_FOUND) {
@@ -163,7 +169,7 @@ public class MetadataServiceClient {
      * @throws MetadataServiceException
      */
     public JSONObject createType(String typeAsJson) throws MetadataServiceException {
-        return callAPI(API.CREATE_TYPE, typeAsJson);
+        return callAPI(API.CREATE_TYPE, typeAsJson, Response.Status.CREATED);
     }
 
     /**
@@ -173,7 +179,7 @@ public class MetadataServiceClient {
      * @throws MetadataServiceException
      */
     public JSONObject createEntity(String entityAsJson) throws MetadataServiceException {
-        return callAPI(API.CREATE_ENTITY, entityAsJson);
+        return callAPI(API.CREATE_ENTITY, entityAsJson, Response.Status.CREATED);
     }
 
     /**
@@ -183,9 +189,9 @@ public class MetadataServiceClient {
      * @throws MetadataServiceException
      */
     public Referenceable getEntity(String guid) throws MetadataServiceException {
-        JSONObject jsonResponse = callAPI(API.GET_ENTITY, null, guid);
+        JSONObject jsonResponse = callAPI(API.GET_ENTITY, null, Response.Status.OK, guid);
         try {
-            String entityInstanceDefinition = jsonResponse.getString(MetadataServiceClient.RESULTS);
+            String entityInstanceDefinition = jsonResponse.getString(MetadataServiceClient.GUID);
             return InstanceSerialization.fromJsonReferenceable(entityInstanceDefinition, true);
         } catch (JSONException e) {
             throw new MetadataServiceException(e);
@@ -195,7 +201,7 @@ public class MetadataServiceClient {
     public JSONObject searchEntity(String searchQuery) throws MetadataServiceException {
         WebResource resource = getResource(API.SEARCH);
         resource = resource.queryParam("query", searchQuery);
-        return callAPIWithResource(API.SEARCH, resource);
+        return callAPIWithResource(API.SEARCH, resource, Response.Status.OK);
     }
 
     /**
@@ -225,7 +231,7 @@ public class MetadataServiceClient {
     public JSONArray searchByDSL(String query) throws MetadataServiceException {
         WebResource resource = getResource(API.SEARCH_DSL);
         resource = resource.queryParam("query", query);
-        JSONObject result = callAPIWithResource(API.SEARCH_DSL, resource);
+        JSONObject result = callAPIWithResource(API.SEARCH_DSL, resource, Response.Status.OK);
         try {
             return result.getJSONObject("results").getJSONArray("rows");
         } catch (JSONException e) {
@@ -242,7 +248,7 @@ public class MetadataServiceClient {
     public JSONObject searchByGremlin(String gremlinQuery) throws MetadataServiceException {
         WebResource resource = getResource(API.SEARCH_GREMLIN);
         resource = resource.queryParam("query", gremlinQuery);
-        return callAPIWithResource(API.SEARCH_GREMLIN, resource);
+        return callAPIWithResource(API.SEARCH_GREMLIN, resource, Response.Status.OK);
     }
 
     /**
@@ -254,7 +260,7 @@ public class MetadataServiceClient {
     public JSONObject searchByFullText(String query) throws MetadataServiceException {
         WebResource resource = getResource(API.SEARCH_FULL_TEXT);
         resource = resource.queryParam("query", query);
-        return callAPIWithResource(API.SEARCH_FULL_TEXT, resource);
+        return callAPIWithResource(API.SEARCH_FULL_TEXT, resource, Response.Status.OK);
     }
 
     public String getRequestId(JSONObject json) throws MetadataServiceException {
@@ -275,19 +281,20 @@ public class MetadataServiceClient {
         return resource;
     }
 
-    private JSONObject callAPIWithResource(API api, WebResource resource) throws MetadataServiceException {
-        return callAPIWithResource(api, resource, null);
+    private JSONObject callAPIWithResource(API api, WebResource resource, Response.Status expectedStatus) throws MetadataServiceException {
+        return callAPIWithResource(api, resource, null, expectedStatus);
     }
 
-    private JSONObject callAPIWithResource(API api, WebResource resource, Object requestObject)
+    private JSONObject callAPIWithResource(API api, WebResource resource, Object requestObject, Response.Status expectedStatus)
             throws MetadataServiceException {
         ClientResponse clientResponse = resource
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(api.getMethod(), ClientResponse.class, requestObject);
 
-        if (clientResponse.getStatus() == Response.Status.OK.getStatusCode()) {
+        if (clientResponse.getStatus() == expectedStatus.getStatusCode()) {
             String responseAsString = clientResponse.getEntity(String.class);
+            System.out.println("response : " + responseAsString);
             try {
                 return new JSONObject(responseAsString);
             } catch (JSONException e) {
@@ -299,8 +306,8 @@ public class MetadataServiceClient {
     }
 
     private JSONObject callAPI(API api, Object requestObject,
-                               String... pathParams) throws MetadataServiceException {
+                               Response.Status expectedStatus, String... pathParams) throws MetadataServiceException {
         WebResource resource = getResource(api, pathParams);
-        return callAPIWithResource(api, resource, requestObject);
+        return callAPIWithResource(api, resource, requestObject, expectedStatus);
     }
 }
