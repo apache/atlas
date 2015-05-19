@@ -278,7 +278,7 @@ object InstanceSerialization {
     }
     case s : IStruct => _Struct(s.getTypeName, asScala(s.getValuesMap).asInstanceOf[Map[String, AnyRef]])
     case l : java.util.List[_] => l.asScala.map(e => asScala(e)).toList
-    case m : java.util.Map[_, _] => m.asScala.mapValues(v => asScala(v)).toMap
+    case m : java.util.Map[_, _] => m.asScala.map(t => (asScala(t._1), asScala(t._2))).toMap
     case _ => v
   }
 

@@ -104,6 +104,17 @@ class GremlinTest2 extends FunSuite with BeforeAndAfterAll with BaseGremlinTest 
     validateJson(r)
   }
 
+  test("testHighLevelLineageReturnGraph") {
+    val r = HiveLineageQuery("Table", "sales_fact_monthly_mv",
+      "LoadProcess",
+      "inputTables",
+      "outputTable",
+      None, Some(List("name")), true, GraphPersistenceStrategy1, g).graph
+
+    println(r.toInstanceJson)
+    //validateJson(r)
+  }
+
   test("testHighLevelWhereUsed") {
     val r = HiveWhereUsedQuery("Table", "sales_fact",
       "LoadProcess",
@@ -111,6 +122,15 @@ class GremlinTest2 extends FunSuite with BeforeAndAfterAll with BaseGremlinTest 
       "outputTable",
       None, Some(List("name")), true, GraphPersistenceStrategy1, g).evaluate()
     validateJson(r)
+  }
+
+  test("testHighLevelWhereUsedReturnGraph") {
+    val r = HiveWhereUsedQuery("Table", "sales_fact",
+      "LoadProcess",
+      "inputTables",
+      "outputTable",
+      None, Some(List("name")), true, GraphPersistenceStrategy1, g).graph
+    println(r.toInstanceJson)
   }
 
 }
