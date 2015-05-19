@@ -18,10 +18,16 @@
 
 package org.apache.hadoop.metadata.query
 
+import java.util
+
 import Expressions._
 import com.thinkaurelius.titan.core.TitanGraph
-import org.apache.hadoop.metadata.typesystem.types.DataTypes
-import org.apache.hadoop.metadata.typesystem.types.DataTypes.PrimitiveType
+import org.apache.hadoop.metadata.MetadataException
+import org.apache.hadoop.metadata.typesystem.ITypedStruct
+import org.apache.hadoop.metadata.typesystem.json.{InstanceSerialization, Serialization}
+import org.apache.hadoop.metadata.typesystem.persistence.{Id, StructInstance}
+import org.apache.hadoop.metadata.typesystem.types.{TypeSystem, StructType, DataTypes}
+import org.apache.hadoop.metadata.typesystem.types.DataTypes.{MapType, PrimitiveType}
 
 /**
  * Represents a Query to compute the closure based on a relationship between entities of a particular type.
@@ -61,6 +67,9 @@ import org.apache.hadoop.metadata.typesystem.types.DataTypes.PrimitiveType
  * Given these 5 things the ClosureQuery can be executed, it returns a GremlinQueryResult of the Closure Query.
  */
 trait ClosureQuery {
+
+  val SRC_PREFIX = TypeUtils.GraphResultStruct.SRC_PREFIX
+  val DEST_PREFIX = TypeUtils.GraphResultStruct.DEST_PREFIX
 
   sealed trait PathAttribute {
 
@@ -129,14 +138,88 @@ trait ClosureQuery {
   def srcCondition(expr : Expression) : Expression = expr
 
   def expr : Expressions.Expression = {
-    val e = srcCondition(Expressions._class(closureType)).as("src").loop(pathExpr).as("dest").
-      select((selectExpr("src") ++ selectExpr("dest")):_*)
+    val e = srcCondition(Expressions._class(closureType)).as(SRC_PREFIX).loop(pathExpr).as(DEST_PREFIX).
+      select((selectExpr(SRC_PREFIX) ++ selectExpr(DEST_PREFIX)):_*)
     if (withPath) e.path else e
   }
 
   def evaluate(): GremlinQueryResult = {
     var e = expr
     QueryProcessor.evaluate(e, g, persistenceStrategy)
+  }
+
+  def graph : GraphResult = {
+
+    if (!withPath) {
+      throw new ExpressionException(expr, "Graph requested for non Path Query")
+    }
+
+    import scala.collection.JavaConverters._
+
+    val res = evaluate()
+
+    val graphResType = TypeUtils.GraphResultStruct.createType(res.resultDataType.asInstanceOf[StructType])
+    val vertexPayloadType = {
+      val mT = graphResType.fieldMapping.fields.get(TypeUtils.GraphResultStruct.verticesAttrName).
+        dataType().asInstanceOf[MapType]
+      mT.getValueType.asInstanceOf[StructType]
+    }
+
+    def id(idObj : StructInstance) : String = idObj.getString(TypeSystem.ID_STRUCT_ID_ATTRNAME)
+
+    def vertexStruct(idObj : StructInstance, resRow : ITypedStruct, attrPrefix : String) : StructInstance = {
+      val vP = vertexPayloadType.createInstance()
+      vP.set(TypeUtils.GraphResultStruct.vertexIdAttrName, idObj)
+      vertexPayloadType.fieldMapping.fields.asScala.keys.
+        filter(_ != TypeUtils.GraphResultStruct.vertexIdAttrName).foreach{a =>
+        vP.set(a, resRow.get(s"${attrPrefix}$a"))
+      }
+      vP.asInstanceOf[StructInstance]
+    }
+
+    val instance = graphResType.createInstance()
+    val vertices = new util.HashMap[String, AnyRef]()
+    val edges = new util.HashMap[String,java.util.List[String]]()
+
+    /**
+     * foreach resultRow
+     *   for each Path entry
+     *     add an entry in the edges Map
+     *   add an entry for the Src Vertex to the vertex Map
+     *   add an entry for the Dest Vertex to the vertex Map
+     */
+    res.rows.map(_.asInstanceOf[StructInstance]).foreach { r =>
+
+      val path = r.get(TypeUtils.ResultWithPathStruct.pathAttrName).asInstanceOf[java.util.List[_]].asScala
+      val srcVertex = path.head.asInstanceOf[StructInstance]
+
+      var currVertex = srcVertex
+      path.tail.foreach { n =>
+        val nextVertex = n.asInstanceOf[StructInstance]
+        val iList = if (!edges.containsKey(id(currVertex))) {
+          val l = new util.ArrayList[String]()
+          edges.put(id(currVertex), l)
+          l
+        } else {
+          edges.get(id(currVertex))
+        }
+        if ( !iList.contains(id(nextVertex))) {
+          iList.add(id(nextVertex))
+        }
+        currVertex = nextVertex
+      }
+      val vertex = r.get(TypeUtils.ResultWithPathStruct.resultAttrName)
+      vertices.put(id(srcVertex), vertexStruct(srcVertex,
+        r.get(TypeUtils.ResultWithPathStruct.resultAttrName).asInstanceOf[ITypedStruct],
+        s"${SRC_PREFIX}_"))
+      vertices.put(id(currVertex), vertexStruct(currVertex,
+        r.get(TypeUtils.ResultWithPathStruct.resultAttrName).asInstanceOf[ITypedStruct],
+        s"${DEST_PREFIX}_"))
+    }
+
+    instance.set(TypeUtils.GraphResultStruct.verticesAttrName, vertices)
+    instance.set(TypeUtils.GraphResultStruct.edgesAttrName, edges)
+    GraphResult(res.query, instance)
   }
 }
 
@@ -237,4 +320,11 @@ case class HiveWhereUsedQuery(tableTypeName : String,
     ReverseRelation(ctasTypeName, ctasInputTableAttribute),
     Relation(ctasOutputTableAttribute)
   )
+}
+
+case class GraphResult(query: String, result : ITypedStruct) {
+
+  def toTypedJson = Serialization.toJson(result)
+
+  def toInstanceJson = InstanceSerialization.toJson(result)
 }

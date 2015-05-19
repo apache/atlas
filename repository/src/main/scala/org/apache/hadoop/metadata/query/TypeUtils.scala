@@ -86,6 +86,66 @@ object TypeUtils {
       }
     }
 
+  /**
+   * Structure representing the Closure Graph.
+   * Returns:
+   * 1. A map of vertexId -> vertex Info(these are the attributes requested in the query)
+   * 2. A edges map: each entry is a mapping from an vertexId to the List of adjacent vertexIds.
+   *
+   * '''The Vertex Map doesn't contain all the vertices in the Graph. Only the ones for which Attributes are
+   * available.''' These are the vertices that represent the EntityType whose Closure was requested. For e.g. for
+   * Table Lineage the ''vertex map'' will contain information  about Tables, but not about ''Load Process'' vertices
+   * that connect Tables.
+   */
+  object GraphResultStruct {
+    val SRC_PREFIX = "src"
+    val DEST_PREFIX = "dest"
+
+    val verticesAttrName = "vertices"
+    val edgesAttrName = "edges"
+    val vertexIdAttrName = "vertexId"
+
+    lazy val edgesAttrType = typSystem.defineMapType(DataTypes.STRING_TYPE,
+      typSystem.defineArrayType(DataTypes.STRING_TYPE))
+
+    def createType(resultWithPathType: StructType): StructType = {
+      val resultType = resultWithPathType.fieldMapping().fields.get(ResultWithPathStruct.resultAttrName).dataType()
+
+      val verticesAttrType = typSystem.defineMapType(DataTypes.STRING_TYPE,
+        vertexType(resultType.asInstanceOf[StructType]))
+      val typName = s"${TEMP_STRUCT_NAME_PREFIX}${tempStructCounter.getAndIncrement}"
+      val verticesAttr = new AttributeDefinition(verticesAttrName, verticesAttrType.getName,
+        Multiplicity.REQUIRED, false, null)
+      val edgesAttr = new AttributeDefinition(edgesAttrName, edgesAttrType.getName, Multiplicity.REQUIRED, false, null)
+
+      val m: java.util.HashMap[String, IDataType[_]] = new util.HashMap[String, IDataType[_]]()
+      m.put(resultWithPathType.getName, resultWithPathType)
+      m.put(resultType.getName, resultType)
+      m.put(edgesAttrType.getName, edgesAttrType)
+      m.put(verticesAttrType.getName, verticesAttrType)
+      typSystem.defineQueryResultType(typName, m, verticesAttr, edgesAttr)
+    }
+
+    private def vertexType(resultType: StructType): StructType = {
+
+      import scala.collection.JavaConverters._
+
+      var attrs: List[AttributeDefinition] =
+        resultType.fieldMapping.fields.asScala.filter(_._1.startsWith(s"${SRC_PREFIX}_")).mapValues { aInfo =>
+
+        new AttributeDefinition(aInfo.name.substring(s"${SRC_PREFIX}_".length), aInfo.dataType.getName,
+          aInfo.multiplicity, aInfo.isComposite, aInfo.reverseAttributeName)
+      }.values.toList
+
+      attrs = new AttributeDefinition(vertexIdAttrName, typSystem.getIdType.getStructType.name,
+        Multiplicity.REQUIRED, false, null) :: attrs
+
+      return typSystem.defineQueryResultType(s"${TEMP_STRUCT_NAME_PREFIX}${tempStructCounter.getAndIncrement}",
+        null,
+        attrs: _*)
+    }
+  }
+
     def fieldMapping(iDataType: IDataType[_]) : Option[FieldMapping] = iDataType match {
         case c : ClassType => Some(c.fieldMapping())
         case t : TraitType => Some(t.fieldMapping())

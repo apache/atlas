@@ -653,4 +653,6 @@ public class TypeSystem {
         public String idAttrName() { return ID_ATTRNAME;}
         public String typeNameAttrName() { return TYPENAME_ATTRNAME;}
     }
+
+    public static final String ID_STRUCT_ID_ATTRNAME = IdType.ID_ATTRNAME;
 }
