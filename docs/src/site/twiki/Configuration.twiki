@@ -1,0 +1,60 @@
+---+ Configuring Apache Atlas
+
+---++ Introduction
+
+All configuration in Atlas uses java properties style configuration.
+
+---++ Application Properties
+
+The main configuration file is application.properties which is in the *conf* dir at the deployed
+location. It consists of the following sections:
+
+---+++ Graph Database Configs
+
+---++++ Graph persistence engine
+
+This section sets up the graph db - titan - to use a persistence engine. Please refer to
+<a href="http://s3.thinkaurelius.com/docs/titan/0.5.4/titan-config-ref.html">link</a> for more
+details. The example below uses BerkeleyDBJE.
+
+<verbatim>
+metadata.graph.storage.backend=berkeleyje
+metadata.graph.storage.directory=data/berkley
+</verbatim>
+
+---++++ Graph Search Index
+This section sets up the graph db - titan - to use an search indexing system. The example
+configuration below setsup to use an embedded Elastic search indexing system.
+
+<verbatim>
+metadata.graph.index.search.backend=elasticsearch
+metadata.graph.index.search.directory=data/es
+metadata.graph.index.search.elasticsearch.client-only=false
+metadata.graph.index.search.elasticsearch.local-mode=true
+metadata.graph.index.search.elasticsearch.create.sleep=2000
+</verbatim>
+
+---+++ Hive Lineage Configs
+The higher layer services like hive lineage, schema, etc. are driven by the type system and this
+section encodes the specific types for the hive data model.
+
+# This models follows the quick-start guide
+<verbatim>
+metadata.lineage.hive.table.type.name=hive_table
+metadata.lineage.hive.table.column.name=columns
+metadata.lineage.hive.process.type.name=hive_process
+metadata.lineage.hive.process.inputs.name=inputTables
+metadata.lineage.hive.process.outputs.name=outputTables
+#Currently unused
+#metadata.lineage.hive.column.type.name=Column
+</verbatim>
+
+---+++ Security Properties
+
+---++++ SSL config
+The following property is used to toggle the SSL feature.
+
+<verbatim>
+metadata.enableTLS=false
+</verbatim>
+
