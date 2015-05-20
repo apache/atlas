@@ -138,7 +138,7 @@ public class MetadataServiceClient {
 
     public List<String> listTypes() throws MetadataServiceException {
         try {
-            final JSONObject jsonObject = callAPI(API.LIST_TYPES, Response.Status.OK, null);
+            final JSONObject jsonObject = callAPI(API.LIST_TYPES, null);
             final JSONArray list = jsonObject.getJSONArray(MetadataServiceClient.RESULTS);
             ArrayList<String> types = new ArrayList<>();
             for (int index = 0; index < list.length(); index++) {
@@ -154,7 +154,7 @@ public class MetadataServiceClient {
     public String getType(String typeName) throws MetadataServiceException {
         WebResource resource = getResource(API.GET_TYPE, typeName);
         try {
-            JSONObject response = callAPIWithResource(API.GET_TYPE, resource, Response.Status.OK);
+            JSONObject response = callAPIWithResource(API.GET_TYPE, resource);
             return response.getString(DEFINITION);
         } catch (MetadataServiceException e) {
             if (e.getStatus() == ClientResponse.Status.NOT_FOUND) {
@@ -205,7 +205,7 @@ public class MetadataServiceClient {
     public JSONObject searchEntity(String searchQuery) throws MetadataServiceException {
         WebResource resource = getResource(API.SEARCH);
         resource = resource.queryParam("query", searchQuery);
-        return callAPIWithResource(API.SEARCH, resource, Response.Status.OK);
+        return callAPIWithResource(API.SEARCH, resource);
     }
 
     /**
@@ -235,9 +235,9 @@ public class MetadataServiceClient {
     public JSONArray searchByDSL(String query) throws MetadataServiceException {
         WebResource resource = getResource(API.SEARCH_DSL);
         resource = resource.queryParam("query", query);
-        JSONObject result = callAPIWithResource(API.SEARCH_DSL, resource, Response.Status.OK);
+        JSONObject result = callAPIWithResource(API.SEARCH_DSL, resource);
         try {
-            return result.getJSONObject("results").getJSONArray("rows");
+            return result.getJSONObject(RESULTS).getJSONArray(ROWS);
         } catch (JSONException e) {
             throw new MetadataServiceException(e);
         }
@@ -252,7 +252,7 @@ public class MetadataServiceClient {
     public JSONObject searchByGremlin(String gremlinQuery) throws MetadataServiceException {
         WebResource resource = getResource(API.SEARCH_GREMLIN);
         resource = resource.queryParam("query", gremlinQuery);
-        return callAPIWithResource(API.SEARCH_GREMLIN, resource, Response.Status.OK);
+        return callAPIWithResource(API.SEARCH_GREMLIN, resource);
     }
 
     /**
@@ -264,7 +264,7 @@ public class MetadataServiceClient {
     public JSONObject searchByFullText(String query) throws MetadataServiceException {
         WebResource resource = getResource(API.SEARCH_FULL_TEXT);
         resource = resource.queryParam("query", query);
-        return callAPIWithResource(API.SEARCH_FULL_TEXT, resource, Response.Status.OK);
+        return callAPIWithResource(API.SEARCH_FULL_TEXT, resource);
     }
 
     public String getRequestId(JSONObject json) throws MetadataServiceException {
