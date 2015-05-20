@@ -157,7 +157,7 @@ public class TypesResource {
 
             JSONObject response = new JSONObject();
             response.put(MetadataServiceClient.RESULTS, new JSONArray(result));
-            response.put(MetadataServiceClient.TOTAL_SIZE, result.size());
+            response.put(MetadataServiceClient.COUNT, result.size());
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
 
             return Response.ok(response).build();

@@ -83,8 +83,12 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         JSONObject results = response.getJSONObject(MetadataServiceClient.RESULTS);
         Assert.assertNotNull(results);
 
-        JSONArray rows = results.getJSONArray("rows");
+        JSONArray rows = results.getJSONArray(MetadataServiceClient.ROWS);
         Assert.assertEquals(rows.length(), 1);
+
+        int numRows = response.getInt(MetadataServiceClient.COUNT);
+        Assert.assertEquals(numRows, 1);
+
     }
 
     @Test
@@ -164,6 +168,9 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(row.get("guid"));
         Assert.assertEquals(row.getString("typeName"), "dsl_test_type");
         Assert.assertNotNull(row.get("score"));
+
+        int numRows = response.getInt(MetadataServiceClient.COUNT);
+        Assert.assertEquals(numRows, 1);
     }
 
     private void createTypes() throws Exception {

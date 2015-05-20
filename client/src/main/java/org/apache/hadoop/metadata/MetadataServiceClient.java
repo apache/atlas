@@ -57,12 +57,15 @@ public class MetadataServiceClient {
     public static final String ERROR = "error";
     public static final String REQUEST_ID = "requestId";
     public static final String RESULTS = "results";
-    public static final String TOTAL_SIZE = "totalSize";
-    public static final String BASE_URI = "api/metadata/";
-    public static final String URI_TYPES = "types";
-    public static final String URI_ENTITIES = "entities";
-    public static final String URI_TRAITS = "traits";
-    public static final String URI_SEARCH = "discovery/search";
+    public static final String COUNT = "count";
+    public static final String ROWS = "rows";
+
+    private static final String BASE_URI = "api/metadata/";
+    private static final String URI_TYPES = "types";
+    private static final String URI_ENTITIES = "entities";
+    private static final String URI_TRAITS = "traits";
+    private static final String URI_SEARCH = "discovery/search";
+
 
     private WebResource service;
 
