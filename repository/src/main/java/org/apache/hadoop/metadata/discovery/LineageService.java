@@ -32,12 +32,28 @@ public interface LineageService {
     String getOutputs(String tableName) throws DiscoveryException;
 
     /**
+     * Return the lineage outputs graph for the given tableName.
+     *
+     * @param tableName tableName
+     * @return Outputs Graph as JSON
+     */
+    String getOutputsGraph(String tableName) throws DiscoveryException;
+
+    /**
      * Return the lineage inputs for the given tableName.
      *
      * @param tableName tableName
      * @return Inputs as JSON
      */
     String getInputs(String tableName) throws DiscoveryException;
+
+    /**
+     * Return the lineage inputs graph for the given tableName.
+     *
+     * @param tableName tableName
+     * @return Inputs Graph as JSON
+     */
+    String getInputsGraph(String tableName) throws DiscoveryException;
 
     /**
      * Return the schema for the given tableName.
