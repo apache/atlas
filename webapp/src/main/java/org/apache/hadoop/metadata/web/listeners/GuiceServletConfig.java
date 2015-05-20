@@ -31,6 +31,7 @@ import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.PropertiesUtil;
 import org.apache.hadoop.metadata.RepositoryMetadataModule;
 import org.apache.hadoop.metadata.repository.typestore.ITypeStore;
@@ -83,7 +84,7 @@ public class GuiceServletConfig extends GuiceServletContextListener {
 
                             Map<String, String> params = new HashMap<>();
                             params.put(PackagesResourceConfig.PROPERTY_PACKAGES, packages);
-                            serve("/api/metadata/*").with(GuiceContainer.class, params);
+                            serve("/" + MetadataServiceClient.BASE_URI + "*").with(GuiceContainer.class, params);
                         }
 
                         private void configureAuthenticationFilter() throws ConfigurationException {

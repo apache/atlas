@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,10 +19,14 @@
 package org.apache.hadoop.metadata.web.resources;
 
 import com.google.common.base.Preconditions;
+import com.google.inject.Guice;
+import com.sun.jersey.api.client.ClientResponse;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.services.MetadataService;
 import org.apache.hadoop.metadata.typesystem.types.DataTypes;
+import org.apache.hadoop.metadata.typesystem.types.IDataType;
+import org.apache.hadoop.metadata.web.listeners.GuiceServletConfig;
 import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -34,10 +38,12 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import javax.ws.rs.core.*;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * This class provides RESTful API for Types.
@@ -74,13 +80,22 @@ public class TypesResource {
             final String typeDefinition = Servlets.getRequestPayload(request);
             LOG.debug("creating type with definition {} ", typeDefinition);
 
-            JSONObject typesAdded = metadataService.createType(typeDefinition);
+            JSONObject typesJson = metadataService.createType(typeDefinition);
+            final JSONArray typesJsonArray = typesJson.getJSONArray(MetadataServiceClient.TYPES);
+
+            List<Map<String, String>> typesAddedList = new ArrayList<>();
+            for (int i = 0; i < typesJsonArray.length(); i++) {
+                final String name = typesJsonArray.getString(i);
+                typesAddedList.add(
+                        new HashMap<String, String>() {{
+                            put(MetadataServiceClient.NAME, name);
+                        }});
+            }
 
             JSONObject response = new JSONObject();
-            response.put("types", typesAdded);
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-
-            return Response.ok(response).build();
+            response.put(MetadataServiceClient.TYPES, typesAddedList);
+            return Response.status(ClientResponse.Status.CREATED).entity(response).build();
         } catch (Exception e) {
             LOG.error("Unable to persist types", e);
             throw new WebApplicationException(
@@ -103,7 +118,7 @@ public class TypesResource {
 
             JSONObject response = new JSONObject();
             response.put("typeName", typeName);
-            response.put("definition", typeDefinition);
+            response.put(MetadataServiceClient.DEFINITION, typeDefinition);
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
 
             return Response.ok(response).build();
@@ -124,7 +139,7 @@ public class TypesResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response getTypesByFilter(@Context HttpServletRequest request,
-                                  @DefaultValue(TYPE_ALL) @QueryParam("type") String type) {
+                                     @DefaultValue(TYPE_ALL) @QueryParam("type") String type) {
         try {
             List<String> result = null;
             if (TYPE_ALL.equals(type)) {
@@ -140,7 +155,7 @@ public class TypesResource {
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
 
             return Response.ok(response).build();
-        } catch(IllegalArgumentException ie) {
+        } catch (IllegalArgumentException ie) {
             LOG.error("Unsupported typeName while retrieving type list {}", type);
             throw new WebApplicationException(
                     Servlets.getErrorResponse("Unsupported type " + type, Response.Status.BAD_REQUEST));

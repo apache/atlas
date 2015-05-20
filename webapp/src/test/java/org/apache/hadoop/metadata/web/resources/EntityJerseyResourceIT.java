@@ -147,7 +147,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         JSONObject response = new JSONObject(responseAsString);
         Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
 
-        final String definition = response.getString(MetadataServiceClient.RESULTS);
+        final String definition = response.getString(MetadataServiceClient.DEFINITION);
         Assert.assertNotNull(definition);
         LOG.debug("tableInstanceAfterGet = " + definition);
         InstanceSerialization.fromJsonReferenceable(definition, true);
@@ -176,7 +176,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     private String getEntityDefinition(ClientResponse clientResponse) throws Exception {
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
         JSONObject response = new JSONObject(clientResponse.getEntity(String.class));
-        final String definition = response.getString(MetadataServiceClient.RESULTS);
+        final String definition = response.getString(MetadataServiceClient.DEFINITION);
         Assert.assertNotNull(definition);
 
         return definition;
@@ -196,6 +196,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         String responseAsString = clientResponse.getEntity(String.class);
         Assert.assertNotNull(responseAsString);
+
+        JSONObject response = new JSONObject(responseAsString);
+        Assert.assertNotNull(response.get(MetadataServiceClient.ERROR));
     }
 
     @Test(dependsOnMethods = "testSubmitEntity")
@@ -232,6 +235,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         String responseAsString = clientResponse.getEntity(String.class);
         Assert.assertNotNull(responseAsString);
+
+        JSONObject response = new JSONObject(responseAsString);
+        Assert.assertNotNull(response.get(MetadataServiceClient.ERROR));
     }
 
     @Test
@@ -311,15 +317,15 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.CREATED.getStatusCode());
 
         String responseAsString = clientResponse.getEntity(String.class);
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
         Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
-        Assert.assertNotNull(response.get("GUID"));
-        Assert.assertNotNull(response.get("traitInstance"));
+        Assert.assertNotNull(response.get(MetadataServiceClient.GUID));
+        Assert.assertNotNull(response.get(MetadataServiceClient.DEFINITION));
     }
 
     @Test
@@ -383,6 +389,12 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .method(HttpMethod.DELETE, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(),
                 Response.Status.BAD_REQUEST.getStatusCode());
+
+        String responseAsString = clientResponse.getEntity(String.class);
+        Assert.assertNotNull(responseAsString);
+
+        JSONObject response = new JSONObject(responseAsString);
+        Assert.assertNotNull(response.get(MetadataServiceClient.ERROR));
     }
 
     private void createHiveTypes() throws Exception {

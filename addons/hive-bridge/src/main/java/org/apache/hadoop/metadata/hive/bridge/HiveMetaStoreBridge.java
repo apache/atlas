@@ -155,7 +155,7 @@ public class HiveMetaStoreBridge {
         String entityJSON = InstanceSerialization.toJson(referenceable, true);
         LOG.debug("Submitting new entity {} = {}", referenceable.getTypeName(), entityJSON);
         JSONObject jsonObject = metadataServiceClient.createEntity(entityJSON);
-        String guid = jsonObject.getString(MetadataServiceClient.RESULTS);
+        String guid = jsonObject.getString(MetadataServiceClient.GUID);
         LOG.debug("created instance for type " + typeName + ", guid: " + guid);
 
         return new Referenceable(guid, referenceable.getTypeName(), null);

@@ -76,7 +76,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
                     .accept(MediaType.APPLICATION_JSON)
                     .type(MediaType.APPLICATION_JSON)
                     .method(HttpMethod.POST, ClientResponse.class, typesAsJSON);
-            Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+            Assert.assertEquals(clientResponse.getStatus(), Response.Status.CREATED.getStatusCode());
 
             String responseAsString = clientResponse.getEntity(String.class);
             Assert.assertNotNull(responseAsString);
