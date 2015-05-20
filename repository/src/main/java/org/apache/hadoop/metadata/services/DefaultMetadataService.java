@@ -21,6 +21,7 @@ package org.apache.hadoop.metadata.services;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.discovery.SearchIndexer;
 import org.apache.hadoop.metadata.listener.EntityChangeListener;
 import org.apache.hadoop.metadata.listener.TypesChangeListener;
@@ -100,7 +101,7 @@ public class DefaultMetadataService implements MetadataService {
 
             onTypesAddedToRepo(typesAdded);
             JSONObject response = new JSONObject() {{
-                put("types", typesAdded.keySet());
+                put(MetadataServiceClient.URI_TYPES, typesAdded.keySet());
             }};
             return response;
         } catch (JSONException e) {

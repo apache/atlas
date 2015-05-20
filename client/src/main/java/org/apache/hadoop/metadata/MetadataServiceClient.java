@@ -29,6 +29,7 @@ import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization;
 import org.apache.hadoop.metadata.typesystem.json.Serialization;
+import org.apache.http.protocol.HTTP;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -36,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.HttpMethod;
+import javax.ws.rs.POST;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
@@ -50,7 +52,6 @@ import static org.apache.hadoop.metadata.security.SecurityProperties.TLS_ENABLED
 public class MetadataServiceClient {
     private static final Logger LOG = LoggerFactory.getLogger(MetadataServiceClient.class);
     public static final String NAME = "name";
-    public static final String URI = "id";
     public static final String GUID = "GUID";
     public static final String DEFINITION = "definition";
     public static final String ERROR = "error";
@@ -61,7 +62,7 @@ public class MetadataServiceClient {
     public static final String URI_TYPES = "types";
     public static final String URI_ENTITIES = "entities";
     public static final String URI_TRAITS = "traits";
-    private static final String URI_SEARCH = "discovery/search";
+    public static final String URI_SEARCH = "discovery/search";
 
     private WebResource service;
 
@@ -169,7 +170,7 @@ public class MetadataServiceClient {
      * @throws MetadataServiceException
      */
     public JSONObject createType(String typeAsJson) throws MetadataServiceException {
-        return callAPI(API.CREATE_TYPE, typeAsJson, Response.Status.CREATED);
+        return callAPI(API.CREATE_TYPE, typeAsJson);
     }
 
     /**
@@ -179,7 +180,7 @@ public class MetadataServiceClient {
      * @throws MetadataServiceException
      */
     public JSONObject createEntity(String entityAsJson) throws MetadataServiceException {
-        return callAPI(API.CREATE_ENTITY, entityAsJson, Response.Status.CREATED);
+        return callAPI(API.CREATE_ENTITY, entityAsJson);
     }
 
     /**
@@ -189,7 +190,7 @@ public class MetadataServiceClient {
      * @throws MetadataServiceException
      */
     public Referenceable getEntity(String guid) throws MetadataServiceException {
-        JSONObject jsonResponse = callAPI(API.GET_ENTITY, null, Response.Status.OK, guid);
+        JSONObject jsonResponse = callAPI(API.GET_ENTITY, null, guid);
         try {
             String entityInstanceDefinition = jsonResponse.getString(MetadataServiceClient.GUID);
             return InstanceSerialization.fromJsonReferenceable(entityInstanceDefinition, true);
@@ -281,17 +282,19 @@ public class MetadataServiceClient {
         return resource;
     }
 
-    private JSONObject callAPIWithResource(API api, WebResource resource, Response.Status expectedStatus) throws MetadataServiceException {
-        return callAPIWithResource(api, resource, null, expectedStatus);
+    private JSONObject callAPIWithResource(API api, WebResource resource) throws MetadataServiceException {
+        return callAPIWithResource(api, resource, null);
     }
 
-    private JSONObject callAPIWithResource(API api, WebResource resource, Object requestObject, Response.Status expectedStatus)
+    private JSONObject callAPIWithResource(API api, WebResource resource, Object requestObject)
             throws MetadataServiceException {
         ClientResponse clientResponse = resource
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(api.getMethod(), ClientResponse.class, requestObject);
 
+        Response.Status expectedStatus = (api.getMethod() == HttpMethod.POST)
+            ? Response.Status.CREATED : Response.Status.OK;
         if (clientResponse.getStatus() == expectedStatus.getStatusCode()) {
             String responseAsString = clientResponse.getEntity(String.class);
             System.out.println("response : " + responseAsString);
@@ -306,8 +309,8 @@ public class MetadataServiceClient {
     }
 
     private JSONObject callAPI(API api, Object requestObject,
-                               Response.Status expectedStatus, String... pathParams) throws MetadataServiceException {
+                               String... pathParams) throws MetadataServiceException {
         WebResource resource = getResource(api, pathParams);
-        return callAPIWithResource(api, resource, requestObject, expectedStatus);
+        return callAPIWithResource(api, resource, requestObject);
     }
 }

@@ -36,10 +36,8 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+
 
 /**
  * Entity management operations as REST API.
@@ -89,7 +87,6 @@ public class EntityResource {
             JSONObject response = new JSONObject();
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
             response.put(MetadataServiceClient.GUID, guid);
-            response.put(MetadataServiceClient.URI, locationURI.toURL().toExternalForm());
             response.put(MetadataServiceClient.DEFINITION, entity);
 
             return Response.created(locationURI).entity(response).build();
@@ -268,7 +265,6 @@ public class EntityResource {
             JSONObject response = new JSONObject();
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
             response.put(MetadataServiceClient.GUID, guid);
-            response.put(MetadataServiceClient.URI, locationURI.toURL().toExternalForm());
             response.put(MetadataServiceClient.DEFINITION, traitDefinition);
 
             return Response.created(locationURI).entity(response).build();

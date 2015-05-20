@@ -95,7 +95,6 @@ public class TypesResource {
                 typesAddedList.add(
                         new HashMap<String, String>() {{
                             put(MetadataServiceClient.NAME, name);
-                            put(MetadataServiceClient.URI, locationUri.toURL().toExternalForm());
                         }});
             }
 
