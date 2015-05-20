@@ -29,6 +29,7 @@ import org.apache.hadoop.metadata.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.hadoop.metadata.query.HiveTitanSample;
 import org.apache.hadoop.metadata.query.QueryTestsUtils;
 import org.apache.hadoop.metadata.repository.graph.GraphBackedMetadataRepository;
+import org.apache.hadoop.metadata.repository.graph.GraphBackedSearchIndexer;
 import org.apache.hadoop.metadata.repository.graph.GraphHelper;
 import org.apache.hadoop.metadata.repository.graph.GraphProvider;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
@@ -224,6 +225,7 @@ public class GraphBackedDiscoveryServiceTest {
             {"Table as _loop0 loop (LoadProcess outputTable) withPath"},
             {"Table as src loop (LoadProcess outputTable) as dest select src.name as srcTable, dest.name as destTable withPath"},
             {"Table as t, sd, Column as c where t.name=\"sales_fact\" select c.name as colName, c.dataType as colType"},
+            {"Table where name='sales_fact', db where name='Reporting'"}
         };
     }
 
@@ -265,39 +267,6 @@ public class GraphBackedDiscoveryServiceTest {
         System.out.println("Executing dslQuery = " + dslQuery);
         discoveryService.searchByDSL(dslQuery);
         Assert.fail();
-    }
-
-    @Test
-    public void testSearchByDSLQuery() throws Exception {
-        String dslQuery = "Column as PII";
-        System.out.println("Executing dslQuery = " + dslQuery);
-        String jsonResults = discoveryService.searchByDSL(dslQuery);
-        Assert.assertNotNull(jsonResults);
-
-        JSONObject results = new JSONObject(jsonResults);
-        Assert.assertEquals(results.length(), 3);
-        System.out.println("results = " + results);
-
-        Object query = results.get("query");
-        Assert.assertNotNull(query);
-
-        JSONObject dataType = results.getJSONObject("dataType");
-        Assert.assertNotNull(dataType);
-        String typeName = dataType.getString("typeName");
-        Assert.assertNotNull(typeName);
-
-        JSONArray rows = results.getJSONArray("rows");
-        Assert.assertNotNull(rows);
-        Assert.assertTrue(rows.length() > 0);
-
-        for (int index = 0; index < rows.length(); index++) {
-            JSONObject row = rows.getJSONObject(index);
-            String type = row.getString("$typeName$");
-            Assert.assertEquals(type, "Column");
-
-            String name = row.getString("name");
-            Assert.assertNotEquals(name, "null");
-        }
     }
 
     @Test

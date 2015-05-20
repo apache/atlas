@@ -128,7 +128,16 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
     @Override
     public String getEdgeLabel(IDataType<?> dataType, AttributeInfo aInfo) {
-        return EDGE_LABEL_PREFIX + dataType.getName() + "." + aInfo.name;
+        return getEdgeLabel(dataType.getName(), aInfo.name);
+    }
+
+    public String getEdgeLabel(String typeName, String attrName) {
+        return EDGE_LABEL_PREFIX + typeName + "." + attrName;
+    }
+
+    public String getEdgeLabel(ITypedInstance typedInstance, AttributeInfo aInfo) throws MetadataException {
+        IDataType dataType = typeSystem.getDataType(IDataType.class, typedInstance.getTypeName());
+        return getEdgeLabel(dataType, aInfo);
     }
 
     @Override
@@ -275,7 +284,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             }
 
             final String entityTypeName = getTypeName(instanceVertex);
-            String relationshipLabel = entityTypeName + "." + traitNameToBeDeleted;
+            String relationshipLabel = getEdgeLabel(entityTypeName, traitNameToBeDeleted);
             Iterator<Edge> results = instanceVertex.getEdges(
                     Direction.OUT, relationshipLabel).iterator();
             if (results.hasNext()) { // there should only be one edge for this label
@@ -673,6 +682,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             Object attrValue = typedInstance.get(attributeInfo.name);
             LOG.debug("mapping attribute {} = {}", attributeInfo.name, attrValue);
             final String propertyName = getQualifiedName(typedInstance, attributeInfo);
+            String edgeLabel = getEdgeLabel(typedInstance, attributeInfo);
             if (attrValue == null) {
                 return;
             }
@@ -698,11 +708,10 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
                 case STRUCT:
                     Vertex structInstanceVertex = mapStructInstanceToVertex(id,
-                            (ITypedStruct) typedInstance.get(attributeInfo.name),
-                            attributeInfo, idToVertexMap);
+                            (ITypedStruct) typedInstance.get(attributeInfo.name), attributeInfo, idToVertexMap);
                     // add an edge to the newly created vertex from the parent
                     GraphHelper.addEdge(
-                            titanGraph, instanceVertex, structInstanceVertex, propertyName);
+                            titanGraph, instanceVertex, structInstanceVertex, edgeLabel);
                     break;
 
                 case TRAIT:
@@ -712,7 +721,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 case CLASS:
                     Id referenceId = (Id) typedInstance.get(attributeInfo.name);
                     mapClassReferenceAsEdge(
-                            instanceVertex, idToVertexMap, propertyName, referenceId);
+                            instanceVertex, idToVertexMap, edgeLabel, referenceId);
                     break;
 
                 default:
@@ -886,7 +895,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                     traitInstance.fieldMapping().fields, idToVertexMap);
 
             // add an edge to the newly created vertex from the parent
-            String relationshipLabel = typedInstanceTypeName + "." + traitName;
+            String relationshipLabel = getEdgeLabel(typedInstanceTypeName, traitName);
             GraphHelper.addEdge(
                     titanGraph, parentInstanceVertex, traitInstanceVertex, relationshipLabel);
         }
@@ -1017,7 +1026,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                     break;
 
                 case CLASS:
-                    String relationshipLabel = getQualifiedName(typedInstance, attributeInfo);
+                    String relationshipLabel = getEdgeLabel(typedInstance, attributeInfo);
                     Object idOrInstance = mapClassReferenceToVertex(instanceVertex,
                             attributeInfo, relationshipLabel, attributeInfo.dataType());
                     typedInstance.set(attributeInfo.name, idOrInstance);
@@ -1221,7 +1230,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             ITypedStruct structInstance = structType.createInstance();
             typedInstance.set(attributeInfo.name, structInstance);
 
-            String relationshipLabel = getQualifiedName(typedInstance, attributeInfo);
+            String relationshipLabel = getEdgeLabel(typedInstance, attributeInfo);
             LOG.debug("Finding edge for {} -> label {} ", instanceVertex, relationshipLabel);
             for (Edge edge : instanceVertex.getEdges(Direction.OUT, relationshipLabel)) {
                 final Vertex structInstanceVertex = edge.getVertex(Direction.IN);

@@ -19,6 +19,7 @@
 package org.apache.hadoop.metadata.services;
 
 import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.typesystem.types.DataTypes;
 import org.codehaus.jettison.json.JSONObject;
 
 import java.util.List;
@@ -57,7 +58,7 @@ public interface MetadataService {
      *
      * @return list of trait type names in the type system
      */
-    List<String> getTraitNamesList() throws MetadataException;
+    List<String> getTypeNamesByCategory(DataTypes.TypeCategory typeCategory) throws MetadataException;
 
     /**
      * Creates an entity, instance of the type.

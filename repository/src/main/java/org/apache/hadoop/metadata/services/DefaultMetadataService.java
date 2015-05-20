@@ -20,6 +20,7 @@ package org.apache.hadoop.metadata.services;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Injector;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.discovery.SearchIndexer;
 import org.apache.hadoop.metadata.listener.EntityChangeListener;
@@ -34,11 +35,7 @@ import org.apache.hadoop.metadata.typesystem.TypesDef;
 import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization;
 import org.apache.hadoop.metadata.typesystem.json.Serialization$;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
-import org.apache.hadoop.metadata.typesystem.types.ClassType;
-import org.apache.hadoop.metadata.typesystem.types.IDataType;
-import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
-import org.apache.hadoop.metadata.typesystem.types.TraitType;
-import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
+import org.apache.hadoop.metadata.typesystem.types.*;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
@@ -77,8 +74,21 @@ public class DefaultMetadataService implements MetadataService {
         this.typeSystem = TypeSystem.getInstance();
         this.repository = repository;
 
+        restoreTypeSystem();
         registerListener(searchIndexer);
     }
+
+    private void restoreTypeSystem() {
+        LOG.info("Restoring type system from the store");
+        try {
+            TypesDef typesDef = typeStore.restore();
+            typeSystem.defineTypes(typesDef);
+        } catch (MetadataException e) {
+            throw new RuntimeException(e);
+        }
+        LOG.info("Restored type system from the store");
+    }
+
 
     /**
      * Creates a new type based on the type system to enable adding
@@ -144,8 +154,8 @@ public class DefaultMetadataService implements MetadataService {
      * @return list of trait type names in the type system
      */
     @Override
-    public List<String> getTraitNamesList() throws MetadataException {
-        return typeSystem.getTraitsNames();
+    public List<String> getTypeNamesByCategory(DataTypes.TypeCategory typeCategory) throws MetadataException {
+        return typeSystem.getTypeNamesByCategory(typeCategory);
     }
 
     /**
@@ -195,7 +205,7 @@ public class DefaultMetadataService implements MetadataService {
         Preconditions.checkNotNull(guid, "guid cannot be null");
 
         final ITypedReferenceableInstance instance = repository.getEntityDefinition(guid);
-        return Serialization$.MODULE$.toJson(instance);
+        return InstanceSerialization.toJson(instance, true);
     }
 
     /**

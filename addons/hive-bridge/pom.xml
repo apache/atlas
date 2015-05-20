@@ -138,7 +138,7 @@
                 <version>2.10</version>
                 <executions>
                     <execution>
-                        <id>copy-dependencies</id>
+                        <id>copy-bridge-dependencies</id>
                         <phase>package</phase>
                         <goals>
                             <goal>copy-dependencies</goal>
@@ -152,28 +152,6 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>copy-hook-dependencies</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/dependency/hook/hive</outputDirectory>
-                            <includeScope>runtime</includeScope>
-                            <overWriteReleases>false</overWriteReleases>
-                            <overWriteSnapshots>false</overWriteSnapshots>
-                            <overWriteIfNewer>true</overWriteIfNewer>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <version>2.10</version>
-                <executions>
-                    <execution>
                         <id>copy</id>
                         <phase>package</phase>
                         <goals>
@@ -186,14 +164,72 @@
                                     <artifactId>${project.artifactId}</artifactId>
                                     <version>${project.version}</version>
                                     <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/dependency/bridge/hive</outputDirectory>
+                                    <outputDirectory>${project.build.directory}/dependency/hook/hive</outputDirectory>
                                 </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-hook-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/dependency/hook/hive</outputDirectory>
+                            <overWriteReleases>false</overWriteReleases>
+                            <overWriteSnapshots>false</overWriteSnapshots>
+                            <overWriteIfNewer>true</overWriteIfNewer>
+                            <artifactItems>
                                 <artifactItem>
                                     <groupId>${project.groupId}</groupId>
                                     <artifactId>${project.artifactId}</artifactId>
                                     <version>${project.version}</version>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/dependency/hook/hive</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.json4s</groupId>
+                                    <artifactId>json4s-native_2.10</artifactId>
+                                    <version>${json.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.json4s</groupId>
+                                    <artifactId>json4s-core_2.10</artifactId>
+                                    <version>${json.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.json4s</groupId>
+                                    <artifactId>json4s-ast_2.10</artifactId>
+                                    <version>${json.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>metadata-client</artifactId>
+                                    <version>${project.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>metadata-typesystem</artifactId>
+                                    <version>${project.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.scala-lang</groupId>
+                                    <artifactId>scala-compiler</artifactId>
+                                    <version>${scala.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.scala-lang</groupId>
+                                    <artifactId>scala-reflect</artifactId>
+                                    <version>${scala.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.scala-lang</groupId>
+                                    <artifactId>scala-library</artifactId>
+                                    <version>${scala.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.scala-lang</groupId>
+                                    <artifactId>scalap</artifactId>
+                                    <version>${scala.version}</version>
                                 </artifactItem>
                             </artifactItems>
                         </configuration>

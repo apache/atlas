@@ -18,7 +18,9 @@
 
 package org.apache.hadoop.metadata.typesystem.types;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Multimap;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.classification.InterfaceAudience;
 import org.apache.hadoop.metadata.typesystem.TypesDef;
@@ -55,9 +57,9 @@ public class TypeSystem {
     private IdType idType;
 
     /**
-     * An in-memory copy of list of traits for convenience.
+     * An in-memory copy of type categories vs types for convenience.
      */
-    private List<String> traitTypes;
+    private Multimap<DataTypes.TypeCategory, String> typeCategoriesToTypeNamesMap;
 
     private ImmutableList<String> coreTypes;
 
@@ -79,7 +81,7 @@ public class TypeSystem {
 
     private void initialize() {
         types = new ConcurrentHashMap<>();
-        traitTypes = new ArrayList<>();
+        typeCategoriesToTypeNamesMap = ArrayListMultimap.create(DataTypes.TypeCategory.values().length, 10);
 
         registerPrimitiveTypes();
         registerCoreTypes();
@@ -94,12 +96,8 @@ public class TypeSystem {
         return ImmutableList.copyOf(types.keySet());
     }
 
-    public ImmutableList<String> getTraitsNames() {
-        return ImmutableList.copyOf(traitTypes);
-    }
-
-    private void addTraitName(String traitName) {
-        traitTypes.add(traitName);
+    public ImmutableList<String> getTypeNamesByCategory(DataTypes.TypeCategory typeCategory) {
+        return ImmutableList.copyOf(typeCategoriesToTypeNamesMap.get(typeCategory));
     }
 
     private void registerPrimitiveTypes() {
@@ -114,6 +112,8 @@ public class TypeSystem {
         types.put(DataTypes.BIGDECIMAL_TYPE.getName(), DataTypes.BIGDECIMAL_TYPE);
         types.put(DataTypes.DATE_TYPE.getName(), DataTypes.DATE_TYPE);
         types.put(DataTypes.STRING_TYPE.getName(), DataTypes.STRING_TYPE);
+
+        typeCategoriesToTypeNamesMap.putAll(DataTypes.TypeCategory.PRIMITIVE, types.keySet());
     }
 
 
@@ -267,6 +267,7 @@ public class TypeSystem {
         assert elemType != null;
         DataTypes.ArrayType dT = new DataTypes.ArrayType(elemType);
         types.put(dT.getName(), dT);
+        typeCategoriesToTypeNamesMap.put(DataTypes.TypeCategory.ARRAY, dT.getName());
         return dT;
     }
 
@@ -276,6 +277,7 @@ public class TypeSystem {
         assert valueType != null;
         DataTypes.MapType dT = new DataTypes.MapType(keyType, valueType);
         types.put(dT.getName(), dT);
+        typeCategoriesToTypeNamesMap.put(DataTypes.TypeCategory.MAP, dT.getName());
         return dT;
     }
 
@@ -291,6 +293,7 @@ public class TypeSystem {
         }
         EnumType eT = new EnumType(this, eDef.name, eDef.enumValues);
         types.put(eDef.name, eT);
+        typeCategoriesToTypeNamesMap.put(DataTypes.TypeCategory.ENUM, eDef.name);
         return eT;
     }
 
@@ -520,17 +523,19 @@ public class TypeSystem {
 
             for (StructTypeDefinition structDef : structDefs) {
                 constructStructureType(structDef);
+                typeCategoriesToTypeNamesMap.put(DataTypes.TypeCategory.CLASS, structDef.typeName);
             }
 
             for (TraitType traitType : traitTypes) {
                 constructHierarchicalType(TraitType.class,
                         traitNameToDefMap.get(traitType.getName()));
-                addTraitName(traitType.getName());
+                typeCategoriesToTypeNamesMap.put(DataTypes.TypeCategory.TRAIT, traitType.getName());
             }
 
             for (ClassType classType : classTypes) {
                 constructHierarchicalType(ClassType.class,
                         classNameToDefMap.get(classType.getName()));
+                typeCategoriesToTypeNamesMap.put(DataTypes.TypeCategory.CLASS, classType.getName());
             }
         }
 

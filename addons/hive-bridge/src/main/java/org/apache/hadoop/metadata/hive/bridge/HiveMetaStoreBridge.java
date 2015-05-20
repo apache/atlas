@@ -40,6 +40,7 @@ import org.apache.hadoop.metadata.typesystem.json.Serialization;
 import org.apache.hadoop.metadata.typesystem.persistence.Id;
 import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,8 +120,8 @@ public class HiveMetaStoreBridge {
         if (results.length() == 0) {
             return null;
         } else {
-            ITypedReferenceableInstance reference = Serialization.fromJson(results.get(0).toString());
-            return new Referenceable(reference.getId().id, typeName, null);
+            String guid = getGuidFromDSLResponse(results.getJSONObject(0));
+            return new Referenceable(guid, typeName, null);
         }
     }
 
@@ -192,17 +193,20 @@ public class HiveMetaStoreBridge {
         //todo DSL support for reference doesn't work. is the usage right?
 //        String query = String.format("%s where dbName = \"%s\" and tableName = \"%s\"", typeName, dbRef.getId().id,
 //                tableName);
-        String query = String.format("%s where tableName = \"%s\"", typeName, tableName);
+        String query = String.format("%s where name = \"%s\"", typeName, tableName);
         JSONArray results = dgiClient.searchByDSL(query);
         if (results.length() == 0) {
             return null;
         } else {
             //There should be just one instance with the given name
-            ITypedReferenceableInstance reference = Serialization.fromJson(results.get(0).toString());
-            String guid = reference.getId().id;
+            String guid = getGuidFromDSLResponse(results.getJSONObject(0));
             LOG.debug("Got reference for table {}.{} = {}", dbRef, tableName, guid);
             return new Referenceable(guid, typeName, null);
         }
+    }
+
+    private String getGuidFromDSLResponse(JSONObject jsonObject) throws JSONException {
+        return jsonObject.getJSONObject("$id$").getString("id");
     }
 
     private Referenceable getSDForTable(Referenceable dbRef, String tableName) throws Exception {
@@ -212,7 +216,7 @@ public class HiveMetaStoreBridge {
         }
 
         MetadataServiceClient dgiClient = getMetadataServiceClient();
-        ITypedReferenceableInstance tableInstance = dgiClient.getEntity(tableRef.getId().id);
+        Referenceable tableInstance = dgiClient.getEntity(tableRef.getId().id);
         Id sdId = (Id) tableInstance.get("sd");
         return new Referenceable(sdId.id, sdId.getTypeName(), null);
     }
@@ -223,6 +227,7 @@ public class HiveMetaStoreBridge {
     }
 
     public Referenceable registerTable(Referenceable dbReference, String dbName, String tableName) throws Exception {
+        LOG.info("Attempting to register table [" + tableName + "]");
         Referenceable tableRef = getTableReference(dbReference, tableName);
         if (tableRef == null) {
             LOG.info("Importing objects from " + dbName + "." + tableName);
@@ -230,7 +235,7 @@ public class HiveMetaStoreBridge {
             Table hiveTable = hiveClient.getTable(dbName, tableName);
 
             tableRef = new Referenceable(HiveDataTypes.HIVE_TABLE.getName());
-            tableRef.set("tableName", hiveTable.getTableName());
+            tableRef.set("name", hiveTable.getTableName());
             tableRef.set("owner", hiveTable.getOwner());
             //todo fix
             tableRef.set("createTime", hiveTable.getLastAccessTime());
@@ -274,8 +279,8 @@ public class HiveMetaStoreBridge {
             tableRef.set("tableType", hiveTable.getTableType());
             tableRef.set("temporary", hiveTable.isTemporary());
 
-            // List<Referenceable> fieldsList = getColumns(storageDesc);
-            // tableRef.set("columns", fieldsList);
+            List<Referenceable> colList = getColumns(hiveTable.getAllCols());
+            tableRef.set("columns", colList);
 
             tableRef = createInstance(tableRef);
         } else {
@@ -397,7 +402,7 @@ public class HiveMetaStoreBridge {
         }
         */
 
-        List<Referenceable> fieldsList = getColumns(storageDesc);
+        List<Referenceable> fieldsList = getColumns(storageDesc.getCols());
         sdReferenceable.set("cols", fieldsList);
 
         List<Struct> sortColsStruct = new ArrayList<>();
@@ -428,19 +433,19 @@ public class HiveMetaStoreBridge {
         return createInstance(sdReferenceable);
     }
 
-    private List<Referenceable> getColumns(StorageDescriptor storageDesc) throws Exception {
-        List<Referenceable> fieldsList = new ArrayList<>();
-        Referenceable colReferenceable;
-        for (FieldSchema fs : storageDesc.getCols()) {
+    private List<Referenceable> getColumns(List<FieldSchema> schemaList) throws Exception
+    {
+        List<Referenceable> colList = new ArrayList<>();
+        for (FieldSchema fs : schemaList) {
             LOG.debug("Processing field " + fs);
-            colReferenceable = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
+            Referenceable colReferenceable = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
             colReferenceable.set("name", fs.getName());
             colReferenceable.set("type", fs.getType());
             colReferenceable.set("comment", fs.getComment());
 
-            fieldsList.add(createInstance(colReferenceable));
+            colList.add(createInstance(colReferenceable));
         }
-        return fieldsList;
+        return colList;
     }
 
     public synchronized void registerHiveDataModel() throws Exception {
@@ -454,10 +459,6 @@ public class HiveMetaStoreBridge {
         } else {
             LOG.info("Hive data model is already registered!");
         }
-
-        //todo remove when fromJson(entityJson) is supported on client
-        dataModelGenerator.createDataModel();
-        TypeSystem.getInstance().defineTypes(dataModelGenerator.getTypesDef());
     }
 
     public static void main(String[] argv) throws Exception {

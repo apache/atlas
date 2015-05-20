@@ -73,7 +73,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
         this.graphPersistenceStrategy = new DefaultGraphPersistenceStrategy(metadataRepository);
     }
 
-    //Refer http://s3.thinkaurelius.com/docs/titan/0.5.0/index-backends.html for indexed query
+    //Refer http://s3.thinkaurelius.com/docs/titan/0.5.4/index-backends.html for indexed query
     //http://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query
     // .html#query-string-syntax for query syntax
     @Override

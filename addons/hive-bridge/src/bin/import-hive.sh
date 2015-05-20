@@ -85,6 +85,7 @@ else
 fi
 export HIVE_CP
 echo Using Hive configuration directory [$HIVE_CP]
+echo "Logs for import are in $METADATA_LOG_DIR/import-hive.log"
 
 ${JAVA_BIN} ${JAVA_PROPERTIES} -cp ${HIVE_CP}:${METADATACPPATH} org.apache.hadoop.metadata.hive.bridge.HiveMetaStoreBridge
 

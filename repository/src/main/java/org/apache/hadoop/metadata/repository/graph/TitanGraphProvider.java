@@ -25,6 +25,8 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.PropertiesUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
 import java.util.Iterator;
@@ -33,6 +35,8 @@ import java.util.Iterator;
  * Default implementation for Graph Provider that doles out Titan Graph.
  */
 public class TitanGraphProvider implements GraphProvider<TitanGraph> {
+
+    private static final Logger LOG = LoggerFactory.getLogger(TitanGraphProvider.class);
 
     /**
      * Constant for the configuration property that indicates the prefix.
@@ -51,6 +55,7 @@ public class TitanGraphProvider implements GraphProvider<TitanGraph> {
                 String value = (String) configProperties.getProperty(key);
                 key = key.substring(METADATA_PREFIX.length());
                 graphConfig.setProperty(key, value);
+                LOG.info("Using graph property {}={}", key, value);
             }
         }
 
