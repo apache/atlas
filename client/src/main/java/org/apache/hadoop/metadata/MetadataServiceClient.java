@@ -51,12 +51,15 @@ public class MetadataServiceClient {
     private static final Logger LOG = LoggerFactory.getLogger(MetadataServiceClient.class);
     public static final String REQUEST_ID = "requestId";
     public static final String RESULTS = "results";
-    public static final String TOTAL_SIZE = "totalSize";
+    public static final String COUNT = "count";
+    public static final String ROWS = "rows";
+
     private static final String BASE_URI = "api/metadata/";
     private static final String URI_TYPES = "types";
     private static final String URI_ENTITIES = "entities";
     private static final String URI_TRAITS = "traits";
     private static final String URI_SEARCH = "discovery/search";
+
 
     private WebResource service;
 
