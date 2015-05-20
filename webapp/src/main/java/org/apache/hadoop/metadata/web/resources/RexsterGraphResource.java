@@ -165,7 +165,7 @@ public class RexsterGraphResource {
 
             JSONObject response = new JSONObject();
             response.put(MetadataServiceClient.RESULTS, new JSONObject(vertexProperties));
-            response.put(MetadataServiceClient.TOTAL_SIZE, vertexProperties.size());
+            response.put(MetadataServiceClient.COUNT, vertexProperties.size());
             return Response.ok(response).build();
         } catch (JSONException e) {
             throw new WebApplicationException(
@@ -276,7 +276,7 @@ public class RexsterGraphResource {
         if (!countOnly) {
             response.put(MetadataServiceClient.RESULTS, elementArray);
         }
-        response.put(MetadataServiceClient.TOTAL_SIZE, counter);
+        response.put(MetadataServiceClient.COUNT, counter);
         return Response.ok(response).build();
     }
 
@@ -323,7 +323,7 @@ public class RexsterGraphResource {
 
         JSONObject response = new JSONObject();
         response.put(MetadataServiceClient.RESULTS, vertexArray);
-        response.put(MetadataServiceClient.TOTAL_SIZE, counter);
+        response.put(MetadataServiceClient.COUNT, counter);
 
         return response;
     }

@@ -143,14 +143,10 @@ public class EntityResource {
      * Gets the list of entities for a given entity type.
      *
      * @param entityType     name of a type which is unique
-     * @param offset         starting offset for pagination
-     * @param resultsPerPage number of results for pagination
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getEntityListByType(@QueryParam("type") String entityType,
-                                  @DefaultValue("0") @QueryParam("offset") Integer offset,
-                                  @QueryParam("numResults") Integer resultsPerPage) {
+    public Response getEntityListByType(@QueryParam("type") String entityType) {
         Preconditions.checkNotNull(entityType, "Entity type cannot be null");
         try {
             LOG.debug("Fetching entity list for type={} ", entityType);
@@ -160,7 +156,7 @@ public class EntityResource {
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
             response.put("type", entityType);
             response.put(MetadataServiceClient.RESULTS, new JSONArray(entityList));
-            response.put(MetadataServiceClient.TOTAL_SIZE, entityList.size());
+            response.put(MetadataServiceClient.COUNT, entityList.size());
 
             return Response.ok(response).build();
         } catch (MetadataException | IllegalArgumentException e) {
@@ -225,7 +221,7 @@ public class EntityResource {
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
             response.put(GUID, guid);
             response.put(MetadataServiceClient.RESULTS, new JSONArray(traitNames));
-            response.put(MetadataServiceClient.TOTAL_SIZE, traitNames.size());
+            response.put(MetadataServiceClient.COUNT, traitNames.size());
 
             return Response.ok(response).build();
         } catch (MetadataException | IllegalArgumentException e) {
