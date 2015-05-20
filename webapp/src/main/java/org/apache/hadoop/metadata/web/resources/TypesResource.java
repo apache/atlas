@@ -8,7 +8,7 @@
  * with the License.  You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -62,10 +62,6 @@ public class TypesResource {
     private final MetadataService metadataService;
 
     static final String TYPE_ALL = "all";
-    private static final String URI_TYPES = "types";
-
-    @Context
-    UriInfo uriInfo;
 
     @Inject
     public TypesResource(MetadataService metadataService) {
@@ -85,13 +81,11 @@ public class TypesResource {
             LOG.debug("creating type with definition {} ", typeDefinition);
 
             JSONObject typesJson = metadataService.createType(typeDefinition);
-            UriBuilder ub = uriInfo.getAbsolutePathBuilder();
-            final JSONArray typesJsonArray = typesJson.getJSONArray("types");
+            final JSONArray typesJsonArray = typesJson.getJSONArray(MetadataServiceClient.TYPES);
 
             List<Map<String, String>> typesAddedList = new ArrayList<>();
             for (int i = 0; i < typesJsonArray.length(); i++) {
                 final String name = typesJsonArray.getString(i);
-                final URI locationUri = ub.path(name).build();
                 typesAddedList.add(
                         new HashMap<String, String>() {{
                             put(MetadataServiceClient.NAME, name);
@@ -100,7 +94,7 @@ public class TypesResource {
 
             JSONObject response = new JSONObject();
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(MetadataServiceClient.URI_TYPES, typesAddedList);
+            response.put(MetadataServiceClient.TYPES, typesAddedList);
             return Response.status(ClientResponse.Status.CREATED).entity(response).build();
         } catch (Exception e) {
             LOG.error("Unable to persist types", e);

@@ -58,7 +58,7 @@ public class MetadataServiceClient {
     public static final String ROWS = "rows";
 
     public static final String BASE_URI = "api/metadata/";
-    public static final String URI_TYPES = "types";
+    public static final String TYPES = "types";
     public static final String URI_ENTITIES = "entities";
     public static final String URI_TRAITS = "traits";
     public static final String URI_SEARCH = "discovery/search";
@@ -97,10 +97,10 @@ public class MetadataServiceClient {
     static enum API {
 
         //Type operations
-        CREATE_TYPE(BASE_URI + URI_TYPES, HttpMethod.POST),
-        GET_TYPE(BASE_URI + URI_TYPES, HttpMethod.GET),
-        LIST_TYPES(BASE_URI + URI_TYPES, HttpMethod.GET),
-        LIST_TRAIT_TYPES(BASE_URI + URI_TYPES + "?type=trait", HttpMethod.GET),
+        CREATE_TYPE(BASE_URI + TYPES, HttpMethod.POST),
+        GET_TYPE(BASE_URI + TYPES, HttpMethod.GET),
+        LIST_TYPES(BASE_URI + TYPES, HttpMethod.GET),
+        LIST_TRAIT_TYPES(BASE_URI + TYPES + "?type=trait", HttpMethod.GET),
 
         //Entity operations
         CREATE_ENTITY(BASE_URI + URI_ENTITIES, HttpMethod.POST),

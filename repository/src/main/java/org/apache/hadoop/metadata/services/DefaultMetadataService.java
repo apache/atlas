@@ -115,7 +115,7 @@ public class DefaultMetadataService implements MetadataService {
 
             onTypesAddedToRepo(typesAdded);
             JSONObject response = new JSONObject() {{
-                put(MetadataServiceClient.URI_TYPES, typesAdded.keySet());
+                put(MetadataServiceClient.TYPES, typesAdded.keySet());
             }};
             return response;
         } catch (JSONException e) {
