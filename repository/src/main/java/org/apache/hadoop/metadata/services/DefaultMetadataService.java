@@ -20,6 +20,7 @@ package org.apache.hadoop.metadata.services;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Injector;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.discovery.SearchIndexer;
 import org.apache.hadoop.metadata.listener.EntityChangeListener;
@@ -73,8 +74,21 @@ public class DefaultMetadataService implements MetadataService {
         this.typeSystem = TypeSystem.getInstance();
         this.repository = repository;
 
+        restoreTypeSystem();
         registerListener(searchIndexer);
     }
+
+    private void restoreTypeSystem() {
+        LOG.info("Restoring type system from the store");
+        try {
+            TypesDef typesDef = typeStore.restore();
+            typeSystem.defineTypes(typesDef);
+        } catch (MetadataException e) {
+            throw new RuntimeException(e);
+        }
+        LOG.info("Restored type system from the store");
+    }
+
 
     /**
      * Creates a new type based on the type system to enable adding
