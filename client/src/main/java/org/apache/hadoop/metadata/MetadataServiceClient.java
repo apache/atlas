@@ -152,7 +152,7 @@ public class MetadataServiceClient {
         WebResource resource = getResource(API.GET_TYPE, typeName);
         try {
             JSONObject response = callAPIWithResource(API.GET_TYPE, resource, Response.Status.OK);
-            return response.getString("definition");
+            return response.getString(DEFINITION);
         } catch (MetadataServiceException e) {
             if (e.getStatus() == ClientResponse.Status.NOT_FOUND) {
                 return null;
