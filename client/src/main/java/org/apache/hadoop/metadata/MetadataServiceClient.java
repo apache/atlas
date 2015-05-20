@@ -297,7 +297,6 @@ public class MetadataServiceClient {
             ? Response.Status.CREATED : Response.Status.OK;
         if (clientResponse.getStatus() == expectedStatus.getStatusCode()) {
             String responseAsString = clientResponse.getEntity(String.class);
-            System.out.println("response : " + responseAsString);
             try {
                 return new JSONObject(responseAsString);
             } catch (JSONException e) {
