@@ -49,8 +49,6 @@ import java.util.Map;
 public class MetadataDiscoveryResource {
 
     private static final Logger LOG = LoggerFactory.getLogger(EntityResource.class);
-    private static final String QUERY = "query";
-    private static final String QUERY_TYPE = "queryType";
     private static final String QUERY_TYPE_DSL = "dsl";
     private static final String QUERY_TYPE_GREMLIN = "gremlin";
     private static final String QUERY_TYPE_FULLTEXT = "full-text";
@@ -166,8 +164,8 @@ public class MetadataDiscoveryResource {
 
             JSONObject response = new JSONObject();
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(QUERY, gremlinQuery);
-            response.put(QUERY_TYPE, QUERY_TYPE_GREMLIN);
+            response.put(MetadataServiceClient.QUERY, gremlinQuery);
+            response.put(MetadataServiceClient.QUERY_TYPE, QUERY_TYPE_GREMLIN);
 
             JSONArray list = new JSONArray();
             for (Map<String, String> result : results) {
@@ -252,8 +250,8 @@ public class MetadataDiscoveryResource {
             Preconditions.checkArgument(count >= 0, "Search Result count should be > 0");
 
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(QUERY, query);
-            response.put(QUERY_TYPE, queryType);
+            response.put(MetadataServiceClient.QUERY, query);
+            response.put(MetadataServiceClient.QUERY_TYPE, queryType);
             response.put(MetadataServiceClient.COUNT, count);
             return response;
         }

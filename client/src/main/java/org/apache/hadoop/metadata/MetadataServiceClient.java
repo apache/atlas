@@ -25,11 +25,8 @@ import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.client.urlconnection.URLConnectionClientHandler;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.metadata.security.SecureClientUtils;
-import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization;
-import org.apache.hadoop.metadata.typesystem.json.Serialization;
-import org.apache.http.protocol.HTTP;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -60,11 +57,14 @@ public class MetadataServiceClient {
     public static final String COUNT = "count";
     public static final String ROWS = "rows";
 
-    private static final String BASE_URI = "api/metadata/";
-    private static final String URI_TYPES = "types";
-    private static final String URI_ENTITIES = "entities";
-    private static final String URI_TRAITS = "traits";
-    private static final String URI_SEARCH = "discovery/search";
+    public static final String BASE_URI = "api/metadata/";
+    public static final String URI_TYPES = "types";
+    public static final String URI_ENTITIES = "entities";
+    public static final String URI_TRAITS = "traits";
+    public static final String URI_SEARCH = "discovery/search";
+
+    public static final String QUERY = "query";
+    public static final String QUERY_TYPE = "queryType";
 
 
     private WebResource service;
@@ -204,7 +204,7 @@ public class MetadataServiceClient {
 
     public JSONObject searchEntity(String searchQuery) throws MetadataServiceException {
         WebResource resource = getResource(API.SEARCH);
-        resource = resource.queryParam("query", searchQuery);
+        resource = resource.queryParam(QUERY, searchQuery);
         return callAPIWithResource(API.SEARCH, resource);
     }
 
@@ -234,7 +234,7 @@ public class MetadataServiceClient {
      */
     public JSONArray searchByDSL(String query) throws MetadataServiceException {
         WebResource resource = getResource(API.SEARCH_DSL);
-        resource = resource.queryParam("query", query);
+        resource = resource.queryParam(QUERY, query);
         JSONObject result = callAPIWithResource(API.SEARCH_DSL, resource);
         try {
             return result.getJSONObject(RESULTS).getJSONArray(ROWS);
@@ -251,7 +251,7 @@ public class MetadataServiceClient {
      */
     public JSONObject searchByGremlin(String gremlinQuery) throws MetadataServiceException {
         WebResource resource = getResource(API.SEARCH_GREMLIN);
-        resource = resource.queryParam("query", gremlinQuery);
+        resource = resource.queryParam(QUERY, gremlinQuery);
         return callAPIWithResource(API.SEARCH_GREMLIN, resource);
     }
 
@@ -263,7 +263,7 @@ public class MetadataServiceClient {
      */
     public JSONObject searchByFullText(String query) throws MetadataServiceException {
         WebResource resource = getResource(API.SEARCH_FULL_TEXT);
-        resource = resource.queryParam("query", query);
+        resource = resource.queryParam(QUERY, query);
         return callAPIWithResource(API.SEARCH_FULL_TEXT, resource);
     }
 
