@@ -20,7 +20,11 @@ package org.apache.hadoop.metadata.web.listeners;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.TypeLiteral;
+import com.google.inject.matcher.Matchers;
 import com.google.inject.servlet.GuiceServletContextListener;
+import com.google.inject.spi.TypeEncounter;
+import com.google.inject.spi.TypeListener;
 import com.sun.jersey.api.core.PackagesResourceConfig;
 import com.sun.jersey.guice.JerseyServletModule;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
@@ -40,6 +44,8 @@ import org.slf4j.LoggerFactory;
 import javax.servlet.ServletContextEvent;
 import java.util.HashMap;
 import java.util.Map;
+
+import static com.google.inject.matcher.Matchers.*;
 
 public class GuiceServletConfig extends GuiceServletContextListener {
 
@@ -107,22 +113,6 @@ public class GuiceServletConfig extends GuiceServletContextListener {
         // perform login operations
         LoginProcessor loginProcessor = new LoginProcessor();
         loginProcessor.login();
-
-        restoreTypeSystem();
-    }
-
-    private void restoreTypeSystem() {
-        LOG.info("Restoring type system from the store");
-        Injector injector = getInjector();
-        ITypeStore typeStore = injector.getInstance(ITypeStore.class);
-        try {
-            TypesDef typesDef = typeStore.restore();
-            TypeSystem typeSystem = injector.getInstance(TypeSystem.class);
-            typeSystem.defineTypes(typesDef);
-        } catch (MetadataException e) {
-            throw new RuntimeException(e);
-        }
-        LOG.info("Restored type system from the store");
     }
 
     @Override

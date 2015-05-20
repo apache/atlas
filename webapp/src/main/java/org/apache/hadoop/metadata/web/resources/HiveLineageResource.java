@@ -93,6 +93,40 @@ public class HiveLineageResource {
     }
 
     /**
+     * Returns the inputs graph for a given entity.
+     *
+     * @param tableName table name
+     */
+    @GET
+    @Path("table/{tableName}/inputs/graph")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response inputsGraph(@Context HttpServletRequest request,
+                                @PathParam("tableName") String tableName) {
+        Preconditions.checkNotNull(tableName, "table name cannot be null");
+        LOG.info("Fetching lineage inputs graph for tableName={}", tableName);
+
+        try {
+            final String jsonResult = lineageService.getInputsGraph(tableName);
+
+            JSONObject response = new JSONObject();
+            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
+            response.put("tableName", tableName);
+            response.put(MetadataServiceClient.RESULTS, new JSONObject(jsonResult));
+
+            return Response.ok(response).build();
+        } catch (DiscoveryException e) {
+            LOG.error("Unable to get lineage inputs graph for table {}", tableName, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (JSONException e) {
+            LOG.error("Unable to get lineage inputs graph for table {}", tableName, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    /**
      * Returns the outputs for a given entity.
      *
      * @param tableName table name
@@ -117,11 +151,45 @@ public class HiveLineageResource {
 
             return Response.ok(response).build();
         } catch (DiscoveryException e) {
-            LOG.error("Unable to get lineage inputs for table {}", tableName, e);
+            LOG.error("Unable to get lineage outputs for table {}", tableName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (JSONException e) {
-            LOG.error("Unable to get lineage inputs for table {}", tableName, e);
+            LOG.error("Unable to get lineage outputs for table {}", tableName, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    /**
+     * Returns the outputs graph for a given entity.
+     *
+     * @param tableName table name
+     */
+    @GET
+    @Path("table/{tableName}/outputs/graph")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response outputsGraph(@Context HttpServletRequest request,
+                                 @PathParam("tableName") String tableName) {
+        Preconditions.checkNotNull(tableName, "table name cannot be null");
+        LOG.info("Fetching lineage outputs graph for tableName={}", tableName);
+
+        try {
+            final String jsonResult = lineageService.getOutputs(tableName);
+
+            JSONObject response = new JSONObject();
+            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
+            response.put("tableName", tableName);
+            response.put(MetadataServiceClient.RESULTS, new JSONObject(jsonResult));
+
+            return Response.ok(response).build();
+        } catch (DiscoveryException e) {
+            LOG.error("Unable to get lineage outputs graph for table {}", tableName, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (JSONException e) {
+            LOG.error("Unable to get lineage outputs graph for table {}", tableName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }

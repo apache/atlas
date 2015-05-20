@@ -19,7 +19,6 @@
 package org.apache.hadoop.metadata.discovery;
 
 import com.thinkaurelius.titan.core.TitanGraph;
-import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.PropertiesUtil;
@@ -116,6 +115,24 @@ public class HiveLineageService implements LineageService {
     }
 
     /**
+     * Return the lineage outputs graph for the given tableName.
+     *
+     * @param tableName tableName
+     * @return Outputs Graph as JSON
+     */
+    @Override
+    public String getOutputsGraph(String tableName) throws DiscoveryException {
+        LOG.info("Fetching lineage outputs graph for tableName={}", tableName);
+
+        HiveWhereUsedQuery outputsQuery = new HiveWhereUsedQuery(
+                HIVE_TABLE_TYPE_NAME, tableName, HIVE_PROCESS_TYPE_NAME,
+                HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME,
+                Option.empty(), SELECT_ATTRIBUTES, true,
+                graphPersistenceStrategy, titanGraph);
+        return outputsQuery.graph().toInstanceJson();
+    }
+
+    /**
      * Return the lineage inputs for the given tableName.
      *
      * @param tableName tableName
@@ -138,6 +155,24 @@ public class HiveLineageService implements LineageService {
         } catch (Exception e) { // unable to catch ExpressionException
             throw new DiscoveryException("Invalid expression [" + expression.toString() + "]", e);
         }
+    }
+
+    /**
+     * Return the lineage inputs graph for the given tableName.
+     *
+     * @param tableName tableName
+     * @return Inputs Graph as JSON
+     */
+    @Override
+    public String getInputsGraph(String tableName) throws DiscoveryException {
+        LOG.info("Fetching lineage inputs graph for tableName={}", tableName);
+
+        HiveLineageQuery inputsQuery = new HiveLineageQuery(
+                HIVE_TABLE_TYPE_NAME, tableName, HIVE_PROCESS_TYPE_NAME,
+                HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME,
+                Option.empty(), SELECT_ATTRIBUTES, true,
+                graphPersistenceStrategy, titanGraph);
+        return inputsQuery.graph().toInstanceJson();
     }
 
     /**

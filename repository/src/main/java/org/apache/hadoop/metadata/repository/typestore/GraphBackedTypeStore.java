@@ -207,46 +207,53 @@ public class GraphBackedTypeStore implements ITypeStore {
 
     @Override
     public TypesDef restore() throws MetadataException {
-        //Get all vertices for type system
-        Iterator vertices = titanGraph.query().has(Constants.VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE).vertices().iterator();
+        try {
+            titanGraph.rollback();  //Cleanup previous state
+            //Get all vertices for type system
+            Iterator vertices =
+                    titanGraph.query().has(Constants.VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE).vertices().iterator();
 
-        ImmutableList.Builder<EnumTypeDefinition> enums = ImmutableList.builder();
-        ImmutableList.Builder<StructTypeDefinition> structs = ImmutableList.builder();
-        ImmutableList.Builder<HierarchicalTypeDefinition<ClassType>> classTypes = ImmutableList.builder();
-        ImmutableList.Builder<HierarchicalTypeDefinition<TraitType>> traits = ImmutableList.builder();
+            ImmutableList.Builder<EnumTypeDefinition> enums = ImmutableList.builder();
+            ImmutableList.Builder<StructTypeDefinition> structs = ImmutableList.builder();
+            ImmutableList.Builder<HierarchicalTypeDefinition<ClassType>> classTypes = ImmutableList.builder();
+            ImmutableList.Builder<HierarchicalTypeDefinition<TraitType>> traits = ImmutableList.builder();
 
-        while (vertices.hasNext()) {
-            Vertex vertex = (Vertex) vertices.next();
-            DataTypes.TypeCategory typeCategory = vertex.getProperty(Constants.TYPE_CATEGORY_PROPERTY_KEY);
-            String typeName = vertex.getProperty(Constants.TYPENAME_PROPERTY_KEY);
-            LOG.info("Restoring type {}.{}", typeCategory, typeName);
-            switch(typeCategory) {
-            case ENUM:
-                enums.add(getEnumType(vertex));
-                break;
+            while (vertices.hasNext()) {
+                Vertex vertex = (Vertex) vertices.next();
+                DataTypes.TypeCategory typeCategory = vertex.getProperty(Constants.TYPE_CATEGORY_PROPERTY_KEY);
+                String typeName = vertex.getProperty(Constants.TYPENAME_PROPERTY_KEY);
+                LOG.info("Restoring type {}.{}", typeCategory, typeName);
+                switch (typeCategory) {
+                case ENUM:
+                    enums.add(getEnumType(vertex));
+                    break;
 
-            case STRUCT:
-                AttributeDefinition[] attributes = getAttributes(vertex);
-                structs.add(new StructTypeDefinition(typeName, attributes));
-                break;
+                case STRUCT:
+                    AttributeDefinition[] attributes = getAttributes(vertex);
+                    structs.add(new StructTypeDefinition(typeName, attributes));
+                    break;
 
-            case CLASS:
-                ImmutableList<String> superTypes = getSuperTypes(vertex);
-                attributes = getAttributes(vertex);
-                classTypes.add(new HierarchicalTypeDefinition(ClassType.class, typeName, superTypes, attributes));
-                break;
+                case CLASS:
+                    ImmutableList<String> superTypes = getSuperTypes(vertex);
+                    attributes = getAttributes(vertex);
+                    classTypes.add(new HierarchicalTypeDefinition(ClassType.class, typeName, superTypes, attributes));
+                    break;
 
-            case TRAIT:
-                superTypes = getSuperTypes(vertex);
-                attributes = getAttributes(vertex);
-                traits.add(new HierarchicalTypeDefinition(TraitType.class, typeName, superTypes, attributes));
-                break;
+                case TRAIT:
+                    superTypes = getSuperTypes(vertex);
+                    attributes = getAttributes(vertex);
+                    traits.add(new HierarchicalTypeDefinition(TraitType.class, typeName, superTypes, attributes));
+                    break;
 
-            default:
-                throw new IllegalArgumentException("Unhandled type category " + typeCategory);
+                default:
+                    throw new IllegalArgumentException("Unhandled type category " + typeCategory);
+                }
             }
+            titanGraph.commit();
+            return TypeUtils.getTypesDef(enums.build(), structs.build(), traits.build(), classTypes.build());
+        } finally {
+            titanGraph.rollback();
         }
-        return TypeUtils.getTypesDef(enums.build(), structs.build(), traits.build(), classTypes.build());
     }
 
     private EnumTypeDefinition getEnumType(Vertex vertex) {

@@ -44,7 +44,7 @@ import java.util.Properties;
 public class MetadataAuthenticationFilter extends AuthenticationFilter {
     private static final Logger LOG = LoggerFactory.getLogger(MetadataAuthenticationFilter.class);
     static final String PREFIX = "metadata.http.authentication.";
-    static final String BIND_ADDRESS = "bind.address";
+    static final String BIND_ADDRESS = "metadata.server.bind.address";
 
     @Override
     protected Properties getConfiguration(String configPrefix, FilterConfig filterConfig) throws ServletException {
