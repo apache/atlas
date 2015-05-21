@@ -71,7 +71,11 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
 
     @Override
     public String fieldNameInVertex(IDataType<?> dataType, AttributeInfo aInfo) {
-        return metadataRepository.getFieldNameInVertex(dataType, aInfo);
+        try {
+            return metadataRepository.getFieldNameInVertex(dataType, aInfo);
+        } catch (MetadataException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

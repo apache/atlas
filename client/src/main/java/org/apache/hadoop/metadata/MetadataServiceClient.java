@@ -73,6 +73,7 @@ public class MetadataServiceClient {
         } catch (Exception e) {
             LOG.info("Error processing client configuration.", e);
         }
+
         URLConnectionClientHandler handler = SecureClientUtils.getClientConnectionHandler(config, clientConfig);
 
         Client client = new Client(handler, config);

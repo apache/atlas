@@ -184,8 +184,14 @@ class GremlinTranslator(expr: Expression,
     }
 
     private def genQuery(expr: Expression, inSelect: Boolean): String = expr match {
-        case ClassExpression(clsName) => s"""has("${gPersistenceBehavior.typeAttributeName}","$clsName")"""
-        case TraitExpression(clsName) => s"""has("${gPersistenceBehavior.typeAttributeName}","$clsName")"""
+        case ClassExpression(clsName) =>
+            val typeName = gPersistenceBehavior.typeAttributeName
+            val superTypeName = gPersistenceBehavior.superTypeAttributeName
+            s"""filter{(it.$typeName == "$clsName") | (it.$superTypeName ? it.$superTypeName.contains("$clsName") : false)}""".stripMargin
+        case TraitExpression(clsName) =>
+            val typeName = gPersistenceBehavior.typeAttributeName
+            val superTypeName = gPersistenceBehavior.superTypeAttributeName
+            s"""filter{(it.$typeName == "$clsName") | (it.$superTypeName ? it.$superTypeName.contains("$clsName") : false)}""".stripMargin
         case fe@FieldExpression(fieldName, fInfo, child) if fe.dataType.getTypeCategory == TypeCategory.PRIMITIVE => {
             val fN = "\"" + gPersistenceBehavior.fieldNameInVertex(fInfo.dataType, fInfo.attrInfo) + "\""
             child match {
