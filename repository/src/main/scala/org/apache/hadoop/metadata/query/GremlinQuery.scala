@@ -187,11 +187,11 @@ class GremlinTranslator(expr: Expression,
         case ClassExpression(clsName) =>
             val typeName = gPersistenceBehavior.typeAttributeName
             val superTypeName = gPersistenceBehavior.superTypeAttributeName
-            s"""filter{(it.$typeName == "$clsName") | (it.$superTypeName ? it.$superTypeName.contains("$clsName") : false)}""".stripMargin
+            s"""filter{(it.$typeName == "$clsName") | (it.$superTypeName ? it.$superTypeName.contains("$clsName") : false)}"""
         case TraitExpression(clsName) =>
             val typeName = gPersistenceBehavior.typeAttributeName
             val superTypeName = gPersistenceBehavior.superTypeAttributeName
-            s"""filter{(it.$typeName == "$clsName") | (it.$superTypeName ? it.$superTypeName.contains("$clsName") : false)}""".stripMargin
+            s"""filter{(it.$typeName == "$clsName") | (it.$superTypeName ? it.$superTypeName.contains("$clsName") : false)}"""
         case fe@FieldExpression(fieldName, fInfo, child) if fe.dataType.getTypeCategory == TypeCategory.PRIMITIVE => {
             val fN = "\"" + gPersistenceBehavior.fieldNameInVertex(fInfo.dataType, fInfo.attrInfo) + "\""
             child match {
