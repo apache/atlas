@@ -31,5 +31,6 @@ public interface SecurityProperties {
     public static final String SERVER_CERT_PASSWORD_KEY = "password";
     public static final String CLIENT_AUTH_KEY = "client.auth.enabled";
     public static final String CERT_STORES_CREDENTIAL_PROVIDER_PATH = "cert.stores.credential.provider.path";
-    String SSL_CLIENT_PROPERTIES = "ssl-client.xml";
+    public static final String SSL_CLIENT_PROPERTIES = "ssl-client.xml";
+    public static final String BIND_ADDRESS = "metadata.server.bind.address";
 }
