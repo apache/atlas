@@ -15,4 +15,4 @@ npm install
 grunt server
 ```
 Server will start at: 
-<http://localhost:3020/>
+<http://localhost:3010/>
