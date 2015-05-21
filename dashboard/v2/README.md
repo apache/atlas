@@ -9,8 +9,8 @@
 ### Setup:
 
 ```
-git clone https://github.com/hortonworks/dgi-metadata-ui.git
-cd dgi-metadata-ui
+git clone https://github.com/MPR-Global/metadata.git
+cd dashboard/v2
 npm install
 grunt server
 ```
