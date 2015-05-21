@@ -33,11 +33,11 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
+
 
 /**
  * Entity management operations as REST API.
@@ -50,11 +50,12 @@ import java.util.List;
 public class EntityResource {
 
     private static final Logger LOG = LoggerFactory.getLogger(EntityResource.class);
-
-    private static final String GUID = "GUID";
     private static final String TRAIT_NAME = "traitName";
 
     private final MetadataService metadataService;
+
+    @Context
+    UriInfo uriInfo;
 
     /**
      * Created by the Guice ServletModule and injected with the
@@ -79,11 +80,16 @@ public class EntityResource {
             LOG.debug("submitting entity {} ", entity);
 
             final String guid = metadataService.createEntity(entity);
+
+            UriBuilder ub = uriInfo.getAbsolutePathBuilder();
+            URI locationURI = ub.path(guid).build();
+
             JSONObject response = new JSONObject();
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(MetadataServiceClient.RESULTS, guid);
+            response.put(MetadataServiceClient.GUID, guid);
+            response.put(MetadataServiceClient.DEFINITION, entity);
 
-            return Response.ok(response).build();
+            return Response.created(locationURI).entity(response).build();
         } catch (MetadataException | IOException | IllegalArgumentException e) {
             LOG.error("Unable to persist entity instance", e);
             throw new WebApplicationException(
@@ -112,30 +118,26 @@ public class EntityResource {
 
             JSONObject response = new JSONObject();
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(GUID, guid);
+            response.put(MetadataServiceClient.GUID, guid);
 
             Response.Status status = Response.Status.NOT_FOUND;
             if (entityDefinition != null) {
-                response.put(MetadataServiceClient.RESULTS, entityDefinition);
+                response.put(MetadataServiceClient.DEFINITION, entityDefinition);
                 status = Response.Status.OK;
+            } else {
+                response.put(MetadataServiceClient.ERROR, JSONObject.quote(String.format("An entity with GUID={%s} does not exist", guid)));
             }
 
             return Response.status(status).entity(response).build();
 
         } catch (MetadataException | IllegalArgumentException e) {
             LOG.error("An entity with GUID={} does not exist", guid, e);
-            throw new WebApplicationException(e, Response
-                    .status(Response.Status.NOT_FOUND)
-                    .entity(e.getMessage())
-                    .type(MediaType.APPLICATION_JSON)
-                    .build());
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (JSONException e) {
             LOG.error("Unable to get instance definition for GUID {}", guid, e);
-            throw new WebApplicationException(e, Response
-                    .status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(e.getMessage())
-                    .type(MediaType.APPLICATION_JSON)
-                    .build());
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
 
@@ -143,14 +145,10 @@ public class EntityResource {
      * Gets the list of entities for a given entity type.
      *
      * @param entityType     name of a type which is unique
-     * @param offset         starting offset for pagination
-     * @param resultsPerPage number of results for pagination
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getEntityListByType(@QueryParam("type") String entityType,
-                                  @DefaultValue("0") @QueryParam("offset") Integer offset,
-                                  @QueryParam("numResults") Integer resultsPerPage) {
+    public Response getEntityListByType(@QueryParam("type") String entityType) {
         Preconditions.checkNotNull(entityType, "Entity type cannot be null");
         try {
             LOG.debug("Fetching entity list for type={} ", entityType);
@@ -160,7 +158,7 @@ public class EntityResource {
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
             response.put("type", entityType);
             response.put(MetadataServiceClient.RESULTS, new JSONArray(entityList));
-            response.put(MetadataServiceClient.TOTAL_SIZE, entityList.size());
+            response.put(MetadataServiceClient.COUNT, entityList.size());
 
             return Response.ok(response).build();
         } catch (MetadataException | IllegalArgumentException e) {
@@ -223,9 +221,9 @@ public class EntityResource {
 
             JSONObject response = new JSONObject();
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(GUID, guid);
+            response.put(MetadataServiceClient.GUID, guid);
             response.put(MetadataServiceClient.RESULTS, new JSONArray(traitNames));
-            response.put(MetadataServiceClient.TOTAL_SIZE, traitNames.size());
+            response.put(MetadataServiceClient.COUNT, traitNames.size());
 
             return Response.ok(response).build();
         } catch (MetadataException | IllegalArgumentException e) {
@@ -257,12 +255,15 @@ public class EntityResource {
             LOG.debug("Adding trait={} for entity={} ", traitDefinition, guid);
             metadataService.addTrait(guid, traitDefinition);
 
+            UriBuilder ub = uriInfo.getAbsolutePathBuilder();
+            URI locationURI = ub.path(guid).build();
+
             JSONObject response = new JSONObject();
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(GUID, guid);
-            response.put("traitInstance", traitDefinition);
+            response.put(MetadataServiceClient.GUID, guid);
+            response.put(MetadataServiceClient.DEFINITION, traitDefinition);
 
-            return Response.ok(response).build();
+            return Response.created(locationURI).entity(response).build();
         } catch (MetadataException | IOException | IllegalArgumentException e) {
             LOG.error("Unable to add trait for entity={}", guid, e);
             throw new WebApplicationException(
@@ -296,7 +297,7 @@ public class EntityResource {
 
             JSONObject response = new JSONObject();
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(GUID, guid);
+            response.put(MetadataServiceClient.GUID, guid);
             response.put(TRAIT_NAME, traitName);
 
             return Response.ok(response).build();

@@ -20,7 +20,11 @@ package org.apache.hadoop.metadata.web.util;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.metadata.MetadataServiceClient;
+import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
@@ -33,6 +37,7 @@ import java.io.StringWriter;
  */
 public final class Servlets {
 
+    private static final Logger LOG = LoggerFactory.getLogger(Servlets.class);
     private Servlets() {
         /* singleton */
     }
@@ -97,9 +102,17 @@ public final class Servlets {
     }
 
     public static Response getErrorResponse(String message, Response.Status status) {
+        JSONObject errorJson = new JSONObject();
+        Object errorEntity = JSONObject.quote(message);
+        try {
+            errorJson.put(MetadataServiceClient.ERROR, errorEntity);
+            errorEntity = errorJson;
+        } catch (JSONException jsonE) {
+            LOG.warn("Could not construct error Json rensponse");
+        }
         return Response
                 .status(status)
-                .entity(JSONObject.quote(message))
+                .entity(errorEntity)
                 .type(MediaType.APPLICATION_JSON)
                 .build();
     }

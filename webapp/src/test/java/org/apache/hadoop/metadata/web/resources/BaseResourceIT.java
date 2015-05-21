@@ -76,7 +76,7 @@ public abstract class BaseResourceIT {
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.POST, ClientResponse.class, typesAsJSON);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.CREATED.getStatusCode());
 
         String responseAsString = clientResponse.getEntity(String.class);
         Assert.assertNotNull(responseAsString);
@@ -93,7 +93,7 @@ public abstract class BaseResourceIT {
         String entityJSON = InstanceSerialization.toJson(referenceable, true);
         System.out.println("Submitting new entity= " + entityJSON);
         JSONObject jsonObject = serviceClient.createEntity(entityJSON);
-        String guid = jsonObject.getString(MetadataServiceClient.RESULTS);
+        String guid = jsonObject.getString(MetadataServiceClient.GUID);
         System.out.println("created instance for type " + typeName + ", guid: " + guid);
 
         // return the reference to created instance with guid

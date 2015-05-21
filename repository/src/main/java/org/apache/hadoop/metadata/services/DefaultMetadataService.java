@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Injector;
 import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.discovery.SearchIndexer;
 import org.apache.hadoop.metadata.listener.EntityChangeListener;
 import org.apache.hadoop.metadata.listener.TypesChangeListener;
@@ -107,18 +108,15 @@ public class DefaultMetadataService implements MetadataService {
             if(typesDef.isEmpty())
                 throw new MetadataException("Invalid type definition");
 
-            Map<String, IDataType> typesAdded = typeSystem.defineTypes(typesDef);
+            final Map<String, IDataType> typesAdded = typeSystem.defineTypes(typesDef);
             
             //TODO how do we handle transaction - store failure??
             typeStore.store(typeSystem, ImmutableList.copyOf(typesAdded.keySet()));
 
             onTypesAddedToRepo(typesAdded);
-
-            JSONObject response = new JSONObject();
-            for (Map.Entry<String, IDataType> entry : typesAdded.entrySet()) {
-                response.put(entry.getKey(), entry.getValue().getName());
-            }
-
+            JSONObject response = new JSONObject() {{
+                put(MetadataServiceClient.TYPES, typesAdded.keySet());
+            }};
             return response;
         } catch (JSONException e) {
             LOG.error("Unable to create response for types={}", typeDefinition, e);
