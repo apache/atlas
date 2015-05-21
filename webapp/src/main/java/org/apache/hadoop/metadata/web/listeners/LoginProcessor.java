@@ -21,14 +21,17 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.PropertiesUtil;
+import org.apache.hadoop.metadata.security.SecurityProperties;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.Shell;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.ServletException;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 /**
  * A class capable of performing a simple or kerberos login.
@@ -73,15 +76,28 @@ public class LoginProcessor  {
             if (authenticationMethod == UserGroupInformation.AuthenticationMethod.SIMPLE) {
                 UserGroupInformation.loginUserFromSubject(null);
             } else if (authenticationMethod == UserGroupInformation.AuthenticationMethod.KERBEROS) {
+                String bindAddress = getHostname(configuration);
                 UserGroupInformation.loginUserFromKeytab(
-                        getServerPrincipal(configuration.getString(AUTHENTICATION_PRINCIPAL)),
+                        getServerPrincipal(configuration.getString(AUTHENTICATION_PRINCIPAL), bindAddress),
                         configuration.getString(AUTHENTICATION_KEYTAB));
             }
-
             LOG.info("Logged in user {}", UserGroupInformation.getLoginUser());
         } catch (IOException e) {
             throw new IllegalStateException(String.format("Unable to perform %s login.", authenticationMethod), e);
         }
+    }
+
+    private String getHostname(PropertiesConfiguration configuration) {
+        String bindAddress = configuration.getString(SecurityProperties.BIND_ADDRESS);
+        if (bindAddress == null) {
+            LOG.info("No host name configured.  Defaulting to local host name.");
+            try {
+                bindAddress = InetAddress.getLocalHost().getHostName();
+            } catch (UnknownHostException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        return bindAddress;
     }
 
     protected void setupHadoopConfiguration(Configuration hadoopConfig, PropertiesConfiguration configuration) {
@@ -104,8 +120,8 @@ public class LoginProcessor  {
      * @return the service principal.
      * @throws IOException
      */
-    private String getServerPrincipal(String principal) throws IOException {
-        return SecurityUtil.getServerPrincipal(principal, InetAddress.getLocalHost().getHostName());
+    private String getServerPrincipal(String principal, String host) throws IOException {
+        return SecurityUtil.getServerPrincipal(principal, host);
     }
 
     /**

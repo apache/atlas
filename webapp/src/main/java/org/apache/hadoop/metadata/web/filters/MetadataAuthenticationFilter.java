@@ -21,6 +21,7 @@ package org.apache.hadoop.metadata.web.filters;
 import com.google.inject.Singleton;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.hadoop.metadata.security.SecurityProperties;
 import org.apache.hadoop.metadata.PropertiesUtil;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.authentication.server.AuthenticationFilter;
@@ -44,7 +45,6 @@ import java.util.Properties;
 public class MetadataAuthenticationFilter extends AuthenticationFilter {
     private static final Logger LOG = LoggerFactory.getLogger(MetadataAuthenticationFilter.class);
     static final String PREFIX = "metadata.http.authentication.";
-    static final String BIND_ADDRESS = "metadata.server.bind.address";
 
     @Override
     protected Properties getConfiguration(String configPrefix, FilterConfig filterConfig) throws ServletException {
@@ -77,7 +77,7 @@ public class MetadataAuthenticationFilter extends AuthenticationFilter {
         }
 
         //Resolve _HOST into bind address
-        String bindAddress = config.getProperty(BIND_ADDRESS);
+        String bindAddress = config.getProperty(SecurityProperties.BIND_ADDRESS);
         if (bindAddress == null) {
             LOG.info("No host name configured.  Defaulting to local host name.");
             try {
