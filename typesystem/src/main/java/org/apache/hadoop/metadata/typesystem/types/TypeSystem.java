@@ -627,13 +627,13 @@ public class TypeSystem {
     }
 
     public class IdType {
-        private static final String ID_ATTRNAME = "guid";
-        private static final String  TYPENAME_ATTRNAME = "typeName";
+        private static final String ID_ATTRNAME = "__guid";
+        private static final String  TYPENAME_ATTRNAME = "__typeName";
         private static final String  TYP_NAME = "__IdType";
 
         private IdType() {
             AttributeDefinition idAttr = new AttributeDefinition(ID_ATTRNAME,
-                    DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null);
+                    DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, true, true, false, null);
             AttributeDefinition typNmAttr =
                     new AttributeDefinition(TYPENAME_ATTRNAME,
                             DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null);

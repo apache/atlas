@@ -23,6 +23,7 @@ import com.thinkaurelius.titan.core.TitanIndexQuery;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.discovery.DiscoveryException;
 import org.apache.hadoop.metadata.discovery.DiscoveryService;
 import org.apache.hadoop.metadata.query.Expressions;
@@ -66,6 +67,8 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
     private final TitanGraph titanGraph;
     private final DefaultGraphPersistenceStrategy graphPersistenceStrategy;
 
+    public final static String SCORE = "score";
+
     @Inject
     GraphBackedDiscoveryService(GraphProvider<TitanGraph> graphProvider,
                                 MetadataRepository metadataRepository) throws DiscoveryException {
@@ -92,9 +95,9 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
             String guid = vertex.getProperty(Constants.GUID_PROPERTY_KEY);
             if (guid != null) { //Filter non-class entities
                 try {
-                    row.put("guid", guid);
-                    row.put("typeName", vertex.<String>getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY));
-                    row.put("score", result.getScore());
+                    row.put(MetadataServiceClient.GUID, guid);
+                    row.put(MetadataServiceClient.TYPENAME, vertex.<String>getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY));
+                    row.put(SCORE, result.getScore());
                 } catch (JSONException e) {
                     LOG.error("Unable to create response", e);
                     throw new DiscoveryException("Unable to create response");
