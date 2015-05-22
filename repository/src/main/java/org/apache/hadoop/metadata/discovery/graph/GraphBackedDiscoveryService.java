@@ -95,7 +95,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
             String guid = vertex.getProperty(Constants.GUID_PROPERTY_KEY);
             if (guid != null) { //Filter non-class entities
                 try {
-                    row.put(MetadataServiceClient.GUID, guid);
+                    row.put("guid", guid);
                     row.put(MetadataServiceClient.TYPENAME, vertex.<String>getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY));
                     row.put(SCORE, result.getScore());
                 } catch (JSONException e) {
