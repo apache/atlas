@@ -50,6 +50,9 @@ public class MetadataServiceClient {
     private static final Logger LOG = LoggerFactory.getLogger(MetadataServiceClient.class);
     public static final String NAME = "name";
     public static final String GUID = "GUID";
+    public static final String TYPENAME = "typeName";
+
+
     public static final String DEFINITION = "definition";
     public static final String ERROR = "error";
     public static final String REQUEST_ID = "requestId";
@@ -82,6 +85,7 @@ public class MetadataServiceClient {
         } catch (Exception e) {
             LOG.info("Error processing client configuration.", e);
         }
+
         URLConnectionClientHandler handler = SecureClientUtils.getClientConnectionHandler(config, clientConfig);
 
         Client client = new Client(handler, config);

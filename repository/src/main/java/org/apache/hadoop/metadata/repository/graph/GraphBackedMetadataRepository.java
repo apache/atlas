@@ -122,8 +122,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     }
 
     @Override
-    public String getFieldNameInVertex(IDataType<?> dataType, AttributeInfo aInfo) {
-        return dataType.getName() + "." + aInfo.name;
+    public String getFieldNameInVertex(IDataType<?> dataType, AttributeInfo aInfo) throws MetadataException {
+        return getQualifiedName(dataType, aInfo.name);
     }
 
     @Override
