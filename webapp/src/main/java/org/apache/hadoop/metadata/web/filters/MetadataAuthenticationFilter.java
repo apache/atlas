@@ -77,7 +77,7 @@ public class MetadataAuthenticationFilter extends AuthenticationFilter {
         }
 
         //Resolve _HOST into bind address
-        String bindAddress = config.getProperty(SecurityProperties.BIND_ADDRESS);
+        String bindAddress = configuration.getString(SecurityProperties.BIND_ADDRESS);
         if (bindAddress == null) {
             LOG.info("No host name configured.  Defaulting to local host name.");
             try {
