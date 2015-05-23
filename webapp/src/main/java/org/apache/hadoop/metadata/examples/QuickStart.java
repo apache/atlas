@@ -300,7 +300,7 @@ public class QuickStart {
         String entityJSON = InstanceSerialization.toJson(referenceable, true);
         System.out.println("Submitting new entity= " + entityJSON);
         JSONObject jsonObject = metadataServiceClient.createEntity(entityJSON);
-        String guid = jsonObject.getString(MetadataServiceClient.RESULTS);
+        String guid = jsonObject.getString(MetadataServiceClient.GUID);
         System.out.println("created instance for type " + typeName + ", guid: " + guid);
 
         // return the Id for created instance with guid

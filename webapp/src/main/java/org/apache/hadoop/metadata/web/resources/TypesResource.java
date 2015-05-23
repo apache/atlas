@@ -18,15 +18,11 @@
 
 package org.apache.hadoop.metadata.web.resources;
 
-import com.google.common.base.Preconditions;
-import com.google.inject.Guice;
 import com.sun.jersey.api.client.ClientResponse;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.services.MetadataService;
 import org.apache.hadoop.metadata.typesystem.types.DataTypes;
-import org.apache.hadoop.metadata.typesystem.types.IDataType;
-import org.apache.hadoop.metadata.web.listeners.GuiceServletConfig;
 import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -37,9 +33,18 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
-import javax.ws.rs.core.*;
-import java.net.URI;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -141,7 +146,7 @@ public class TypesResource {
     public Response getTypesByFilter(@Context HttpServletRequest request,
                                      @DefaultValue(TYPE_ALL) @QueryParam("type") String type) {
         try {
-            List<String> result = null;
+            List<String> result;
             if (TYPE_ALL.equals(type)) {
                 result = metadataService.getTypeNamesList();
             } else {
