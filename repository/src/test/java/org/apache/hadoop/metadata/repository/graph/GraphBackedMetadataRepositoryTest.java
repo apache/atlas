@@ -349,6 +349,33 @@ public class GraphBackedMetadataRepositoryTest {
         }
     }
 
+    @Test(dependsOnMethods = "testSubmitEntity")
+    public void testSearchByDSLWithInheritance() throws Exception {
+        String dslQuery = "Person where name = 'Jane'";
+        System.out.println("Executing dslQuery = " + dslQuery);
+        String jsonResults = discoveryService.searchByDSL(dslQuery);
+        Assert.assertNotNull(jsonResults);
+
+        JSONObject results = new JSONObject(jsonResults);
+        Assert.assertEquals(results.length(), 3);
+        System.out.println("results = " + results);
+
+        Object query = results.get("query");
+        Assert.assertNotNull(query);
+
+        JSONObject dataType = results.getJSONObject("dataType");
+        Assert.assertNotNull(dataType);
+        String typeName = dataType.getString("typeName");
+        Assert.assertEquals(typeName, "Person");
+
+        JSONArray rows = results.getJSONArray("rows");
+        Assert.assertEquals(rows.length(), 1);
+
+        JSONObject row = rows.getJSONObject(0);
+        Assert.assertEquals(row.getString("$typeName$"), "Manager");
+        Assert.assertEquals(row.getString("name"), "Jane");
+    }
+
     /**
       * Full text search requires GraphBackedSearchIndexer, and GraphBackedSearchIndexer can't be enabled in
       * GraphBackedDiscoveryServiceTest because of its test data. So, test for full text search is in
