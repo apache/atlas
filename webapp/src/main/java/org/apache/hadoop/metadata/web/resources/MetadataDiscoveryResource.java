@@ -82,7 +82,7 @@ public class MetadataDiscoveryResource {
             return searchUsingGremlinQuery(query);
         }
 
-        JSONObject response = null;
+        JSONObject response;
 
         try {   // fall back to dsl
             final String jsonResultStr = discoveryService.searchByDSL(query);

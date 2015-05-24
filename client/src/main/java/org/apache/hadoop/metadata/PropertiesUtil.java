@@ -18,13 +18,11 @@
 
 package org.apache.hadoop.metadata;
 
-import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.net.MalformedURLException;
 import java.net.URL;
 
 public class PropertiesUtil {
@@ -33,11 +31,11 @@ public class PropertiesUtil {
     private static final String APPLICATION_PROPERTIES = "application.properties";
     public static final String CLIENT_PROPERTIES = "client.properties";
 
-    public static final PropertiesConfiguration getApplicationProperties() throws MetadataException {
+    public static PropertiesConfiguration getApplicationProperties() throws MetadataException {
         return getPropertiesConfiguration(APPLICATION_PROPERTIES);
     }
 
-    public static final PropertiesConfiguration getClientProperties() throws MetadataException {
+    public static PropertiesConfiguration getClientProperties() throws MetadataException {
         return getPropertiesConfiguration(CLIENT_PROPERTIES);
     }
 
