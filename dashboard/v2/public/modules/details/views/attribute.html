@@ -16,5 +16,24 @@
   ~ limitations under the License.
   -->
 
-<h4>{{key}}:</h4>
-<p>{{value | date:'medium'}}</p>
+<!--<div>-->
+<!--{{key}}:-->
+
+<!--{{value}}-->
+<!--</div>-->
+
+
+<div >
+  <table class="table table-bordered"  ng-if="value && !(key==='columns') && !(key==='name') && !(key==='description')">
+    <thead>
+    <tr >
+      <th>{{key}}</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+      <td>{{value}}</td>
+    </tr>
+    </tbody>
+  </table>
+</div>
