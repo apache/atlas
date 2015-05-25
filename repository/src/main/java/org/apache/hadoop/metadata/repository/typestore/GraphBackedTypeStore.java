@@ -188,7 +188,7 @@ public class GraphBackedTypeStore implements ITypeStore {
                 break;
 
             default:
-                throw new IllegalArgumentException("Unhandled type category " + attrDataType.getTypeCategory());
+                throw new IllegalArgumentException("Attribute cannot reference instances of type : " + attrDataType.getTypeCategory());
         }
 
         for (IDataType attrType : attrDataTypes) {
