@@ -1,0 +1,18 @@
+<div>
+    <table class="table table-bordered">
+        <thead>
+        <tr >
+            <th>Name</th>
+            <th>Comment</th>
+            <th>DataType</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="s in schemas.columns track by $index">
+            <td> {{s.name}}</td>
+            <td>{{s.comment}}</td>
+            <td> {{s.dataType}}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
