@@ -291,6 +291,7 @@ public class TypeSystem {
             throw new MetadataException(
                     String.format("Redefinition of type %s not supported", eDef.name));
         }
+
         EnumType eT = new EnumType(this, eDef.name, eDef.enumValues);
         types.put(eDef.name, eT);
         typeCategoriesToTypeNamesMap.put(DataTypes.TypeCategory.ENUM, eDef.name);

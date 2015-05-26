@@ -47,7 +47,7 @@ public class HierarchicalTypeDefinition<T extends HierarchicalType> extends Stru
     public HierarchicalTypeDefinition(Class<T> hierarchicalMetaType,
                                       String typeName, ImmutableList<String> superTypes,
                                       AttributeDefinition[] attributeDefinitions) {
-        super(typeName, attributeDefinitions);
+        super(typeName, false, attributeDefinitions);
         hierarchicalMetaTypeName = hierarchicalMetaType.getName();
         this.superTypes = superTypes == null ? ImmutableList.<String>of() : superTypes;
     }
