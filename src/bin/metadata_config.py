@@ -110,8 +110,9 @@ def executeEnvSh(confDir):
         proc.communicate()
 
 def java(classname, args, classpath, jvm_opts_list, logdir=None):
-    if os.environ.get("JAVA_HOME") is not None and os.environ["JAVA_HOME"]:
-        prg = os.path.join(os.environ["JAVA_HOME"], "bin", "java")
+    java_home = os.environ.get("JAVA_HOME", None)
+    if java_home:
+        prg = os.path.join(java_home, "bin", "java")
     else:
         prg = which("java")
 
@@ -124,8 +125,9 @@ def java(classname, args, classpath, jvm_opts_list, logdir=None):
     return runProcess(commandline, logdir)
 
 def jar(path):
-    if os.environ["JAVA_HOME"] is not None and os.environ["JAVA_HOME"]:
-        prg = os.path.join(os.environ["JAVA_HOME"], "bin", "jar")
+    java_home = os.environ.get("JAVA_HOME", None)
+    if java_home:
+        prg = os.path.join(java_home, "bin", "jar")
     else:
         prg = which("jar")
 

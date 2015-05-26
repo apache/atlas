@@ -18,6 +18,7 @@
 import os
 from signal import SIGTERM
 import sys
+import traceback
 
 import metadata_config as mc
 
@@ -52,6 +53,7 @@ if __name__ == '__main__':
         returncode = main()
     except Exception as e:
         print "Exception: %s " % str(e)
+        print traceback.format_exc()
         returncode = -1
 
     sys.exit(returncode)
