@@ -28,8 +28,8 @@ def main():
 
     metadata_home = mc.metadataDir()
     confdir = mc.dirMustExist(mc.confDir(metadata_home))
-    logdir = mc.dirMustExist(mc.logDir(metadata_home))
     mc.executeEnvSh(confdir)
+    logdir = mc.dirMustExist(mc.logDir(metadata_home))
 
     #create sys property for conf dirs
     jvm_opts_list = (METADATA_LOG_OPTS % logdir).split()
