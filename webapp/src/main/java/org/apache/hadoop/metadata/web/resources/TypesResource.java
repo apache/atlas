@@ -140,6 +140,11 @@ public class TypesResource {
 
     /**
      * Gets the list of trait type names registered in the type system.
+     *
+     * @param type type should be the name of enum
+     *             org.apache.hadoop.metadata.typesystem.types.DataTypes.TypeCategory
+     *             Typically, would be one of all, TRAIT, CLASS, ENUM, STRUCT
+     * @return entity names response payload as json
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
