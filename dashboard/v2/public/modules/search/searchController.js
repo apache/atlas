@@ -21,18 +21,20 @@
 angular.module('dgc.search').controller('SearchController', ['$scope', '$location', '$http', '$state', '$stateParams', 'SearchResource', 'NotificationService',
     function($scope, $location, $http, $state, $stateParams, SearchResource, NotificationService) {
 
-        $scope.types = [];
+        $scope.types = ['table','column','db','view','loadprocess','storagedesc'];
         $scope.results = [];
+        $scope.resultCount=0;
         $scope.search = function(query) {
             $scope.results = [];
             NotificationService.reset();
-            SearchResource.search($location.search(query).search(), function searchSuccess(response) {
-                $scope.results = response;
+            SearchResource.search({query:query}, function searchSuccess(response) {
+                $scope.results = response.results;
+                $scope.resultCount=response.count;
                 if ($scope.results.length < 1) {
                     NotificationService.error('No Result found', false);
                 }
-                $state.go('search.results', {}, {
-                    location: false
+                $state.go('search.results', {query:query}, {
+                    location: 'replace'
                 });
             }, function searchError(err) {
                 NotificationService.error('Error occurred during executing search query, error status code = ' + err.status + ', status text = ' + err.statusText, false);
@@ -40,11 +42,10 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
         };
 
         $scope.typeAvailable = function() {
-            return ['hive_table'].indexOf(this.result.type && this.result.type.toLowerCase()) > -1;
+            return $scope.types.indexOf(this.results.dataType.typeName && this.results.dataType.typeName.toLowerCase()) > -1;
         };
 
-        var urlParts = $location.url().split('?');
-        $scope.query = urlParts.length > 1 ? urlParts[1] : null;
+        $scope.query=$stateParams.query;
         if ($scope.query) {
             $scope.search($scope.query);
         }

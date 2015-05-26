@@ -16,21 +16,7 @@
   ~ limitations under the License.
   -->
 
-<div data-ng-controller="HeaderController">
-    <div class="navbar-header">
-        <button class="navbar-toggle" type="button" data-ng-click="isCollapsed = !isCollapsed">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-        </button>
-        <a data-ui-sref="home" data-ui-sref-active="active"><h1>DGI</h1></a>
-    </div>
-    <nav class="collapse navbar-collapse" data-collapse="isCollapsed" data-role="navigation">
-        <ul class="navbar-nav nav" data-ng-if="isLoggedIn()">
-            <li data-ng-repeat="item in menu" data-ui-sref-active="active">
-                <a data-ui-sref="{{item.state}}">{{item.title}}</a>
-            </li>
-        </ul>
-    </nav>
-</div>
+<h4><a data-ui-sref="details({id:result['$id$'].id})">{{result.name}}</a></h4>
+<p>{{result.description}}</p>
+<p><b>inputTables: </b>{{result.inputTables['id']}},<b>queryText: </b>{{result.queryText}},<b>startTime: </b>{{result.startTime | date:'medium'}},<b>endTime: </b> {{result.endTime | date:'medium'}}</p>
+<h5>Tags :  <a ng-repeat="(key, value) in result['$traits$']" data-ui-sref="search.results({query: key})">{{key}}</a> </h5>

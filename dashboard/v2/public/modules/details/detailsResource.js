@@ -24,7 +24,7 @@ angular.module('dgc.details').factory('DetailsResource', ['$resource', function(
             method: 'GET',
             transformResponse: function(data) {
                 if (data) {
-                    return angular.fromJson(data.results);
+                    return angular.fromJson(data.definition);
                 }
             },
             responseType: 'json'

@@ -18,19 +18,19 @@
 
 'use strict';
 
-//Setting up route
-angular.module('dgc.search').config(['$stateProvider',
-    function($stateProvider) {
-
-        // states for my app
-        $stateProvider.state('search', {
-            url: '/search',
-            templateUrl: '/modules/search/views/search.html',
-            controller:'SearchController'
-        }).state('search.results', {
-            url: '/:query',
-            templateUrl: '/modules/search/views/searchResult.html',
-            controller:'SearchController'
-        });
-    }
-]);
+angular.module('dgc.navigation').factory('NavigationResource', ['$resource', function($resource) {
+    return $resource('api/metadata/types', {}, {
+        get: {
+            'method': 'GET',
+            'responseType': 'json',
+            'isArray': true,
+            'transformResponse': function(data) {
+                var results = [];
+                angular.forEach(data && data.results, function(val) {
+                    results.push(val);
+                });
+                return results;
+            }
+        }
+    });
+}]);

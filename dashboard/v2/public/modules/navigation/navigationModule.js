@@ -18,19 +18,4 @@
 
 'use strict';
 
-//Setting up route
-angular.module('dgc.search').config(['$stateProvider',
-    function($stateProvider) {
-
-        // states for my app
-        $stateProvider.state('search', {
-            url: '/search',
-            templateUrl: '/modules/search/views/search.html',
-            controller:'SearchController'
-        }).state('search.results', {
-            url: '/:query',
-            templateUrl: '/modules/search/views/searchResult.html',
-            controller:'SearchController'
-        });
-    }
-]);
+angular.module('dgc.navigation',[]);

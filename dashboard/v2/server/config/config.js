@@ -28,7 +28,7 @@ var path = require('path'),
     config = require('rc')(packageJson.name, {
         app: {
             name: packageJson.name,
-            title: 'DGI | aetna'
+            title: 'DGI'
         },
         nodeEnv: 'local',
         root: rootPath,
@@ -38,7 +38,7 @@ var path = require('path'),
             verbose: true,
             hosts: [{
                 routes: {
-                    '/api': 'http://162.249.6.76:21000/api'
+                    '/api': 'http://162.249.6.39:21000/api'
                 }
             }]
         }
