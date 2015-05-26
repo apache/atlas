@@ -110,8 +110,6 @@ public class EntityResource {
     @Path("{guid}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getEntityDefinition(@PathParam("guid") String guid) {
-        Preconditions.checkNotNull(guid, "Entity GUID cannot be null");
-
         try {
             LOG.debug("Fetching entity definition for guid={} ", guid);
             final String entityDefinition = metadataService.getEntityDefinition(guid);
@@ -144,13 +142,14 @@ public class EntityResource {
     /**
      * Gets the list of entities for a given entity type.
      *
-     * @param entityType     name of a type which is unique
+     * @param entityType name of a type which is unique
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response getEntityListByType(@QueryParam("type") String entityType) {
-        Preconditions.checkNotNull(entityType, "Entity type cannot be null");
         try {
+            Preconditions.checkNotNull(entityType, "Entity type cannot be null");
+
             LOG.debug("Fetching entity list for type={} ", entityType);
             final List<String> entityList = metadataService.getEntityList(entityType);
 
@@ -161,6 +160,10 @@ public class EntityResource {
             response.put(MetadataServiceClient.COUNT, entityList.size());
 
             return Response.ok(response).build();
+        } catch (NullPointerException e) {
+            LOG.error("Entity type cannot be null", e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (MetadataException | IllegalArgumentException e) {
             LOG.error("Unable to get entity list for type {}", entityType, e);
             throw new WebApplicationException(
@@ -213,8 +216,6 @@ public class EntityResource {
     @Path("{guid}/traits")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getTraitNames(@PathParam("guid") String guid) {
-        Preconditions.checkNotNull(guid, "Entity GUID cannot be null");
-
         try {
             LOG.debug("Fetching trait names for entity={}", guid);
             final List<String> traitNames = metadataService.getTraitNames(guid);
@@ -248,8 +249,6 @@ public class EntityResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response addTrait(@Context HttpServletRequest request,
                              @PathParam("guid") String guid) {
-        Preconditions.checkNotNull(guid, "Entity GUID cannot be null");
-
         try {
             final String traitDefinition = Servlets.getRequestPayload(request);
             LOG.debug("Adding trait={} for entity={} ", traitDefinition, guid);
@@ -288,9 +287,6 @@ public class EntityResource {
     public Response deleteTrait(@Context HttpServletRequest request,
                                 @PathParam("guid") String guid,
                                 @PathParam(TRAIT_NAME) String traitName) {
-        Preconditions.checkNotNull(guid, "Entity GUID cannot be null");
-        Preconditions.checkNotNull(traitName, "Trait name cannot be null");
-
         LOG.debug("Deleting trait={} from entity={} ", traitName, guid);
         try {
             metadataService.deleteTrait(guid, traitName);
