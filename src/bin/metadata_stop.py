@@ -25,8 +25,8 @@ def main():
 
     metadata_home = mc.metadataDir()
     confdir = mc.dirMustExist(mc.confDir(metadata_home))
-    piddir = mc.dirMustExist(mc.logDir(metadata_home))
     mc.executeEnvSh(confdir)
+    piddir = mc.dirMustExist(mc.logDir(metadata_home))
 
     metadata_pid_file = mc.pidFile(metadata_home)
 
