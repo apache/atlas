@@ -23,6 +23,8 @@ import com.thinkaurelius.titan.core.TitanIndexQuery;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.gremlin.groovy.Gremlin;
+import com.tinkerpop.gremlin.java.GremlinPipeline;
 import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.discovery.DiscoveryException;
 import org.apache.hadoop.metadata.discovery.DiscoveryService;

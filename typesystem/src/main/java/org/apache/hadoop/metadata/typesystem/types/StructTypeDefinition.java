@@ -18,6 +18,8 @@
 
 package org.apache.hadoop.metadata.typesystem.types;
 
+import org.apache.hadoop.metadata.ParamChecker;
+
 import java.util.Arrays;
 
 public class StructTypeDefinition {
@@ -25,10 +27,17 @@ public class StructTypeDefinition {
     public final String typeName;
     public final AttributeDefinition[] attributeDefinitions;
 
-    public StructTypeDefinition(String typeName,
-                                AttributeDefinition[] attributeDefinitions) {
-        this.typeName = typeName;
+    protected StructTypeDefinition(String typeName, boolean validate, AttributeDefinition... attributeDefinitions) {
+        this.typeName = ParamChecker.notEmpty(typeName, "Struct type name");
+        if (attributeDefinitions != null && attributeDefinitions.length != 0) {
+            ParamChecker.notNullElements(attributeDefinitions, "Attribute definitions");
+        }
         this.attributeDefinitions = attributeDefinitions;
+    }
+
+    public StructTypeDefinition(String typeName, AttributeDefinition[] attributeDefinitions) {
+        this.typeName = ParamChecker.notEmpty(typeName, "Struct type name");
+        this.attributeDefinitions = ParamChecker.notNullElements(attributeDefinitions, "Attribute definitions");
     }
 
     @Override

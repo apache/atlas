@@ -23,6 +23,7 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.metadata.RepositoryMetadataModule;
 import org.apache.hadoop.metadata.TestUtils;
 import org.apache.hadoop.metadata.discovery.graph.GraphBackedDiscoveryService;
@@ -58,6 +59,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
+
+import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
+import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createStructTypeDef;
 
 /**
  * GraphBackedMetadataRepository test
@@ -587,5 +591,26 @@ public class GraphBackedMetadataRepositoryTest {
 
         ClassType tableType = typeSystem.getDataType(ClassType.class, TABLE_TYPE);
         return tableType.convert(tableInstance, Multiplicity.REQUIRED);
+    }
+
+    private String random() {
+        return RandomStringUtils.random(10);
+    }
+
+    @Test
+    public void testUTFValues() throws Exception {
+        Referenceable hrDept = new Referenceable("Department");
+        Referenceable john = new Referenceable("Person");
+        john.set("name", random());
+        john.set("department", hrDept);
+
+        hrDept.set("name", random());
+        hrDept.set("employees", ImmutableList.of(john));
+
+        ClassType deptType = typeSystem.getDataType(ClassType.class, "Department");
+        ITypedReferenceableInstance hrDept2 = deptType.convert(hrDept, Multiplicity.REQUIRED);
+
+        guid = repositoryService.createEntity(hrDept2);
+        Assert.assertNotNull(guid);
     }
 }

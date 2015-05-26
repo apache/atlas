@@ -18,13 +18,15 @@
 
 package org.apache.hadoop.metadata.typesystem.types;
 
+import org.apache.hadoop.metadata.ParamChecker;
+
 public class EnumValue {
 
     public final String value;
     public final int ordinal;
 
     public EnumValue(String value, int ordinal) {
-        this.value = value;
+        this.value = ParamChecker.notEmpty(value, "Enum value");
         this.ordinal = ordinal;
     }
 
