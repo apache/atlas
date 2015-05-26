@@ -110,7 +110,7 @@ def executeEnvSh(confDir):
         proc.communicate()
 
 def java(classname, args, classpath, jvm_opts_list, logdir=None):
-    if os.environ["JAVA_HOME"] is not None and os.environ["JAVA_HOME"]:
+    if os.environ.get("JAVA_HOME") is not None and os.environ["JAVA_HOME"]:
         prg = os.path.join(os.environ["JAVA_HOME"], "bin", "java")
     else:
         prg = which("java")
