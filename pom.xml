@@ -101,6 +101,9 @@
         <StagingId>apache-staging</StagingId>
         <StagingName>Apache Release Distribution Repository</StagingName>
         <StagingUrl>https://repository.apache.org/content/groups/staging</StagingUrl>
+
+        <!-- skips checkstyle and find bugs -->
+        <skipCheck>false</skipCheck>
     </properties>
 
     <profiles>
@@ -971,6 +974,7 @@
                         </goals>
                         <phase>verify</phase>
                         <configuration>
+                            <skip>${skipCheck}</skip>
                             <consoleOutput>true</consoleOutput>
                             <includeTestSourceDirectory>true</includeTestSourceDirectory>
                             <configLocation>src/build/checkstyle.xml</configLocation>
@@ -988,6 +992,7 @@
                     <!--debug>true</debug -->
                     <xmlOutput>true</xmlOutput>
                     <failOnError>false</failOnError>
+                    <skip>${skipCheck}</skip>
                 </configuration>
                 <executions>
                     <execution>
