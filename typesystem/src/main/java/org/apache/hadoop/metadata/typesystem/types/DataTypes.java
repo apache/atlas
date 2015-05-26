@@ -508,7 +508,7 @@ public class DataTypes {
                                 TypeSystem.getInstance().allowNullsInCollections()
                                         ? Multiplicity.OPTIONAL : Multiplicity.REQUIRED));
                     }
-                    return b.build();
+                    return m.isUnique ? b.build().asList() : b.build();
                 } else {
                     try {
                         return ImmutableList.of(elemType.convert(val,
