@@ -50,13 +50,6 @@ public class TypeUtils {
         }
     }
 
-    public static void validateName(String name) throws MetadataException {
-        if (!NAME_PATTERN.matcher(name).matches()) {
-            throw new MetadataException(
-                    String.format("Unsupported name for an attribute '%s'", name));
-        }
-    }
-
     public static String parseAsArrayType(String typeName) {
         Matcher m = ARRAY_TYPE_NAME_PATTERN.matcher(typeName);
         return m.matches() ? m.group(1) : null;

@@ -614,6 +614,12 @@
                 <version>1.8.5</version>
                 <scope>provided</scope>
             </dependency>
+
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>2.4</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
