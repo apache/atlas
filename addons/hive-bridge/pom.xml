@@ -40,25 +40,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.hadoop.metadata</groupId>
-            <artifactId>metadata-client</artifactId>
-            <version>${version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.guava</groupId>
-                    <artifactId>guava</artifactId>
-                </exclusion>
-            </exclusions>
-            <scope>runtime</scope>
-            <type>test-jar</type>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.hadoop.metadata</groupId>
-            <artifactId>metadata-typesystem</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-minikdc</artifactId>
             <version>${hadoop.version}</version>
@@ -96,6 +77,25 @@
             <artifactId>hive-cli</artifactId>
             <version>${hive.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hadoop.metadata</groupId>
+            <artifactId>metadata-client</artifactId>
+            <version>${version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+            </exclusions>
+            <scope>runtime</scope>
+            <type>test-jar</type>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hadoop.metadata</groupId>
+            <artifactId>metadata-typesystem</artifactId>
         </dependency>
 
         <dependency>

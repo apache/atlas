@@ -199,7 +199,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
                 break;
 
             case ENUM:
-                createVertexMixedIndex(propertyName, Integer.class);
+                createVertexMixedIndex(propertyName, String.class);
                 break;
 
             case ARRAY:

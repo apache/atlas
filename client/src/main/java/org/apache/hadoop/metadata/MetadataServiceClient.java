@@ -200,7 +200,7 @@ public class MetadataServiceClient {
     public Referenceable getEntity(String guid) throws MetadataServiceException {
         JSONObject jsonResponse = callAPI(API.GET_ENTITY, null, guid);
         try {
-            String entityInstanceDefinition = jsonResponse.getString(MetadataServiceClient.GUID);
+            String entityInstanceDefinition = jsonResponse.getString(MetadataServiceClient.DEFINITION);
             return InstanceSerialization.fromJsonReferenceable(entityInstanceDefinition, true);
         } catch (JSONException e) {
             throw new MetadataServiceException(e);

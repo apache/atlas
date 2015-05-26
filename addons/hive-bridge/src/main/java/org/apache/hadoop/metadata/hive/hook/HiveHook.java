@@ -189,37 +189,48 @@ public class HiveHook implements ExecuteWithHookContext {
 
         switch (event.operation) {
         case CREATEDATABASE:
-            Set<WriteEntity> outputs = event.outputs;
-            for (WriteEntity entity : outputs) {
-                if (entity.getType() == Entity.Type.DATABASE) {
-                    dgiBridge.registerDatabase(entity.getDatabase().getName());
-                }
-            }
+            handleCreateDB(dgiBridge, event);
             break;
 
         case CREATETABLE:
-            outputs = event.outputs;
-            for (WriteEntity entity : outputs) {
-                if (entity.getType() == Entity.Type.TABLE) {
-
-                    Table table = entity.getTable();
-                    //TODO table.getDbName().toLowerCase() is required as hive stores in lowercase,
-                    // but table.getDbName() is not lowercase
-                    Referenceable dbReferenceable = dgiBridge.registerDatabase(table.getDbName().toLowerCase());
-                    dgiBridge.registerTable(dbReferenceable, table.getDbName(), table.getTableName());
-                }
-            }
+            handleCreateTable(dgiBridge, event);
             break;
 
         case CREATETABLE_AS_SELECT:
-            registerCTAS(dgiBridge, event);
+        case CREATEVIEW:
+        case LOAD:
+        case EXPORT:
+        case IMPORT:
+        case QUERY:
+            registerProcess(dgiBridge, event);
             break;
 
         default:
         }
     }
 
-    private void registerCTAS(HiveMetaStoreBridge dgiBridge, HiveEvent event) throws Exception {
+    private void handleCreateTable(HiveMetaStoreBridge dgiBridge, HiveEvent event) throws Exception {
+        for (WriteEntity entity : event.outputs) {
+            if (entity.getType() == Entity.Type.TABLE) {
+
+                Table table = entity.getTable();
+                //TODO table.getDbName().toLowerCase() is required as hive stores in lowercase,
+                // but table.getDbName() is not lowercase
+                Referenceable dbReferenceable = dgiBridge.registerDatabase(table.getDbName().toLowerCase());
+                dgiBridge.registerTable(dbReferenceable, table.getDbName(), table.getTableName());
+            }
+        }
+    }
+
+    private void handleCreateDB(HiveMetaStoreBridge dgiBridge, HiveEvent event) throws Exception {
+        for (WriteEntity entity : event.outputs) {
+            if (entity.getType() == Entity.Type.DATABASE) {
+                dgiBridge.registerDatabase(entity.getDatabase().getName());
+            }
+        }
+    }
+
+    private void registerProcess(HiveMetaStoreBridge dgiBridge, HiveEvent event) throws Exception {
         Set<ReadEntity> inputs = event.inputs;
         Set<WriteEntity> outputs = event.outputs;
 
@@ -243,7 +254,7 @@ public class HiveHook implements ExecuteWithHookContext {
         processReferenceable.set("userName", event.user);
         List<Referenceable> source = new ArrayList<>();
         for (ReadEntity readEntity : inputs) {
-            if (readEntity.getTyp() == Entity.Type.TABLE) {
+            if (readEntity.getType() == Entity.Type.TABLE) {
                 Table table = readEntity.getTable();
                 String dbName = table.getDbName().toLowerCase();
                 source.add(dgiBridge.registerTable(dbName, table.getTableName()));
@@ -252,10 +263,13 @@ public class HiveHook implements ExecuteWithHookContext {
         processReferenceable.set("inputTables", source);
         List<Referenceable> target = new ArrayList<>();
         for (WriteEntity writeEntity : outputs) {
-            if (writeEntity.getTyp() == Entity.Type.TABLE) {
+            if (writeEntity.getType() == Entity.Type.TABLE || writeEntity.getType() == Entity.Type.PARTITION) {
                 Table table = writeEntity.getTable();
                 String dbName = table.getDbName().toLowerCase();
                 target.add(dgiBridge.registerTable(dbName, table.getTableName()));
+            }
+            if (writeEntity.getType() == Entity.Type.PARTITION) {
+                dgiBridge.registerPartition(writeEntity.getPartition());
             }
         }
         processReferenceable.set("outputTables", target);
