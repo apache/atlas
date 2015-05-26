@@ -38,7 +38,6 @@ public class AttributeInfo {
     private IDataType dataType;
 
     AttributeInfo(TypeSystem t, AttributeDefinition def, Map<String, IDataType> tempTypes) throws MetadataException {
-        TypeUtils.validateName(def.name);
         this.name = def.name;
         this.dataType = (tempTypes != null && tempTypes.containsKey(def.dataTypeName)) ?
                 tempTypes.get(def.dataTypeName) : t.getDataType(IDataType.class, def.dataTypeName);

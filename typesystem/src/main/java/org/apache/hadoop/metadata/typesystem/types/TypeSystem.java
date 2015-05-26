@@ -352,7 +352,6 @@ public class TypeSystem {
         private void step1() throws MetadataException {
             for (StructTypeDefinition sDef : structDefs) {
                 assert sDef.typeName != null;
-                TypeUtils.validateName(sDef.typeName);
                 if (dataType(sDef.typeName) != null) {
                     throw new MetadataException(
                             String.format("Cannot redefine type %s", sDef.typeName));
@@ -365,7 +364,6 @@ public class TypeSystem {
 
             for (HierarchicalTypeDefinition<TraitType> traitDef : traitDefs) {
                 assert traitDef.typeName != null;
-                TypeUtils.validateName(traitDef.typeName);
                 if (types.containsKey(traitDef.typeName)) {
                     throw new MetadataException(
                             String.format("Cannot redefine type %s", traitDef.typeName));
@@ -380,7 +378,6 @@ public class TypeSystem {
 
             for (HierarchicalTypeDefinition<ClassType> classDef : classDefs) {
                 assert classDef.typeName != null;
-                TypeUtils.validateName(classDef.typeName);
                 if (types.containsKey(classDef.typeName)) {
                     throw new MetadataException(
                             String.format("Cannot redefine type %s", classDef.typeName));
