@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Date;
 import java.util.Map;
 
 /**
@@ -249,7 +250,10 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
             return Double.class;
         } else if (dataType == DataTypes.BIGDECIMAL_TYPE) {
             return BigDecimal.class;
+        } else if (dataType == DataTypes.DATE_TYPE) {
+            return Date.class;
         }
+
 
         throw new IllegalArgumentException("unknown data type " + dataType);
     }

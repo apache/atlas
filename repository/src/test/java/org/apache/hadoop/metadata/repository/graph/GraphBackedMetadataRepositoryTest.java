@@ -26,6 +26,7 @@ import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.metadata.RepositoryMetadataModule;
 import org.apache.hadoop.metadata.TestUtils;
 import org.apache.hadoop.metadata.discovery.graph.GraphBackedDiscoveryService;
+import org.apache.hadoop.metadata.repository.BaseTest;
 import org.apache.hadoop.metadata.repository.Constants;
 import org.apache.hadoop.metadata.repository.RepositoryException;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
@@ -53,11 +54,7 @@ import org.testng.annotations.Test;
 import scala.actors.threadpool.Arrays;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * GraphBackedMetadataRepository test
@@ -154,6 +151,7 @@ public class GraphBackedMetadataRepositoryTest {
         Referenceable databaseInstance = new Referenceable(DATABASE_TYPE);
         databaseInstance.set("name", DATABASE_NAME);
         databaseInstance.set("description", "foo database");
+        databaseInstance.set("created", new Date(BaseTest.TEST_DATE_IN_LONG));
 
         databaseInstance.set("namespace", "colo:cluster:hive:db");
         databaseInstance.set("cluster", "cluster-1");
@@ -180,6 +178,7 @@ public class GraphBackedMetadataRepositoryTest {
         String guid = getGUID();
 
         ITypedReferenceableInstance table = repositoryService.getEntityDefinition(guid);
+        Assert.assertEquals(table.getDate("created"), new Date(BaseTest.TEST_DATE_IN_LONG));
         System.out.println("*** table = " + table);
     }
 
@@ -426,7 +425,9 @@ public class GraphBackedMetadataRepositoryTest {
                 TypesUtil.createClassTypeDef(DATABASE_TYPE,
                         ImmutableList.of(SUPER_TYPE_NAME),
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        TypesUtil.createOptionalAttrDef("created", DataTypes.DATE_TYPE),
                         TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
+
 
         StructTypeDefinition structTypeDefinition =
                 new StructTypeDefinition("serdeType",
@@ -461,6 +462,7 @@ public class GraphBackedMetadataRepositoryTest {
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE),
+                        TypesUtil.createOptionalAttrDef("created", DataTypes.DATE_TYPE),
                         // enum
                         new AttributeDefinition("tableType", "tableType",
                                 Multiplicity.REQUIRED, false, null),
@@ -524,6 +526,7 @@ public class GraphBackedMetadataRepositoryTest {
         tableInstance.set("name", TABLE_NAME);
         tableInstance.set("description", "bar table");
         tableInstance.set("type", "managed");
+        tableInstance.set("created", new Date(BaseTest.TEST_DATE_IN_LONG));
         tableInstance.set("tableType", 1); // enum
 
         // super type
