@@ -24,16 +24,15 @@ import org.apache.hadoop.hive.ql.Driver;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.hive.bridge.HiveMetaStoreBridge;
-import org.apache.hadoop.metadata.hive.model.HiveDataModelGenerator;
 import org.apache.hadoop.metadata.hive.model.HiveDataTypes;
 import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 public class HiveHookIT {
     private static final String DGI_URL = "http://localhost:21000/";
+    private static final String CLUSTER_NAME = "test";
     private Driver driver;
     private MetadataServiceClient dgiCLient;
     private SessionState ss;
@@ -59,6 +58,7 @@ public class HiveHookIT {
         hiveConf.set(HiveMetaStoreBridge.DGI_URL_PROPERTY, DGI_URL);
         hiveConf.set("javax.jdo.option.ConnectionURL", "jdbc:derby:./target/metastore_db;create=true");
         hiveConf.set("hive.hook.dgi.synchronous", "true");
+        hiveConf.set(HiveMetaStoreBridge.HIVE_CLUSTER_NAME, CLUSTER_NAME);
         return hiveConf;
     }
 
@@ -82,11 +82,11 @@ public class HiveHookIT {
 
         String tableName = "table" + RandomStringUtils.randomAlphanumeric(5).toLowerCase();
         runCommand("create table " + dbName + "." + tableName + "(id int, name string)");
-        assertTableIsRegistered(tableName);
+        assertTableIsRegistered(dbName, tableName);
 
         tableName = "table" + RandomStringUtils.randomAlphanumeric(5).toLowerCase();
         runCommand("create table " + tableName + "(id int, name string)");
-        assertTableIsRegistered(tableName);
+        assertTableIsRegistered("default", tableName);
 
         //Create table where database doesn't exist, will create database instance as well
         assertDatabaseIsRegistered("default");
@@ -97,24 +97,33 @@ public class HiveHookIT {
         String tableName = "table" + RandomStringUtils.randomAlphanumeric(5).toLowerCase();
         runCommand("create table " + tableName + "(id int, name string)");
 
-        String newTableName = "table" + RandomStringUtils.randomAlphanumeric(5).toLowerCase();
-        String query = "create table " + newTableName + " as select * from " + tableName;
+        String ctasTableName = "table" + RandomStringUtils.randomAlphanumeric(5).toLowerCase();
+        String query = "create table " + ctasTableName + " as select * from " + tableName;
         runCommand(query);
 
-        assertTableIsRegistered(newTableName);
-        assertInstanceIsRegistered(HiveDataTypes.HIVE_PROCESS.getName(), "queryText", query);
+        assertTableIsRegistered("default", ctasTableName);
+        assertProcessIsRegistered(query);
     }
 
-    private void assertTableIsRegistered(String tableName) throws Exception {
-        assertInstanceIsRegistered(HiveDataTypes.HIVE_TABLE.getName(), "name", tableName);
+    private void assertProcessIsRegistered(String queryStr) throws Exception {
+        String dslQuery = String.format("%s where queryText = '%s'", HiveDataTypes.HIVE_PROCESS.getName(), queryStr);
+        assertInstanceIsRegistered(dslQuery);
+    }
+
+    private void assertTableIsRegistered(String dbName, String tableName) throws Exception {
+        String query = String.format("%s where name = '%s', dbName where name = '%s' and clusterName = '%s'",
+                HiveDataTypes.HIVE_TABLE.getName(), tableName, dbName, CLUSTER_NAME);
+        assertInstanceIsRegistered(query);
     }
 
     private void assertDatabaseIsRegistered(String dbName) throws Exception {
-        assertInstanceIsRegistered(HiveDataTypes.HIVE_DB.getName(), "name", dbName);
+        String query = String.format("%s where name = '%s' and clusterName = '%s'", HiveDataTypes.HIVE_DB.getName(),
+                dbName, CLUSTER_NAME);
+        assertInstanceIsRegistered(query);
     }
 
-    private void assertInstanceIsRegistered(String typeName, String colName, String colValue) throws Exception{
-        JSONArray results = dgiCLient.rawSearch(typeName, colName, colValue);
+    private void assertInstanceIsRegistered(String dslQuery) throws Exception{
+        JSONArray results = dgiCLient.searchByDSL(dslQuery);
         Assert.assertEquals(results.length(), 1);
     }
 }

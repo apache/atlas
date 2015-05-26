@@ -21,6 +21,7 @@ package org.apache.hadoop.metadata.typesystem.types;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.metadata.MetadataException;
+import scala.math.BigInt;
 
 public class EnumType extends AbstractDataType<EnumValue> {
 
@@ -54,7 +55,7 @@ public class EnumType extends AbstractDataType<EnumValue> {
             EnumValue e = null;
             if (val instanceof EnumValue) {
                 e = valueMap.get(((EnumValue)val).value);
-            } else if ( val instanceof Integer) {
+            } else if ( val instanceof Integer || val instanceof BigInt) {
                 e = ordinalMap.get(val);
             } else if ( val instanceof  String) {
                 e = valueMap.get(val);

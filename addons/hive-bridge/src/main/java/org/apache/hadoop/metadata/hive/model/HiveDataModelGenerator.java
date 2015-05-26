@@ -280,6 +280,8 @@ public class HiveDataModelGenerator {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition("name", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("clusterName", DataTypes.STRING_TYPE.getName(),
+                        Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("description", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("locationUri", DataTypes.STRING_TYPE.getName(),
@@ -322,8 +324,6 @@ public class HiveDataModelGenerator {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition("name", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
-                //new AttributeDefinition("type", DefinedTypes.HIVE_TYPE.getName(), Multiplicity
-                // .REQUIRED, false, null),
                 new AttributeDefinition("type", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("comment", DataTypes.STRING_TYPE.getName(),
