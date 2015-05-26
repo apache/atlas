@@ -462,6 +462,14 @@ public class TypeSystem {
                 }
             }
 
+            if (info.multiplicity.upper > 1 && !(
+                    info.dataType().getTypeCategory() == DataTypes.TypeCategory.MAP ||
+                            info.dataType().getTypeCategory() == DataTypes.TypeCategory.ARRAY)) {
+                throw new MetadataException(
+                        String.format("A multiplicty of more than one requires a collection type for attribute '%s'",
+                                info.name));
+            }
+
             return info;
         }
 
