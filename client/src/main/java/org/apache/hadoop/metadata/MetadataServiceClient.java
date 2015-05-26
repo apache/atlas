@@ -55,6 +55,7 @@ public class MetadataServiceClient {
 
     public static final String DEFINITION = "definition";
     public static final String ERROR = "error";
+    public static final String STACKTRACE = "stackTrace";
     public static final String REQUEST_ID = "requestId";
     public static final String RESULTS = "results";
     public static final String COUNT = "count";

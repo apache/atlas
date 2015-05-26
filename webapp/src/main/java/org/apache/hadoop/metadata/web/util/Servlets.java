@@ -30,6 +30,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.StringWriter;
 
 /**
@@ -98,7 +99,20 @@ public final class Servlets {
     }
 
     public static Response getErrorResponse(Throwable e, Response.Status status) {
-        return getErrorResponse(e.getMessage(), status);
+        Response response = getErrorResponse(e.getMessage(), status);
+        JSONObject responseJson = (JSONObject) response.getEntity();
+        try {
+            responseJson.put(MetadataServiceClient.STACKTRACE, printStackTrace(e));
+        } catch (JSONException e1) {
+            LOG.warn("Could not construct error Json rensponse", e1);
+        }
+        return response;
+    }
+
+    private static String printStackTrace(Throwable t) {
+        StringWriter sw = new StringWriter();
+        t.printStackTrace(new PrintWriter(sw));
+        return sw.toString();
     }
 
     public static Response getErrorResponse(String message, Response.Status status) {
@@ -108,7 +122,7 @@ public final class Servlets {
             errorJson.put(MetadataServiceClient.ERROR, errorEntity);
             errorEntity = errorJson;
         } catch (JSONException jsonE) {
-            LOG.warn("Could not construct error Json rensponse");
+            LOG.warn("Could not construct error Json rensponse", jsonE);
         }
         return Response
                 .status(status)

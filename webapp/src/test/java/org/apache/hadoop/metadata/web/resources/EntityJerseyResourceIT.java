@@ -199,6 +199,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         JSONObject response = new JSONObject(responseAsString);
         Assert.assertNotNull(response.get(MetadataServiceClient.ERROR));
+        Assert.assertNotNull(response.get(MetadataServiceClient.STACKTRACE));
     }
 
     @Test(dependsOnMethods = "testSubmitEntity")
@@ -238,6 +239,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         JSONObject response = new JSONObject(responseAsString);
         Assert.assertNotNull(response.get(MetadataServiceClient.ERROR));
+        Assert.assertNotNull(response.get(MetadataServiceClient.STACKTRACE));
     }
 
     @Test
@@ -395,6 +397,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         JSONObject response = new JSONObject(responseAsString);
         Assert.assertNotNull(response.get(MetadataServiceClient.ERROR));
+        Assert.assertNotNull(response.get(MetadataServiceClient.STACKTRACE));
     }
 
     private void createHiveTypes() throws Exception {
