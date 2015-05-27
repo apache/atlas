@@ -397,6 +397,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         JSONObject response = new JSONObject(responseAsString);
         Assert.assertNotNull(response.get(MetadataServiceClient.ERROR));
+        Assert.assertEquals(response.getString(MetadataServiceClient.ERROR), "trait=" + traitName + " should be defined in type system before it can be deleted");
         Assert.assertNotNull(response.get(MetadataServiceClient.STACKTRACE));
     }
 
