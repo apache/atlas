@@ -30,4 +30,6 @@ angular.module('dgc.details').factory('DetailsResource', ['$resource', function(
             responseType: 'json'
         }
     });
+
+
 }]);
