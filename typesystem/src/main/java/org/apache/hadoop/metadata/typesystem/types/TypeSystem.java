@@ -47,7 +47,7 @@ public class TypeSystem {
     private static ThreadLocal<SimpleDateFormat> dateFormat = new ThreadLocal() {
         @Override
         public SimpleDateFormat initialValue() {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
             dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
             return dateFormat;
         }

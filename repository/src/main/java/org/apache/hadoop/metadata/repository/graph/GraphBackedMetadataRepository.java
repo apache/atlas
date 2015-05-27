@@ -56,12 +56,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -924,6 +919,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 propertyValue = typedInstance.getDouble(attributeInfo.name);
             } else if (attributeInfo.dataType() == DataTypes.BIGDECIMAL_TYPE) {
                 propertyValue = typedInstance.getBigDecimal(attributeInfo.name);
+            } else if (attributeInfo.dataType() == DataTypes.DATE_TYPE) {
+                propertyValue = typedInstance.getDate(attributeInfo.name);
             }
             addProperty(instanceVertex, vertexPropertyName, propertyValue);
         }
@@ -1295,6 +1292,9 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             } else if (attributeInfo.dataType() == DataTypes.BIGDECIMAL_TYPE) {
                 typedInstance.setBigDecimal(attributeInfo.name,
                         instanceVertex.<BigDecimal>getProperty(vertexPropertyName));
+            } else if (attributeInfo.dataType() == DataTypes.DATE_TYPE) {
+                typedInstance.setDate(attributeInfo.name,
+                        instanceVertex.<Date>getProperty(vertexPropertyName));
             }
         }
     }
