@@ -452,8 +452,9 @@ public class HiveDataModelGenerator {
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("functionType", HiveDataTypes.HIVE_FUNCTION_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("resourceUris", HiveDataTypes.HIVE_RESOURCEURI.getName(),
-                        Multiplicity.COLLECTION, false, null),
+                new AttributeDefinition("resourceUris",
+                        DataTypes.arrayTypeName(HiveDataTypes.HIVE_RESOURCEURI.getName()), Multiplicity.OPTIONAL, false,
+                        null),
         };
 
         HierarchicalTypeDefinition<ClassType> definition = new HierarchicalTypeDefinition<>(

@@ -62,8 +62,8 @@ public class HiveHookIT {
         hiveConf.set("javax.jdo.option.ConnectionURL", "jdbc:derby:./target/metastore_db;create=true");
         hiveConf.set("hive.hook.dgi.synchronous", "true");
         hiveConf.set(HiveMetaStoreBridge.HIVE_CLUSTER_NAME, CLUSTER_NAME);
-        //weird, hive prepends test_ to table name
-        hiveConf.set("hive.test.mode", "true");
+        hiveConf.setBoolVar(HiveConf.ConfVars.HIVETESTMODE, true);  //to not use hdfs
+        hiveConf.setVar(HiveConf.ConfVars.HIVETESTMODEPREFIX, "");
         hiveConf.set("fs.pfile.impl", "org.apache.hadoop.fs.ProxyLocalFileSystem");
         return hiveConf;
     }
@@ -127,7 +127,7 @@ public class HiveHookIT {
     @Test
     public void testLoadData() throws Exception {
         String tableName = "table" + random();
-        runCommand("create table test_" + tableName + "(id int, name string)");
+        runCommand("create table " + tableName + "(id int, name string)");
 
         String loadFile = file("load");
         String query = "load data local inpath 'file://" + loadFile + "' into table " + tableName;
@@ -142,14 +142,14 @@ public class HiveHookIT {
         runCommand("create table " + tableName + "(id int, name string) partitioned by(dt string)");
 
         String insertTableName = "table" + random();
-        runCommand("create table test_" + insertTableName + "(name string) partitioned by(dt string)");
+        runCommand("create table " + insertTableName + "(name string) partitioned by(dt string)");
 
         String query = "insert into " + insertTableName + " partition(dt = '2015-01-01') select name from "
                 + tableName + " where dt = '2015-01-01'";
 
         runCommand(query);
         assertProcessIsRegistered(query);
-        assertPartitionIsRegistered("default", "test_" + insertTableName, "2015-01-01");
+        assertPartitionIsRegistered("default", insertTableName, "2015-01-01");
     }
 
     private String random() {
@@ -173,7 +173,7 @@ public class HiveHookIT {
     @Test
     public void testExportImport() throws Exception {
         String tableName = "table" + random();
-        runCommand("create table test_" + tableName + "(name string)");
+        runCommand("create table " + tableName + "(name string)");
 
         String filename = "pfile://" + mkdir("export");
         String query = "export table " + tableName + " to '" + filename + "'";
