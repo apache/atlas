@@ -18,9 +18,12 @@
 
 package org.apache.hadoop.metadata.web.util;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.metadata.MetadataServiceClient;
+import org.apache.hadoop.metadata.ParamChecker;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
@@ -37,6 +40,8 @@ import java.io.StringWriter;
  * Utility functions for dealing with servlets.
  */
 public final class Servlets {
+
+    public static final String QUOTE = "\"";
 
     private static final Logger LOG = LoggerFactory.getLogger(Servlets.class);
     private Servlets() {
@@ -117,7 +122,7 @@ public final class Servlets {
 
     public static Response getErrorResponse(String message, Response.Status status) {
         JSONObject errorJson = new JSONObject();
-        Object errorEntity = JSONObject.quote(message);
+        Object errorEntity = Servlets.escapeJsonString(message);
         try {
             errorJson.put(MetadataServiceClient.ERROR, errorEntity);
             errorEntity = errorJson;
@@ -139,5 +144,15 @@ public final class Servlets {
 
     public static String getRequestId() {
         return Thread.currentThread().getName();
+    }
+
+    public static String escapeJsonString(String inputStr) {
+        ParamChecker.notNull(inputStr, "Input String cannot be null");
+        return StringEscapeUtils.escapeJson(inputStr);
+    }
+
+    public static void main(String[] args) {
+        String result = Servlets.escapeJsonString(args[0]);
+        System.out.println(result);
     }
 }

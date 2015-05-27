@@ -298,7 +298,7 @@ public class RexsterGraphResource {
                 String message = "Edge with [" + edgeId + "] cannot be found.";
                 LOG.info(message);
                 throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND)
-                        .entity(JSONObject.quote(message)).build());
+                        .entity(Servlets.escapeJsonString(message)).build());
             }
 
             JSONObject response = new JSONObject();
@@ -389,7 +389,7 @@ public class RexsterGraphResource {
                 countOnly = false;
             } else {
                 throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST)
-                        .entity(JSONObject.quote(directionSegment + " segment was invalid."))
+                        .entity(Servlets.escapeJsonString(directionSegment + " segment was invalid."))
                         .build());
             }
         }
