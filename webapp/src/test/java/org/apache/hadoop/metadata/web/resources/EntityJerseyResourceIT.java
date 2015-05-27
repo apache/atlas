@@ -21,6 +21,7 @@ package org.apache.hadoop.metadata.web.resources;
 import com.google.common.collect.ImmutableList;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.Struct;
@@ -231,8 +232,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.GET, ClientResponse.class);
-        Assert.assertEquals(clientResponse.getStatus(),
-                Response.Status.BAD_REQUEST.getStatusCode());
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
 
         String responseAsString = clientResponse.getEntity(String.class);
         Assert.assertNotNull(responseAsString);
@@ -349,8 +349,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
-        Assert.assertEquals(clientResponse.getStatus(),
-                Response.Status.BAD_REQUEST.getStatusCode());
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
     }
 
     @Test (dependsOnMethods = "testAddTrait")
@@ -389,8 +388,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .accept(MediaType.APPLICATION_JSON)
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.DELETE, ClientResponse.class);
-        Assert.assertEquals(clientResponse.getStatus(),
-                Response.Status.BAD_REQUEST.getStatusCode());
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
 
         String responseAsString = clientResponse.getEntity(String.class);
         Assert.assertNotNull(responseAsString);
@@ -399,6 +397,34 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(response.get(MetadataServiceClient.ERROR));
         Assert.assertEquals(response.getString(MetadataServiceClient.ERROR), "trait=" + traitName + " should be defined in type system before it can be deleted");
         Assert.assertNotNull(response.get(MetadataServiceClient.STACKTRACE));
+    }
+
+    private String random() {
+        return RandomStringUtils.random(10);
+    }
+
+    @Test
+    public void testUTF8() throws Exception {
+        String classType = random();
+        String attrName = random();
+        String attrValue = random();
+
+        HierarchicalTypeDefinition<ClassType> classTypeDefinition =
+                TypesUtil.createClassTypeDef(classType, ImmutableList.<String>of(),
+                        TypesUtil.createUniqueRequiredAttrDef(attrName, DataTypes.STRING_TYPE));
+        TypesDef typesDef = TypeUtils.getTypesDef(ImmutableList.<EnumTypeDefinition>of(),
+                ImmutableList.<StructTypeDefinition>of(), ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
+                ImmutableList.of(classTypeDefinition));
+        createType(typesDef);
+
+        Referenceable instance = new Referenceable(classType);
+        instance.set(attrName, attrValue);
+        Id guid = createInstance(instance);
+
+        ClientResponse response = getEntityDefinition(guid._getId());
+        String definition = getEntityDefinition(response);
+        Referenceable getReferenceable = InstanceSerialization.fromJsonReferenceable(definition, true);
+        Assert.assertEquals(getReferenceable.get(attrName), attrValue);
     }
 
     private void createHiveTypes() throws Exception {

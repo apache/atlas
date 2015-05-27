@@ -39,6 +39,7 @@ public final class Main {
     private static final String APP_PATH = "app";
     private static final String APP_PORT = "port";
     private static final String METADATA_HOME = "metadata.home";
+    private static final String METADATA_LOG_DIR = "metadata.log.dir";
 
     /**
      * Prevent users from constructing this.
@@ -86,6 +87,9 @@ public final class Main {
     private static void setApplicationHome() {
         if (System.getProperty(METADATA_HOME) == null) {
             System.setProperty(METADATA_HOME, "target");
+        }
+        if (System.getProperty(METADATA_LOG_DIR) == null) {
+            System.setProperty(METADATA_LOG_DIR, "target/logs");
         }
     }
 
