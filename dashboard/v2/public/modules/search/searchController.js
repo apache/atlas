@@ -45,6 +45,16 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
             return $scope.types.indexOf(this.results.dataType.typeName && this.results.dataType.typeName.toLowerCase()) > -1;
         };
 
+        $scope.filterSearchResults = function(items) {
+
+            var res = {};
+            angular.forEach(items, function(value, key) {
+                if(!(typeof value == 'object'))
+                    res[key] = value + ',';
+            });
+            return res;
+        }
+
         $scope.query=$stateParams.query;
         if ($scope.query) {
             $scope.search($scope.query);
