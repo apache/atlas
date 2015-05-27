@@ -54,7 +54,7 @@ public class StructTest extends BaseTest {
                 "\ti : \t1.0\n" +
                 "\tj : \t1\n" +
                 "\tk : \t1\n" +
-                "\tl : \t2014-12-11\n" +
+                "\tl : \t" + TEST_DATE + "\n" +
                 "\tm : \t[1, 1]\n" +
                 "\tn : \t[1.1, 1.1]\n" +
                 "\to : \t{b=2.0, a=1.0}\n" +
