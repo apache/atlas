@@ -143,4 +143,11 @@ class GremlinTest extends FunSuite with BeforeAndAfterAll with BaseGremlinTest {
       val e = p("from blah").right.get
       an [ExpressionException] should be thrownBy QueryProcessor.evaluate(e, g)
     }
+
+    test("Bug37860") {
+        val p = new QueryParser
+        val e = p("Table as t where name = 'sales_fact' db where name = 'Sales' and owner = 'John ETL' select t").right.get
+        val r = QueryProcessor.evaluate(e, g)
+        validateJson(r)
+    }
 }
