@@ -21,170 +21,182 @@
 angular.module('dgc.lineage').controller('LineageController', ['$element', '$scope', '$state', '$stateParams', 'lodash', 'LineageResource', 'd3',
     function($element, $scope, $state, $stateParams, _, LineageResource, d3) {
 
-        $scope.lineageData = LineageResource.get({
-            id: $stateParams.id
-        }, function(data) {
-            var nodes = {};
-
-            function getNode(nodeId) {
-                if (!nodes[nodeId]) {
-                    var node;
-                    if (data.vertices[nodeId]) {
-                        node = angular.copy(data.vertices[nodeId]);
-                        node.__key = nodeId;
-                        node.__name = node['hive_table.name'] || node.__key;
-                        node.__tooltip = node['hive_table.description'] || node['HiveLineage.query'];
-                    } else {
-                        node = {};
-                        node.__key = nodeId;
-                        node.__tooltip = node.__name = nodeId + ', Node Missing';
+   
+        var metaData = {
+            "jsonClass":"org.apache.hadoop.metadata.typesystem.json.InstanceSerialization$_Struct",
+            "typeName":"__tempQueryResultStruct5",
+            "values":{
+                "vertices":{
+                    "2318d240-481e-421c-a614-843347d03941":{
+                        "jsonClass":"org.apache.hadoop.metadata.typesystem.json.InstanceSerialization$_Struct",
+                        "typeName":"__tempQueryResultStruct4",
+                        "values":{
+                            "vertexId":{
+                                "jsonClass":"org.apache.hadoop.metadata.typesystem.json.InstanceSerialization$_Struct",
+                                "typeName":"__IdType",
+                                "values":{
+                                    "guid":"2318d240-481e-421c-a614-843347d03941",
+                                    "typeName":"Table"
+                                }
+                            },
+                            "name":"sales_fact_daily_mv"
+                        }
+                    },
+                    "2e2ab719-842e-4150-95bd-c9f684b3e3bf":{
+                        "jsonClass":"org.apache.hadoop.metadata.typesystem.json.InstanceSerialization$_Struct",
+                        "typeName":"__tempQueryResultStruct4",
+                        "values":{
+                            "vertexId":{
+                                "jsonClass":"org.apache.hadoop.metadata.typesystem.json.InstanceSerialization$_Struct",
+                                "typeName":"__IdType",
+                                "values":{
+                                    "guid":"2e2ab719-842e-4150-95bd-c9f684b3e3bf",
+                                    "typeName":"Table"
+                                }
+                            },
+                            "name":"time_dim"
+                        }
+                    },
+                    "d3991d56-4600-415f-acdb-6f1b0c8079b2":{
+                        "jsonClass":"org.apache.hadoop.metadata.typesystem.json.InstanceSerialization$_Struct",
+                        "typeName":"__tempQueryResultStruct4",
+                        "values":{
+                            "vertexId":{
+                                "jsonClass":"org.apache.hadoop.metadata.typesystem.json.InstanceSerialization$_Struct",
+                                "typeName":"__IdType",
+                                "values":{
+                                    "guid":"d3991d56-4600-415f-acdb-6f1b0c8079b2",
+                                    "typeName":"Table"
+                                }
+                            },
+                            "name":"sales_fact_monthly_mv"
+                        }
+                    },
+                    "7b516348-d8bb-4624-b330-3082ae87e705":{
+                        "jsonClass":"org.apache.hadoop.metadata.typesystem.json.InstanceSerialization$_Struct",
+                        "typeName":"__tempQueryResultStruct4",
+                        "values":{
+                            "vertexId":{
+                                "jsonClass":"org.apache.hadoop.metadata.typesystem.json.InstanceSerialization$_Struct",
+                                "typeName":"__IdType",
+                                "values":{
+                                    "guid":"7b516348-d8bb-4624-b330-3082ae87e705",
+                                    "typeName":"Table"
+                                }
+                            },
+                            "name":"sales_fact"
+                        }
+                    }, "7b516348-d8bb-4624-b330-3082ae87e706":{
+                        "jsonClass":"org.apache.hadoop.metadata.typesystem.json.InstanceSerialization$_Struct",
+                        "typeName":"__tempQueryResultStruct4",
+                        "values":{
+                            "vertexId":{
+                                "jsonClass":"org.apache.hadoop.metadata.typesystem.json.InstanceSerialization$_Struct",
+                                "typeName":"__IdType",
+                                "values":{
+                                    "guid":"7b516348-d8bb-4624-b330-3082ae87e705",
+                                    "typeName":"Table"
+                                }
+                            },
+                            "name":"sales_fact_2"
+                        }
                     }
-                    nodes[nodeId] = node;
-                }
-                return nodes[nodeId];
-            }
-
-            var edges = [],
-                edgeTypes = [];
-
-            angular.forEach(data.edges, function(edge) {
-                /* Put the head (edge) inside tail (edge)
-                 * Tail is parent
-                 * Head is child
-                 * */
-                var parentNode = getNode(edge.tail);
-                edge.source = parentNode;
-                edge.target = getNode(edge.head);
-
-                parentNode.__hasChild = true;
-
-                edge.__type = edge.label;
-                edgeTypes.push(edge.label);
-                edges.push(edge);
-            });
-            edgeTypes = _.uniq(edgeTypes);
-            render(nodes, edges, edgeTypes);
-        });
-
-        function render(nodes, links, linkTypes) {
-            // Use elliptical arc path segments to doubly-encode directionality.
-            function click(node) {
-                if (node.guid) {
-                    $state.go('details', {
-                        id: node.guid
-                    }, {
-                        location: 'replace'
-                    });
+                },
+                "edges":{
+                    "2318d240-481e-421c-a614-843347d03941":[
+                        "0f45a2df-9bd5-4579-88ec-6ad0ff251d6f"
+                    ],
+                    "0f45a2df-9bd5-4579-88ec-6ad0ff251d6f":[
+                        "7b516348-d8bb-4624-b330-3082ae87e705",
+                        "2e2ab719-842e-4150-95bd-c9f684b3e3bf"
+                    ],
+                    "d3991d56-4600-415f-acdb-6f1b0c8079b2":[
+                        "3710a18a-6116-4625-bf99-57670a7a90a8"
+                    ],
+                    "3710a18a-6116-4625-bf99-57670a7a90a8":[
+                        "2318d240-481e-421c-a614-843347d03941"
+                    ],
+                    "7b516348-d8bb-4624-b330-3082ae87e706": [
+                        "2318d240-481e-421c-a614-843347d03941"
+                    ]
                 }
             }
+        };
 
-            function tick() {
-                path.attr("d", linkArc);
-                circle.attr("transform", transform);
-                text.attr("transform", transform);
+        function transformData(metaData){
+            var nodes = [];
+            var name, guid;
+            var nodeGuids = Object.keys(metaData.values.vertices);
+            for (var index in nodeGuids) {
+                name = metaData.values.vertices[nodeGuids[index]].values.name;
+                guid = nodeGuids[index];
+                nodes.push({ guid: guid, label: name, shape: "rect" });
             }
 
-            function linkArc(d) {
-                var dx = d.target.x - d.source.x,
-                    dy = d.target.y - d.source.y,
-                    dr = Math.sqrt(dx * dx + dy * dy);
-                return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
+            var edges = [];
+            var parent;
+            var child;
+            var edgesParents = Object.keys(metaData.values.edges)
+            for(var index in edgesParents){
+                parent =  edgesParents[index];
+                for(var j = 0; j < metaData.values.edges[parent].length; j++ ) {
+                    child = metaData.values.edges[parent][j];
+                    if(!metaData.values.vertices.hasOwnProperty(child)) {
+                        nodes.push({guid: child, label: 'Load Process', shape: "circle"});
+                    }
+                    edges.push({parent: parent, child: child});
+                }
             }
-
-            function transform(d) {
-                return "translate(" + d.x + "," + d.y + ")";
-            }
-
-            var width = Math.max($element[0].offsetWidth, 960),
-                height = Math.max($element[0].offsetHeight, 350);
-
-            var force = d3.layout.force()
-                .nodes(d3.values(nodes))
-                .links(links)
-                .size([width, height])
-                .linkDistance(200)
-                .charge(-120)
-                .gravity(0.05)
-                .on("tick", tick)
-                .start();
-
-            var svg = d3.select($element[0]).select('svg')
-                .attr("width", width)
-                .attr("height", height);
-
-            /* Initialize tooltip */
-            var tooltip = d3.tip()
-                .attr('class', 'd3-tip')
-                .html(function(d) {
-                    return '<pre class="alert alert-success">' + d.__tooltip + '</pre>';
-                });
-
-            /* Invoke the tip in the context of your visualization */
-            svg.call(tooltip);
-
-            // Per-type markers, as they don't inherit styles.
-            var defs = svg.append("defs");
-
-            var imageDim = 10;
-            defs.append('svg:pattern')
-                .attr('id', 'process-image')
-                .attr('patternUnits', 'userSpaceOnUse')
-                .attr('width', imageDim)
-                .attr('height', imageDim)
-                .append('svg:image')
-                .attr('xlink:href', '/img/process.png')
-                .attr('x', 0)
-                .attr('y', 0)
-                .attr('width', imageDim)
-                .attr('height', imageDim);
-
-            defs.selectAll("marker")
-                .data(linkTypes)
-                .enter().append("marker")
-                .attr("id", function(d) {
-                    return d;
-                })
-                .attr("viewBox", "0 -5 10 10")
-                .attr("refX", 15)
-                .attr("refY", -1.5)
-                .attr("markerWidth", 6)
-                .attr("markerHeight", 6)
-                .attr("orient", "auto")
-                .append("path")
-                .attr("d", "M0,-5L10,0L0,5");
-
-            var path = svg.append("g").selectAll("path")
-                .data(force.links())
-                .enter().append("path")
-                .attr("class", function(d) {
-                    return "link " + d.__type;
-                })
-                .attr("marker-end", function(d) {
-                    return "url(#" + d.__type + ")";
-                });
-
-            var circle = svg.append("g").selectAll("circle")
-                .data(force.nodes())
-                .enter().append("circle")
-                .on('click', click)
-                .on('mouseover', tooltip.show)
-                .on('mouseout', tooltip.hide)
-                .attr('class', function(d) {
-                    return d.__hasChild ? '' : 'empty';
-                })
-                .attr("r", function(d) {
-                    return d.__hasChild ? 15 : 10;
-                })
-                .call(force.drag);
-
-            var text = svg.append("g").selectAll("text")
-                .data(force.nodes())
-                .enter().append("text")
-                .attr('dy', '2em')
-                .text(function(d) {
-                    return d.__name;
-                });
+            return {nodes: nodes, edges: edges};
         }
+
+
+
+
+        function renderGraph(data, element){
+
+            // Create a new directed graph
+            var g = new dagreD3
+                .graphlib
+                .Graph()
+                .setGraph({rankdir: "LR"});
+
+// Automatically label each of the nodes
+//g.setNode("DB (sales)", { label: "Sales DB",  width: 144, height: 100 })
+//states.forEach(function(state) { g.setNode(state, { label: state }); });
+
+            _.forEach(data.nodes, function (node) {
+                g.setNode(node.guid, { label: node.label, shape: node.shape });
+            });
+
+            _.forEach(data.edges, function(edge) {
+                g.setEdge(edge.parent, edge.child, {label: ""});
+            });
+
+// Set some general styles
+            g.nodes().forEach(function(v) {
+                var node = g.node(v);
+                node.rx = node.ry = 5;
+            });
+
+            var inner = element.select("g");
+
+// Create the renderer
+            var render = new dagreD3.render();
+
+// Run the renderer. This is what draws the final graph.
+            render(inner, g);
+
+// Center the graph
+            var initialScale = 0.75;
+            zoom
+                .translate([(element.attr("width") - g.graph().width * initialScale) / 2, 20])
+                .scale(initialScale)
+                .event(element);
+            element.attr('height', g.graph().height * initialScale + 90);
+        }
+
+        renderGraph(transformData(metaData), d3.select($element[0]).select('svg'));
 
     }
 ]);

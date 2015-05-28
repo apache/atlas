@@ -16,25 +16,24 @@
   ~ limitations under the License.
   -->
 
-<div class="container details" data-ng-controller="DetailsController">
-    <div class="col-lg-12">
-        <h4>{{details.name}}</h4>
-        <h5>{{details.description}}</h5>
 
-        <tabset>
-            <tab heading="Details">
-                <section data-ng-repeat="(key,value) in details" data-ng-if="isString(value)" data-ng-include="'/modules/details/views/attribute.html'"></section>
-            </tab>
-            <tab heading="Schema" >
-                <section data-ng-include="'/modules/details/views/schema.html'"></section>
+<div role="tabpanel" >
 
-            </tab>
-            <tab heading="Outputs" ng-if="details['$typeName$']==='Table'">
-                <div class="lineage" data-ng-include="'/modules/lineage/views/lineage.html'"></div>
-            </tab>
-            <tab heading="Inputs" ng-if="details['$typeName$']==='Table'">
-                <div class="lineage" data-ng-include="'/modules/lineage/views/lineage.html'"></div>
-            </tab>
-        </tabset>
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs" role="tablist">
+        <li role="presentation" ><a href="#home" aria-controls="home" role="tab" data-toggle="tab">Details</a></li>
+        <li role="presentation"><a href="#profile" aria-controls="profile" role="tab" data-toggle="tab">Schema</a></li>
+        <li role="presentation" class="active"><a href="#messages" aria-controls="messages" role="tab" data-toggle="tab">Output</a></li>
+        <!--<li role="presentation"><a href="#settings" aria-controls="settings" role="tab" data-toggle="tab">Settings</a></li>-->
+    </ul>
+
+    <!-- Tab panes -->
+    <div class="tab-content" data-ng-controller="DetailsController">
+        <div role="tabpanel" class="tab-pane " id="home"> <section data-ng-repeat="(key,value) in details" data-ng-if="isString(value)" data-ng-include="'/modules/details/views/attribute.html'"></section>
+        </div>
+        <div role="tabpanel" class="tab-pane" id="profile"> <section data-ng-include="'/modules/details/views/schema.html'"></section></div>
+        <div role="tabpanel" class="tab-pane active" id="messages"><div data-ng-include="'/modules/lineage/views/lineage.html'"></div></div>
+        <!--<div role="tabpanel" class="tab-pane" id="settings">...</div>-->
     </div>
+
 </div>

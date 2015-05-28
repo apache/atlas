@@ -31,5 +31,22 @@ angular.module('dgc.details').factory('DetailsResource', ['$resource', function(
         }
     });
 
+    //$scope.getSchema= function (tableName) {
+    //
+    //    $http.get('/api/metadata/lineage/hive/table/'+tableName +'/schema')
+    //        .success(function (data) {
+    //            $scope.iserror1=false;
+    //            $scope.schema=  angular.fromJson(data.results.rows);
+    //            //  console.log(tableName);
+    //
+    //
+    //        })
+    //        .error(function () {
+    //            //     alert("Sorry No response");
+    //
+    //
+    //
+    //        });
+    //}
 
 }]);
