@@ -57,6 +57,11 @@ import java.util.List;
 @Guice(modules = RepositoryMetadataModule.class)
 public class HiveLineageServiceTest {
 
+    static {
+        // this would override super types creation if not first thing
+        TypeSystem.getInstance().reset();
+    }
+
     @Inject
     private DefaultMetadataService metadataService;
 
@@ -71,8 +76,6 @@ public class HiveLineageServiceTest {
 
     @BeforeClass
     public void setUp() throws Exception {
-        TypeSystem.getInstance().reset();
-
         setUpTypes();
         setupInstances();
 
@@ -280,9 +283,7 @@ public class HiveLineageServiceTest {
                 );
 
         HierarchicalTypeDefinition<ClassType> tblClsDef =
-                TypesUtil.createClassTypeDef(HIVE_TABLE_TYPE, null,
-                        attrDef("name", DataTypes.STRING_TYPE),
-                        attrDef("description", DataTypes.STRING_TYPE),
+                TypesUtil.createClassTypeDef(HIVE_TABLE_TYPE, ImmutableList.of("DataSet"),
                         attrDef("owner", DataTypes.STRING_TYPE),
                         attrDef("createTime", DataTypes.INT_TYPE),
                         attrDef("lastAccessTime", DataTypes.INT_TYPE),
@@ -298,8 +299,7 @@ public class HiveLineageServiceTest {
                 );
 
         HierarchicalTypeDefinition<ClassType> loadProcessClsDef =
-                TypesUtil.createClassTypeDef(HIVE_PROCESS_TYPE, null,
-                        attrDef("name", DataTypes.STRING_TYPE),
+                TypesUtil.createClassTypeDef(HIVE_PROCESS_TYPE, ImmutableList.of("Process"),
                         attrDef("userName", DataTypes.STRING_TYPE),
                         attrDef("startTime", DataTypes.INT_TYPE),
                         attrDef("endTime", DataTypes.INT_TYPE),
@@ -401,7 +401,7 @@ public class HiveLineageServiceTest {
                 "sales fact daily materialized view",
                 reportingDB, sd, "Joe BI", "Managed", salesFactColumns, "Metric");
 
-        loadProcess("loadSalesDaily", "John ETL",
+        loadProcess("loadSalesDaily", "hive query for daily summary", "John ETL",
                 ImmutableList.of(salesFact, timeDim), ImmutableList.of(salesFactDaily),
                 "create table as select ", "plan", "id", "graph",
                 "ETL");
@@ -434,7 +434,7 @@ public class HiveLineageServiceTest {
                 "sales fact monthly materialized view",
                 reportingDB, sd, "Jane BI", "Managed", salesFactColumns, "Metric");
 
-        loadProcess("loadSalesMonthly", "John ETL",
+        loadProcess("loadSalesMonthly", "hive query for monthly summary", "John ETL",
                 ImmutableList.of(salesFactDaily), ImmutableList.of(salesFactMonthly),
                 "create table as select ", "plan", "id", "graph",
                 "ETL");
@@ -496,7 +496,7 @@ public class HiveLineageServiceTest {
         return createInstance(referenceable);
     }
 
-    Id loadProcess(String name, String user,
+    Id loadProcess(String name, String description, String user,
                    List<Id> inputTables,
                    List<Id> outputTables,
                    String queryText, String queryPlan,
@@ -504,6 +504,7 @@ public class HiveLineageServiceTest {
                    String... traitNames) throws Exception {
         Referenceable referenceable = new Referenceable(HIVE_PROCESS_TYPE, traitNames);
         referenceable.set("name", name);
+        referenceable.set("description", description);
         referenceable.set("user", user);
         referenceable.set("startTime", System.currentTimeMillis());
         referenceable.set("endTime", System.currentTimeMillis() + 10000);
