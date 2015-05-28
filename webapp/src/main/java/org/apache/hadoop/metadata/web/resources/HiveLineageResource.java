@@ -176,7 +176,7 @@ public class HiveLineageResource {
         LOG.info("Fetching lineage outputs graph for tableName={}", tableName);
 
         try {
-            final String jsonResult = lineageService.getOutputs(tableName);
+            final String jsonResult = lineageService.getOutputsGraph(tableName);
 
             JSONObject response = new JSONObject();
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());

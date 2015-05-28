@@ -166,6 +166,23 @@ public class HiveLineageServiceTest {
     }
 
     @Test
+    public void testGetInputsGraph() throws Exception {
+        JSONObject results = new JSONObject(
+                hiveLineageService.getInputsGraph("sales_fact_monthly_mv"));
+        Assert.assertNotNull(results);
+        System.out.println("inputs graph = " + results);
+
+        JSONObject values = results.getJSONObject("values");
+        Assert.assertNotNull(values);
+
+        final JSONObject vertices = values.getJSONObject("vertices");
+        Assert.assertEquals(vertices.length(), 4);
+
+        final JSONObject edges = values.getJSONObject("edges");
+        Assert.assertEquals(edges.length(), 4);
+    }
+
+    @Test
     public void testGetOutputs() throws Exception {
         JSONObject results = new JSONObject(hiveLineageService.getOutputs("sales_fact"));
         Assert.assertNotNull(results);
@@ -177,6 +194,22 @@ public class HiveLineageServiceTest {
         final JSONObject row = rows.getJSONObject(0);
         JSONArray paths = row.getJSONArray("path");
         Assert.assertTrue(paths.length() > 0);
+    }
+
+    @Test
+    public void testGetOutputsGraph() throws Exception {
+        JSONObject results = new JSONObject(hiveLineageService.getOutputsGraph("sales_fact"));
+        Assert.assertNotNull(results);
+        System.out.println("outputs graph = " + results);
+
+        JSONObject values = results.getJSONObject("values");
+        Assert.assertNotNull(values);
+
+        final JSONObject vertices = values.getJSONObject("vertices");
+        Assert.assertEquals(vertices.length(), 3);
+
+        final JSONObject edges = values.getJSONObject("edges");
+        Assert.assertEquals(edges.length(), 4);
     }
 
     @DataProvider(name = "tableNamesProvider")

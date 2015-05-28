@@ -95,6 +95,40 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
     }
 
     @Test
+    public void testInputsGraph() throws Exception {
+        WebResource resource = service
+                .path(BASE_URI)
+                .path("sales_fact_monthly_mv")
+                .path("inputs")
+                .path("graph");
+
+        ClientResponse clientResponse = resource
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.GET, ClientResponse.class);
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+
+        String responseAsString = clientResponse.getEntity(String.class);
+        Assert.assertNotNull(responseAsString);
+        System.out.println("inputs graph = " + responseAsString);
+
+        JSONObject response = new JSONObject(responseAsString);
+        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+
+        JSONObject results = response.getJSONObject(MetadataServiceClient.RESULTS);
+        Assert.assertNotNull(results);
+
+        JSONObject values = results.getJSONObject("values");
+        Assert.assertNotNull(values);
+
+        final JSONObject vertices = values.getJSONObject("vertices");
+        Assert.assertEquals(vertices.length(), 4);
+
+        final JSONObject edges = values.getJSONObject("edges");
+        Assert.assertEquals(edges.length(), 4);
+    }
+
+    @Test
     public void testOutputs() throws Exception {
         WebResource resource = service
                 .path(BASE_URI)
@@ -123,6 +157,40 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
         final JSONObject row = rows.getJSONObject(0);
         JSONArray paths = row.getJSONArray("path");
         Assert.assertTrue(paths.length() > 0);
+    }
+
+    @Test
+    public void testOutputsGraph() throws Exception {
+        WebResource resource = service
+                .path(BASE_URI)
+                .path("sales_fact")
+                .path("outputs")
+                .path("graph");
+
+        ClientResponse clientResponse = resource
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.GET, ClientResponse.class);
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+
+        String responseAsString = clientResponse.getEntity(String.class);
+        Assert.assertNotNull(responseAsString);
+        System.out.println("outputs graph= " + responseAsString);
+
+        JSONObject response = new JSONObject(responseAsString);
+        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+
+        JSONObject results = response.getJSONObject(MetadataServiceClient.RESULTS);
+        Assert.assertNotNull(results);
+
+        JSONObject values = results.getJSONObject("values");
+        Assert.assertNotNull(values);
+
+        final JSONObject vertices = values.getJSONObject("vertices");
+        Assert.assertEquals(vertices.length(), 3);
+
+        final JSONObject edges = values.getJSONObject("edges");
+        Assert.assertEquals(edges.length(), 4);
     }
 
     @Test
