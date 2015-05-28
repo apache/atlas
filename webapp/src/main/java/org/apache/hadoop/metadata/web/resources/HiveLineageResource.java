@@ -85,7 +85,7 @@ public class HiveLineageResource {
             LOG.error("Unable to get lineage inputs for table {}", tableName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (JSONException e) {
+        } catch (Throwable e) {
             LOG.error("Unable to get lineage inputs for table {}", tableName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
@@ -119,7 +119,7 @@ public class HiveLineageResource {
             LOG.error("Unable to get lineage inputs graph for table {}", tableName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (JSONException e) {
+        } catch (Throwable e) {
             LOG.error("Unable to get lineage inputs graph for table {}", tableName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
@@ -154,7 +154,7 @@ public class HiveLineageResource {
             LOG.error("Unable to get lineage outputs for table {}", tableName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (JSONException e) {
+        } catch (Throwable e) {
             LOG.error("Unable to get lineage outputs for table {}", tableName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
@@ -188,7 +188,7 @@ public class HiveLineageResource {
             LOG.error("Unable to get lineage outputs graph for table {}", tableName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (JSONException e) {
+        } catch (Throwable e) {
             LOG.error("Unable to get lineage outputs graph for table {}", tableName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
@@ -223,7 +223,7 @@ public class HiveLineageResource {
             LOG.error("Unable to get schema for table {}", tableName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (JSONException e) {
+        } catch (Throwable e) {
             LOG.error("Unable to get schema for table {}", tableName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));

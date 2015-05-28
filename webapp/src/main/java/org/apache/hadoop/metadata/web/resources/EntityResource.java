@@ -90,11 +90,11 @@ public class EntityResource {
             response.put(MetadataServiceClient.DEFINITION, entity);
 
             return Response.created(locationURI).entity(response).build();
-        } catch (MetadataException | IOException | IllegalArgumentException e) {
+        } catch (MetadataException | IllegalArgumentException e) {
             LOG.error("Unable to persist entity instance", e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (JSONException e) {
+        } catch (Throwable e) {
             LOG.error("Unable to persist entity instance", e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
@@ -132,7 +132,7 @@ public class EntityResource {
             LOG.error("An entity with GUID={} does not exist", guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
-        } catch (JSONException e) {
+        } catch (Throwable e) {
             LOG.error("Unable to get instance definition for GUID {}", guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
@@ -168,7 +168,7 @@ public class EntityResource {
             LOG.error("Unable to get entity list for type {}", entityType, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (JSONException e) {
+        } catch (Throwable e) {
             LOG.error("Unable to get entity list for type {}", entityType, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
@@ -198,7 +198,7 @@ public class EntityResource {
             LOG.error("Unable to add property {} to entity id {}", property, guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (JSONException e) {
+        } catch (Throwable e) {
             LOG.error("Unable to add property {} to entity id {}", property, guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
@@ -231,7 +231,7 @@ public class EntityResource {
             LOG.error("Unable to get trait names for entity {}", guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (JSONException e) {
+        } catch (Throwable e) {
             LOG.error("Unable to get trait names for entity {}", guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
@@ -267,7 +267,7 @@ public class EntityResource {
             LOG.error("Unable to add trait for entity={}", guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (JSONException e) {
+        } catch (Throwable e) {
             LOG.error("Unable to add trait for entity={}", guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
@@ -301,7 +301,7 @@ public class EntityResource {
             LOG.error("Unable to delete trait name={} for entity={}", traitName, guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (JSONException e) {
+        } catch (Throwable e) {
             LOG.error("Unable to delete trait name={} for entity={}", traitName, guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));

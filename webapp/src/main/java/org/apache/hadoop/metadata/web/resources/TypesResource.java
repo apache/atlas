@@ -101,10 +101,14 @@ public class TypesResource {
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
             response.put(MetadataServiceClient.TYPES, typesAddedList);
             return Response.status(ClientResponse.Status.CREATED).entity(response).build();
-        } catch (Exception e) {
+        } catch (MetadataException | IllegalArgumentException e) {
             LOG.error("Unable to persist types", e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (Throwable e) {
+            LOG.error("Unable to persist types", e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
 
@@ -122,7 +126,7 @@ public class TypesResource {
             final String typeDefinition = metadataService.getTypeDefinition(typeName);
 
             JSONObject response = new JSONObject();
-            response.put("typeName", typeName);
+            response.put(MetadataServiceClient.TYPENAME, typeName);
             response.put(MetadataServiceClient.DEFINITION, typeDefinition);
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
 
@@ -131,10 +135,14 @@ public class TypesResource {
             LOG.error("Unable to get type definition for type {}", typeName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
-        } catch (JSONException e) {
+        } catch (JSONException | IllegalArgumentException e) {
             LOG.error("Unable to get type definition for type {}", typeName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (Throwable e) {
+            LOG.error("Unable to get type definition for type {}", typeName, e);
+            throw new WebApplicationException(
+                Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
 
@@ -165,14 +173,14 @@ public class TypesResource {
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
 
             return Response.ok(response).build();
-        } catch (IllegalArgumentException ie) {
+        } catch (IllegalArgumentException | MetadataException ie) {
             LOG.error("Unsupported typeName while retrieving type list {}", type);
             throw new WebApplicationException(
                     Servlets.getErrorResponse("Unsupported type " + type, Response.Status.BAD_REQUEST));
-        } catch (Exception e) {
+        } catch (Throwable e) {
             LOG.error("Unable to get types list", e);
             throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
 }
