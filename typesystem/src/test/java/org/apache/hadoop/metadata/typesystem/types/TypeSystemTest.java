@@ -19,7 +19,7 @@
 package org.apache.hadoop.metadata.typesystem.types;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
