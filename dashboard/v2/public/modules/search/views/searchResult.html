@@ -22,9 +22,21 @@
         <div data-ng-if="typeAvailable()">
             <h4><a data-ui-sref="details({id:result['$id$'].id})">{{result.name}}</a></h4>
             <p>{{result.description}}</p>
-            <span ng-repeat="(key, value) in filterSearchResults(result)" ><span ng-show="$index < 4"><b>{{key}}: </b>{{value}}</span></span><a data-ui-sref="details({id:result.guid})">..show more</a>
-            <h5>Tags :  <a ng-repeat="(key, value) in result['$traits$']" data-ui-sref="search.results({query: key})">{{key}}</a> </h5>
-        </div>
-        <div data-ng-if="!typeAvailable()" data-ng-include="'/modules/search/views/types/guid.html'"></div>
-    </li>
+            <span ng-repeat="(key, value) in filterSearchResults(result)" >
+                <span ng-show="$index < 4"><b>{{key}}: </b>{{value}}{{$index+1 === limit ? '' : ', '}}</span>
+            </span>
+            <div collapse="isCollapsed">
+                <span class="well well-lg"><span ng-repeat="(key, value) in filterSearchResults(result)" >
+                <span ng-show="$index > 4"><b>{{key}}: </b>{{value}}{{$last ? '' : ', '}}</span>
+            </span></span>
+            </div>
+          <a href="javascript: void(0);" class="show-more" ng-click="isCollapsed = !isCollapsed">..show more</a>
+            <!-- <a href="javascript: void(0);" bn-slide-show class="show-more" ng-click="doToggle(!isCollapsed)">..show more</a>-->
+
+           <h5>Tags :  <a ng-repeat="(key, value) in result['$traits$']" data-ui-sref="search.results({query: key})">{{key}}</a> </h5>
+       </div>
+
+
+       <div data-ng-if="!typeAvailable()" data-ng-include="'/modules/search/views/types/guid.html'"></div>
+   </li>
 </ul>

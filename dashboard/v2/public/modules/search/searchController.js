@@ -24,9 +24,11 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
         $scope.types = ['table','column','db','view','loadprocess','storagedesc'];
         $scope.results = [];
         $scope.resultCount=0;
+        $scope.isCollapsed = true;
         $scope.search = function(query) {
             $scope.results = [];
             NotificationService.reset();
+            $scope.limit = 4;
             SearchResource.search({query:query}, function searchSuccess(response) {
                 $scope.results = response.results;
                 $scope.resultCount=response.count;
@@ -45,12 +47,17 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
             return $scope.types.indexOf(this.results.dataType.typeName && this.results.dataType.typeName.toLowerCase()) > -1;
         };
 
-        $scope.filterSearchResults = function(items) {
+       /* $scope.$watch("currentPage + numPerPage", function() {
+            var begin = (($scope.currentPage - 1) * $scope.numPerPage);
+            var end = begin + $scope.numPerPage;
 
+            $scope.filteredResults = $scope.rows.slice(begin, end);
+        });*/
+        $scope.filterSearchResults = function(items) {
             var res = {};
             angular.forEach(items, function(value, key) {
                 if(!(typeof value == 'object'))
-                    res[key] = value + ',';
+                    res[key] = value;
             });
             return res;
         }
