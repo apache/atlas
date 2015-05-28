@@ -25,6 +25,16 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
         $scope.results = [];
         $scope.resultCount=0;
         $scope.isCollapsed = true;
+        $scope.currentPage = 1;
+        $scope.numPerPage = 10;
+        $scope.itemsPerPage = 2;
+        $scope.maxSize = 5;
+        $scope.$watch("currentPage + numPerPage", function() {
+            var begin = (($scope.currentPage - 1) * $scope.numPerPage);
+            var end = begin + $scope.numPerPage;
+
+            $scope.filteredResults = $scope.results.slice(begin, end);
+        });
         $scope.search = function(query) {
             $scope.results = [];
             NotificationService.reset();
@@ -47,12 +57,10 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
             return $scope.types.indexOf(this.results.dataType.typeName && this.results.dataType.typeName.toLowerCase()) > -1;
         };
 
-       /* $scope.$watch("currentPage + numPerPage", function() {
-            var begin = (($scope.currentPage - 1) * $scope.numPerPage);
-            var end = begin + $scope.numPerPage;
-
-            $scope.filteredResults = $scope.rows.slice(begin, end);
-        });*/
+        $scope.doToggle = function($event,el) {
+            this.isCollapsed = !el;
+            var currElem = $event.currentTarget;
+        };
         $scope.filterSearchResults = function(items) {
             var res = {};
             angular.forEach(items, function(value, key) {

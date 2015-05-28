@@ -16,7 +16,9 @@
   ~ limitations under the License.
   -->
 
-<h4>{{resultCount}} results matching your search query "{{query}}" were found</h4>
+<h4 ng-show='resultCount > 0'>{{resultCount}} results matching your search query "{{query}}" were found</h4>
+<h4 ng-show='resultCount == "0"'>searching .....</h4>
+
 <ul class="list-unstyled">
     <li ng-repeat="result in results.rows" class="searchresults">
         <div data-ng-if="typeAvailable()">
@@ -30,13 +32,15 @@
                 <span ng-show="$index > 4"><b>{{key}}: </b>{{value}}{{$last ? '' : ', '}}</span>
             </span></span>
             </div>
-          <a href="javascript: void(0);" class="show-more" ng-click="isCollapsed = !isCollapsed">..show more</a>
-            <!-- <a href="javascript: void(0);" bn-slide-show class="show-more" ng-click="doToggle(!isCollapsed)">..show more</a>-->
+           <a href="javascript: void(0);" ng-show="isCollapsed"  ng-click="doToggle($event,isCollapsed)">..show more</a>
+           <a href="javascript: void(0);" ng-show="!isCollapsed"  ng-click="doToggle($event,isCollapsed)">..show less</a>
 
-           <h5>Tags :  <a ng-repeat="(key, value) in result['$traits$']" data-ui-sref="search.results({query: key})">{{key}}</a> </h5>
+            <h5>Tags :  <a ng-repeat="(key, value) in result['$traits$']" data-ui-sref="search.results({query: key})">{{key}}</a> </h5>
        </div>
 
 
        <div data-ng-if="!typeAvailable()" data-ng-include="'/modules/search/views/types/guid.html'"></div>
    </li>
 </ul>
+<div ng-show='resultCount > 0'><pagination total-items="totalItems" ng-model="currentPage" ng-change="pageChanged()"></pagination></div>
+
