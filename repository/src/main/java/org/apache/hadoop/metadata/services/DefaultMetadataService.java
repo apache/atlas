@@ -26,7 +26,7 @@ import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.ParamChecker;
-import org.apache.hadoop.metadata.RepositoryMetadataModule;
+import org.apache.hadoop.metadata.classification.InterfaceAudience;
 import org.apache.hadoop.metadata.discovery.SearchIndexer;
 import org.apache.hadoop.metadata.listener.EntityChangeListener;
 import org.apache.hadoop.metadata.listener.TypesChangeListener;
@@ -41,14 +41,20 @@ import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.Struct;
 import org.apache.hadoop.metadata.typesystem.TypesDef;
 import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization;
-import org.apache.hadoop.metadata.typesystem.json.Serialization$;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
-import org.apache.hadoop.metadata.typesystem.types.*;
+import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.ClassType;
+import org.apache.hadoop.metadata.typesystem.types.DataTypes;
+import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.IDataType;
+import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
+import org.apache.hadoop.metadata.typesystem.types.TraitType;
+import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
+import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.tools.cmd.Meta;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -94,12 +100,38 @@ public class DefaultMetadataService implements MetadataService {
         try {
             TypesDef typesDef = typeStore.restore();
             typeSystem.defineTypes(typesDef);
+
+            createSuperTypes();
         } catch (MetadataException e) {
             throw new RuntimeException(e);
         }
         LOG.info("Restored type system from the store");
     }
 
+    private static final AttributeDefinition NAME_ATTRIBUTE =
+            TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE);
+    private static final AttributeDefinition DESCRIPTION_ATTRIBUTE =
+            TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE);
+    private static final String[] SUPER_TYPES = {
+            "DataSet",
+            "Process",
+            "Infrastructure",
+    };
+
+    @InterfaceAudience.Private
+    public void createSuperTypes() throws MetadataException {
+        if (typeSystem.isRegistered(SUPER_TYPES[0])) {
+            return; // this is already registered
+        }
+
+        for (String superTypeName : SUPER_TYPES) {
+            HierarchicalTypeDefinition<ClassType> superTypeDefinition =
+                    TypesUtil.createClassTypeDef(superTypeName,
+                            ImmutableList.<String>of(),
+                            NAME_ATTRIBUTE, DESCRIPTION_ATTRIBUTE);
+            typeSystem.defineClassType(superTypeDefinition);
+        }
+    }
 
     /**
      * Creates a new type based on the type system to enable adding
@@ -123,10 +155,9 @@ public class DefaultMetadataService implements MetadataService {
             typeStore.store(typeSystem, ImmutableList.copyOf(typesAdded.keySet()));
 
             onTypesAddedToRepo(typesAdded);
-            JSONObject response = new JSONObject() {{
+            return new JSONObject() {{
                 put(MetadataServiceClient.TYPES, typesAdded.keySet());
             }};
-            return response;
         } catch (JSONException e) {
             LOG.error("Unable to create response for types={}", typeDefinition, e);
             throw new MetadataException("Unable to create response");

@@ -379,6 +379,30 @@ public class GraphBackedMetadataRepositoryTest {
         Assert.assertEquals(row.getString("name"), "Jane");
     }
 
+    @Test(dependsOnMethods = "testCreateEntity")
+    public void testBug37860() throws Exception {
+        String dslQuery =
+                "hive_table as t where name = 'bar' " +
+                        "database where name = 'foo' and description = 'foo database' select t";
+        System.out.println("Executing dslQuery = " + dslQuery);
+        String jsonResults = discoveryService.searchByDSL(dslQuery);
+        Assert.assertNotNull(jsonResults);
+
+        JSONObject results = new JSONObject(jsonResults);
+        Assert.assertEquals(results.length(), 3);
+        System.out.println("results = " + results);
+
+        Object query = results.get("query");
+        Assert.assertNotNull(query);
+
+        JSONObject dataType = results.getJSONObject("dataType");
+        Assert.assertNotNull(dataType);
+
+        JSONArray rows = results.getJSONArray("rows");
+        Assert.assertEquals(rows.length(), 1);
+
+    }
+
     /**
       * Full text search requires GraphBackedSearchIndexer, and GraphBackedSearchIndexer can't be enabled in
       * GraphBackedDiscoveryServiceTest because of its test data. So, test for full text search is in

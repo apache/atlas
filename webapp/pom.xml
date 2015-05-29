@@ -48,44 +48,31 @@
             <artifactId>metadata-repository</artifactId>
         </dependency>
 
-        <!--<dependency>-->
-            <!--<groupId>org.apache.hadoop.metadata</groupId>-->
-            <!--<artifactId>metadata-client</artifactId>-->
-        <!--</dependency>-->
-
         <dependency>
             <groupId>org.apache.hadoop.metadata</groupId>
             <artifactId>metadata-client</artifactId>
-            <version>${version}</version>
             <type>test-jar</type>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
-            <version>${hadoop.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-minikdc</artifactId>
-            <version>${hadoop.version}</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-hdfs</artifactId>
-            <version>${hadoop.version}</version>
-            <scope>test</scope>
         </dependency>
 
         <!-- supports simple auth handler -->
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
-            <version>4.2.5</version>
         </dependency>
 
         <dependency>
@@ -171,19 +158,16 @@
         <dependency>
             <groupId>com.google.inject.extensions</groupId>
             <artifactId>guice-servlet</artifactId>
-            <version>3.0</version>
         </dependency>
 
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
-            <version>2.3.1</version>
         </dependency>
 
         <dependency>
             <groupId>com.sun.jersey.contribs</groupId>
             <artifactId>jersey-guice</artifactId>
-            <version>1.18.3</version>
         </dependency>
 
         <dependency>
@@ -194,7 +178,6 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.4</version>
         </dependency>
     </dependencies>
 
@@ -225,7 +208,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
-                <version>2.4</version>
                 <configuration>
                     <attachClasses>true</attachClasses>
                     <webResources>
@@ -361,6 +343,10 @@
                 <artifactId>maven-bundle-plugin</artifactId>
                 <inherited>true</inherited>
                 <extensions>true</extensions>
+            </plugin>
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

@@ -19,8 +19,10 @@
 package org.apache.hadoop.metadata;
 
 import com.google.inject.Scopes;
+import com.google.inject.matcher.Matchers;
 import com.google.inject.throwingproviders.ThrowingProviderBinder;
 import com.thinkaurelius.titan.core.TitanGraph;
+import org.aopalliance.intercept.MethodInterceptor;
 import org.apache.hadoop.metadata.discovery.DiscoveryService;
 import org.apache.hadoop.metadata.discovery.HiveLineageService;
 import org.apache.hadoop.metadata.discovery.LineageService;
@@ -40,31 +42,7 @@ import org.apache.hadoop.metadata.services.MetadataService;
  * Guice module for Repository module.
  */
 public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
-
-    // Graph Service implementation class
-    // private Class<? extends GraphService> graphServiceClass;
-
-    // MetadataRepositoryService implementation class
-    private Class<? extends MetadataRepository> metadataRepoClass;
-    private Class<? extends ITypeStore> typeStore;
-    private Class<? extends MetadataService> metadataService;
-    private Class<? extends DiscoveryService> discoveryService;
-    private Class<? extends SearchIndexer> searchIndexer;
-    private Class<? extends LineageService> lineageService;
-
-    public RepositoryMetadataModule() {
-        // GraphServiceConfigurator gsp = new GraphServiceConfigurator();
-
-        // get the impl classes for the repo and the graph service
-        // this.graphServiceClass = gsp.getImplClass();
-        this.metadataRepoClass = GraphBackedMetadataRepository.class;
-        this.typeStore = GraphBackedTypeStore.class;
-        this.metadataService = DefaultMetadataService.class;
-        this.discoveryService = GraphBackedDiscoveryService.class;
-        this.searchIndexer = GraphBackedSearchIndexer.class;
-        this.lineageService = HiveLineageService.class;
-    }
-
+    @Override
     protected void configure() {
         // special wiring for Titan Graph
         ThrowingProviderBinder.create(binder())
@@ -75,22 +53,26 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
         // allow for dynamic binding of the metadata repo & graph service
 
         // bind the MetadataRepositoryService interface to an implementation
-        bind(MetadataRepository.class).to(metadataRepoClass);
+        bind(MetadataRepository.class).to(GraphBackedMetadataRepository.class);
 
         // bind the ITypeStore interface to an implementation
-        bind(ITypeStore.class).to(typeStore);
+        bind(ITypeStore.class).to(GraphBackedTypeStore.class);
 
         // bind the GraphService interface to an implementation
         // bind(GraphService.class).to(graphServiceClass);
 
         // bind the MetadataService interface to an implementation
-        bind(MetadataService.class).to(metadataService);
+        bind(MetadataService.class).to(DefaultMetadataService.class);
 
         // bind the DiscoveryService interface to an implementation
-        bind(DiscoveryService.class).to(discoveryService);
+        bind(DiscoveryService.class).to(GraphBackedDiscoveryService.class);
 
-        bind(SearchIndexer.class).to(searchIndexer);
+        bind(SearchIndexer.class).to(GraphBackedSearchIndexer.class);
 
-        bind(LineageService.class).to(lineageService);
+        bind(LineageService.class).to(HiveLineageService.class);
+
+        MethodInterceptor interceptor = new GraphTransactionInterceptor();
+        requestInjection(interceptor);
+        bindInterceptor(Matchers.any(), Matchers.annotatedWith(GraphTransaction.class), interceptor);
     }
 }

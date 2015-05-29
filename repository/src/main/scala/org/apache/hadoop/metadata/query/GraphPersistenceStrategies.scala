@@ -112,8 +112,19 @@ trait GraphPersistenceStrategies {
     }
 
     def loopObjectExpression(dataType: IDataType[_]) = {
-        s"{it.object.'${typeAttributeName}' == '${dataType.getName}'}"
+      _typeTestExpression(dataType.getName, "it.object")
     }
+
+    def typeTestExpression(typeName : String) :String = {
+      _typeTestExpression(typeName, "it")
+    }
+
+  private def _typeTestExpression(typeName: String, itRef: String): String = {
+    s"""{(${itRef}.'${typeAttributeName}' == '${typeName}') |
+       |(${itRef}.'${superTypeAttributeName}' ?
+       |${itRef}.'${superTypeAttributeName}'.contains('${typeName}') : false)}""".
+      stripMargin.replace(System.getProperty("line.separator"), "")
+  }
 }
 
 object GraphPersistenceStrategy1 extends GraphPersistenceStrategies {

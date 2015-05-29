@@ -29,7 +29,6 @@ import org.apache.hadoop.metadata.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.hadoop.metadata.query.HiveTitanSample;
 import org.apache.hadoop.metadata.query.QueryTestsUtils;
 import org.apache.hadoop.metadata.repository.graph.GraphBackedMetadataRepository;
-import org.apache.hadoop.metadata.repository.graph.GraphBackedSearchIndexer;
 import org.apache.hadoop.metadata.repository.graph.GraphHelper;
 import org.apache.hadoop.metadata.repository.graph.GraphProvider;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;

@@ -77,7 +77,11 @@ public class HiveHookIT {
     public void testCreateDatabase() throws Exception {
         String dbName = "db" + random();
         runCommand("create database " + dbName);
+        assertDatabaseIsRegistered(dbName);
 
+        //There should be just one entity per dbname
+        runCommand("drop database " + dbName);
+        runCommand("create database " + dbName);
         assertDatabaseIsRegistered(dbName);
     }
 
