@@ -46,3 +46,26 @@ div.lineage {
     border-bottom: 2px solid #006600;
     margin-bottom: 30px;
 }
+
+.node rect {
+    stroke: #333;
+    fill: #fff;
+}
+
+.edgePath path {
+    stroke: #333;
+    fill: #333;
+    stroke-width: 1.5px;
+}
+
+.node rect,
+.node circle {
+    stroke: #333;
+    fill: #fff;
+    stroke-width: 1.5px;
+}
+
+.lineage-viz {
+    width: 800px !important;
+    height: 600px !important;
+}
