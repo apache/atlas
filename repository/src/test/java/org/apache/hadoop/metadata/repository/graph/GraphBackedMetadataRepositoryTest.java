@@ -30,6 +30,7 @@ import org.apache.hadoop.metadata.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.hadoop.metadata.repository.BaseTest;
 import org.apache.hadoop.metadata.repository.Constants;
 import org.apache.hadoop.metadata.repository.RepositoryException;
+import org.apache.hadoop.metadata.typesystem.IStruct;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.ITypedStruct;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
@@ -55,10 +56,12 @@ import org.testng.annotations.Test;
 import scala.actors.threadpool.Arrays;
 
 import javax.inject.Inject;
-import java.util.*;
-
-import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
-import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createStructTypeDef;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * GraphBackedMetadataRepository test
@@ -146,7 +149,8 @@ public class GraphBackedMetadataRepositoryTest {
 
     @Test (dependsOnMethods = "testSubmitEntity")
     public void testGetTraitLabel() throws Exception {
-        Assert.assertEquals(repositoryService.getTraitLabel(typeSystem.getDataType(ClassType.class, TABLE_TYPE),
+        Assert.assertEquals(repositoryService.getTraitLabel(
+                typeSystem.getDataType(ClassType.class, TABLE_TYPE),
                 CLASSIFICATION), TABLE_TYPE + "." + CLASSIFICATION);
     }
 
@@ -253,6 +257,33 @@ public class GraphBackedMetadataRepositoryTest {
         Assert.assertTrue(traitNames.contains(CLASSIFICATION));
     }
 
+    @Test (dependsOnMethods = "testAddTrait")
+    public void testAddTraitWithAttribute() throws Exception {
+        final String aGUID = getGUID();
+        final String traitName = "P_I_I";
+
+        HierarchicalTypeDefinition<TraitType> piiTrait =
+                TypesUtil.createTraitTypeDef(traitName, ImmutableList.<String>of(),
+                TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
+        TraitType traitType = typeSystem.defineTraitType(piiTrait);
+        ITypedStruct traitInstance = traitType.createInstance();
+        traitInstance.set("type", "SSN");
+
+        repositoryService.addTrait(aGUID, traitInstance);
+
+        TestUtils.dumpGraph(graphProvider.get());
+
+        // refresh trait names
+        List<String> traitNames = repositoryService.getTraitNames(aGUID);
+        Assert.assertEquals(traitNames.size(), 3);
+        Assert.assertTrue(traitNames.contains(traitName));
+
+        ITypedReferenceableInstance instance = repositoryService.getEntityDefinition(aGUID);
+        IStruct traitInstanceRef = instance.getTrait(traitName);
+        String type = (String) traitInstanceRef.get("type");
+        Assert.assertEquals(type, "SSN");
+    }
+
     @Test (expectedExceptions = NullPointerException.class)
     public void testAddTraitWithNullInstance() throws Exception {
         repositoryService.addTrait(getGUID(), null);
@@ -273,15 +304,16 @@ public class GraphBackedMetadataRepositoryTest {
         final String aGUID = getGUID();
 
         List<String> traitNames = repositoryService.getTraitNames(aGUID);
-        Assert.assertEquals(traitNames.size(), 2);
+        Assert.assertEquals(traitNames.size(), 3);
         Assert.assertTrue(traitNames.contains(PII));
         Assert.assertTrue(traitNames.contains(CLASSIFICATION));
+        Assert.assertTrue(traitNames.contains("P_I_I"));
 
         repositoryService.deleteTrait(aGUID, PII);
 
         // refresh trait names
         traitNames = repositoryService.getTraitNames(aGUID);
-        Assert.assertEquals(traitNames.size(), 1);
+        Assert.assertEquals(traitNames.size(), 2);
         Assert.assertTrue(traitNames.contains(CLASSIFICATION));
         Assert.assertFalse(traitNames.contains(PII));
     }
