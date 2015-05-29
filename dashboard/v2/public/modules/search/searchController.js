@@ -59,17 +59,15 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
 
         $scope.doToggle = function($event,el) {
             this.isCollapsed = !el;
-            var currElem = $event.currentTarget;
         };
         $scope.filterSearchResults = function(items) {
             var res = {};
             angular.forEach(items, function(value, key) {
-                if(!(typeof value == 'object'))
+                if(typeof value !== 'object')
                     res[key] = value;
             });
             return res;
-        }
-
+        };
         $scope.query=$stateParams.query;
         if ($scope.query) {
             $scope.search($scope.query);
