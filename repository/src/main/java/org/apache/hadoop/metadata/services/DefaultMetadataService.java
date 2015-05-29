@@ -20,13 +20,20 @@ package org.apache.hadoop.metadata.services;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Guice;
 import com.google.inject.Injector;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.MetadataServiceClient;
+import org.apache.hadoop.metadata.ParamChecker;
+import org.apache.hadoop.metadata.RepositoryMetadataModule;
 import org.apache.hadoop.metadata.discovery.SearchIndexer;
 import org.apache.hadoop.metadata.listener.EntityChangeListener;
 import org.apache.hadoop.metadata.listener.TypesChangeListener;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
+import org.apache.hadoop.metadata.repository.graph.GraphBackedMetadataRepository;
+import org.apache.hadoop.metadata.repository.graph.GraphBackedSearchIndexer;
+import org.apache.hadoop.metadata.repository.typestore.GraphBackedTypeStore;
 import org.apache.hadoop.metadata.repository.typestore.ITypeStore;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.ITypedStruct;
@@ -45,10 +52,13 @@ import scala.tools.cmd.Meta;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * Simple wrapper over TypeSystem and MetadataRepository services with hooks
@@ -101,8 +111,7 @@ public class DefaultMetadataService implements MetadataService {
     @Override
     public JSONObject createType(String typeDefinition) throws MetadataException {
         try {
-            Preconditions.checkNotNull(typeDefinition, "type definition cannot be null");
-            Preconditions.checkArgument(!typeDefinition.equals(""), "type definition cannot be an empty string");
+            ParamChecker.notEmpty(typeDefinition, "type definition cannot be empty");
 
             TypesDef typesDef = TypesSerialization.fromJson(typeDefinition);
             if(typesDef.isEmpty())
@@ -164,8 +173,8 @@ public class DefaultMetadataService implements MetadataService {
      */
     @Override
     public String createEntity(String entityInstanceDefinition) throws MetadataException {
-        Preconditions.checkNotNull(entityInstanceDefinition,
-                "entity instance definition cannot be null");
+        ParamChecker.notEmpty(entityInstanceDefinition,
+                "Entity instance definition cannot be empty");
 
         ITypedReferenceableInstance entityTypedInstance =
                 deserializeClassInstance(entityInstanceDefinition);
@@ -179,17 +188,14 @@ public class DefaultMetadataService implements MetadataService {
     private ITypedReferenceableInstance deserializeClassInstance(
             String entityInstanceDefinition) throws MetadataException {
 
-        try {
-            final Referenceable entityInstance = InstanceSerialization.fromJsonReferenceable(
-                    entityInstanceDefinition, true);
-            final String entityTypeName = entityInstance.getTypeName();
-            Preconditions.checkNotNull(entityTypeName, "entity type cannot be null");
+        final Referenceable entityInstance = InstanceSerialization.fromJsonReferenceable(
+            entityInstanceDefinition, true);
+        final String entityTypeName = entityInstance.getTypeName();
+        ParamChecker.notEmpty(entityTypeName, "Entity type cannot be null");
 
-            ClassType entityType = typeSystem.getDataType(ClassType.class, entityTypeName);
-            return entityType.convert(entityInstance, Multiplicity.REQUIRED);
-        } catch (Exception e) {
-            throw new MetadataException("Error deserializing class instance", e);
-        }
+        ClassType entityType = typeSystem.getDataType(ClassType.class, entityTypeName);
+        return entityType.convert(entityInstance, Multiplicity.REQUIRED);
+
     }
 
     /**
@@ -200,7 +206,7 @@ public class DefaultMetadataService implements MetadataService {
      */
     @Override
     public String getEntityDefinition(String guid) throws MetadataException {
-        Preconditions.checkNotNull(guid, "guid cannot be null");
+        ParamChecker.notEmpty(guid, "guid cannot be null");
 
         final ITypedReferenceableInstance instance = repository.getEntityDefinition(guid);
         return InstanceSerialization.toJson(instance, true);
@@ -221,15 +227,15 @@ public class DefaultMetadataService implements MetadataService {
 
     @Override
     public void updateEntity(String guid, String property, String value) throws MetadataException {
-        Preconditions.checkNotNull(guid, "guid cannot be null");
-        Preconditions.checkNotNull(property, "property cannot be null");
-        Preconditions.checkNotNull(value, "property value cannot be null");
+        ParamChecker.notEmpty(guid, "guid cannot be null");
+        ParamChecker.notEmpty(property, "property cannot be null");
+        ParamChecker.notEmpty(value, "property value cannot be null");
 
         repository.updateEntity(guid, property, value);
     }
 
     private void validateTypeExists(String entityType) throws MetadataException {
-        Preconditions.checkNotNull(entityType, "entity type cannot be null");
+        ParamChecker.notEmpty(entityType, "entity type cannot be null");
 
         // verify if the type exists
         if (!typeSystem.isRegistered(entityType)) {
@@ -246,7 +252,7 @@ public class DefaultMetadataService implements MetadataService {
      */
     @Override
     public List<String> getTraitNames(String guid) throws MetadataException {
-        Preconditions.checkNotNull(guid, "entity GUID cannot be null");
+        ParamChecker.notEmpty(guid, "entity GUID cannot be null");
         return repository.getTraitNames(guid);
     }
 
@@ -260,8 +266,8 @@ public class DefaultMetadataService implements MetadataService {
     @Override
     public void addTrait(String guid,
                          String traitInstanceDefinition) throws MetadataException {
-        Preconditions.checkNotNull(guid, "entity GUID cannot be null");
-        Preconditions.checkNotNull(traitInstanceDefinition, "Trait instance cannot be null");
+        ParamChecker.notEmpty(guid, "entity GUID cannot be null");
+        ParamChecker.notEmpty(traitInstanceDefinition, "Trait instance cannot be null");
 
         ITypedStruct traitInstance = deserializeTraitInstance(traitInstanceDefinition);
         final String traitName = traitInstance.getTypeName();
@@ -282,7 +288,7 @@ public class DefaultMetadataService implements MetadataService {
             Struct traitInstance = InstanceSerialization.fromJsonStruct(
                     traitInstanceDefinition, true);
             final String entityTypeName = traitInstance.getTypeName();
-            Preconditions.checkNotNull(entityTypeName, "entity type cannot be null");
+            ParamChecker.notEmpty(entityTypeName, "entity type cannot be null");
 
             TraitType traitType = typeSystem.getDataType(TraitType.class, entityTypeName);
             return traitType.convert(
@@ -302,8 +308,8 @@ public class DefaultMetadataService implements MetadataService {
     @Override
     public void deleteTrait(String guid,
                             String traitNameToBeDeleted) throws MetadataException {
-        Preconditions.checkNotNull(guid, "entity GUID cannot be null");
-        Preconditions.checkNotNull(traitNameToBeDeleted, "Trait name cannot be null");
+        ParamChecker.notEmpty(guid, "entity GUID cannot be null");
+        ParamChecker.notEmpty(traitNameToBeDeleted, "Trait name cannot be null");
 
         // ensure trait type is already registered with the TS
         Preconditions.checkArgument(typeSystem.isRegistered(traitNameToBeDeleted),
