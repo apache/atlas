@@ -18,6 +18,7 @@
 
 package org.apache.hadoop.metadata.repository.graph;
 
+import com.google.inject.Provides;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import org.apache.commons.configuration.Configuration;
@@ -64,6 +65,7 @@ public class TitanGraphProvider implements GraphProvider<TitanGraph> {
 
     @Override
     @Singleton
+    @Provides
     public TitanGraph get() {
         Configuration config;
         try {
