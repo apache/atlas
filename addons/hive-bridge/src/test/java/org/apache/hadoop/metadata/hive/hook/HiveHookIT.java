@@ -25,6 +25,7 @@ import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.hive.bridge.HiveMetaStoreBridge;
 import org.apache.hadoop.metadata.hive.model.HiveDataTypes;
+import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
@@ -32,6 +33,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.util.Map;
 
 public class HiveHookIT {
     private static final String DGI_URL = "http://localhost:21000/";
@@ -76,8 +78,13 @@ public class HiveHookIT {
     @Test
     public void testCreateDatabase() throws Exception {
         String dbName = "db" + random();
-        runCommand("create database " + dbName);
-        assertDatabaseIsRegistered(dbName);
+        runCommand("create database " + dbName + " WITH DBPROPERTIES ('p1'='v1', 'p2'='v2')");
+        String dbId = assertDatabaseIsRegistered(dbName);
+        Referenceable definition = dgiCLient.getEntity(dbId);
+        Map params = (Map) definition.get("parameters");
+        Assert.assertNotNull(params);
+        Assert.assertEquals(params.size(), 2);
+        Assert.assertEquals(params.get("p1"), "v1");
 
         //There should be just one entity per dbname
         runCommand("drop database " + dbName);
@@ -213,10 +220,10 @@ public class HiveHookIT {
         assertEntityIsRegistered(query);
     }
 
-    private void assertDatabaseIsRegistered(String dbName) throws Exception {
+    private String assertDatabaseIsRegistered(String dbName) throws Exception {
         String query = String.format("%s where name = '%s' and clusterName = '%s'", HiveDataTypes.HIVE_DB.getName(),
                 dbName, CLUSTER_NAME);
-        assertEntityIsRegistered(query);
+        return assertEntityIsRegistered(query);
     }
 
     private void assertPartitionIsRegistered(String dbName, String tableName, String value) throws Exception {
@@ -233,8 +240,9 @@ public class HiveHookIT {
         Assert.assertEquals(results.length(), 1);
     }
 
-    private void assertEntityIsRegistered(String dslQuery) throws Exception{
+    private String assertEntityIsRegistered(String dslQuery) throws Exception{
         JSONArray results = dgiCLient.searchByDSL(dslQuery);
         Assert.assertEquals(results.length(), 1);
+        return results.getJSONObject(0).getJSONObject("$id$").getString("id");
     }
 }

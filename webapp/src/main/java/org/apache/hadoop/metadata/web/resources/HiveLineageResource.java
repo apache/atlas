@@ -18,12 +18,11 @@
 
 package org.apache.hadoop.metadata.web.resources;
 
-import com.google.common.base.Preconditions;
 import org.apache.hadoop.metadata.MetadataServiceClient;
+import org.apache.hadoop.metadata.ParamChecker;
 import org.apache.hadoop.metadata.discovery.DiscoveryException;
 import org.apache.hadoop.metadata.discovery.LineageService;
 import org.apache.hadoop.metadata.web.util.Servlets;
-import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,10 +68,11 @@ public class HiveLineageResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response inputs(@Context HttpServletRequest request,
                            @PathParam("tableName") String tableName) {
-        Preconditions.checkNotNull(tableName, "table name cannot be null");
+
         LOG.info("Fetching lineage inputs for tableName={}", tableName);
 
         try {
+            ParamChecker.notEmpty(tableName, "table name cannot be null");
             final String jsonResult = lineageService.getInputs(tableName);
 
             JSONObject response = new JSONObject();
@@ -81,11 +81,11 @@ public class HiveLineageResource {
             response.put(MetadataServiceClient.RESULTS, new JSONObject(jsonResult));
 
             return Response.ok(response).build();
-        } catch (DiscoveryException e) {
+        } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get lineage inputs for table {}", tableName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (JSONException e) {
+        } catch (Throwable e) {
             LOG.error("Unable to get lineage inputs for table {}", tableName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
@@ -103,10 +103,10 @@ public class HiveLineageResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response inputsGraph(@Context HttpServletRequest request,
                                 @PathParam("tableName") String tableName) {
-        Preconditions.checkNotNull(tableName, "table name cannot be null");
         LOG.info("Fetching lineage inputs graph for tableName={}", tableName);
 
         try {
+            ParamChecker.notEmpty(tableName, "table name cannot be null");
             final String jsonResult = lineageService.getInputsGraph(tableName);
 
             JSONObject response = new JSONObject();
@@ -115,11 +115,11 @@ public class HiveLineageResource {
             response.put(MetadataServiceClient.RESULTS, new JSONObject(jsonResult));
 
             return Response.ok(response).build();
-        } catch (DiscoveryException e) {
+        } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get lineage inputs graph for table {}", tableName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (JSONException e) {
+        } catch (Throwable e) {
             LOG.error("Unable to get lineage inputs graph for table {}", tableName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
@@ -138,10 +138,10 @@ public class HiveLineageResource {
     public Response outputs(@Context HttpServletRequest request,
                             @PathParam("tableName") String tableName) {
 
-        Preconditions.checkNotNull(tableName, "table name cannot be null");
         LOG.info("Fetching lineage outputs for tableName={}", tableName);
 
         try {
+            ParamChecker.notEmpty(tableName, "table name cannot be null");
             final String jsonResult = lineageService.getOutputs(tableName);
 
             JSONObject response = new JSONObject();
@@ -150,11 +150,11 @@ public class HiveLineageResource {
             response.put(MetadataServiceClient.RESULTS, new JSONObject(jsonResult));
 
             return Response.ok(response).build();
-        } catch (DiscoveryException e) {
+        } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get lineage outputs for table {}", tableName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (JSONException e) {
+        } catch (Throwable e) {
             LOG.error("Unable to get lineage outputs for table {}", tableName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
@@ -172,10 +172,11 @@ public class HiveLineageResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response outputsGraph(@Context HttpServletRequest request,
                                  @PathParam("tableName") String tableName) {
-        Preconditions.checkNotNull(tableName, "table name cannot be null");
+
         LOG.info("Fetching lineage outputs graph for tableName={}", tableName);
 
         try {
+            ParamChecker.notEmpty(tableName, "table name cannot be null");
             final String jsonResult = lineageService.getOutputsGraph(tableName);
 
             JSONObject response = new JSONObject();
@@ -184,11 +185,11 @@ public class HiveLineageResource {
             response.put(MetadataServiceClient.RESULTS, new JSONObject(jsonResult));
 
             return Response.ok(response).build();
-        } catch (DiscoveryException e) {
+        } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get lineage outputs graph for table {}", tableName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (JSONException e) {
+        } catch (Throwable e) {
             LOG.error("Unable to get lineage outputs graph for table {}", tableName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
@@ -207,10 +208,11 @@ public class HiveLineageResource {
     public Response schema(@Context HttpServletRequest request,
                            @PathParam("tableName") String tableName) {
 
-        Preconditions.checkNotNull(tableName, "table name cannot be null");
+
         LOG.info("Fetching schema for tableName={}", tableName);
 
         try {
+            ParamChecker.notEmpty(tableName, "table name cannot be null");
             final String jsonResult = lineageService.getSchema(tableName);
 
             JSONObject response = new JSONObject();
@@ -219,11 +221,11 @@ public class HiveLineageResource {
             response.put(MetadataServiceClient.RESULTS, new JSONObject(jsonResult));
 
             return Response.ok(response).build();
-        } catch (DiscoveryException e) {
+        } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get schema for table {}", tableName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (JSONException e) {
+        } catch (Throwable e) {
             LOG.error("Unable to get schema for table {}", tableName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
