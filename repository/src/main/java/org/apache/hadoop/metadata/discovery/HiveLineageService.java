@@ -20,6 +20,7 @@ package org.apache.hadoop.metadata.discovery;
 
 import com.thinkaurelius.titan.core.TitanGraph;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.hadoop.metadata.GraphTransaction;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.PropertiesUtil;
 import org.apache.hadoop.metadata.discovery.graph.DefaultGraphPersistenceStrategy;
@@ -96,6 +97,7 @@ public class HiveLineageService implements LineageService {
      * @return Lineage Outputs as JSON
      */
     @Override
+    @GraphTransaction
     public String getOutputs(String tableName) throws DiscoveryException {
         LOG.info("Fetching lineage outputs for tableName={}", tableName);
 
@@ -121,6 +123,7 @@ public class HiveLineageService implements LineageService {
      * @return Outputs Graph as JSON
      */
     @Override
+    @GraphTransaction
     public String getOutputsGraph(String tableName) throws DiscoveryException {
         LOG.info("Fetching lineage outputs graph for tableName={}", tableName);
 
@@ -139,6 +142,7 @@ public class HiveLineageService implements LineageService {
      * @return Lineage Inputs as JSON
      */
     @Override
+    @GraphTransaction
     public String getInputs(String tableName) throws DiscoveryException {
         LOG.info("Fetching lineage inputs for tableName={}", tableName);
 
@@ -164,6 +168,7 @@ public class HiveLineageService implements LineageService {
      * @return Inputs Graph as JSON
      */
     @Override
+    @GraphTransaction
     public String getInputsGraph(String tableName) throws DiscoveryException {
         LOG.info("Fetching lineage inputs graph for tableName={}", tableName);
 
@@ -182,6 +187,7 @@ public class HiveLineageService implements LineageService {
      * @return Schema as JSON
      */
     @Override
+    @GraphTransaction
     public String getSchema(String tableName) throws DiscoveryException {
         // todo - validate if indeed this is a table type and exists
         String schemaQuery = HIVE_TABLE_TYPE_NAME

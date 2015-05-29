@@ -27,6 +27,7 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.metadata.GraphTransaction;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.repository.Constants;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
@@ -137,27 +138,23 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     }
 
     @Override
+    @GraphTransaction
     public String createEntity(IReferenceableInstance typedInstance) throws RepositoryException {
         LOG.info("adding entity={}", typedInstance);
-
         try {
-            titanGraph.rollback();
             final String guid = instanceToGraphMapper.mapTypedInstanceToGraph(typedInstance);
-            titanGraph.commit();  // commit if there are no errors
             return guid;
-
         } catch (MetadataException e) {
-            titanGraph.rollback();
             throw new RepositoryException(e);
         }
     }
 
     @Override
+    @GraphTransaction
     public ITypedReferenceableInstance getEntityDefinition(String guid) throws RepositoryException {
         LOG.info("Retrieving entity with guid={}", guid);
 
         try {
-            titanGraph.rollback();  // clean up before starting a query
             Vertex instanceVertex = getVertexForGUID(guid);
 
             LOG.debug("Found a vertex {} for guid {}", instanceVertex, guid);
@@ -206,9 +203,9 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
      * @throws RepositoryException
      */
     @Override
+    @GraphTransaction
     public List<String> getTraitNames(String guid) throws RepositoryException {
         LOG.info("Retrieving trait names for entity={}", guid);
-        titanGraph.rollback();  // clean up before starting a query
         Vertex instanceVertex = getVertexForGUID(guid);
         return getTraitNames(instanceVertex);
     }
@@ -231,6 +228,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
      * @throws RepositoryException
      */
     @Override
+    @GraphTransaction
     public void addTrait(String guid,
                          ITypedStruct traitInstance) throws RepositoryException {
         Preconditions.checkNotNull(traitInstance, "Trait instance cannot be null");
@@ -238,22 +236,18 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         LOG.info("Adding a new trait={} for entity={}", traitName, guid);
 
         try {
-            titanGraph.rollback();  // clean up before starting a query
             Vertex instanceVertex = getVertexForGUID(guid);
 
             // add the trait instance as a new vertex
             final String typeName = getTypeName(instanceVertex);
-            instanceToGraphMapper.mapTraitInstanceToVertex(traitInstance,
-                    getIdFromVertex(typeName, instanceVertex),
+            instanceToGraphMapper.mapTraitInstanceToVertex(traitInstance, getIdFromVertex(typeName, instanceVertex),
                     typeName, instanceVertex, Collections.<Id, Vertex>emptyMap());
 
             // update the traits in entity once adding trait instance is successful
             ((TitanVertex) instanceVertex)
                     .addProperty(Constants.TRAIT_NAMES_PROPERTY_KEY, traitName);
 
-            titanGraph.commit();  // commit if there are no errors
         } catch (MetadataException e) {
-            titanGraph.rollback();
             throw new RepositoryException(e);
         }
     }
@@ -266,11 +260,11 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
      * @throws RepositoryException
      */
     @Override
+    @GraphTransaction
     public void deleteTrait(String guid, String traitNameToBeDeleted)
             throws RepositoryException {
         LOG.info("Deleting trait={} from entity={}", traitNameToBeDeleted, guid);
         try {
-            titanGraph.rollback();  // clean up before starting a query
             Vertex instanceVertex = getVertexForGUID(guid);
 
             List<String> traitNames = getTraitNames(instanceVertex);
@@ -297,11 +291,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                     traitNames.remove(traitNameToBeDeleted);
                     updateTraits(instanceVertex, traitNames);
                 }
-
-                titanGraph.commit();  // commit if there are no errors
             }
         } catch (Exception e) {
-            titanGraph.rollback();
             throw new RepositoryException(e);
         }
     }
@@ -318,11 +309,11 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     }
 
     @Override
+    @GraphTransaction
     public void updateEntity(String guid, String property, String value) throws RepositoryException {
         LOG.info("Adding property {} for entity guid {}", property, guid);
 
         try {
-            titanGraph.rollback();  // clean up before starting a query
             Vertex instanceVertex = GraphHelper.findVertexByGUID(titanGraph, guid);
             if (instanceVertex == null) {
                 throw new RepositoryException("Could not find a vertex for guid " + guid);
@@ -349,11 +340,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
             instanceToGraphMapper.mapAttributesToVertex(getIdFromVertex(typeName, instanceVertex), instance,
                     instanceVertex, new HashMap<Id, Vertex>(), attributeInfo, attributeInfo.dataType());
-            titanGraph.commit();
         } catch (Exception e) {
             throw new RepositoryException(e);
-        } finally {
-            titanGraph.rollback();
         }
     }
 

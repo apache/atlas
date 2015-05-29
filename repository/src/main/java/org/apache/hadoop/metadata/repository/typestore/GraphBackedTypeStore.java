@@ -25,6 +25,7 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.metadata.GraphTransaction;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.repository.Constants;
 import org.apache.hadoop.metadata.repository.graph.GraphProvider;
@@ -76,40 +77,35 @@ public class GraphBackedTypeStore implements ITypeStore {
     }
 
     @Override
+    @GraphTransaction
     public void store(TypeSystem typeSystem, ImmutableList<String> typeNames) throws MetadataException {
-        try {
-            ImmutableList<String> coreTypes = typeSystem.getCoreTypes();
-            titanGraph.rollback();  //Cleanup previous state
-            for (String typeName : typeNames) {
-                if (!coreTypes.contains(typeName)) {
-                    IDataType dataType = typeSystem.getDataType(IDataType.class, typeName);
-                    LOG.debug("Processing {}.{} in type store", dataType.getTypeCategory(), dataType.getName());
-                    switch (dataType.getTypeCategory()) {
-                        case ENUM:
-                            storeInGraph((EnumType)dataType);
-                            break;
+        ImmutableList<String> coreTypes = typeSystem.getCoreTypes();
+        for (String typeName : typeNames) {
+            if (!coreTypes.contains(typeName)) {
+                IDataType dataType = typeSystem.getDataType(IDataType.class, typeName);
+                LOG.debug("Processing {}.{} in type store", dataType.getTypeCategory(), dataType.getName());
+                switch (dataType.getTypeCategory()) {
+                    case ENUM:
+                        storeInGraph((EnumType)dataType);
+                        break;
 
-                        case STRUCT:
-                            StructType structType = (StructType) dataType;
-                            storeInGraph(typeSystem, dataType.getTypeCategory(), dataType.getName(),
-                                    ImmutableList.copyOf(structType.infoToNameMap.keySet()), ImmutableList.<String>of());
-                            break;
+                    case STRUCT:
+                        StructType structType = (StructType) dataType;
+                        storeInGraph(typeSystem, dataType.getTypeCategory(), dataType.getName(),
+                                ImmutableList.copyOf(structType.infoToNameMap.keySet()), ImmutableList.<String>of());
+                        break;
 
-                        case TRAIT:
-                        case CLASS:
-                            HierarchicalType type = (HierarchicalType) dataType;
-                            storeInGraph(typeSystem, dataType.getTypeCategory(), dataType.getName(),
-                                    type.immediateAttrs, type.superTypes);
-                            break;
+                    case TRAIT:
+                    case CLASS:
+                        HierarchicalType type = (HierarchicalType) dataType;
+                        storeInGraph(typeSystem, dataType.getTypeCategory(), dataType.getName(),
+                                type.immediateAttrs, type.superTypes);
+                        break;
 
-                        default:    //Ignore primitive/collection types as they are covered under references
-                            break;
-                    }
+                    default:    //Ignore primitive/collection types as they are covered under references
+                        break;
                 }
             }
-            titanGraph.commit();
-        } finally {
-            titanGraph.rollback();
         }
     }
 
@@ -206,54 +202,49 @@ public class GraphBackedTypeStore implements ITypeStore {
     }
 
     @Override
+    @GraphTransaction
     public TypesDef restore() throws MetadataException {
-        try {
-            titanGraph.rollback();  //Cleanup previous state
-            //Get all vertices for type system
-            Iterator vertices =
-                    titanGraph.query().has(Constants.VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE).vertices().iterator();
+        //Get all vertices for type system
+        Iterator vertices =
+                titanGraph.query().has(Constants.VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE).vertices().iterator();
 
-            ImmutableList.Builder<EnumTypeDefinition> enums = ImmutableList.builder();
-            ImmutableList.Builder<StructTypeDefinition> structs = ImmutableList.builder();
-            ImmutableList.Builder<HierarchicalTypeDefinition<ClassType>> classTypes = ImmutableList.builder();
-            ImmutableList.Builder<HierarchicalTypeDefinition<TraitType>> traits = ImmutableList.builder();
+        ImmutableList.Builder<EnumTypeDefinition> enums = ImmutableList.builder();
+        ImmutableList.Builder<StructTypeDefinition> structs = ImmutableList.builder();
+        ImmutableList.Builder<HierarchicalTypeDefinition<ClassType>> classTypes = ImmutableList.builder();
+        ImmutableList.Builder<HierarchicalTypeDefinition<TraitType>> traits = ImmutableList.builder();
 
-            while (vertices.hasNext()) {
-                Vertex vertex = (Vertex) vertices.next();
-                DataTypes.TypeCategory typeCategory = vertex.getProperty(Constants.TYPE_CATEGORY_PROPERTY_KEY);
-                String typeName = vertex.getProperty(Constants.TYPENAME_PROPERTY_KEY);
-                LOG.info("Restoring type {}.{}", typeCategory, typeName);
-                switch (typeCategory) {
-                case ENUM:
-                    enums.add(getEnumType(vertex));
-                    break;
+        while (vertices.hasNext()) {
+            Vertex vertex = (Vertex) vertices.next();
+            DataTypes.TypeCategory typeCategory = vertex.getProperty(Constants.TYPE_CATEGORY_PROPERTY_KEY);
+            String typeName = vertex.getProperty(Constants.TYPENAME_PROPERTY_KEY);
+            LOG.info("Restoring type {}.{}", typeCategory, typeName);
+            switch (typeCategory) {
+            case ENUM:
+                enums.add(getEnumType(vertex));
+                break;
 
-                case STRUCT:
-                    AttributeDefinition[] attributes = getAttributes(vertex);
-                    structs.add(new StructTypeDefinition(typeName, attributes));
-                    break;
+            case STRUCT:
+                AttributeDefinition[] attributes = getAttributes(vertex);
+                structs.add(new StructTypeDefinition(typeName, attributes));
+                break;
 
-                case CLASS:
-                    ImmutableList<String> superTypes = getSuperTypes(vertex);
-                    attributes = getAttributes(vertex);
-                    classTypes.add(new HierarchicalTypeDefinition(ClassType.class, typeName, superTypes, attributes));
-                    break;
+            case CLASS:
+                ImmutableList<String> superTypes = getSuperTypes(vertex);
+                attributes = getAttributes(vertex);
+                classTypes.add(new HierarchicalTypeDefinition(ClassType.class, typeName, superTypes, attributes));
+                break;
 
-                case TRAIT:
-                    superTypes = getSuperTypes(vertex);
-                    attributes = getAttributes(vertex);
-                    traits.add(new HierarchicalTypeDefinition(TraitType.class, typeName, superTypes, attributes));
-                    break;
+            case TRAIT:
+                superTypes = getSuperTypes(vertex);
+                attributes = getAttributes(vertex);
+                traits.add(new HierarchicalTypeDefinition(TraitType.class, typeName, superTypes, attributes));
+                break;
 
-                default:
-                    throw new IllegalArgumentException("Unhandled type category " + typeCategory);
-                }
+            default:
+                throw new IllegalArgumentException("Unhandled type category " + typeCategory);
             }
-            titanGraph.commit();
-            return TypeUtils.getTypesDef(enums.build(), structs.build(), traits.build(), classTypes.build());
-        } finally {
-            titanGraph.rollback();
         }
+        return TypeUtils.getTypesDef(enums.build(), structs.build(), traits.build(), classTypes.build());
     }
 
     private EnumTypeDefinition getEnumType(Vertex vertex) {

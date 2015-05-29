@@ -25,6 +25,7 @@ import com.thinkaurelius.titan.core.TitanVertex;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.gremlin.groovy.Gremlin;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
+import org.apache.hadoop.metadata.GraphTransaction;
 import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.discovery.DiscoveryException;
 import org.apache.hadoop.metadata.discovery.DiscoveryService;
@@ -82,6 +83,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
     //http://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query
     // .html#query-string-syntax for query syntax
     @Override
+//    @GraphTransaction
     public String searchByFullText(String query) throws DiscoveryException {
         String graphQuery = String.format("v.%s:(%s)", Constants.ENTITY_TEXT_PROPERTY_KEY, query);
         LOG.debug("Full text query: {}", graphQuery);
@@ -118,6 +120,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
      * @return JSON representing the type and results.
      */
     @Override
+    @GraphTransaction
     public String searchByDSL(String dslQuery) throws DiscoveryException {
         LOG.info("Executing dsl query={}", dslQuery);
         try {
@@ -155,6 +158,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
      * @throws org.apache.hadoop.metadata.discovery.DiscoveryException
      */
     @Override
+    @GraphTransaction
     public List<Map<String, String>> searchByGremlin(String gremlinQuery)
             throws DiscoveryException {
         LOG.info("Executing gremlin query={}", gremlinQuery);
