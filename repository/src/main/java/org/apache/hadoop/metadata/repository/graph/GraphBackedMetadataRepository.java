@@ -41,7 +41,6 @@ import org.apache.hadoop.metadata.typesystem.persistence.MapIds;
 import org.apache.hadoop.metadata.typesystem.types.AttributeInfo;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
 import org.apache.hadoop.metadata.typesystem.types.DataTypes;
-import org.apache.hadoop.metadata.typesystem.types.EnumType;
 import org.apache.hadoop.metadata.typesystem.types.EnumValue;
 import org.apache.hadoop.metadata.typesystem.types.HierarchicalType;
 import org.apache.hadoop.metadata.typesystem.types.IDataType;
@@ -57,7 +56,13 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -142,8 +147,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     public String createEntity(IReferenceableInstance typedInstance) throws RepositoryException {
         LOG.info("adding entity={}", typedInstance);
         try {
-            final String guid = instanceToGraphMapper.mapTypedInstanceToGraph(typedInstance);
-            return guid;
+            return instanceToGraphMapper.mapTypedInstanceToGraph(typedInstance);
         } catch (MetadataException e) {
             throw new RepositoryException(e);
         }
@@ -240,7 +244,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
             // add the trait instance as a new vertex
             final String typeName = getTypeName(instanceVertex);
-            instanceToGraphMapper.mapTraitInstanceToVertex(traitInstance, getIdFromVertex(typeName, instanceVertex),
+            instanceToGraphMapper.mapTraitInstanceToVertex(
+                    traitInstance, getIdFromVertex(typeName, instanceVertex),
                     typeName, instanceVertex, Collections.<Id, Vertex>emptyMap());
 
             // update the traits in entity once adding trait instance is successful
@@ -732,7 +737,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             String propertyName = getQualifiedName(typedInstance, attributeInfo);
             IDataType elementType = ((DataTypes.ArrayType) attributeInfo.dataType()).getElemType();
 
-            List<String> values = new ArrayList(list.size());
+            List<String> values = new ArrayList<>(list.size());
             for (int index = 0; index < list.size(); index++) {
                 String entryId = mapCollectionEntryToVertex(id, instanceVertex,
                         attributeInfo, idToVertexMap, elementType, list.get(index), propertyName);
@@ -1108,7 +1113,6 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 return;
             }
             DataTypes.MapType mapType = (DataTypes.MapType) attributeInfo.dataType();
-            final IDataType keyType = mapType.getKeyType();
             final IDataType valueType = mapType.getValueType();
 
             HashMap values = new HashMap();
@@ -1219,10 +1223,10 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                     traitName, traitType, traitInstance);
         }
 
-        public void mapVertexToTraitInstance(Vertex instanceVertex, String typeName,
+        public void mapVertexToTraitInstance(Vertex instanceVertex, String typedInstanceTypeName,
                                              String traitName, TraitType traitType,
                                              ITypedStruct traitInstance) throws MetadataException {
-            String relationshipLabel = typeName + "." + traitName;
+            String relationshipLabel = getEdgeLabel(typedInstanceTypeName, traitName);
             LOG.debug("Finding edge for {} -> label {} ", instanceVertex, relationshipLabel);
             for (Edge edge : instanceVertex.getEdges(Direction.OUT, relationshipLabel)) {
                 final Vertex traitInstanceVertex = edge.getVertex(Direction.IN);

@@ -24,6 +24,7 @@ import com.sun.jersey.api.client.WebResource;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.MetadataServiceException;
+import org.apache.hadoop.metadata.typesystem.IStruct;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.Struct;
 import org.apache.hadoop.metadata.typesystem.TypesDef;
@@ -60,7 +61,6 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     private static final String TABLE_TYPE = "hive_table_type";
     private static final String TABLE_NAME = "bar";
     private static final String TRAITS = "traits";
-    private static final String TRAIT = "trait";
 
     private Referenceable tableInstance;
     private Id tableId;
@@ -120,7 +120,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
             tableId = createInstance(tableInstance);
             Assert.fail("Was expecting an  exception here ");
         } catch (MetadataServiceException e) {
-           Assert.assertTrue(e.getMessage().contains("\"error\":\"Cannot convert value '2014-07-11' to datatype date\""));
+           Assert.assertTrue(e.getMessage()
+                   .contains("\"error\":\"Cannot convert value '2014-07-11' to datatype date\""));
         }
     }
 
@@ -359,7 +360,54 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         JSONObject response = new JSONObject(responseAsString);
         Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
         Assert.assertNotNull(response.get(MetadataServiceClient.GUID));
-        Assert.assertNotNull(response.get(MetadataServiceClient.DEFINITION));
+    }
+
+    @Test(dependsOnMethods = "testGetTraitNames")
+    public void testAddTraitWithAttribute() throws Exception {
+            final String traitName = "P_I_I";
+        HierarchicalTypeDefinition<TraitType> piiTrait =
+                TypesUtil.createTraitTypeDef(traitName, ImmutableList.<String>of(),
+                        TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
+        String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
+        LOG.debug("traitDefinitionAsJSON = " + traitDefinitionAsJSON);
+        createType(traitDefinitionAsJSON);
+
+        Struct traitInstance = new Struct(traitName);
+        traitInstance.set("type", "SSN");
+        String traitInstanceAsJSON = InstanceSerialization.toJson(traitInstance, true);
+        LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
+
+        final String guid = tableId._getId();
+        ClientResponse clientResponse = service
+                .path("api/metadata/entities")
+                .path(guid)
+                .path(TRAITS)
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.CREATED.getStatusCode());
+
+        String responseAsString = clientResponse.getEntity(String.class);
+        Assert.assertNotNull(responseAsString);
+
+        JSONObject response = new JSONObject(responseAsString);
+        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+        Assert.assertNotNull(response.get(MetadataServiceClient.GUID));
+
+        // verify the response
+        clientResponse = getEntityDefinition(guid);
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+        responseAsString = clientResponse.getEntity(String.class);
+        Assert.assertNotNull(responseAsString);
+        response = new JSONObject(responseAsString);
+        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+
+        final String definition = response.getString(MetadataServiceClient.DEFINITION);
+        Assert.assertNotNull(definition);
+        Referenceable entityRef = InstanceSerialization.fromJsonReferenceable(definition, true);
+        IStruct traitRef = entityRef.getTrait(traitName);
+        String type = (String) traitRef.get("type");
+        Assert.assertEquals(type, "SSN");
     }
 
     @Test
