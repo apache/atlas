@@ -20,6 +20,7 @@ package org.apache.hadoop.metadata.web.resources;
 
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.metadata.MetadataServiceClient;
+import org.apache.hadoop.metadata.ParamChecker;
 import org.apache.hadoop.metadata.discovery.DiscoveryException;
 import org.apache.hadoop.metadata.discovery.DiscoveryService;
 import org.apache.hadoop.metadata.web.util.Servlets;
@@ -76,20 +77,22 @@ public class MetadataDiscoveryResource {
     @Path("search")
     @Produces(MediaType.APPLICATION_JSON)
     public Response search(@QueryParam("query") String query) {
-        Preconditions.checkNotNull(query, "query cannot be null");
-
-        if (query.startsWith("g.")) { // raw gremlin query
-            return searchUsingGremlinQuery(query);
-        }
-
         JSONObject response;
-
         try {   // fall back to dsl
+            ParamChecker.notEmpty(query, "query cannot be null");
+
+            if (query.startsWith("g.")) { // raw gremlin query
+                return searchUsingGremlinQuery(query);
+            }
+            
             final String jsonResultStr = discoveryService.searchByDSL(query);
             response = new DSLJSONResponseBuilder().results(jsonResultStr)
                 .query(query)
                 .build();
 
+        } catch (IllegalArgumentException e) {
+            LOG.error("Unable to get entity list for empty query", e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (Throwable throwable) {
             LOG.error("Unable to get entity list for query {} using dsl", query, throwable);
 
@@ -99,10 +102,10 @@ public class MetadataDiscoveryResource {
                     .query(query)
                     .build();
 
-            } catch (DiscoveryException e) {
+            } catch (DiscoveryException | IllegalArgumentException e) {
                 LOG.error("Unable to get entity list for query {}", query, e);
                 throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-            } catch (JSONException e) {
+            } catch(Throwable e) {
                 LOG.error("Unable to get entity list for query {}", query, e);
                 throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
@@ -124,9 +127,8 @@ public class MetadataDiscoveryResource {
     @Path("search/dsl")
     @Produces(MediaType.APPLICATION_JSON)
     public Response searchUsingQueryDSL(@QueryParam("query") String dslQuery) {
-        Preconditions.checkNotNull(dslQuery, "dslQuery cannot be null");
-
         try {
+            ParamChecker.notEmpty(dslQuery, "dslQuery cannot be null");
             final String jsonResultStr = discoveryService.searchByDSL(dslQuery);
 
             JSONObject response = new DSLJSONResponseBuilder().results(jsonResultStr)
@@ -135,11 +137,11 @@ public class MetadataDiscoveryResource {
 
             return Response.ok(response)
                 .build();
-        } catch (DiscoveryException e) {
+        } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get entity list for dslQuery {}", dslQuery, e);
             throw new WebApplicationException(
                 Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (JSONException e) {
+        } catch(Throwable e) {
             LOG.error("Unable to get entity list for dslQuery {}", dslQuery, e);
             throw new WebApplicationException(
                 Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
@@ -156,9 +158,8 @@ public class MetadataDiscoveryResource {
     @Path("search/gremlin")
     @Produces(MediaType.APPLICATION_JSON)
     public Response searchUsingGremlinQuery(@QueryParam("query") String gremlinQuery) {
-        Preconditions.checkNotNull(gremlinQuery, "gremlinQuery cannot be null");
-
         try {
+            ParamChecker.notEmpty(gremlinQuery, "gremlinQuery cannot be null or empty");
             final List<Map<String, String>> results = discoveryService
                 .searchByGremlin(gremlinQuery);
 
@@ -176,11 +177,11 @@ public class MetadataDiscoveryResource {
 
             return Response.ok(response)
                 .build();
-        } catch (DiscoveryException e) {
+        } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get entity list for gremlinQuery {}", gremlinQuery, e);
             throw new WebApplicationException(
                 Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (JSONException e) {
+        } catch(Throwable e) {
             LOG.error("Unable to get entity list for gremlinQuery {}", gremlinQuery, e);
             throw new WebApplicationException(
                 Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
@@ -197,9 +198,8 @@ public class MetadataDiscoveryResource {
     @Path("search/fulltext")
     @Produces(MediaType.APPLICATION_JSON)
     public Response searchUsingFullText(@QueryParam("query") String query) {
-        Preconditions.checkNotNull(query, "query cannot be null");
-
         try {
+            ParamChecker.notEmpty(query, "query cannot be null or empty");
             final String jsonResultStr = discoveryService.searchByFullText(query);
             JSONArray rowsJsonArr = new JSONArray(jsonResultStr);
 
@@ -208,10 +208,10 @@ public class MetadataDiscoveryResource {
                 .build();
             return Response.ok(response)
                 .build();
-        } catch (DiscoveryException e) {
+        } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get entity list for query {}", query, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (JSONException e) {
+        } catch(Throwable e) {
             LOG.error("Unable to get entity list for query {}", query, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
