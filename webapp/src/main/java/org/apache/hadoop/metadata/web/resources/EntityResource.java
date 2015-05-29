@@ -25,7 +25,6 @@ import org.apache.hadoop.metadata.services.MetadataService;
 import org.apache.hadoop.metadata.typesystem.types.ValueConversionException;
 import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,8 +32,21 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
-import javax.ws.rs.core.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
+import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
@@ -88,7 +100,8 @@ public class EntityResource {
             JSONObject response = new JSONObject();
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
             response.put(MetadataServiceClient.GUID, guid);
-            response.put(MetadataServiceClient.DEFINITION, entity);
+            response.put(MetadataServiceClient.DEFINITION,
+                    metadataService.getEntityDefinition(guid));
 
             return Response.created(locationURI).entity(response).build();
 
@@ -266,7 +279,6 @@ public class EntityResource {
             JSONObject response = new JSONObject();
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
             response.put(MetadataServiceClient.GUID, guid);
-            response.put(MetadataServiceClient.DEFINITION, traitDefinition);
 
             return Response.created(locationURI).entity(response).build();
         } catch (MetadataException | IOException | IllegalArgumentException e) {
