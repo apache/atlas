@@ -83,7 +83,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
     //http://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query
     // .html#query-string-syntax for query syntax
     @Override
-//    @GraphTransaction
+    @GraphTransaction
     public String searchByFullText(String query) throws DiscoveryException {
         String graphQuery = String.format("v.%s:(%s)", Constants.ENTITY_TEXT_PROPERTY_KEY, query);
         LOG.debug("Full text query: {}", graphQuery);
