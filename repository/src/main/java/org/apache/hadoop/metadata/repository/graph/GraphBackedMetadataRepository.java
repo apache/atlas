@@ -761,8 +761,9 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             IDataType elementType = ((DataTypes.MapType) attributeInfo.dataType()).getValueType();
             for (Map.Entry entry : collection.entrySet()) {
                 String myPropertyName = propertyName + "." + entry.getKey().toString();
-                mapCollectionEntryToVertex(id, instanceVertex, attributeInfo,
+                String value = mapCollectionEntryToVertex(id, instanceVertex, attributeInfo,
                         idToVertexMap, elementType, entry.getValue(), myPropertyName);
+                instanceVertex.setProperty(myPropertyName, value);
             }
 
             // for dereference on way out
@@ -1100,7 +1101,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         @SuppressWarnings("unchecked")
         private void mapVertexToMapInstance(Vertex instanceVertex, ITypedInstance typedInstance,
                                             AttributeInfo attributeInfo,
-                                            String propertyName) throws MetadataException {
+                                            final String propertyName) throws MetadataException {
             LOG.debug("mapping vertex {} to array {}", instanceVertex, attributeInfo.name);
             List<String> keys = instanceVertex.getProperty(propertyName);
             if (keys == null || keys.size() == 0) {
@@ -1112,19 +1113,13 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
             HashMap values = new HashMap();
             for (String key : keys) {
+                String keyPropertyName = propertyName + "." + key;
+                Object keyValue = instanceVertex.getProperty(keyPropertyName);
                 values.put(key, mapVertexToCollectionEntry(instanceVertex, attributeInfo,
-                        valueType, propertyName, propertyName));
+                        valueType, keyValue, propertyName));
             }
 
             typedInstance.set(attributeInfo.name, values);
-        }
-
-        private String extractKey(String propertyNameWithSuffix, IDataType keyType) {
-            return propertyNameWithSuffix.substring(
-                    propertyNameWithSuffix.lastIndexOf(".") + 1,
-                    keyType.getTypeCategory() == DataTypes.TypeCategory.PRIMITIVE
-                            ? propertyNameWithSuffix.length()
-                            : propertyNameWithSuffix.lastIndexOf(":"));
         }
 
         private ITypedStruct getStructInstanceFromVertex(Vertex instanceVertex,
