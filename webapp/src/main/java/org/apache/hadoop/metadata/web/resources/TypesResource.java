@@ -83,7 +83,7 @@ public class TypesResource {
     public Response submit(@Context HttpServletRequest request) {
         try {
             final String typeDefinition = Servlets.getRequestPayload(request);
-            LOG.debug("creating type with definition {} ", typeDefinition);
+            LOG.debug("Creating type with definition {} ", typeDefinition);
 
             JSONObject typesJson = metadataService.createType(typeDefinition);
             final JSONArray typesJsonArray = typesJson.getJSONArray(MetadataServiceClient.TYPES);

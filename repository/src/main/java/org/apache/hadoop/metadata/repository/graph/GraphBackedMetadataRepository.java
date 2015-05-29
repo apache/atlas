@@ -968,7 +968,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
         public void mapVertexToAttribute(Vertex instanceVertex, ITypedInstance typedInstance,
                                          AttributeInfo attributeInfo) throws MetadataException {
-            LOG.debug("mapping attributeInfo {}", attributeInfo.name);
+            LOG.debug("Mapping attributeInfo {}", attributeInfo.name);
             final IDataType dataType = attributeInfo.dataType();
             final String vertexPropertyName = getQualifiedName(typedInstance, attributeInfo);
 
