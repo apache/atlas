@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.metadata.MetadataServiceClient;
+import org.apache.hadoop.metadata.MetadataServiceException;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.Struct;
 import org.apache.hadoop.metadata.typesystem.TypesDef;
@@ -31,16 +32,7 @@ import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization$;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization$;
 import org.apache.hadoop.metadata.typesystem.persistence.Id;
-import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
-import org.apache.hadoop.metadata.typesystem.types.ClassType;
-import org.apache.hadoop.metadata.typesystem.types.DataTypes;
-import org.apache.hadoop.metadata.typesystem.types.EnumTypeDefinition;
-import org.apache.hadoop.metadata.typesystem.types.EnumValue;
-import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
-import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
-import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
-import org.apache.hadoop.metadata.typesystem.types.TraitType;
-import org.apache.hadoop.metadata.typesystem.types.TypeUtils;
+import org.apache.hadoop.metadata.typesystem.types.*;
 import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
@@ -93,7 +85,46 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }
     }
 
-    @Test (dependsOnMethods = "testSubmitEntity")
+    @Test
+    public void testSubmitEntityWithBadDateFormat() throws Exception {
+
+        try {
+            Referenceable databaseInstance = new Referenceable(DATABASE_TYPE);
+            databaseInstance.set("name", DATABASE_NAME);
+            databaseInstance.set("description", "foo database");
+
+            Referenceable tableInstance = new Referenceable(TABLE_TYPE,
+                    "classification", "pii", "phi", "pci", "sox", "sec", "finance");
+            tableInstance.set("name", TABLE_NAME);
+            tableInstance.set("description", "bar table");
+            tableInstance.set("date", "2014-07-11");
+            tableInstance.set("type", "managed");
+            tableInstance.set("level", 2);
+            tableInstance.set("tableType", 1); // enum
+            tableInstance.set("database", databaseInstance);
+            tableInstance.set("compressed", false);
+
+            Struct traitInstance = (Struct) tableInstance.getTrait("classification");
+            traitInstance.set("tag", "foundation_etl");
+
+            Struct serde1Instance = new Struct("serdeType");
+            serde1Instance.set("name", "serde1");
+            serde1Instance.set("serde", "serde1");
+            tableInstance.set("serde1", serde1Instance);
+
+            Struct serde2Instance = new Struct("serdeType");
+            serde2Instance.set("name", "serde2");
+            serde2Instance.set("serde", "serde2");
+            tableInstance.set("serde2", serde2Instance);
+
+            tableId = createInstance(tableInstance);
+            Assert.fail("Was expecting an  exception here ");
+        } catch (MetadataServiceException e) {
+           Assert.assertTrue(e.getMessage().contains("\"error\":\"Cannot convert value '2014-07-11' to datatype date\""));
+        }
+    }
+
+    @Test(dependsOnMethods = "testSubmitEntity")
     public void testAddProperty() throws Exception {
         final String guid = tableId._getId();
         //add property
@@ -120,7 +151,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         tableInstance.set("level", 4);
     }
 
-    @Test (dependsOnMethods = "testSubmitEntity")
+    @Test(dependsOnMethods = "testSubmitEntity")
     public void testAddReferenceProperty() throws Exception {
         //Create new db instance
         Referenceable databaseInstance = new Referenceable(DATABASE_TYPE);
@@ -242,6 +273,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(response.get(MetadataServiceClient.STACKTRACE));
     }
 
+
     @Test
     public void testGetEntityListForNoInstances() throws Exception {
         addNewType();
@@ -275,7 +307,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         createType(typesAsJSON);
     }
 
-    @Test (dependsOnMethods = "testSubmitEntity")
+    @Test(dependsOnMethods = "testSubmitEntity")
     public void testGetTraitNames() throws Exception {
         final String guid = tableId._getId();
         ClientResponse clientResponse = service
@@ -298,7 +330,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertEquals(list.length(), 7);
     }
 
-    @Test (dependsOnMethods = "testGetTraitNames")
+    @Test(dependsOnMethods = "testGetTraitNames")
     public void testAddTrait() throws Exception {
         final String traitName = "PII_Trait";
         HierarchicalTypeDefinition<TraitType> piiTrait =
@@ -352,7 +384,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
     }
 
-    @Test (dependsOnMethods = "testAddTrait")
+    @Test(dependsOnMethods = "testAddTrait")
     public void testDeleteTrait() throws Exception {
         final String traitName = "PII_Trait";
         final String guid = tableId._getId();
@@ -454,6 +486,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createOptionalAttrDef("description", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE),
+                        TypesUtil.createRequiredAttrDef("date", DataTypes.DATE_TYPE),
                         TypesUtil.createRequiredAttrDef("level", DataTypes.INT_TYPE),
                         new AttributeDefinition("tableType", "tableType",
                                 Multiplicity.REQUIRED, false, null),
@@ -501,6 +534,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 "classification", "pii", "phi", "pci", "sox", "sec", "finance");
         tableInstance.set("name", TABLE_NAME);
         tableInstance.set("description", "bar table");
+        tableInstance.set("date", "2014-07-11T08:00:00.000Z");
         tableInstance.set("type", "managed");
         tableInstance.set("level", 2);
         tableInstance.set("tableType", 1); // enum

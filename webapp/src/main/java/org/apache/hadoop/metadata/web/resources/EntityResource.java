@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.services.MetadataService;
+import org.apache.hadoop.metadata.typesystem.types.ValueConversionException;
 import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -90,6 +91,11 @@ public class EntityResource {
             response.put(MetadataServiceClient.DEFINITION, entity);
 
             return Response.created(locationURI).entity(response).build();
+
+        } catch(ValueConversionException ve) {
+            LOG.error("Unable to persist entity instance due to a desrialization error ", ve);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(ve.getCause(), Response.Status.BAD_REQUEST));
         } catch (MetadataException | IllegalArgumentException e) {
             LOG.error("Unable to persist entity instance", e);
             throw new WebApplicationException(
@@ -123,7 +129,7 @@ public class EntityResource {
                 response.put(MetadataServiceClient.DEFINITION, entityDefinition);
                 status = Response.Status.OK;
             } else {
-                response.put(MetadataServiceClient.ERROR, JSONObject.quote(String.format("An entity with GUID={%s} does not exist", guid)));
+                response.put(MetadataServiceClient.ERROR, Servlets.escapeJsonString(String.format("An entity with GUID={%s} does not exist", guid)));
             }
 
             return Response.status(status).entity(response).build();
@@ -155,7 +161,7 @@ public class EntityResource {
 
             JSONObject response = new JSONObject();
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            response.put("type", entityType);
+            response.put(MetadataServiceClient.TYPENAME, entityType);
             response.put(MetadataServiceClient.RESULTS, new JSONArray(entityList));
             response.put(MetadataServiceClient.COUNT, entityList.size());
 
@@ -192,7 +198,7 @@ public class EntityResource {
             metadataService.updateEntity(guid, property, value);
 
             JSONObject response = new JSONObject();
-            response.put("requestId", Thread.currentThread().getName());
+            response.put(MetadataServiceClient.REQUEST_ID, Thread.currentThread().getName());
             return Response.ok(response).build();
         } catch (MetadataException e) {
             LOG.error("Unable to add property {} to entity id {}", property, guid, e);
