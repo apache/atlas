@@ -28,6 +28,9 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
         $scope.currentPage = 1;
         $scope.itemsPerPage = 10
         $scope.totalItems = 40;
+        $scope.filteredResults = [];
+        $scope.resultRows = [];
+
         $scope.setPage = function (pageNo) {
             $scope.currentPage = pageNo;
         };
@@ -45,8 +48,10 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
                     var begin = (($scope.currentPage - 1) * $scope.itemsPerPage),
                         end = begin + $scope.itemsPerPage;
                     $scope.searchTypesAvailable = $scope.typeAvailable();
+                    console.log($scope.searchTypesAvailable);
                     if ($scope.searchTypesAvailable) {
-                        $scope.searchMessage = 'searching...';
+                        console.log($scope.searchTypesAvailable);
+                        $scope.searchMessage = 'loading results...';
                         $scope.filteredResults = $scope.resultRows.slice(begin, end);
                         $scope.pageCount = function () {
                             return Math.ceil($scope.resultCount / $scope.itemsPerPage);
@@ -61,11 +66,10 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
                     } else {
                         $scope.searchMessage = '0 results matching your search query '+ $scope.query +' were found';
                     }
-                    $state.go('search.results', {query:query}, {
-                        location: 'replace'
-                    });
                 });
-
+                $state.go('search.results', {query:query}, {
+                    location: 'replace'
+                });
 
             }, function searchError(err) {
                 NotificationService.error('Error occurred during executing search query, error status code = ' + err.status + ', status text = ' + err.statusText, false);
@@ -73,10 +77,14 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
         };
 
         $scope.typeAvailable = function() {
-            console.log($scope.results.dataType);
+
            if($scope.results.dataType) {
                return $scope.types.indexOf($scope.results.dataType.typeName && $scope.results.dataType.typeName.toLowerCase()) > -1;
            }
+        };
+
+        $scope.onKeyPress = function ($event,query) {
+            console.log($event);
         };
 
         $scope.doToggle = function($event,el) {
