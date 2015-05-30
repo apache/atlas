@@ -26,11 +26,11 @@ angular.module('dgc.search').config(['$stateProvider',
         $stateProvider.state('search', {
             url: '/search',
             templateUrl: '/modules/search/views/search.html',
-            controller:'SearchController'
+            controller: 'SearchController'
         }).state('search.results', {
             url: '/:query',
             templateUrl: '/modules/search/views/searchResult.html',
-            controller:'SearchController'
+            controller: 'SearchController'
         });
     }
 ]);

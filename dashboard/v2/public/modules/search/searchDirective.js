@@ -19,11 +19,12 @@
 'use strict';
 
 angular.module('dgc.search').directive(
-    "myDirective", function() {
+    "myDirective",
+    function() {
         return {
             restrict: 'EA',
             template: '<a href="javascript: void(0);" button-toggle toggle="isCollapsed" class="show-more" ng-click="isCollapsed = !isCollapsed">..show more</a>',
-            link: function($scope){
+            link: function($scope) {
                 $scope.isCollapsed = true;
                 console.log($scope.isCollapsed);
             },

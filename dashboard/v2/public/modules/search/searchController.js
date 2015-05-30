@@ -21,21 +21,25 @@
 angular.module('dgc.search').controller('SearchController', ['$scope', '$location', '$http', '$state', '$stateParams', 'SearchResource', 'NotificationService',
     function($scope, $location, $http, $state, $stateParams, SearchResource, NotificationService) {
 
-        $scope.types = ['table','column','db','view','loadprocess','storagedesc'];
+        $scope.types = ['table', 'column', 'db', 'view', 'loadprocess', 'storagedesc'];
         $scope.results = [];
-        $scope.resultCount=0;
+        $scope.resultCount = 0;
         $scope.isCollapsed = true;
         $scope.search = function(query) {
             $scope.results = [];
             NotificationService.reset();
             $scope.limit = 4;
-            SearchResource.search({query:query}, function searchSuccess(response) {
+            SearchResource.search({
+                query: query
+            }, function searchSuccess(response) {
                 $scope.results = response.results;
-                $scope.resultCount=response.count;
+                $scope.resultCount = response.count;
                 if ($scope.results.length < 1) {
                     NotificationService.error('No Result found', false);
                 }
-                $state.go('search.results', {query:query}, {
+                $state.go('search.results', {
+                    query: query
+                }, {
                     location: 'replace'
                 });
             }, function searchError(err) {
@@ -47,22 +51,22 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
             return $scope.types.indexOf(this.results.dataType.typeName && this.results.dataType.typeName.toLowerCase()) > -1;
         };
 
-       /* $scope.$watch("currentPage + numPerPage", function() {
-            var begin = (($scope.currentPage - 1) * $scope.numPerPage);
-            var end = begin + $scope.numPerPage;
+        /* $scope.$watch("currentPage + numPerPage", function() {
+             var begin = (($scope.currentPage - 1) * $scope.numPerPage);
+             var end = begin + $scope.numPerPage;
 
-            $scope.filteredResults = $scope.rows.slice(begin, end);
-        });*/
+             $scope.filteredResults = $scope.rows.slice(begin, end);
+         });*/
         $scope.filterSearchResults = function(items) {
             var res = {};
             angular.forEach(items, function(value, key) {
-                if((typeof value !== 'object'))
+                if ((typeof value !== 'object'))
                     res[key] = value;
             });
             return res;
         };
 
-        $scope.query=$stateParams.query;
+        $scope.query = $stateParams.query;
         if ($scope.query) {
             $scope.search($scope.query);
         }
