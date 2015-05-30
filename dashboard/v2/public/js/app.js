@@ -24,7 +24,8 @@ angular.module('dgc', ['ngCookies',
     'ui.router',
     'dgc.system',
     'dgc.home',
-    'dgc.search'
+    'dgc.search',
+    'dgc.navigation'
 ]);
 
 angular.module('dgc.system', ['dgc.system.notification']);

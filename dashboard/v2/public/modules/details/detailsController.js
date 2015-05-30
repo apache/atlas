@@ -21,24 +21,16 @@
 angular.module('dgc.details').controller('DetailsController', ['$scope', '$stateParams', 'DetailsResource',
     function($scope, $stateParams, DetailsResource) {
 
-        $scope.details = DetailsResource.get({
+        var details = DetailsResource.get({
             id: $stateParams.id
         });
-
-
-
+        $scope.details=details;
+        $scope.tableName= details.name;
 
         $scope.isString = angular.isString;
 
-
-        //schema
         $scope.schemas = DetailsResource.get({
             id: $stateParams.id
         });
-
-
-
-
     }
-
 ]);

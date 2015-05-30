@@ -19,7 +19,7 @@
 <div data-ng-controller="SearchController">
     <div class="search">
         <form name="form" novalidate class="container">
-            <div class="col-lg-7">
+            <div class="col-lg-7 col-lg-offset-3">
                 <div class="row input-group">
                     <input type="text" class="form-control" placeholder="Search" data-ng-model="query" data-typeahead="type for type in types" required/>
                     <span class="input-group-btn">
@@ -29,18 +29,17 @@
                     </span>
                 </div>
                 <div class="row">
-                    <small class="small-txt">Examples : property=HiveLineage.executionEngine&text=tez</small>
-                    <br/>
-                    <small class="small-txt">property=type&text=HiveLineage</small>
-                    <br/>
-                    <small class="small-txt">property=type&text=hive_table</small>
+                    <small class="small-txt">search: Table, DB, Column</small>
                 </div>
             </div>
         </form>
     </div>
     <div class="container">
         <div class="row">
-            <div class="col-lg-11" data-ui-view=""></div>
+
+                <div data-ng-include="'/modules/navigation/views/navigation.html'"></div>
+
+            <div class="col-lg-9" data-ui-view=""></div>
         </div>
     </div>
 </div>

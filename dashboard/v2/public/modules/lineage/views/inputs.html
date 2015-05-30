@@ -16,6 +16,8 @@
   ~ limitations under the License.
   -->
 
-<h4><a data-ui-sref="details({id:result.instanceInfo.guid})">{{result.instanceInfo.guid}}</a></h4>
-<p><b>TypeName: </b>{{result.instanceInfo.typeName}}</p>
-<h5>Tags :  <a ng-repeat="(key, value) in result['$traits$']" data-ui-sref="search.results({query: key})">{{key}}</a> </h5>
+<div data-ng-controller="LineageController">
+  <div id="inputs">
+    <svg class="lineage-viz"><g></svg>
+  </div>
+</div>

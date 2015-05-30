@@ -16,56 +16,16 @@
  * limitations under the License.
  */
 
-g circle {
-    cursor: pointer;
-    stroke: green;
-    stroke-width: 2px;
-    fill: url(#process-image);
-}
+'use strict';
 
-g circle.empty {
-    fill: #90ef96;
-}
+angular.module('dgc.navigation').controller('NavigationController', ['$scope', 'NavigationResource',
+    function($scope, NavigationResource) {
 
-.link {
-    fill: none;
-    stroke: green;
-    stroke-width: 2px;
-}
+        $scope.leftnav= NavigationResource.get();
+        $scope.updateVar = function(event) {
+            $scope.$$prevSibling.query = angular.element(event.target).text();
 
-g text {
-    pointer-events: none;
-    text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
-}
+        };
 
-.d3-tip pre {
-    max-width: 400px;
-}
-
-div.lineage {
-    border-bottom: 2px solid #006600;
-    margin-bottom: 30px;
-}
-
-.node rect {
-    stroke: #333;
-    fill: #fff;
-}
-
-.edgePath path {
-    stroke: #333;
-    fill: #333;
-    stroke-width: 1.5px;
-}
-
-.node rect,
-.node circle {
-    stroke: #333;
-    fill: #fff;
-    stroke-width: 1.5px;
-}
-
-.lineage-viz {
-    width: 800px !important;
-    height: 600px !important;
-}
+    }
+]);
