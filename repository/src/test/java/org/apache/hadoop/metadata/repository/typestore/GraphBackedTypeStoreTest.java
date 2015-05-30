@@ -33,6 +33,7 @@ import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
 import org.apache.hadoop.metadata.typesystem.types.DataTypes;
 import org.apache.hadoop.metadata.typesystem.types.EnumTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.EnumValue;
 import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.TraitType;
@@ -84,6 +85,12 @@ public class GraphBackedTypeStoreTest {
         //validate enum
         List<EnumTypeDefinition> enumTypes = types.enumTypesAsJavaList();
         Assert.assertEquals(1, enumTypes.size());
+        EnumTypeDefinition orgLevel = enumTypes.get(0);
+        Assert.assertEquals(orgLevel.name, "OrgLevel");
+        Assert.assertEquals(orgLevel.enumValues.length, 2);
+        EnumValue enumValue = orgLevel.enumValues[0];
+        Assert.assertEquals(enumValue.value, "L1");
+        Assert.assertEquals(enumValue.ordinal, 1);
 
         //validate class
         List<StructTypeDefinition> structTypes = types.structTypesAsJavaList();
@@ -94,6 +101,7 @@ public class GraphBackedTypeStoreTest {
         for (HierarchicalTypeDefinition<ClassType> classType : classTypes) {
             ClassType expectedType = ts.getDataType(ClassType.class, classType.typeName);
             Assert.assertEquals(expectedType.immediateAttrs.size(), classType.attributeDefinitions.length);
+            Assert.assertEquals(expectedType.superTypes.size(), classType.superTypes.size());
         }
 
         //validate trait
