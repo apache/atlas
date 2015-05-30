@@ -168,7 +168,13 @@ public class HiveMetaStoreBridge {
         if (results.length() == 0) {
             return null;
         } else {
-            String guid = getGuidFromDSLResponse(results.getJSONObject(0));
+            String guid;
+            JSONObject row = results.getJSONObject(0);
+            if (row.has("$id$")) {
+                guid = row.getJSONObject("$id$").getString("id");
+            } else {
+                guid = row.getJSONObject("_col_0").getString("id");
+            }
             return new Referenceable(guid, typeName, null);
         }
     }
@@ -186,15 +192,16 @@ public class HiveMetaStoreBridge {
 
         String typeName = HiveDataTypes.HIVE_TABLE.getName();
 
-//        String dslQuery = String.format("%s as t where name = '%s' dbName where name = '%s' and "
-//                        + "clusterName = '%s' select t",
-//                HiveDataTypes.HIVE_TABLE.getName(), tableName, dbName, clusterName);
-        String dbType = HiveDataTypes.HIVE_DB.getName();
+        String dslQuery = String.format(
+                "%s as t where name = '%s', dbName where name = '%s' and " + "clusterName = '%s' select t",
+                HiveDataTypes.HIVE_TABLE.getName(), tableName, dbName, clusterName);
+        return getEntityReferenceFromDSL(typeName, dslQuery);
 
-        String gremlinQuery = String.format("g.V.has('__typeName', '%s').has('%s.name', '%s').as('t').out"
-                        + "('__%s.dbName').has('%s.name', '%s').has('%s.clusterName', '%s').back('t').toList()",
-                typeName, typeName, tableName, typeName, dbType, dbName, dbType, clusterName);
-        return getEntityReferenceFromGremlin(typeName, gremlinQuery);
+//        String dbType = HiveDataTypes.HIVE_DB.getName();
+//        String gremlinQuery = String.format("g.V.has('__typeName', '%s').has('%s.name', '%s').as('t').out"
+//                        + "('__%s.dbName').has('%s.name', '%s').has('%s.clusterName', '%s').back('t').toList()",
+//                typeName, typeName, tableName, typeName, dbType, dbName, dbType, clusterName);
+//        return getEntityReferenceFromGremlin(typeName, gremlinQuery);
     }
 
     private Referenceable getEntityReferenceFromGremlin(String typeName, String gremlinQuery) throws MetadataServiceException,
@@ -226,10 +233,6 @@ public class HiveMetaStoreBridge {
                 tableType, tableName, tableType, dbType, dbName, dbType, clusterName);
 
         return getEntityReferenceFromGremlin(typeName, gremlinQuery);
-    }
-
-    private String getGuidFromDSLResponse(JSONObject jsonObject) throws JSONException {
-        return jsonObject.getJSONObject("$id$").getString("id");
     }
 
     private Referenceable getSDForTable(String dbName, String tableName) throws Exception {
