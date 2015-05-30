@@ -243,11 +243,13 @@ public class HiveHook implements ExecuteWithHookContext {
             return;
         }
 
-        Referenceable dbReferenceable = dgiBridge.registerDatabase(oldTable.getDbName().toLowerCase());
+        Referenceable dbReferenceable = dgiBridge.registerDatabase(oldTable.getDbName());
         Referenceable tableReferenceable =
                 dgiBridge.registerTable(dbReferenceable, oldTable.getDbName(), oldTable.getTableName());
+        LOG.info("Updating entity name {}.{} to {}",
+                oldTable.getDbName(), oldTable.getTableName(), newTable.getTableName());
         dgiBridge.getMetadataServiceClient().updateEntity(tableReferenceable.getId()._getId(), "name",
-                newTable.getTableName());
+                newTable.getTableName().toLowerCase());
     }
 
     private void handleCreateTable(HiveMetaStoreBridge dgiBridge, HiveEvent event) throws Exception {
@@ -255,9 +257,7 @@ public class HiveHook implements ExecuteWithHookContext {
             if (entity.getType() == Entity.Type.TABLE) {
 
                 Table table = entity.getTable();
-                //TODO table.getDbName().toLowerCase() is required as hive stores in lowercase,
-                // but table.getDbName() is not lowercase
-                Referenceable dbReferenceable = dgiBridge.registerDatabase(table.getDbName().toLowerCase());
+                Referenceable dbReferenceable = dgiBridge.registerDatabase(table.getDbName());
                 dgiBridge.registerTable(dbReferenceable, table.getDbName(), table.getTableName());
             }
         }
@@ -297,7 +297,7 @@ public class HiveHook implements ExecuteWithHookContext {
         for (ReadEntity readEntity : inputs) {
             if (readEntity.getType() == Entity.Type.TABLE) {
                 Table table = readEntity.getTable();
-                String dbName = table.getDbName().toLowerCase();
+                String dbName = table.getDbName();
                 source.add(dgiBridge.registerTable(dbName, table.getTableName()));
             }
             if (readEntity.getType() == Entity.Type.PARTITION) {
@@ -309,7 +309,7 @@ public class HiveHook implements ExecuteWithHookContext {
         for (WriteEntity writeEntity : outputs) {
             if (writeEntity.getType() == Entity.Type.TABLE || writeEntity.getType() == Entity.Type.PARTITION) {
                 Table table = writeEntity.getTable();
-                String dbName = table.getDbName().toLowerCase();
+                String dbName = table.getDbName();
                 target.add(dgiBridge.registerTable(dbName, table.getTableName()));
             }
             if (writeEntity.getType() == Entity.Type.PARTITION) {
