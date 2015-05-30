@@ -236,9 +236,9 @@ public class TypeSystem {
 
     public Map<String, IDataType> defineTypes(TypesDef typesDef)
     throws MetadataException {
-
+        Map<String, IDataType> typesAdded = new HashMap<>();
         for (EnumTypeDefinition enumDef : typesDef.enumTypesAsJavaList()) {
-            defineEnumType(enumDef);
+            typesAdded.put(enumDef.name, defineEnumType(enumDef));
         }
 
         ImmutableList<StructTypeDefinition> structDefs = ImmutableList
@@ -248,7 +248,8 @@ public class TypeSystem {
         ImmutableList<HierarchicalTypeDefinition<ClassType>> classDefs =
                 ImmutableList.copyOf(typesDef.classTypesAsJavaList());
 
-        return defineTypes(structDefs, traitDefs, classDefs);
+        typesAdded.putAll(defineTypes(structDefs, traitDefs, classDefs));
+        return typesAdded;
     }
 
     public Map<String, IDataType> defineTypes(ImmutableList<StructTypeDefinition> structDefs,
@@ -304,6 +305,10 @@ public class TypeSystem {
 
     public boolean allowNullsInCollections() {
         return false;
+    }
+
+    public void removeTypes(ImmutableList<String> typeNames) {
+
     }
 
     class TransientTypeSystem extends TypeSystem {

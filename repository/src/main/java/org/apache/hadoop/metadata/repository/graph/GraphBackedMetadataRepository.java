@@ -768,7 +768,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 String myPropertyName = propertyName + "." + entry.getKey().toString();
                 String value = mapCollectionEntryToVertex(id, instanceVertex, attributeInfo,
                         idToVertexMap, elementType, entry.getValue(), myPropertyName);
-                instanceVertex.setProperty(myPropertyName, value);
+                addProperty(instanceVertex, myPropertyName, value);
             }
 
             // for dereference on way out

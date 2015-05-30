@@ -144,11 +144,15 @@ public class DefaultMetadataService implements MetadataService {
                 throw new MetadataException("Invalid type definition");
 
             final Map<String, IDataType> typesAdded = typeSystem.defineTypes(typesDef);
-            
-            //TODO how do we handle transaction - store failure??
-            typeStore.store(typeSystem, ImmutableList.copyOf(typesAdded.keySet()));
 
-            onTypesAddedToRepo(typesAdded);
+            try {
+                typeStore.store(typeSystem, ImmutableList.copyOf(typesAdded.keySet()));
+                onTypesAddedToRepo(typesAdded);
+            } catch(Throwable t) {
+                typeSystem.removeTypes(ImmutableList.copyOf(typesAdded.keySet()));
+                throw new MetadataException(t);
+            }
+
             return new JSONObject() {{
                 put(MetadataServiceClient.TYPES, typesAdded.keySet());
             }};
@@ -198,8 +202,7 @@ public class DefaultMetadataService implements MetadataService {
      */
     @Override
     public String createEntity(String entityInstanceDefinition) throws MetadataException {
-        ParamChecker.notEmpty(entityInstanceDefinition,
-                "Entity instance definition cannot be empty");
+        ParamChecker.notEmpty(entityInstanceDefinition, "Entity instance definition cannot be empty");
 
         ITypedReferenceableInstance entityTypedInstance =
                 deserializeClassInstance(entityInstanceDefinition);
