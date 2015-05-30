@@ -215,8 +215,8 @@ public class HiveHookIT {
     }
 
     private void assertTableIsRegistered(String dbName, String tableName) throws Exception {
-        String query = String.format("%s where name = '%s', dbName where name = '%s' and clusterName = '%s'",
-                HiveDataTypes.HIVE_TABLE.getName(), tableName, dbName, CLUSTER_NAME);
+        String query = String.format("%s as t where name = '%s', dbName where name = '%s' and clusterName = '%s'"
+                        + " select t", HiveDataTypes.HIVE_TABLE.getName(), tableName, dbName, CLUSTER_NAME);
         assertEntityIsRegistered(query);
     }
 
@@ -243,6 +243,11 @@ public class HiveHookIT {
     private String assertEntityIsRegistered(String dslQuery) throws Exception{
         JSONArray results = dgiCLient.searchByDSL(dslQuery);
         Assert.assertEquals(results.length(), 1);
-        return results.getJSONObject(0).getJSONObject("$id$").getString("id");
+        JSONObject row = results.getJSONObject(0);
+        if (row.has("$id$")) {
+            return row.getJSONObject("$id$").getString("id");
+        } else {
+            return row.getJSONObject("_col_0").getString("id");
+        }
     }
 }
