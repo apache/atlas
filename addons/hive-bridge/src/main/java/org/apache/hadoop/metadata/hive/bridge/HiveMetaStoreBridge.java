@@ -158,7 +158,7 @@ public class HiveMetaStoreBridge {
         String typeName = HiveDataTypes.HIVE_DB.getName();
 
         String dslQuery = String.format("%s where name = '%s' and clusterName = '%s'", HiveDataTypes.HIVE_DB.getName(),
-                databaseName, clusterName);
+                databaseName.toLowerCase(), clusterName);
         return getEntityReferenceFromDSL(typeName, dslQuery);
     }
 
@@ -194,7 +194,7 @@ public class HiveMetaStoreBridge {
 
         String dslQuery = String.format(
                 "%s as t where name = '%s', dbName where name = '%s' and " + "clusterName = '%s' select t",
-                HiveDataTypes.HIVE_TABLE.getName(), tableName, dbName, clusterName);
+                HiveDataTypes.HIVE_TABLE.getName(), tableName.toLowerCase(), dbName.toLowerCase(), clusterName);
         return getEntityReferenceFromDSL(typeName, dslQuery);
 
 //        String dbType = HiveDataTypes.HIVE_DB.getName();
@@ -230,7 +230,7 @@ public class HiveMetaStoreBridge {
         String gremlinQuery = String.format("g.V.has('__typeName', '%s').has('%s.values', %s).as('p')."
                 + "out('__%s.tableName').has('%s.name', '%s').out('__%s.dbName').has('%s.name', '%s')"
                 + ".has('%s.clusterName', '%s').back('p').toList()", typeName, typeName, valuesStr, typeName,
-                tableType, tableName, tableType, dbType, dbName, dbType, clusterName);
+                tableType, tableName.toLowerCase(), tableType, dbType, dbName.toLowerCase(), dbType, clusterName);
 
         return getEntityReferenceFromGremlin(typeName, gremlinQuery);
     }

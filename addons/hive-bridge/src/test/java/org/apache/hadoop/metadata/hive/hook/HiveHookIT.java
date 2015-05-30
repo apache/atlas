@@ -26,8 +26,10 @@ import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.hive.bridge.HiveMetaStoreBridge;
 import org.apache.hadoop.metadata.hive.model.HiveDataTypes;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
+import org.apache.log4j.spi.LoggerFactory;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
+import org.slf4j.Logger;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -36,6 +38,8 @@ import java.io.File;
 import java.util.Map;
 
 public class HiveHookIT {
+    public static final Logger LOG = org.slf4j.LoggerFactory.getLogger(HiveHookIT.class);
+
     private static final String DGI_URL = "http://localhost:21000/";
     private static final String CLUSTER_NAME = "test";
     public static final String DEFAULT_DB = "default";
@@ -178,7 +182,7 @@ public class HiveHookIT {
     }
 
     private String random() {
-        return RandomStringUtils.randomAlphanumeric(5).toLowerCase();
+        return RandomStringUtils.randomAlphanumeric(10);
     }
 
     private String file(String tag) throws Exception {
@@ -259,26 +263,30 @@ public class HiveHookIT {
     }
 
     private String assertTableIsRegistered(String dbName, String tableName, boolean registered) throws Exception {
+        LOG.debug("Searching for table {}.{}", dbName, tableName);
         String query = String.format("%s as t where name = '%s', dbName where name = '%s' and clusterName = '%s'"
-                + " select t", HiveDataTypes.HIVE_TABLE.getName(), tableName, dbName, CLUSTER_NAME);
+                + " select t", HiveDataTypes.HIVE_TABLE.getName(), tableName.toLowerCase(), dbName.toLowerCase(),
+                CLUSTER_NAME);
         return assertEntityIsRegistered(query, registered);
     }
 
     private String assertDatabaseIsRegistered(String dbName) throws Exception {
+        LOG.debug("Searching for database {}", dbName);
         String query = String.format("%s where name = '%s' and clusterName = '%s'", HiveDataTypes.HIVE_DB.getName(),
-                dbName, CLUSTER_NAME);
+                dbName.toLowerCase(), CLUSTER_NAME);
         return assertEntityIsRegistered(query, true);
     }
 
     private void assertPartitionIsRegistered(String dbName, String tableName, String value) throws Exception {
         String typeName = HiveDataTypes.HIVE_PARTITION.getName();
-
         String dbType = HiveDataTypes.HIVE_DB.getName();
         String tableType = HiveDataTypes.HIVE_TABLE.getName();
+
+        LOG.debug("Searching for partition of {}.{} with values {}", dbName, tableName, value);
         String gremlinQuery = String.format("g.V.has('__typeName', '%s').has('%s.values', ['%s']).as('p')."
                         + "out('__%s.tableName').has('%s.name', '%s').out('__%s.dbName').has('%s.name', '%s')"
                         + ".has('%s.clusterName', '%s').back('p').toList()", typeName, typeName, value, typeName,
-                tableType, tableName, tableType, dbType, dbName, dbType, CLUSTER_NAME);
+                tableType, tableName.toLowerCase(), tableType, dbType, dbName.toLowerCase(), dbType, CLUSTER_NAME);
         JSONObject response = dgiCLient.searchByGremlin(gremlinQuery);
         JSONArray results = response.getJSONArray(MetadataServiceClient.RESULTS);
         Assert.assertEquals(results.length(), 1);
