@@ -34,7 +34,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.HttpMethod;
-import javax.ws.rs.POST;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
@@ -69,6 +68,8 @@ public class MetadataServiceClient {
 
     public static final String QUERY = "query";
     public static final String QUERY_TYPE = "queryType";
+    public static final String ATTRIBUTE_NAME = "property";
+    public static final String ATTRIBUTE_VALUE = "value";
 
 
     private WebResource service;
@@ -205,6 +206,19 @@ public class MetadataServiceClient {
         } catch (JSONException e) {
             throw new MetadataServiceException(e);
         }
+    }
+
+    /**
+     * Updates property for the entity corresponding to guid
+     * @param guid
+     * @param property
+     * @param value
+     */
+    public JSONObject updateEntity(String guid, String property, String value) throws MetadataServiceException {
+        WebResource resource = getResource(API.UPDATE_ENTITY, guid);
+        resource = resource.queryParam(ATTRIBUTE_NAME, property);
+        resource = resource.queryParam(ATTRIBUTE_VALUE, value);
+        return callAPIWithResource(API.UPDATE_ENTITY, resource);
     }
 
     public JSONObject searchEntity(String searchQuery) throws MetadataServiceException {

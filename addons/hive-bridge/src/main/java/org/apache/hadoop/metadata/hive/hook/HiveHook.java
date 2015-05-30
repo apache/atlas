@@ -156,9 +156,7 @@ public class HiveHook implements ExecuteWithHookContext {
         event.queryPlan = hookContext.getQueryPlan();
         event.hookType = hookContext.getHookType();
 
-        //todo throws NPE
-//        event.jsonPlan = getQueryPlan(event);
-        event.jsonPlan = new JSONObject();
+        event.jsonPlan = getQueryPlan(event);
 
         if (debug) {
             fireAndForget(event);
@@ -205,8 +203,51 @@ public class HiveHook implements ExecuteWithHookContext {
             registerProcess(dgiBridge, event);
             break;
 
+        case ALTERTABLE_RENAME:
+        case ALTERVIEW_RENAME:
+            renameTable(dgiBridge, event);
+            break;
+
+        case ALTERVIEW_AS:
+            //update inputs/outputs?
+            break;
+
+        case ALTERTABLE_ADDCOLS:
+        case ALTERTABLE_REPLACECOLS:
+        case ALTERTABLE_RENAMECOL:
+            break;
+
         default:
         }
+    }
+
+    private void renameTable(HiveMetaStoreBridge dgiBridge, HiveEvent event) throws Exception {
+        //crappy, no easy of getting new name
+        assert event.inputs != null && event.inputs.size() == 1;
+        assert event.outputs != null && event.outputs.size() > 0;
+
+        Table oldTable = event.inputs.iterator().next().getTable();
+        Table newTable = null;
+        for (WriteEntity writeEntity : event.outputs) {
+            if (writeEntity.getType() == Entity.Type.TABLE) {
+                Table table = writeEntity.getTable();
+                if (table.getDbName().equals(oldTable.getDbName()) && !table.getTableName()
+                        .equals(oldTable.getTableName())) {
+                    newTable = table;
+                    break;
+                }
+            }
+        }
+        if (newTable == null) {
+            LOG.warn("Failed to deduct new name for " + event.queryPlan.getQueryStr());
+            return;
+        }
+
+        Referenceable dbReferenceable = dgiBridge.registerDatabase(oldTable.getDbName().toLowerCase());
+        Referenceable tableReferenceable =
+                dgiBridge.registerTable(dbReferenceable, oldTable.getDbName(), oldTable.getTableName());
+        dgiBridge.getMetadataServiceClient().updateEntity(tableReferenceable.getId()._getId(), "name",
+                newTable.getTableName());
     }
 
     private void handleCreateTable(HiveMetaStoreBridge dgiBridge, HiveEvent event) throws Exception {
@@ -259,6 +300,9 @@ public class HiveHook implements ExecuteWithHookContext {
                 String dbName = table.getDbName().toLowerCase();
                 source.add(dgiBridge.registerTable(dbName, table.getTableName()));
             }
+            if (readEntity.getType() == Entity.Type.PARTITION) {
+                dgiBridge.registerPartition(readEntity.getPartition());
+            }
         }
         processReferenceable.set("inputTables", source);
         List<Referenceable> target = new ArrayList<>();
@@ -285,9 +329,14 @@ public class HiveHook implements ExecuteWithHookContext {
 
 
     private JSONObject getQueryPlan(HiveEvent event) throws Exception {
-        ExplainTask explain = new ExplainTask();
-        explain.initialize(event.conf, event.queryPlan, null);
-        List<Task<?>> rootTasks = event.queryPlan.getRootTasks();
-        return explain.getJSONPlan(null, null, rootTasks, event.queryPlan.getFetchTask(), true, false, false);
+        try {
+            ExplainTask explain = new ExplainTask();
+            explain.initialize(event.conf, event.queryPlan, null);
+            List<Task<?>> rootTasks = event.queryPlan.getRootTasks();
+            return explain.getJSONPlan(null, null, rootTasks, event.queryPlan.getFetchTask(), true, false, false);
+        } catch(Exception e) {
+            LOG.warn("Failed to get queryplan", e);
+            return new JSONObject();
+        }
     }
 }
