@@ -26,35 +26,57 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
         $scope.resultCount=0;
         $scope.isCollapsed = true;
         $scope.currentPage = 1;
-        $scope.numPerPage = 10;
-        $scope.itemsPerPage = 2;
-        $scope.maxSize = 5;
-        $scope.$watch("currentPage + numPerPage", function() {
-            var begin = (($scope.currentPage - 1) * $scope.numPerPage);
-            var end = begin + $scope.numPerPage;
-
-            $scope.filteredResults = $scope.results.slice(begin, end);
-        });
+        $scope.itemsPerPage = 10
+        $scope.totalItems = 40;
+        $scope.setPage = function (pageNo) {
+            $scope.currentPage = pageNo;
+        };
         $scope.search = function(query) {
             $scope.results = [];
             NotificationService.reset();
             $scope.limit = 4;
             SearchResource.search({query:query}, function searchSuccess(response) {
-                $scope.results = response.results;
+
                 $scope.resultCount=response.count;
-                if ($scope.results.length < 1) {
-                    NotificationService.error('No Result found', false);
-                }
-                $state.go('search.results', {query:query}, {
-                    location: 'replace'
+                $scope.results = response.results;
+                $scope.resultRows = $scope.results.rows;
+                $scope.totalItems = $scope.resultCount;
+                $scope.$watch('currentPage + itemsPerPage', function() {
+                    var begin = (($scope.currentPage - 1) * $scope.itemsPerPage),
+                        end = begin + $scope.itemsPerPage;
+                    $scope.searchTypesAvailable = $scope.typeAvailable();
+                    if ($scope.searchTypesAvailable) {
+                        $scope.searchMessage = 'searching...';
+                        $scope.filteredResults = $scope.resultRows.slice(begin, end);
+                        $scope.pageCount = function () {
+                            return Math.ceil($scope.resultCount / $scope.itemsPerPage);
+                        };
+                        if ($scope.results.rows)
+                            $scope.searchMessage = $scope.results.rows.length +' results matching your search query '+ $scope.query +' were found';
+                        else
+                            $scope.searchMessage = '0 results matching your search query '+ $scope.query +' were found';
+                        if ($scope.results.length < 1) {
+                            NotificationService.error('No Result found', false);
+                        }
+                    } else {
+                        $scope.searchMessage = '0 results matching your search query '+ $scope.query +' were found';
+                    }
+                    $state.go('search.results', {query:query}, {
+                        location: 'replace'
+                    });
                 });
+
+
             }, function searchError(err) {
                 NotificationService.error('Error occurred during executing search query, error status code = ' + err.status + ', status text = ' + err.statusText, false);
             });
         };
 
         $scope.typeAvailable = function() {
-            return $scope.types.indexOf(this.results.dataType.typeName && this.results.dataType.typeName.toLowerCase()) > -1;
+            console.log($scope.results.dataType);
+           if($scope.results.dataType) {
+               return $scope.types.indexOf($scope.results.dataType.typeName && $scope.results.dataType.typeName.toLowerCase()) > -1;
+           }
         };
 
         $scope.doToggle = function($event,el) {
@@ -62,14 +84,21 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
         };
         $scope.filterSearchResults = function(items) {
             var res = {};
+            var count = 0;
             angular.forEach(items, function(value, key) {
-                if(typeof value !== 'object')
+                if(typeof value !== 'object') {
                     res[key] = value;
+                    count++;
+                }
             });
+
+            $scope.keyLength = count;
             return res;
         };
-        $scope.query=$stateParams.query;
+        $scope.searchQuery = $location.search();
+        $scope.query=($location.search()).query;
         if ($scope.query) {
+            $scope.searchMessage = 'searching...';
             $scope.search($scope.query);
         }
     }
