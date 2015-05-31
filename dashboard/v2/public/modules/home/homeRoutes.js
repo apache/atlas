@@ -25,7 +25,8 @@ angular.module('dgc.home.routes', []).config(['$stateProvider',
         // states for my app
         $stateProvider.state('home', {
             url: '/search',
-            templateUrl: '/modules/search/views/search.html'
+            templateUrl: '/modules/search/views/search.html',
+            controller: 'SearchController'
         });
     }
 ]);
