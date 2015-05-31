@@ -18,15 +18,17 @@
 
 'use strict';
 
-angular.module('dgc.navigation').controller('NavigationController', ['$scope', 'NavigationResource',
-    function($scope, NavigationResource) {
-
-
-        $scope.leftnav= NavigationResource.get();
-        $scope.updateVar = function(event) {
-            $scope.$$prevSibling.query = angular.element(event.target).text();
-
+angular.module('dgc.search').directive(
+    "myDirective",
+    function() {
+        return {
+            restrict: 'EA',
+            template: '<a href="javascript: void(0);" button-toggle toggle="isCollapsed" class="show-more" ng-click="isCollapsed = !isCollapsed">..show more</a>',
+            link: function($scope) {
+                $scope.isCollapsed = true;
+                console.log($scope.isCollapsed);
+            },
+            transclude: true,
+            scope: {}
         };
-
-    }
-]);
+    });

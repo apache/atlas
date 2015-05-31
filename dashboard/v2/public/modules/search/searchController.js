@@ -76,9 +76,9 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
 
         $scope.typeAvailable = function() {
 
-           if($scope.results.dataType) {
-               return $scope.types.indexOf($scope.results.dataType.typeName && $scope.results.dataType.typeName.toLowerCase()) > -1;
-           }
+            if($scope.results.dataType) {
+                return $scope.types.indexOf($scope.results.dataType.typeName && $scope.results.dataType.typeName.toLowerCase()) > -1;
+            }
         };
         $scope.doToggle = function($event,el) {
             this.isCollapsed = !el;

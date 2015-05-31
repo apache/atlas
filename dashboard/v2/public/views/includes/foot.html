@@ -15,11 +15,6 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<script>
-  $(function () {
-    $('#myTab a:last').tab('show')
-  })
-</script>
 <!-- Angular JS -->
 <script type="text/javascript" src="/lib/angular/angular.min.js"></script>
 <script type="text/javascript" src="/lib/lodash/lodash.min.js"></script>
@@ -36,13 +31,6 @@
 <script src="http://cpettitt.github.io/project/dagre-d3/latest/dagre-d3.js"></script>
 <script type="text/javascript" src="dist/app.min.js"></script>
 
-<!-- Enable the tabs -->
-<script type="text/javascript">
-  $('#myTabs a').click(function (e) {
-    e.preventDefault()
-    $(this).tab('show')
-  });
-</script>
 
 {% if (process.env.NODE_ENV == 'local') %}
 <!-- Livereload script rendered -->
