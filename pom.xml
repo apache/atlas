@@ -78,7 +78,7 @@
         <slf4j.version>1.7.7</slf4j.version>
         <jetty.version>6.1.26</jetty.version>
         <jersey.version>1.9</jersey.version>
-        <tinkerpop.version>2.5.0</tinkerpop.version>
+        <tinkerpop.version>2.6.0</tinkerpop.version>
         <titan.version>0.5.4</titan.version>
         <hadoop.version>2.6.0</hadoop.version>
 
@@ -101,6 +101,9 @@
         <StagingId>apache-staging</StagingId>
         <StagingName>Apache Release Distribution Repository</StagingName>
         <StagingUrl>https://repository.apache.org/content/groups/staging</StagingUrl>
+
+        <!-- skips checkstyle and find bugs -->
+        <skipCheck>false</skipCheck>
     </properties>
 
     <profiles>
@@ -611,6 +614,12 @@
                 <version>1.8.5</version>
                 <scope>provided</scope>
             </dependency>
+
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>3.4</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -971,6 +980,7 @@
                         </goals>
                         <phase>verify</phase>
                         <configuration>
+                            <skip>${skipCheck}</skip>
                             <consoleOutput>true</consoleOutput>
                             <includeTestSourceDirectory>true</includeTestSourceDirectory>
                             <configLocation>src/build/checkstyle.xml</configLocation>
@@ -988,6 +998,7 @@
                     <!--debug>true</debug -->
                     <xmlOutput>true</xmlOutput>
                     <failOnError>false</failOnError>
+                    <skip>${skipCheck}</skip>
                 </configuration>
                 <executions>
                     <execution>

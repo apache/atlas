@@ -109,7 +109,7 @@ object QueryTestsUtils extends GraphUtils {
         def viewClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "View", null,
             Array(
                 attrDef("name", DataTypes.STRING_TYPE),
-                new AttributeDefinition("inputTables", "Table", Multiplicity.COLLECTION, false, null)
+                new AttributeDefinition("inputTables", DataTypes.arrayTypeName("Table"), Multiplicity.COLLECTION, false, null)
             ))
 
         def dimTraitDef = new HierarchicalTypeDefinition[TraitType](classOf[TraitType], "Dimension", null,

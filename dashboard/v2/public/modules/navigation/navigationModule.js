@@ -17,5 +17,4 @@
  */
 
 'use strict';
-
-angular.module('dgc.navigation', []);
+angular.module('dgc.navigation',[]);

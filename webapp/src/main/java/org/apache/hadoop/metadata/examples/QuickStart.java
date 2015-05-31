@@ -128,9 +128,7 @@ public class QuickStart {
                 );
 
         HierarchicalTypeDefinition<ClassType> tblClsDef =
-                TypesUtil.createClassTypeDef(TABLE_TYPE, null,
-                        attrDef("name", DataTypes.STRING_TYPE),
-                        attrDef("description", DataTypes.STRING_TYPE),
+                 TypesUtil.createClassTypeDef(TABLE_TYPE, ImmutableList.of("DataSet"),
                         new AttributeDefinition("db", DATABASE_TYPE,
                                 Multiplicity.REQUIRED, false, null),
                         new AttributeDefinition("sd", STORAGE_DESC_TYPE,
@@ -149,8 +147,7 @@ public class QuickStart {
                 );
 
         HierarchicalTypeDefinition<ClassType> loadProcessClsDef =
-                TypesUtil.createClassTypeDef(LOAD_PROCESS_TYPE, null,
-                        attrDef("name", DataTypes.STRING_TYPE),
+                 TypesUtil.createClassTypeDef(LOAD_PROCESS_TYPE, ImmutableList.of("Process"),
                         attrDef("userName", DataTypes.STRING_TYPE),
                         attrDef("startTime", DataTypes.INT_TYPE),
                         attrDef("endTime", DataTypes.INT_TYPE),
@@ -273,7 +270,7 @@ public class QuickStart {
                 "sales fact daily materialized view", reportingDB, sd,
                 "Joe BI", "Managed", salesFactColumns, "Metric");
 
-        loadProcess("loadSalesDaily", "John ETL",
+        loadProcess("loadSalesDaily", "hive query for daily summary", "John ETL",
                 ImmutableList.of(salesFact, timeDim), ImmutableList.of(salesFactDaily),
                 "create table as select ", "plan", "id", "graph",
                 "ETL");
@@ -288,7 +285,7 @@ public class QuickStart {
                 "sales fact monthly materialized view",
                 reportingDB, sd, "Jane BI", "Managed", salesFactColumns, "Metric");
 
-        loadProcess("loadSalesMonthly", "John ETL",
+        loadProcess("loadSalesMonthly", "hive query for monthly summary", "John ETL",
                 ImmutableList.of(salesFactDaily), ImmutableList.of(salesFactMonthly),
                 "create table as select ", "plan", "id", "graph",
                 "ETL");
@@ -300,7 +297,7 @@ public class QuickStart {
         String entityJSON = InstanceSerialization.toJson(referenceable, true);
         System.out.println("Submitting new entity= " + entityJSON);
         JSONObject jsonObject = metadataServiceClient.createEntity(entityJSON);
-        String guid = jsonObject.getString(MetadataServiceClient.RESULTS);
+        String guid = jsonObject.getString(MetadataServiceClient.GUID);
         System.out.println("created instance for type " + typeName + ", guid: " + guid);
 
         // return the Id for created instance with guid
@@ -362,7 +359,7 @@ public class QuickStart {
         return createInstance(referenceable);
     }
 
-    Id loadProcess(String name, String user,
+    Id loadProcess(String name, String description, String user,
                    List<Id> inputTables,
                    List<Id> outputTables,
                    String queryText, String queryPlan,
@@ -370,6 +367,7 @@ public class QuickStart {
                    String... traitNames) throws Exception {
         Referenceable referenceable = new Referenceable(LOAD_PROCESS_TYPE, traitNames);
         referenceable.set("name", name);
+        referenceable.set("description", description);
         referenceable.set("user", user);
         referenceable.set("startTime", System.currentTimeMillis());
         referenceable.set("endTime", System.currentTimeMillis() + 10000);
@@ -465,6 +463,8 @@ public class QuickStart {
             */
             "Table where name=\"sales_fact\", columns",
             "Table where name=\"sales_fact\", columns as column select column.name, column.dataType, column.comment",
+            "from DataSet",
+            "from Process",
         };
     }
 

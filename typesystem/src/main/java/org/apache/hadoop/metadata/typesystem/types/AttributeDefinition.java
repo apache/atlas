@@ -18,7 +18,7 @@
 
 package org.apache.hadoop.metadata.typesystem.types;
 
-import com.google.common.base.Preconditions;
+import org.apache.hadoop.metadata.ParamChecker;
 
 public final class AttributeDefinition {
 
@@ -44,16 +44,13 @@ public final class AttributeDefinition {
     public AttributeDefinition(String name, String dataTypeName,
                                Multiplicity multiplicity, boolean isComposite, boolean isUnique,
                                boolean isIndexable, String reverseAttributeName) {
-        Preconditions.checkNotNull(name);
-        Preconditions.checkNotNull(dataTypeName);
-
-        this.name = name;
-        this.dataTypeName = dataTypeName;
+        this.name = ParamChecker.notEmpty(name, "Attribute name");
+        this.dataTypeName = ParamChecker.notEmpty(dataTypeName, "Attribute type");
         this.multiplicity = multiplicity;
         this.isComposite = isComposite;
         this.isUnique = isUnique;
         this.isIndexable = isIndexable;
-        this.reverseAttributeName = reverseAttributeName;
+        this.reverseAttributeName = ParamChecker.notEmptyIfNotNull(reverseAttributeName, "Reverse attribute name");
     }
 
     @Override

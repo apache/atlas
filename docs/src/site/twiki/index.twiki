@@ -44,7 +44,9 @@ allows integration with the whole enterprise data ecosystem.
    * [[Architecture][High Level Architecture]]
    * [[TypeSystem][Type System]]
    * [[Repository][Metadata Repository]]
-   * [[Discovery][Search]]
+   * [[Search][Search]]
+   * [[security][security]]
+   * [[Configuration][Configuration]]
 
 
 ---++ API Documentation

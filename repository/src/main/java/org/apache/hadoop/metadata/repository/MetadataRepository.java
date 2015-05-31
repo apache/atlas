@@ -18,6 +18,7 @@
 
 package org.apache.hadoop.metadata.repository;
 
+import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.typesystem.IReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.ITypedStruct;
@@ -61,7 +62,7 @@ public interface MetadataRepository {
      * @param aInfo    attribute info
      * @return property key used to store a given attribute
      */
-    String getFieldNameInVertex(IDataType<?> dataType, AttributeInfo aInfo);
+    String getFieldNameInVertex(IDataType<?> dataType, AttributeInfo aInfo) throws MetadataException;
 
     /**
      * Return the edge label for a given attribute in the repository.

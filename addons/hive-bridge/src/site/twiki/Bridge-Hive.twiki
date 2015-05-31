@@ -29,6 +29,10 @@ hive conf directory:
   <name>hive.hook.dgi.url</name>
   <value>http://localhost:21000/</value>
 </property>
+<property>
+  <name>hive.cluster.name</name>
+  <value>primary</value>
+</property>
 </verbatim>
 
 Usage: <dgi package>/bin/import-hive.sh. The logs are in <dgi package>/logs/import-hive.log
@@ -44,11 +48,15 @@ The hook submits the request to a thread pool executor to avoid blocking the com
   <value>org.apache.hadoop.metadata.hive.hook.HiveHook</value>
 </property>
 </verbatim>
-   * Add the following property in hive-ste.xml with the DGI endpoint for your set-up
+   * Add the following properties in hive-ste.xml with the DGI endpoint for your set-up
 <verbatim>
 <property>
   <name>hive.hook.dgi.url</name>
   <value>http://localhost:21000/</value>
+</property>
+<property>
+  <name>hive.cluster.name</name>
+  <value>primary</value>
 </property>
 </verbatim>
    * Add 'export HIVE_AUX_JARS_PATH=<dgi package>/hook/hive' in hive-env.sh

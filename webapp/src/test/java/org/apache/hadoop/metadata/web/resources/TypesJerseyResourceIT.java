@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import org.apache.hadoop.metadata.MetadataServiceClient;
+import org.apache.hadoop.metadata.typesystem.TypesDef;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization$;
 import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
@@ -76,13 +77,13 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
                     .accept(MediaType.APPLICATION_JSON)
                     .type(MediaType.APPLICATION_JSON)
                     .method(HttpMethod.POST, ClientResponse.class, typesAsJSON);
-            Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+            Assert.assertEquals(clientResponse.getStatus(), Response.Status.CREATED.getStatusCode());
 
             String responseAsString = clientResponse.getEntity(String.class);
             Assert.assertNotNull(responseAsString);
 
             JSONObject response = new JSONObject(responseAsString);
-            Assert.assertNotNull(response.get("types"));
+            Assert.assertNotNull(response.get(MetadataServiceClient.TYPES));
             Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
         }
     }
@@ -104,10 +105,21 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
 
             String responseAsString = clientResponse.getEntity(String.class);
             Assert.assertNotNull(responseAsString);
-
             JSONObject response = new JSONObject(responseAsString);
-            Assert.assertNotNull(response.get("definition"));
+            Assert.assertNotNull(response.get(MetadataServiceClient.DEFINITION));
             Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+
+            String typesJson = response.getString(MetadataServiceClient.DEFINITION);
+            final TypesDef typesDef = TypesSerialization.fromJson(typesJson);
+            List<HierarchicalTypeDefinition<ClassType>> hierarchicalTypeDefinitions = typesDef.classTypesAsJavaList();
+            for(HierarchicalTypeDefinition<ClassType> classType : hierarchicalTypeDefinitions) {
+                for(AttributeDefinition attrDef : classType.attributeDefinitions) {
+                    if("name".equals(attrDef.name)) {
+                        Assert.assertEquals(attrDef.isIndexable, true);
+                        Assert.assertEquals(attrDef.isUnique, true);
+                    }
+                }
+            }
         }
     }
 
@@ -196,14 +208,14 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         HierarchicalTypeDefinition<ClassType> databaseTypeDefinition =
                 TypesUtil.createClassTypeDef("database",
                         ImmutableList.<String>of(),
-                        TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
         typeDefinitions.add(databaseTypeDefinition);
 
         HierarchicalTypeDefinition<ClassType> tableTypeDefinition = TypesUtil.createClassTypeDef(
                 "table",
                 ImmutableList.<String>of(),
-                TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                 TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE),
                 TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE),
                 new AttributeDefinition("database",

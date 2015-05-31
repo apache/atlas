@@ -109,9 +109,10 @@ def executeEnvSh(confDir):
 
         proc.communicate()
 
-def java(classname, args, classpath, jvm_opts_list):
-    if os.environ["JAVA_HOME"] is not None and os.environ["JAVA_HOME"]:
-        prg = os.path.join(os.environ["JAVA_HOME"], "bin", "java")
+def java(classname, args, classpath, jvm_opts_list, logdir=None):
+    java_home = os.environ.get("JAVA_HOME", None)
+    if java_home:
+        prg = os.path.join(java_home, "bin", "java")
     else:
         prg = which("java")
 
@@ -121,11 +122,12 @@ def java(classname, args, classpath, jvm_opts_list):
     commandline.append(classpath)
     commandline.append(classname)
     commandline.extend(args)
-    return runProcess(commandline)
+    return runProcess(commandline, logdir)
 
 def jar(path):
-    if os.environ["JAVA_HOME"] is not None and os.environ["JAVA_HOME"]:
-        prg = os.path.join(os.environ["JAVA_HOME"], "bin", "jar")
+    java_home = os.environ.get("JAVA_HOME", None)
+    if java_home:
+        prg = os.path.join(java_home, "bin", "jar")
     else:
         prg = which("jar")
 
@@ -153,7 +155,7 @@ def which(program):
 
     return None
 
-def runProcess(commandline):
+def runProcess(commandline, logdir=None):
     """
     Run a process
     :param commandline: command line
@@ -161,7 +163,13 @@ def runProcess(commandline):
     """
     global finished
     debug ("Executing : %s" % commandline)
-    return subprocess.Popen(commandline)
+    timestr = time.strftime("metadata.%Y%m%d-%H%M%S")
+    stdoutFile = None
+    stderrFile = None
+    if logdir:
+        stdoutFile = open(os.path.join(logdir, timestr + ".out"), "w")
+        stderrFile = open(os.path.join(logdir,timestr + ".err"), "w")
+    return subprocess.Popen(commandline, stdout=stdoutFile, stderr=stderrFile)
 
 def print_output(name, src, toStdErr):
     """

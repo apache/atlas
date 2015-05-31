@@ -17,6 +17,7 @@
 # limitations under the License.
 import os
 import sys
+import traceback
 
 import metadata_config as mc
 
@@ -29,8 +30,8 @@ def main():
 
     metadata_home = mc.metadataDir()
     confdir = mc.dirMustExist(mc.confDir(metadata_home))
-    logdir = mc.dirMustExist(mc.logDir(metadata_home))
     mc.executeEnvSh(confdir)
+    logdir = mc.dirMustExist(mc.logDir(metadata_home))
 
     #create sys property for conf dirs
     jvm_opts_list = (METADATA_LOG_OPTS % logdir).split()
@@ -64,7 +65,7 @@ def main():
     args = ["-app", os.path.join(web_app_dir, "metadata")]
     args.extend(sys.argv[1:])
 
-    process = mc.java("org.apache.hadoop.metadata.Main", args, metadata_classpath, jvm_opts_list)
+    process = mc.java("org.apache.hadoop.metadata.Main", args, metadata_classpath, jvm_opts_list, logdir)
     mc.writePid(metadata_pid_file, process)
 
     print "Metadata Server started!!!\n"
@@ -74,6 +75,7 @@ if __name__ == '__main__':
         returncode = main()
     except Exception as e:
         print "Exception: %s " % str(e)
+        print traceback.format_exc()
         returncode = -1
 
     sys.exit(returncode)

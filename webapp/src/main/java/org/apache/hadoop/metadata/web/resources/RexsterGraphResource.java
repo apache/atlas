@@ -165,7 +165,7 @@ public class RexsterGraphResource {
 
             JSONObject response = new JSONObject();
             response.put(MetadataServiceClient.RESULTS, new JSONObject(vertexProperties));
-            response.put(MetadataServiceClient.TOTAL_SIZE, vertexProperties.size());
+            response.put(MetadataServiceClient.COUNT, vertexProperties.size());
             return Response.ok(response).build();
         } catch (JSONException e) {
             throw new WebApplicationException(
@@ -276,7 +276,7 @@ public class RexsterGraphResource {
         if (!countOnly) {
             response.put(MetadataServiceClient.RESULTS, elementArray);
         }
-        response.put(MetadataServiceClient.TOTAL_SIZE, counter);
+        response.put(MetadataServiceClient.COUNT, counter);
         return Response.ok(response).build();
     }
 
@@ -298,7 +298,7 @@ public class RexsterGraphResource {
                 String message = "Edge with [" + edgeId + "] cannot be found.";
                 LOG.info(message);
                 throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND)
-                        .entity(JSONObject.quote(message)).build());
+                        .entity(Servlets.escapeJsonString(message)).build());
             }
 
             JSONObject response = new JSONObject();
@@ -323,7 +323,7 @@ public class RexsterGraphResource {
 
         JSONObject response = new JSONObject();
         response.put(MetadataServiceClient.RESULTS, vertexArray);
-        response.put(MetadataServiceClient.TOTAL_SIZE, counter);
+        response.put(MetadataServiceClient.COUNT, counter);
 
         return response;
     }
@@ -389,7 +389,7 @@ public class RexsterGraphResource {
                 countOnly = false;
             } else {
                 throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST)
-                        .entity(JSONObject.quote(directionSegment + " segment was invalid."))
+                        .entity(Servlets.escapeJsonString(directionSegment + " segment was invalid."))
                         .build());
             }
         }

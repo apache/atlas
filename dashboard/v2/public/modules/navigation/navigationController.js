@@ -21,7 +21,8 @@
 angular.module('dgc.navigation').controller('NavigationController', ['$scope', 'NavigationResource',
     function($scope, NavigationResource) {
 
-        $scope.leftnav = NavigationResource.get();
+
+        $scope.leftnav= NavigationResource.get();
         $scope.updateVar = function(event) {
             $scope.$$prevSibling.query = angular.element(event.target).text();
 

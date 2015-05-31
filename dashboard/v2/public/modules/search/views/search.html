@@ -21,7 +21,7 @@
         <form name="form" novalidate class="container">
             <div class="col-lg-7 col-lg-offset-3">
                 <div class="row input-group">
-                    <input type="text" class="form-control" placeholder="Search" data-ng-model="query" data-typeahead="type for type in types" required/>
+                    <input type="text" class="form-control" placeholder="Search" data-ng-model="query"  required/>
                     <span class="input-group-btn">
                         <button class="btn btn-success" type="submit" data-ng-disabled="form.$invalid" data-ng-click="search(query)">
                             <i class="glyphicon glyphicon-search white "></i>
@@ -37,9 +37,9 @@
     <div class="container">
         <div class="row">
 
-                <div data-ng-include="'/modules/navigation/views/navigation.html'"></div>
+            <div data-ng-include="'/modules/navigation/views/navigation.html'"></div>
 
-            <div class="col-lg-9" data-ui-view=""></div>
+            <div class="col-lg-9" data-ui-view=""  style="min-height: 1350px;"></div>
         </div>
     </div>
 </div>

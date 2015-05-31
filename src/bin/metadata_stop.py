@@ -18,6 +18,7 @@
 import os
 from signal import SIGTERM
 import sys
+import traceback
 
 import metadata_config as mc
 
@@ -25,8 +26,8 @@ def main():
 
     metadata_home = mc.metadataDir()
     confdir = mc.dirMustExist(mc.confDir(metadata_home))
-    piddir = mc.dirMustExist(mc.logDir(metadata_home))
     mc.executeEnvSh(confdir)
+    piddir = mc.dirMustExist(mc.logDir(metadata_home))
 
     metadata_pid_file = mc.pidFile(metadata_home)
 
@@ -52,6 +53,7 @@ if __name__ == '__main__':
         returncode = main()
     except Exception as e:
         print "Exception: %s " % str(e)
+        print traceback.format_exc()
         returncode = -1
 
     sys.exit(returncode)

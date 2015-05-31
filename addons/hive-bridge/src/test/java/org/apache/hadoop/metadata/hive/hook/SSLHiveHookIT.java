@@ -208,40 +208,6 @@ public class SSLHiveHookIT {
         assertDatabaseIsRegistered(dbName);
     }
 
-    @Test
-    public void testCreateTable() throws Exception {
-        String dbName = "db" + RandomStringUtils.randomAlphanumeric(5).toLowerCase();
-        runCommand("create database " + dbName);
-
-        String tableName = "table" + RandomStringUtils.randomAlphanumeric(5).toLowerCase();
-        runCommand("create table " + dbName + "." + tableName + "(id int, name string)");
-        assertTableIsRegistered(tableName);
-
-        tableName = "table" + RandomStringUtils.randomAlphanumeric(5).toLowerCase();
-        runCommand("create table " + tableName + "(id int, name string)");
-        assertTableIsRegistered(tableName);
-
-        //Create table where database doesn't exist, will create database instance as well
-        assertDatabaseIsRegistered("default");
-    }
-
-    @Test
-    public void testCTAS() throws Exception {
-        String tableName = "table" + RandomStringUtils.randomAlphanumeric(5).toLowerCase();
-        runCommand("create table " + tableName + "(id int, name string)");
-
-        String newTableName = "table" + RandomStringUtils.randomAlphanumeric(5).toLowerCase();
-        String query = "create table " + newTableName + " as select * from " + tableName;
-        runCommand(query);
-
-        assertTableIsRegistered(newTableName);
-        assertInstanceIsRegistered(HiveDataTypes.HIVE_PROCESS.getName(), "queryText", query);
-    }
-
-    private void assertTableIsRegistered(String tableName) throws Exception {
-        assertInstanceIsRegistered(HiveDataTypes.HIVE_TABLE.getName(), "name", tableName);
-    }
-
     private void assertDatabaseIsRegistered(String dbName) throws Exception {
         assertInstanceIsRegistered(HiveDataTypes.HIVE_DB.getName(), "name", dbName);
     }

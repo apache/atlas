@@ -27,7 +27,7 @@ angular.module('dgc.details').controller('DetailsController', ['$scope', '$state
             $scope.details = data;
             $scope.tableName = data.values.name;
         });
-
+       
         $scope.isString = angular.isString;
 
         $scope.schemas = DetailsResource.get({

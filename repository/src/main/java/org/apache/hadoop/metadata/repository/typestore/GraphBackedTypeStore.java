@@ -53,8 +53,8 @@ import java.util.Iterator;
 import java.util.List;
 
 public class GraphBackedTypeStore implements ITypeStore {
-    public static final String VERTEX_TYPE = "typeSystem";
-    private static final String PROPERTY_PREFIX = "type.";
+    public static final String VERTEX_TYPE = Constants.INTERNAL_PROPERTY_KEY_PREFIX + "typeSystem";
+    private static final String PROPERTY_PREFIX = Constants.INTERNAL_PROPERTY_KEY_PREFIX + "type.";
     public static final String SUPERTYPE_EDGE_LABEL = PROPERTY_PREFIX + ".supertype";
     public static final String SUBTYPE_EDGE_LABEL = PROPERTY_PREFIX + ".subtype";
 
@@ -188,7 +188,7 @@ public class GraphBackedTypeStore implements ITypeStore {
                 break;
 
             default:
-                throw new IllegalArgumentException("Unhandled type category " + attrDataType.getTypeCategory());
+                throw new IllegalArgumentException("Attribute cannot reference instances of type : " + attrDataType.getTypeCategory());
         }
 
         for (IDataType attrType : attrDataTypes) {

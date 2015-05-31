@@ -124,3 +124,6 @@ footer.navbar-bottom img {
 {
     height: 800px;
 }
+.pagination {
+    float: right;
+}

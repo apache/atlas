@@ -19,6 +19,7 @@
 package org.apache.hadoop.metadata.typesystem.types;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -28,6 +29,11 @@ import scala.actors.threadpool.Arrays;
 
 import java.util.Collections;
 import java.util.List;
+
+import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createClassTypeDef;
+import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
+import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createStructTypeDef;
+import static org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil.createTraitTypeDef;
 
 public class TypeSystemTest extends BaseTest {
 
@@ -99,5 +105,35 @@ public class TypeSystemTest extends BaseTest {
         });
 
         Assert.assertFalse(Collections.disjoint(traitsNames, traits));
+    }
+
+    private String random() {
+        return RandomStringUtils.random(10);
+    }
+
+    @Test
+    public void testUTFNames() throws Exception {
+        TypeSystem ts = getTypeSystem();
+
+        String enumType = random();
+        EnumTypeDefinition orgLevelEnum =
+                new EnumTypeDefinition(enumType, new EnumValue(random(), 1), new EnumValue(random(), 2));
+        ts.defineEnumType(orgLevelEnum);
+
+        String structName = random();
+        String attrType = random();
+        StructTypeDefinition structType = createStructTypeDef(structName,
+                createRequiredAttrDef(attrType, DataTypes.STRING_TYPE));
+
+        String className = random();
+        HierarchicalTypeDefinition<ClassType> classType =
+                createClassTypeDef(className, ImmutableList.<String>of(),
+                        createRequiredAttrDef(attrType, DataTypes.STRING_TYPE));
+
+        String traitName = random();
+        HierarchicalTypeDefinition<TraitType> traitType = createTraitTypeDef(traitName,
+                ImmutableList.<String>of(), createRequiredAttrDef(attrType, DataTypes.INT_TYPE));
+
+        ts.defineTypes(ImmutableList.of(structType), ImmutableList.of(traitType), ImmutableList.of(classType));
     }
 }

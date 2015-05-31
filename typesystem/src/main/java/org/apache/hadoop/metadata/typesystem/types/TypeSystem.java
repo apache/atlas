@@ -47,7 +47,7 @@ public class TypeSystem {
     private static ThreadLocal<SimpleDateFormat> dateFormat = new ThreadLocal() {
         @Override
         public SimpleDateFormat initialValue() {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
             dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
             return dateFormat;
         }
@@ -291,6 +291,7 @@ public class TypeSystem {
             throw new MetadataException(
                     String.format("Redefinition of type %s not supported", eDef.name));
         }
+
         EnumType eT = new EnumType(this, eDef.name, eDef.enumValues);
         types.put(eDef.name, eT);
         typeCategoriesToTypeNamesMap.put(DataTypes.TypeCategory.ENUM, eDef.name);
@@ -352,7 +353,6 @@ public class TypeSystem {
         private void step1() throws MetadataException {
             for (StructTypeDefinition sDef : structDefs) {
                 assert sDef.typeName != null;
-                TypeUtils.validateName(sDef.typeName);
                 if (dataType(sDef.typeName) != null) {
                     throw new MetadataException(
                             String.format("Cannot redefine type %s", sDef.typeName));
@@ -365,7 +365,6 @@ public class TypeSystem {
 
             for (HierarchicalTypeDefinition<TraitType> traitDef : traitDefs) {
                 assert traitDef.typeName != null;
-                TypeUtils.validateName(traitDef.typeName);
                 if (types.containsKey(traitDef.typeName)) {
                     throw new MetadataException(
                             String.format("Cannot redefine type %s", traitDef.typeName));
@@ -380,7 +379,6 @@ public class TypeSystem {
 
             for (HierarchicalTypeDefinition<ClassType> classDef : classDefs) {
                 assert classDef.typeName != null;
-                TypeUtils.validateName(classDef.typeName);
                 if (types.containsKey(classDef.typeName)) {
                     throw new MetadataException(
                             String.format("Cannot redefine type %s", classDef.typeName));
@@ -462,6 +460,14 @@ public class TypeSystem {
                 } else if (transientTypes.contains(mapType.getValueType().getName())) {
                     recursiveMapTypes.add(mapType);
                 }
+            }
+
+            if (info.multiplicity.upper > 1 && !(
+                    info.dataType().getTypeCategory() == DataTypes.TypeCategory.MAP ||
+                            info.dataType().getTypeCategory() == DataTypes.TypeCategory.ARRAY)) {
+                throw new MetadataException(
+                        String.format("A multiplicty of more than one requires a collection type for attribute '%s'",
+                                info.name));
             }
 
             return info;

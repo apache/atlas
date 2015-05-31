@@ -30,15 +30,13 @@ import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.Partition;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.metadata.MetadataServiceClient;
+import org.apache.hadoop.metadata.MetadataServiceException;
 import org.apache.hadoop.metadata.hive.model.HiveDataModelGenerator;
 import org.apache.hadoop.metadata.hive.model.HiveDataTypes;
-import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.Struct;
 import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization;
-import org.apache.hadoop.metadata.typesystem.json.Serialization;
 import org.apache.hadoop.metadata.typesystem.persistence.Id;
-import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -55,20 +53,9 @@ import java.util.Set;
  */
 public class HiveMetaStoreBridge {
     private static final String DEFAULT_DGI_URL = "http://localhost:21000/";
-
-    public static class Pair<S, T> {
-        public S first;
-        public T second;
-
-        public Pair(S first, T second) {
-            this.first = first;
-            this.second = second;
-        }
-
-        public static <S, T> Pair of(S first, T second) {
-            return new Pair(first, second);
-        }
-    }
+    public static final String HIVE_CLUSTER_NAME = "hive.cluster.name";
+    public static final String DEFAULT_CLUSTER_NAME = "primary";
+    private final String clusterName;
 
     public static final String DGI_URL_PROPERTY = "hive.hook.dgi.url";
 
@@ -82,6 +69,7 @@ public class HiveMetaStoreBridge {
      * @param hiveConf
      */
     public HiveMetaStoreBridge(HiveConf hiveConf) throws Exception {
+        clusterName = hiveConf.get(HIVE_CLUSTER_NAME, DEFAULT_CLUSTER_NAME);
         hiveClient = Hive.get(hiveConf);
         metadataServiceClient = new MetadataServiceClient(hiveConf.get(DGI_URL_PROPERTY, DEFAULT_DGI_URL));
     }
@@ -104,35 +92,15 @@ public class HiveMetaStoreBridge {
         }
     }
 
-    /**
-     * Gets reference for the database
-     *
-     * @param dbName    database name
-     * @return Reference for database if exists, else null
-     * @throws Exception
-     */
-    private Referenceable getDatabaseReference(String dbName) throws Exception {
-        LOG.debug("Getting reference for database {}", dbName);
-        String typeName = HiveDataTypes.HIVE_DB.getName();
-        MetadataServiceClient dgiClient = getMetadataServiceClient();
-
-        JSONArray results = dgiClient.rawSearch(typeName, "name", dbName);
-        if (results.length() == 0) {
-            return null;
-        } else {
-            String guid = getGuidFromDSLResponse(results.getJSONObject(0));
-            return new Referenceable(guid, typeName, null);
-        }
-    }
-
     public Referenceable registerDatabase(String databaseName) throws Exception {
-        Referenceable dbRef = getDatabaseReference(databaseName);
+        Referenceable dbRef = getDatabaseReference(databaseName, clusterName);
         if (dbRef == null) {
             LOG.info("Importing objects from databaseName : " + databaseName);
             Database hiveDB = hiveClient.getDatabase(databaseName);
 
             dbRef = new Referenceable(HiveDataTypes.HIVE_DB.getName());
             dbRef.set("name", hiveDB.getName());
+            dbRef.set("clusterName", clusterName);
             dbRef.set("description", hiveDB.getDescription());
             dbRef.set("locationUri", hiveDB.getLocationUri());
             dbRef.set("parameters", hiveDB.getParameters());
@@ -155,7 +123,7 @@ public class HiveMetaStoreBridge {
         String entityJSON = InstanceSerialization.toJson(referenceable, true);
         LOG.debug("Submitting new entity {} = {}", referenceable.getTypeName(), entityJSON);
         JSONObject jsonObject = metadataServiceClient.createEntity(entityJSON);
-        String guid = jsonObject.getString(MetadataServiceClient.RESULTS);
+        String guid = jsonObject.getString(MetadataServiceClient.GUID);
         LOG.debug("created instance for type " + typeName + ", guid: " + guid);
 
         return new Referenceable(guid, referenceable.getTypeName(), null);
@@ -168,7 +136,7 @@ public class HiveMetaStoreBridge {
             Referenceable tableReferenceable = registerTable(databaseReferenceable, databaseName, tableName);
 
             // Import Partitions
-            Referenceable sdReferenceable = getSDForTable(databaseReferenceable, tableName);
+            Referenceable sdReferenceable = getSDForTable(databaseName, tableName);
             importPartitions(databaseName, tableName, databaseReferenceable, tableReferenceable, sdReferenceable);
 
             // Import Indexes
@@ -177,42 +145,97 @@ public class HiveMetaStoreBridge {
     }
 
     /**
+     * Gets reference for the database
+     *
+     *
+     * @param databaseName
+     * @param clusterName    cluster name
+     * @return Reference for database if exists, else null
+     * @throws Exception
+     */
+    private Referenceable getDatabaseReference(String databaseName, String clusterName) throws Exception {
+        LOG.debug("Getting reference for database {}", databaseName);
+        String typeName = HiveDataTypes.HIVE_DB.getName();
+
+        String dslQuery = String.format("%s where name = '%s' and clusterName = '%s'", HiveDataTypes.HIVE_DB.getName(),
+                databaseName, clusterName);
+        return getEntityReferenceFromDSL(typeName, dslQuery);
+    }
+
+    private Referenceable getEntityReferenceFromDSL(String typeName, String dslQuery) throws Exception {
+        MetadataServiceClient dgiClient = getMetadataServiceClient();
+        JSONArray results = dgiClient.searchByDSL(dslQuery);
+        if (results.length() == 0) {
+            return null;
+        } else {
+            String guid = getGuidFromDSLResponse(results.getJSONObject(0));
+            return new Referenceable(guid, typeName, null);
+        }
+    }
+
+    /**
      * Gets reference for the table
      *
-     * @param dbRef
+     * @param dbName
      * @param tableName table name
      * @return table reference if exists, else null
      * @throws Exception
      */
-    private Referenceable getTableReference(Referenceable dbRef, String tableName) throws Exception {
-        LOG.debug("Getting reference for table {}.{}", dbRef, tableName);
+    private Referenceable getTableReference(String dbName, String tableName) throws Exception {
+        LOG.debug("Getting reference for table {}.{}", dbName, tableName);
 
         String typeName = HiveDataTypes.HIVE_TABLE.getName();
-        MetadataServiceClient dgiClient = getMetadataServiceClient();
 
-        //todo DSL support for reference doesn't work. is the usage right?
-//        String query = String.format("%s where dbName = \"%s\" and tableName = \"%s\"", typeName, dbRef.getId().id,
-//                tableName);
-        String query = String.format("%s where name = \"%s\"", typeName, tableName);
-        JSONArray results = dgiClient.searchByDSL(query);
+//        String dslQuery = String.format("%s as t where name = '%s' dbName where name = '%s' and "
+//                        + "clusterName = '%s' select t",
+//                HiveDataTypes.HIVE_TABLE.getName(), tableName, dbName, clusterName);
+        String dbType = HiveDataTypes.HIVE_DB.getName();
+
+        String gremlinQuery = String.format("g.V.has('__typeName', '%s').has('%s.name', '%s').as('t').out"
+                        + "('__%s.dbName').has('%s.name', '%s').has('%s.clusterName', '%s').back('t').toList()",
+                typeName, typeName, tableName, typeName, dbType, dbName, dbType, clusterName);
+        return getEntityReferenceFromGremlin(typeName, gremlinQuery);
+    }
+
+    private Referenceable getEntityReferenceFromGremlin(String typeName, String gremlinQuery) throws MetadataServiceException,
+    JSONException {
+        MetadataServiceClient client = getMetadataServiceClient();
+        JSONObject response = client.searchByGremlin(gremlinQuery);
+        JSONArray results = response.getJSONArray(MetadataServiceClient.RESULTS);
         if (results.length() == 0) {
             return null;
-        } else {
-            //There should be just one instance with the given name
-            String guid = getGuidFromDSLResponse(results.getJSONObject(0));
-            LOG.debug("Got reference for table {}.{} = {}", dbRef, tableName, guid);
-            return new Referenceable(guid, typeName, null);
         }
+        String guid = results.getJSONObject(0).getString("__guid");
+        return new Referenceable(guid, typeName, null);
+    }
+
+    private Referenceable getPartitionReference(String dbName, String tableName, List<String> values) throws Exception {
+        String valuesStr = "['" + StringUtils.join(values, "', '") + "']";
+        LOG.debug("Getting reference for partition for {}.{} with values {}", dbName, tableName, valuesStr);
+        String typeName = HiveDataTypes.HIVE_PARTITION.getName();
+
+        //        String dslQuery = String.format("%s as p where values = %s, tableName where name = '%s', "
+        //                        + "dbName where name = '%s' and clusterName = '%s' select p", typeName, valuesStr, tableName,
+        //                dbName, clusterName);
+
+        String dbType = HiveDataTypes.HIVE_DB.getName();
+        String tableType = HiveDataTypes.HIVE_TABLE.getName();
+        String gremlinQuery = String.format("g.V.has('__typeName', '%s').has('%s.values', %s).as('p')."
+                + "out('__%s.tableName').has('%s.name', '%s').out('__%s.dbName').has('%s.name', '%s')"
+                + ".has('%s.clusterName', '%s').back('p').toList()", typeName, typeName, valuesStr, typeName,
+                tableType, tableName, tableType, dbType, dbName, dbType, clusterName);
+
+        return getEntityReferenceFromGremlin(typeName, gremlinQuery);
     }
 
     private String getGuidFromDSLResponse(JSONObject jsonObject) throws JSONException {
         return jsonObject.getJSONObject("$id$").getString("id");
     }
 
-    private Referenceable getSDForTable(Referenceable dbRef, String tableName) throws Exception {
-        Referenceable tableRef = getTableReference(dbRef, tableName);
+    private Referenceable getSDForTable(String dbName, String tableName) throws Exception {
+        Referenceable tableRef = getTableReference(dbName, tableName);
         if (tableRef == null) {
-            throw new IllegalArgumentException("Table " + dbRef + "." + tableName + " doesn't exist");
+            throw new IllegalArgumentException("Table " + dbName + "." + tableName + " doesn't exist");
         }
 
         MetadataServiceClient dgiClient = getMetadataServiceClient();
@@ -228,7 +251,7 @@ public class HiveMetaStoreBridge {
 
     public Referenceable registerTable(Referenceable dbReference, String dbName, String tableName) throws Exception {
         LOG.info("Attempting to register table [" + tableName + "]");
-        Referenceable tableRef = getTableReference(dbReference, tableName);
+        Referenceable tableRef = getTableReference(dbName, tableName);
         if (tableRef == null) {
             LOG.info("Importing objects from " + dbName + "." + tableName);
 
@@ -302,31 +325,48 @@ public class HiveMetaStoreBridge {
         }
     }
 
-    //todo should be idempotent
+    public Referenceable registerPartition(Partition partition) throws Exception {
+        String dbName = partition.getTable().getDbName();
+        String tableName = partition.getTable().getTableName();
+        Referenceable dbRef = registerDatabase(dbName);
+        Referenceable tableRef = registerTable(dbName, tableName);
+        Referenceable sdRef = getSDForTable(dbName, tableName);
+        return importPartition(partition, dbRef, tableRef, sdRef);
+    }
+
     private Referenceable importPartition(Partition hivePart,
                                           Referenceable dbReferenceable,
                                           Referenceable tableReferenceable,
                                           Referenceable sdReferenceable) throws Exception {
         LOG.info("Importing partition for {}.{} with values {}", dbReferenceable, tableReferenceable,
                 StringUtils.join(hivePart.getValues(), ","));
-        Referenceable partRef = new Referenceable(HiveDataTypes.HIVE_PARTITION.getName());
-        partRef.set("values", hivePart.getValues());
+        String dbName = hivePart.getTable().getDbName();
+        String tableName = hivePart.getTable().getTableName();
 
-        partRef.set("dbName", dbReferenceable);
-        partRef.set("tableName", tableReferenceable);
+        Referenceable partRef = getPartitionReference(dbName, tableName, hivePart.getValues());
+        if (partRef == null) {
+            partRef = new Referenceable(HiveDataTypes.HIVE_PARTITION.getName());
+            partRef.set("values", hivePart.getValues());
 
-        //todo fix
-        partRef.set("createTime", hivePart.getLastAccessTime());
-        partRef.set("lastAccessTime", hivePart.getLastAccessTime());
+            partRef.set("dbName", dbReferenceable);
+            partRef.set("tableName", tableReferenceable);
 
-        // sdStruct = fillStorageDescStruct(hivePart.getSd());
-        // Instead of creating copies of the sdstruct for partitions we are reusing existing
-        // ones will fix to identify partitions with differing schema.
-        partRef.set("sd", sdReferenceable);
+            //todo fix
+            partRef.set("createTime", hivePart.getLastAccessTime());
+            partRef.set("lastAccessTime", hivePart.getLastAccessTime());
 
-        partRef.set("parameters", hivePart.getParameters());
+            // sdStruct = fillStorageDescStruct(hivePart.getSd());
+            // Instead of creating copies of the sdstruct for partitions we are reusing existing
+            // ones will fix to identify partitions with differing schema.
+            partRef.set("sd", sdReferenceable);
 
-        return createInstance(partRef);
+            partRef.set("parameters", hivePart.getParameters());
+            partRef = createInstance(partRef);
+        } else {
+            LOG.info("Partition {}.{} with values {} is already registered with id {}", dbName, tableName,
+                    StringUtils.join(hivePart.getValues(), ","), partRef.getId().id);
+        }
+        return partRef;
     }
 
     private void importIndexes(String db, String table,

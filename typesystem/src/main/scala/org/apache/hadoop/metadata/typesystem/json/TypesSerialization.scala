@@ -126,7 +126,7 @@ object TypesSerialization {
 
   private def convertAttributeInfoToAttributeDef(aInfo: AttributeInfo) = {
         new AttributeDefinition(aInfo.name, aInfo.dataType().getName, aInfo.multiplicity,
-            aInfo.isComposite, aInfo.reverseAttributeName)
+            aInfo.isComposite, aInfo.isUnique, aInfo.isIndexable, aInfo.reverseAttributeName)
     }
 
     private def convertEnumTypeToEnumTypeDef(et: EnumType) = {

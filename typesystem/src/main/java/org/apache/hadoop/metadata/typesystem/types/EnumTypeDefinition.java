@@ -18,6 +18,8 @@
 
 package org.apache.hadoop.metadata.typesystem.types;
 
+import org.apache.hadoop.metadata.ParamChecker;
+
 import java.util.Arrays;
 
 public final class EnumTypeDefinition {
@@ -26,8 +28,8 @@ public final class EnumTypeDefinition {
     public final EnumValue[] enumValues;
 
     public EnumTypeDefinition(String name, EnumValue... enumValues) {
-        this.name = name;
-        this.enumValues = enumValues;
+        this.name = ParamChecker.notEmpty(name, "Enum type name");
+        this.enumValues = ParamChecker.notNullElements(enumValues, "Enum values");
     }
 
     @Override

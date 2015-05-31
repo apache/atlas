@@ -22,6 +22,7 @@ import com.thinkaurelius.titan.core.TitanVertex;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.query.Expressions;
 import org.apache.hadoop.metadata.query.GraphPersistenceStrategies;
+import org.apache.hadoop.metadata.query.GraphPersistenceStrategies$class;
 import org.apache.hadoop.metadata.query.TypeUtils;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
 import org.apache.hadoop.metadata.repository.Constants;
@@ -71,7 +72,11 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
 
     @Override
     public String fieldNameInVertex(IDataType<?> dataType, AttributeInfo aInfo) {
-        return metadataRepository.getFieldNameInVertex(dataType, aInfo);
+        try {
+            return metadataRepository.getFieldNameInVertex(dataType, aInfo);
+        } catch (MetadataException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -164,33 +169,12 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
 
     @Override
     public String gremlinCompOp(Expressions.ComparisonExpression op) {
-        switch (op.symbol()) {
-            case "=":
-                return "T.eq";
-
-            case "!=":
-                return "T.neq";
-
-            case ">":
-                return "T.gt";
-
-            case ">=":
-                return "T.gte";
-
-            case "<":
-                return "T.lt";
-
-            case "<=":
-                return "T.lte";
-
-            default:
-                throw new RuntimeException(("Comparison operator not supported in Gremlin: " + op));
-        }
+        return GraphPersistenceStrategies$class.gremlinCompOp(this, op);
     }
 
     @Override
     public String loopObjectExpression(IDataType<?> dataType) {
-        return "{it.object." + typeAttributeName() + " == '" + dataType.getName() + "'}";
+        return GraphPersistenceStrategies$class.loopObjectExpression(this, dataType);
     }
 
     @Override
@@ -201,5 +185,10 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
 
     @Override
     public String idAttributeName() { return metadataRepository.getIdAttributeName(); }
+
+    @Override
+    public String typeTestExpression(String typeName) {
+        return GraphPersistenceStrategies$class.typeTestExpression(this, typeName);
+    }
 
 }
