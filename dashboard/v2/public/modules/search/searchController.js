@@ -39,7 +39,6 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
             NotificationService.reset();
             $scope.limit = 4;
             SearchResource.search({query:query}, function searchSuccess(response) {
-
                 $scope.resultCount=response.count;
                 $scope.results = response.results;
                 $scope.resultRows = $scope.results.rows;
