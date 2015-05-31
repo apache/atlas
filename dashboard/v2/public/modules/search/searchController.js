@@ -26,7 +26,7 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
         $scope.resultCount=0;
         $scope.isCollapsed = true;
         $scope.currentPage = 1;
-        $scope.itemsPerPage = 10
+        $scope.itemsPerPage = 10;
         $scope.totalItems = 40;
         $scope.filteredResults = [];
         $scope.resultRows = [];
@@ -48,9 +48,7 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
                     var begin = (($scope.currentPage - 1) * $scope.itemsPerPage),
                         end = begin + $scope.itemsPerPage;
                     $scope.searchTypesAvailable = $scope.typeAvailable();
-                    console.log($scope.searchTypesAvailable);
                     if ($scope.searchTypesAvailable) {
-                        console.log($scope.searchTypesAvailable);
                         $scope.searchMessage = 'loading results...';
                         $scope.filteredResults = $scope.resultRows.slice(begin, end);
                         $scope.pageCount = function () {
@@ -82,11 +80,6 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
                return $scope.types.indexOf($scope.results.dataType.typeName && $scope.results.dataType.typeName.toLowerCase()) > -1;
            }
         };
-
-        $scope.onKeyPress = function ($event,query) {
-            console.log($event);
-        };
-
         $scope.doToggle = function($event,el) {
             this.isCollapsed = !el;
         };
