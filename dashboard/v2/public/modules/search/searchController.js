@@ -27,18 +27,12 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
         $scope.isCollapsed = true;
         $scope.currentPage = 1;
         $scope.itemsPerPage = 10;
-        $scope.totalItems = 40;
         $scope.filteredResults = [];
         $scope.resultRows = [];
 
         $scope.$on('$stateChangeStart', function(event, toState) {
             if (toState.resolve) {
                 $scope.loading = true;
-            }
-        });
-        $scope.$on('$stateChangeSuccess', function(event, toState) {
-            if (toState.resolve) {
-                $scope.loading = false;
             }
         });
         $scope.setPage = function(pageNo) {
@@ -49,10 +43,12 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
             NotificationService.reset();
             $scope.limit = 4;
             $scope.searchMessage = 'searching...';
+
             $scope.$parent.query = query;
             SearchResource.search({
                 query: query
             }, function searchSuccess(response) {
+                $scope.querySuceess = true;
                 $scope.resultCount = response.count;
                 $scope.results = response.results;
                 $scope.resultRows = $scope.results.rows;
@@ -78,15 +74,10 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
                         $scope.searchMessage = '0 results matching your search query ' + $scope.query + ' were found';
                     }
                 });
-                $state.go('search.results', {
-                    query: query
-                }, {
-                    location: 'replace'
-                });
-
             }, function searchError(err) {
                 NotificationService.error('Error occurred during executing search query, error status code = ' + err.status + ', status text = ' + err.statusText, false);
             });
+
         };
 
         $scope.typeAvailable = function() {
@@ -115,6 +106,6 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
         $scope.query = ($location.search()).query;
         if ($scope.query) {
             $scope.search($scope.query);
-        }
+         }
     }
 ]);
