@@ -106,6 +106,6 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
         $scope.query = ($location.search()).query;
         if ($scope.query) {
             $scope.search($scope.query);
-         }
+        }
     }
 ]);

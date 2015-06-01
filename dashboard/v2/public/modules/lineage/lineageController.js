@@ -26,16 +26,18 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                 tableName: tableData.tableName,
                 type: tableData.type
             }, function lineageSuccess(response) {
-                $scope.lineageData = transformData(response.results);
-                if (callRender) {
-                    render();
+                if (!_.isEmpty(response.results.values.vertices)) {
+                    $scope.lineageData = transformData(response.results);
+                    if (callRender) {
+                        render();
+                    }
                 }
+                $scope.requested = false;
             });
         }
 
         $scope.type = $element.parent().attr('data-table-type');
-        $scope.rendered = false;
-        var requested = false;
+        $scope.requested = false;
 
         function render() {
             renderGraph($scope.lineageData, {
@@ -49,9 +51,9 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
         $scope.$on('render-lineage', function(event, lineageData) {
             if (lineageData.type === $scope.type) {
                 if (!$scope.lineageData) {
-                    if (!requested) {
+                    if (!$scope.requested) {
                         getLineageData(lineageData, true);
-                        requested = true;
+                        $scope.requested = true;
                     }
                 } else {
                     render();

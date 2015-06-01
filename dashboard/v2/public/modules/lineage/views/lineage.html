@@ -17,7 +17,8 @@
   -->
 
 <div class="lineage-viz" data-ng-controller="LineageController">
-    <i data-ng-hide="rendered" class="fa fa-spinner fa-spin fa-5x"></i>
+    <h4 data-ng-if="!requested && !lineageData">No lineage data found</h4>
+    <i data-ng-if="requested" class="fa fa-spinner fa-spin fa-5x"></i>
     <svg>
         <g/>
     </svg>
