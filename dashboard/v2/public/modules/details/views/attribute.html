@@ -22,9 +22,8 @@
 <!--{{value}}-->
 <!--</div>-->
 
-<div class="row" data-ng-repeat="(key1,value1) in value" ng-if="value1">
-  <div class="col-md-6" data-ng-if="!isString(value1)" data-ng-repeat="(key2,value2) in value1 track by $index"></div>
-  <div data-ng-if="isString(value2)" data-ng-repeat="(key3,value3) in value2"> {{key3}}: {{value3}}</div>
-  <div class="col-md-6" data-ng-if="isString(value1)">  {{key1}} : {{value1 | date:'medium'}}</div>
-
+<div class="row" data-ng-repeat="(key1, value1) in value" ng-if="value1">
+    <div class="col-md-6" data-ng-if="!isString(value1)" data-ng-repeat="(key2, value2) in value1 track by $index"></div>
+    <div data-ng-if="isString(value2)" data-ng-repeat="(key3, value3) in value2"> {{key3}}: {{value3}}</div>
+    <div class="col-md-6" data-ng-if="isString(value1)"> {{key1}} : {{value1 | date:'medium'}}</div>
 </div>

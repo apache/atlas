@@ -66,6 +66,6 @@ div.lineage {
 }
 
 .lineage-viz {
-    width: 800px !important;
-    height: 600px !important;
+    padding: 10px;
+    margin: 0 auto;
 }

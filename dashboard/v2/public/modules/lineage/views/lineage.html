@@ -16,10 +16,9 @@
   ~ limitations under the License.
   -->
 
-<div data-ng-controller="LineageController">
-
-
-
-  <svg class="lineage-viz"><g></svg>
-
+<div class="lineage-viz" data-ng-controller="LineageController">
+    <i data-ng-hide="rendered" class="fa fa-spinner fa-spin fa-5x"></i>
+    <svg>
+        <g/>
+    </svg>
 </div>

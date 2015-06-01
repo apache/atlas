@@ -21,24 +21,42 @@
 angular.module('dgc.lineage').controller('LineageController', ['$element', '$scope', '$state', '$stateParams', 'lodash', 'LineageResource', 'd3', 'dagreD3',
     function($element, $scope, $state, $stateParams, _, LineageResource, d3, dagreD3) {
 
-        $scope.metaData = [];
+        function getLineageData(tableData, callRender) {
+            LineageResource.get({
+                tableName: tableData.tableName,
+                type: tableData.type
+            }, function lineageSuccess(response) {
+                $scope.lineageData = transformData(response.results);
+                if (callRender) {
+                    render();
+                }
+            });
+        }
 
-        LineageResource.get({
-            tableName: $scope.tableName,
-            type: "outputs"
-        }, function lineageSuccess(response) {
-            $scope.metaData = response.results;
-            renderGraph(transformData(response.results), d3.select($element[0]).select('svg'));
+        $scope.type = $element.parent().attr('data-table-type');
+        $scope.rendered = false;
+        var requested = false;
 
-        });
+        function render() {
+            renderGraph($scope.lineageData, {
+                element: $element[0],
+                height: $element[0].offsetHeight,
+                width: $element[0].offsetWidth
+            });
+            $scope.rendered = true;
+        }
 
-        LineageResource.get({
-            tableName: $scope.tableName,
-            type: "inputs"
-        }, function lineageSuccess(response) {
-            $scope.metaData = response.results;
-            renderGraph(transformData(response.results), d3.select($element[0]).select('svg'));
-
+        $scope.$on('render-lineage', function(event, lineageData) {
+            if (lineageData.type === $scope.type) {
+                if (!$scope.lineageData) {
+                    if (!requested) {
+                        getLineageData(lineageData, true);
+                        requested = true;
+                    }
+                } else {
+                    render();
+                }
+            }
         });
 
         function transformData(metaData) {
@@ -51,7 +69,7 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                 nodes.push({
                     guid: guid,
                     label: name,
-                    shape: "rect"
+                    shape: 'rect'
                 });
             }
 
@@ -67,7 +85,7 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                         nodes.push({
                             guid: child,
                             label: 'Load Process',
-                            shape: "circle"
+                            shape: 'circle'
                         });
                     }
                     edges.push({
@@ -82,18 +100,17 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
             };
         }
 
-        function renderGraph(data, element) {
-
+        function renderGraph(data, container) {
             // Create a new directed graph
             var g = new dagreD3
                 .graphlib
                 .Graph()
                 .setGraph({
-                    rankdir: "LR"
+                    rankdir: 'LR'
                 });
 
             // Automatically label each of the nodes
-            //g.setNode("DB (sales)", { label: "Sales DB",  width: 144, height: 100 })
+            //g.setNode('DB (sales)', { label: 'Sales DB',  width: 144, height: 100 })
             //states.forEach(function(state) { g.setNode(state, { label: state }); });
 
             _.forEach(data.nodes, function(node) {
@@ -105,7 +122,7 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
 
             _.forEach(data.edges, function(edge) {
                 g.setEdge(edge.parent, edge.child, {
-                    label: ""
+                    label: ''
                 });
             });
 
@@ -115,7 +132,13 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                 node.rx = node.ry = 5;
             });
 
-            var inner = element.select("g");
+            var element = d3.select(container.element),
+                width = Math.max(container.width, 960),
+                height = Math.max(container.height, 350),
+                inner = element.select('svg')
+                .attr('width', width)
+                .attr('height', height)
+                .select('g');
 
             // Create the renderer
             var render = new dagreD3.render();
@@ -124,12 +147,12 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
             render(inner, g);
 
             // Center the graph
-            var initialScale = 0.75;
+            //var initialScale = 0.75;
             //  zoom
-            //     .translate([(element.attr("width") - g.graph().width * initialScale) / 2, 20])
+            //     .translate([(container.attr('width') - g.graph().width * initialScale) / 2, 20])
             //    .scale(initialScale)
-            //    .event(element);
-            element.attr('height', g.graph().height * initialScale + 90);
+            //    .event(container);
+            //container.attr('height', g.graph().height * initialScale + 90);
         }
 
     }

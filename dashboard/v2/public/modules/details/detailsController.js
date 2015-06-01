@@ -21,6 +21,7 @@
 angular.module('dgc.details').controller('DetailsController', ['$scope', '$stateParams', 'DetailsResource',
     function($scope, $stateParams, DetailsResource) {
 
+        $scope.tableName = false;
         DetailsResource.get({
             id: $stateParams.id
         }, function(data) {
@@ -33,5 +34,12 @@ angular.module('dgc.details').controller('DetailsController', ['$scope', '$state
         $scope.schemas = DetailsResource.get({
             id: $stateParams.id
         });
+
+        $scope.onActivate = function tabActivate(tabname) {
+            $scope.$broadcast('render-lineage', {
+                type: tabname,
+                tableName: $scope.tableName
+            });
+        };
     }
 ]);

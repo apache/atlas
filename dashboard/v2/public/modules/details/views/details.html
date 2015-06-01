@@ -18,25 +18,13 @@
 
 
 <div role="tabpanel" class="col-md-7 col-lg-offset-3" data-ng-controller="DetailsController">
-    <h2>{{details.values.name}}</h2>
-    <h4>{{details.values.description}}</h4>
-    <!-- Nav tabs -->
-    <ul class="nav nav-tabs" role="tablist">
-        <li role="presentation" class="active"><a href="#Details" aria-controls="Details" role="tab" data-toggle="tab">Details</a></li>
-        <li role="presentation" data-ng-if="details.typeName=='Table'"><a href="#Schema" aria-controls="Schema" role="tab" data-toggle="tab">Schema</a></li>
-        <li role="presentation"  data-ng-if="details.typeName=='Table'"><a href="#Output" aria-controls="Output" role="tab" data-toggle="tab">Output</a></li>
-        <li role="presentation" data-ng-if="details.typeName=='Table'"><a href="#Input" aria-controls="Input" role="tab" data-toggle="tab">Input</a></li>
-    </ul>
-
-    <!-- Tab panes -->
-    <div class="tab-content">
-
-
-        <div role="tabpanel" class="tab-pane active" id="Details">
-
+    <h2>Name: {{details.values.name}}</h2>
+    <h4>Description: {{details.values.description}}</h4>
+    <tabset>
+        <tab heading="Details">
             <table class="table table-bordered">
                 <thead>
-                <tr >
+                <tr>
                     <th>Key</th>
                     <th>Value</th>
                 </tr>
@@ -44,17 +32,15 @@
                 <tbody>
                 <tr data-ng-repeat="(key,value) in details.values" ng-if="value && !(key==='columns') && !(key==='name') && !(key==='description')">
                     <td>{{key}}</td>
-                    <td data-ng-if="!isString(value)"  data-ng-include="'/modules/details/views/attribute.html'"></td>
+                    <td data-ng-if="!isString(value)" data-ng-include="'/modules/details/views/attribute.html'"></td>
                     <td data-ng-if="isString(value)">{{value | date:'medium'}}</td>
                 </tr>
                 </tbody>
             </table>
-
-
-        </div>
-        <div role="tabpanel" class="tab-pane" id="Schema"> <section data-ng-include="'/modules/details/views/schema.html'"></section></div>
-        <div role="tabpanel" class="tab-pane" id="Output"><div data-ng-include="'/modules/lineage/views/outputs.html'"></div></div>
-        <div role="tabpanel" class="tab-pane" id="Input"><div data-ng-include="'/modules/lineage/views/inputs.html'"></div></div>
-    </div>
+        </tab>
+        <tab data-heading="Schema"><ng-include src="'/modules/details/views/schema.html'"/></tab>
+        <tab data-heading="Output" data-disable="!tableName" data-select="onActivate('outputs')"><ng-include data-table-type="outputs" src="'/modules/lineage/views/lineage.html'"/></tab>
+        <tab data-heading="Input" data-disable="!tableName" data-select="onActivate('inputs')"><ng-include data-table-type="inputs" src="'/modules/lineage/views/lineage.html'"/></tab>
+    </tabset>
 
 </div>
