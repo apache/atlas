@@ -277,20 +277,8 @@ public class HiveMetaStoreBridge {
             tableRef.set("sd", sdReferenceable);
 
             // add reference to the Partition Keys
-            List<Referenceable> partKeys = new ArrayList<>();
-            Referenceable colRef;
-            if (hiveTable.getPartitionKeys().size() > 0) {
-                for (FieldSchema fs : hiveTable.getPartitionKeys()) {
-                    colRef = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
-                    colRef.set("name", fs.getName());
-                    colRef.set("type", fs.getType());
-                    colRef.set("comment", fs.getComment());
-                    Referenceable colRefTyped = createInstance(colRef);
-                    partKeys.add(colRefTyped);
-                }
-
-                tableRef.set("partitionKeys", partKeys);
-            }
+            List<Referenceable> partKeys = getColumns(hiveTable.getPartitionKeys());;
+            tableRef.set("partitionKeys", partKeys);
 
             tableRef.set("parameters", hiveTable.getParameters());
 
