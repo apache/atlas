@@ -41,7 +41,7 @@
         <div data-ng-if="!searchTypesAvailable" data-ng-include="'/modules/search/views/types/guid.html'"></div>
     </li>
 </ul>
-<div ng-show='filteredResults.length > 0'>
+<div class="resultsPagination" ng-show='filteredResults.length > 0'>
     <pagination total-items="totalItems" items-per-page="itemsPerPage" ng-model="currentPage" ng-change="pageChanged()"></pagination>
     <p>
 </div>

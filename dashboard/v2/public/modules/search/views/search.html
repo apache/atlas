@@ -23,7 +23,7 @@
                 <div class="row input-group">
                     <input type="text" class="form-control" placeholder="Search" data-ng-model="query"  required/>
                     <span class="input-group-btn">
-                        <button class="btn btn-success" type="submit" data-ng-disabled="form.$invalid" data-ng-click="search(query)">
+                        <button class="btn btn-success" type="submit" data-ng-disabled="form.$invalid" ui-sref="search.results({ query: query })">
                             <i class="glyphicon glyphicon-search white "></i>
                         </button>
                     </span>
@@ -39,7 +39,7 @@
 
             <div data-ng-include="'/modules/navigation/views/navigation.html'"></div>
 
-            <div class="col-lg-9" data-ui-view=""  style="min-height: 1350px;"></div>
+            <div class="col-lg-9" data-ui-view="" ></div>
         </div>
     </div>
 </div>

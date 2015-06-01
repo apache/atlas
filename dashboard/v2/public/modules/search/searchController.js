@@ -31,6 +31,16 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
         $scope.filteredResults = [];
         $scope.resultRows = [];
 
+        $scope.$on('$stateChangeStart', function(event, toState) {
+            if (toState.resolve) {
+                $scope.loading = true;
+            }
+        });
+        $scope.$on('$stateChangeSuccess', function(event, toState) {
+            if (toState.resolve) {
+                $scope.loading = false;
+            }
+        });
         $scope.setPage = function(pageNo) {
             $scope.currentPage = pageNo;
         };
@@ -38,6 +48,8 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
             $scope.results = [];
             NotificationService.reset();
             $scope.limit = 4;
+            $scope.searchMessage = 'searching...';
+            $scope.$parent.query = query;
             SearchResource.search({
                 query: query
             }, function searchSuccess(response) {
@@ -102,7 +114,6 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
         $scope.searchQuery = $location.search();
         $scope.query = ($location.search()).query;
         if ($scope.query) {
-            $scope.searchMessage = 'searching...';
             $scope.search($scope.query);
         }
     }
