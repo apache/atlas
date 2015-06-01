@@ -220,14 +220,19 @@ public class DefaultMetadataService implements MetadataService {
     private ITypedReferenceableInstance deserializeClassInstance(
             String entityInstanceDefinition) throws MetadataException {
 
-        final Referenceable entityInstance = InstanceSerialization.fromJsonReferenceable(
-            entityInstanceDefinition, true);
+        final Referenceable entityInstance;
+        try {
+            entityInstance = InstanceSerialization.fromJsonReferenceable(
+                    entityInstanceDefinition, true);
+        } catch (Exception e) {  // exception from deserializer
+            LOG.error("Unable to deserialize json={}", entityInstanceDefinition, e);
+            throw new IllegalArgumentException("Unable to deserialize json");
+        }
         final String entityTypeName = entityInstance.getTypeName();
         ParamChecker.notEmpty(entityTypeName, "Entity type cannot be null");
 
         ClassType entityType = typeSystem.getDataType(ClassType.class, entityTypeName);
         return entityType.convert(entityInstance, Multiplicity.REQUIRED);
-
     }
 
     /**
