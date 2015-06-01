@@ -52,13 +52,10 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Simple wrapper over TypeSystem and MetadataRepository services with hooks
@@ -136,13 +133,20 @@ public class DefaultMetadataService implements MetadataService {
      */
     @Override
     public JSONObject createType(String typeDefinition) throws MetadataException {
+        ParamChecker.notEmpty(typeDefinition, "type definition cannot be empty");
+
+        TypesDef typesDef;
         try {
-            ParamChecker.notEmpty(typeDefinition, "type definition cannot be empty");
-
-            TypesDef typesDef = TypesSerialization.fromJson(typeDefinition);
-            if(typesDef.isEmpty())
+            typesDef = TypesSerialization.fromJson(typeDefinition);
+            if(typesDef.isEmpty()) {
                 throw new MetadataException("Invalid type definition");
+            }
+        } catch (Exception e) {
+            LOG.error("Unable to deserialize json={}", typeDefinition, e);
+            throw new IllegalArgumentException("Unable to deserialize json");
+        }
 
+        try {
             final Map<String, IDataType> typesAdded = typeSystem.defineTypes(typesDef);
 
             try {
