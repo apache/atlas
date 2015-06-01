@@ -302,7 +302,7 @@ public class HiveMetaStoreBridge {
                 tableRef.set("viewExpandedText", hiveTable.getViewExpandedText());
             }
 
-            tableRef.set("tableType", hiveTable.getTableType());
+            tableRef.set("tableType", hiveTable.getTableType().name());
             tableRef.set("temporary", hiveTable.isTemporary());
 
             List<Referenceable> colList = getColumns(hiveTable.getAllCols());
