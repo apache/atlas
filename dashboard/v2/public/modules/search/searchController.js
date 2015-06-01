@@ -21,9 +21,9 @@
 angular.module('dgc.search').controller('SearchController', ['$scope', '$location', '$http', '$state', '$stateParams', 'SearchResource', 'NotificationService',
     function($scope, $location, $http, $state, $stateParams, SearchResource, NotificationService) {
 
-        $scope.types = ['table','column','db','view','loadprocess','storagedesc'];
+        $scope.types = ['table', 'column', 'db', 'view', 'loadprocess', 'storagedesc'];
         $scope.results = [];
-        $scope.resultCount=0;
+        $scope.resultCount = 0;
         $scope.isCollapsed = true;
         $scope.currentPage = 1;
         $scope.itemsPerPage = 10;
@@ -31,15 +31,17 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
         $scope.filteredResults = [];
         $scope.resultRows = [];
 
-        $scope.setPage = function (pageNo) {
+        $scope.setPage = function(pageNo) {
             $scope.currentPage = pageNo;
         };
         $scope.search = function(query) {
             $scope.results = [];
             NotificationService.reset();
             $scope.limit = 4;
-            SearchResource.search({query:query}, function searchSuccess(response) {
-                $scope.resultCount=response.count;
+            SearchResource.search({
+                query: query
+            }, function searchSuccess(response) {
+                $scope.resultCount = response.count;
                 $scope.results = response.results;
                 $scope.resultRows = $scope.results.rows;
                 $scope.totalItems = $scope.resultCount;
@@ -50,21 +52,23 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
                     if ($scope.searchTypesAvailable) {
                         $scope.searchMessage = 'loading results...';
                         $scope.filteredResults = $scope.resultRows.slice(begin, end);
-                        $scope.pageCount = function () {
+                        $scope.pageCount = function() {
                             return Math.ceil($scope.resultCount / $scope.itemsPerPage);
                         };
                         if ($scope.results.rows)
-                            $scope.searchMessage = $scope.results.rows.length +' results matching your search query '+ $scope.query +' were found';
+                            $scope.searchMessage = $scope.results.rows.length + ' results matching your search query ' + $scope.query + ' were found';
                         else
-                            $scope.searchMessage = '0 results matching your search query '+ $scope.query +' were found';
+                            $scope.searchMessage = '0 results matching your search query ' + $scope.query + ' were found';
                         if ($scope.results.length < 1) {
                             NotificationService.error('No Result found', false);
                         }
                     } else {
-                        $scope.searchMessage = '0 results matching your search query '+ $scope.query +' were found';
+                        $scope.searchMessage = '0 results matching your search query ' + $scope.query + ' were found';
                     }
                 });
-                $state.go('search.results', {query:query}, {
+                $state.go('search.results', {
+                    query: query
+                }, {
                     location: 'replace'
                 });
 
@@ -75,18 +79,18 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
 
         $scope.typeAvailable = function() {
 
-            if($scope.results.dataType) {
+            if ($scope.results.dataType) {
                 return $scope.types.indexOf($scope.results.dataType.typeName && $scope.results.dataType.typeName.toLowerCase()) > -1;
             }
         };
-        $scope.doToggle = function($event,el) {
+        $scope.doToggle = function($event, el) {
             this.isCollapsed = !el;
         };
         $scope.filterSearchResults = function(items) {
             var res = {};
             var count = 0;
             angular.forEach(items, function(value, key) {
-                if(typeof value !== 'object') {
+                if (typeof value !== 'object') {
                     res[key] = value;
                     count++;
                 }
@@ -96,7 +100,7 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
             return res;
         };
         $scope.searchQuery = $location.search();
-        $scope.query=($location.search()).query;
+        $scope.query = ($location.search()).query;
         if ($scope.query) {
             $scope.searchMessage = 'searching...';
             $scope.search($scope.query);

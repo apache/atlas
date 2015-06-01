@@ -20,7 +20,7 @@
 
 angular.module('dgc.navigation').factory('NavigationResource', ['$resource', function($resource) {
     return $resource('api/metadata/types?type=TRAIT', {}, {
-      get: {
+        get: {
             'method': 'GET',
             'responseType': 'json',
             'isArray': true,

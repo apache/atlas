@@ -30,6 +30,6 @@ angular.module('dgc.search').config(['$stateProvider',
             url: '?query',
             templateUrl: '/modules/search/views/searchResult.html',
             controller: 'SearchController'
-      });
+        });
     }
 ]);
