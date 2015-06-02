@@ -21,6 +21,7 @@ package org.apache.hadoop.metadata.hive.hook;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.TableType;
+import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.ql.Driver;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.metadata.MetadataServiceClient;
@@ -28,6 +29,7 @@ import org.apache.hadoop.metadata.hive.bridge.HiveMetaStoreBridge;
 import org.apache.hadoop.metadata.hive.model.HiveDataModelGenerator;
 import org.apache.hadoop.metadata.hive.model.HiveDataTypes;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
+import org.apache.hadoop.metadata.typesystem.persistence.Id;
 import org.apache.log4j.spi.LoggerFactory;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
@@ -139,6 +141,9 @@ public class HiveHookIT {
         Referenceable tableRef = dgiCLient.getEntity(tableId);
         Assert.assertEquals(tableRef.get("tableType"), TableType.MANAGED_TABLE.name());
         Assert.assertEquals(tableRef.get(HiveDataModelGenerator.COMMENT), "table comment");
+        final Id sdId = (Id) tableRef.get("sd");
+        Referenceable sdRef = dgiCLient.getEntity(sdId.id);
+        Assert.assertEquals(sdRef.get(HiveDataModelGenerator.STORAGE_IS_STORED_AS_SUB_DIRS),false);
 
         //Create table where database doesn't exist, will create database instance as well
         assertDatabaseIsRegistered(DEFAULT_DB);
