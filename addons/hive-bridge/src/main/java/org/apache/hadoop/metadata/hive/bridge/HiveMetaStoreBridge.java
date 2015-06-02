@@ -26,6 +26,7 @@ import org.apache.hadoop.hive.metastore.api.Index;
 import org.apache.hadoop.hive.metastore.api.Order;
 import org.apache.hadoop.hive.metastore.api.SerDeInfo;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
+import org.apache.hadoop.hive.metastore.api.hive_metastoreConstants;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.Partition;
 import org.apache.hadoop.hive.ql.metadata.Table;
@@ -263,10 +264,12 @@ public class HiveMetaStoreBridge {
             tableRef = new Referenceable(HiveDataTypes.HIVE_TABLE.getName());
             tableRef.set("name", hiveTable.getTableName());
             tableRef.set("owner", hiveTable.getOwner());
-            //todo fix
-            tableRef.set("createTime", hiveTable.getLastAccessTime());
+
+            tableRef.set("createTime", hiveTable.getMetadata().getProperty(hive_metastoreConstants.DDL_TIME));
             tableRef.set("lastAccessTime", hiveTable.getLastAccessTime());
             tableRef.set("retention", hiveTable.getRetention());
+
+            tableRef.set(HiveDataModelGenerator.COMMENT, hiveTable.getParameters().get(HiveDataModelGenerator.COMMENT));
 
             // add reference to the database
             tableRef.set("dbName", dbReference);
@@ -416,6 +419,8 @@ public class HiveMetaStoreBridge {
         serdeInfoStruct.set("parameters", serdeInfo.getParameters());
 
         sdReferenceable.set("serdeInfo", serdeInfoStruct);
+        sdReferenceable.set(HiveDataModelGenerator.STORAGE_NUM_BUCKETS, storageDesc.getNumBuckets());
+        sdReferenceable.set(HiveDataModelGenerator.STORAGE_IS_STORED_AS_SUB_DIRS, storageDesc.isStoredAsSubDirectories());
 
         // Will need to revisit this after we fix typesystem.
         /*
@@ -480,7 +485,7 @@ public class HiveMetaStoreBridge {
             Referenceable colReferenceable = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
             colReferenceable.set("name", fs.getName());
             colReferenceable.set("type", fs.getType());
-            colReferenceable.set("comment", fs.getComment());
+            colReferenceable.set(HiveDataModelGenerator.COMMENT, fs.getComment());
 
             colList.add(createInstance(colReferenceable));
         }

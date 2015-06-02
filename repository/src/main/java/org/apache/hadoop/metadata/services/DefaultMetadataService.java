@@ -89,10 +89,11 @@ public class DefaultMetadataService implements MetadataService {
     private void restoreTypeSystem() {
         LOG.info("Restoring type system from the store");
         try {
+            createSuperTypes();
+
             TypesDef typesDef = typeStore.restore();
             typeSystem.defineTypes(typesDef);
 
-            createSuperTypes();
         } catch (MetadataException e) {
             throw new RuntimeException(e);
         }

@@ -25,6 +25,7 @@ import org.apache.hadoop.hive.ql.Driver;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.hive.bridge.HiveMetaStoreBridge;
+import org.apache.hadoop.metadata.hive.model.HiveDataModelGenerator;
 import org.apache.hadoop.metadata.hive.model.HiveDataTypes;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.log4j.spi.LoggerFactory;
@@ -118,7 +119,7 @@ public class HiveHookIT {
 
     private String createTable(boolean partition) throws Exception {
         String tableName = tableName();
-        runCommand("create table " + tableName + "(id int, name string)" + (partition ? " partitioned by(dt string)"
+        runCommand("create table " + tableName + "(id int, name string) comment 'table comment' " + (partition ? " partitioned by(dt string)"
                 : ""));
         return tableName;
     }
@@ -137,6 +138,7 @@ public class HiveHookIT {
         String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
         Referenceable tableRef = dgiCLient.getEntity(tableId);
         Assert.assertEquals(tableRef.get("tableType"), TableType.MANAGED_TABLE.name());
+        Assert.assertEquals(tableRef.get(HiveDataModelGenerator.COMMENT), "table comment");
 
         //Create table where database doesn't exist, will create database instance as well
         assertDatabaseIsRegistered(DEFAULT_DB);
