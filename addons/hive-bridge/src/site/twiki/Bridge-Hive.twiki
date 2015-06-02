@@ -1,6 +1,5 @@
 ---+ Hive DGI Bridge
 Hive metadata can be modelled in DGI using its Type System. The default modelling is available in org.apache.hadoop.metadata.hive.model.HiveDataModelGenerator. It defines the following types:
-   * hive_object_type(EnumType) - [GLOBAL, DATABASE, TABLE, PARTITION, COLUMN]
    * hive_resource_type(EnumType) - [JAR, FILE, ARCHIVE]
    * hive_principal_type(EnumType) - [USER, ROLE, GROUP]
    * hive_function_type(EnumType) - [JAVA]
@@ -66,4 +65,8 @@ The following properties in hive-site.xml control the thread pool details:
    * hive.hook.dgi.maxThreads - maximum number of threads. default 5
    * hive.hook.dgi.keepAliveTime - keep alive time in msecs. default 10
    * hive.hook.dgi.synchronous - boolean, true to run the hook synchronously. default false
+
+---++ Limitations
+   * Since database name, table name and column names are case insensitive in hive, the corresponding names in entities are lowercase. So, any search APIs should use lowercase while querying on the entity names
+   * Only the following hive operations are captured by hive hook currently - create database, create table, create view, CTAS, load, import, export, query, alter table rename and alter view rename
 

@@ -20,6 +20,7 @@ package org.apache.hadoop.metadata.hive.hook;
 
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.ql.Driver;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.metadata.MetadataServiceClient;
@@ -130,7 +131,9 @@ public class HiveHookIT {
         assertTableIsRegistered(dbName, tableName);
 
         tableName = createTable();
-        assertTableIsRegistered(DEFAULT_DB, tableName);
+        String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
+        Referenceable tableRef = dgiCLient.getEntity(tableId);
+        Assert.assertEquals(tableRef.get("tableType"), TableType.MANAGED_TABLE.name());
 
         //Create table where database doesn't exist, will create database instance as well
         assertDatabaseIsRegistered(DEFAULT_DB);
