@@ -57,11 +57,6 @@ import java.util.List;
 @Guice(modules = RepositoryMetadataModule.class)
 public class HiveLineageServiceTest {
 
-    static {
-        // this would override super types creation if not first thing
-        TypeSystem.getInstance().reset();
-    }
-
     @Inject
     private DefaultMetadataService metadataService;
 

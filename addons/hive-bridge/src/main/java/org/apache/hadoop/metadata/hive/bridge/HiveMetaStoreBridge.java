@@ -26,6 +26,7 @@ import org.apache.hadoop.hive.metastore.api.Index;
 import org.apache.hadoop.hive.metastore.api.Order;
 import org.apache.hadoop.hive.metastore.api.SerDeInfo;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
+import org.apache.hadoop.hive.metastore.api.hive_metastoreConstants;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.Partition;
 import org.apache.hadoop.hive.ql.metadata.Table;
@@ -228,8 +229,8 @@ public class HiveMetaStoreBridge {
         String dbType = HiveDataTypes.HIVE_DB.getName();
         String tableType = HiveDataTypes.HIVE_TABLE.getName();
         String gremlinQuery = String.format("g.V.has('__typeName', '%s').has('%s.values', %s).as('p')."
-                + "out('__%s.tableName').has('%s.name', '%s').out('__%s.dbName').has('%s.name', '%s')"
-                + ".has('%s.clusterName', '%s').back('p').toList()", typeName, typeName, valuesStr, typeName,
+                        + "out('__%s.tableName').has('%s.name', '%s').out('__%s.dbName').has('%s.name', '%s')"
+                        + ".has('%s.clusterName', '%s').back('p').toList()", typeName, typeName, valuesStr, typeName,
                 tableType, tableName.toLowerCase(), tableType, dbType, dbName.toLowerCase(), dbType, clusterName);
 
         return getEntityReferenceFromGremlin(typeName, gremlinQuery);
@@ -263,17 +264,22 @@ public class HiveMetaStoreBridge {
             tableRef = new Referenceable(HiveDataTypes.HIVE_TABLE.getName());
             tableRef.set("name", hiveTable.getTableName());
             tableRef.set("owner", hiveTable.getOwner());
-            //todo fix
-            tableRef.set("createTime", hiveTable.getLastAccessTime());
+
+            tableRef.set("createTime", hiveTable.getMetadata().getProperty(hive_metastoreConstants.DDL_TIME));
             tableRef.set("lastAccessTime", hiveTable.getLastAccessTime());
             tableRef.set("retention", hiveTable.getRetention());
+
+            tableRef.set(HiveDataModelGenerator.COMMENT, hiveTable.getParameters().get(HiveDataModelGenerator.COMMENT));
 
             // add reference to the database
             tableRef.set("dbName", dbReference);
 
+            List<Referenceable> colList = getColumns(hiveTable.getCols());
+            tableRef.set("columns", colList);
+
             // add reference to the StorageDescriptor
             StorageDescriptor storageDesc = hiveTable.getSd();
-            Referenceable sdReferenceable = fillStorageDescStruct(storageDesc);
+            Referenceable sdReferenceable = fillStorageDescStruct(storageDesc, colList);
             tableRef.set("sd", sdReferenceable);
 
             // add reference to the Partition Keys
@@ -293,8 +299,6 @@ public class HiveMetaStoreBridge {
             tableRef.set("tableType", hiveTable.getTableType().name());
             tableRef.set("temporary", hiveTable.isTemporary());
 
-            List<Referenceable> colList = getColumns(hiveTable.getAllCols());
-            tableRef.set("columns", colList);
 
             tableRef = createInstance(tableRef);
         } else {
@@ -388,7 +392,7 @@ public class HiveMetaStoreBridge {
         indexRef.set("origTableName", index.getOrigTableName());
         indexRef.set("indexTableName", index.getIndexTableName());
 
-        Referenceable sdReferenceable = fillStorageDescStruct(index.getSd());
+        Referenceable sdReferenceable = fillStorageDescStruct(index.getSd(), null);
         indexRef.set("sd", sdReferenceable);
 
         indexRef.set("parameters", index.getParameters());
@@ -398,7 +402,7 @@ public class HiveMetaStoreBridge {
         createInstance(indexRef);
     }
 
-    private Referenceable fillStorageDescStruct(StorageDescriptor storageDesc) throws Exception {
+    private Referenceable fillStorageDescStruct(StorageDescriptor storageDesc, List<Referenceable> colList) throws Exception {
         LOG.debug("Filling storage descriptor information for " + storageDesc);
 
         Referenceable sdReferenceable = new Referenceable(HiveDataTypes.HIVE_STORAGEDESC.getName());
@@ -415,6 +419,8 @@ public class HiveMetaStoreBridge {
         serdeInfoStruct.set("parameters", serdeInfo.getParameters());
 
         sdReferenceable.set("serdeInfo", serdeInfoStruct);
+        sdReferenceable.set(HiveDataModelGenerator.STORAGE_NUM_BUCKETS, storageDesc.getNumBuckets());
+        sdReferenceable.set(HiveDataModelGenerator.STORAGE_IS_STORED_AS_SUB_DIRS, storageDesc.isStoredAsSubDirectories());
 
         // Will need to revisit this after we fix typesystem.
         /*
@@ -433,8 +439,15 @@ public class HiveMetaStoreBridge {
         }
         */
 
-        List<Referenceable> fieldsList = getColumns(storageDesc.getCols());
-        sdReferenceable.set("cols", fieldsList);
+        //Use the passed column list if not null, ex: use same references for table and SD
+        List<FieldSchema> columns = storageDesc.getCols();
+        if (columns != null && !columns.isEmpty()) {
+            if (colList != null) {
+                sdReferenceable.set("cols", colList);
+            } else {
+                sdReferenceable.set("cols", getColumns(columns));
+            }
+        }
 
         List<Struct> sortColsStruct = new ArrayList<>();
         for (Order sortcol : storageDesc.getSortCols()) {
@@ -472,7 +485,7 @@ public class HiveMetaStoreBridge {
             Referenceable colReferenceable = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
             colReferenceable.set("name", fs.getName());
             colReferenceable.set("type", fs.getType());
-            colReferenceable.set("comment", fs.getComment());
+            colReferenceable.set(HiveDataModelGenerator.COMMENT, fs.getComment());
 
             colList.add(createInstance(colReferenceable));
         }

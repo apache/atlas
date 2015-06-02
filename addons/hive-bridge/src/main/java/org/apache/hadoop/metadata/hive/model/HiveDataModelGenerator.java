@@ -55,6 +55,10 @@ public class HiveDataModelGenerator {
     private final Map<String, EnumTypeDefinition> enumTypeDefinitionMap;
     private final Map<String, StructTypeDefinition> structTypeDefinitionMap;
 
+    public static final String COMMENT = "comment";
+    public static final String STORAGE_NUM_BUCKETS = "numBuckets";
+    public static final String STORAGE_IS_STORED_AS_SUB_DIRS = "storedAsSubDirectories";
+
     public HiveDataModelGenerator() {
         classTypeDefinitions = new HashMap<>();
         enumTypeDefinitionMap = new HashMap<>();
@@ -237,7 +241,7 @@ public class HiveDataModelGenerator {
                         Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("compressed", DataTypes.BOOLEAN_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("numBuckets", DataTypes.INT_TYPE.getName(),
+                new AttributeDefinition(STORAGE_NUM_BUCKETS, DataTypes.INT_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("serdeInfo", HiveDataTypes.HIVE_SERDE.getName(),
                         Multiplicity.OPTIONAL, false, null),
@@ -251,7 +255,7 @@ public class HiveDataModelGenerator {
                         Multiplicity.OPTIONAL, false, null),
                 //new AttributeDefinition("skewedInfo", DefinedTypes.HIVE_SKEWEDINFO.getName(),
                 // Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("storedAsSubDirectories", DataTypes.BOOLEAN_TYPE.getName(),
+                new AttributeDefinition(STORAGE_IS_STORED_AS_SUB_DIRS, DataTypes.BOOLEAN_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
         };
 
@@ -326,7 +330,7 @@ public class HiveDataModelGenerator {
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("type", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("comment", DataTypes.STRING_TYPE.getName(),
+                new AttributeDefinition(COMMENT, DataTypes.STRING_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
         };
         HierarchicalTypeDefinition<ClassType> definition =
@@ -376,6 +380,8 @@ public class HiveDataModelGenerator {
                 new AttributeDefinition("createTime", DataTypes.INT_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("lastAccessTime", DataTypes.INT_TYPE.getName(),
+                        Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition(COMMENT, DataTypes.STRING_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("retention", DataTypes.INT_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
