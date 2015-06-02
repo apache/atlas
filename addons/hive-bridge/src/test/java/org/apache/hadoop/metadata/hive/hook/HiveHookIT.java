@@ -127,8 +127,11 @@ public class HiveHookIT {
     public void testCreateTable() throws Exception {
         String tableName = tableName();
         String dbName = createDatabase();
-        runCommand("create table " + dbName + "." + tableName + "(id int, name string)");
+        String colName = "col" + random();
+        runCommand("create table " + dbName + "." + tableName + "(" + colName + " int, name string)");
         assertTableIsRegistered(dbName, tableName);
+        //there is only one instance of column registered
+        assertColumnIsRegistered(colName);
 
         tableName = createTable();
         String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
@@ -137,6 +140,13 @@ public class HiveHookIT {
 
         //Create table where database doesn't exist, will create database instance as well
         assertDatabaseIsRegistered(DEFAULT_DB);
+    }
+
+    private String assertColumnIsRegistered(String colName) throws Exception {
+        LOG.debug("Searching for column {}", colName);
+        String query = String.format("%s where name = '%s'", HiveDataTypes.HIVE_COLUMN.getName(), colName.toLowerCase());
+        return assertEntityIsRegistered(query, true);
+
     }
 
     @Test
