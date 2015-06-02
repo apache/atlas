@@ -48,28 +48,28 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
         ThrowingProviderBinder.create(binder())
                 .bind(GraphProvider.class, TitanGraph.class)
                 .to(TitanGraphProvider.class)
-                .in(Scopes.SINGLETON);
+                .asEagerSingleton();
 
         // allow for dynamic binding of the metadata repo & graph service
 
         // bind the MetadataRepositoryService interface to an implementation
-        bind(MetadataRepository.class).to(GraphBackedMetadataRepository.class);
+        bind(MetadataRepository.class).to(GraphBackedMetadataRepository.class).asEagerSingleton();
 
         // bind the ITypeStore interface to an implementation
-        bind(ITypeStore.class).to(GraphBackedTypeStore.class);
+        bind(ITypeStore.class).to(GraphBackedTypeStore.class).asEagerSingleton();
 
         // bind the GraphService interface to an implementation
         // bind(GraphService.class).to(graphServiceClass);
 
         // bind the MetadataService interface to an implementation
-        bind(MetadataService.class).to(DefaultMetadataService.class);
+        bind(MetadataService.class).to(DefaultMetadataService.class).asEagerSingleton();
 
         // bind the DiscoveryService interface to an implementation
-        bind(DiscoveryService.class).to(GraphBackedDiscoveryService.class);
+        bind(DiscoveryService.class).to(GraphBackedDiscoveryService.class).asEagerSingleton();
 
-        bind(SearchIndexer.class).to(GraphBackedSearchIndexer.class);
+        bind(SearchIndexer.class).to(GraphBackedSearchIndexer.class).asEagerSingleton();
 
-        bind(LineageService.class).to(HiveLineageService.class);
+        bind(LineageService.class).to(HiveLineageService.class).asEagerSingleton();
 
         MethodInterceptor interceptor = new GraphTransactionInterceptor();
         requestInjection(interceptor);
