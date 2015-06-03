@@ -151,12 +151,6 @@ public class QuickStart {
                         attrDef("userName", DataTypes.STRING_TYPE),
                         attrDef("startTime", DataTypes.INT_TYPE),
                         attrDef("endTime", DataTypes.INT_TYPE),
-                        new AttributeDefinition("inputTables",
-                                DataTypes.arrayTypeName(TABLE_TYPE),
-                                Multiplicity.COLLECTION, false, null),
-                        new AttributeDefinition("outputTables",
-                                DataTypes.arrayTypeName(TABLE_TYPE),
-                                Multiplicity.COLLECTION, false, null),
                         attrDef("queryText", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
                         attrDef("queryPlan", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
                         attrDef("queryId", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
@@ -366,14 +360,15 @@ public class QuickStart {
                    String queryId, String queryGraph,
                    String... traitNames) throws Exception {
         Referenceable referenceable = new Referenceable(LOAD_PROCESS_TYPE, traitNames);
+        // super type attributes
         referenceable.set("name", name);
         referenceable.set("description", description);
+        referenceable.set("inputs", inputTables);
+        referenceable.set("outputs", outputTables);
+
         referenceable.set("user", user);
         referenceable.set("startTime", System.currentTimeMillis());
         referenceable.set("endTime", System.currentTimeMillis() + 10000);
-
-        referenceable.set("inputTables", inputTables);
-        referenceable.set("outputTables", outputTables);
 
         referenceable.set("queryText", queryText);
         referenceable.set("queryPlan", queryPlan);

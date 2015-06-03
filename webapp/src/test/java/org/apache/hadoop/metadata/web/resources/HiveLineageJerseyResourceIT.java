@@ -256,9 +256,7 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
                 );
 
         HierarchicalTypeDefinition<ClassType> tblClsDef =
-                TypesUtil.createClassTypeDef(HIVE_TABLE_TYPE, null,
-                        attrDef("name", DataTypes.STRING_TYPE),
-                        attrDef("description", DataTypes.STRING_TYPE),
+                TypesUtil.createClassTypeDef(HIVE_TABLE_TYPE, ImmutableList.of("DataSet"),
                         attrDef("owner", DataTypes.STRING_TYPE),
                         attrDef("createTime", DataTypes.INT_TYPE),
                         attrDef("lastAccessTime", DataTypes.INT_TYPE),
@@ -272,17 +270,10 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
                 );
 
         HierarchicalTypeDefinition<ClassType> loadProcessClsDef =
-                TypesUtil.createClassTypeDef(HIVE_PROCESS_TYPE, null,
-                        attrDef("name", DataTypes.STRING_TYPE),
+                TypesUtil.createClassTypeDef(HIVE_PROCESS_TYPE, ImmutableList.of("Process"),
                         attrDef("userName", DataTypes.STRING_TYPE),
                         attrDef("startTime", DataTypes.INT_TYPE),
                         attrDef("endTime", DataTypes.INT_TYPE),
-                        new AttributeDefinition("inputTables",
-                                DataTypes.arrayTypeName(HIVE_TABLE_TYPE),
-                                Multiplicity.COLLECTION, false, null),
-                        new AttributeDefinition("outputTables",
-                                DataTypes.arrayTypeName(HIVE_TABLE_TYPE),
-                                Multiplicity.COLLECTION, false, null),
                         attrDef("queryText", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
                         attrDef("queryPlan", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
                         attrDef("queryId", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
@@ -427,8 +418,8 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
         referenceable.set("startTime", System.currentTimeMillis());
         referenceable.set("endTime", System.currentTimeMillis() + 10000);
 
-        referenceable.set("inputTables", inputTables);
-        referenceable.set("outputTables", outputTables);
+        referenceable.set("inputs", inputTables);
+        referenceable.set("outputs", outputTables);
 
         referenceable.set("queryText", queryText);
         referenceable.set("queryPlan", queryPlan);

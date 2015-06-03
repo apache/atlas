@@ -38,15 +38,15 @@ metadata.graph.index.search.elasticsearch.create.sleep=2000
 The higher layer services like hive lineage, schema, etc. are driven by the type system and this
 section encodes the specific types for the hive data model.
 
-# This models follows the quick-start guide
+# This models reflects the base super types for Data and Process
 <verbatim>
-metadata.lineage.hive.table.type.name=hive_table
-metadata.lineage.hive.table.column.name=columns
-metadata.lineage.hive.process.type.name=hive_process
-metadata.lineage.hive.process.inputs.name=inputTables
-metadata.lineage.hive.process.outputs.name=outputTables
-#Currently unused
-#metadata.lineage.hive.column.type.name=Column
+metadata.lineage.hive.table.type.name=DataSet
+metadata.lineage.hive.process.type.name=Process
+metadata.lineage.hive.process.inputs.name=inputs
+metadata.lineage.hive.process.outputs.name=outputs
+
+## Schema
+metadata.lineage.hive.table.schema.query=hive_table where name=?, columns
 </verbatim>
 
 ---+++ Security Properties

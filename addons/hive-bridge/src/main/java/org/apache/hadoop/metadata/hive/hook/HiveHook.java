@@ -293,6 +293,7 @@ public class HiveHook implements ExecuteWithHookContext {
         processReferenceable.set("name", event.operation.getOperationName());
         processReferenceable.set("startTime", queryStartTime);
         processReferenceable.set("userName", event.user);
+
         List<Referenceable> source = new ArrayList<>();
         for (ReadEntity readEntity : inputs) {
             if (readEntity.getType() == Entity.Type.TABLE) {
@@ -304,7 +305,8 @@ public class HiveHook implements ExecuteWithHookContext {
                 dgiBridge.registerPartition(readEntity.getPartition());
             }
         }
-        processReferenceable.set("inputTables", source);
+        processReferenceable.set("inputs", source);
+
         List<Referenceable> target = new ArrayList<>();
         for (WriteEntity writeEntity : outputs) {
             if (writeEntity.getType() == Entity.Type.TABLE || writeEntity.getType() == Entity.Type.PARTITION) {
@@ -316,7 +318,7 @@ public class HiveHook implements ExecuteWithHookContext {
                 dgiBridge.registerPartition(writeEntity.getPartition());
             }
         }
-        processReferenceable.set("outputTables", target);
+        processReferenceable.set("outputs", target);
         processReferenceable.set("queryText", queryStr);
         processReferenceable.set("queryId", queryId);
         processReferenceable.set("queryPlan", event.jsonPlan.toString());
