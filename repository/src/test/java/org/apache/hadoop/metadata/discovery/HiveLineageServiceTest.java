@@ -37,7 +37,6 @@ import org.apache.hadoop.metadata.typesystem.types.IDataType;
 import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
 import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.TraitType;
-import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.apache.hadoop.metadata.typesystem.types.TypeUtils;
 import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
 import org.codehaus.jettison.json.JSONArray;
@@ -298,12 +297,6 @@ public class HiveLineageServiceTest {
                         attrDef("userName", DataTypes.STRING_TYPE),
                         attrDef("startTime", DataTypes.INT_TYPE),
                         attrDef("endTime", DataTypes.INT_TYPE),
-                        new AttributeDefinition("inputTables",
-                                DataTypes.arrayTypeName(HIVE_TABLE_TYPE),
-                                Multiplicity.COLLECTION, false, null),
-                        new AttributeDefinition("outputTables",
-                                DataTypes.arrayTypeName(HIVE_TABLE_TYPE),
-                                Multiplicity.COLLECTION, false, null),
                         attrDef("queryText", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
                         attrDef("queryPlan", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
                         attrDef("queryId", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
@@ -504,8 +497,8 @@ public class HiveLineageServiceTest {
         referenceable.set("startTime", System.currentTimeMillis());
         referenceable.set("endTime", System.currentTimeMillis() + 10000);
 
-        referenceable.set("inputTables", inputTables);
-        referenceable.set("outputTables", outputTables);
+        referenceable.set("inputs", inputTables);
+        referenceable.set("outputs", outputTables);
 
         referenceable.set("queryText", queryText);
         referenceable.set("queryPlan", queryPlan);

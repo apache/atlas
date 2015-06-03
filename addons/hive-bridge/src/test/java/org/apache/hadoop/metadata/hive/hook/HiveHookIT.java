@@ -21,7 +21,6 @@ package org.apache.hadoop.metadata.hive.hook;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.TableType;
-import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.ql.Driver;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.metadata.MetadataServiceClient;
@@ -30,7 +29,6 @@ import org.apache.hadoop.metadata.hive.model.HiveDataModelGenerator;
 import org.apache.hadoop.metadata.hive.model.HiveDataTypes;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.persistence.Id;
-import org.apache.log4j.spi.LoggerFactory;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
@@ -301,12 +299,14 @@ public class HiveHookIT {
         String typeName = HiveDataTypes.HIVE_PARTITION.getName();
         String dbType = HiveDataTypes.HIVE_DB.getName();
         String tableType = HiveDataTypes.HIVE_TABLE.getName();
+        String datasetType = MetadataServiceClient.DATA_SET_SUPER_TYPE;
 
         LOG.debug("Searching for partition of {}.{} with values {}", dbName, tableName, value);
+        //todo replace with DSL
         String gremlinQuery = String.format("g.V.has('__typeName', '%s').has('%s.values', ['%s']).as('p')."
                         + "out('__%s.tableName').has('%s.name', '%s').out('__%s.dbName').has('%s.name', '%s')"
                         + ".has('%s.clusterName', '%s').back('p').toList()", typeName, typeName, value, typeName,
-                tableType, tableName.toLowerCase(), tableType, dbType, dbName.toLowerCase(), dbType, CLUSTER_NAME);
+                datasetType, tableName.toLowerCase(), tableType, dbType, dbName.toLowerCase(), dbType, CLUSTER_NAME);
         JSONObject response = dgiCLient.searchByGremlin(gremlinQuery);
         JSONArray results = response.getJSONArray(MetadataServiceClient.RESULTS);
         Assert.assertEquals(results.length(), 1);

@@ -51,26 +51,29 @@ public class HiveLineageService implements LineageService {
             Some.<List<String>>apply(List.<String>fromArray(new String[]{"name"}));
 
     private static final String HIVE_TABLE_TYPE_NAME;
-    private static final String HIVE_TABLE_COLUMNS_ATTRIBUTE_NAME;
     private static final String HIVE_PROCESS_TYPE_NAME;
     private static final String HIVE_PROCESS_INPUT_ATTRIBUTE_NAME;
     private static final String HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME;
+
+    private static final String HIVE_TABLE_SCHEMA_QUERY;
 
     static {
         // todo - externalize this using type system - dog food
         try {
             PropertiesConfiguration conf = PropertiesUtil.getApplicationProperties();
             HIVE_TABLE_TYPE_NAME =
-                    conf.getString("metadata.lineage.hive.table.type.name",  "hive_table");
-            HIVE_TABLE_COLUMNS_ATTRIBUTE_NAME =
-                    conf.getString("metadata.lineage.hive.table.column.name",  "columns");
-
+                conf.getString("metadata.lineage.hive.table.type.name",  "DataSet");
+                conf.getString("metadata.lineage.hive.table.type.name",  "hive_table");
             HIVE_PROCESS_TYPE_NAME =
-                    conf.getString("metadata.lineage.hive.process.type.name", "hive_process");
+                conf.getString("metadata.lineage.hive.process.type.name", "Process");
             HIVE_PROCESS_INPUT_ATTRIBUTE_NAME =
-                    conf.getString("metadata.lineage.hive.process.inputs.name", "inputTables");
+                conf.getString("metadata.lineage.hive.process.inputs.name", "inputs");
             HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME =
-                    conf.getString("metadata.lineage.hive.process.outputs.name", "outputTables");
+                conf.getString("metadata.lineage.hive.process.outputs.name", "outputs");
+
+            HIVE_TABLE_SCHEMA_QUERY = conf.getString(
+                    "metadata.lineage.hive.table.schema.query",
+                    "hive_table where name=\"?\", columns");
         } catch (MetadataException e) {
             throw new RuntimeException(e);
         }
@@ -190,11 +193,7 @@ public class HiveLineageService implements LineageService {
     @GraphTransaction
     public String getSchema(String tableName) throws DiscoveryException {
         // todo - validate if indeed this is a table type and exists
-        String schemaQuery = HIVE_TABLE_TYPE_NAME
-                + " where name=\"" + tableName + "\""
-                + ", " + HIVE_TABLE_COLUMNS_ATTRIBUTE_NAME
-                // + " as column select column.name, column.dataType, column.comment"
-        ;
+        String schemaQuery = HIVE_TABLE_SCHEMA_QUERY.replace("?", tableName);
         return discoveryService.searchByDSL(schemaQuery);
     }
 }

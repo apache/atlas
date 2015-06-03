@@ -72,6 +72,10 @@ public class MetadataServiceClient {
     public static final String ATTRIBUTE_VALUE = "value";
 
 
+    public static final String INFRASTRUCTURE_SUPER_TYPE = "Infrastructure";
+    public static final String DATA_SET_SUPER_TYPE = "DataSet";
+    public static final String PROCESS_SUPER_TYPE = "Process";
+
     private WebResource service;
 
     public MetadataServiceClient(String baseUrl) {
@@ -100,7 +104,7 @@ public class MetadataServiceClient {
         return PropertiesUtil.getClientProperties();
     }
 
-    static enum API {
+    enum API {
 
         //Type operations
         CREATE_TYPE(BASE_URI + TYPES, HttpMethod.POST),

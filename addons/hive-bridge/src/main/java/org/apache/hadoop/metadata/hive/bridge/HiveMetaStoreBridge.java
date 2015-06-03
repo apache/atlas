@@ -67,7 +67,7 @@ public class HiveMetaStoreBridge {
 
     /**
      * Construct a HiveMetaStoreBridge.
-     * @param hiveConf
+     * @param hiveConf hive conf
      */
     public HiveMetaStoreBridge(HiveConf hiveConf) throws Exception {
         clusterName = hiveConf.get(HIVE_CLUSTER_NAME, DEFAULT_CLUSTER_NAME);
@@ -149,7 +149,7 @@ public class HiveMetaStoreBridge {
      * Gets reference for the database
      *
      *
-     * @param databaseName
+     * @param databaseName  database Name
      * @param clusterName    cluster name
      * @return Reference for database if exists, else null
      * @throws Exception
@@ -183,7 +183,7 @@ public class HiveMetaStoreBridge {
     /**
      * Gets reference for the table
      *
-     * @param dbName
+     * @param dbName database name
      * @param tableName table name
      * @return table reference if exists, else null
      * @throws Exception
@@ -222,16 +222,18 @@ public class HiveMetaStoreBridge {
         LOG.debug("Getting reference for partition for {}.{} with values {}", dbName, tableName, valuesStr);
         String typeName = HiveDataTypes.HIVE_PARTITION.getName();
 
+        //todo replace gremlin with DSL
         //        String dslQuery = String.format("%s as p where values = %s, tableName where name = '%s', "
         //                        + "dbName where name = '%s' and clusterName = '%s' select p", typeName, valuesStr, tableName,
         //                dbName, clusterName);
 
         String dbType = HiveDataTypes.HIVE_DB.getName();
         String tableType = HiveDataTypes.HIVE_TABLE.getName();
+        String datasetType = MetadataServiceClient.DATA_SET_SUPER_TYPE;
         String gremlinQuery = String.format("g.V.has('__typeName', '%s').has('%s.values', %s).as('p')."
                         + "out('__%s.tableName').has('%s.name', '%s').out('__%s.dbName').has('%s.name', '%s')"
                         + ".has('%s.clusterName', '%s').back('p').toList()", typeName, typeName, valuesStr, typeName,
-                tableType, tableName.toLowerCase(), tableType, dbType, dbName.toLowerCase(), dbType, clusterName);
+                datasetType, tableName.toLowerCase(), tableType, dbType, dbName.toLowerCase(), dbType, clusterName);
 
         return getEntityReferenceFromGremlin(typeName, gremlinQuery);
     }
@@ -283,7 +285,7 @@ public class HiveMetaStoreBridge {
             tableRef.set("sd", sdReferenceable);
 
             // add reference to the Partition Keys
-            List<Referenceable> partKeys = getColumns(hiveTable.getPartitionKeys());;
+            List<Referenceable> partKeys = getColumns(hiveTable.getPartitionKeys());
             tableRef.set("partitionKeys", partKeys);
 
             tableRef.set("parameters", hiveTable.getParameters());
