@@ -50,7 +50,6 @@ public class MetadataServiceClient {
     public static final String NAME = "name";
     public static final String GUID = "GUID";
     public static final String TYPENAME = "typeName";
-    public static final String TYPE = "type";
 
     public static final String DEFINITION = "definition";
     public static final String ERROR = "error";
