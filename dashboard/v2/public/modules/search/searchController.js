@@ -29,12 +29,6 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
         $scope.itemsPerPage = 10;
         $scope.filteredResults = [];
         $scope.resultRows = [];
-
-        $scope.$on('$stateChangeStart', function(event, toState) {
-            if (toState.resolve) {
-                $scope.loading = true;
-            }
-        });
         $scope.setPage = function(pageNo) {
             $scope.currentPage = pageNo;
         };
@@ -48,43 +42,56 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
             SearchResource.search({
                 query: query
             }, function searchSuccess(response) {
-                $scope.querySuceess = true;
                 $scope.resultCount = response.count;
                 $scope.results = response.results;
                 $scope.resultRows = $scope.results.rows;
                 $scope.totalItems = $scope.resultCount;
-                $scope.$watch('currentPage + itemsPerPage', function() {
+                $scope.transformedResults = {};
+                $scope.dataTransitioned = false ;
+                if(response.results.dataType.typeName.indexOf('__') === 0) {
+                    $scope.dataTransitioned = true ;
+                    var attrDef = response.results.dataType.attributeDefinitions;
+                    angular.forEach(attrDef, function(value) {
+                        if(value.dataTypeName === '__IdType') {
+                            $scope.searchKey = value.name;
+                        }
+                    });
+                    $scope.transformedResults = $scope.filterResults();
+                    } else {
+                       $scope.transformedResults = $scope.resultRows;
+                    }
+                    if ($scope.results.rows)
+                        $scope.searchMessage = $scope.resultCount + ' results matching your search query ' + $scope.query + ' were found';
+                    else
+                        $scope.searchMessage = '0 results matching your search query ' + $scope.query + ' were found';
+
+                    $scope.$watch('currentPage + itemsPerPage', function() {
                     var begin = (($scope.currentPage - 1) * $scope.itemsPerPage),
                         end = begin + $scope.itemsPerPage;
-                    $scope.searchTypesAvailable = $scope.typeAvailable();
-                    if ($scope.searchTypesAvailable) {
-                        $scope.searchMessage = 'loading results...';
-                        $scope.filteredResults = $scope.resultRows.slice(begin, end);
-                        $scope.pageCount = function() {
-                            return Math.ceil($scope.resultCount / $scope.itemsPerPage);
-                        };
-                        if ($scope.results.rows)
-                            $scope.searchMessage = $scope.results.rows.length + ' results matching your search query ' + $scope.query + ' were found';
-                        else
-                            $scope.searchMessage = '0 results matching your search query ' + $scope.query + ' were found';
-                        if ($scope.results.length < 1) {
-                            NotificationService.error('No Result found', false);
-                        }
-                    } else {
-                        $scope.searchMessage = '0 results matching your search query ' + $scope.query + ' were found';
+                    $scope.filteredResults = $scope.transformedResults.slice(begin, end);
+                    $scope.pageCount = function() {
+                        return Math.ceil($scope.resultCount / $scope.itemsPerPage);
+                    };
+                    if ($scope.results.length < 1) {
+                        NotificationService.error('No Result found', false);
                     }
                 });
             }, function searchError(err) {
                 NotificationService.error('Error occurred during executing search query, error status code = ' + err.status + ', status text = ' + err.statusText, false);
             });
-
+            $state.go('search', {
+                query: query
+            }, {
+                location: 'replace'
+            });
         };
 
-        $scope.typeAvailable = function() {
-
-            if ($scope.results.dataType) {
-                return $scope.types.indexOf($scope.results.dataType.typeName && $scope.results.dataType.typeName.toLowerCase()) > -1;
-            }
+        $scope.filterResults = function() {
+            var res = [];
+            angular.forEach($scope.resultRows, function(value,key) {
+                res.push( value[$scope.searchKey] );
+            });
+            return res;
         };
         $scope.doToggle = function($event, el) {
             this.isCollapsed = !el;
@@ -93,19 +100,19 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
             var res = {};
             var count = 0;
             angular.forEach(items, function(value, key) {
-                if (typeof value !== 'object') {
+                if (typeof value !== 'object' && (key.indexOf('$$') < 0)) {
                     res[key] = value;
                     count++;
                 }
             });
-
             $scope.keyLength = count;
             return res;
         };
         $scope.searchQuery = $location.search();
         $scope.query = ($location.search()).query;
         if ($scope.query) {
+
             $scope.search($scope.query);
-        }
+         }
     }
 ]);
