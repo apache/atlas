@@ -38,10 +38,6 @@ angular.module('dgc').factory('lodash', ['$window',
     function($window) {
         return $window.d3;
     }
-]).factory('dagreD3', ['$window',
-    function($window) {
-        return $window.dagreD3;
-    }
 ]).factory('Global', ['$window',
     function($window) {
         return {
