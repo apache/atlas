@@ -281,12 +281,14 @@ public class GraphBackedTypeStore implements ITypeStore {
     private AttributeDefinition[] getAttributes(Vertex vertex, String typeName) throws MetadataException {
         List<AttributeDefinition> attributes = new ArrayList<>();
         List<String> attrNames = vertex.getProperty(getPropertyKey(typeName));
-        for (String attrName : attrNames) {
-            try {
-                String propertyKey = getPropertyKey(typeName, attrName);
-                attributes.add(AttributeInfo.fromJson((String) vertex.getProperty(propertyKey)));
-            } catch (JSONException e) {
-                throw new MetadataException(e);
+        if (attrNames != null) {
+            for (String attrName : attrNames) {
+                try {
+                    String propertyKey = getPropertyKey(typeName, attrName);
+                    attributes.add(AttributeInfo.fromJson((String) vertex.getProperty(propertyKey)));
+                } catch (JSONException e) {
+                    throw new MetadataException(e);
+                }
             }
         }
         return attributes.toArray(new AttributeDefinition[attributes.size()]);
