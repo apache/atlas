@@ -83,7 +83,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
                 .buildMixedIndex(Constants.BACKING_INDEX);
         management.buildIndex(Constants.EDGE_INDEX, Edge.class)
                 .buildMixedIndex(Constants.BACKING_INDEX);
-        management.commit();
 
         // create a composite index for guid as its unique
         createCompositeIndex(Constants.GUID_INDEX,
@@ -119,7 +118,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
         management.buildIndex(Constants.FULLTEXT_INDEX, Vertex.class)
                 .addKey(fullText, com.thinkaurelius.titan.core.schema.Parameter.of("mapping", Mapping.TEXT))
                 .buildMixedIndex(Constants.BACKING_INDEX);
-        management.commit();
         LOG.info("Created mixed index for {}", Constants.ENTITY_TEXT_PROPERTY_KEY);
     }
 
@@ -302,8 +300,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
             }
 
             indexBuilder.buildCompositeIndex();
-            management.commit();
-
             LOG.info("Created index for property {} in composite index {}", propertyName, indexName);
         }
 
@@ -323,12 +319,10 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
             if (propertyClass == Boolean.class) {
                 //Use standard index as backing index only supports string, int and geo types
                 management.buildIndex(propertyName, Vertex.class).addKey(propertyKey).buildCompositeIndex();
-                management.commit();
             } else {
                 //Use backing index
                 TitanGraphIndex vertexIndex = management.getGraphIndex(Constants.VERTEX_INDEX);
                 management.addIndexKey(vertexIndex, propertyKey);
-                management.commit();
             }
             LOG.info("Created mixed vertex index for property {}", propertyName);
         }
@@ -343,7 +337,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
         if (edgeLabel == null) {
             edgeLabel = management.makeEdgeLabel(propertyName).make();
             management.buildEdgeIndex(edgeLabel, propertyName, Direction.BOTH, Order.DEFAULT);
-            management.commit();
             LOG.info("Created index for edge label {}", propertyName);
         }
     } */
