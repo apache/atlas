@@ -50,7 +50,6 @@ public class MetadataServiceClient {
     public static final String NAME = "name";
     public static final String GUID = "GUID";
     public static final String TYPENAME = "typeName";
-    public static final String TYPE = "type";
 
     public static final String DEFINITION = "definition";
     public static final String ERROR = "error";
@@ -71,6 +70,10 @@ public class MetadataServiceClient {
     public static final String ATTRIBUTE_NAME = "property";
     public static final String ATTRIBUTE_VALUE = "value";
 
+
+    public static final String INFRASTRUCTURE_SUPER_TYPE = "Infrastructure";
+    public static final String DATA_SET_SUPER_TYPE = "DataSet";
+    public static final String PROCESS_SUPER_TYPE = "Process";
 
     private WebResource service;
 
@@ -100,7 +103,7 @@ public class MetadataServiceClient {
         return PropertiesUtil.getClientProperties();
     }
 
-    static enum API {
+    enum API {
 
         //Type operations
         CREATE_TYPE(BASE_URI + TYPES, HttpMethod.POST),

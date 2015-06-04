@@ -20,6 +20,7 @@ package org.apache.hadoop.metadata.hive.model;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.typesystem.TypesDef;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
 import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
@@ -350,9 +351,9 @@ public class HiveDataModelGenerator {
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("tableName", HiveDataTypes.HIVE_TABLE.getName(),
                         Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("createTime", DataTypes.INT_TYPE.getName(),
+                new AttributeDefinition("createTime", DataTypes.LONG_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("lastAccessTime", DataTypes.INT_TYPE.getName(),
+                new AttributeDefinition("lastAccessTime", DataTypes.LONG_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("sd", HiveDataTypes.HIVE_STORAGEDESC.getName(),
                         Multiplicity.REQUIRED, false, null),
@@ -371,15 +372,13 @@ public class HiveDataModelGenerator {
 
     private void createTableClass() throws MetadataException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition("name", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("dbName", HiveDataTypes.HIVE_DB.getName(),
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("owner", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("createTime", DataTypes.INT_TYPE.getName(),
+                new AttributeDefinition("createTime", DataTypes.LONG_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("lastAccessTime", DataTypes.INT_TYPE.getName(),
+                new AttributeDefinition("lastAccessTime", DataTypes.LONG_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition(COMMENT, DataTypes.STRING_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
@@ -406,7 +405,7 @@ public class HiveDataModelGenerator {
         };
         HierarchicalTypeDefinition<ClassType> definition =
                 new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_TABLE.getName(),
-                        null, attributeDefinitions);
+                        ImmutableList.of("DataSet"), attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_TABLE.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_TABLE.getName());
     }
@@ -419,9 +418,9 @@ public class HiveDataModelGenerator {
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("dbName", HiveDataTypes.HIVE_DB.getName(),
                         Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("createTime", DataTypes.INT_TYPE.getName(),
+                new AttributeDefinition("createTime", DataTypes.LONG_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("lastAccessTime", DataTypes.INT_TYPE.getName(),
+                new AttributeDefinition("lastAccessTime", DataTypes.LONG_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("origTableName", HiveDataTypes.HIVE_TABLE.getName(),
                         Multiplicity.REQUIRED, false, null),
@@ -437,7 +436,7 @@ public class HiveDataModelGenerator {
 
         HierarchicalTypeDefinition<ClassType> definition =
                 new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_INDEX.getName(),
-                        null, attributeDefinitions);
+                        ImmutableList.of(MetadataServiceClient.DATA_SET_SUPER_TYPE), attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_INDEX.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_INDEX.getName());
     }
@@ -454,7 +453,7 @@ public class HiveDataModelGenerator {
                         Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("ownerType", HiveDataTypes.HIVE_PRINCIPAL_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("createTime", DataTypes.INT_TYPE.getName(),
+                new AttributeDefinition("createTime", DataTypes.LONG_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("functionType", HiveDataTypes.HIVE_FUNCTION_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
@@ -473,7 +472,7 @@ public class HiveDataModelGenerator {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition("roleName", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("createTime", DataTypes.INT_TYPE.getName(),
+                new AttributeDefinition("createTime", DataTypes.LONG_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("ownerName", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
@@ -487,20 +486,12 @@ public class HiveDataModelGenerator {
 
     private void createProcessClass() throws MetadataException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition("name", DataTypes.STRING_TYPE.getName(),
+                new AttributeDefinition("startTime", DataTypes.LONG_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("startTime", DataTypes.INT_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("endTime", DataTypes.INT_TYPE.getName(),
+                new AttributeDefinition("endTime", DataTypes.LONG_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("userName", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("inputTables",
-                        DataTypes.arrayTypeName(HiveDataTypes.HIVE_TABLE.getName()),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("outputTables",
-                        DataTypes.arrayTypeName(HiveDataTypes.HIVE_TABLE.getName()),
-                        Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("queryText", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("queryPlan", DataTypes.STRING_TYPE.getName(),
@@ -512,7 +503,8 @@ public class HiveDataModelGenerator {
         };
 
         HierarchicalTypeDefinition<ClassType> definition = new HierarchicalTypeDefinition<>(
-                ClassType.class, HiveDataTypes.HIVE_PROCESS.getName(), null, attributeDefinitions);
+                ClassType.class, HiveDataTypes.HIVE_PROCESS.getName(),
+                ImmutableList.of(MetadataServiceClient.PROCESS_SUPER_TYPE), attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_PROCESS.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_PROCESS.getName());
     }

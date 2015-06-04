@@ -104,26 +104,38 @@ public class DefaultMetadataService implements MetadataService {
     private static final AttributeDefinition NAME_ATTRIBUTE =
             TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE);
     private static final AttributeDefinition DESCRIPTION_ATTRIBUTE =
-            TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE);
-    private static final String[] SUPER_TYPES = {
-            "DataSet",
-            "Process",
-            "Infrastructure",
-    };
+            TypesUtil.createOptionalAttrDef("description", DataTypes.STRING_TYPE);
 
     @InterfaceAudience.Private
     public void createSuperTypes() throws MetadataException {
-        if (typeSystem.isRegistered(SUPER_TYPES[0])) {
+        if (typeSystem.isRegistered(MetadataServiceClient.DATA_SET_SUPER_TYPE)) {
             return; // this is already registered
         }
 
-        for (String superTypeName : SUPER_TYPES) {
-            HierarchicalTypeDefinition<ClassType> superTypeDefinition =
-                    TypesUtil.createClassTypeDef(superTypeName,
-                            ImmutableList.<String>of(),
-                            NAME_ATTRIBUTE, DESCRIPTION_ATTRIBUTE);
-            typeSystem.defineClassType(superTypeDefinition);
-        }
+        HierarchicalTypeDefinition<ClassType> superTypeDefinition =
+                TypesUtil.createClassTypeDef(MetadataServiceClient.INFRASTRUCTURE_SUPER_TYPE,
+                        ImmutableList.<String>of(),
+                        NAME_ATTRIBUTE, DESCRIPTION_ATTRIBUTE);
+        typeSystem.defineClassType(superTypeDefinition);
+
+        superTypeDefinition =
+                TypesUtil.createClassTypeDef(MetadataServiceClient.DATA_SET_SUPER_TYPE,
+                        ImmutableList.<String>of(),
+                        NAME_ATTRIBUTE, DESCRIPTION_ATTRIBUTE);
+        typeSystem.defineClassType(superTypeDefinition);
+
+        superTypeDefinition =
+                TypesUtil.createClassTypeDef(MetadataServiceClient.PROCESS_SUPER_TYPE,
+                        ImmutableList.<String>of(),
+                        NAME_ATTRIBUTE, DESCRIPTION_ATTRIBUTE,
+                        new AttributeDefinition("inputs",
+                                DataTypes.arrayTypeName(MetadataServiceClient.DATA_SET_SUPER_TYPE),
+                                new Multiplicity(0, Integer.MAX_VALUE, false), false, null),
+                        new AttributeDefinition("outputs",
+                                DataTypes.arrayTypeName(MetadataServiceClient.DATA_SET_SUPER_TYPE),
+                                new Multiplicity(0, Integer.MAX_VALUE, false), false, null)
+                );
+        typeSystem.defineClassType(superTypeDefinition);
     }
 
     /**

@@ -64,37 +64,6 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
     }
 
     @Test
-    public void testInputs() throws Exception {
-        WebResource resource = service
-                .path(BASE_URI)
-                .path("sales_fact_monthly_mv")
-                .path("inputs");
-
-        ClientResponse clientResponse = resource
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
-                .method(HttpMethod.GET, ClientResponse.class);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
-
-        String responseAsString = clientResponse.getEntity(String.class);
-        Assert.assertNotNull(responseAsString);
-        System.out.println("inputs = " + responseAsString);
-
-        JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
-
-        JSONObject results = response.getJSONObject(MetadataServiceClient.RESULTS);
-        Assert.assertNotNull(results);
-
-        JSONArray rows = results.getJSONArray("rows");
-        Assert.assertTrue(rows.length() > 0);
-
-        final JSONObject row = rows.getJSONObject(0);
-        JSONArray paths = row.getJSONArray("path");
-        Assert.assertTrue(paths.length() > 0);
-    }
-
-    @Test
     public void testInputsGraph() throws Exception {
         WebResource resource = service
                 .path(BASE_URI)
@@ -126,37 +95,6 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
 
         final JSONObject edges = values.getJSONObject("edges");
         Assert.assertEquals(edges.length(), 4);
-    }
-
-    @Test
-    public void testOutputs() throws Exception {
-        WebResource resource = service
-                .path(BASE_URI)
-                .path("sales_fact")
-                .path("outputs");
-
-        ClientResponse clientResponse = resource
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
-                .method(HttpMethod.GET, ClientResponse.class);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
-
-        String responseAsString = clientResponse.getEntity(String.class);
-        Assert.assertNotNull(responseAsString);
-        System.out.println("outputs = " + responseAsString);
-
-        JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
-
-        JSONObject results = response.getJSONObject(MetadataServiceClient.RESULTS);
-        Assert.assertNotNull(results);
-
-        JSONArray rows = results.getJSONArray("rows");
-        Assert.assertTrue(rows.length() > 0);
-
-        final JSONObject row = rows.getJSONObject(0);
-        JSONArray paths = row.getJSONArray("path");
-        Assert.assertTrue(paths.length() > 0);
     }
 
     @Test
@@ -228,6 +166,36 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
         }
     }
 
+    @Test
+    public void testSchemaForEmptyTable() throws Exception {
+        WebResource resource = service
+                .path(BASE_URI)
+                .path("")
+                .path("schema");
+
+        ClientResponse clientResponse = resource
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.GET, ClientResponse.class);
+        Assert.assertEquals(clientResponse.getStatus(),
+                Response.Status.NOT_FOUND.getStatusCode());
+    }
+
+    @Test
+    public void testSchemaForInvalidTable() throws Exception {
+        WebResource resource = service
+                .path(BASE_URI)
+                .path("blah")
+                .path("schema");
+
+        ClientResponse clientResponse = resource
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.GET, ClientResponse.class);
+        Assert.assertEquals(clientResponse.getStatus(),
+                Response.Status.BAD_REQUEST.getStatusCode());
+    }
+
     private void setUpTypes() throws Exception {
         TypesDef typesDef = createTypeDefinitions();
         createType(typesDef);
@@ -256,9 +224,7 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
                 );
 
         HierarchicalTypeDefinition<ClassType> tblClsDef =
-                TypesUtil.createClassTypeDef(HIVE_TABLE_TYPE, null,
-                        attrDef("name", DataTypes.STRING_TYPE),
-                        attrDef("description", DataTypes.STRING_TYPE),
+                TypesUtil.createClassTypeDef(HIVE_TABLE_TYPE, ImmutableList.of("DataSet"),
                         attrDef("owner", DataTypes.STRING_TYPE),
                         attrDef("createTime", DataTypes.INT_TYPE),
                         attrDef("lastAccessTime", DataTypes.INT_TYPE),
@@ -272,17 +238,10 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
                 );
 
         HierarchicalTypeDefinition<ClassType> loadProcessClsDef =
-                TypesUtil.createClassTypeDef(HIVE_PROCESS_TYPE, null,
-                        attrDef("name", DataTypes.STRING_TYPE),
+                TypesUtil.createClassTypeDef(HIVE_PROCESS_TYPE, ImmutableList.of("Process"),
                         attrDef("userName", DataTypes.STRING_TYPE),
                         attrDef("startTime", DataTypes.INT_TYPE),
                         attrDef("endTime", DataTypes.INT_TYPE),
-                        new AttributeDefinition("inputTables",
-                                DataTypes.arrayTypeName(HIVE_TABLE_TYPE),
-                                Multiplicity.COLLECTION, false, null),
-                        new AttributeDefinition("outputTables",
-                                DataTypes.arrayTypeName(HIVE_TABLE_TYPE),
-                                Multiplicity.COLLECTION, false, null),
                         attrDef("queryText", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
                         attrDef("queryPlan", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
                         attrDef("queryId", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
@@ -427,8 +386,8 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
         referenceable.set("startTime", System.currentTimeMillis());
         referenceable.set("endTime", System.currentTimeMillis() + 10000);
 
-        referenceable.set("inputTables", inputTables);
-        referenceable.set("outputTables", outputTables);
+        referenceable.set("inputs", inputTables);
+        referenceable.set("outputs", outputTables);
 
         referenceable.set("queryText", queryText);
         referenceable.set("queryPlan", queryPlan);

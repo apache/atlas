@@ -37,7 +37,6 @@ import org.apache.hadoop.metadata.typesystem.types.IDataType;
 import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
 import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.TraitType;
-import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.apache.hadoop.metadata.typesystem.types.TypeUtils;
 import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
 import org.codehaus.jettison.json.JSONArray;
@@ -163,6 +162,24 @@ public class HiveLineageServiceTest {
         Assert.assertTrue(paths.length() > 0);
     }
 
+    @Test (expectedExceptions = IllegalArgumentException.class)
+    public void testGetInputsTableNameNull() throws Exception {
+        hiveLineageService.getInputs(null);
+        Assert.fail();
+    }
+
+    @Test (expectedExceptions = IllegalArgumentException.class)
+    public void testGetInputsTableNameEmpty() throws Exception {
+        hiveLineageService.getInputs("");
+        Assert.fail();
+    }
+
+    @Test (expectedExceptions = IllegalArgumentException.class)
+    public void testGetInputsBadTableName() throws Exception {
+        hiveLineageService.getInputs("blah");
+        Assert.fail();
+    }
+
     @Test
     public void testGetInputsGraph() throws Exception {
         JSONObject results = new JSONObject(
@@ -192,6 +209,24 @@ public class HiveLineageServiceTest {
         final JSONObject row = rows.getJSONObject(0);
         JSONArray paths = row.getJSONArray("path");
         Assert.assertTrue(paths.length() > 0);
+    }
+
+    @Test (expectedExceptions = IllegalArgumentException.class)
+    public void testGetOututsTableNameNull() throws Exception {
+        hiveLineageService.getOutputs(null);
+        Assert.fail();
+    }
+
+    @Test (expectedExceptions = IllegalArgumentException.class)
+    public void testGetOutputsTableNameEmpty() throws Exception {
+        hiveLineageService.getOutputs("");
+        Assert.fail();
+    }
+
+    @Test (expectedExceptions = IllegalArgumentException.class)
+    public void testGetOutputsBadTableName() throws Exception {
+        hiveLineageService.getOutputs("blah");
+        Assert.fail();
     }
 
     @Test
@@ -236,6 +271,24 @@ public class HiveLineageServiceTest {
             Assert.assertNotNull(row.getString("dataType"));
             Assert.assertEquals(row.getString("$typeName$"), "hive_column");
         }
+    }
+
+    @Test (expectedExceptions = IllegalArgumentException.class)
+    public void testGetSchemaTableNameNull() throws Exception {
+        hiveLineageService.getSchema(null);
+        Assert.fail();
+    }
+
+    @Test (expectedExceptions = IllegalArgumentException.class)
+    public void testGetSchemaTableNameEmpty() throws Exception {
+        hiveLineageService.getSchema("");
+        Assert.fail();
+    }
+
+    @Test (expectedExceptions = IllegalArgumentException.class)
+    public void testGetSchemaBadTableName() throws Exception {
+        hiveLineageService.getSchema("blah");
+        Assert.fail();
     }
 
     private void setUpTypes() throws Exception {
@@ -298,12 +351,6 @@ public class HiveLineageServiceTest {
                         attrDef("userName", DataTypes.STRING_TYPE),
                         attrDef("startTime", DataTypes.INT_TYPE),
                         attrDef("endTime", DataTypes.INT_TYPE),
-                        new AttributeDefinition("inputTables",
-                                DataTypes.arrayTypeName(HIVE_TABLE_TYPE),
-                                Multiplicity.COLLECTION, false, null),
-                        new AttributeDefinition("outputTables",
-                                DataTypes.arrayTypeName(HIVE_TABLE_TYPE),
-                                Multiplicity.COLLECTION, false, null),
                         attrDef("queryText", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
                         attrDef("queryPlan", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
                         attrDef("queryId", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
@@ -504,8 +551,8 @@ public class HiveLineageServiceTest {
         referenceable.set("startTime", System.currentTimeMillis());
         referenceable.set("endTime", System.currentTimeMillis() + 10000);
 
-        referenceable.set("inputTables", inputTables);
-        referenceable.set("outputTables", outputTables);
+        referenceable.set("inputs", inputTables);
+        referenceable.set("outputs", outputTables);
 
         referenceable.set("queryText", queryText);
         referenceable.set("queryPlan", queryPlan);
