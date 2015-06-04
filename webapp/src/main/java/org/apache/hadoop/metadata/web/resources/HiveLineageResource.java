@@ -58,41 +58,6 @@ public class HiveLineageResource {
     }
 
     /**
-     * Returns the inputs for a given entity.
-     *
-     * @param tableName table name
-     */
-    @GET
-    @Path("table/{tableName}/inputs")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response inputs(@Context HttpServletRequest request,
-                           @PathParam("tableName") String tableName) {
-
-        LOG.info("Fetching lineage inputs for tableName={}", tableName);
-
-        try {
-            ParamChecker.notEmpty(tableName, "table name cannot be null");
-            final String jsonResult = lineageService.getInputs(tableName);
-
-            JSONObject response = new JSONObject();
-            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            response.put("tableName", tableName);
-            response.put(MetadataServiceClient.RESULTS, new JSONObject(jsonResult));
-
-            return Response.ok(response).build();
-        } catch (DiscoveryException | IllegalArgumentException e) {
-            LOG.error("Unable to get lineage inputs for table {}", tableName, e);
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (Throwable e) {
-            LOG.error("Unable to get lineage inputs for table {}", tableName, e);
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
-        }
-    }
-
-    /**
      * Returns the inputs graph for a given entity.
      *
      * @param tableName table name
@@ -127,41 +92,6 @@ public class HiveLineageResource {
     }
 
     /**
-     * Returns the outputs for a given entity.
-     *
-     * @param tableName table name
-     */
-    @GET
-    @Path("table/{tableName}/outputs")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response outputs(@Context HttpServletRequest request,
-                            @PathParam("tableName") String tableName) {
-
-        LOG.info("Fetching lineage outputs for tableName={}", tableName);
-
-        try {
-            ParamChecker.notEmpty(tableName, "table name cannot be null");
-            final String jsonResult = lineageService.getOutputs(tableName);
-
-            JSONObject response = new JSONObject();
-            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            response.put("tableName", tableName);
-            response.put(MetadataServiceClient.RESULTS, new JSONObject(jsonResult));
-
-            return Response.ok(response).build();
-        } catch (DiscoveryException | IllegalArgumentException e) {
-            LOG.error("Unable to get lineage outputs for table {}", tableName, e);
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (Throwable e) {
-            LOG.error("Unable to get lineage outputs for table {}", tableName, e);
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
-        }
-    }
-
-    /**
      * Returns the outputs graph for a given entity.
      *
      * @param tableName table name
@@ -172,7 +102,6 @@ public class HiveLineageResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response outputsGraph(@Context HttpServletRequest request,
                                  @PathParam("tableName") String tableName) {
-
         LOG.info("Fetching lineage outputs graph for tableName={}", tableName);
 
         try {
@@ -207,8 +136,6 @@ public class HiveLineageResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response schema(@Context HttpServletRequest request,
                            @PathParam("tableName") String tableName) {
-
-
         LOG.info("Fetching schema for tableName={}", tableName);
 
         try {
