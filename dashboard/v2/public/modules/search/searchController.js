@@ -47,25 +47,25 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
                 $scope.resultRows = $scope.results.rows;
                 $scope.totalItems = $scope.resultCount;
                 $scope.transformedResults = {};
-                $scope.dataTransitioned = false ;
-                if(response.results.dataType.typeName.indexOf('__') === 0) {
-                    $scope.dataTransitioned = true ;
+                $scope.dataTransitioned = false;
+                if (response.results.dataType.typeName.indexOf('__') === 0) {
+                    $scope.dataTransitioned = true;
                     var attrDef = response.results.dataType.attributeDefinitions;
                     angular.forEach(attrDef, function(value) {
-                        if(value.dataTypeName === '__IdType') {
+                        if (value.dataTypeName === '__IdType') {
                             $scope.searchKey = value.name;
                         }
                     });
                     $scope.transformedResults = $scope.filterResults();
-                    } else {
-                       $scope.transformedResults = $scope.resultRows;
-                    }
-                    if ($scope.results.rows)
-                        $scope.searchMessage = $scope.resultCount + ' results matching your search query ' + $scope.query + ' were found';
-                    else
-                        $scope.searchMessage = '0 results matching your search query ' + $scope.query + ' were found';
+                } else {
+                    $scope.transformedResults = $scope.resultRows;
+                }
+                if ($scope.results.rows)
+                    $scope.searchMessage = $scope.resultCount + ' results matching your search query ' + $scope.query + ' were found';
+                else
+                    $scope.searchMessage = '0 results matching your search query ' + $scope.query + ' were found';
 
-                    $scope.$watch('currentPage + itemsPerPage', function() {
+                $scope.$watch('currentPage + itemsPerPage', function() {
                     var begin = (($scope.currentPage - 1) * $scope.itemsPerPage),
                         end = begin + $scope.itemsPerPage;
                     $scope.filteredResults = $scope.transformedResults.slice(begin, end);
@@ -88,8 +88,8 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
 
         $scope.filterResults = function() {
             var res = [];
-            angular.forEach($scope.resultRows, function(value,key) {
-                res.push( value[$scope.searchKey] );
+            angular.forEach($scope.resultRows, function(value) {
+                res.push(value[$scope.searchKey]);
             });
             return res;
         };
@@ -113,6 +113,6 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
         if ($scope.query) {
 
             $scope.search($scope.query);
-         }
+        }
     }
 ]);
