@@ -19,6 +19,8 @@
 package org.apache.hadoop.metadata.hive.hook;
 
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.ql.Driver;
@@ -222,7 +224,7 @@ public class HiveHookIT {
         String tableName = createTable(false);
 
         String filename = "pfile://" + mkdir("export");
-        String query = "export table " + tableName + " to '" + filename + "'";
+        String query = "export table " + tableName + " to \"" + filename + "\"";
         runCommand(query);
         assertProcessIsRegistered(query);
 
@@ -237,6 +239,11 @@ public class HiveHookIT {
     public void testSelect() throws Exception {
         String tableName = createTable();
         String query = "select * from " + tableName;
+        runCommand(query);
+        assertProcessIsRegistered(query);
+
+        //single entity per query
+        query = "SELECT * from " + tableName.toUpperCase();
         runCommand(query);
         assertProcessIsRegistered(query);
     }
@@ -268,8 +275,23 @@ public class HiveHookIT {
     }
 
     private void assertProcessIsRegistered(String queryStr) throws Exception {
-        String dslQuery = String.format("%s where queryText = \"%s\"", HiveDataTypes.HIVE_PROCESS.getName(), queryStr);
-        assertEntityIsRegistered(dslQuery, true);
+//        String dslQuery = String.format("%s where queryText = \"%s\"", HiveDataTypes.HIVE_PROCESS.getName(),
+//                normalize(queryStr));
+//        assertEntityIsRegistered(dslQuery, true);
+        //todo replace with DSL
+        String typeName = HiveDataTypes.HIVE_PROCESS.getName();
+        String gremlinQuery = String.format("g.V.has('__typeName', '%s').has('%s.queryText', \"%s\").toList()",
+                typeName, typeName, normalize(queryStr));
+        JSONObject response = dgiCLient.searchByGremlin(gremlinQuery);
+        JSONArray results = response.getJSONArray(MetadataServiceClient.RESULTS);
+        Assert.assertEquals(results.length(), 1);
+    }
+
+    private String normalize(String str) {
+        if (StringUtils.isEmpty(str)) {
+            return null;
+        }
+        return StringEscapeUtils.escapeJava(str.toLowerCase());
     }
 
     private String assertTableIsRegistered(String dbName, String tableName) throws Exception {
