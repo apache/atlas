@@ -18,6 +18,7 @@
 
 package org.apache.hadoop.metadata.repository.graph;
 
+import com.google.inject.Singleton;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.Order;
@@ -51,6 +52,7 @@ import java.util.Map;
 /**
  * Adds index for properties of a given type when its added before any instances are added.
  */
+@Singleton
 public class GraphBackedSearchIndexer implements SearchIndexer {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphBackedSearchIndexer.class);

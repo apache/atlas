@@ -38,8 +38,6 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
         }
 
         try {
-            LOG.debug("graph rollback to cleanup previous state");
-            titanGraph.rollback();  //cleanup previous state
             Object response = invocation.proceed();
             titanGraph.commit();
             LOG.debug("graph commit");

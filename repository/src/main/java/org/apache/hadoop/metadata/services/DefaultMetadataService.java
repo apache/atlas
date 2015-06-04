@@ -20,6 +20,7 @@ package org.apache.hadoop.metadata.services;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import org.apache.hadoop.metadata.GraphTransaction;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.ParamChecker;
@@ -133,6 +134,7 @@ public class DefaultMetadataService implements MetadataService {
      * @return a unique id for this type
      */
     @Override
+    @GraphTransaction
     public JSONObject createType(String typeDefinition) throws MetadataException {
         ParamChecker.notEmpty(typeDefinition, "type definition cannot be empty");
 
