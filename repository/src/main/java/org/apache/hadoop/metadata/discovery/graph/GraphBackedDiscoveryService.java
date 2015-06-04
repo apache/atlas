@@ -23,8 +23,6 @@ import com.thinkaurelius.titan.core.TitanIndexQuery;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.gremlin.groovy.Gremlin;
-import com.tinkerpop.gremlin.java.GremlinPipeline;
 import org.apache.hadoop.metadata.GraphTransaction;
 import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.discovery.DiscoveryException;
@@ -123,13 +121,18 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
     @GraphTransaction
     public String searchByDSL(String dslQuery) throws DiscoveryException {
         LOG.info("Executing dsl query={}", dslQuery);
+        GremlinQueryResult queryResult = evaluate(dslQuery);
+        return queryResult.toJson();
+    }
+
+    public GremlinQueryResult evaluate(String dslQuery) throws DiscoveryException {
+        LOG.info("Executing dsl query={}", dslQuery);
         try {
             QueryParser queryParser = new QueryParser();
             Either<Parsers.NoSuccess, Expressions.Expression> either = queryParser.apply(dslQuery);
             if (either.isRight()) {
                 Expressions.Expression expression = either.right().get();
-                GremlinQueryResult queryResult = evaluate(expression);
-                return queryResult.toJson();
+                return evaluate(expression);
             }
         } catch (Exception e) { // unable to catch ExpressionException
             throw new DiscoveryException("Invalid expression : " + dslQuery, e);

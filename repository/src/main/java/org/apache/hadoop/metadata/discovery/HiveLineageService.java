@@ -22,10 +22,12 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.metadata.GraphTransaction;
 import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.ParamChecker;
 import org.apache.hadoop.metadata.PropertiesUtil;
 import org.apache.hadoop.metadata.discovery.graph.DefaultGraphPersistenceStrategy;
 import org.apache.hadoop.metadata.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.hadoop.metadata.query.Expressions;
+import org.apache.hadoop.metadata.query.GremlinQueryResult;
 import org.apache.hadoop.metadata.query.HiveLineageQuery;
 import org.apache.hadoop.metadata.query.HiveWhereUsedQuery;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
@@ -56,6 +58,7 @@ public class HiveLineageService implements LineageService {
     private static final String HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME;
 
     private static final String HIVE_TABLE_SCHEMA_QUERY;
+    private static final String HIVE_TABLE_EXISTS_QUERY;
 
     static {
         // todo - externalize this using type system - dog food
@@ -63,7 +66,6 @@ public class HiveLineageService implements LineageService {
             PropertiesConfiguration conf = PropertiesUtil.getApplicationProperties();
             HIVE_TABLE_TYPE_NAME =
                 conf.getString("metadata.lineage.hive.table.type.name",  "DataSet");
-                conf.getString("metadata.lineage.hive.table.type.name",  "hive_table");
             HIVE_PROCESS_TYPE_NAME =
                 conf.getString("metadata.lineage.hive.process.type.name", "Process");
             HIVE_PROCESS_INPUT_ATTRIBUTE_NAME =
@@ -74,6 +76,9 @@ public class HiveLineageService implements LineageService {
             HIVE_TABLE_SCHEMA_QUERY = conf.getString(
                     "metadata.lineage.hive.table.schema.query",
                     "hive_table where name=\"?\", columns");
+            HIVE_TABLE_EXISTS_QUERY = conf.getString(
+                    "metadata.lineage.hive.table.exists.query",
+                    "from hive_table where name=\"?\"");
         } catch (MetadataException e) {
             throw new RuntimeException(e);
         }
@@ -103,6 +108,8 @@ public class HiveLineageService implements LineageService {
     @GraphTransaction
     public String getOutputs(String tableName) throws DiscoveryException {
         LOG.info("Fetching lineage outputs for tableName={}", tableName);
+        ParamChecker.notEmpty(tableName, "table name cannot be null");
+        validateTableExists(tableName);
 
         HiveWhereUsedQuery outputsQuery = new HiveWhereUsedQuery(
                 HIVE_TABLE_TYPE_NAME, tableName, HIVE_PROCESS_TYPE_NAME,
@@ -129,6 +136,8 @@ public class HiveLineageService implements LineageService {
     @GraphTransaction
     public String getOutputsGraph(String tableName) throws DiscoveryException {
         LOG.info("Fetching lineage outputs graph for tableName={}", tableName);
+        ParamChecker.notEmpty(tableName, "table name cannot be null");
+        validateTableExists(tableName);
 
         HiveWhereUsedQuery outputsQuery = new HiveWhereUsedQuery(
                 HIVE_TABLE_TYPE_NAME, tableName, HIVE_PROCESS_TYPE_NAME,
@@ -148,6 +157,8 @@ public class HiveLineageService implements LineageService {
     @GraphTransaction
     public String getInputs(String tableName) throws DiscoveryException {
         LOG.info("Fetching lineage inputs for tableName={}", tableName);
+        ParamChecker.notEmpty(tableName, "table name cannot be null");
+        validateTableExists(tableName);
 
         HiveLineageQuery inputsQuery = new HiveLineageQuery(
                 HIVE_TABLE_TYPE_NAME, tableName, HIVE_PROCESS_TYPE_NAME,
@@ -174,6 +185,8 @@ public class HiveLineageService implements LineageService {
     @GraphTransaction
     public String getInputsGraph(String tableName) throws DiscoveryException {
         LOG.info("Fetching lineage inputs graph for tableName={}", tableName);
+        ParamChecker.notEmpty(tableName, "table name cannot be null");
+        validateTableExists(tableName);
 
         HiveLineageQuery inputsQuery = new HiveLineageQuery(
                 HIVE_TABLE_TYPE_NAME, tableName, HIVE_PROCESS_TYPE_NAME,
@@ -192,8 +205,24 @@ public class HiveLineageService implements LineageService {
     @Override
     @GraphTransaction
     public String getSchema(String tableName) throws DiscoveryException {
-        // todo - validate if indeed this is a table type and exists
+        LOG.info("Fetching schema for tableName={}", tableName);
+        ParamChecker.notEmpty(tableName, "table name cannot be null");
+        validateTableExists(tableName);
+
         String schemaQuery = HIVE_TABLE_SCHEMA_QUERY.replace("?", tableName);
         return discoveryService.searchByDSL(schemaQuery);
+    }
+
+    /**
+     * Validate if indeed this is a table type and exists.
+     *
+     * @param tableName table name
+     */
+    private void validateTableExists(String tableName) throws DiscoveryException {
+        String tableExistsQuery = HIVE_TABLE_EXISTS_QUERY.replace("?", tableName);
+        GremlinQueryResult queryResult = discoveryService.evaluate(tableExistsQuery);
+        if (!(queryResult.rows().length() > 0)) {
+            throw new IllegalArgumentException(tableName + " does not exist");
+        }
     }
 }
