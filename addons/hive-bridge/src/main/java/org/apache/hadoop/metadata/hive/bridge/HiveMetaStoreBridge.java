@@ -18,6 +18,7 @@
 
 package org.apache.hadoop.metadata.hive.bridge;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.api.Database;
@@ -158,9 +159,22 @@ public class HiveMetaStoreBridge {
         LOG.debug("Getting reference for database {}", databaseName);
         String typeName = HiveDataTypes.HIVE_DB.getName();
 
-        String dslQuery = String.format("%s where name = '%s' and clusterName = '%s'", HiveDataTypes.HIVE_DB.getName(),
+        String dslQuery = String.format("%s where name = '%s' and clusterName = '%s'", typeName,
                 databaseName.toLowerCase(), clusterName);
         return getEntityReferenceFromDSL(typeName, dslQuery);
+    }
+
+    public Referenceable getProcessReference(String queryStr) throws Exception {
+        LOG.debug("Getting reference for process with query {}", queryStr);
+        String typeName = HiveDataTypes.HIVE_PROCESS.getName();
+
+        //todo enable DSL
+//        String dslQuery = String.format("%s where queryText = \"%s\"", typeName, queryStr);
+//        return getEntityReferenceFromDSL(typeName, dslQuery);
+
+        String gremlinQuery = String.format("g.V.has('__typeName', '%s').has('%s.queryText', \"%s\").toList()",
+                typeName, typeName, StringEscapeUtils.escapeJava(queryStr));
+        return getEntityReferenceFromGremlin(typeName, gremlinQuery);
     }
 
     private Referenceable getEntityReferenceFromDSL(String typeName, String dslQuery) throws Exception {
