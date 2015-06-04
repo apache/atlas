@@ -23,6 +23,6 @@ angular.module('dgc').config(['$locationProvider', '$urlRouterProvider',
     function($locationProvider, $urlRouterProvider) {
         $locationProvider.hashPrefix('!');
         // For unmatched routes:
-        $urlRouterProvider.otherwise('/');
+        $urlRouterProvider.otherwise('/search');
     }
 ]);
