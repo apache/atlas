@@ -150,9 +150,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
             LOG.info("Index creation for type {} complete", typeName);
 
         } catch (Throwable throwable) {
-            // gets handle to currently open transaction
-            titanGraph.getManagementSystem().rollback();
             LOG.error("Error creating index for type {}", dataType, throwable);
+            throw new MetadataException("Error while creating index for type " + dataType, throwable);
         }
     }
 
