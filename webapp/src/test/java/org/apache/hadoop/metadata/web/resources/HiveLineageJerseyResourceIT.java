@@ -64,37 +64,6 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
     }
 
     @Test
-    public void testInputs() throws Exception {
-        WebResource resource = service
-                .path(BASE_URI)
-                .path("sales_fact_monthly_mv")
-                .path("inputs");
-
-        ClientResponse clientResponse = resource
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
-                .method(HttpMethod.GET, ClientResponse.class);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
-
-        String responseAsString = clientResponse.getEntity(String.class);
-        Assert.assertNotNull(responseAsString);
-        System.out.println("inputs = " + responseAsString);
-
-        JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
-
-        JSONObject results = response.getJSONObject(MetadataServiceClient.RESULTS);
-        Assert.assertNotNull(results);
-
-        JSONArray rows = results.getJSONArray("rows");
-        Assert.assertTrue(rows.length() > 0);
-
-        final JSONObject row = rows.getJSONObject(0);
-        JSONArray paths = row.getJSONArray("path");
-        Assert.assertTrue(paths.length() > 0);
-    }
-
-    @Test
     public void testInputsGraph() throws Exception {
         WebResource resource = service
                 .path(BASE_URI)
@@ -126,37 +95,6 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
 
         final JSONObject edges = values.getJSONObject("edges");
         Assert.assertEquals(edges.length(), 4);
-    }
-
-    @Test
-    public void testOutputs() throws Exception {
-        WebResource resource = service
-                .path(BASE_URI)
-                .path("sales_fact")
-                .path("outputs");
-
-        ClientResponse clientResponse = resource
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
-                .method(HttpMethod.GET, ClientResponse.class);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
-
-        String responseAsString = clientResponse.getEntity(String.class);
-        Assert.assertNotNull(responseAsString);
-        System.out.println("outputs = " + responseAsString);
-
-        JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
-
-        JSONObject results = response.getJSONObject(MetadataServiceClient.RESULTS);
-        Assert.assertNotNull(results);
-
-        JSONArray rows = results.getJSONArray("rows");
-        Assert.assertTrue(rows.length() > 0);
-
-        final JSONObject row = rows.getJSONObject(0);
-        JSONArray paths = row.getJSONArray("path");
-        Assert.assertTrue(paths.length() > 0);
     }
 
     @Test
