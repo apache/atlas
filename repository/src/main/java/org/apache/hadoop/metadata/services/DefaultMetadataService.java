@@ -90,10 +90,11 @@ public class DefaultMetadataService implements MetadataService {
     private void restoreTypeSystem() {
         LOG.info("Restoring type system from the store");
         try {
-            createSuperTypes();
-
             TypesDef typesDef = typeStore.restore();
             typeSystem.defineTypes(typesDef);
+
+            // restore types before creating super types
+            createSuperTypes();
 
         } catch (MetadataException e) {
             throw new RuntimeException(e);
@@ -107,7 +108,7 @@ public class DefaultMetadataService implements MetadataService {
             TypesUtil.createOptionalAttrDef("description", DataTypes.STRING_TYPE);
 
     @InterfaceAudience.Private
-    public void createSuperTypes() throws MetadataException {
+    private void createSuperTypes() throws MetadataException {
         if (typeSystem.isRegistered(MetadataServiceClient.DATA_SET_SUPER_TYPE)) {
             return; // this is already registered
         }
