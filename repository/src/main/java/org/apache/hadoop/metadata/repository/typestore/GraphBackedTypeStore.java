@@ -20,6 +20,7 @@ package org.apache.hadoop.metadata.repository.typestore;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -53,6 +54,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+@Singleton
 public class GraphBackedTypeStore implements ITypeStore {
     public static final String VERTEX_TYPE = "typeSystem";
     private static final String PROPERTY_PREFIX = Constants.INTERNAL_PROPERTY_KEY_PREFIX + "type.";
@@ -73,7 +75,6 @@ public class GraphBackedTypeStore implements ITypeStore {
     }
 
     @Override
-    @GraphTransaction
     public void store(TypeSystem typeSystem, ImmutableList<String> typeNames) throws MetadataException {
         ImmutableList<String> coreTypes = typeSystem.getCoreTypes();
         for (String typeName : typeNames) {

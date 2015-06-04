@@ -23,6 +23,7 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import junit.framework.Assert;
+import org.apache.hadoop.metadata.GraphTransaction;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.RepositoryMetadataModule;
 import org.apache.hadoop.metadata.TestUtils;
@@ -63,6 +64,7 @@ public class GraphBackedTypeStoreTest {
     }
 
     @Test
+    @GraphTransaction
     public void testStore() throws MetadataException {
         typeStore.store(ts);
         dumpGraph();
@@ -79,6 +81,7 @@ public class GraphBackedTypeStoreTest {
     }
 
     @Test (dependsOnMethods = "testStore")
+    @GraphTransaction
     public void testRestore() throws Exception {
         TypesDef types = typeStore.restore();
 
