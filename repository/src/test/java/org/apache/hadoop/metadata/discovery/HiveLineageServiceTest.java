@@ -162,6 +162,24 @@ public class HiveLineageServiceTest {
         Assert.assertTrue(paths.length() > 0);
     }
 
+    @Test (expectedExceptions = IllegalArgumentException.class)
+    public void testGetInputsTableNameNull() throws Exception {
+        hiveLineageService.getInputs(null);
+        Assert.fail();
+    }
+
+    @Test (expectedExceptions = IllegalArgumentException.class)
+    public void testGetInputsTableNameEmpty() throws Exception {
+        hiveLineageService.getInputs("");
+        Assert.fail();
+    }
+
+    @Test (expectedExceptions = IllegalArgumentException.class)
+    public void testGetInputsBadTableName() throws Exception {
+        hiveLineageService.getInputs("blah");
+        Assert.fail();
+    }
+
     @Test
     public void testGetInputsGraph() throws Exception {
         JSONObject results = new JSONObject(
@@ -191,6 +209,24 @@ public class HiveLineageServiceTest {
         final JSONObject row = rows.getJSONObject(0);
         JSONArray paths = row.getJSONArray("path");
         Assert.assertTrue(paths.length() > 0);
+    }
+
+    @Test (expectedExceptions = IllegalArgumentException.class)
+    public void testGetOututsTableNameNull() throws Exception {
+        hiveLineageService.getOutputs(null);
+        Assert.fail();
+    }
+
+    @Test (expectedExceptions = IllegalArgumentException.class)
+    public void testGetOutputsTableNameEmpty() throws Exception {
+        hiveLineageService.getOutputs("");
+        Assert.fail();
+    }
+
+    @Test (expectedExceptions = IllegalArgumentException.class)
+    public void testGetOutputsBadTableName() throws Exception {
+        hiveLineageService.getOutputs("blah");
+        Assert.fail();
     }
 
     @Test
@@ -235,6 +271,24 @@ public class HiveLineageServiceTest {
             Assert.assertNotNull(row.getString("dataType"));
             Assert.assertEquals(row.getString("$typeName$"), "hive_column");
         }
+    }
+
+    @Test (expectedExceptions = IllegalArgumentException.class)
+    public void testGetSchemaTableNameNull() throws Exception {
+        hiveLineageService.getSchema(null);
+        Assert.fail();
+    }
+
+    @Test (expectedExceptions = IllegalArgumentException.class)
+    public void testGetSchemaTableNameEmpty() throws Exception {
+        hiveLineageService.getSchema("");
+        Assert.fail();
+    }
+
+    @Test (expectedExceptions = IllegalArgumentException.class)
+    public void testGetSchemaBadTableName() throws Exception {
+        hiveLineageService.getSchema("blah");
+        Assert.fail();
     }
 
     private void setUpTypes() throws Exception {

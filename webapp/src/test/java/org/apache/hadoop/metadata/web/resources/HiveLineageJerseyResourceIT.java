@@ -166,6 +166,36 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
         }
     }
 
+    @Test
+    public void testSchemaForEmptyTable() throws Exception {
+        WebResource resource = service
+                .path(BASE_URI)
+                .path("")
+                .path("schema");
+
+        ClientResponse clientResponse = resource
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.GET, ClientResponse.class);
+        Assert.assertEquals(clientResponse.getStatus(),
+                Response.Status.NOT_FOUND.getStatusCode());
+    }
+
+    @Test
+    public void testSchemaForInvalidTable() throws Exception {
+        WebResource resource = service
+                .path(BASE_URI)
+                .path("blah")
+                .path("schema");
+
+        ClientResponse clientResponse = resource
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.GET, ClientResponse.class);
+        Assert.assertEquals(clientResponse.getStatus(),
+                Response.Status.BAD_REQUEST.getStatusCode());
+    }
+
     private void setUpTypes() throws Exception {
         TypesDef typesDef = createTypeDefinitions();
         createType(typesDef);
