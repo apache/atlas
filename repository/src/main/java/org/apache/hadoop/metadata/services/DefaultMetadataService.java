@@ -53,6 +53,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -83,8 +84,8 @@ public class DefaultMetadataService implements MetadataService {
         this.typeSystem = TypeSystem.getInstance();
         this.repository = repository;
 
-        restoreTypeSystem();
         registerListener(searchIndexer);
+        restoreTypeSystem();
     }
 
     private void restoreTypeSystem() {
@@ -113,17 +114,18 @@ public class DefaultMetadataService implements MetadataService {
             return; // this is already registered
         }
 
+        Map<String, IDataType> superTypes = new HashMap();
         HierarchicalTypeDefinition<ClassType> superTypeDefinition =
                 TypesUtil.createClassTypeDef(MetadataServiceClient.INFRASTRUCTURE_SUPER_TYPE,
-                        ImmutableList.<String>of(),
-                        NAME_ATTRIBUTE, DESCRIPTION_ATTRIBUTE);
-        typeSystem.defineClassType(superTypeDefinition);
+                        ImmutableList.<String>of(), NAME_ATTRIBUTE, DESCRIPTION_ATTRIBUTE);
+        superTypes.put(MetadataServiceClient.INFRASTRUCTURE_SUPER_TYPE, typeSystem.defineClassType
+                (superTypeDefinition));
 
         superTypeDefinition =
                 TypesUtil.createClassTypeDef(MetadataServiceClient.DATA_SET_SUPER_TYPE,
                         ImmutableList.<String>of(),
                         NAME_ATTRIBUTE, DESCRIPTION_ATTRIBUTE);
-        typeSystem.defineClassType(superTypeDefinition);
+        superTypes.put(MetadataServiceClient.DATA_SET_SUPER_TYPE, typeSystem.defineClassType(superTypeDefinition));
 
         superTypeDefinition =
                 TypesUtil.createClassTypeDef(MetadataServiceClient.PROCESS_SUPER_TYPE,
@@ -136,7 +138,8 @@ public class DefaultMetadataService implements MetadataService {
                                 DataTypes.arrayTypeName(MetadataServiceClient.DATA_SET_SUPER_TYPE),
                                 new Multiplicity(0, Integer.MAX_VALUE, false), false, null)
                 );
-        typeSystem.defineClassType(superTypeDefinition);
+        superTypes.put(MetadataServiceClient.PROCESS_SUPER_TYPE, typeSystem.defineClassType(superTypeDefinition));
+        onTypesAddedToRepo(superTypes);
     }
 
     /**
