@@ -193,7 +193,7 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
                 .type(MediaType.APPLICATION_JSON)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(),
-                Response.Status.BAD_REQUEST.getStatusCode());
+                Response.Status.NOT_FOUND.getStatusCode());
     }
 
     private void setUpTypes() throws Exception {

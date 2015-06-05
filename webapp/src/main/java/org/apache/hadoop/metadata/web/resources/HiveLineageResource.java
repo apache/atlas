@@ -22,6 +22,7 @@ import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.ParamChecker;
 import org.apache.hadoop.metadata.discovery.DiscoveryException;
 import org.apache.hadoop.metadata.discovery.LineageService;
+import org.apache.hadoop.metadata.repository.EntityNotFoundException;
 import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
@@ -80,6 +81,10 @@ public class HiveLineageResource {
             response.put(MetadataServiceClient.RESULTS, new JSONObject(jsonResult));
 
             return Response.ok(response).build();
+        } catch (EntityNotFoundException e) {
+            LOG.error("table entity not found for {}", tableName, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get lineage inputs graph for table {}", tableName, e);
             throw new WebApplicationException(
@@ -114,6 +119,10 @@ public class HiveLineageResource {
             response.put(MetadataServiceClient.RESULTS, new JSONObject(jsonResult));
 
             return Response.ok(response).build();
+        } catch (EntityNotFoundException e) {
+            LOG.error("table entity not found for {}", tableName, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get lineage outputs graph for table {}", tableName, e);
             throw new WebApplicationException(
@@ -148,6 +157,10 @@ public class HiveLineageResource {
             response.put(MetadataServiceClient.RESULTS, new JSONObject(jsonResult));
 
             return Response.ok(response).build();
+        } catch (EntityNotFoundException e) {
+            LOG.error("table entity not found for {}", tableName, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get schema for table {}", tableName, e);
             throw new WebApplicationException(

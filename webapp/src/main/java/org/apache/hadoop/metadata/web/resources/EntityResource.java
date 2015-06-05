@@ -142,7 +142,8 @@ public class EntityResource {
                 response.put(MetadataServiceClient.DEFINITION, entityDefinition);
                 status = Response.Status.OK;
             } else {
-                response.put(MetadataServiceClient.ERROR, Servlets.escapeJsonString(String.format("An entity with GUID={%s} does not exist", guid)));
+                response.put(MetadataServiceClient.ERROR, Servlets.escapeJsonString(
+                        String.format("An entity with GUID={%s} does not exist", guid)));
             }
 
             return Response.status(status).entity(response).build();
@@ -208,12 +209,15 @@ public class EntityResource {
                            @QueryParam("property") String property,
                            @QueryParam("value") String value) {
         try {
+            Preconditions.checkNotNull(property, "Entity property cannot be null");
+            Preconditions.checkNotNull(value, "Entity value cannot be null");
+
             metadataService.updateEntity(guid, property, value);
 
             JSONObject response = new JSONObject();
             response.put(MetadataServiceClient.REQUEST_ID, Thread.currentThread().getName());
             return Response.ok(response).build();
-        } catch (MetadataException e) {
+        } catch (MetadataException | IllegalArgumentException e) {
             LOG.error("Unable to add property {} to entity id {}", property, guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));

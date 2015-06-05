@@ -152,6 +152,22 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         tableInstance.set("level", 4);
     }
 
+    @Test(dependsOnMethods = "testSubmitEntity", expectedExceptions = IllegalArgumentException.class)
+    public void testAddNullProperty() throws Exception {
+        final String guid = tableId._getId();
+        //add property
+        addProperty(guid, null, "foo bar");
+        Assert.fail();
+    }
+
+    @Test(dependsOnMethods = "testSubmitEntity", expectedExceptions = IllegalArgumentException.class)
+    public void testAddNullPropertyValue() throws Exception {
+        final String guid = tableId._getId();
+        //add property
+        addProperty(guid, "description", null);
+        Assert.fail();
+    }
+
     @Test(dependsOnMethods = "testSubmitEntity")
     public void testAddReferenceProperty() throws Exception {
         //Create new db instance
@@ -360,6 +376,25 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         JSONObject response = new JSONObject(responseAsString);
         Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
         Assert.assertNotNull(response.get(MetadataServiceClient.GUID));
+    }
+
+    @Test(dependsOnMethods = "testAddTrait")
+    public void testAddExistingTrait() throws Exception {
+        final String traitName = "PII_Trait";
+
+        Struct traitInstance = new Struct(traitName);
+        String traitInstanceAsJSON = InstanceSerialization.toJson(traitInstance, true);
+        LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
+
+        final String guid = tableId._getId();
+        ClientResponse clientResponse = service
+                .path("api/metadata/entities")
+                .path(guid)
+                .path(TRAITS)
+                .accept(MediaType.APPLICATION_JSON)
+                .type(MediaType.APPLICATION_JSON)
+                .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
     }
 
     @Test(dependsOnMethods = "testGetTraitNames")
