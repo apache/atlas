@@ -21,6 +21,8 @@ package org.apache.hadoop.metadata.web.resources;
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.MetadataServiceClient;
+import org.apache.hadoop.metadata.ParamChecker;
+import org.apache.hadoop.metadata.repository.EntityNotFoundException;
 import org.apache.hadoop.metadata.services.MetadataService;
 import org.apache.hadoop.metadata.typesystem.types.ValueConversionException;
 import org.apache.hadoop.metadata.web.util.Servlets;
@@ -43,7 +45,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
@@ -131,6 +132,7 @@ public class EntityResource {
     public Response getEntityDefinition(@PathParam("guid") String guid) {
         try {
             LOG.debug("Fetching entity definition for guid={} ", guid);
+            ParamChecker.notEmpty(guid, "guid cannot be null");
             final String entityDefinition = metadataService.getEntityDefinition(guid);
 
             JSONObject response = new JSONObject();
@@ -148,10 +150,14 @@ public class EntityResource {
 
             return Response.status(status).entity(response).build();
 
-        } catch (MetadataException | IllegalArgumentException e) {
+        } catch (EntityNotFoundException e) {
             LOG.error("An entity with GUID={} does not exist", guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
+        } catch (MetadataException | IllegalArgumentException e) {
+            LOG.error("Bad GUID={}", guid, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
             LOG.error("Unable to get instance definition for GUID {}", guid, e);
             throw new WebApplicationException(
@@ -218,6 +224,10 @@ public class EntityResource {
             JSONObject response = new JSONObject();
             response.put(MetadataServiceClient.REQUEST_ID, Thread.currentThread().getName());
             return Response.ok(response).build();
+        } catch (EntityNotFoundException e) {
+            LOG.error("An entity with GUID={} does not exist", guid, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (MetadataException | IllegalArgumentException e) {
             LOG.error("Unable to add property {} to entity id {}", property, guid, e);
             throw new WebApplicationException(
@@ -251,6 +261,10 @@ public class EntityResource {
             response.put(MetadataServiceClient.COUNT, traitNames.size());
 
             return Response.ok(response).build();
+        } catch (EntityNotFoundException e) {
+            LOG.error("An entity with GUID={} does not exist", guid, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (MetadataException | IllegalArgumentException e) {
             LOG.error("Unable to get trait names for entity {}", guid, e);
             throw new WebApplicationException(
@@ -286,6 +300,10 @@ public class EntityResource {
             response.put(MetadataServiceClient.GUID, guid);
 
             return Response.created(locationURI).entity(response).build();
+        } catch (EntityNotFoundException e) {
+            LOG.error("An entity with GUID={} does not exist", guid, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (MetadataException | IOException | IllegalArgumentException e) {
             LOG.error("Unable to add trait for entity={}", guid, e);
             throw new WebApplicationException(
@@ -320,6 +338,10 @@ public class EntityResource {
             response.put(TRAIT_NAME, traitName);
 
             return Response.ok(response).build();
+        } catch (EntityNotFoundException e) {
+            LOG.error("An entity with GUID={} does not exist", guid, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (MetadataException | IllegalArgumentException e) {
             LOG.error("Unable to delete trait name={} for entity={}", traitName, guid, e);
             throw new WebApplicationException(

@@ -162,9 +162,9 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     public ITypedReferenceableInstance getEntityDefinition(String guid) throws RepositoryException {
         LOG.info("Retrieving entity with guid={}", guid);
 
-        try {
-            Vertex instanceVertex = getVertexForGUID(guid);
+        Vertex instanceVertex = getVertexForGUID(guid);
 
+        try {
             LOG.debug("Found a vertex {} for guid {}", instanceVertex, guid);
             return graphToInstanceMapper.mapGraphToTypedInstance(guid, instanceVertex);
 

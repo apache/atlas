@@ -23,7 +23,7 @@ import org.apache.hadoop.metadata.MetadataException;
 /**
  * A simple wrapper for 404.
  */
-public class EntityNotFoundException extends MetadataException {
+public class EntityNotFoundException extends RepositoryException {
     public EntityNotFoundException() {
     }
 
