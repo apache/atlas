@@ -64,6 +64,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     private Referenceable tableInstance;
     private Id tableId;
+    private String traitName;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -120,8 +121,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
             tableId = createInstance(tableInstance);
             Assert.fail("Was expecting an  exception here ");
         } catch (MetadataServiceException e) {
-           Assert.assertTrue(e.getMessage()
-                   .contains("\"error\":\"Cannot convert value '2014-07-11' to datatype date\""));
+           Assert.assertTrue(
+                   e.getMessage().contains("\"error\":\"Cannot convert value '2014-07-11' to datatype date\""));
         }
     }
 
@@ -315,8 +316,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     private void addNewType() throws Exception {
         HierarchicalTypeDefinition<ClassType> testTypeDefinition =
-                TypesUtil.createClassTypeDef("test",
-                        ImmutableList.<String>of(),
+                TypesUtil.createClassTypeDef("test", ImmutableList.<String>of(),
                         TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
 
@@ -349,7 +349,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test(dependsOnMethods = "testGetTraitNames")
     public void testAddTrait() throws Exception {
-        final String traitName = "PII_Trait";
+        traitName = "PII_Trait" + randomString();
         HierarchicalTypeDefinition<TraitType> piiTrait =
                 TypesUtil.createTraitTypeDef(traitName, ImmutableList.<String>of());
         String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
@@ -469,7 +469,6 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test(dependsOnMethods = "testAddTrait")
     public void testDeleteTrait() throws Exception {
-        final String traitName = "PII_Trait";
         final String guid = tableId._getId();
 
         ClientResponse clientResponse = service
@@ -510,12 +509,17 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         JSONObject response = new JSONObject(responseAsString);
         Assert.assertNotNull(response.get(MetadataServiceClient.ERROR));
-        Assert.assertEquals(response.getString(MetadataServiceClient.ERROR), "trait=" + traitName + " should be defined in type system before it can be deleted");
+        Assert.assertEquals(response.getString(MetadataServiceClient.ERROR),
+                "trait=" + traitName + " should be defined in type system before it can be deleted");
         Assert.assertNotNull(response.get(MetadataServiceClient.STACKTRACE));
     }
 
     private String random() {
         return RandomStringUtils.random(10);
+    }
+
+    private String randomString() {
+        return RandomStringUtils.randomAlphanumeric(10);
     }
 
     @Test
