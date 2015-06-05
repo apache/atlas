@@ -16,8 +16,11 @@
   ~ limitations under the License.
   -->
 
-<div class="row">
-    <div role="tabpanel" class="col-lg-12" data-ng-controller="DetailsController">
+<div class="row" data-ng-controller="DetailsController">
+    <ul class="breadcrumb">
+        <li><button class="btn btn-link" data-ng-click="goBack()">Back To Result</button> </li>
+    </ul>
+    <div role="tabpanel" class="col-lg-12">
         <h2>Name: {{details.values.name}}</h2>
         <h4>Description: {{details.values.description}}</h4>
         <tabset>

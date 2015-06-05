@@ -18,8 +18,8 @@
 
 'use strict';
 
-angular.module('dgc.details').controller('DetailsController', ['$scope', '$stateParams', 'DetailsResource',
-    function($scope, $stateParams, DetailsResource) {
+angular.module('dgc.details').controller('DetailsController', ['$window', '$scope', '$stateParams', 'DetailsResource',
+    function($window, $scope, $stateParams, DetailsResource) {
 
         $scope.tableName = false;
         DetailsResource.get({
@@ -41,5 +41,10 @@ angular.module('dgc.details').controller('DetailsController', ['$scope', '$state
                 tableName: $scope.tableName
             });
         };
+
+        $scope.goBack = function() {
+            $window.history.back();
+        };
+
     }
 ]);
