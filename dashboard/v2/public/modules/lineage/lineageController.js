@@ -110,9 +110,9 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
 
             var margin = {
                 top: 100,
-                right: 10,
+                right: 50,
                 bottom: 30,
-                left: 100
+                left: 50
             };
             width = width - margin.right - margin.left;
             height = height - margin.top - margin.bottom;
@@ -120,8 +120,7 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
             var i = 0;
 
             var tree = d3.layout.tree()
-
-            .size([height, width]);
+                .size([height, width]);
 
             var diagonal = d3.svg.diagonal()
                 .projection(function(d) {

@@ -68,11 +68,10 @@ div.lineage {
 /*}*/
 
 .lineage-viz {
-    padding: 5px;
     margin: 0 auto;
     overflow: auto;
-    border-top: none;
-    border-right: inherit  ;
+    /*border: 1px solid #ddd;
+    border-top: none;*/
 
 }
 /*.images {*/
