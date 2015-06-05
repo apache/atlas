@@ -389,7 +389,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test(dependsOnMethods = "testAddTrait")
     public void testAddExistingTrait() throws Exception {
-        final String traitName = "PII_Trait";
+        final String traitName = "PII_Trait" + randomString();
 
         Struct traitInstance = new Struct(traitName);
         String traitInstanceAsJSON = InstanceSerialization.toJson(traitInstance, true);
@@ -408,7 +408,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test(dependsOnMethods = "testGetTraitNames")
     public void testAddTraitWithAttribute() throws Exception {
-            final String traitName = "P_I_I";
+        final String traitName = "PII_Trait" + randomString();
         HierarchicalTypeDefinition<TraitType> piiTrait =
                 TypesUtil.createTraitTypeDef(traitName, ImmutableList.<String>of(),
                         TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
@@ -456,7 +456,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testAddTraitWithNoRegistration() throws Exception {
-        final String traitName = "PII_Trait_Blah";
+        final String traitName = "PII_Trait" + randomString();
         HierarchicalTypeDefinition<TraitType> piiTrait =
                 TypesUtil.createTraitTypeDef(traitName, ImmutableList.<String>of());
         String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
