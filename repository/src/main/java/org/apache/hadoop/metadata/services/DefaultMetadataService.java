@@ -328,6 +328,9 @@ public class DefaultMetadataService implements MetadataService {
         // ensure trait type is already registered with the TS
         Preconditions.checkArgument(typeSystem.isRegistered(traitName),
                 "trait=%s should be defined in type system before it can be added", traitName);
+        // ensure trait is not already defined
+        Preconditions.checkArgument(getTraitNames(guid).contains(traitName),
+                "trait=%s is already defined for entity=%s", traitName, guid);
 
         repository.addTrait(guid, traitInstance);
 
