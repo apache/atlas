@@ -4,13 +4,13 @@
  * distributed with this work for additional information
  * regarding copyright ownership.  The ASF licenses this file
  * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
+ * 'License'); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
+ * distributed under the License is distributed on an 'AS IS' BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -18,8 +18,8 @@
 
 'use strict';
 
-angular.module('dgc.lineage').controller('LineageController', ['$element', '$scope', '$state', '$stateParams', 'lodash', 'LineageResource', 'd3', 'dagreD3',
-    function($element, $scope, $state, $stateParams, _, LineageResource, d3, dagreD3) {
+angular.module('dgc.lineage').controller('LineageController', ['$element', '$scope', '$state', '$stateParams', 'lodash', 'LineageResource', 'd3',
+    function($element, $scope, $state, $stateParams, _, LineageResource, d3) {
 
         function getLineageData(tableData, callRender) {
             LineageResource.get({
@@ -62,99 +62,148 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
         });
 
         function transformData(metaData) {
-            var nodes = [];
-            var name, guid;
-            var nodeGuids = Object.keys(metaData.values.vertices);
-            for (var index in nodeGuids) {
-                name = metaData.values.vertices[nodeGuids[index]].values.name;
-                guid = nodeGuids[index];
-                nodes.push({
+            var edges = metaData.values.edges,
+                vertices = metaData.values.vertices,
+                nodes = {};
+
+            function getNode(guid) {
+                var vertex = {
                     guid: guid,
-                    label: name,
-                    shape: 'rect'
+                    name: vertices.hasOwnProperty(guid) ? vertices[guid].values.name : 'Load Process',
+                    type: vertices.hasOwnProperty(guid) ? vertices[guid].values.vertexId.values.typeName : 'LoadProcess'
+                };
+                if (!nodes.hasOwnProperty(guid)) {
+                    nodes[guid] = vertex;
+                }
+                return nodes[guid];
+            }
+
+            function attachParent(edge, node) {
+                edge.forEach(function eachPoint(childGuid) {
+                    var childNode = getNode(childGuid);
+                    node.children = node.children || [];
+                    node.children.push(childNode);
+                    childNode.parent = node.guid;
                 });
             }
 
-            var edges = [];
-            var parent;
-            var child;
-            var edgesParents = Object.keys(metaData.values.edges);
-            for (index in edgesParents) {
-                parent = edgesParents[index];
-                for (var j = 0; j < metaData.values.edges[parent].length; j++) {
-                    child = metaData.values.edges[parent][j];
-                    if (!metaData.values.vertices.hasOwnProperty(child)) {
-                        nodes.push({
-                            guid: child,
-                            label: 'Load Process',
-                            shape: 'circle'
-                        });
-                    }
-                    edges.push({
-                        parent: parent,
-                        child: child
-                    });
-                }
+            /* Loop through all edges and attach them to correct parent */
+            for (var guid in edges) {
+                var edge = edges[guid],
+                    node = getNode(guid);
+
+                /* Attach parent to each endpoint of edge */
+                attachParent(edge, node);
             }
-            return {
-                nodes: nodes,
-                edges: edges
-            };
+
+            /* Return the first node w/o parent, this is root node*/
+            return _.find(nodes, function(node) {
+                return !node.hasOwnProperty('parent');
+            });
         }
 
         function renderGraph(data, container) {
-            // Create a new directed graph
-            var g = new dagreD3
-                .graphlib
-                .Graph()
-                .setGraph({
-                    rankdir: 'LR'
-                });
-
-            // Automatically label each of the nodes
-            //g.setNode('DB (sales)', { label: 'Sales DB',  width: 144, height: 100 })
-            //states.forEach(function(state) { g.setNode(state, { label: state }); });
-
-            _.forEach(data.nodes, function(node) {
-                g.setNode(node.guid, {
-                    label: node.label,
-                    shape: node.shape
-                });
-            });
-
-            _.forEach(data.edges, function(edge) {
-                g.setEdge(edge.parent, edge.child, {
-                    label: ''
-                });
-            });
-
-            // Set some general styles
-            g.nodes().forEach(function(v) {
-                var node = g.node(v);
-                node.rx = node.ry = 5;
-            });
-
+            // ************** Generate the tree diagram	 *****************
             var element = d3.select(container.element),
                 width = Math.max(container.width, 960),
-                height = Math.max(container.height, 350),
-                inner = element.select('svg')
-                .attr('width', width)
-                .attr('height', height)
-                .select('g');
+                height = Math.max(container.height, 350);
 
-            // Create the renderer
-            var render = new dagreD3.render();
+            var margin = {
+                top: 100,
+                right: 50,
+                bottom: 30,
+                left: 50
+            };
+            width = width - margin.right - margin.left;
+            height = height - margin.top - margin.bottom;
 
-            // Run the renderer. This is what draws the final graph.
-            render(inner, g);
+            var i = 0;
 
-            // Center the graph
-            //var initialScale = 0.75;
-            //  zoom
-            //     .translate([(container.attr('width') - g.graph().width * initialScale) / 2, 20])
-            //    .scale(initialScale)
-            //    .event(container);
-            //container.attr('height', g.graph().height * initialScale + 90);
+            var tree = d3.layout.tree()
+                .size([height, width]);
+
+            var diagonal = d3.svg.diagonal()
+                .projection(function(d) {
+                    return [d.y, d.x];
+                });
+
+            var svg = element.select('svg')
+                .attr('width', width + margin.right + margin.left)
+                .attr('height', height + margin.top + margin.bottom)
+                .select('g')
+
+            .attr('transform',
+                'translate(' + margin.left + ',' + margin.right + ')');
+            //arrow
+            svg.append("svg:defs").append("svg:marker").attr("id", "arrow").attr("viewBox", "0 0 10 10").attr("refX", 26).attr("refY", 5).attr("markerUnits", "strokeWidth").attr("markerWidth", 6).attr("markerHeight", 9).attr("orient", "auto").append("svg:path").attr("d", "M 0 0 L 10 5 L 0 10 z");
+
+            var root = data;
+
+            function update(source) {
+
+                // Compute the new tree layout.
+                var nodes = tree.nodes(source).reverse(),
+                    links = tree.links(nodes);
+
+                // Normalize for fixed-depth.
+                nodes.forEach(function(d) {
+                    d.y = d.depth * 180;
+                });
+
+                // Declare the nodes…
+                var node = svg.selectAll('g.node')
+                    .data(nodes, function(d) {
+                        return d.id || (d.id = ++i);
+                    });
+
+                // Enter the nodes.
+                var nodeEnter = node.enter().append('g')
+                    .attr('class', 'node')
+                    .attr('transform', function(d) {
+                        return 'translate(' + d.y + ',' + d.x + ')';
+                    });
+
+                nodeEnter.append("image")
+                    .attr("xlink:href", function(d) {
+                        //return d.icon;
+                        return d.type === 'Table' ? '../img/tableicon.png' : '../img/process.png';
+                    })
+                    .attr("x", "-12px")
+                    .attr("y", "-12px")
+                    .attr("width", "24px")
+                    .attr("height", "24px");
+
+                nodeEnter.append('text')
+                    .attr('x', function(d) {
+                        return d.children || d._children ?
+                            (5) * -1 : +15;
+                    })
+                    .attr('dy', '-1.35em')
+                    .attr('text-anchor', function(d) {
+                        return d.children || d._children ? 'middle' : 'middle';
+                    })
+                    .text(function(d) {
+                        return d.name;
+                    })
+
+                .style('fill-opacity', 1);
+
+                // Declare the links…
+                var link = svg.selectAll('path.link')
+                    .data(links, function(d) {
+                        return d.target.id;
+                    });
+
+                link.enter().insert('path', 'g')
+                    .attr('class', 'link')
+                    //.style('stroke', function(d) { return d.target.level; })
+                    .style('stroke', 'green')
+                    .attr('d', diagonal);
+                link.attr("marker-end", "url(#arrow)");
+
+            }
+
+            update(root);
         }
 
     }
