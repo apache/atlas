@@ -69,7 +69,8 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
             function getNode(guid) {
                 var vertex = {
                     guid: guid,
-                    name: vertices.hasOwnProperty(guid) ? vertices[guid].values.name : 'Load Process-Added'
+                    name: vertices.hasOwnProperty(guid) ? vertices[guid].values.name : 'Load Process',
+                    type: vertices.hasOwnProperty(guid) ? vertices[guid].values.vertexId.values.typeName : 'LoadProcess'
                 };
                 if (!nodes.hasOwnProperty(guid)) {
                     nodes[guid] = vertex;
@@ -108,10 +109,10 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                 height = Math.max(container.height, 350);
 
             var margin = {
-                top: 20,
-                right: 120,
-                bottom: 20,
-                left: 120
+                top: 100,
+                right: 10,
+                bottom: 30,
+                left: 100
             };
             width = width - margin.right - margin.left;
             height = height - margin.top - margin.bottom;
@@ -119,7 +120,8 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
             var i = 0;
 
             var tree = d3.layout.tree()
-                .size([height, width]);
+
+            .size([height, width]);
 
             var diagonal = d3.svg.diagonal()
                 .projection(function(d) {
@@ -130,8 +132,11 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                 .attr('width', width + margin.right + margin.left)
                 .attr('height', height + margin.top + margin.bottom)
                 .select('g')
-                .attr('transform',
-                    'translate(' + margin.left + ',' + margin.top + ')');
+
+            .attr('transform',
+                'translate(' + margin.left + ',' + margin.right + ')');
+            //arrow
+            svg.append("svg:defs").append("svg:marker").attr("id", "arrow").attr("viewBox", "0 0 10 10").attr("refX", 26).attr("refY", 5).attr("markerUnits", "strokeWidth").attr("markerWidth", 6).attr("markerHeight", 9).attr("orient", "auto").append("svg:path").attr("d", "M 0 0 L 10 5 L 0 10 z");
 
             var root = data;
 
@@ -159,28 +164,30 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                         return 'translate(' + d.y + ',' + d.x + ')';
                     });
 
-                nodeEnter.append('image')
-                    .attr('xlink:href', function(d) {
-                        return d.icon;
+                nodeEnter.append("image")
+                    .attr("xlink:href", function(d) {
+                        //return d.icon;
+                        return d.type === 'Table' ? '../img/tableicon.png' : '../img/process.png';
                     })
-                    .attr('x', '-12px')
-                    .attr('y', '-12px')
-                    .attr('width', '24px')
-                    .attr('height', '24px');
+                    .attr("x", "-12px")
+                    .attr("y", "-12px")
+                    .attr("width", "24px")
+                    .attr("height", "24px");
 
                 nodeEnter.append('text')
                     .attr('x', function(d) {
                         return d.children || d._children ?
-                            (15) * -1 : +15;
+                            (5) * -1 : +15;
                     })
-                    .attr('dy', '.35em')
+                    .attr('dy', '-1.35em')
                     .attr('text-anchor', function(d) {
-                        return d.children || d._children ? 'end' : 'start';
+                        return d.children || d._children ? 'middle' : 'middle';
                     })
                     .text(function(d) {
                         return d.name;
                     })
-                    .style('fill-opacity', 1);
+
+                .style('fill-opacity', 1);
 
                 // Declare the links…
                 var link = svg.selectAll('path.link')
@@ -188,12 +195,12 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                         return d.target.id;
                     });
 
-                // Enter the links.
                 link.enter().insert('path', 'g')
                     .attr('class', 'link')
                     //.style('stroke', function(d) { return d.target.level; })
-                    .style('stroke', '#000')
+                    .style('stroke', 'green')
                     .attr('d', diagonal);
+                link.attr("marker-end", "url(#arrow)");
 
             }
 

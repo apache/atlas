@@ -120,10 +120,10 @@ footer.navbar-bottom img {
     min-height: 0;
     padding: 5px 5px 5px 0;
 }
-#Details
-{
-    height: 800px;
-}
+/*#Details*/
+/*{*/
+    /*height: 800px;*/
+/*}*/
 .pagination {
     float: right;
 }
