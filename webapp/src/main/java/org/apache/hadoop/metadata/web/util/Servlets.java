@@ -48,6 +48,7 @@ public final class Servlets {
         /* singleton */
     }
 
+    public static final String JSON_MEDIA_TYPE = MediaType.APPLICATION_JSON + "; charset=UTF-8";
     /**
      * Returns the user of the given request.
      *

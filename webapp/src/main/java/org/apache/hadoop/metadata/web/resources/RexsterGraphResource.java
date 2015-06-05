@@ -115,7 +115,7 @@ public class RexsterGraphResource {
      */
     @GET
     @Path("/vertices/{id}")
-    @Produces({MediaType.APPLICATION_JSON})
+    @Produces({Servlets.JSON_MEDIA_TYPE})
     public Response getVertex(@PathParam("id") final String vertexId) {
         LOG.info("Get vertex for vertexId= {}", vertexId);
         validateInputs("Invalid argument: vertex id passed is null or empty.", vertexId);
@@ -152,7 +152,7 @@ public class RexsterGraphResource {
      */
     @GET
     @Path("/vertices/properties/{id}")
-    @Produces({MediaType.APPLICATION_JSON})
+    @Produces({Servlets.JSON_MEDIA_TYPE})
     public Response getVertexProperties(@PathParam("id") final String vertexId,
                                         @DefaultValue("false") @QueryParam("relationships")
                                         final String relationships) {
@@ -192,7 +192,7 @@ public class RexsterGraphResource {
      */
     @GET
     @Path("/vertices")
-    @Produces({MediaType.APPLICATION_JSON})
+    @Produces({Servlets.JSON_MEDIA_TYPE})
     public Response getVertices(@QueryParam("key") final String key,
                                 @QueryParam("value") final String value) {
         LOG.info("Get vertices for property key= {}, value= {}", key, value);
@@ -216,7 +216,7 @@ public class RexsterGraphResource {
      */
     @GET
     @Path("vertices/{id}/{direction}")
-    @Produces({MediaType.APPLICATION_JSON})
+    @Produces({Servlets.JSON_MEDIA_TYPE})
     public Response getVertexEdges(@PathParam("id") String vertexId,
                                    @PathParam("direction") String direction) {
         LOG.info("Get vertex edges for vertexId= {}, direction= {}", vertexId, direction);
@@ -288,7 +288,7 @@ public class RexsterGraphResource {
      */
     @GET
     @Path("/edges/{id}")
-    @Produces({MediaType.APPLICATION_JSON})
+    @Produces({Servlets.JSON_MEDIA_TYPE})
     public Response getEdge(@PathParam("id") final String edgeId) {
         LOG.info("Get vertex for edgeId= {}", edgeId);
         validateInputs("Invalid argument: edge id passed is null or empty.", edgeId);

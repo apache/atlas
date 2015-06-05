@@ -78,8 +78,8 @@ public class TypesResource {
      * domain. Could represent things like Hive Database, Hive Table, etc.
      */
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response submit(@Context HttpServletRequest request) {
         try {
             final String typeDefinition = Servlets.getRequestPayload(request);
@@ -119,7 +119,7 @@ public class TypesResource {
      */
     @GET
     @Path("{typeName}")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getDefinition(@Context HttpServletRequest request,
                                   @PathParam("typeName") String typeName) {
         try {
@@ -155,7 +155,7 @@ public class TypesResource {
      * @return entity names response payload as json
      */
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getTypesByFilter(@Context HttpServletRequest request,
                                      @DefaultValue(TYPE_ALL) @QueryParam("type") String type) {
         try {

@@ -65,8 +65,8 @@ public class HiveLineageResource {
      */
     @GET
     @Path("table/{tableName}/inputs/graph")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response inputsGraph(@Context HttpServletRequest request,
                                 @PathParam("tableName") String tableName) {
         LOG.info("Fetching lineage inputs graph for tableName={}", tableName);
@@ -103,8 +103,8 @@ public class HiveLineageResource {
      */
     @GET
     @Path("table/{tableName}/outputs/graph")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response outputsGraph(@Context HttpServletRequest request,
                                  @PathParam("tableName") String tableName) {
         LOG.info("Fetching lineage outputs graph for tableName={}", tableName);
@@ -141,8 +141,8 @@ public class HiveLineageResource {
      */
     @GET
     @Path("table/{tableName}/schema")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response schema(@Context HttpServletRequest request,
                            @PathParam("tableName") String tableName) {
         LOG.info("Fetching schema for tableName={}", tableName);

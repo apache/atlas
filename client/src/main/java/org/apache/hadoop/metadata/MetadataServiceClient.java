@@ -82,7 +82,7 @@ public class MetadataServiceClient {
         PropertiesConfiguration clientConfig = null;
         try {
             clientConfig = getClientProperties();
-            if (clientConfig.getBoolean(TLS_ENABLED)  || clientConfig.getString("metadata.http.authentication.type") != null) {
+            if (clientConfig.getBoolean(TLS_ENABLED, false)) {
                 // create an SSL properties configuration if one doesn't exist.  SSLFactory expects a file, so forced to create a
                 // configuration object, persist it, then subsequently pass in an empty configuration to SSLFactory
                 SecureClientUtils.persistSSLClientConfiguration(clientConfig);
