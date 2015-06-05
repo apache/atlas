@@ -32,6 +32,7 @@ import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
 import org.apache.hadoop.metadata.typesystem.types.TraitType;
 import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
+import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
@@ -40,7 +41,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.HttpMethod;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
@@ -74,8 +74,8 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
                     .path("api/metadata/types");
 
             ClientResponse clientResponse = resource
-                    .accept(MediaType.APPLICATION_JSON)
-                    .type(MediaType.APPLICATION_JSON)
+                    .accept(Servlets.JSON_MEDIA_TYPE)
+                    .type(Servlets.JSON_MEDIA_TYPE)
                     .method(HttpMethod.POST, ClientResponse.class, typesAsJSON);
             Assert.assertEquals(clientResponse.getStatus(), Response.Status.CREATED.getStatusCode());
 
@@ -98,8 +98,8 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
                     .path(typeDefinition.typeName);
 
             ClientResponse clientResponse = resource
-                    .accept(MediaType.APPLICATION_JSON)
-                    .type(MediaType.APPLICATION_JSON)
+                    .accept(Servlets.JSON_MEDIA_TYPE)
+                    .type(Servlets.JSON_MEDIA_TYPE)
                     .method(HttpMethod.GET, ClientResponse.class);
             Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
@@ -130,8 +130,8 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
                 .path("blah");
 
         ClientResponse clientResponse = resource
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
     }
@@ -142,8 +142,8 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
                 .path("api/metadata/types");
 
         ClientResponse clientResponse = resource
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
@@ -166,8 +166,8 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
 
         ClientResponse clientResponse = resource
                 .queryParam("type", DataTypes.TypeCategory.TRAIT.name())
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
