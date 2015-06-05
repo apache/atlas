@@ -76,7 +76,7 @@ public class AdminResource {
      */
     @GET
     @Path("version")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getVersion() {
         if (version == null) {
             try {

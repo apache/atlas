@@ -33,8 +33,18 @@ import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization$;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization$;
 import org.apache.hadoop.metadata.typesystem.persistence.Id;
-import org.apache.hadoop.metadata.typesystem.types.*;
+import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.ClassType;
+import org.apache.hadoop.metadata.typesystem.types.DataTypes;
+import org.apache.hadoop.metadata.typesystem.types.EnumTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.EnumValue;
+import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
+import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.TraitType;
+import org.apache.hadoop.metadata.typesystem.types.TypeUtils;
 import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
+import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
@@ -44,7 +54,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.HttpMethod;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.UUID;
@@ -209,8 +218,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .path(guid);
 
         return resource.queryParam("property", property).queryParam("value", value)
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.PUT, ClientResponse.class);
     }
 
@@ -218,8 +227,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         WebResource resource = service
                 .path("api/metadata/entities")
                 .path(guid);
-        return resource.accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+        return resource.accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
     }
 
@@ -239,8 +248,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .path("blah");
 
         ClientResponse clientResponse = resource
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
 
@@ -257,8 +266,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         ClientResponse clientResponse = service
                 .path("api/metadata/entities")
                 .queryParam("type", TABLE_TYPE)
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
@@ -278,8 +287,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         ClientResponse clientResponse = service
                 .path("api/metadata/entities")
                 .queryParam("type", "blah")
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
 
@@ -299,8 +308,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         ClientResponse clientResponse = service
                 .path("api/metadata/entities")
                 .queryParam("type", "test")
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
@@ -331,8 +340,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .path("api/metadata/entities")
                 .path(guid)
                 .path(TRAITS)
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
@@ -365,8 +374,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .path("api/metadata/entities")
                 .path(guid)
                 .path(TRAITS)
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.CREATED.getStatusCode());
 
@@ -391,8 +400,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .path("api/metadata/entities")
                 .path(guid)
                 .path(TRAITS)
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
     }
@@ -417,8 +426,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .path("api/metadata/entities")
                 .path(guid)
                 .path(TRAITS)
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.CREATED.getStatusCode());
 
@@ -461,8 +470,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .path("api/metadata/entities")
                 .path("random")
                 .path(TRAITS)
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
     }
@@ -476,8 +485,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .path(guid)
                 .path(TRAITS)
                 .path(traitName)
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.DELETE, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
@@ -499,8 +508,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .path("random")
                 .path(TRAITS)
                 .path(traitName)
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.DELETE, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
 

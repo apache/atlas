@@ -75,6 +75,8 @@ public class MetadataServiceClient {
     public static final String DATA_SET_SUPER_TYPE = "DataSet";
     public static final String PROCESS_SUPER_TYPE = "Process";
 
+    public static final String JSON_MEDIA_TYPE = MediaType.APPLICATION_JSON + "; charset=UTF-8";
+
     private WebResource service;
 
     public MetadataServiceClient(String baseUrl) {
@@ -213,9 +215,9 @@ public class MetadataServiceClient {
 
     /**
      * Updates property for the entity corresponding to guid
-     * @param guid
-     * @param property
-     * @param value
+     * @param guid      guid
+     * @param property  property key
+     * @param value     property value
      */
     public JSONObject updateEntity(String guid, String property, String value) throws MetadataServiceException {
         WebResource resource = getResource(API.UPDATE_ENTITY, guid);
@@ -314,11 +316,11 @@ public class MetadataServiceClient {
     private JSONObject callAPIWithResource(API api, WebResource resource, Object requestObject)
             throws MetadataServiceException {
         ClientResponse clientResponse = resource
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(JSON_MEDIA_TYPE)
+                .type(JSON_MEDIA_TYPE)
                 .method(api.getMethod(), ClientResponse.class, requestObject);
 
-        Response.Status expectedStatus = (api.getMethod() == HttpMethod.POST)
+        Response.Status expectedStatus = HttpMethod.POST.equals(api.getMethod())
             ? Response.Status.CREATED : Response.Status.OK;
         if (clientResponse.getStatus() == expectedStatus.getStatusCode()) {
             String responseAsString = clientResponse.getEntity(String.class);

@@ -21,13 +21,13 @@ package org.apache.hadoop.metadata.web.resources;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.HttpMethod;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 /**
@@ -46,8 +46,8 @@ public class AdminJerseyResourceIT extends BaseResourceIT {
                 .path("api/metadata/admin/version");
 
         ClientResponse clientResponse = resource
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 

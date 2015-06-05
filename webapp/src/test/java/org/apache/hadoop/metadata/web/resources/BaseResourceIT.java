@@ -30,12 +30,12 @@ import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
 import org.apache.hadoop.metadata.typesystem.persistence.Id;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
 import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 
 import javax.ws.rs.HttpMethod;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
@@ -73,8 +73,8 @@ public abstract class BaseResourceIT {
                 .path("api/metadata/types");
 
         ClientResponse clientResponse = resource
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.POST, ClientResponse.class, typesAsJSON);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.CREATED.getStatusCode());
 
