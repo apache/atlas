@@ -30,6 +30,7 @@ import org.apache.hadoop.metadata.query.Expressions;
 import org.apache.hadoop.metadata.query.GremlinQueryResult;
 import org.apache.hadoop.metadata.query.HiveLineageQuery;
 import org.apache.hadoop.metadata.query.HiveWhereUsedQuery;
+import org.apache.hadoop.metadata.repository.EntityNotFoundException;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
 import org.apache.hadoop.metadata.repository.graph.GraphProvider;
 import org.slf4j.Logger;
@@ -75,10 +76,10 @@ public class HiveLineageService implements LineageService {
 
             HIVE_TABLE_SCHEMA_QUERY = conf.getString(
                     "metadata.lineage.hive.table.schema.query",
-                    "hive_table where name=\"?\", columns");
+                    "hive_table where name=\"%s\", columns");
             HIVE_TABLE_EXISTS_QUERY = conf.getString(
                     "metadata.lineage.hive.table.exists.query",
-                    "from hive_table where name=\"?\"");
+                    "from hive_table where name=\"%s\"");
         } catch (MetadataException e) {
             throw new RuntimeException(e);
         }
@@ -106,7 +107,7 @@ public class HiveLineageService implements LineageService {
      */
     @Override
     @GraphTransaction
-    public String getOutputs(String tableName) throws DiscoveryException {
+    public String getOutputs(String tableName) throws MetadataException {
         LOG.info("Fetching lineage outputs for tableName={}", tableName);
         ParamChecker.notEmpty(tableName, "table name cannot be null");
         validateTableExists(tableName);
@@ -134,7 +135,7 @@ public class HiveLineageService implements LineageService {
      */
     @Override
     @GraphTransaction
-    public String getOutputsGraph(String tableName) throws DiscoveryException {
+    public String getOutputsGraph(String tableName) throws MetadataException {
         LOG.info("Fetching lineage outputs graph for tableName={}", tableName);
         ParamChecker.notEmpty(tableName, "table name cannot be null");
         validateTableExists(tableName);
@@ -155,7 +156,7 @@ public class HiveLineageService implements LineageService {
      */
     @Override
     @GraphTransaction
-    public String getInputs(String tableName) throws DiscoveryException {
+    public String getInputs(String tableName) throws MetadataException {
         LOG.info("Fetching lineage inputs for tableName={}", tableName);
         ParamChecker.notEmpty(tableName, "table name cannot be null");
         validateTableExists(tableName);
@@ -183,7 +184,7 @@ public class HiveLineageService implements LineageService {
      */
     @Override
     @GraphTransaction
-    public String getInputsGraph(String tableName) throws DiscoveryException {
+    public String getInputsGraph(String tableName) throws MetadataException {
         LOG.info("Fetching lineage inputs graph for tableName={}", tableName);
         ParamChecker.notEmpty(tableName, "table name cannot be null");
         validateTableExists(tableName);
@@ -204,12 +205,12 @@ public class HiveLineageService implements LineageService {
      */
     @Override
     @GraphTransaction
-    public String getSchema(String tableName) throws DiscoveryException {
+    public String getSchema(String tableName) throws MetadataException {
         LOG.info("Fetching schema for tableName={}", tableName);
         ParamChecker.notEmpty(tableName, "table name cannot be null");
         validateTableExists(tableName);
 
-        String schemaQuery = HIVE_TABLE_SCHEMA_QUERY.replace("?", tableName);
+        final String schemaQuery = String.format(HIVE_TABLE_SCHEMA_QUERY, tableName);
         return discoveryService.searchByDSL(schemaQuery);
     }
 
@@ -218,11 +219,11 @@ public class HiveLineageService implements LineageService {
      *
      * @param tableName table name
      */
-    private void validateTableExists(String tableName) throws DiscoveryException {
-        String tableExistsQuery = HIVE_TABLE_EXISTS_QUERY.replace("?", tableName);
+    private void validateTableExists(String tableName) throws MetadataException {
+        final String tableExistsQuery = String.format(HIVE_TABLE_EXISTS_QUERY, tableName);
         GremlinQueryResult queryResult = discoveryService.evaluate(tableExistsQuery);
         if (!(queryResult.rows().length() > 0)) {
-            throw new IllegalArgumentException(tableName + " does not exist");
+            throw new EntityNotFoundException(tableName + " does not exist");
         }
     }
 }

@@ -18,6 +18,8 @@
 
 package org.apache.hadoop.metadata.discovery;
 
+import org.apache.hadoop.metadata.MetadataException;
+
 /**
  * Lineage service interface.
  */
@@ -29,7 +31,7 @@ public interface LineageService {
      * @param tableName tableName
      * @return Outputs as JSON
      */
-    String getOutputs(String tableName) throws DiscoveryException;
+    String getOutputs(String tableName) throws MetadataException;
 
     /**
      * Return the lineage outputs graph for the given tableName.
@@ -37,7 +39,7 @@ public interface LineageService {
      * @param tableName tableName
      * @return Outputs Graph as JSON
      */
-    String getOutputsGraph(String tableName) throws DiscoveryException;
+    String getOutputsGraph(String tableName) throws MetadataException;
 
     /**
      * Return the lineage inputs for the given tableName.
@@ -45,7 +47,7 @@ public interface LineageService {
      * @param tableName tableName
      * @return Inputs as JSON
      */
-    String getInputs(String tableName) throws DiscoveryException;
+    String getInputs(String tableName) throws MetadataException;
 
     /**
      * Return the lineage inputs graph for the given tableName.
@@ -53,7 +55,7 @@ public interface LineageService {
      * @param tableName tableName
      * @return Inputs Graph as JSON
      */
-    String getInputsGraph(String tableName) throws DiscoveryException;
+    String getInputsGraph(String tableName) throws MetadataException;
 
     /**
      * Return the schema for the given tableName.
@@ -61,5 +63,5 @@ public interface LineageService {
      * @param tableName tableName
      * @return Schema as JSON
      */
-    String getSchema(String tableName) throws DiscoveryException;
+    String getSchema(String tableName) throws MetadataException;
 }

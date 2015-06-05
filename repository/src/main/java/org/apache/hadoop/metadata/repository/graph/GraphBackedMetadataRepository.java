@@ -30,6 +30,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.metadata.GraphTransaction;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.repository.Constants;
+import org.apache.hadoop.metadata.repository.EntityNotFoundException;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
 import org.apache.hadoop.metadata.repository.RepositoryException;
 import org.apache.hadoop.metadata.typesystem.IReferenceableInstance;
@@ -89,7 +90,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     private final TitanGraph titanGraph;
 
     @Inject
-    public GraphBackedMetadataRepository(GraphProvider<TitanGraph> graphProvider) throws MetadataException {
+    public GraphBackedMetadataRepository(
+            GraphProvider<TitanGraph> graphProvider) throws MetadataException {
         this.typeSystem = TypeSystem.getInstance();
 
         this.titanGraph = graphProvider.get();
@@ -124,7 +126,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     }
 
     @Override
-    public String getFieldNameInVertex(IDataType<?> dataType, AttributeInfo aInfo) throws MetadataException {
+    public String getFieldNameInVertex(IDataType<?> dataType,
+                                       AttributeInfo aInfo) throws MetadataException {
         return getQualifiedName(dataType, aInfo.name);
     }
 
@@ -137,7 +140,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         return EDGE_LABEL_PREFIX + typeName + "." + attrName;
     }
 
-    public String getEdgeLabel(ITypedInstance typedInstance, AttributeInfo aInfo) throws MetadataException {
+    public String getEdgeLabel(ITypedInstance typedInstance,
+                               AttributeInfo aInfo) throws MetadataException {
         IDataType dataType = typeSystem.getDataType(IDataType.class, typedInstance.getTypeName());
         return getEdgeLabel(dataType, aInfo);
     }
@@ -169,11 +173,11 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         }
     }
 
-    private Vertex getVertexForGUID(String guid) throws RepositoryException {
+    private Vertex getVertexForGUID(String guid) throws EntityNotFoundException {
         Vertex instanceVertex = GraphHelper.findVertexByGUID(titanGraph, guid);
         if (instanceVertex == null) {
             LOG.debug("Could not find a vertex for guid={}", guid);
-            throw new RepositoryException(
+            throw new EntityNotFoundException(
                     "Could not find an entity in the repository for guid: " + guid);
         }
 
@@ -208,7 +212,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
      */
     @Override
     @GraphTransaction
-    public List<String> getTraitNames(String guid) throws RepositoryException {
+    public List<String> getTraitNames(String guid) throws MetadataException {
         LOG.info("Retrieving trait names for entity={}", guid);
         Vertex instanceVertex = getVertexForGUID(guid);
         return getTraitNames(instanceVertex);
@@ -252,7 +256,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             ((TitanVertex) instanceVertex)
                     .addProperty(Constants.TRAIT_NAMES_PROPERTY_KEY, traitName);
 
-        } catch (MetadataException e) {
+        } catch (Exception e) {
             throw new RepositoryException(e);
         }
     }
@@ -315,21 +319,20 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
     @Override
     @GraphTransaction
-    public void updateEntity(String guid, String property, String value) throws RepositoryException {
+    public void updateEntity(String guid,
+                             String property, String value) throws RepositoryException {
         LOG.info("Adding property {} for entity guid {}", property, guid);
 
         try {
-            Vertex instanceVertex = GraphHelper.findVertexByGUID(titanGraph, guid);
-            if (instanceVertex == null) {
-                throw new RepositoryException("Could not find a vertex for guid " + guid);
-            }
+            Vertex instanceVertex = getVertexForGUID(guid);
 
             LOG.debug("Found a vertex {} for guid {}", instanceVertex, guid);
             String typeName = instanceVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY);
             ClassType type = typeSystem.getDataType(ClassType.class, typeName);
             AttributeInfo attributeInfo = type.fieldMapping.fields.get(property);
             if (attributeInfo == null) {
-                throw new MetadataException("Invalid property " + property + " for entity " + typeName);
+                throw new MetadataException("Invalid property "
+                        + property + " for entity " + typeName);
             }
 
             DataTypes.TypeCategory attrTypeCategory = attributeInfo.dataType().getTypeCategory();
@@ -343,8 +346,9 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 throw new RepositoryException("Update of " + attrTypeCategory + " is not supported");
             }
 
-            instanceToGraphMapper.mapAttributesToVertex(getIdFromVertex(typeName, instanceVertex), instance,
-                    instanceVertex, new HashMap<Id, Vertex>(), attributeInfo, attributeInfo.dataType());
+            instanceToGraphMapper.mapAttributesToVertex(getIdFromVertex(typeName, instanceVertex),
+                    instance, instanceVertex, new HashMap<Id, Vertex>(),
+                    attributeInfo, attributeInfo.dataType());
         } catch (Exception e) {
             throw new RepositoryException(e);
         }
