@@ -85,8 +85,8 @@ public class EntityResource {
      * Submits an entity definition (instance) corresponding to a given type.
      */
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response submit(@Context HttpServletRequest request) {
         try {
             final String entity = Servlets.getRequestPayload(request);
@@ -127,7 +127,7 @@ public class EntityResource {
      */
     @GET
     @Path("{guid}")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getEntityDefinition(@PathParam("guid") String guid) {
         try {
             LOG.debug("Fetching entity definition for guid={} ", guid);
@@ -164,7 +164,7 @@ public class EntityResource {
      * @param entityType name of a type which is unique
      */
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getEntityListByType(@QueryParam("type") String entityType) {
         try {
             Preconditions.checkNotNull(entityType, "Entity type cannot be null");
@@ -203,7 +203,8 @@ public class EntityResource {
      */
     @PUT
     @Path("{guid}")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response update(@PathParam("guid") String guid,
                            @QueryParam("property") String property,
                            @QueryParam("value") String value) {
@@ -233,7 +234,7 @@ public class EntityResource {
      */
     @GET
     @Path("{guid}/traits")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getTraitNames(@PathParam("guid") String guid) {
         try {
             LOG.debug("Fetching trait names for entity={}", guid);
@@ -264,8 +265,8 @@ public class EntityResource {
      */
     @POST
     @Path("{guid}/traits")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response addTrait(@Context HttpServletRequest request,
                              @PathParam("guid") String guid) {
         try {
@@ -300,8 +301,8 @@ public class EntityResource {
      */
     @DELETE
     @Path("{guid}/traits/{traitName}")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response deleteTrait(@Context HttpServletRequest request,
                                 @PathParam("guid") String guid,
                                 @PathParam(TRAIT_NAME) String traitName) {
