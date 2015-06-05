@@ -64,6 +64,7 @@ public class MetadataServiceClient {
     public static final String URI_ENTITIES = "entities";
     public static final String URI_TRAITS = "traits";
     public static final String URI_SEARCH = "discovery/search";
+    public static final String URI_LINEAGE = "lineage/hive";
 
     public static final String QUERY = "query";
     public static final String QUERY_TYPE = "queryType";
@@ -127,6 +128,8 @@ public class MetadataServiceClient {
         SEARCH_DSL(BASE_URI + URI_SEARCH + "/dsl", HttpMethod.GET),
         SEARCH_GREMLIN(BASE_URI + URI_SEARCH + "/gremlin", HttpMethod.GET),
         SEARCH_FULL_TEXT(BASE_URI + URI_SEARCH + "/fulltext", HttpMethod.GET);
+
+        //Lineage operations
 
         private final String method;
         private final String path;
@@ -255,6 +258,7 @@ public class MetadataServiceClient {
      * @throws MetadataServiceException
      */
     public JSONArray searchByDSL(String query) throws MetadataServiceException {
+        LOG.debug("DSL query: {}", query);
         WebResource resource = getResource(API.SEARCH_DSL);
         resource = resource.queryParam(QUERY, query);
         JSONObject result = callAPIWithResource(API.SEARCH_DSL, resource);
@@ -272,6 +276,7 @@ public class MetadataServiceClient {
      * @throws MetadataServiceException
      */
     public JSONObject searchByGremlin(String gremlinQuery) throws MetadataServiceException {
+        LOG.debug("Gremlin query: " + gremlinQuery);
         WebResource resource = getResource(API.SEARCH_GREMLIN);
         resource = resource.queryParam(QUERY, gremlinQuery);
         return callAPIWithResource(API.SEARCH_GREMLIN, resource);

@@ -121,8 +121,8 @@ public class HiveHookIT {
 
     private String createTable(boolean partition) throws Exception {
         String tableName = tableName();
-        runCommand("create table " + tableName + "(id int, name string) comment 'table comment' " + (partition ? " partitioned by(dt string)"
-                : ""));
+        runCommand("create table " + tableName + "(id int, name string) comment 'table comment' "
+                + (partition ? " partitioned by(dt string)" : ""));
         return tableName;
     }
 
@@ -304,7 +304,7 @@ public class HiveHookIT {
 
     private String assertTableIsRegistered(String dbName, String tableName, boolean registered) throws Exception {
         LOG.debug("Searching for table {}.{}", dbName, tableName);
-        String query = String.format("%s as t where name = '%s', dbName where name = '%s' and clusterName = '%s'"
+        String query = String.format("%s as t where tableName = '%s', db where name = '%s' and clusterName = '%s'"
                 + " select t", HiveDataTypes.HIVE_TABLE.getName(), tableName.toLowerCase(), dbName.toLowerCase(),
                 CLUSTER_NAME);
         return assertEntityIsRegistered(query, registered);
@@ -321,14 +321,13 @@ public class HiveHookIT {
         String typeName = HiveDataTypes.HIVE_PARTITION.getName();
         String dbType = HiveDataTypes.HIVE_DB.getName();
         String tableType = HiveDataTypes.HIVE_TABLE.getName();
-        String datasetType = MetadataServiceClient.DATA_SET_SUPER_TYPE;
 
         LOG.debug("Searching for partition of {}.{} with values {}", dbName, tableName, value);
         //todo replace with DSL
         String gremlinQuery = String.format("g.V.has('__typeName', '%s').has('%s.values', ['%s']).as('p')."
-                        + "out('__%s.tableName').has('%s.name', '%s').out('__%s.dbName').has('%s.name', '%s')"
+                        + "out('__%s.table').has('%s.tableName', '%s').out('__%s.db').has('%s.name', '%s')"
                         + ".has('%s.clusterName', '%s').back('p').toList()", typeName, typeName, value, typeName,
-                datasetType, tableName.toLowerCase(), tableType, dbType, dbName.toLowerCase(), dbType, CLUSTER_NAME);
+                tableType, tableName.toLowerCase(), tableType, dbType, dbName.toLowerCase(), dbType, CLUSTER_NAME);
         JSONObject response = dgiCLient.searchByGremlin(gremlinQuery);
         JSONArray results = response.getJSONArray(MetadataServiceClient.RESULTS);
         Assert.assertEquals(results.length(), 1);
@@ -348,5 +347,22 @@ public class HiveHookIT {
             Assert.assertEquals(results.length(), 0);
             return null;
         }
+    }
+
+    @Test(enabled = false)
+    public void testLineage() throws Exception {
+        String table1 = createTable(false);
+
+        String db2 = createDatabase();
+        String table2 = tableName();
+
+        String db3 = createDatabase();
+        String table3 = tableName();
+
+        String query = String.format("create table %s.%s as select * from %s", db2, table2, table1);
+        runCommand(query);
+
+        query = String.format("create table %s.%s as select * from %s.%s", db3, table3, db2, table2);
+        runCommand(query);
     }
 }

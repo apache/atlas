@@ -27,11 +27,9 @@ public enum HiveDataTypes {
     HIVE_OBJECT_TYPE,
     HIVE_PRINCIPAL_TYPE,
     HIVE_RESOURCE_TYPE,
-    HIVE_FUNCTION_TYPE,
 
     // Structs
     HIVE_SERDE,
-    HIVE_SKEWEDINFO,
     HIVE_ORDER,
     HIVE_RESOURCEURI,
 
@@ -42,7 +40,6 @@ public enum HiveDataTypes {
     HIVE_COLUMN,
     HIVE_PARTITION,
     HIVE_INDEX,
-    HIVE_FUNCTION,
     HIVE_ROLE,
     HIVE_TYPE,
     HIVE_PROCESS,
