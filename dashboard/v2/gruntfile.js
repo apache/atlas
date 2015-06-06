@@ -51,7 +51,7 @@ module.exports = function(grunt) {
             }
         },
         concurrent: {
-            tasks: ['nodemon:local', 'watch'],
+            tasks: ['nodemon:local', 'watch','ngserver'],
             options: {
                 logConcurrentOutput: true
             }
@@ -120,15 +120,18 @@ module.exports = function(grunt) {
                 },
                 src: ['node_modules/**', 'package.json', 'server.js', 'server/**', 'public/**', '!public/js/**', '!public/modules/**/*.js']
             }
+        },
+        nginx: {
+            options: {
+                config: 'nginx.conf'
+            }
         }
     });
 
     require('load-grunt-tasks')(grunt);
-
     grunt.registerTask('default', ['devUpdate', 'bower', 'jshint', 'jsbeautifier:default']);
 
     grunt.registerTask('server', ['bower', 'jshint', 'minify', 'concurrent']);
-    grunt.registerTask('server:prod', ['nodemon:prod']);
     grunt.registerTask('server:prod', ['nodemon:prod']);
 
     grunt.registerTask('minify', 'Minify the all js', function() {
@@ -136,6 +139,13 @@ module.exports = function(grunt) {
         grunt.file.mkdir('public/dist');
         grunt.task.run(['shell:min']);
         done();
+    });
+
+    grunt.registerTask('ngserver', 'Nginx server', function() {
+        grunt.file.mkdir('logs/log');
+        grunt.file.mkdir('temp/client_body_temp');
+        grunt.file.write('mime.types');
+        grunt.task.run(['nginx:start']);
     });
 
     grunt.registerTask('release', 'Create release package', function() {
