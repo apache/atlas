@@ -60,3 +60,24 @@ The properties for configuring the SPNEGO support are:
 	
 For a more detailed discussion of the HTTP authentication mechanism refer to [[http://hadoop.apache.org/docs/stable/hadoop-auth/Configuration.html][Hadoop Auth, Java HTTP SPNEGO 2.6.0 - Server Side Configuration]].  The prefix that document references is "metadata.http.authentication" in the case of the DGI authentication implementation.
 
+---+++ Client security configuration
+
+When leveraging Atlas client code to communicate with an Atlas server configured for SSL transport and/or Kerberos authentication, there is a requirement to provide a client configuration file that provides the security properties that allow for communication with, or authenticating to, the server.
+Create a client.properties file with the appropriate settings (see below) and place it on the client's classpath or in the directory specified by the "metadata.conf" system property.
+
+The client properties for SSL communication are:
+
+   * <code>metadata.enableTLS</code> (false|true) [default: false] - enable/disable the SSL client communication infrastructure.
+   * <code>keystore.file</code> - the path to the keystore file leveraged by the client.  This file is only required if 2-Way SSL is enabled at the server and contains the client certificate.
+   * <code>truststore.file</code> - the path to the truststore file. This file contains the certificates of trusted entities (e.g. the certificates for the server or a shared certification authority). This file is required for both one-way or two-way SSL.
+   * <code>cert.stores.credential.provider.path</code> - the path to the Credential Provider store file.  The passwords for the keystore, truststore, and client certificate are maintained in this secure file.
+
+The property required for authenticating to the server (if authentication is enabled):
+
+   * <code>metadata.http.authentication.type</code> (simple|kerberos) [default: simple] - the authentication type
+
+If the authentication type specified is 'kerberos', then the kerberos ticket cache will be accessed for authenticating to the server (Therefore the client is required to authenticate to the KDC prior to communication with the server using 'kinit' or a similar mechanism).
+
+
+
+
