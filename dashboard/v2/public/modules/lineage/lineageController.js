@@ -110,9 +110,9 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
 
             var margin = {
                 top: 100,
-                right: 50,
+                right: 70,
                 bottom: 30,
-                left: 50
+                left: 70
             };
             width = width - margin.right - margin.left;
             height = height - margin.top - margin.bottom;
@@ -170,8 +170,8 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                     })
                     .attr("x", "-12px")
                     .attr("y", "-12px")
-                    .attr("width", "24px")
-                    .attr("height", "24px");
+                    .attr("width", "34px")
+                    .attr("height", "34px");
 
                 nodeEnter.append('text')
                     .attr('x', function(d) {
@@ -199,7 +199,7 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                     //.style('stroke', function(d) { return d.target.level; })
                     .style('stroke', 'green')
                     .attr('d', diagonal);
-                link.attr("marker-end", "url(#arrow)");
+                  link.attr("marker-end", "url(#arrow)");
 
             }
 
