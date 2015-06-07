@@ -41,12 +41,12 @@
 
                 <p>{{result.description}}</p>
                             <span ng-repeat="(key, value) in filterSearchResults(result)">
-                                <span ng-show="$index < 4 "><b>{{key}}: </b>{{value}} {{(($index+1 === limit) || $last ) ? '' : ', '}}</span>
+                                <span ng-show="$index <= 3  "><b>{{key}}: </b>{{value}} {{(($index+1 === limit) || $last ) ? '' : ', '}}</span>
                             </span>
 
                 <div collapse="isCollapsed">
                                 <span ng-repeat="(key, value) in filterSearchResults(result)">
-                                <span ng-show="$index > 4"><b>{{key}}: </b>{{value}}{{$last ? '' : ', '}}</span>
+                                <span ng-show="$index > 3"><b>{{key}}: </b>{{value}}{{$last ? '' : ', '}}</span>
                             </span>
                 </div>
                 <a href ng-show="isCollapsed && (keyLength > 4)" ng-click="doToggle($event,isCollapsed)">..show more</a>
