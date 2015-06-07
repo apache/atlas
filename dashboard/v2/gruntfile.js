@@ -68,7 +68,7 @@ module.exports = function(grunt) {
                 }
             }
         },
-        dist: 'public/dist/app.min.js',
+        dist: 'public/js/app.min.js',
         modules: grunt.file.expand(
             'public/js/app.js',
             'public/js/routes.js',
@@ -118,8 +118,8 @@ module.exports = function(grunt) {
         	 mainjs:{
         		expand: true,
     		    cwd: 'public/',
-    		    src: 'dist/*.js',
-    		    dest: 'dist/dist/',
+    		    src: 'js/*.js',
+    		    dest: 'dist/js/',
     		    flatten: true,
     		    filter: 'isFile'
         	 }
@@ -146,7 +146,7 @@ module.exports = function(grunt) {
     require('load-grunt-tasks')(grunt);
     grunt.registerTask('default', ['devUpdate', 'bower', 'jshint', 'jsbeautifier:default']);
 
-    grunt.registerTask('server', ['jshint','build','bower','minify','concurrent']);
+    grunt.registerTask('server', ['jshint','build','bower','minify','copy:mainjs','concurrent']);
 
     grunt.registerTask('minify', 'Minify the all js', function() {
         var done = this.async();
