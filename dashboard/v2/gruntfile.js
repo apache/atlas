@@ -79,8 +79,8 @@ module.exports = function(grunt) {
         shell: {
             min: {
                 command: 'java ' +
-                    '-cp public/lib/closure-compiler/compiler.jar' + classPathSep +
-                    'public/lib/ng-closure-runner/ngcompiler.jar ' +
+                    '-cp dist/lib/closure-compiler/compiler.jar' + classPathSep +
+                    'dist/lib/ng-closure-runner/ngcompiler.jar ' +
                     'org.angularjs.closurerunner.NgClosureRunner ' +
                     '--compilation_level SIMPLE_OPTIMIZATIONS ' +
                     //'--formatting PRETTY_PRINT ' +
@@ -113,7 +113,7 @@ module.exports = function(grunt) {
         		expand: true,
         	    cwd: 'public/',
         	    src: '**',
-        	    dest: 'dist'
+        	    dest: 'dist',
         	 },
         	 mainjs:{
         		expand: true,
@@ -146,7 +146,7 @@ module.exports = function(grunt) {
     require('load-grunt-tasks')(grunt);
     grunt.registerTask('default', ['devUpdate', 'bower', 'jshint', 'jsbeautifier:default']);
 
-    grunt.registerTask('server', ['bower','jshint', 'minify','build','concurrent']);
+    grunt.registerTask('server', ['jshint','build','bower','minify','concurrent']);
 
     grunt.registerTask('minify', 'Minify the all js', function() {
         var done = this.async();
