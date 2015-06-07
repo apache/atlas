@@ -119,22 +119,20 @@ module.exports = function(grunt) {
         		expand: true,
     		    cwd: 'public/',
     		    src: 'js/*.js',
-    		    dest: 'dist/js/',
-    		    flatten: true,
-    		    filter: 'isFile'
+    		    dest: 'dist/js',
         	 }
         },
         clean: ['dist'],
         proxit: {
             dev: {
                 options: {
-                	"port": 9000,
-                    "verbose": true,
-                    "hosts": [{
-                        "hostnames": ["*"],
-                        "routes": {
-                            "/": "dist",
-                            "/api":"http://162.249.6.39:21000/api"
+                	'port': 3010,
+                    'verbose': true,
+                    'hosts': [{
+                        'hostnames': ['*'],
+                        'routes': {
+                            '/': 'dist',
+                            '/api':'http://162.249.6.39:21000/api'
                         }
                     }
                    ]
