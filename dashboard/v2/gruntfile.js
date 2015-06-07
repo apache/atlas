@@ -14,7 +14,7 @@ module.exports = function(grunt) {
             },
             js: {
                 files: ['public/**/*.js', '!public/lib/**', '!public/dist/**'],
-                tasks: ['shell']
+                tasks: ['shell','copy:mainjs']
             },
             html: {
                 files: ['public/**/*.html']
@@ -31,27 +31,8 @@ module.exports = function(grunt) {
                 }
             }
         },
-        nodemon: {
-            local: {
-                script: 'server.js',
-                options: {
-                    ext: 'js,json',
-                    ignore: ['public/**', 'node_modules/**'],
-                    nodeArgs: ['--debug=6868']
-                }
-            },
-            prod: {
-                script: 'server.js',
-                options: {
-                    ignore: ['.'],
-                    env: {
-                        NODE_ENV: 'production'
-                    }
-                }
-            }
-        },
         concurrent: {
-            tasks: ['nodemon:local', 'watch','ngserver'],
+            tasks: ['build','watch', 'ngserver'],
             options: {
                 logConcurrentOutput: true
             }
@@ -123,16 +104,32 @@ module.exports = function(grunt) {
         },
         nginx: {
             options: {
-                config: 'nginx.conf'
+                config: 'nginx.conf',
             }
-        }
+        },
+        copy: {
+        	dist: {
+        		expand: true,
+        	    cwd: 'public/',
+        	    src: '**',
+        	    dest: 'dist'
+        	 },
+        	 mainjs:{
+        		expand: true,
+    		    cwd: 'public/',
+    		    src: 'dist/*.js',
+    		    dest: 'dist/dist/',
+    		    flatten: true,
+    		    filter: 'isFile'
+        	 }
+        },
+        clean: ['dist']
     });
 
     require('load-grunt-tasks')(grunt);
     grunt.registerTask('default', ['devUpdate', 'bower', 'jshint', 'jsbeautifier:default']);
 
     grunt.registerTask('server', ['bower', 'jshint', 'minify', 'concurrent']);
-    grunt.registerTask('server:prod', ['nodemon:prod']);
 
     grunt.registerTask('minify', 'Minify the all js', function() {
         var done = this.async();
@@ -142,12 +139,16 @@ module.exports = function(grunt) {
     });
 
     grunt.registerTask('ngserver', 'Nginx server', function() {
+    	var done = this.async();
         grunt.file.mkdir('logs/log');
         grunt.file.mkdir('temp/client_body_temp');
-        grunt.file.write('mime.types');
         grunt.task.run(['nginx:start']);
+        done();
     });
-
+    grunt.registerTask('build','Build DGI',function(){
+    	grunt.task.run(['clean']);
+    	 grunt.task.run(['copy:dist']);
+    });
     grunt.registerTask('release', 'Create release package', function() {
         var done = this.async();
         git.short(function(str) {
