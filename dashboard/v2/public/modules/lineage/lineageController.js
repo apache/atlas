@@ -168,8 +168,8 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                         //return d.icon;
                         return d.type === 'Table' ? '../img/tableicon.png' : '../img/process.png';
                     })
-                    .attr("x", "-12px")
-                    .attr("y", "-12px")
+                    .attr("x", "-18px")
+                    .attr("y", "-18px")
                     .attr("width", "34px")
                     .attr("height", "34px");
 
@@ -178,7 +178,7 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                         return d.children || d._children ?
                             (5) * -1 : +15;
                     })
-                    .attr('dy', '-1.35em')
+                    .attr('dy', '-1.75em')
                     .attr('text-anchor', function(d) {
                         return d.children || d._children ? 'middle' : 'middle';
                     })
@@ -199,7 +199,7 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                     //.style('stroke', function(d) { return d.target.level; })
                     .style('stroke', 'green')
                     .attr('d', diagonal);
-                  link.attr("marker-end", "url(#arrow)");
+                link.attr("marker-end", "url(#arrow)");
 
             }
 
