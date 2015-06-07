@@ -17,10 +17,16 @@ module.exports = function(grunt) {
                 tasks: ['shell','copy:mainjs']
             },
             html: {
-                files: ['public/**/*.html']
+                files: ['public/**/*.html'],
+                tasks: ['copy:dist']
             },
             css: {
-                files: ['public/**/*.css']
+                files: ['public/**/*.css'],
+                tasks: ['copy:dist']
+            },
+            image: {
+                files: ['public/**/*.{ico,gif,png}'],
+                tasks: ['copy:dist']
             }
         },
         jshint: {
@@ -32,7 +38,7 @@ module.exports = function(grunt) {
             }
         },
         concurrent: {
-            tasks: ['build','watch', 'ngserver'],
+            tasks: ['watch','proxitserver'],
             options: {
                 logConcurrentOutput: true
             }
@@ -102,11 +108,6 @@ module.exports = function(grunt) {
                 src: ['node_modules/**', 'package.json', 'server.js', 'server/**', 'public/**', '!public/js/**', '!public/modules/**/*.js']
             }
         },
-        nginx: {
-            options: {
-                config: 'nginx.conf',
-            }
-        },
         copy: {
         	dist: {
         		expand: true,
@@ -123,13 +124,29 @@ module.exports = function(grunt) {
     		    filter: 'isFile'
         	 }
         },
-        clean: ['dist']
+        clean: ['dist'],
+        proxit: {
+            dev: {
+                options: {
+                	"port": 9000,
+                    "verbose": true,
+                    "hosts": [{
+                        "hostnames": ["*"],
+                        "routes": {
+                            "/": "dist",
+                            "/api":"http://162.249.6.39:21000/api"
+                        }
+                    }
+                   ]
+                }
+            }
+        }
     });
 
     require('load-grunt-tasks')(grunt);
     grunt.registerTask('default', ['devUpdate', 'bower', 'jshint', 'jsbeautifier:default']);
 
-    grunt.registerTask('server', ['bower', 'jshint', 'minify', 'concurrent']);
+    grunt.registerTask('server', ['bower','jshint', 'minify','build','concurrent']);
 
     grunt.registerTask('minify', 'Minify the all js', function() {
         var done = this.async();
@@ -137,12 +154,10 @@ module.exports = function(grunt) {
         grunt.task.run(['shell:min']);
         done();
     });
-
-    grunt.registerTask('ngserver', 'Nginx server', function() {
+    grunt.loadNpmTasks('proxit');
+    grunt.registerTask('proxitserver', 'Proxit', function() {
     	var done = this.async();
-        grunt.file.mkdir('logs/log');
-        grunt.file.mkdir('temp/client_body_temp');
-        grunt.task.run(['nginx:start']);
+        grunt.task.run(['proxit:dev']);
         done();
     });
     grunt.registerTask('build','Build DGI',function(){

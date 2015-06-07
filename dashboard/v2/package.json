@@ -59,6 +59,7 @@
     "load-grunt-tasks": "^3.1.0",
     "grunt-nginx": "~0.2.2",
     "grunt-contrib-copy": "~0.8.0",
-    "grunt-contrib-clean": "~0.6.0"
+    "grunt-contrib-clean": "~0.6.0",
+    "proxit": "~0.6.4"
   }
 }
