@@ -37,7 +37,7 @@
         <h4 ng-show="searchMessage">{{searchMessage}}</h4>
         <ul class="list-unstyled">
             <li ng-repeat="result in filteredResults" class="searchresults">
-                <h4><a data-ui-sref="details({id:result['$id$'].id})">{{result.name}}</a></h4>
+                <h4><a data-ui-sref="details({id:result['$id$'].id || result.guid})">{{result.name || result.guid}}</a></h4>
 
                 <p>{{result.description}}</p>
                             <span ng-repeat="(key, value) in filterSearchResults(result)">

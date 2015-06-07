@@ -18,10 +18,9 @@
 
 'use strict';
 
-angular.module('dgc.search').controller('SearchController', ['$scope', '$location', '$http', '$state', '$stateParams', 'SearchResource', 'NotificationService',
-    function($scope, $location, $http, $state, $stateParams, SearchResource, NotificationService) {
+angular.module('dgc.search').controller('SearchController', ['$scope', '$location', '$http', '$state', '$stateParams', 'lodash', 'SearchResource', 'NotificationService',
+    function($scope, $location, $http, $state, $stateParams, _, SearchResource, NotificationService) {
 
-        $scope.types = ['table', 'column', 'db', 'view', 'loadprocess', 'storagedesc'];
         $scope.results = [];
         $scope.resultCount = 0;
         $scope.isCollapsed = true;
@@ -99,6 +98,7 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
         $scope.filterSearchResults = function(items) {
             var res = {};
             var count = 0;
+            items = _.omit(items, ['name', 'description', 'guid']);
             angular.forEach(items, function(value, key) {
                 if (typeof value !== 'object' && (key.indexOf('$$') < 0)) {
                     res[key] = value;
