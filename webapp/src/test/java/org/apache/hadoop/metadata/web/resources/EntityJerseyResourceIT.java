@@ -51,6 +51,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.HttpMethod;
@@ -92,6 +93,26 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
             Assert.assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
             Assert.fail("Response is not a guid, " + guid);
+        }
+    }
+
+    @DataProvider
+    public Object[][] invalidAttrValues() {
+        return new Object[][]{
+                {null}, {""}, {" "}};
+    }
+
+    @Test(dataProvider = "invalidAttrValues")
+    public void testEntityInvalidValue(String value) throws Exception {
+        Referenceable databaseInstance = new Referenceable(DATABASE_TYPE);
+        databaseInstance.set("name", randomString());
+        databaseInstance.set("description", value);
+
+        try {
+            createInstance(databaseInstance);
+            Assert.fail("Exptected MetadataServiceException");
+        } catch(MetadataServiceException e) {
+            Assert.assertEquals(e.getStatus(), ClientResponse.Status.BAD_REQUEST);
         }
     }
 
