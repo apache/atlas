@@ -85,8 +85,7 @@ public abstract class ABridge implements IBridge {
         ITypedReferenceableInstance refBean = null;
         try {
             refBean = type.convert(this.convertToReferencable(bean), Multiplicity.REQUIRED);
-//            String id = repo.createEntity(refBean, type.getName());
-            String id = null;
+            String id = repo.createEntity(refBean);
             return id;
         } catch (IllegalArgumentException | IllegalAccessException e) {
             // TODO Auto-generated catch block
