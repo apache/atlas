@@ -35,7 +35,7 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
             $scope.results = [];
             NotificationService.reset();
             $scope.limit = 4;
-            $scope.searchMessage = 'searching...';
+            $scope.searchMessage = 'load-gif';
 
             $scope.$parent.query = query;
             SearchResource.search({
@@ -67,7 +67,7 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
                 $scope.$watch('currentPage + itemsPerPage', function() {
                     var begin = (($scope.currentPage - 1) * $scope.itemsPerPage),
                         end = begin + $scope.itemsPerPage;
-                    if ($scope.transformedResults) $scope.filteredResults = $scope.transformedResults.slice(begin, end);
+                    if ($scope.transformedResults)$scope.filteredResults = $scope.transformedResults.slice(begin, end);
                     $scope.pageCount = function() {
                         return Math.ceil($scope.resultCount / $scope.itemsPerPage);
                     };
