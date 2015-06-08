@@ -305,7 +305,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
             }
 
             indexBuilder.buildCompositeIndex();
-
             LOG.info("Created index for property {} in composite index {}", propertyName, indexName);
         }
 
@@ -333,7 +332,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
                 TitanGraphIndex vertexIndex = management.getGraphIndex(Constants.VERTEX_INDEX);
                 management.addIndexKey(vertexIndex, propertyKey);
                 LOG.debug("Created backing index for property {} of type {} ", propertyName, propertyClass.getName());
-
             }
             LOG.info("Created mixed vertex index for property {}", propertyName);
         }
