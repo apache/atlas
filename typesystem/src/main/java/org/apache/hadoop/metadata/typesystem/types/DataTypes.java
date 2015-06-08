@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.typesystem.IReferenceableInstance;
 import org.apache.hadoop.metadata.typesystem.persistence.Id;
@@ -455,7 +456,7 @@ public class DataTypes {
 
         @Override
         public String convert(Object val, Multiplicity m) throws MetadataException {
-            if (val != null) {
+            if (StringUtils.isNotBlank((CharSequence) val)) {
                 return val.toString();
             }
             return convertNull(m);

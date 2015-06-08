@@ -20,18 +20,18 @@ package org.apache.hadoop.metadata.query
 
 import com.thinkaurelius.titan.core.TitanGraph
 import org.apache.hadoop.metadata.query.Expressions._
+import org.slf4j.{LoggerFactory, Logger}
 
 object QueryProcessor {
+    val LOG : Logger = LoggerFactory.getLogger("org.apache.hadoop.metadata.query.QueryProcessor")
 
     def evaluate(e: Expression, g: TitanGraph, gP : GraphPersistenceStrategies = GraphPersistenceStrategy1):
     GremlinQueryResult = {
         val e1 = validate(e)
         val q = new GremlinTranslator(e1, gP).translate()
-//            println("---------------------")
-//            println("Query: " + e1)
-//            println("Expression Tree:\n" + e1.treeString)
-//            println("Gremlin Query: " + q.queryStr)
-//            println("---------------------")
+        LOG.debug("Query: " + e1)
+        LOG.debug("Expression Tree:\n" + e1.treeString)
+        LOG.debug("Gremlin Query: " + q.queryStr)
         new GremlinEvaluator(q, gP, g).evaluate()
     }
 
