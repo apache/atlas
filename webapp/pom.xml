@@ -272,7 +272,7 @@
                     <webResources>
                         <resource>
                             <directory>../dashboard/v2/dist</directory>
-                            <targetPath>dashboard</targetPath>
+                            <targetPath>/</targetPath>
                         </resource>
                         <resource>
                             <directory>src/main/webapp/WEB-INF</directory>
