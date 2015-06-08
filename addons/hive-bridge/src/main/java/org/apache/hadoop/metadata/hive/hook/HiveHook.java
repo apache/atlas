@@ -37,7 +37,6 @@ package org.apache.hadoop.metadata.hive.hook;
 
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.QueryPlan;
@@ -248,10 +247,9 @@ public class HiveHook implements ExecuteWithHookContext {
         Referenceable dbReferenceable = dgiBridge.registerDatabase(oldTable.getDbName());
         Referenceable tableReferenceable =
                 dgiBridge.registerTable(dbReferenceable, oldTable.getDbName(), oldTable.getTableName());
-        LOG.info("Updating entity name {}.{} to {}",
-                oldTable.getDbName(), oldTable.getTableName(), newTable.getTableName());
-        dgiBridge.getMetadataServiceClient().updateEntity(tableReferenceable.getId()._getId(), "name",
-                newTable.getTableName().toLowerCase());
+        LOG.info("Updating entity name {}.{} to {}", oldTable.getDbName(), oldTable.getTableName(),
+                newTable.getTableName());
+        dgiBridge.updateTable(tableReferenceable, newTable);
     }
 
     private void handleCreateTable(HiveMetaStoreBridge dgiBridge, HiveEvent event) throws Exception {
