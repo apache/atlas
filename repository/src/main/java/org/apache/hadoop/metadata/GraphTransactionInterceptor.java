@@ -44,7 +44,7 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
             return response;
         } catch (Throwable t){
             titanGraph.rollback();
-            LOG.debug("graph rollback");
+            LOG.error("graph rollback due to exception ", t);
             throw t;
         }
     }

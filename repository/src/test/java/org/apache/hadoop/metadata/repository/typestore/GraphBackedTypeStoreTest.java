@@ -81,7 +81,6 @@ public class GraphBackedTypeStoreTest {
     }
 
     @Test (dependsOnMethods = "testStore")
-    @GraphTransaction
     public void testRestore() throws Exception {
         TypesDef types = typeStore.restore();
 

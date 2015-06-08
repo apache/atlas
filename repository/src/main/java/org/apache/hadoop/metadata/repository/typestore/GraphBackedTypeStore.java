@@ -75,6 +75,7 @@ public class GraphBackedTypeStore implements ITypeStore {
     }
 
     @Override
+    @GraphTransaction
     public void store(TypeSystem typeSystem, ImmutableList<String> typeNames) throws MetadataException {
         ImmutableList<String> coreTypes = typeSystem.getCoreTypes();
         for (String typeName : typeNames) {

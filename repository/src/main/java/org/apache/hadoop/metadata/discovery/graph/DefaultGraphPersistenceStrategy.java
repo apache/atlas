@@ -19,6 +19,7 @@
 package org.apache.hadoop.metadata.discovery.graph;
 
 import com.thinkaurelius.titan.core.TitanVertex;
+import org.apache.hadoop.metadata.GraphTransaction;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.query.Expressions;
 import org.apache.hadoop.metadata.query.GraphPersistenceStrategies;
@@ -90,6 +91,7 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
     }
 
     @Override
+    @GraphTransaction
     public Id getIdFromVertex(String dataTypeName, TitanVertex vertex) {
         return metadataRepository.getIdFromVertex(dataTypeName, vertex);
     }

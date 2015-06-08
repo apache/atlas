@@ -181,6 +181,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     }
 
     @Override
+    @GraphTransaction
     public List<String> getEntityList(String entityType) throws RepositoryException {
         LOG.info("Retrieving entity list for type={}", entityType);
         GraphQuery query = titanGraph.query()
@@ -421,7 +422,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             }
         }
 
-        public void createVerticesForClassTypes(
+        private void createVerticesForClassTypes(
                 List<ITypedReferenceableInstance> newInstances) throws MetadataException {
             for (ITypedReferenceableInstance typedInstance : newInstances) {
                 final Id id = typedInstance.getId();
@@ -927,6 +928,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
     public final class GraphToTypedInstanceMapper {
 
+        @GraphTransaction
         public ITypedReferenceableInstance mapGraphToTypedInstance(String guid,
                                                                    Vertex instanceVertex)
             throws MetadataException {
@@ -950,7 +952,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             return typedInstance;
         }
 
-        public void mapVertexToInstanceTraits(Vertex instanceVertex,
+        private void mapVertexToInstanceTraits(Vertex instanceVertex,
                                               ITypedReferenceableInstance typedInstance,
                                               List<String> traits) throws MetadataException {
             for (String traitName : traits) {
@@ -961,6 +963,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             }
         }
 
+        @GraphTransaction
         public void mapVertexToInstance(Vertex instanceVertex, ITypedInstance typedInstance,
                                         Map<String, AttributeInfo> fields)
         throws MetadataException {
@@ -972,7 +975,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             }
         }
 
-        public void mapVertexToAttribute(Vertex instanceVertex, ITypedInstance typedInstance,
+
+        private void mapVertexToAttribute(Vertex instanceVertex, ITypedInstance typedInstance,
                                          AttributeInfo attributeInfo) throws MetadataException {
             LOG.debug("Mapping attributeInfo {}", attributeInfo.name);
             final IDataType dataType = attributeInfo.dataType();
@@ -1022,7 +1026,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             }
         }
 
-        public Object mapClassReferenceToVertex(Vertex instanceVertex,
+        private Object mapClassReferenceToVertex(Vertex instanceVertex,
                                                 AttributeInfo attributeInfo,
                                                 String relationshipLabel,
                                                 IDataType dataType) throws MetadataException {
@@ -1052,7 +1056,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         }
 
         @SuppressWarnings("unchecked")
-        public void mapVertexToArrayInstance(Vertex instanceVertex, ITypedInstance typedInstance,
+        private void mapVertexToArrayInstance(Vertex instanceVertex, ITypedInstance typedInstance,
                                              AttributeInfo attributeInfo,
                                              String propertyName) throws MetadataException {
             LOG.debug("mapping vertex {} to array {}", instanceVertex, attributeInfo.name);
@@ -1072,7 +1076,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             typedInstance.set(attributeInfo.name, values);
         }
 
-        public Object mapVertexToCollectionEntry(Vertex instanceVertex,
+        private Object mapVertexToCollectionEntry(Vertex instanceVertex,
                                                  AttributeInfo attributeInfo,
                                                  IDataType elementType, Object value, String propertyName)
             throws MetadataException {
@@ -1156,7 +1160,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             return null;
         }
 
-        public Object mapClassReferenceToVertex(Vertex instanceVertex,
+        private Object mapClassReferenceToVertex(Vertex instanceVertex,
                                                 AttributeInfo attributeInfo,
                                                 String relationshipLabel,
                                                 IDataType dataType,
@@ -1223,7 +1227,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                     traitName, traitType, traitInstance);
         }
 
-        public void mapVertexToTraitInstance(Vertex instanceVertex, String typedInstanceTypeName,
+        private void mapVertexToTraitInstance(Vertex instanceVertex, String typedInstanceTypeName,
                                              String traitName, TraitType traitType,
                                              ITypedStruct traitInstance) throws MetadataException {
             String relationshipLabel = getEdgeLabel(typedInstanceTypeName, traitName);

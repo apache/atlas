@@ -307,8 +307,13 @@ public class TypeSystem {
         return false;
     }
 
-    public void removeTypes(ImmutableList<String> typeNames) {
-
+    public void removeTypes(Map<String, IDataType> typeNames) {
+        for(String typeName : typeNames.keySet()) {
+            types.remove(typeName);
+            IDataType dataType = typeNames.get(typeName);
+            final DataTypes.TypeCategory typeCategory = dataType.getTypeCategory();
+            typeCategoriesToTypeNamesMap.get(typeCategory).remove(typeName);
+        }
     }
 
     class TransientTypeSystem extends TypeSystem {

@@ -42,6 +42,7 @@ import org.apache.hadoop.metadata.services.MetadataService;
  * Guice module for Repository module.
  */
 public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
+
     @Override
     protected void configure() {
         // special wiring for Titan Graph
@@ -67,7 +68,7 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
         // bind the DiscoveryService interface to an implementation
         bind(DiscoveryService.class).to(GraphBackedDiscoveryService.class).asEagerSingleton();
 
-        bind(SearchIndexer.class).to(GraphBackedSearchIndexer.class).asEagerSingleton();
+        bind(SearchIndexer.class).to(GraphBackedSearchIndexer.class);
 
         bind(LineageService.class).to(HiveLineageService.class).asEagerSingleton();
 
@@ -75,4 +76,5 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
         requestInjection(interceptor);
         bindInterceptor(Matchers.any(), Matchers.annotatedWith(GraphTransaction.class), interceptor);
     }
+
 }

@@ -15,23 +15,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.hadoop.metadata.repository;
 
-package org.apache.hadoop.metadata.discovery;
+import org.apache.hadoop.metadata.MetadataException;
 
-import org.apache.hadoop.metadata.listener.TypesChangeListener;
-import org.apache.hadoop.metadata.repository.IndexException;
+public class IndexException extends MetadataException {
 
+    public IndexException() {
+    }
 
-/**
- * Interface for indexing types.
- */
-public interface SearchIndexer extends TypesChangeListener {
+    public IndexException(String message) {
+        super(message);
+    }
 
-    /* Commit the indexes */
+    public IndexException(String message, Throwable cause) {
+        super(message, cause);
+    }
 
-   void commit() throws IndexException;
+    public IndexException(Throwable cause) {
+        super(cause);
+    }
 
-    /* RollBack the index */
-   void rollback() throws IndexException;
+    public IndexException(String message, Throwable cause, boolean enableSuppression,
+                          boolean writableStackTrace) {
+        super(message, cause, enableSuppression, writableStackTrace);
+    }
 
 }

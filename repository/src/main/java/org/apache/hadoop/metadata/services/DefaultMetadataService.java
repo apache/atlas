@@ -20,14 +20,19 @@ package org.apache.hadoop.metadata.services;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.Provider;
 import org.apache.hadoop.metadata.GraphTransaction;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.ParamChecker;
+import org.apache.hadoop.metadata.RepositoryMetadataModule;
 import org.apache.hadoop.metadata.classification.InterfaceAudience;
 import org.apache.hadoop.metadata.discovery.SearchIndexer;
 import org.apache.hadoop.metadata.listener.EntityChangeListener;
-import org.apache.hadoop.metadata.listener.TypesChangeListener;
+import org.apache.hadoop.metadata.repository.IndexCreationException;
+import org.apache.hadoop.metadata.repository.IndexException;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
 import org.apache.hadoop.metadata.repository.typestore.ITypeStore;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
@@ -53,6 +58,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.io.IOException;
+import java.text.ParseException;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -68,23 +75,23 @@ public class DefaultMetadataService implements MetadataService {
     private static final Logger LOG =
             LoggerFactory.getLogger(DefaultMetadataService.class);
 
-    private final Set<TypesChangeListener> typesChangeListeners = new LinkedHashSet<>();
     private final Set<EntityChangeListener> entityChangeListeners
             = new LinkedHashSet<>();
 
     private final TypeSystem typeSystem;
     private final MetadataRepository repository;
     private final ITypeStore typeStore;
+    private final Provider<SearchIndexer> searchIndexProvider;
 
     @Inject
     DefaultMetadataService(MetadataRepository repository,
-                           SearchIndexer searchIndexer, ITypeStore typeStore) throws MetadataException {
+                           Provider<SearchIndexer> searchIndexProvider, ITypeStore typeStore) throws MetadataException {
         this.typeStore = typeStore;
         this.typeSystem = TypeSystem.getInstance();
         this.repository = repository;
+        this.searchIndexProvider = searchIndexProvider;
 
         restoreTypeSystem();
-        registerListener(searchIndexer);
     }
 
     private void restoreTypeSystem() {
@@ -146,19 +153,18 @@ public class DefaultMetadataService implements MetadataService {
      * @return a unique id for this type
      */
     @Override
-    @GraphTransaction
     public JSONObject createType(String typeDefinition) throws MetadataException {
         ParamChecker.notEmpty(typeDefinition, "type definition cannot be empty");
 
         TypesDef typesDef;
         try {
             typesDef = TypesSerialization.fromJson(typeDefinition);
-            if(typesDef.isEmpty()) {
+            if (typesDef.isEmpty()) {
                 throw new MetadataException("Invalid type definition");
             }
         } catch (Exception e) {
             LOG.error("Unable to deserialize json={}", typeDefinition, e);
-            throw new IllegalArgumentException("Unable to deserialize json");
+            throw new IllegalArgumentException("Unable to deserialize json ", e);
         }
 
         try {
@@ -167,9 +173,9 @@ public class DefaultMetadataService implements MetadataService {
             try {
                 typeStore.store(typeSystem, ImmutableList.copyOf(typesAdded.keySet()));
                 onTypesAddedToRepo(typesAdded);
-            } catch(Throwable t) {
-                typeSystem.removeTypes(ImmutableList.copyOf(typesAdded.keySet()));
-                throw new MetadataException(t);
+            } catch (Throwable t) {
+                typeSystem.removeTypes(typesAdded);
+                throw new MetadataException("Unable to persist types ", t);
             }
 
             return new JSONObject() {{
@@ -177,7 +183,7 @@ public class DefaultMetadataService implements MetadataService {
             }};
         } catch (JSONException e) {
             LOG.error("Unable to create response for types={}", typeDefinition, e);
-            throw new MetadataException("Unable to create response");
+            throw new MetadataException("Unable to create response ", e);
         }
     }
 
@@ -334,7 +340,7 @@ public class DefaultMetadataService implements MetadataService {
     }
 
     private ITypedStruct deserializeTraitInstance(String traitInstanceDefinition)
-        throws MetadataException {
+            throws MetadataException {
 
         try {
             Struct traitInstance = InstanceSerialization.fromJsonStruct(
@@ -374,23 +380,21 @@ public class DefaultMetadataService implements MetadataService {
     }
 
     private void onTypesAddedToRepo(Map<String, IDataType> typesAdded) throws MetadataException {
-        for (TypesChangeListener listener : typesChangeListeners) {
+        final SearchIndexer indexer = searchIndexProvider.get();
+        try {
             for (Map.Entry<String, IDataType> entry : typesAdded.entrySet()) {
-                listener.onAdd(entry.getKey(), entry.getValue());
+                indexer.onAdd(entry.getKey(), entry.getValue());
             }
+            indexer.commit();
+        } catch(IndexCreationException ice) {
+            indexer.rollback();
+            throw ice;
         }
     }
 
-    public void registerListener(TypesChangeListener listener) {
-        typesChangeListeners.add(listener);
-    }
-
-    public void unregisterListener(TypesChangeListener listener) {
-        typesChangeListeners.remove(listener);
-    }
 
     private void onEntityAddedToRepo(ITypedReferenceableInstance typedInstance)
-        throws MetadataException {
+            throws MetadataException {
 
         for (EntityChangeListener listener : entityChangeListeners) {
             listener.onEntityAdded(typedInstance);
@@ -418,4 +422,5 @@ public class DefaultMetadataService implements MetadataService {
     public void unregisterListener(EntityChangeListener listener) {
         entityChangeListeners.remove(listener);
     }
+
 }
