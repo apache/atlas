@@ -45,6 +45,7 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -87,18 +88,17 @@ public class TypesResource {
             JSONObject typesJson = metadataService.createType(typeDefinition);
             final JSONArray typesJsonArray = typesJson.getJSONArray(MetadataServiceClient.TYPES);
 
-            List<Map<String, String>> typesAddedList = new ArrayList<>();
+            JSONArray typesResponse = new JSONArray();
             for (int i = 0; i < typesJsonArray.length(); i++) {
                 final String name = typesJsonArray.getString(i);
-                typesAddedList.add(
-                        new HashMap<String, String>() {{
-                            put(MetadataServiceClient.NAME, name);
-                        }});
+                typesResponse.put(new JSONObject() {{
+                    put(MetadataServiceClient.NAME, name);
+                }});
             }
 
             JSONObject response = new JSONObject();
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(MetadataServiceClient.TYPES, typesAddedList);
+            response.put(MetadataServiceClient.TYPES, typesResponse);
             return Response.status(ClientResponse.Status.CREATED).entity(response).build();
         } catch (MetadataException | IllegalArgumentException e) {
             LOG.error("Unable to persist types", e);
