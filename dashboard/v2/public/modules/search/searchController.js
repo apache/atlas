@@ -47,7 +47,7 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
                 $scope.totalItems = $scope.resultCount;
                 $scope.transformedResults = {};
                 $scope.dataTransitioned = false;
-                if (response.results.dataType.typeName.indexOf('__') === 0) {
+                if (response.results.dataType && response.results.dataType.typeName.indexOf('__') === 0) {
                     $scope.dataTransitioned = true;
                     var attrDef = response.results.dataType.attributeDefinitions;
                     angular.forEach(attrDef, function(value) {
@@ -67,7 +67,7 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
                 $scope.$watch('currentPage + itemsPerPage', function() {
                     var begin = (($scope.currentPage - 1) * $scope.itemsPerPage),
                         end = begin + $scope.itemsPerPage;
-                    $scope.filteredResults = $scope.transformedResults.slice(begin, end);
+                    if ($scope.transformedResults)$scope.filteredResults = $scope.transformedResults.slice(begin, end);
                     $scope.pageCount = function() {
                         return Math.ceil($scope.resultCount / $scope.itemsPerPage);
                     };
@@ -76,6 +76,7 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
                     }
                 });
             }, function searchError(err) {
+                $scope.searchMessage = '0 results matching your search query ' + $scope.query + ' were found';
                 NotificationService.error('Error occurred during executing search query, error status code = ' + err.status + ', status text = ' + err.statusText, false);
             });
             $state.go('search', {
