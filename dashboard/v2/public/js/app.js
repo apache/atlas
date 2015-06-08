@@ -57,8 +57,10 @@ angular.module('dgc').factory('lodash', ['$window',
             NotificationService.error(err);
         });
     } else {
-        errors.timeout = false;
-        NotificationService.error(errors);
+        if (errors) {
+            errors.timeout = false;
+            NotificationService.error(errors);
+        }
     }
     $rootScope.$on('$stateChangeStart', function() {
         d3.selectAll('.d3-tip').remove();

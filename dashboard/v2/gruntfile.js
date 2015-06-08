@@ -13,8 +13,8 @@ module.exports = function(grunt) {
                 livereload: 35729
             },
             js: {
-                files: ['public/**/*.js', '!public/lib/**', '!public/dist/**'],
-                tasks: ['shell','copy:mainjs']
+                files: ['public/**/*.js', '!public/lib/**', '!public/dist/**', '!public/js/app.min.js'],
+                tasks: ['shell', 'copy:mainjs']
             },
             html: {
                 files: ['public/**/*.html'],
@@ -31,14 +31,14 @@ module.exports = function(grunt) {
         },
         jshint: {
             all: {
-                src: ['gruntfile.js', 'package.json', 'server.js', 'server/**/*.js', 'public/**/*.js', '!public/lib/**', '!public/dist/**'],
+                src: ['gruntfile.js', 'package.json', 'server.js', 'server/**/*.js', 'public/**/*.js', '!public/lib/**', '!public/dist/**', '!public/**/app.min.js'],
                 options: {
                     jshintrc: true
                 }
             }
         },
         concurrent: {
-            tasks: ['watch','proxitserver'],
+            tasks: ['watch', 'proxitserver'],
             options: {
                 logConcurrentOutput: true
             }
@@ -109,35 +109,34 @@ module.exports = function(grunt) {
             }
         },
         copy: {
-        	dist: {
-        		expand: true,
-        	    cwd: 'public/',
-        	    src: '**',
-        	    dest: 'dist',
-        	 },
-        	 mainjs:{
-        		expand: true,
-     		    cwd: 'public/',
-     		    src: 'js/app.min.js',
-     		    dest: 'dist/js/',
-     		    flatten: true,
-     		    filter :'isFile'
-        	 }
+            dist: {
+                expand: true,
+                cwd: 'public/',
+                src: '**',
+                dest: 'dist',
+            },
+            mainjs: {
+                expand: true,
+                cwd: 'public/',
+                src: 'js/app.min.js',
+                dest: 'dist/js/',
+                flatten: true,
+                filter: 'isFile'
+            }
         },
-        clean: ['dist'],
+        clean: ['public/lib', 'dist'],
         proxit: {
             dev: {
                 options: {
-                	'port': 3010,
+                    'port': 3010,
                     'verbose': true,
                     'hosts': [{
                         'hostnames': ['*'],
                         'routes': {
                             '/': 'dist',
-                            '/api':'http://162.249.6.39:21000/api'
+                            '/api': 'http://162.249.6.39:21000/api'
                         }
-                    }
-                   ]
+                    }]
                 }
             }
         }
@@ -146,8 +145,8 @@ module.exports = function(grunt) {
     require('load-grunt-tasks')(grunt);
     grunt.registerTask('default', ['devUpdate', 'bower', 'jshint', 'jsbeautifier:default']);
 
-    grunt.registerTask('server', ['jshint','build','concurrent']);
-    grunt.registerTask('build', ['clean','bower','copy:dist','minify','copy:mainjs']);
+    grunt.registerTask('server', ['jshint', 'build', 'concurrent']);
+    grunt.registerTask('build', ['clean', 'bower', 'copy:dist', 'minify', 'copy:mainjs']);
 
     grunt.registerTask('minify', 'Minify the all js', function() {
         var done = this.async();
@@ -156,7 +155,7 @@ module.exports = function(grunt) {
     });
     grunt.loadNpmTasks('proxit');
     grunt.registerTask('proxitserver', 'Proxit', function() {
-    	var done = this.async();
+        var done = this.async();
         grunt.task.run(['proxit:dev']);
         done();
     });
