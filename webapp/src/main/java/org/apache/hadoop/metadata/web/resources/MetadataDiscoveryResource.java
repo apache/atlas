@@ -32,12 +32,12 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
@@ -75,7 +75,8 @@ public class MetadataDiscoveryResource {
      */
     @GET
     @Path("search")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response search(@QueryParam("query") String query) {
         JSONObject response;
         try {   // fall back to dsl
@@ -125,7 +126,8 @@ public class MetadataDiscoveryResource {
      */
     @GET
     @Path("search/dsl")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response searchUsingQueryDSL(@QueryParam("query") String dslQuery) {
         try {
             ParamChecker.notEmpty(dslQuery, "dslQuery cannot be null");
@@ -156,7 +158,8 @@ public class MetadataDiscoveryResource {
      */
     @GET
     @Path("search/gremlin")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response searchUsingGremlinQuery(@QueryParam("query") String gremlinQuery) {
         try {
             ParamChecker.notEmpty(gremlinQuery, "gremlinQuery cannot be null or empty");
@@ -196,7 +199,8 @@ public class MetadataDiscoveryResource {
      */
     @GET
     @Path("search/fulltext")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response searchUsingFullText(@QueryParam("query") String query) {
         try {
             ParamChecker.notEmpty(query, "query cannot be null or empty");

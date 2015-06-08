@@ -29,6 +29,7 @@ import org.apache.hadoop.metadata.TestUtils;
 import org.apache.hadoop.metadata.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.hadoop.metadata.repository.BaseTest;
 import org.apache.hadoop.metadata.repository.Constants;
+import org.apache.hadoop.metadata.repository.EntityNotFoundException;
 import org.apache.hadoop.metadata.repository.RepositoryException;
 import org.apache.hadoop.metadata.typesystem.IStruct;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
@@ -227,7 +228,7 @@ public class GraphBackedMetadataRepositoryTest {
         Assert.assertEquals(traitNames.size(), 0);
     }
 
-    @Test (expectedExceptions = RepositoryException.class)
+    @Test (expectedExceptions = EntityNotFoundException.class)
     public void testGetTraitNamesForBadEntity() throws Exception {
         repositoryService.getTraitNames(UUID.randomUUID().toString());
         Assert.fail();

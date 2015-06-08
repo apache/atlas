@@ -133,12 +133,12 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
             if (either.isRight()) {
                 Expressions.Expression expression = either.right().get();
                 return evaluate(expression);
+            } else {
+                throw new DiscoveryException("Invalid expression : " + dslQuery + ". " + either.left());
             }
         } catch (Exception e) { // unable to catch ExpressionException
             throw new DiscoveryException("Invalid expression : " + dslQuery, e);
         }
-
-        throw new DiscoveryException("Invalid expression : " + dslQuery);
     }
 
     public GremlinQueryResult evaluate(Expressions.Expression expression) {

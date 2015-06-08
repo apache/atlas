@@ -16,37 +16,31 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata.hive.model;
+package org.apache.hadoop.metadata.repository;
+
+import org.apache.hadoop.metadata.MetadataException;
 
 /**
- * Hive Data Types for model and bridge.
+ * A simple wrapper for 404.
  */
-public enum HiveDataTypes {
+public class EntityNotFoundException extends RepositoryException {
+    public EntityNotFoundException() {
+    }
 
-    // Enums
-    HIVE_OBJECT_TYPE,
-    HIVE_PRINCIPAL_TYPE,
-    HIVE_RESOURCE_TYPE,
+    public EntityNotFoundException(String message) {
+        super(message);
+    }
 
-    // Structs
-    HIVE_SERDE,
-    HIVE_ORDER,
-    HIVE_RESOURCEURI,
+    public EntityNotFoundException(String message, Throwable cause) {
+        super(message, cause);
+    }
 
-    // Classes
-    HIVE_DB,
-    HIVE_STORAGEDESC,
-    HIVE_TABLE,
-    HIVE_COLUMN,
-    HIVE_PARTITION,
-    HIVE_INDEX,
-    HIVE_ROLE,
-    HIVE_TYPE,
-    HIVE_PROCESS,
-    // HIVE_VIEW,
-    ;
+    public EntityNotFoundException(Throwable cause) {
+        super(cause);
+    }
 
-    public String getName() {
-        return name().toLowerCase();
+    public EntityNotFoundException(String message, Throwable cause, boolean enableSuppression,
+                                   boolean writableStackTrace) {
+        super(message, cause, enableSuppression, writableStackTrace);
     }
 }

@@ -20,19 +20,14 @@ package org.apache.hadoop.metadata.services;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.google.inject.Provider;
-import org.apache.hadoop.metadata.GraphTransaction;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.ParamChecker;
-import org.apache.hadoop.metadata.RepositoryMetadataModule;
 import org.apache.hadoop.metadata.classification.InterfaceAudience;
 import org.apache.hadoop.metadata.discovery.SearchIndexer;
 import org.apache.hadoop.metadata.listener.EntityChangeListener;
 import org.apache.hadoop.metadata.repository.IndexCreationException;
-import org.apache.hadoop.metadata.repository.IndexException;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
 import org.apache.hadoop.metadata.repository.typestore.ITypeStore;
 import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
@@ -45,11 +40,14 @@ import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
 import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
 import org.apache.hadoop.metadata.typesystem.types.DataTypes;
+import org.apache.hadoop.metadata.typesystem.types.EnumTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.IDataType;
 import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
+import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.TraitType;
 import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
+import org.apache.hadoop.metadata.typesystem.types.TypeUtils;
 import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -58,8 +56,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.io.IOException;
-import java.text.ParseException;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -97,10 +94,11 @@ public class DefaultMetadataService implements MetadataService {
     private void restoreTypeSystem() {
         LOG.info("Restoring type system from the store");
         try {
-            createSuperTypes();
-
             TypesDef typesDef = typeStore.restore();
             typeSystem.defineTypes(typesDef);
+
+            // restore types before creating super types
+            createSuperTypes();
 
         } catch (MetadataException e) {
             throw new RuntimeException(e);
@@ -114,35 +112,33 @@ public class DefaultMetadataService implements MetadataService {
             TypesUtil.createOptionalAttrDef("description", DataTypes.STRING_TYPE);
 
     @InterfaceAudience.Private
-    public void createSuperTypes() throws MetadataException {
+    private void createSuperTypes() throws MetadataException {
         if (typeSystem.isRegistered(MetadataServiceClient.DATA_SET_SUPER_TYPE)) {
             return; // this is already registered
         }
 
-        HierarchicalTypeDefinition<ClassType> superTypeDefinition =
+        HierarchicalTypeDefinition<ClassType> infraType =
                 TypesUtil.createClassTypeDef(MetadataServiceClient.INFRASTRUCTURE_SUPER_TYPE,
-                        ImmutableList.<String>of(),
-                        NAME_ATTRIBUTE, DESCRIPTION_ATTRIBUTE);
-        typeSystem.defineClassType(superTypeDefinition);
+                        ImmutableList.<String>of(), NAME_ATTRIBUTE, DESCRIPTION_ATTRIBUTE);
 
-        superTypeDefinition =
-                TypesUtil.createClassTypeDef(MetadataServiceClient.DATA_SET_SUPER_TYPE,
-                        ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<ClassType> datasetType = TypesUtil
+                .createClassTypeDef(MetadataServiceClient.DATA_SET_SUPER_TYPE, ImmutableList.<String>of(),
                         NAME_ATTRIBUTE, DESCRIPTION_ATTRIBUTE);
-        typeSystem.defineClassType(superTypeDefinition);
 
-        superTypeDefinition =
-                TypesUtil.createClassTypeDef(MetadataServiceClient.PROCESS_SUPER_TYPE,
-                        ImmutableList.<String>of(),
-                        NAME_ATTRIBUTE, DESCRIPTION_ATTRIBUTE,
-                        new AttributeDefinition("inputs",
+        HierarchicalTypeDefinition<ClassType> processType = TypesUtil
+                .createClassTypeDef(MetadataServiceClient.PROCESS_SUPER_TYPE, ImmutableList.<String>of(),
+                        NAME_ATTRIBUTE, DESCRIPTION_ATTRIBUTE, new AttributeDefinition("inputs",
                                 DataTypes.arrayTypeName(MetadataServiceClient.DATA_SET_SUPER_TYPE),
-                                new Multiplicity(0, Integer.MAX_VALUE, false), false, null),
+                                Multiplicity.OPTIONAL, false, null),
                         new AttributeDefinition("outputs",
                                 DataTypes.arrayTypeName(MetadataServiceClient.DATA_SET_SUPER_TYPE),
-                                new Multiplicity(0, Integer.MAX_VALUE, false), false, null)
-                );
-        typeSystem.defineClassType(superTypeDefinition);
+                                Multiplicity.OPTIONAL, false, null));
+
+        TypesDef typesDef = TypeUtils
+                .getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
+                        ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
+                        ImmutableList.of(infraType, datasetType, processType));
+        createType(TypesSerialization.toJson(typesDef));
     }
 
     /**
@@ -333,6 +329,9 @@ public class DefaultMetadataService implements MetadataService {
         // ensure trait type is already registered with the TS
         Preconditions.checkArgument(typeSystem.isRegistered(traitName),
                 "trait=%s should be defined in type system before it can be added", traitName);
+        // ensure trait is not already defined
+        Preconditions.checkArgument(!getTraitNames(guid).contains(traitName),
+                "trait=%s is already defined for entity=%s", traitName, guid);
 
         repository.addTrait(guid, traitInstance);
 

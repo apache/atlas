@@ -18,6 +18,7 @@
 
 package org.apache.hadoop.metadata.hive.bridge;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.api.Database;
@@ -100,8 +101,8 @@ public class HiveMetaStoreBridge {
             Database hiveDB = hiveClient.getDatabase(databaseName);
 
             dbRef = new Referenceable(HiveDataTypes.HIVE_DB.getName());
-            dbRef.set("name", hiveDB.getName());
-            dbRef.set("clusterName", clusterName);
+            dbRef.set(HiveDataModelGenerator.NAME, hiveDB.getName().toLowerCase());
+            dbRef.set(HiveDataModelGenerator.CLUSTER_NAME, clusterName);
             dbRef.set("description", hiveDB.getDescription());
             dbRef.set("locationUri", hiveDB.getLocationUri());
             dbRef.set("parameters", hiveDB.getParameters());
@@ -138,7 +139,7 @@ public class HiveMetaStoreBridge {
 
             // Import Partitions
             Referenceable sdReferenceable = getSDForTable(databaseName, tableName);
-            importPartitions(databaseName, tableName, databaseReferenceable, tableReferenceable, sdReferenceable);
+            registerPartitions(databaseName, tableName, tableReferenceable, sdReferenceable);
 
             // Import Indexes
             importIndexes(databaseName, tableName, databaseReferenceable, tableReferenceable);
@@ -158,9 +159,23 @@ public class HiveMetaStoreBridge {
         LOG.debug("Getting reference for database {}", databaseName);
         String typeName = HiveDataTypes.HIVE_DB.getName();
 
-        String dslQuery = String.format("%s where name = '%s' and clusterName = '%s'", HiveDataTypes.HIVE_DB.getName(),
-                databaseName.toLowerCase(), clusterName);
+        String dslQuery = String.format("%s where %s = '%s' and %s = '%s'", typeName,
+                HiveDataModelGenerator.NAME, databaseName.toLowerCase(), HiveDataModelGenerator.CLUSTER_NAME,
+                clusterName);
         return getEntityReferenceFromDSL(typeName, dslQuery);
+    }
+
+    public Referenceable getProcessReference(String queryStr) throws Exception {
+        LOG.debug("Getting reference for process with query {}", queryStr);
+        String typeName = HiveDataTypes.HIVE_PROCESS.getName();
+
+        //todo enable DSL
+//        String dslQuery = String.format("%s where queryText = \"%s\"", typeName, queryStr);
+//        return getEntityReferenceFromDSL(typeName, dslQuery);
+
+        String gremlinQuery = String.format("g.V.has('__typeName', '%s').has('%s.queryText', \"%s\").toList()",
+                typeName, typeName, StringEscapeUtils.escapeJava(queryStr));
+        return getEntityReferenceFromGremlin(typeName, gremlinQuery);
     }
 
     private Referenceable getEntityReferenceFromDSL(String typeName, String dslQuery) throws Exception {
@@ -180,6 +195,10 @@ public class HiveMetaStoreBridge {
         }
     }
 
+    public static String getTableName(String clusterName, String dbName, String tableName) {
+        return String.format("%s.%s@%s", dbName.toLowerCase(), tableName.toLowerCase(), clusterName);
+    }
+
     /**
      * Gets reference for the table
      *
@@ -192,17 +211,9 @@ public class HiveMetaStoreBridge {
         LOG.debug("Getting reference for table {}.{}", dbName, tableName);
 
         String typeName = HiveDataTypes.HIVE_TABLE.getName();
-
-        String dslQuery = String.format(
-                "%s as t where name = '%s', dbName where name = '%s' and " + "clusterName = '%s' select t",
-                HiveDataTypes.HIVE_TABLE.getName(), tableName.toLowerCase(), dbName.toLowerCase(), clusterName);
+        String entityName = getTableName(clusterName, dbName, tableName);
+        String dslQuery = String.format("%s as t where name = '%s'", typeName, entityName);
         return getEntityReferenceFromDSL(typeName, dslQuery);
-
-//        String dbType = HiveDataTypes.HIVE_DB.getName();
-//        String gremlinQuery = String.format("g.V.has('__typeName', '%s').has('%s.name', '%s').as('t').out"
-//                        + "('__%s.dbName').has('%s.name', '%s').has('%s.clusterName', '%s').back('t').toList()",
-//                typeName, typeName, tableName, typeName, dbType, dbName, dbType, clusterName);
-//        return getEntityReferenceFromGremlin(typeName, gremlinQuery);
     }
 
     private Referenceable getEntityReferenceFromGremlin(String typeName, String gremlinQuery) throws MetadataServiceException,
@@ -227,13 +238,12 @@ public class HiveMetaStoreBridge {
         //                        + "dbName where name = '%s' and clusterName = '%s' select p", typeName, valuesStr, tableName,
         //                dbName, clusterName);
 
-        String dbType = HiveDataTypes.HIVE_DB.getName();
-        String tableType = HiveDataTypes.HIVE_TABLE.getName();
         String datasetType = MetadataServiceClient.DATA_SET_SUPER_TYPE;
+        String tableEntityName = getTableName(clusterName, dbName, tableName);
+
         String gremlinQuery = String.format("g.V.has('__typeName', '%s').has('%s.values', %s).as('p')."
-                        + "out('__%s.tableName').has('%s.name', '%s').out('__%s.dbName').has('%s.name', '%s')"
-                        + ".has('%s.clusterName', '%s').back('p').toList()", typeName, typeName, valuesStr, typeName,
-                datasetType, tableName.toLowerCase(), tableType, dbType, dbName.toLowerCase(), dbType, clusterName);
+                        + "out('__%s.table').has('%s.name', '%s').back('p').toList()", typeName, typeName, valuesStr,
+                typeName, datasetType, tableEntityName);
 
         return getEntityReferenceFromGremlin(typeName, gremlinQuery);
     }
@@ -264,7 +274,9 @@ public class HiveMetaStoreBridge {
             Table hiveTable = hiveClient.getTable(dbName, tableName);
 
             tableRef = new Referenceable(HiveDataTypes.HIVE_TABLE.getName());
-            tableRef.set("name", hiveTable.getTableName());
+            tableRef.set(HiveDataModelGenerator.NAME,
+                    getTableName(clusterName, hiveTable.getDbName(), hiveTable.getTableName()));
+            tableRef.set(HiveDataModelGenerator.TABLE_NAME, hiveTable.getTableName().toLowerCase());
             tableRef.set("owner", hiveTable.getOwner());
 
             tableRef.set("createTime", hiveTable.getMetadata().getProperty(hive_metastoreConstants.DDL_TIME));
@@ -274,7 +286,7 @@ public class HiveMetaStoreBridge {
             tableRef.set(HiveDataModelGenerator.COMMENT, hiveTable.getParameters().get(HiveDataModelGenerator.COMMENT));
 
             // add reference to the database
-            tableRef.set("dbName", dbReference);
+            tableRef.set(HiveDataModelGenerator.DB, dbReference);
 
             List<Referenceable> colList = getColumns(hiveTable.getCols());
             tableRef.set("columns", colList);
@@ -309,15 +321,13 @@ public class HiveMetaStoreBridge {
         return tableRef;
     }
 
-    private void importPartitions(String db, String tableName,
-                                  Referenceable dbReferenceable,
-                                  Referenceable tableReferenceable,
-                                  Referenceable sdReferenceable) throws Exception {
+    private void registerPartitions(String db, String tableName, Referenceable tableReferenceable,
+            Referenceable sdReferenceable) throws Exception {
         Set<Partition> tableParts = hiveClient.getAllPartitionsOf(new Table(Table.getEmptyTable(db, tableName)));
 
         if (tableParts.size() > 0) {
             for (Partition hivePart : tableParts) {
-                importPartition(hivePart, dbReferenceable, tableReferenceable, sdReferenceable);
+                registerPartition(hivePart, tableReferenceable, sdReferenceable);
             }
         }
     }
@@ -325,17 +335,14 @@ public class HiveMetaStoreBridge {
     public Referenceable registerPartition(Partition partition) throws Exception {
         String dbName = partition.getTable().getDbName();
         String tableName = partition.getTable().getTableName();
-        Referenceable dbRef = registerDatabase(dbName);
         Referenceable tableRef = registerTable(dbName, tableName);
         Referenceable sdRef = getSDForTable(dbName, tableName);
-        return importPartition(partition, dbRef, tableRef, sdRef);
+        return registerPartition(partition, tableRef, sdRef);
     }
 
-    private Referenceable importPartition(Partition hivePart,
-                                          Referenceable dbReferenceable,
-                                          Referenceable tableReferenceable,
-                                          Referenceable sdReferenceable) throws Exception {
-        LOG.info("Importing partition for {}.{} with values {}", dbReferenceable, tableReferenceable,
+    private Referenceable registerPartition(Partition hivePart, Referenceable tableReferenceable,
+            Referenceable sdReferenceable) throws Exception {
+        LOG.info("Registering partition for {} with values {}", tableReferenceable,
                 StringUtils.join(hivePart.getValues(), ","));
         String dbName = hivePart.getTable().getDbName();
         String tableName = hivePart.getTable().getTableName();
@@ -345,8 +352,7 @@ public class HiveMetaStoreBridge {
             partRef = new Referenceable(HiveDataTypes.HIVE_PARTITION.getName());
             partRef.set("values", hivePart.getValues());
 
-            partRef.set("dbName", dbReferenceable);
-            partRef.set("tableName", tableReferenceable);
+            partRef.set(HiveDataModelGenerator.TABLE, tableReferenceable);
 
             //todo fix
             partRef.set("createTime", hivePart.getLastAccessTime());
@@ -384,15 +390,15 @@ public class HiveMetaStoreBridge {
         LOG.info("Importing index {} for {}.{}", index.getIndexName(), dbReferenceable, tableReferenceable);
         Referenceable indexRef = new Referenceable(HiveDataTypes.HIVE_INDEX.getName());
 
-        indexRef.set("indexName", index.getIndexName());
+        indexRef.set(HiveDataModelGenerator.NAME, index.getIndexName());
         indexRef.set("indexHandlerClass", index.getIndexHandlerClass());
 
-        indexRef.set("dbName", dbReferenceable);
+        indexRef.set(HiveDataModelGenerator.DB, dbReferenceable);
 
         indexRef.set("createTime", index.getCreateTime());
         indexRef.set("lastAccessTime", index.getLastAccessTime());
-        indexRef.set("origTableName", index.getOrigTableName());
-        indexRef.set("indexTableName", index.getIndexTableName());
+        indexRef.set("origTable", index.getOrigTableName());
+        indexRef.set("indexTable", index.getIndexTableName());
 
         Referenceable sdReferenceable = fillStorageDescStruct(index.getSd(), null);
         indexRef.set("sd", sdReferenceable);
@@ -416,30 +422,13 @@ public class HiveMetaStoreBridge {
         String serdeInfoName = HiveDataTypes.HIVE_SERDE.getName();
         Struct serdeInfoStruct = new Struct(serdeInfoName);
 
-        serdeInfoStruct.set("name", serdeInfo.getName());
+        serdeInfoStruct.set(HiveDataModelGenerator.NAME, serdeInfo.getName());
         serdeInfoStruct.set("serializationLib", serdeInfo.getSerializationLib());
         serdeInfoStruct.set("parameters", serdeInfo.getParameters());
 
         sdReferenceable.set("serdeInfo", serdeInfoStruct);
         sdReferenceable.set(HiveDataModelGenerator.STORAGE_NUM_BUCKETS, storageDesc.getNumBuckets());
         sdReferenceable.set(HiveDataModelGenerator.STORAGE_IS_STORED_AS_SUB_DIRS, storageDesc.isStoredAsSubDirectories());
-
-        // Will need to revisit this after we fix typesystem.
-        /*
-        LOG.info("skewedInfo = " + skewedInfo);
-        String skewedInfoName = HiveDataTypes.HIVE_SKEWEDINFO.name();
-        Struct skewedInfoStruct = new Struct(skewedInfoName);
-        if (skewedInfo.getSkewedColNames().size() > 0) {
-            skewedInfoStruct.set("skewedColNames", skewedInfo.getSkewedColNames());
-            skewedInfoStruct.set("skewedColValues", skewedInfo.getSkewedColValues());
-            skewedInfoStruct.set("skewedColValueLocationMaps",
-                    skewedInfo.getSkewedColValueLocationMaps());
-            StructType skewedInfotype = (StructType) hiveTypeSystem.getDataType(skewedInfoName);
-            ITypedStruct skewedInfoStructTyped =
-                    skewedInfotype.convert(skewedInfoStruct, Multiplicity.OPTIONAL);
-            sdStruct.set("skewedInfo", skewedInfoStructTyped);
-        }
-        */
 
         //Use the passed column list if not null, ex: use same references for table and SD
         List<FieldSchema> columns = storageDesc.getCols();
@@ -485,7 +474,7 @@ public class HiveMetaStoreBridge {
         for (FieldSchema fs : schemaList) {
             LOG.debug("Processing field " + fs);
             Referenceable colReferenceable = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
-            colReferenceable.set("name", fs.getName());
+            colReferenceable.set(HiveDataModelGenerator.NAME, fs.getName());
             colReferenceable.set("type", fs.getType());
             colReferenceable.set(HiveDataModelGenerator.COMMENT, fs.getComment());
 
@@ -511,5 +500,13 @@ public class HiveMetaStoreBridge {
         HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(new HiveConf());
         hiveMetaStoreBridge.registerHiveDataModel();
         hiveMetaStoreBridge.importHiveMetadata();
+    }
+
+    public void updateTable(Referenceable tableReferenceable, Table newTable) throws MetadataServiceException {
+        MetadataServiceClient client = getMetadataServiceClient();
+        client.updateEntity(tableReferenceable.getId()._getId(), HiveDataModelGenerator.TABLE_NAME,
+                newTable.getTableName().toLowerCase());
+        client.updateEntity(tableReferenceable.getId()._getId(), HiveDataModelGenerator.NAME,
+                getTableName(clusterName, newTable.getDbName(), newTable.getTableName()));
     }
 }

@@ -37,6 +37,7 @@ package org.apache.hadoop.metadata.hive.hook;
 
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.QueryPlan;
 import org.apache.hadoop.hive.ql.exec.ExplainTask;
@@ -246,10 +247,9 @@ public class HiveHook implements ExecuteWithHookContext {
         Referenceable dbReferenceable = dgiBridge.registerDatabase(oldTable.getDbName());
         Referenceable tableReferenceable =
                 dgiBridge.registerTable(dbReferenceable, oldTable.getDbName(), oldTable.getTableName());
-        LOG.info("Updating entity name {}.{} to {}",
-                oldTable.getDbName(), oldTable.getTableName(), newTable.getTableName());
-        dgiBridge.getMetadataServiceClient().updateEntity(tableReferenceable.getId()._getId(), "name",
-                newTable.getTableName().toLowerCase());
+        LOG.info("Updating entity name {}.{} to {}", oldTable.getDbName(), oldTable.getTableName(),
+                newTable.getTableName());
+        dgiBridge.updateTable(tableReferenceable, newTable);
     }
 
     private void handleCreateTable(HiveMetaStoreBridge dgiBridge, HiveEvent event) throws Exception {
@@ -271,6 +271,13 @@ public class HiveHook implements ExecuteWithHookContext {
         }
     }
 
+    private String normalize(String str) {
+        if (StringUtils.isEmpty(str)) {
+            return null;
+        }
+        return str.toLowerCase().trim();
+    }
+
     private void registerProcess(HiveMetaStoreBridge dgiBridge, HiveEvent event) throws Exception {
         Set<ReadEntity> inputs = event.inputs;
         Set<WriteEntity> outputs = event.outputs;
@@ -285,48 +292,53 @@ public class HiveHook implements ExecuteWithHookContext {
         }
 
         String queryId = event.queryPlan.getQueryId();
-        String queryStr = event.queryPlan.getQueryStr();
+        String queryStr = normalize(event.queryPlan.getQueryStr());
         long queryStartTime = event.queryPlan.getQueryStartTime();
 
         LOG.debug("Registering CTAS query: {}", queryStr);
-        Referenceable processReferenceable = new Referenceable(HiveDataTypes.HIVE_PROCESS.getName());
-        processReferenceable.set("name", event.operation.getOperationName());
-        processReferenceable.set("startTime", queryStartTime);
-        processReferenceable.set("userName", event.user);
+        Referenceable processReferenceable = dgiBridge.getProcessReference(queryStr);
+        if (processReferenceable == null) {
+            processReferenceable = new Referenceable(HiveDataTypes.HIVE_PROCESS.getName());
+            processReferenceable.set("name", event.operation.getOperationName());
+            processReferenceable.set("startTime", queryStartTime);
+            processReferenceable.set("userName", event.user);
 
-        List<Referenceable> source = new ArrayList<>();
-        for (ReadEntity readEntity : inputs) {
-            if (readEntity.getType() == Entity.Type.TABLE) {
-                Table table = readEntity.getTable();
-                String dbName = table.getDbName();
-                source.add(dgiBridge.registerTable(dbName, table.getTableName()));
+            List<Referenceable> source = new ArrayList<>();
+            for (ReadEntity readEntity : inputs) {
+                if (readEntity.getType() == Entity.Type.TABLE) {
+                    Table table = readEntity.getTable();
+                    String dbName = table.getDbName();
+                    source.add(dgiBridge.registerTable(dbName, table.getTableName()));
+                }
+                if (readEntity.getType() == Entity.Type.PARTITION) {
+                    dgiBridge.registerPartition(readEntity.getPartition());
+                }
             }
-            if (readEntity.getType() == Entity.Type.PARTITION) {
-                dgiBridge.registerPartition(readEntity.getPartition());
+            processReferenceable.set("inputs", source);
+
+            List<Referenceable> target = new ArrayList<>();
+            for (WriteEntity writeEntity : outputs) {
+                if (writeEntity.getType() == Entity.Type.TABLE || writeEntity.getType() == Entity.Type.PARTITION) {
+                    Table table = writeEntity.getTable();
+                    String dbName = table.getDbName();
+                    target.add(dgiBridge.registerTable(dbName, table.getTableName()));
+                }
+                if (writeEntity.getType() == Entity.Type.PARTITION) {
+                    dgiBridge.registerPartition(writeEntity.getPartition());
+                }
             }
+            processReferenceable.set("outputs", target);
+            processReferenceable.set("queryText", queryStr);
+            processReferenceable.set("queryId", queryId);
+            processReferenceable.set("queryPlan", event.jsonPlan.toString());
+            processReferenceable.set("endTime", System.currentTimeMillis());
+
+            //TODO set
+            processReferenceable.set("queryGraph", "queryGraph");
+            dgiBridge.createInstance(processReferenceable);
+        } else {
+            LOG.debug("Query {} is already registered", queryStr);
         }
-        processReferenceable.set("inputs", source);
-
-        List<Referenceable> target = new ArrayList<>();
-        for (WriteEntity writeEntity : outputs) {
-            if (writeEntity.getType() == Entity.Type.TABLE || writeEntity.getType() == Entity.Type.PARTITION) {
-                Table table = writeEntity.getTable();
-                String dbName = table.getDbName();
-                target.add(dgiBridge.registerTable(dbName, table.getTableName()));
-            }
-            if (writeEntity.getType() == Entity.Type.PARTITION) {
-                dgiBridge.registerPartition(writeEntity.getPartition());
-            }
-        }
-        processReferenceable.set("outputs", target);
-        processReferenceable.set("queryText", queryStr);
-        processReferenceable.set("queryId", queryId);
-        processReferenceable.set("queryPlan", event.jsonPlan.toString());
-        processReferenceable.set("endTime", System.currentTimeMillis());
-
-        //TODO set
-        processReferenceable.set("queryGraph", "queryGraph");
-        dgiBridge.createInstance(processReferenceable);
     }
 
 

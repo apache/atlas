@@ -64,6 +64,7 @@ public class MetadataServiceClient {
     public static final String URI_ENTITIES = "entities";
     public static final String URI_TRAITS = "traits";
     public static final String URI_SEARCH = "discovery/search";
+    public static final String URI_LINEAGE = "lineage/hive/table";
 
     public static final String QUERY = "query";
     public static final String QUERY_TYPE = "queryType";
@@ -75,6 +76,8 @@ public class MetadataServiceClient {
     public static final String DATA_SET_SUPER_TYPE = "DataSet";
     public static final String PROCESS_SUPER_TYPE = "Process";
 
+    public static final String JSON_MEDIA_TYPE = MediaType.APPLICATION_JSON + "; charset=UTF-8";
+
     private WebResource service;
 
     public MetadataServiceClient(String baseUrl) {
@@ -82,7 +85,7 @@ public class MetadataServiceClient {
         PropertiesConfiguration clientConfig = null;
         try {
             clientConfig = getClientProperties();
-            if (clientConfig.getBoolean(TLS_ENABLED)  || clientConfig.getString("metadata.http.authentication.type") != null) {
+            if (clientConfig.getBoolean(TLS_ENABLED, false)) {
                 // create an SSL properties configuration if one doesn't exist.  SSLFactory expects a file, so forced to create a
                 // configuration object, persist it, then subsequently pass in an empty configuration to SSLFactory
                 SecureClientUtils.persistSSLClientConfiguration(clientConfig);
@@ -126,7 +129,12 @@ public class MetadataServiceClient {
         SEARCH(BASE_URI + URI_SEARCH, HttpMethod.GET),
         SEARCH_DSL(BASE_URI + URI_SEARCH + "/dsl", HttpMethod.GET),
         SEARCH_GREMLIN(BASE_URI + URI_SEARCH + "/gremlin", HttpMethod.GET),
-        SEARCH_FULL_TEXT(BASE_URI + URI_SEARCH + "/fulltext", HttpMethod.GET);
+        SEARCH_FULL_TEXT(BASE_URI + URI_SEARCH + "/fulltext", HttpMethod.GET),
+
+        //Lineage operations
+        LINEAGE_INPUTS_GRAPH(BASE_URI + URI_LINEAGE, HttpMethod.GET),
+        LINEAGE_OUTPUTS_GRAPH(BASE_URI + URI_LINEAGE, HttpMethod.GET),
+        LINEAGE_SCHEMA(BASE_URI + URI_LINEAGE, HttpMethod.GET);
 
         private final String method;
         private final String path;
@@ -143,6 +151,16 @@ public class MetadataServiceClient {
         public String getPath() {
             return path;
         }
+    }
+
+    /**
+     * Register the given type(meta model)
+     * @param typeAsJson type definition a jaon
+     * @return result json object
+     * @throws MetadataServiceException
+     */
+    public JSONObject createType(String typeAsJson) throws MetadataServiceException {
+        return callAPI(API.CREATE_TYPE, typeAsJson);
     }
 
     public List<String> listTypes() throws MetadataServiceException {
@@ -176,16 +194,6 @@ public class MetadataServiceClient {
     }
 
     /**
-     * Register the given type(meta model)
-     * @param typeAsJson type definition a jaon
-     * @return result json object
-     * @throws MetadataServiceException
-     */
-    public JSONObject createType(String typeAsJson) throws MetadataServiceException {
-        return callAPI(API.CREATE_TYPE, typeAsJson);
-    }
-
-    /**
      * Create the given entity
      * @param entityAsJson entity(type instance) as json
      * @return result json object
@@ -213,9 +221,9 @@ public class MetadataServiceClient {
 
     /**
      * Updates property for the entity corresponding to guid
-     * @param guid
-     * @param property
-     * @param value
+     * @param guid      guid
+     * @param property  property key
+     * @param value     property value
      */
     public JSONObject updateEntity(String guid, String property, String value) throws MetadataServiceException {
         WebResource resource = getResource(API.UPDATE_ENTITY, guid);
@@ -255,6 +263,7 @@ public class MetadataServiceClient {
      * @throws MetadataServiceException
      */
     public JSONArray searchByDSL(String query) throws MetadataServiceException {
+        LOG.debug("DSL query: {}", query);
         WebResource resource = getResource(API.SEARCH_DSL);
         resource = resource.queryParam(QUERY, query);
         JSONObject result = callAPIWithResource(API.SEARCH_DSL, resource);
@@ -272,6 +281,7 @@ public class MetadataServiceClient {
      * @throws MetadataServiceException
      */
     public JSONObject searchByGremlin(String gremlinQuery) throws MetadataServiceException {
+        LOG.debug("Gremlin query: " + gremlinQuery);
         WebResource resource = getResource(API.SEARCH_GREMLIN);
         resource = resource.queryParam(QUERY, gremlinQuery);
         return callAPIWithResource(API.SEARCH_GREMLIN, resource);
@@ -287,6 +297,24 @@ public class MetadataServiceClient {
         WebResource resource = getResource(API.SEARCH_FULL_TEXT);
         resource = resource.queryParam(QUERY, query);
         return callAPIWithResource(API.SEARCH_FULL_TEXT, resource);
+    }
+
+    public JSONObject getInputGraph(String datasetName) throws MetadataServiceException {
+        JSONObject response = callAPI(API.LINEAGE_INPUTS_GRAPH, null, datasetName, "/inputs/graph");
+        try {
+            return response.getJSONObject(MetadataServiceClient.RESULTS);
+        } catch (JSONException e) {
+            throw new MetadataServiceException(e);
+        }
+    }
+
+    public JSONObject getOutputGraph(String datasetName) throws MetadataServiceException {
+        JSONObject response = callAPI(API.LINEAGE_OUTPUTS_GRAPH, null, datasetName, "/outputs/graph");
+        try {
+            return response.getJSONObject(MetadataServiceClient.RESULTS);
+        } catch (JSONException e) {
+            throw new MetadataServiceException(e);
+        }
     }
 
     public String getRequestId(JSONObject json) throws MetadataServiceException {
@@ -314,11 +342,11 @@ public class MetadataServiceClient {
     private JSONObject callAPIWithResource(API api, WebResource resource, Object requestObject)
             throws MetadataServiceException {
         ClientResponse clientResponse = resource
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(JSON_MEDIA_TYPE)
+                .type(JSON_MEDIA_TYPE)
                 .method(api.getMethod(), ClientResponse.class, requestObject);
 
-        Response.Status expectedStatus = (api.getMethod() == HttpMethod.POST)
+        Response.Status expectedStatus = HttpMethod.POST.equals(api.getMethod())
             ? Response.Status.CREATED : Response.Status.OK;
         if (clientResponse.getStatus() == expectedStatus.getStatusCode()) {
             String responseAsString = clientResponse.getEntity(String.class);

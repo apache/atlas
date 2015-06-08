@@ -29,7 +29,7 @@ public interface ITypeStore {
      * @param typeSystem type system to persist
      * @throws StorageException
      */
-    public void store(TypeSystem typeSystem) throws MetadataException;
+    void store(TypeSystem typeSystem) throws MetadataException;
 
     /**
      * Persist the given type in the type system - insert or update
@@ -37,12 +37,12 @@ public interface ITypeStore {
      * @param types types to persist
      * @throws StorageException
      */
-    public void store(TypeSystem typeSystem, ImmutableList<String> types) throws MetadataException;
+    void store(TypeSystem typeSystem, ImmutableList<String> types) throws MetadataException;
 
     /**
      * Restore all type definitions
      * @return List of persisted type definitions
      * @throws org.apache.hadoop.metadata.MetadataException
      */
-    public TypesDef restore() throws MetadataException;
+    TypesDef restore() throws MetadataException;
 }

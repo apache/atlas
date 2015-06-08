@@ -130,7 +130,7 @@ public interface MetadataRepository {
      * @return a list of trait names for the given entity guid
      * @throws RepositoryException
      */
-    List<String> getTraitNames(String guid) throws RepositoryException;
+    List<String> getTraitNames(String guid) throws MetadataException;
 
     /**
      * Adds a new trait to an existing entity represented by a guid.

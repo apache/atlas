@@ -70,7 +70,7 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
         this.fieldMapping = null;
         this.numFields = numFields;
         this.superTypes = superTypes;
-        this.immediateAttrs = null;
+        this.immediateAttrs = ImmutableList.of();
         this.attributeNameToType = null;
     }
 
@@ -86,7 +86,7 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
         this.attributeNameToType = p.right;
         this.numFields = this.fieldMapping.fields.size();
         this.superTypes = superTypes == null ? ImmutableList.<String>of() : superTypes;
-        this.immediateAttrs = ImmutableList.<AttributeInfo>copyOf(fields);
+        this.immediateAttrs = ImmutableList.copyOf(fields);
     }
 
     @Override
@@ -184,7 +184,7 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
                     (ST) typeSystem.getDataType(superTypeClass, currentPath.typeName);
 
             ImmutableList<AttributeInfo> superTypeFields = superType == this ?
-                    ImmutableList.<AttributeInfo>copyOf(fields) : superType.immediateAttrs;
+                    ImmutableList.copyOf(fields) : superType.immediateAttrs;
 
             Set<String> immediateFields = new HashSet<String>();
 

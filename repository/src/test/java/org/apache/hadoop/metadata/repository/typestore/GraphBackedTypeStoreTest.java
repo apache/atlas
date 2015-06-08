@@ -98,13 +98,17 @@ public class GraphBackedTypeStoreTest {
         List<StructTypeDefinition> structTypes = types.structTypesAsJavaList();
         Assert.assertEquals(1, structTypes.size());
 
+        boolean clsTypeFound = false;
         List<HierarchicalTypeDefinition<ClassType>> classTypes = types.classTypesAsJavaList();
-        Assert.assertEquals(3, classTypes.size());
         for (HierarchicalTypeDefinition<ClassType> classType : classTypes) {
-            ClassType expectedType = ts.getDataType(ClassType.class, classType.typeName);
-            Assert.assertEquals(expectedType.immediateAttrs.size(), classType.attributeDefinitions.length);
-            Assert.assertEquals(expectedType.superTypes.size(), classType.superTypes.size());
+            if (classType.typeName.equals("Manager")) {
+                ClassType expectedType = ts.getDataType(ClassType.class, classType.typeName);
+                Assert.assertEquals(expectedType.immediateAttrs.size(), classType.attributeDefinitions.length);
+                Assert.assertEquals(expectedType.superTypes.size(), classType.superTypes.size());
+                clsTypeFound = true;
+            }
         }
+        Assert.assertTrue("Manager type not restored", clsTypeFound);
 
         //validate trait
         List<HierarchicalTypeDefinition<TraitType>> traitTypes = types.traitTypesAsJavaList();

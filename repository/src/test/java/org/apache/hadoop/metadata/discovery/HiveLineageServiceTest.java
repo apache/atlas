@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.apache.hadoop.metadata.RepositoryMetadataModule;
 import org.apache.hadoop.metadata.discovery.graph.GraphBackedDiscoveryService;
+import org.apache.hadoop.metadata.repository.EntityNotFoundException;
 import org.apache.hadoop.metadata.services.DefaultMetadataService;
 import org.apache.hadoop.metadata.typesystem.Referenceable;
 import org.apache.hadoop.metadata.typesystem.TypesDef;
@@ -174,7 +175,7 @@ public class HiveLineageServiceTest {
         Assert.fail();
     }
 
-    @Test (expectedExceptions = IllegalArgumentException.class)
+    @Test (expectedExceptions = EntityNotFoundException.class)
     public void testGetInputsBadTableName() throws Exception {
         hiveLineageService.getInputs("blah");
         Assert.fail();
@@ -223,7 +224,7 @@ public class HiveLineageServiceTest {
         Assert.fail();
     }
 
-    @Test (expectedExceptions = IllegalArgumentException.class)
+    @Test (expectedExceptions = EntityNotFoundException.class)
     public void testGetOutputsBadTableName() throws Exception {
         hiveLineageService.getOutputs("blah");
         Assert.fail();
@@ -285,7 +286,7 @@ public class HiveLineageServiceTest {
         Assert.fail();
     }
 
-    @Test (expectedExceptions = IllegalArgumentException.class)
+    @Test (expectedExceptions = EntityNotFoundException.class)
     public void testGetSchemaBadTableName() throws Exception {
         hiveLineageService.getSchema("blah");
         Assert.fail();

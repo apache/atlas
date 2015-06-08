@@ -18,7 +18,6 @@
 
 package org.apache.hadoop.metadata.web.util;
 
-import com.google.common.base.Preconditions;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -41,12 +40,12 @@ import java.io.StringWriter;
  */
 public final class Servlets {
 
-    public static final String QUOTE = "\"";
-
     private static final Logger LOG = LoggerFactory.getLogger(Servlets.class);
     private Servlets() {
         /* singleton */
     }
+
+    public static final String JSON_MEDIA_TYPE = MediaType.APPLICATION_JSON + "; charset=UTF-8";
 
     /**
      * Returns the user of the given request.
@@ -132,7 +131,7 @@ public final class Servlets {
         return Response
                 .status(status)
                 .entity(errorEntity)
-                .type(MediaType.APPLICATION_JSON)
+                .type(JSON_MEDIA_TYPE)
                 .build();
     }
 

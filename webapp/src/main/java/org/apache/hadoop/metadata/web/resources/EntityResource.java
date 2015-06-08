@@ -21,6 +21,8 @@ package org.apache.hadoop.metadata.web.resources;
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.MetadataServiceClient;
+import org.apache.hadoop.metadata.ParamChecker;
+import org.apache.hadoop.metadata.repository.EntityNotFoundException;
 import org.apache.hadoop.metadata.services.MetadataService;
 import org.apache.hadoop.metadata.typesystem.types.ValueConversionException;
 import org.apache.hadoop.metadata.web.util.Servlets;
@@ -43,7 +45,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
@@ -85,8 +86,8 @@ public class EntityResource {
      * Submits an entity definition (instance) corresponding to a given type.
      */
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response submit(@Context HttpServletRequest request) {
         try {
             final String entity = Servlets.getRequestPayload(request);
@@ -127,10 +128,11 @@ public class EntityResource {
      */
     @GET
     @Path("{guid}")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getEntityDefinition(@PathParam("guid") String guid) {
         try {
             LOG.debug("Fetching entity definition for guid={} ", guid);
+            ParamChecker.notEmpty(guid, "guid cannot be null");
             final String entityDefinition = metadataService.getEntityDefinition(guid);
 
             JSONObject response = new JSONObject();
@@ -142,15 +144,20 @@ public class EntityResource {
                 response.put(MetadataServiceClient.DEFINITION, entityDefinition);
                 status = Response.Status.OK;
             } else {
-                response.put(MetadataServiceClient.ERROR, Servlets.escapeJsonString(String.format("An entity with GUID={%s} does not exist", guid)));
+                response.put(MetadataServiceClient.ERROR, Servlets.escapeJsonString(
+                        String.format("An entity with GUID={%s} does not exist", guid)));
             }
 
             return Response.status(status).entity(response).build();
 
-        } catch (MetadataException | IllegalArgumentException e) {
+        } catch (EntityNotFoundException e) {
             LOG.error("An entity with GUID={} does not exist", guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
+        } catch (MetadataException | IllegalArgumentException e) {
+            LOG.error("Bad GUID={}", guid, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
             LOG.error("Unable to get instance definition for GUID {}", guid, e);
             throw new WebApplicationException(
@@ -164,7 +171,7 @@ public class EntityResource {
      * @param entityType name of a type which is unique
      */
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getEntityListByType(@QueryParam("type") String entityType) {
         try {
             Preconditions.checkNotNull(entityType, "Entity type cannot be null");
@@ -203,17 +210,25 @@ public class EntityResource {
      */
     @PUT
     @Path("{guid}")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response update(@PathParam("guid") String guid,
                            @QueryParam("property") String property,
                            @QueryParam("value") String value) {
         try {
+            Preconditions.checkNotNull(property, "Entity property cannot be null");
+            Preconditions.checkNotNull(value, "Entity value cannot be null");
+
             metadataService.updateEntity(guid, property, value);
 
             JSONObject response = new JSONObject();
             response.put(MetadataServiceClient.REQUEST_ID, Thread.currentThread().getName());
             return Response.ok(response).build();
-        } catch (MetadataException e) {
+        } catch (EntityNotFoundException e) {
+            LOG.error("An entity with GUID={} does not exist", guid, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
+        } catch (MetadataException | IllegalArgumentException e) {
             LOG.error("Unable to add property {} to entity id {}", property, guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
@@ -233,7 +248,7 @@ public class EntityResource {
      */
     @GET
     @Path("{guid}/traits")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getTraitNames(@PathParam("guid") String guid) {
         try {
             LOG.debug("Fetching trait names for entity={}", guid);
@@ -246,6 +261,10 @@ public class EntityResource {
             response.put(MetadataServiceClient.COUNT, traitNames.size());
 
             return Response.ok(response).build();
+        } catch (EntityNotFoundException e) {
+            LOG.error("An entity with GUID={} does not exist", guid, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (MetadataException | IllegalArgumentException e) {
             LOG.error("Unable to get trait names for entity {}", guid, e);
             throw new WebApplicationException(
@@ -264,8 +283,8 @@ public class EntityResource {
      */
     @POST
     @Path("{guid}/traits")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response addTrait(@Context HttpServletRequest request,
                              @PathParam("guid") String guid) {
         try {
@@ -281,6 +300,10 @@ public class EntityResource {
             response.put(MetadataServiceClient.GUID, guid);
 
             return Response.created(locationURI).entity(response).build();
+        } catch (EntityNotFoundException e) {
+            LOG.error("An entity with GUID={} does not exist", guid, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (MetadataException | IOException | IllegalArgumentException e) {
             LOG.error("Unable to add trait for entity={}", guid, e);
             throw new WebApplicationException(
@@ -300,8 +323,8 @@ public class EntityResource {
      */
     @DELETE
     @Path("{guid}/traits/{traitName}")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response deleteTrait(@Context HttpServletRequest request,
                                 @PathParam("guid") String guid,
                                 @PathParam(TRAIT_NAME) String traitName) {
@@ -315,6 +338,10 @@ public class EntityResource {
             response.put(TRAIT_NAME, traitName);
 
             return Response.ok(response).build();
+        } catch (EntityNotFoundException e) {
+            LOG.error("An entity with GUID={} does not exist", guid, e);
+            throw new WebApplicationException(
+                    Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (MetadataException | IllegalArgumentException e) {
             LOG.error("Unable to delete trait name={} for entity={}", traitName, guid, e);
             throw new WebApplicationException(

@@ -19,6 +19,8 @@
 package org.apache.hadoop.metadata.hive.hook;
 
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.ql.Driver;
@@ -119,8 +121,8 @@ public class HiveHookIT {
 
     private String createTable(boolean partition) throws Exception {
         String tableName = tableName();
-        runCommand("create table " + tableName + "(id int, name string) comment 'table comment' " + (partition ? " partitioned by(dt string)"
-                : ""));
+        runCommand("create table " + tableName + "(id int, name string) comment 'table comment' "
+                + (partition ? " partitioned by(dt string)" : ""));
         return tableName;
     }
 
@@ -139,6 +141,9 @@ public class HiveHookIT {
         Referenceable tableRef = dgiCLient.getEntity(tableId);
         Assert.assertEquals(tableRef.get("tableType"), TableType.MANAGED_TABLE.name());
         Assert.assertEquals(tableRef.get(HiveDataModelGenerator.COMMENT), "table comment");
+        String entityName = HiveMetaStoreBridge.getTableName(CLUSTER_NAME, DEFAULT_DB, tableName);
+        Assert.assertEquals(tableRef.get(HiveDataModelGenerator.NAME), entityName);
+
         final Id sdId = (Id) tableRef.get("sd");
         Referenceable sdRef = dgiCLient.getEntity(sdId.id);
         Assert.assertEquals(sdRef.get(HiveDataModelGenerator.STORAGE_IS_STORED_AS_SUB_DIRS),false);
@@ -222,7 +227,7 @@ public class HiveHookIT {
         String tableName = createTable(false);
 
         String filename = "pfile://" + mkdir("export");
-        String query = "export table " + tableName + " to '" + filename + "'";
+        String query = "export table " + tableName + " to \"" + filename + "\"";
         runCommand(query);
         assertProcessIsRegistered(query);
 
@@ -237,6 +242,11 @@ public class HiveHookIT {
     public void testSelect() throws Exception {
         String tableName = createTable();
         String query = "select * from " + tableName;
+        runCommand(query);
+        assertProcessIsRegistered(query);
+
+        //single entity per query
+        query = "SELECT * from " + tableName.toUpperCase();
         runCommand(query);
         assertProcessIsRegistered(query);
     }
@@ -268,8 +278,23 @@ public class HiveHookIT {
     }
 
     private void assertProcessIsRegistered(String queryStr) throws Exception {
-        String dslQuery = String.format("%s where queryText = \"%s\"", HiveDataTypes.HIVE_PROCESS.getName(), queryStr);
-        assertEntityIsRegistered(dslQuery, true);
+//        String dslQuery = String.format("%s where queryText = \"%s\"", HiveDataTypes.HIVE_PROCESS.getName(),
+//                normalize(queryStr));
+//        assertEntityIsRegistered(dslQuery, true);
+        //todo replace with DSL
+        String typeName = HiveDataTypes.HIVE_PROCESS.getName();
+        String gremlinQuery = String.format("g.V.has('__typeName', '%s').has('%s.queryText', \"%s\").toList()",
+                typeName, typeName, normalize(queryStr));
+        JSONObject response = dgiCLient.searchByGremlin(gremlinQuery);
+        JSONArray results = response.getJSONArray(MetadataServiceClient.RESULTS);
+        Assert.assertEquals(results.length(), 1);
+    }
+
+    private String normalize(String str) {
+        if (StringUtils.isEmpty(str)) {
+            return null;
+        }
+        return StringEscapeUtils.escapeJava(str.toLowerCase());
     }
 
     private String assertTableIsRegistered(String dbName, String tableName) throws Exception {
@@ -282,7 +307,7 @@ public class HiveHookIT {
 
     private String assertTableIsRegistered(String dbName, String tableName, boolean registered) throws Exception {
         LOG.debug("Searching for table {}.{}", dbName, tableName);
-        String query = String.format("%s as t where name = '%s', dbName where name = '%s' and clusterName = '%s'"
+        String query = String.format("%s as t where tableName = '%s', db where name = '%s' and clusterName = '%s'"
                 + " select t", HiveDataTypes.HIVE_TABLE.getName(), tableName.toLowerCase(), dbName.toLowerCase(),
                 CLUSTER_NAME);
         return assertEntityIsRegistered(query, registered);
@@ -299,14 +324,13 @@ public class HiveHookIT {
         String typeName = HiveDataTypes.HIVE_PARTITION.getName();
         String dbType = HiveDataTypes.HIVE_DB.getName();
         String tableType = HiveDataTypes.HIVE_TABLE.getName();
-        String datasetType = MetadataServiceClient.DATA_SET_SUPER_TYPE;
 
         LOG.debug("Searching for partition of {}.{} with values {}", dbName, tableName, value);
         //todo replace with DSL
         String gremlinQuery = String.format("g.V.has('__typeName', '%s').has('%s.values', ['%s']).as('p')."
-                        + "out('__%s.tableName').has('%s.name', '%s').out('__%s.dbName').has('%s.name', '%s')"
+                        + "out('__%s.table').has('%s.tableName', '%s').out('__%s.db').has('%s.name', '%s')"
                         + ".has('%s.clusterName', '%s').back('p').toList()", typeName, typeName, value, typeName,
-                datasetType, tableName.toLowerCase(), tableType, dbType, dbName.toLowerCase(), dbType, CLUSTER_NAME);
+                tableType, tableName.toLowerCase(), tableType, dbType, dbName.toLowerCase(), dbType, CLUSTER_NAME);
         JSONObject response = dgiCLient.searchByGremlin(gremlinQuery);
         JSONArray results = response.getJSONArray(MetadataServiceClient.RESULTS);
         Assert.assertEquals(results.length(), 1);
@@ -326,5 +350,30 @@ public class HiveHookIT {
             Assert.assertEquals(results.length(), 0);
             return null;
         }
+    }
+
+    @Test
+    public void testLineage() throws Exception {
+        String table1 = createTable(false);
+
+        String db2 = createDatabase();
+        String table2 = tableName();
+
+        String query = String.format("create table %s.%s as select * from %s", db2, table2, table1);
+        runCommand(query);
+        String table1Id = assertTableIsRegistered(DEFAULT_DB, table1);
+        String table2Id = assertTableIsRegistered(db2, table2);
+
+        String datasetName = HiveMetaStoreBridge.getTableName(CLUSTER_NAME, db2, table2);
+        JSONObject response = dgiCLient.getInputGraph(datasetName);
+        JSONObject vertices = response.getJSONObject("values").getJSONObject("vertices");
+        Assert.assertTrue(vertices.has(table1Id));
+        Assert.assertTrue(vertices.has(table2Id));
+
+        datasetName = HiveMetaStoreBridge.getTableName(CLUSTER_NAME, DEFAULT_DB, table1);
+        response = dgiCLient.getOutputGraph(datasetName);
+        vertices = response.getJSONObject("values").getJSONObject("vertices");
+        Assert.assertTrue(vertices.has(table1Id));
+        Assert.assertTrue(vertices.has(table2Id));
     }
 }

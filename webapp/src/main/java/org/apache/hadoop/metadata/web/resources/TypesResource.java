@@ -43,9 +43,9 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,8 +78,8 @@ public class TypesResource {
      * domain. Could represent things like Hive Database, Hive Table, etc.
      */
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response submit(@Context HttpServletRequest request) {
         try {
             final String typeDefinition = Servlets.getRequestPayload(request);
@@ -88,18 +88,17 @@ public class TypesResource {
             JSONObject typesJson = metadataService.createType(typeDefinition);
             final JSONArray typesJsonArray = typesJson.getJSONArray(MetadataServiceClient.TYPES);
 
-            List<Map<String, String>> typesAddedList = new ArrayList<>();
+            JSONArray typesResponse = new JSONArray();
             for (int i = 0; i < typesJsonArray.length(); i++) {
                 final String name = typesJsonArray.getString(i);
-                typesAddedList.add(
-                        new HashMap<String, String>() {{
-                            put(MetadataServiceClient.NAME, name);
-                        }});
+                typesResponse.put(new JSONObject() {{
+                    put(MetadataServiceClient.NAME, name);
+                }});
             }
 
             JSONObject response = new JSONObject();
             response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(MetadataServiceClient.TYPES, typesAddedList);
+            response.put(MetadataServiceClient.TYPES, typesResponse);
             return Response.status(ClientResponse.Status.CREATED).entity(response).build();
         } catch (MetadataException | IllegalArgumentException e) {
             LOG.error("Unable to persist types", e);
@@ -119,7 +118,7 @@ public class TypesResource {
      */
     @GET
     @Path("{typeName}")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getDefinition(@Context HttpServletRequest request,
                                   @PathParam("typeName") String typeName) {
         try {
@@ -155,7 +154,7 @@ public class TypesResource {
      * @return entity names response payload as json
      */
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getTypesByFilter(@Context HttpServletRequest request,
                                      @DefaultValue(TYPE_ALL) @QueryParam("type") String type) {
         try {

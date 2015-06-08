@@ -33,18 +33,28 @@ import org.apache.hadoop.metadata.typesystem.json.InstanceSerialization$;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
 import org.apache.hadoop.metadata.typesystem.json.TypesSerialization$;
 import org.apache.hadoop.metadata.typesystem.persistence.Id;
-import org.apache.hadoop.metadata.typesystem.types.*;
+import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.ClassType;
+import org.apache.hadoop.metadata.typesystem.types.DataTypes;
+import org.apache.hadoop.metadata.typesystem.types.EnumTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.EnumValue;
+import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
+import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
+import org.apache.hadoop.metadata.typesystem.types.TraitType;
+import org.apache.hadoop.metadata.typesystem.types.TypeUtils;
 import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
+import org.apache.hadoop.metadata.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.HttpMethod;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.UUID;
@@ -64,6 +74,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     private Referenceable tableInstance;
     private Id tableId;
+    private String traitName;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -82,6 +93,26 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
             Assert.assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
             Assert.fail("Response is not a guid, " + guid);
+        }
+    }
+
+    @DataProvider
+    public Object[][] invalidAttrValues() {
+        return new Object[][]{
+                {null}, {""}, {" "}};
+    }
+
+    @Test(dataProvider = "invalidAttrValues")
+    public void testEntityInvalidValue(String value) throws Exception {
+        Referenceable databaseInstance = new Referenceable(DATABASE_TYPE);
+        databaseInstance.set("name", randomString());
+        databaseInstance.set("description", value);
+
+        try {
+            createInstance(databaseInstance);
+            Assert.fail("Exptected MetadataServiceException");
+        } catch(MetadataServiceException e) {
+            Assert.assertEquals(e.getStatus(), ClientResponse.Status.BAD_REQUEST);
         }
     }
 
@@ -120,8 +151,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
             tableId = createInstance(tableInstance);
             Assert.fail("Was expecting an  exception here ");
         } catch (MetadataServiceException e) {
-           Assert.assertTrue(e.getMessage()
-                   .contains("\"error\":\"Cannot convert value '2014-07-11' to datatype date\""));
+           Assert.assertTrue(
+                   e.getMessage().contains("\"error\":\"Cannot convert value '2014-07-11' to datatype date\""));
         }
     }
 
@@ -150,6 +181,22 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(entityRef);
 
         tableInstance.set("level", 4);
+    }
+
+    @Test(dependsOnMethods = "testSubmitEntity", expectedExceptions = IllegalArgumentException.class)
+    public void testAddNullProperty() throws Exception {
+        final String guid = tableId._getId();
+        //add property
+        addProperty(guid, null, "foo bar");
+        Assert.fail();
+    }
+
+    @Test(dependsOnMethods = "testSubmitEntity", expectedExceptions = IllegalArgumentException.class)
+    public void testAddNullPropertyValue() throws Exception {
+        final String guid = tableId._getId();
+        //add property
+        addProperty(guid, "description", null);
+        Assert.fail();
     }
 
     @Test(dependsOnMethods = "testSubmitEntity")
@@ -192,8 +239,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .path(guid);
 
         return resource.queryParam("property", property).queryParam("value", value)
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.PUT, ClientResponse.class);
     }
 
@@ -201,8 +248,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         WebResource resource = service
                 .path("api/metadata/entities")
                 .path(guid);
-        return resource.accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+        return resource.accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
     }
 
@@ -222,8 +269,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .path("blah");
 
         ClientResponse clientResponse = resource
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
 
@@ -240,8 +287,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         ClientResponse clientResponse = service
                 .path("api/metadata/entities")
                 .queryParam("type", TABLE_TYPE)
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
@@ -261,8 +308,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         ClientResponse clientResponse = service
                 .path("api/metadata/entities")
                 .queryParam("type", "blah")
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
 
@@ -282,8 +329,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         ClientResponse clientResponse = service
                 .path("api/metadata/entities")
                 .queryParam("type", "test")
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
@@ -299,8 +346,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     private void addNewType() throws Exception {
         HierarchicalTypeDefinition<ClassType> testTypeDefinition =
-                TypesUtil.createClassTypeDef("test",
-                        ImmutableList.<String>of(),
+                TypesUtil.createClassTypeDef("test", ImmutableList.<String>of(),
                         TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
 
@@ -315,8 +361,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .path("api/metadata/entities")
                 .path(guid)
                 .path(TRAITS)
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
@@ -333,7 +379,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test(dependsOnMethods = "testGetTraitNames")
     public void testAddTrait() throws Exception {
-        final String traitName = "PII_Trait";
+        traitName = "PII_Trait" + randomString();
         HierarchicalTypeDefinition<TraitType> piiTrait =
                 TypesUtil.createTraitTypeDef(traitName, ImmutableList.<String>of());
         String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
@@ -349,8 +395,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .path("api/metadata/entities")
                 .path(guid)
                 .path(TRAITS)
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.CREATED.getStatusCode());
 
@@ -362,9 +408,28 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(response.get(MetadataServiceClient.GUID));
     }
 
+    @Test(dependsOnMethods = "testAddTrait")
+    public void testAddExistingTrait() throws Exception {
+        final String traitName = "PII_Trait" + randomString();
+
+        Struct traitInstance = new Struct(traitName);
+        String traitInstanceAsJSON = InstanceSerialization.toJson(traitInstance, true);
+        LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
+
+        final String guid = tableId._getId();
+        ClientResponse clientResponse = service
+                .path("api/metadata/entities")
+                .path(guid)
+                .path(TRAITS)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
+                .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
+    }
+
     @Test(dependsOnMethods = "testGetTraitNames")
     public void testAddTraitWithAttribute() throws Exception {
-            final String traitName = "P_I_I";
+        final String traitName = "PII_Trait" + randomString();
         HierarchicalTypeDefinition<TraitType> piiTrait =
                 TypesUtil.createTraitTypeDef(traitName, ImmutableList.<String>of(),
                         TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
@@ -382,8 +447,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .path("api/metadata/entities")
                 .path(guid)
                 .path(TRAITS)
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.CREATED.getStatusCode());
 
@@ -412,7 +477,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testAddTraitWithNoRegistration() throws Exception {
-        final String traitName = "PII_Trait_Blah";
+        final String traitName = "PII_Trait" + randomString();
         HierarchicalTypeDefinition<TraitType> piiTrait =
                 TypesUtil.createTraitTypeDef(traitName, ImmutableList.<String>of());
         String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
@@ -426,15 +491,14 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .path("api/metadata/entities")
                 .path("random")
                 .path(TRAITS)
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
     }
 
     @Test(dependsOnMethods = "testAddTrait")
     public void testDeleteTrait() throws Exception {
-        final String traitName = "PII_Trait";
         final String guid = tableId._getId();
 
         ClientResponse clientResponse = service
@@ -442,8 +506,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .path(guid)
                 .path(TRAITS)
                 .path(traitName)
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.DELETE, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
@@ -465,8 +529,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .path("random")
                 .path(TRAITS)
                 .path(traitName)
-                .accept(MediaType.APPLICATION_JSON)
-                .type(MediaType.APPLICATION_JSON)
+                .accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.DELETE, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
 
@@ -475,12 +539,17 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         JSONObject response = new JSONObject(responseAsString);
         Assert.assertNotNull(response.get(MetadataServiceClient.ERROR));
-        Assert.assertEquals(response.getString(MetadataServiceClient.ERROR), "trait=" + traitName + " should be defined in type system before it can be deleted");
+        Assert.assertEquals(response.getString(MetadataServiceClient.ERROR),
+                "trait=" + traitName + " should be defined in type system before it can be deleted");
         Assert.assertNotNull(response.get(MetadataServiceClient.STACKTRACE));
     }
 
     private String random() {
         return RandomStringUtils.random(10);
+    }
+
+    private String randomString() {
+        return RandomStringUtils.randomAlphanumeric(10);
     }
 
     @Test
