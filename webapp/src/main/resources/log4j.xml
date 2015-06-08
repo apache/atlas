@@ -52,17 +52,17 @@
 
 
     <logger name="com.thinkaurelius.titan" additivity="false">
-        <level value="debug"/>
+        <level value="info"/>
         <appender-ref ref="FILE"/>
     </logger>
 
     <logger name="org.elasticsearch" additivity="false">
-        <level value="debug"/>
+        <level value="info"/>
         <appender-ref ref="FILE"/>
     </logger>
 
     <logger name="org.apache.lucene" additivity="false">
-        <level value="debug"/>
+        <level value="info"/>
         <appender-ref ref="FILE"/>
     </logger>
 
@@ -77,7 +77,7 @@
     </logger>
 
     <root>
-        <priority value="debug"/>
+        <priority value="info"/>
         <appender-ref ref="FILE"/>
     </root>
 
