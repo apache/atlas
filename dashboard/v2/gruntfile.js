@@ -117,9 +117,11 @@ module.exports = function(grunt) {
         	 },
         	 mainjs:{
         		expand: true,
-    		    cwd: 'public/',
-    		    src: 'js/*.js',
-    		    dest: 'dist/js',
+     		    cwd: 'public/',
+     		    src: 'js/app.min.js',
+     		    dest: 'dist/js/',
+     		    flatten: true,
+     		    filter :'isFile'
         	 }
         },
         clean: ['dist'],
