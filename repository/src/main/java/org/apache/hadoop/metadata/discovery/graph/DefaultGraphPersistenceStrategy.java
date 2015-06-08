@@ -20,9 +20,7 @@ package org.apache.hadoop.metadata.discovery.graph;
 
 import com.thinkaurelius.titan.core.TitanVertex;
 import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.query.Expressions;
-import org.apache.hadoop.metadata.query.GraphPersistenceStrategies;
-import org.apache.hadoop.metadata.query.GraphPersistenceStrategies$class;
+import org.apache.hadoop.metadata.query.*;
 import org.apache.hadoop.metadata.query.TypeUtils;
 import org.apache.hadoop.metadata.repository.MetadataRepository;
 import org.apache.hadoop.metadata.repository.Constants;
@@ -33,6 +31,7 @@ import org.apache.hadoop.metadata.typesystem.persistence.Id;
 import org.apache.hadoop.metadata.typesystem.types.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.collection.Traversable;
 
 import java.util.List;
 
@@ -187,8 +186,18 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
     public String idAttributeName() { return metadataRepository.getIdAttributeName(); }
 
     @Override
-    public String typeTestExpression(String typeName) {
-        return GraphPersistenceStrategies$class.typeTestExpression(this, typeName);
+    public scala.collection.Seq<String> typeTestExpression(String typeName, IntSequence intSeq) {
+        return GraphPersistenceStrategies$class.typeTestExpression(this, typeName, intSeq);
+    }
+
+    @Override
+    public boolean collectTypeInstancesIntoVar() {
+        return GraphPersistenceStrategies$class.collectTypeInstancesIntoVar(this);
+    }
+
+    @Override
+    public boolean addGraphVertexPrefix(scala.collection.Traversable<String> preStatements) {
+        return GraphPersistenceStrategies$class.addGraphVertexPrefix(this, preStatements);
     }
 
 }

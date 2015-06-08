@@ -25,6 +25,9 @@ import org.apache.hadoop.metadata.typesystem.types.TypeSystem
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
+trait IntSequence {
+    def next: Int
+}
 
 case class GremlinQuery(expr: Expression, queryStr: String, resultMaping: Map[String, (String, Int)]) {
 
@@ -127,6 +130,9 @@ class GremlinTranslator(expr: Expression,
                         gPersistenceBehavior: GraphPersistenceStrategies)
     extends SelectExpressionHandling {
 
+    val preStatements = ArrayBuffer[String]()
+    val postStatements = ArrayBuffer[String]()
+
     val wrapAndRule: PartialFunction[Expression, Expression] = {
         case f: FilterExpression if !f.condExpr.isInstanceOf[LogicalExpression] =>
             FilterExpression(f.child, new LogicalExpression("and", List(f.condExpr)))
@@ -144,7 +150,7 @@ class GremlinTranslator(expr: Expression,
             ()
     }
 
-    class counter {
+    val counter =  new IntSequence {
         var i: Int = -1;
 
         def next: Int = {
@@ -152,7 +158,7 @@ class GremlinTranslator(expr: Expression,
         }
     }
 
-    def addAliasToLoopInput(c: counter = new counter()): PartialFunction[Expression, Expression] = {
+    def addAliasToLoopInput(c: IntSequence = counter): PartialFunction[Expression, Expression] = {
         case l@LoopExpression(aliasE@AliasExpression(_, _), _, _) => l
         case l@LoopExpression(inputExpr, loopExpr, t) => {
             val aliasE = AliasExpression(inputExpr, s"_loop${c.next}")
@@ -183,11 +189,17 @@ class GremlinTranslator(expr: Expression,
       }
     }
 
+    def typeTestExpression(typeName : String) : String = {
+        val stats = gPersistenceBehavior.typeTestExpression(typeName, counter)
+        preStatements ++= stats.init
+        stats.last
+    }
+
     private def genQuery(expr: Expression, inSelect: Boolean): String = expr match {
         case ClassExpression(clsName) =>
-            s"""filter${gPersistenceBehavior.typeTestExpression(clsName)}"""
+            typeTestExpression(clsName)
         case TraitExpression(clsName) =>
-            s"""filter${gPersistenceBehavior.typeTestExpression(clsName)}"""
+            typeTestExpression(clsName)
         case fe@FieldExpression(fieldName, fInfo, child) if fe.dataType.getTypeCategory == TypeCategory.PRIMITIVE => {
             val fN = "\"" + gPersistenceBehavior.fieldNameInVertex(fInfo.dataType, fInfo.attrInfo) + "\""
             child match {
@@ -283,6 +295,23 @@ class GremlinTranslator(expr: Expression,
         case x => throw new GremlinTranslationException(x, "expression not yet supported")
     }
 
+    def genFullQuery(expr: Expression): String = {
+        var q = genQuery(expr, false)
+
+        if(gPersistenceBehavior.addGraphVertexPrefix(preStatements)) {
+            q = s"g.V.$q"
+        }
+
+        q = s"$q.toList()"
+
+        q = (preStatements ++ Seq(q) ++ postStatements).mkString("", ";", "")
+        /*
+         * the L:{} represents a groovy code block; the label is needed
+         * to distinguish it from a groovy closure.
+         */
+        s"L:{$q}"
+    }
+
     def translate(): GremlinQuery = {
         var e1 = expr.transformUp(wrapAndRule)
 
@@ -297,13 +326,13 @@ class GremlinTranslator(expr: Expression,
         e1 match {
             case e1: SelectExpression => {
                 val rMap = buildResultMapping(e1)
-                GremlinQuery(e1, s"g.V.${genQuery(e1, false)}.toList()", rMap)
+                GremlinQuery(e1, genFullQuery(e1), rMap)
             }
             case pe@PathExpression(se@SelectExpression(child, selectList)) => {
               val rMap = buildResultMapping(se)
-              GremlinQuery(e1, s"g.V.${genQuery(pe, false)}.toList()", rMap)
+              GremlinQuery(e1, genFullQuery(e1), rMap)
             }
-            case e1 => GremlinQuery(e1, s"g.V.${genQuery(e1, false)}.toList()", null)
+            case e1 => GremlinQuery(e1, genFullQuery(e1), null)
         }
 
     }
