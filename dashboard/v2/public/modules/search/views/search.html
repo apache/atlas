@@ -33,9 +33,12 @@
 </div>
 <div class="row mt10px">
     <div class="col-lg-3" data-ng-include="'/modules/navigation/views/navigation.html'"></div>
-    <div class="col-lg-9" ng-show='resultCount > 0'>
-        <h4 ng-show="searchMessage">{{searchMessage}}</h4>
-        <ul class="list-unstyled">
+    <div class="col-lg-9">
+        <div ng-switch on="searchMessage">
+            <div ng-switch-when="load-gif" class="search-spinner"><img src="../img/spinner.gif" align="middle" /></div>
+            <div ng-switch-default><h4 ng-show="searchMessage">{{searchMessage}}</h4></div>
+        </div>
+        <ul class="list-unstyled"  ng-show='resultCount > 0'>
             <li ng-repeat="result in filteredResults" class="searchresults">
                 <h4><a data-ui-sref="details({id:result['$id$'].id || result.guid})">{{result.name || result.guid}}</a></h4>
 
