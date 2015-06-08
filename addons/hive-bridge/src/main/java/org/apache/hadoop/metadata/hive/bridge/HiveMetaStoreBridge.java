@@ -195,8 +195,8 @@ public class HiveMetaStoreBridge {
         }
     }
 
-    private String getTableName(String dbName, String tableName) {
-        return String.format("%s/%s.%s", clusterName, dbName.toLowerCase(), tableName.toLowerCase());
+    public static String getTableName(String clusterName, String dbName, String tableName) {
+        return String.format("%s.%s@%s", dbName.toLowerCase(), tableName.toLowerCase(), clusterName);
     }
 
     /**
@@ -211,7 +211,7 @@ public class HiveMetaStoreBridge {
         LOG.debug("Getting reference for table {}.{}", dbName, tableName);
 
         String typeName = HiveDataTypes.HIVE_TABLE.getName();
-        String entityName = getTableName(dbName, tableName);
+        String entityName = getTableName(clusterName, dbName, tableName);
         String dslQuery = String.format("%s as t where name = '%s'", typeName, entityName);
         return getEntityReferenceFromDSL(typeName, dslQuery);
     }
@@ -239,7 +239,7 @@ public class HiveMetaStoreBridge {
         //                dbName, clusterName);
 
         String datasetType = MetadataServiceClient.DATA_SET_SUPER_TYPE;
-        String tableEntityName = getTableName(dbName, tableName);
+        String tableEntityName = getTableName(clusterName, dbName, tableName);
 
         String gremlinQuery = String.format("g.V.has('__typeName', '%s').has('%s.values', %s).as('p')."
                         + "out('__%s.table').has('%s.name', '%s').back('p').toList()", typeName, typeName, valuesStr,
@@ -274,7 +274,8 @@ public class HiveMetaStoreBridge {
             Table hiveTable = hiveClient.getTable(dbName, tableName);
 
             tableRef = new Referenceable(HiveDataTypes.HIVE_TABLE.getName());
-            tableRef.set(HiveDataModelGenerator.NAME, getTableName(hiveTable.getDbName(), hiveTable.getTableName()));
+            tableRef.set(HiveDataModelGenerator.NAME,
+                    getTableName(clusterName, hiveTable.getDbName(), hiveTable.getTableName()));
             tableRef.set(HiveDataModelGenerator.TABLE_NAME, hiveTable.getTableName().toLowerCase());
             tableRef.set("owner", hiveTable.getOwner());
 
@@ -506,6 +507,6 @@ public class HiveMetaStoreBridge {
         client.updateEntity(tableReferenceable.getId()._getId(), HiveDataModelGenerator.TABLE_NAME,
                 newTable.getTableName().toLowerCase());
         client.updateEntity(tableReferenceable.getId()._getId(), HiveDataModelGenerator.NAME,
-                getTableName(newTable.getDbName(), newTable.getTableName()));
+                getTableName(clusterName, newTable.getDbName(), newTable.getTableName()));
     }
 }

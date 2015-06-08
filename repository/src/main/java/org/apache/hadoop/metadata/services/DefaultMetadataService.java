@@ -40,11 +40,14 @@ import org.apache.hadoop.metadata.typesystem.json.TypesSerialization;
 import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.ClassType;
 import org.apache.hadoop.metadata.typesystem.types.DataTypes;
+import org.apache.hadoop.metadata.typesystem.types.EnumTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.IDataType;
 import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
+import org.apache.hadoop.metadata.typesystem.types.StructTypeDefinition;
 import org.apache.hadoop.metadata.typesystem.types.TraitType;
 import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
+import org.apache.hadoop.metadata.typesystem.types.TypeUtils;
 import org.apache.hadoop.metadata.typesystem.types.utils.TypesUtil;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -114,32 +117,28 @@ public class DefaultMetadataService implements MetadataService {
             return; // this is already registered
         }
 
-        Map<String, IDataType> superTypes = new HashMap();
-        HierarchicalTypeDefinition<ClassType> superTypeDefinition =
+        HierarchicalTypeDefinition<ClassType> infraType =
                 TypesUtil.createClassTypeDef(MetadataServiceClient.INFRASTRUCTURE_SUPER_TYPE,
                         ImmutableList.<String>of(), NAME_ATTRIBUTE, DESCRIPTION_ATTRIBUTE);
-        superTypes.put(MetadataServiceClient.INFRASTRUCTURE_SUPER_TYPE, typeSystem.defineClassType
-                (superTypeDefinition));
 
-        superTypeDefinition =
-                TypesUtil.createClassTypeDef(MetadataServiceClient.DATA_SET_SUPER_TYPE,
-                        ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<ClassType> datasetType = TypesUtil
+                .createClassTypeDef(MetadataServiceClient.DATA_SET_SUPER_TYPE, ImmutableList.<String>of(),
                         NAME_ATTRIBUTE, DESCRIPTION_ATTRIBUTE);
-        superTypes.put(MetadataServiceClient.DATA_SET_SUPER_TYPE, typeSystem.defineClassType(superTypeDefinition));
 
-        superTypeDefinition =
-                TypesUtil.createClassTypeDef(MetadataServiceClient.PROCESS_SUPER_TYPE,
-                        ImmutableList.<String>of(),
-                        NAME_ATTRIBUTE, DESCRIPTION_ATTRIBUTE,
-                        new AttributeDefinition("inputs",
+        HierarchicalTypeDefinition<ClassType> processType = TypesUtil
+                .createClassTypeDef(MetadataServiceClient.PROCESS_SUPER_TYPE, ImmutableList.<String>of(),
+                        NAME_ATTRIBUTE, DESCRIPTION_ATTRIBUTE, new AttributeDefinition("inputs",
                                 DataTypes.arrayTypeName(MetadataServiceClient.DATA_SET_SUPER_TYPE),
-                                new Multiplicity(0, Integer.MAX_VALUE, false), false, null),
+                                Multiplicity.OPTIONAL, false, null),
                         new AttributeDefinition("outputs",
                                 DataTypes.arrayTypeName(MetadataServiceClient.DATA_SET_SUPER_TYPE),
-                                new Multiplicity(0, Integer.MAX_VALUE, false), false, null)
-                );
-        superTypes.put(MetadataServiceClient.PROCESS_SUPER_TYPE, typeSystem.defineClassType(superTypeDefinition));
-        onTypesAddedToRepo(superTypes);
+                                Multiplicity.OPTIONAL, false, null));
+
+        TypesDef typesDef = TypeUtils
+                .getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
+                        ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
+                        ImmutableList.of(infraType, datasetType, processType));
+        createType(TypesSerialization.toJson(typesDef));
     }
 
     /**

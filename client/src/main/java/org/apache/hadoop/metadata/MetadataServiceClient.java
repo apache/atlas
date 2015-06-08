@@ -64,7 +64,7 @@ public class MetadataServiceClient {
     public static final String URI_ENTITIES = "entities";
     public static final String URI_TRAITS = "traits";
     public static final String URI_SEARCH = "discovery/search";
-    public static final String URI_LINEAGE = "lineage/hive";
+    public static final String URI_LINEAGE = "lineage/hive/table";
 
     public static final String QUERY = "query";
     public static final String QUERY_TYPE = "queryType";
@@ -127,9 +127,12 @@ public class MetadataServiceClient {
         SEARCH(BASE_URI + URI_SEARCH, HttpMethod.GET),
         SEARCH_DSL(BASE_URI + URI_SEARCH + "/dsl", HttpMethod.GET),
         SEARCH_GREMLIN(BASE_URI + URI_SEARCH + "/gremlin", HttpMethod.GET),
-        SEARCH_FULL_TEXT(BASE_URI + URI_SEARCH + "/fulltext", HttpMethod.GET);
+        SEARCH_FULL_TEXT(BASE_URI + URI_SEARCH + "/fulltext", HttpMethod.GET),
 
         //Lineage operations
+        LINEAGE_INPUTS_GRAPH(BASE_URI + URI_LINEAGE, HttpMethod.GET),
+        LINEAGE_OUTPUTS_GRAPH(BASE_URI + URI_LINEAGE, HttpMethod.GET),
+        LINEAGE_SCHEMA(BASE_URI + URI_LINEAGE, HttpMethod.GET);
 
         private final String method;
         private final String path;
@@ -146,6 +149,16 @@ public class MetadataServiceClient {
         public String getPath() {
             return path;
         }
+    }
+
+    /**
+     * Register the given type(meta model)
+     * @param typeAsJson type definition a jaon
+     * @return result json object
+     * @throws MetadataServiceException
+     */
+    public JSONObject createType(String typeAsJson) throws MetadataServiceException {
+        return callAPI(API.CREATE_TYPE, typeAsJson);
     }
 
     public List<String> listTypes() throws MetadataServiceException {
@@ -176,16 +189,6 @@ public class MetadataServiceClient {
         } catch (JSONException e) {
             throw new MetadataServiceException(e);
         }
-    }
-
-    /**
-     * Register the given type(meta model)
-     * @param typeAsJson type definition a jaon
-     * @return result json object
-     * @throws MetadataServiceException
-     */
-    public JSONObject createType(String typeAsJson) throws MetadataServiceException {
-        return callAPI(API.CREATE_TYPE, typeAsJson);
     }
 
     /**
@@ -292,6 +295,24 @@ public class MetadataServiceClient {
         WebResource resource = getResource(API.SEARCH_FULL_TEXT);
         resource = resource.queryParam(QUERY, query);
         return callAPIWithResource(API.SEARCH_FULL_TEXT, resource);
+    }
+
+    public JSONObject getInputGraph(String datasetName) throws MetadataServiceException {
+        JSONObject response = callAPI(API.LINEAGE_INPUTS_GRAPH, null, datasetName, "/inputs/graph");
+        try {
+            return response.getJSONObject(MetadataServiceClient.RESULTS);
+        } catch (JSONException e) {
+            throw new MetadataServiceException(e);
+        }
+    }
+
+    public JSONObject getOutputGraph(String datasetName) throws MetadataServiceException {
+        JSONObject response = callAPI(API.LINEAGE_OUTPUTS_GRAPH, null, datasetName, "/outputs/graph");
+        try {
+            return response.getJSONObject(MetadataServiceClient.RESULTS);
+        } catch (JSONException e) {
+            throw new MetadataServiceException(e);
+        }
     }
 
     public String getRequestId(JSONObject json) throws MetadataServiceException {

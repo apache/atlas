@@ -141,6 +141,9 @@ public class HiveHookIT {
         Referenceable tableRef = dgiCLient.getEntity(tableId);
         Assert.assertEquals(tableRef.get("tableType"), TableType.MANAGED_TABLE.name());
         Assert.assertEquals(tableRef.get(HiveDataModelGenerator.COMMENT), "table comment");
+        String entityName = HiveMetaStoreBridge.getTableName(CLUSTER_NAME, DEFAULT_DB, tableName);
+        Assert.assertEquals(tableRef.get(HiveDataModelGenerator.NAME), entityName);
+
         final Id sdId = (Id) tableRef.get("sd");
         Referenceable sdRef = dgiCLient.getEntity(sdId.id);
         Assert.assertEquals(sdRef.get(HiveDataModelGenerator.STORAGE_IS_STORED_AS_SUB_DIRS),false);
@@ -349,20 +352,28 @@ public class HiveHookIT {
         }
     }
 
-    @Test(enabled = false)
+    @Test
     public void testLineage() throws Exception {
         String table1 = createTable(false);
 
         String db2 = createDatabase();
         String table2 = tableName();
 
-        String db3 = createDatabase();
-        String table3 = tableName();
-
         String query = String.format("create table %s.%s as select * from %s", db2, table2, table1);
         runCommand(query);
+        String table1Id = assertTableIsRegistered(DEFAULT_DB, table1);
+        String table2Id = assertTableIsRegistered(db2, table2);
 
-        query = String.format("create table %s.%s as select * from %s.%s", db3, table3, db2, table2);
-        runCommand(query);
+        String datasetName = HiveMetaStoreBridge.getTableName(CLUSTER_NAME, db2, table2);
+        JSONObject response = dgiCLient.getInputGraph(datasetName);
+        JSONObject vertices = response.getJSONObject("values").getJSONObject("vertices");
+        Assert.assertTrue(vertices.has(table1Id));
+        Assert.assertTrue(vertices.has(table2Id));
+
+        datasetName = HiveMetaStoreBridge.getTableName(CLUSTER_NAME, DEFAULT_DB, table1);
+        response = dgiCLient.getOutputGraph(datasetName);
+        vertices = response.getJSONObject("values").getJSONObject("vertices");
+        Assert.assertTrue(vertices.has(table1Id));
+        Assert.assertTrue(vertices.has(table2Id));
     }
 }
