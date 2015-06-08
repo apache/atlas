@@ -115,8 +115,39 @@ trait GraphPersistenceStrategies {
       _typeTestExpression(dataType.getName, "it.object")
     }
 
-    def typeTestExpression(typeName : String) :String = {
-      _typeTestExpression(typeName, "it")
+    def addGraphVertexPrefix(preStatements : Traversable[String]) = !collectTypeInstancesIntoVar
+
+    /**
+     * Controls behavior of how instances of a Type are discovered.
+     * - query is generated in a way that indexes are exercised using a local set variable across multiple lookups
+     * - query is generated using an 'or' expression.
+     *
+     * '''This is a very bad idea: controlling query execution behavior via query generation.''' But our current
+     * knowledge of seems to indicate we have no choice. See
+     * [[https://groups.google.com/forum/#!topic/gremlin-users/n1oV86yr4yU discussion in Gremlin group]].
+     * Also this seems a fragile solution, dependend on the memory requirements of the Set variable.
+     * For now enabling via the '''collectTypeInstancesIntoVar''' behavior setting. Reverting back would require
+     * setting this to false.
+     *
+     * Long term have to get to the bottom of Gremlin:
+     * - there doesn't seem to be way to see the physical query plan. Maybe we should directly interface with Titan.
+     * - At least from querying perspective a columnar db maybe a better route. Daniel Abadi did some good work
+     *   on showing how to use a columnar store as a Graph Db.
+     *
+     *
+     * @return
+     */
+    def collectTypeInstancesIntoVar = true
+
+    def typeTestExpression(typeName : String, intSeq : IntSequence) : Seq[String] = {
+        if (collectTypeInstancesIntoVar)
+            typeTestExpressionMultiStep(typeName, intSeq)
+        else
+            typeTestExpressionUsingFilter(typeName)
+    }
+
+    private def typeTestExpressionUsingFilter(typeName : String) : Seq[String] = {
+      Seq(s"""filter${_typeTestExpression(typeName, "it")}""")
     }
 
   private def _typeTestExpression(typeName: String, itRef: String): String = {
@@ -125,6 +156,27 @@ trait GraphPersistenceStrategies {
        |${itRef}.'${superTypeAttributeName}'.contains('${typeName}') : false)}""".
       stripMargin.replace(System.getProperty("line.separator"), "")
   }
+
+    private def typeTestExpressionMultiStep(typeName : String, intSeq : IntSequence) : Seq[String] = {
+
+        val varName = s"_var_${intSeq.next}"
+        Seq(
+            newSetVar(varName),
+            fillVarWithTypeInstances(typeName, varName),
+            fillVarWithSubTypeInstances(typeName, varName),
+            s"$varName._()"
+        )
+    }
+
+    private def newSetVar(varName : String) = s"$varName = [] as Set"
+
+    private def fillVarWithTypeInstances(typeName : String, fillVar : String) = {
+        s"""g.V().has("${typeAttributeName}", "${typeName}").fill($fillVar)"""
+    }
+
+    private def fillVarWithSubTypeInstances(typeName : String, fillVar : String) = {
+        s"""g.V().has("${superTypeAttributeName}", "${typeName}").fill($fillVar)"""
+    }
 }
 
 object GraphPersistenceStrategy1 extends GraphPersistenceStrategies {
