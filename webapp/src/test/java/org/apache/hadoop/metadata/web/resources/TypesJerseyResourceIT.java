@@ -83,7 +83,9 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
             Assert.assertNotNull(responseAsString);
 
             JSONObject response = new JSONObject(responseAsString);
-            Assert.assertNotNull(response.get(MetadataServiceClient.TYPES));
+            JSONArray typesAdded = response.getJSONArray(MetadataServiceClient.TYPES);
+            Assert.assertEquals(typesAdded.length(), 1);
+            Assert.assertEquals(typesAdded.getJSONObject(0).getString("name"), typeDefinition.typeName);
             Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
         }
     }
