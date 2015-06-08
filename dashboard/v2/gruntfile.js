@@ -146,11 +146,11 @@ module.exports = function(grunt) {
     require('load-grunt-tasks')(grunt);
     grunt.registerTask('default', ['devUpdate', 'bower', 'jshint', 'jsbeautifier:default']);
 
-    grunt.registerTask('server', ['jshint','build','bower','minify','copy:mainjs','concurrent']);
+    grunt.registerTask('server', ['jshint','build','concurrent']);
+    grunt.registerTask('build', ['clean','bower','copy:dist','minify','copy:mainjs']);
 
     grunt.registerTask('minify', 'Minify the all js', function() {
         var done = this.async();
-        grunt.file.mkdir('public/dist');
         grunt.task.run(['shell:min']);
         done();
     });
@@ -159,10 +159,6 @@ module.exports = function(grunt) {
     	var done = this.async();
         grunt.task.run(['proxit:dev']);
         done();
-    });
-    grunt.registerTask('build','Build DGI',function(){
-    	grunt.task.run(['clean']);
-    	 grunt.task.run(['copy:dist']);
     });
     grunt.registerTask('release', 'Create release package', function() {
         var done = this.async();
