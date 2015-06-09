@@ -29,6 +29,7 @@ import com.tinkerpop.blueprints.Vertex;
 import org.apache.atlas.MetadataException;
 import org.apache.atlas.discovery.SearchIndexer;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.IndexCreationException;
 import org.apache.atlas.repository.IndexException;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.typesystem.types.AttributeInfo;
@@ -153,9 +154,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
             LOG.info("Index creation for type {} complete", typeName);
 
         } catch (Throwable throwable) {
-            // gets handle to currently open transaction
             LOG.error("Error creating index for type {}", dataType, throwable);
-            throw new IndexException("Error while creating index for type " + dataType, throwable);
+            throw new IndexCreationException("Error while creating index for type " + dataType, throwable);
         }
     }
 
@@ -351,7 +351,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
     public void commit() throws IndexException {
         try {
             management.commit();
-        } catch(Exception e) {
+        } catch (Exception e) {
             LOG.error("Index commit failed" , e);
             throw new IndexException("Index commit failed " , e);
         }
@@ -361,7 +361,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
     public void rollback() throws IndexException {
         try {
             management.rollback();
-        } catch(Exception e) {
+        } catch (Exception e) {
             LOG.error("Index rollback failed " , e);
             throw new IndexException("Index rollback failed " , e);
         }

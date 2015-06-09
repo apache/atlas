@@ -59,6 +59,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -80,16 +83,16 @@ public class DefaultMetadataService implements MetadataService {
     private final TypeSystem typeSystem;
     private final MetadataRepository repository;
     private final ITypeStore typeStore;
-    private final Provider<SearchIndexer> searchIndexProvider;
+    private final Set<Provider<SearchIndexer>> typeChangeListeners;
 
     @Inject
-    DefaultMetadataService(MetadataRepository repository,
-                           Provider<SearchIndexer> searchIndexProvider, ITypeStore typeStore) throws MetadataException {
+    DefaultMetadataService(final MetadataRepository repository,
+                           final Provider<SearchIndexer> searchIndexProvider, final ITypeStore typeStore) throws MetadataException {
         this.typeStore = typeStore;
         this.typeSystem = TypeSystem.getInstance();
         this.repository = repository;
-        this.searchIndexProvider = searchIndexProvider;
 
+        this.typeChangeListeners = new LinkedHashSet<Provider<SearchIndexer>>() {{ add(searchIndexProvider); }};
         restoreTypeSystem();
     }
 
@@ -394,18 +397,25 @@ public class DefaultMetadataService implements MetadataService {
     }
 
     private void onTypesAddedToRepo(Map<String, IDataType> typesAdded) throws MetadataException {
-        final SearchIndexer indexer = searchIndexProvider.get();
-        try {
-            for (Map.Entry<String, IDataType> entry : typesAdded.entrySet()) {
-                indexer.onAdd(entry.getKey(), entry.getValue());
+        Map<SearchIndexer, Throwable> caughtExceptions = new HashMap<>();
+        for(Provider<SearchIndexer> indexerProvider : typeChangeListeners) {
+            final SearchIndexer indexer = indexerProvider.get();
+            try {
+                for (Map.Entry<String, IDataType> entry : typesAdded.entrySet()) {
+                    indexer.onAdd(entry.getKey(), entry.getValue());
+                }
+                indexer.commit();
+            } catch (IndexCreationException ice) {
+                LOG.error("Index creation for listener {} failed ", indexerProvider, ice);
+                indexer.rollback();
+                caughtExceptions.put(indexer, ice);
             }
-            indexer.commit();
-        } catch(IndexCreationException ice) {
-            indexer.rollback();
-            throw ice;
+        }
+
+        if (caughtExceptions.size() > 0) {
+           throw new IndexCreationException("Index creation failed for types " + typesAdded.keySet() + ". Aborting");
         }
     }
-
 
     private void onEntityAddedToRepo(ITypedReferenceableInstance typedInstance)
             throws MetadataException {
