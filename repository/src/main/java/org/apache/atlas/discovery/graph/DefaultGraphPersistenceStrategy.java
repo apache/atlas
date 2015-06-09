@@ -23,6 +23,7 @@ import org.apache.atlas.MetadataException;
 import org.apache.atlas.query.Expressions;
 import org.apache.atlas.query.GraphPersistenceStrategies;
 import org.apache.atlas.query.GraphPersistenceStrategies$class;
+import org.apache.atlas.query.IntSequence;
 import org.apache.atlas.query.TypeUtils;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.MetadataRepository;
@@ -38,7 +39,6 @@ import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.collection.Traversable;
 
 import java.util.List;
 
