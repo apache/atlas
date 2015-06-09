@@ -22,14 +22,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <artifactId>metadata-governance</artifactId>
-        <groupId>org.apache.hadoop.metadata</groupId>
+        <artifactId>apache-atlas</artifactId>
+        <groupId>org.apache.atlas</groupId>
         <version>0.1-incubating-SNAPSHOT</version>
         <relativePath>../../</relativePath>
     </parent>
     <artifactId>hive-bridge</artifactId>
-    <description>Apache Metadata Hive Bridge Module</description>
-    <name>Apache Metadata Hive Bridge</name>
+    <description>Apache Atlas Hive Bridge Module</description>
+    <name>Apache Atlas Hive Bridge</name>
     <packaging>jar</packaging>
 
     <properties>
@@ -76,8 +76,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.hadoop.metadata</groupId>
-            <artifactId>metadata-client</artifactId>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-client</artifactId>
             <version>${version}</version>
             <exclusions>
                 <exclusion>
@@ -90,8 +90,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.hadoop.metadata</groupId>
-            <artifactId>metadata-typesystem</artifactId>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-typesystem</artifactId>
         </dependency>
 
         <dependency>
@@ -110,8 +110,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.hadoop.metadata</groupId>
-            <artifactId>metadata-webapp</artifactId>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-webapp</artifactId>
             <classifier>classes</classifier>
         </dependency>
 
@@ -194,12 +194,12 @@
                                 </artifactItem>
                                 <artifactItem>
                                     <groupId>${project.groupId}</groupId>
-                                    <artifactId>metadata-client</artifactId>
+                                    <artifactId>atlas-client</artifactId>
                                     <version>${project.version}</version>
                                 </artifactItem>
                                 <artifactItem>
                                     <groupId>${project.groupId}</groupId>
-                                    <artifactId>metadata-typesystem</artifactId>
+                                    <artifactId>atlas-typesystem</artifactId>
                                     <version>${project.version}</version>
                                 </artifactItem>
                                 <artifactItem>
@@ -241,20 +241,20 @@
                             <maxIdleTime>60000</maxIdleTime>
                         </connector>
                     </connectors>
-                    <webApp>../../webapp/target/metadata-webapp-${project.version}.war</webApp>
+                    <webApp>../../webapp/target/atlas-webapp-${project.version}.war</webApp>
                     <contextPath>/</contextPath>
                     <useTestClasspath>true</useTestClasspath>
                     <systemProperties>
                         <systemProperty>
-                            <name>metadata.log.dir</name>
+                            <name>atlas.log.dir</name>
                             <value>${project.build.directory}/logs</value>
                         </systemProperty>
                         <systemProperty>
-                            <name>metadata.conf</name>
+                            <name>atlas.conf</name>
                             <value>addons/hive-bridge/src/test/resources</value>
                         </systemProperty>
                     </systemProperties>
-                    <stopKey>metadata-stop</stopKey>
+                    <stopKey>atlas-stop</stopKey>
                     <stopPort>41001</stopPort>
                 </configuration>
                 <executions>

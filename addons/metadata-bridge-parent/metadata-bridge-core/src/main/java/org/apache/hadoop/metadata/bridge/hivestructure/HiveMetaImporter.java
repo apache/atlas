@@ -16,8 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata.bridge.hivestructure;
+package org.apache.atlas.bridge.hivestructure;
 
+import org.apache.atlas.MetadataException;
+import org.apache.atlas.repository.IRepository;
+import org.apache.atlas.repository.RepositoryException;
+import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.typesystem.types.ClassType;
+import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.Database;
@@ -27,12 +33,6 @@ import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hadoop.hive.metastore.api.UnknownDBException;
 import org.apache.hadoop.hive.metastore.api.UnknownTableException;
-import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.repository.IRepository;
-import org.apache.hadoop.metadata.repository.RepositoryException;
-import org.apache.hadoop.metadata.typesystem.Referenceable;
-import org.apache.hadoop.metadata.typesystem.types.ClassType;
-import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
 import org.apache.thrift.TException;
 /*
  * Initial pass at one time importer TODO - needs re-write

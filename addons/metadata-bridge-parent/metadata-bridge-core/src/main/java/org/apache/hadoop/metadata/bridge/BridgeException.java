@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata.bridge;
+package org.apache.atlas.bridge;
 
 import org.apache.hadoop.hive.metastore.api.MetaException;
 

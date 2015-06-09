@@ -16,20 +16,20 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata.bridge;
+package org.apache.atlas.bridge;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.repository.MetadataRepository;
-import org.apache.hadoop.metadata.repository.RepositoryException;
-import org.apache.hadoop.metadata.typesystem.ITypedReferenceableInstance;
-import org.apache.hadoop.metadata.typesystem.Referenceable;
-import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
-import org.apache.hadoop.metadata.typesystem.types.AttributeInfo;
-import org.apache.hadoop.metadata.typesystem.types.ClassType;
-import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
-import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
-import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
+import org.apache.atlas.MetadataException;
+import org.apache.atlas.repository.MetadataRepository;
+import org.apache.atlas.repository.RepositoryException;
+import org.apache.atlas.typesystem.ITypedReferenceableInstance;
+import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.typesystem.types.AttributeDefinition;
+import org.apache.atlas.typesystem.types.AttributeInfo;
+import org.apache.atlas.typesystem.types.ClassType;
+import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.atlas.typesystem.types.Multiplicity;
+import org.apache.atlas.typesystem.types.TypeSystem;
 import org.slf4j.Logger;
 
 import java.lang.reflect.Field;

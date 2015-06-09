@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata.bridge.hivelineage;
+package org.apache.atlas.bridge.hivelineage;
 
-import org.apache.hadoop.metadata.bridge.ABridge;
-import org.apache.hadoop.metadata.bridge.hivelineage.hook.HiveLineage;
-import org.apache.hadoop.metadata.repository.MetadataRepository;
+import org.apache.atlas.bridge.ABridge;
+import org.apache.atlas.bridge.hivelineage.hook.HiveLineage;
+import org.apache.atlas.repository.MetadataRepository;
 
 import javax.inject.Inject;
 

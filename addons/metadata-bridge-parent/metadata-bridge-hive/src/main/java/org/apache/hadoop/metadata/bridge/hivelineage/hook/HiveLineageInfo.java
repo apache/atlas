@@ -16,9 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata.bridge.hivelineage.hook;
+package org.apache.atlas.bridge.hivelineage.hook;
 
 import com.google.gson.Gson;
+import org.apache.atlas.bridge.hivelineage.hook.HiveLineage.CreateColumns;
+import org.apache.atlas.bridge.hivelineage.hook.HiveLineage.GroupBy;
+import org.apache.atlas.bridge.hivelineage.hook.HiveLineage.QueryColumns;
+import org.apache.atlas.bridge.hivelineage.hook.HiveLineage.SourceTables;
+import org.apache.atlas.bridge.hivelineage.hook.HiveLineage.WhereClause;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.ql.lib.DefaultGraphWalker;
@@ -34,11 +39,6 @@ import org.apache.hadoop.hive.ql.parse.HiveParser;
 import org.apache.hadoop.hive.ql.parse.ParseDriver;
 import org.apache.hadoop.hive.ql.parse.ParseException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
-import org.apache.hadoop.metadata.bridge.hivelineage.hook.HiveLineage.CreateColumns;
-import org.apache.hadoop.metadata.bridge.hivelineage.hook.HiveLineage.GroupBy;
-import org.apache.hadoop.metadata.bridge.hivelineage.hook.HiveLineage.QueryColumns;
-import org.apache.hadoop.metadata.bridge.hivelineage.hook.HiveLineage.SourceTables;
-import org.apache.hadoop.metadata.bridge.hivelineage.hook.HiveLineage.WhereClause;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;

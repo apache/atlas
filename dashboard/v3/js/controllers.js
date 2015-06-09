@@ -52,7 +52,7 @@ DgcControllers.controller("headerController", ['$scope', '$window', '$location',
 
 DgcControllers.controller("footerController", ['$scope','$http', function($scope, $http)
     {
-        $http.get('/api/metadata/admin/version')
+        $http.get('/api/atlas/admin/version')
             .success(function (data) {
                 $scope.iserror1=false;
                 $scope.apiVersion=data.Version;
@@ -70,7 +70,7 @@ DgcControllers.controller("footerController", ['$scope','$http', function($scope
 DgcControllers.controller("NavController", ['$scope','$http', '$filter', 'sharedProperties', function($scope, $http, $filter, sharedProperties)
 {
 
-    $http.get('/api/metadata/types/traits/list')
+    $http.get('/api/atlas/types/traits/list')
         .success(function (data) {
             $scope.iserror1=false;
             $scope.leftnav=angular.fromJson(data.results);
@@ -150,7 +150,7 @@ DgcControllers.controller("ListController", ['$scope','$http', '$filter','$state
             });
 
 
-            $http.get('/api/metadata/discovery/search?query='+$scope.SearchQuery)
+            $http.get('/api/atlas/discovery/search?query='+$scope.SearchQuery)
                 .success(function (data) {
                     $scope.iserror=false;
                     $scope.entities=angular.fromJson(data.results.rows);
@@ -227,7 +227,7 @@ DgcControllers.controller("ListController", ['$scope','$http', '$filter','$state
     };
     //click value to textbox
         $scope.getGuidName=function getGuidName(val){
-            $http.get('/api/metadata/entities/definition/'+val)
+            $http.get('/api/atlas/entities/definition/'+val)
                 .success(function (data) {
                     $scope.iserror1=false;
                     if(!$scope.isUndefined(data.results)){
@@ -340,7 +340,7 @@ DgcControllers.controller("DefinitionController", ['$scope','$http', '$statePara
     };
 //onclick to textbox
 					$scope.getGuidName=function getGuidName(val){
-					$http.get('/api/metadata/entities/definition/'+val)
+					$http.get('/api/atlas/entities/definition/'+val)
 						.success(function (data) {
 						$scope.iserror1=false;
 							if(!$scope.isUndefined(data.results)){								
@@ -361,7 +361,7 @@ DgcControllers.controller("DefinitionController", ['$scope','$http', '$statePara
         $scope.searchqry=sharedProperties.getQuery();
         $scope.datatype1=sharedProperties.getProperty();
 
-        $http.get('/api/metadata/entities/definition/'+$stateParams.Id)
+        $http.get('/api/atlas/entities/definition/'+$stateParams.Id)
                 .success(function (data) {
                     $scope.iserror1=false;
                 $scope.details=  angular.fromJson(data.results);
@@ -381,7 +381,7 @@ DgcControllers.controller("DefinitionController", ['$scope','$http', '$statePara
 
         $scope.getSchema= function (tableName) {
 
-            $http.get('/api/metadata/lineage/hive/schema/'+tableName)
+            $http.get('/api/atlas/lineage/hive/schema/'+tableName)
                 .success(function (data) {
                     $scope.iserror1=false;
                     $scope.schema=  angular.fromJson(data.results.rows);
@@ -403,7 +403,7 @@ $scope.getLinegae= function (tableName) {
             var arrmyalias=[];
 			   var datatypes=[];
 			   var tags=[];
-            $http.get('/api/metadata/lineage/hive/outputs/'+tableName)
+            $http.get('/api/atlas/lineage/hive/outputs/'+tableName)
                 .success(function (data) {
                     $scope.iserror1=false;
                     $scope.lineage=  angular.fromJson(data.results.rows);
@@ -445,7 +445,7 @@ $scope.getLinegae= function (tableName) {
                             newarrvts.push(item);
                             uniquevts[item.Name] = item;
 
-							  var url="/api/metadata/entities/definition/"+item.Name;
+							  var url="/api/atlas/entities/definition/"+item.Name;
 							   arr.push($http.get(url)); 
                         }
                     });
@@ -795,7 +795,7 @@ $scope.getLinegaeforinput= function (tableName) {
             var arrmyalias=[];
 			   var datatypes=[];
 			   var tags=[];
-            $http.get('/api/metadata/lineage/hive/inputs/'+tableName)
+            $http.get('/api/atlas/lineage/hive/inputs/'+tableName)
                 .success(function (data) {
                     $scope.iserror1=false;
                     $scope.lineage=  angular.fromJson(data.results.rows);
@@ -836,7 +836,7 @@ $scope.getLinegaeforinput= function (tableName) {
                             newarrvts.push(item);
                             uniquevts[item.Name] = item;
 
-							  var url="/api/metadata/entities/definition/"+item.Name;
+							  var url="/api/atlas/entities/definition/"+item.Name;
 							   arr.push($http.get(url));
 
                             //getLienageGuidName(item.Name);
@@ -1228,7 +1228,7 @@ DgcControllers.controller("GuidController", ['$scope','$http', '$filter','$state
 $scope.getGuidName=function getGuidName(val){
   
         $scope.gnew=[];
-                    $http.get('/api/metadata/entities/definition/'+val)
+                    $http.get('/api/atlas/entities/definition/'+val)
                         .success(function (data) {
                         $scope.iserror1=false;
                             if(!$scope.isUndefined(data.results)){  

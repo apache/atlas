@@ -24,13 +24,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.apache.hadoop.metadata</groupId>
-        <artifactId>metadata-governance</artifactId>
+        <groupId>org.apache.atlas</groupId>
+        <artifactId>apache-atlas</artifactId>
         <version>0.1-incubating-SNAPSHOT</version>
     </parent>
-    <artifactId>metadata-typesystem</artifactId>
-    <description>Apache Metadata Typesystem Module</description>
-    <name>Apache Metadata Typesystem</name>
+    <artifactId>atlas-typesystem</artifactId>
+    <description>Apache Atlas Typesystem Module</description>
+    <name>Apache Atlas Typesystem</name>
     <packaging>jar</packaging>
 
     <dependencies>

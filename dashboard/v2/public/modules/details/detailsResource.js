@@ -19,7 +19,7 @@
 'use strict';
 
 angular.module('dgc.details').factory('DetailsResource', ['$resource', function($resource) {
-    return $resource('/api/metadata/entities/definition/:id', {}, {
+    return $resource('/api/atlas/entities/definition/:id', {}, {
         get: {
             method: 'GET',
             transformResponse: function(data) {

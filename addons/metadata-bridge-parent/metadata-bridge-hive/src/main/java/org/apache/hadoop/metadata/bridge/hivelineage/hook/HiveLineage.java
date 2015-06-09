@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata.bridge.hivelineage.hook;
+package org.apache.atlas.bridge.hivelineage.hook;
 
 import java.io.Serializable;
 import java.util.ArrayList;

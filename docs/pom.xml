@@ -22,13 +22,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.apache.hadoop.metadata</groupId>
-        <artifactId>metadata-governance</artifactId>
+        <groupId>org.apache.atlas</groupId>
+        <artifactId>apache-atlas</artifactId>
         <version>0.1-incubating-SNAPSHOT</version>
     </parent>
-    <artifactId>metadata-docs</artifactId>
-    <description>Apache Metadata Documentation</description>
-    <name>Apache Metadata Documentation</name>
+    <artifactId>atlas-docs</artifactId>
+    <description>Apache Atlas Documentation</description>
+    <name>Apache Atlas Documentation</name>
 
     <properties>
         <skipTests>true</skipTests>
