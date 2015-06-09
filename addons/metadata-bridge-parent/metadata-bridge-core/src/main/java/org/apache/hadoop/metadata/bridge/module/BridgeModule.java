@@ -16,16 +16,16 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata.bridge.module;
+package org.apache.atlas.bridge.module;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
+import org.apache.atlas.RepositoryMetadataModule;
+import org.apache.atlas.bridge.BridgeTypeBootstrapper;
+import org.apache.atlas.bridge.IBridge;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.hadoop.metadata.RepositoryMetadataModule;
-import org.apache.hadoop.metadata.bridge.BridgeTypeBootstrapper;
-import org.apache.hadoop.metadata.bridge.IBridge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

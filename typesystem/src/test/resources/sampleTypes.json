@@ -324,7 +324,7 @@
         "B",
         "C"
       ],
-      "hierarchicalMetaTypeName": "org.apache.hadoop.metadata.types.TraitType",
+      "hierarchicalMetaTypeName": "org.apache.atlas.types.TraitType",
       "typeName": "D",
       "attributeDefinitions": [
         {
@@ -339,7 +339,7 @@
     {
       "superTypes": [
       ],
-      "hierarchicalMetaTypeName": "org.apache.hadoop.metadata.types.TraitType",
+      "hierarchicalMetaTypeName": "org.apache.atlas.types.TraitType",
       "typeName": "A",
       "attributeDefinitions": [
         {
@@ -376,7 +376,7 @@
       "superTypes": [
         "A"
       ],
-      "hierarchicalMetaTypeName": "org.apache.hadoop.metadata.types.TraitType",
+      "hierarchicalMetaTypeName": "org.apache.atlas.types.TraitType",
       "typeName": "B",
       "attributeDefinitions": [
         {
@@ -392,7 +392,7 @@
       "superTypes": [
         "A"
       ],
-      "hierarchicalMetaTypeName": "org.apache.hadoop.metadata.types.TraitType",
+      "hierarchicalMetaTypeName": "org.apache.atlas.types.TraitType",
       "typeName": "C",
       "attributeDefinitions": [
         {
@@ -407,7 +407,7 @@
     {
       "superTypes": [
       ],
-      "hierarchicalMetaTypeName": "org.apache.hadoop.metadata.types.TraitType",
+      "hierarchicalMetaTypeName": "org.apache.atlas.types.TraitType",
       "typeName": "SecurityClearance",
       "attributeDefinitions": [
         {
@@ -425,7 +425,7 @@
       "superTypes": [
         "Person"
       ],
-      "hierarchicalMetaTypeName": "org.apache.hadoop.metadata.types.ClassType",
+      "hierarchicalMetaTypeName": "org.apache.atlas.types.ClassType",
       "typeName": "Manager",
       "attributeDefinitions": [
         {
@@ -440,7 +440,7 @@
     {
       "superTypes": [
       ],
-      "hierarchicalMetaTypeName": "org.apache.hadoop.metadata.types.ClassType",
+      "hierarchicalMetaTypeName": "org.apache.atlas.types.ClassType",
       "typeName": "Department",
       "attributeDefinitions": [
         {
@@ -462,7 +462,7 @@
     {
       "superTypes": [
       ],
-      "hierarchicalMetaTypeName": "org.apache.hadoop.metadata.types.ClassType",
+      "hierarchicalMetaTypeName": "org.apache.atlas.types.ClassType",
       "typeName": "t4",
       "attributeDefinitions": [
         {
@@ -603,7 +603,7 @@
     {
       "superTypes": [
       ],
-      "hierarchicalMetaTypeName": "org.apache.hadoop.metadata.types.ClassType",
+      "hierarchicalMetaTypeName": "org.apache.atlas.types.ClassType",
       "typeName": "Person",
       "attributeDefinitions": [
         {

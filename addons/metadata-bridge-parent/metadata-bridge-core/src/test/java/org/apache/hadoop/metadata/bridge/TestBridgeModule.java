@@ -16,9 +16,9 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata.bridge;
+package org.apache.atlas.bridge;
 
-import org.apache.hadoop.metadata.bridge.module.BridgeModule;
+import org.apache.atlas.bridge.module.BridgeModule;
 import org.testng.Assert;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;

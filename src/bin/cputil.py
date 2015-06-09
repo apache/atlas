@@ -18,7 +18,7 @@
 import os
 import sys
 
-import metadata_config as mc
+import atlas_config as mc
 
 DEFAULT_JVM_OPTS="-Xmx1024m"
 
@@ -41,11 +41,11 @@ def main():
 
     p = os.pathsep
     metadata_classpath = confdir + p \
-                       + os.path.join(web_app_dir, "metadata", "WEB-INF", "classes" ) + p \
-                       + os.path.join(web_app_dir, "metadata", "WEB-INF", "lib", "*" )  + p \
+                       + os.path.join(web_app_dir, "atlas", "WEB-INF", "classes" ) + p \
+                       + os.path.join(web_app_dir, "atlas", "WEB-INF", "lib", "*" )  + p \
                        + os.path.join(metadata_home, "libext", "*")
 
-    process = mc.java("org.apache.hadoop.metadata.util.CredentialProviderUtility", sys.argv[1:], metadata_classpath, jvm_opts_list)
+    process = mc.java("org.apache.atlas.util.CredentialProviderUtility", sys.argv[1:], metadata_classpath, jvm_opts_list)
     process.wait()
 
 if __name__ == '__main__':

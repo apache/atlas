@@ -64,7 +64,7 @@
         <appender-ref ref="console"/>
     </logger>
 
-    <logger name="org.apache.hadoop.metadata" additivity="false">
+    <logger name="org.apache.atlas" additivity="false">
         <level value="debug"/>
         <appender-ref ref="console"/>
     </logger>

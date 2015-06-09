@@ -16,15 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata.bridge.hivelineage;
+package org.apache.atlas.bridge.hivelineage;
 
 import com.google.gson.Gson;
+import org.apache.atlas.MetadataException;
+import org.apache.atlas.bridge.BridgeTypeBootstrapper;
+import org.apache.atlas.bridge.hivelineage.hook.HiveLineage;
+import org.apache.atlas.bridge.module.BridgeModule;
+import org.apache.atlas.repository.RepositoryException;
 import org.apache.commons.collections.IteratorUtils;
-import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.bridge.BridgeTypeBootstrapper;
-import org.apache.hadoop.metadata.bridge.hivelineage.hook.HiveLineage;
-import org.apache.hadoop.metadata.bridge.module.BridgeModule;
-import org.apache.hadoop.metadata.repository.RepositoryException;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;

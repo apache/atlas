@@ -25,7 +25,7 @@
         <format>dir</format>
     </formats>
     <id>bin</id>
-    <baseDirectory>metadata-${project.version}</baseDirectory>
+    <baseDirectory>apache-atlas-${project.version}</baseDirectory>
     <fileSets>
         <fileSet>
             <directory>src/conf/</directory>
@@ -103,9 +103,9 @@
 
     <files>
         <file>
-            <source>webapp/target/metadata-webapp-${project.version}.war</source>
+            <source>webapp/target/atlas-webapp-${project.version}.war</source>
             <outputDirectory>server/webapp</outputDirectory>
-            <destName>metadata.war</destName>
+            <destName>atlas.war</destName>
         </file>
     </files>
 </assembly>

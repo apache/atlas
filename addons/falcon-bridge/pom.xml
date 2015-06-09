@@ -22,14 +22,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <artifactId>metadata-governance</artifactId>
-        <groupId>org.apache.hadoop.metadata</groupId>
+        <artifactId>apache-atlas</artifactId>
+        <groupId>org.apache.atlas</groupId>
         <version>0.1-incubating-SNAPSHOT</version>
         <relativePath>../../</relativePath>
     </parent>
     <artifactId>falcon-bridge</artifactId>
-    <description>Apache Metadata Falcon Bridge Module</description>
-    <name>Apache Metadata Falcon Bridge</name>
+    <description>Apache Atlas Falcon Bridge Module</description>
+    <name>Apache Atlas Falcon Bridge</name>
     <packaging>jar</packaging>
 
     <properties>
@@ -50,13 +50,13 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.hadoop.metadata</groupId>
-            <artifactId>metadata-typesystem</artifactId>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-typesystem</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.hadoop.metadata</groupId>
-            <artifactId>metadata-repository</artifactId>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-repository</artifactId>
         </dependency>
 
         <dependency>
