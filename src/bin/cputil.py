@@ -41,8 +41,8 @@ def main():
 
     p = os.pathsep
     metadata_classpath = confdir + p \
-                       + os.path.join(web_app_dir, "metadata", "WEB-INF", "classes" ) + p \
-                       + os.path.join(web_app_dir, "metadata", "WEB-INF", "lib", "*" )  + p \
+                       + os.path.join(web_app_dir, "atlas", "WEB-INF", "classes" ) + p \
+                       + os.path.join(web_app_dir, "atlas", "WEB-INF", "lib", "*" )  + p \
                        + os.path.join(metadata_home, "libext", "*")
 
     process = mc.java("org.apache.atlas.util.CredentialProviderUtility", sys.argv[1:], metadata_classpath, jvm_opts_list)

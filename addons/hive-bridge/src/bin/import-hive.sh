@@ -34,8 +34,8 @@ if [ -z "$METADATA_CONF" ]; then
 fi
 export METADATA_CONF
 
-if [ -f "${METADATA_CONF}/metadata-env.sh" ]; then
-  . "${METADATA_CONF}/metadata-env.sh"
+if [ -f "${METADATA_CONF}/atlas-env.sh" ]; then
+  . "${METADATA_CONF}/atlas-env.sh"
 fi
 
 if test -z ${JAVA_HOME}

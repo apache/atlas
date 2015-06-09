@@ -20,7 +20,7 @@ import sys
 
 import atlas_config as mc
 
-METADATA_LOG_OPTS="-Dmetadata.log.dir=%s"
+METADATA_LOG_OPTS="-Datlas.log.dir=%s"
 METADATA_COMMAND_OPTS="-Dmetadata.home=%s"
 DEFAULT_JVM_OPTS="-Xmx1024m"
 
@@ -47,8 +47,8 @@ def main():
 
     p = os.pathsep
     metadata_classpath = confdir + p \
-                       + os.path.join(web_app_dir, "metadata", "WEB-INF", "classes" ) + p \
-                       + os.path.join(web_app_dir, "metadata", "WEB-INF", "lib", "*" )  + p \
+                       + os.path.join(web_app_dir, "atlas", "WEB-INF", "classes" ) + p \
+                       + os.path.join(web_app_dir, "atlas", "WEB-INF", "lib", "*" )  + p \
                        + os.path.join(metadata_home, "libext", "*")
 
     process = mc.java("org.apache.atlas.examples.QuickStart", sys.argv[1:], metadata_classpath, jvm_opts_list)

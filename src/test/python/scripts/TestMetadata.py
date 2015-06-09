@@ -23,7 +23,7 @@ from mock import patch
 import unittest
 import logging
 import atlas_config as mc
-import metadata_start as metadata
+import atlas_start as metadata
 import platform
 
 IS_WINDOWS = platform.system() == "Windows"
@@ -48,15 +48,15 @@ class TestMetadata(unittest.TestCase):
     if IS_WINDOWS:
       java_mock.assert_called_with(
         'org.apache.atlas.Main',
-        ['-app', 'metadata_home/server/webapp/metadata'],
-        'metadata_home/conf:metadata_home/server/webapp/metadata/WEB-INF/classes:metadata_home/server/webapp/metadata/WEB-INF/lib\\*:metadata_home/libext\\*',
-        ['-Dmetadata.log.dir=metadata_home/logs', '-Dmetadata.log.file=application.log', '-Dmetadata.home=metadata_home', '-Dmetadata.conf=metadata_home/conf', '-Xmx1024m'], 'metadata_home/logs')
+        ['-app', 'metadata_home/server/webapp/atlas'],
+        'metadata_home/conf:metadata_home/server/webapp/atlas/WEB-INF/classes:metadata_home/server/webapp/atlas/WEB-INF/lib\\*:metadata_home/libext\\*',
+        ['-Datlas.log.dir=metadata_home/logs', '-Datlas.log.file=application.log', '-Dmetadata.home=metadata_home', '-Dmetadata.conf=metadata_home/conf', '-Xmx1024m'], 'metadata_home/logs')
     else:
       java_mock.assert_called_with(
         'org.apache.atlas.Main',
-        ['-app', 'metadata_home/server/webapp/metadata'],
-        'metadata_home/conf:metadata_home/server/webapp/metadata/WEB-INF/classes:metadata_home/server/webapp/metadata/WEB-INF/lib/*:metadata_home/libext/*',
-        ['-Dmetadata.log.dir=metadata_home/logs', '-Dmetadata.log.file=application.log', '-Dmetadata.home=metadata_home', '-Dmetadata.conf=metadata_home/conf', '-Xmx1024m'],  'metadata_home/logs')
+        ['-app', 'metadata_home/server/webapp/atlas'],
+        'metadata_home/conf:metadata_home/server/webapp/atlas/WEB-INF/classes:metadata_home/server/webapp/atlas/WEB-INF/lib/*:metadata_home/libext/*',
+        ['-Datlas.log.dir=metadata_home/logs', '-Datlas.log.file=application.log', '-Dmetadata.home=metadata_home', '-Dmetadata.conf=metadata_home/conf', '-Xmx1024m'],  'metadata_home/logs')
     pass
 
 
