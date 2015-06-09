@@ -65,7 +65,7 @@ def logDir(dir):
 
 def pidFile(dir):
     localPid = os.path.join(dir, LOG)
-    return os.path.join(os.environ.get(METADATA_PID, localPid), 'metadata.pid')
+    return os.path.join(os.environ.get(METADATA_PID, localPid), 'atlas.pid')
 
 def dataDir(dir):
     data = os.path.join(dir, DATA)
@@ -77,7 +77,7 @@ def webAppDir(dir):
 
 def expandWebApp(dir):
     webappDir = webAppDir(dir)
-    webAppMetadataDir = os.path.join(webappDir, "metadata")
+    webAppMetadataDir = os.path.join(webappDir, "atlas")
     d = os.sep
     if not os.path.exists(os.path.join(webAppMetadataDir, "WEB-INF")):
         try:
@@ -95,7 +95,7 @@ def dirMustExist(dirname):
     return dirname
 
 def executeEnvSh(confDir):
-    envscript = '%s/metadata-env.sh' % confDir
+    envscript = '%s/atlas-env.sh' % confDir
     if not IS_WINDOWS and os.path.exists(envscript):
         envCmd = 'source %s && env' % envscript
         command = ['bash', '-c', envCmd]

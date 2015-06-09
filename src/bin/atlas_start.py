@@ -21,7 +21,7 @@ import traceback
 
 import atlas_config as mc
 
-METADATA_LOG_OPTS="-Dmetadata.log.dir=%s -Dmetadata.log.file=application.log"
+METADATA_LOG_OPTS="-Datlas.log.dir=%s -Datlas.log.file=application.log"
 METADATA_COMMAND_OPTS="-Dmetadata.home=%s"
 METADATA_CONFIG_OPTS="-Dmetadata.conf=%s"
 DEFAULT_JVM_OPTS="-Xmx1024m"
@@ -52,8 +52,8 @@ def main():
 
     p = os.pathsep
     metadata_classpath = confdir + p \
-                       + os.path.join(web_app_dir, "metadata", "WEB-INF", "classes" ) + p \
-                       + os.path.join(web_app_dir, "metadata", "WEB-INF", "lib", "*" )  + p \
+                       + os.path.join(web_app_dir, "atlas", "WEB-INF", "classes" ) + p \
+                       + os.path.join(web_app_dir, "atlas", "WEB-INF", "lib", "*" )  + p \
                        + os.path.join(metadata_home, "libext", "*")
 
     metadata_pid_file = mc.pidFile(metadata_home)
@@ -62,7 +62,7 @@ def main():
         print "%s already exists, exiting" % metadata_pid_file
         sys.exit()
 
-    args = ["-app", os.path.join(web_app_dir, "metadata")]
+    args = ["-app", os.path.join(web_app_dir, "atlas")]
     args.extend(sys.argv[1:])
 
     process = mc.java("org.apache.atlas.Main", args, metadata_classpath, jvm_opts_list, logdir)
