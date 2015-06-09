@@ -73,7 +73,7 @@ public class GraphRepoMapperScaleTest {
     private static final String TABLE_TYPE = "hive_table_type";
     private static final String TABLE_NAME = "bar";
 
-    private static final String INDEX_DIR = System.getProperty("java.io.tmpdir", "/tmp") + "/titan-schema-test" + new Random().nextLong();
+    private static final String INDEX_DIR = System.getProperty("java.io.tmpdir", "/tmp") + "/atlas-test" + new Random().nextLong();
 
     private GraphProvider<TitanGraph> graphProvider = new GraphProvider<TitanGraph>() {
 
