@@ -170,10 +170,13 @@ public class DefaultMetadataService implements MetadataService {
             final Map<String, IDataType> typesAdded = typeSystem.defineTypes(typesDef);
 
             try {
-                typeStore.store(typeSystem, ImmutableList.copyOf(typesAdded.keySet()));
+                /* Create indexes first so that if index creation fails then we rollback
+                   the typesystem and also do not persist the graph
+                 */
                 onTypesAddedToRepo(typesAdded);
+                typeStore.store(typeSystem, ImmutableList.copyOf(typesAdded.keySet()));
             } catch (Throwable t) {
-                typeSystem.removeTypes(typesAdded);
+                typeSystem.removeTypes(typesAdded.keySet());
                 throw new MetadataException("Unable to persist types ", t);
             }
 
