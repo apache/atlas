@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata.bridge;
+package org.apache.atlas.bridge;
 
-import org.apache.hadoop.metadata.RepositoryMetadataModule;
-import org.apache.hadoop.metadata.repository.MetadataRepository;
+import org.apache.atlas.RepositoryMetadataModule;
+import org.apache.atlas.repository.MetadataRepository;
 import org.testng.Assert;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;

@@ -19,7 +19,7 @@
 'use strict';
 
 angular.module('dgc.search').factory('SearchResource', ['$resource', function($resource) {
-    return $resource('/api/metadata/discovery/search/fulltext', {}, {
+    return $resource('/api/atlas/discovery/search/fulltext', {}, {
         search: {
             'method': 'GET',
             'responseType': 'json',

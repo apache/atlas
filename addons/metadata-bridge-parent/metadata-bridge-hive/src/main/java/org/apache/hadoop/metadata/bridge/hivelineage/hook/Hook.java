@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata.bridge.hivelineage.hook;
+package org.apache.atlas.bridge.hivelineage.hook;
 
 
 import com.google.gson.Gson;
@@ -203,8 +203,8 @@ public class Hook implements ExecuteWithHookContext {
     throws Exception {
         String postUri = String
                 .format("http://%s:%s%s", METADATA_HOST, METADATA_PORT, METADATA_PATH);
-        if (conf.getTrimmed("hadoop.metadata.hive.hook.uri") != null) {
-            postUri = conf.getTrimmed("hadoop.metadata.hive.hook.uri");
+        if (conf.getTrimmed("atlas.hive.hook.uri") != null) {
+            postUri = conf.getTrimmed("atlas.hive.hook.uri");
         }
         Gson gson = new Gson();
         String gsonString = gson.toJson(hookData);

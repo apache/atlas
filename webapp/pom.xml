@@ -24,13 +24,13 @@
 
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.apache.hadoop.metadata</groupId>
-        <artifactId>metadata-governance</artifactId>
+        <groupId>org.apache.atlas</groupId>
+        <artifactId>apache-atlas</artifactId>
         <version>0.1-incubating-SNAPSHOT</version>
     </parent>
-    <artifactId>metadata-webapp</artifactId>
-    <description>Apache Metadata Web Application</description>
-    <name>Apache Metadata Web Application</name>
+    <artifactId>atlas-webapp</artifactId>
+    <description>Apache Atlas Web Application</description>
+    <name>Apache Atlas Web Application</name>
     <packaging>war</packaging>
 
     <properties>
@@ -39,18 +39,18 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.hadoop.metadata</groupId>
-            <artifactId>metadata-typesystem</artifactId>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-typesystem</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.hadoop.metadata</groupId>
-            <artifactId>metadata-repository</artifactId>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-repository</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.hadoop.metadata</groupId>
-            <artifactId>metadata-client</artifactId>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-client</artifactId>
             <type>test-jar</type>
         </dependency>
 
@@ -198,7 +198,7 @@
                             <includeTransitiveDependencySources>false</includeTransitiveDependencySources>
                             <includeDependencySources>true</includeDependencySources>
                             <dependencySourceIncludes>
-                                <dependencySourceInclude>org.apache.hadoop.metadata:*</dependencySourceInclude>
+                                <dependencySourceInclude>org.apache.atlas:*</dependencySourceInclude>
                             </dependencySourceIncludes>
                         </configuration>
                     </execution>
@@ -260,11 +260,11 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <dname>cn=metadata.incubator.apache.org</dname>
-                    <keystore>${project.build.directory}/metadata.keystore</keystore>
+                    <dname>cn=atlas.incubator.apache.org</dname>
+                    <keystore>${project.build.directory}/atlas.keystore</keystore>
                     <keypass>keypass</keypass>
                     <storepass>keypass</storepass>
-                    <alias>metadata</alias>
+                    <alias>atlas</alias>
                     <keyalg>RSA</keyalg>
                     <validity>100000</validity>
                 </configuration>
@@ -282,9 +282,9 @@
                         <connector implementation="org.mortbay.jetty.security.SslSocketConnector">
                             <port>21443</port>
                             <maxIdleTime>60000</maxIdleTime>
-                            <keystore>${project.build.directory}/../../webapp/target/metadata.keystore</keystore>
-                            <keyPassword>metadata-passwd</keyPassword>
-                            <password>metadata-passwd</password>
+                            <keystore>${project.build.directory}/../../webapp/target/atlas.keystore</keystore>
+                            <keyPassword>atlas-passwd</keyPassword>
+                            <password>atlas-passwd</password>
                         </connector>
                         -->
                         <connector implementation="org.mortbay.jetty.nio.SelectChannelConnector">
@@ -292,29 +292,29 @@
                             <maxIdleTime>60000</maxIdleTime>
                         </connector>
                     </connectors>
-                    <webApp>${project.build.directory}/metadata-webapp-${project.version}</webApp>
+                    <webApp>${project.build.directory}/atlas-webapp-${project.version}</webApp>
                     <contextPath>/</contextPath>
                     <useTestClasspath>true</useTestClasspath>
                     <systemProperties>
                         <systemProperty>
-                            <name>metadata.log.dir</name>
+                            <name>atlas.log.dir</name>
                             <value>${project.build.directory}/logs</value>
                         </systemProperty>
                         <systemProperty>
                             <name>keystore.file</name>
-                            <value>${project.build.directory}/../../webapp/target/metadata.keystore
+                            <value>${project.build.directory}/../../webapp/target/atlas.keystore
                             </value>
                         </systemProperty>
                         <systemProperty>
                             <name>truststore.file</name>
-                            <value>${project.build.directory}/../../webapp/target/metadata.keystore</value>
+                            <value>${project.build.directory}/../../webapp/target/atlas.keystore </value>
                         </systemProperty>
                         <systemProperty>
-                            <name>metadata.home</name>
+                            <name>atlas.home</name>
                             <value>${project.build.directory}</value>
                         </systemProperty>
                     </systemProperties>
-                    <stopKey>metadata-stop</stopKey>
+                    <stopKey>atlas-stop</stopKey>
                     <stopPort>41001</stopPort>
                     <daemon>${debug.jetty.daemon}</daemon>
                 </configuration>

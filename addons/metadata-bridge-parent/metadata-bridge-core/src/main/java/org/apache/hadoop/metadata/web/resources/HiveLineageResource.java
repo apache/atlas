@@ -16,9 +16,9 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata.web.resources;
+package org.apache.atlas.web.resources;
 
-import org.apache.hadoop.metadata.bridge.hivelineage.HiveLineageBridge;
+import org.apache.atlas.bridge.hivelineage.HiveLineageBridge;
 
 import javax.inject.Singleton;
 

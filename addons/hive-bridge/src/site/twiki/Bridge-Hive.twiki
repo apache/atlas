@@ -1,5 +1,5 @@
 ---+ Hive DGI Bridge
-Hive metadata can be modelled in DGI using its Type System. The default modelling is available in org.apache.hadoop.metadata.hive.model.HiveDataModelGenerator. It defines the following types:
+Hive metadata can be modelled in DGI using its Type System. The default modelling is available in org.apache.atlas.hive.model.HiveDataModelGenerator. It defines the following types:
    * hive_resource_type(EnumType) - [JAR, FILE, ARCHIVE]
    * hive_principal_type(EnumType) - [USER, ROLE, GROUP]
    * hive_function_type(EnumType) - [JAVA]
@@ -19,7 +19,7 @@ Hive metadata can be modelled in DGI using its Type System. The default modellin
 
 
 ---++ Importing Hive Metadata
-org.apache.hadoop.metadata.hive.bridge.HiveMetaStoreBridge imports the hive metadata into DGI using the typesystem defined in org.apache.hadoop.metadata.hive.model.HiveDataModelGenerator. import-hive.sh command can be used to facilitate this.
+org.apache.atlas.hive.bridge.HiveMetaStoreBridge imports the hive metadata into DGI using the typesystem defined in org.apache.atlas.hive.model.HiveDataModelGenerator. import-hive.sh command can be used to facilitate this.
 Set-up the following configs in hive-site.xml of your hive set-up and set environment variable HIVE_CONFIG to the
 hive conf directory:
    * DGI endpoint - Add the following property with the DGI endpoint for your set-up
@@ -38,13 +38,13 @@ Usage: <dgi package>/bin/import-hive.sh. The logs are in <dgi package>/logs/impo
 
 
 ---++ Hive Hook
-Hive supports listeners on hive command execution using hive hooks. This is used to add/update/remove entities in DGI using the model defined in org.apache.hadoop.metadata.hive.model.HiveDataModelGenerator.
+Hive supports listeners on hive command execution using hive hooks. This is used to add/update/remove entities in DGI using the model defined in org.apache.atlas.hive.model.HiveDataModelGenerator.
 The hook submits the request to a thread pool executor to avoid blocking the command execution. Follow the these instructions in your hive set-up to add hive hook for DGI:
-   * Add org.apache.hadoop.metadata.hive.hook.HiveHook as post execution hook in hive-site.xml
+   * Add org.apache.atlas.hive.hook.HiveHook as post execution hook in hive-site.xml
 <verbatim>
 <property>
   <name>hive.exec.post.hooks</name>
-  <value>org.apache.hadoop.metadata.hive.hook.HiveHook</value>
+  <value>org.apache.atlas.hive.hook.HiveHook</value>
 </property>
 </verbatim>
    * Add the following properties in hive-ste.xml with the DGI endpoint for your set-up

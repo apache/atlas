@@ -157,7 +157,7 @@
       "superTypes":[
 
       ],
-      "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
+      "hierarchicalMetaTypeName":"org.apache.atlas.typesystem.types.ClassType",
       "typeName":"hive_process",
       "attributeDefinitions":[
         {
@@ -256,7 +256,7 @@
       "superTypes":[
 
       ],
-      "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
+      "hierarchicalMetaTypeName":"org.apache.atlas.typesystem.types.ClassType",
       "typeName":"hive_function",
       "attributeDefinitions":[
         {
@@ -337,7 +337,7 @@
       "superTypes":[
 
       ],
-      "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
+      "hierarchicalMetaTypeName":"org.apache.atlas.typesystem.types.ClassType",
       "typeName":"hive_type",
       "attributeDefinitions":[
         {
@@ -382,7 +382,7 @@
       "superTypes":[
 
       ],
-      "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
+      "hierarchicalMetaTypeName":"org.apache.atlas.typesystem.types.ClassType",
       "typeName":"hive_table",
       "attributeDefinitions":[
         {
@@ -508,7 +508,7 @@
       "superTypes":[
 
       ],
-      "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
+      "hierarchicalMetaTypeName":"org.apache.atlas.typesystem.types.ClassType",
       "typeName":"hive_partition",
       "attributeDefinitions":[
         {
@@ -580,7 +580,7 @@
       "superTypes":[
 
       ],
-      "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
+      "hierarchicalMetaTypeName":"org.apache.atlas.typesystem.types.ClassType",
       "typeName":"hive_storagedesc",
       "attributeDefinitions":[
         {
@@ -688,7 +688,7 @@
       "superTypes":[
 
       ],
-      "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
+      "hierarchicalMetaTypeName":"org.apache.atlas.typesystem.types.ClassType",
       "typeName":"hive_index",
       "attributeDefinitions":[
         {
@@ -787,7 +787,7 @@
       "superTypes":[
 
       ],
-      "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
+      "hierarchicalMetaTypeName":"org.apache.atlas.typesystem.types.ClassType",
       "typeName":"hive_role",
       "attributeDefinitions":[
         {
@@ -823,7 +823,7 @@
       "superTypes":[
 
       ],
-      "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
+      "hierarchicalMetaTypeName":"org.apache.atlas.typesystem.types.ClassType",
       "typeName":"hive_db",
       "attributeDefinitions":[
         {
@@ -886,7 +886,7 @@
       "superTypes":[
 
       ],
-      "hierarchicalMetaTypeName":"org.apache.hadoop.metadata.typesystem.types.ClassType",
+      "hierarchicalMetaTypeName":"org.apache.atlas.typesystem.types.ClassType",
       "typeName":"hive_column",
       "attributeDefinitions":[
         {

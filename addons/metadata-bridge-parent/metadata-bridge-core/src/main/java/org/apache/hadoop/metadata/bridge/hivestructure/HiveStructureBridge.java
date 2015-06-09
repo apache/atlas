@@ -16,16 +16,16 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata.bridge.hivestructure;
+package org.apache.atlas.bridge.hivestructure;
 
-import org.apache.hadoop.metadata.MetadataException;
-import org.apache.hadoop.metadata.bridge.ABridge;
-import org.apache.hadoop.metadata.repository.MetadataRepository;
-import org.apache.hadoop.metadata.typesystem.types.AttributeDefinition;
-import org.apache.hadoop.metadata.typesystem.types.ClassType;
-import org.apache.hadoop.metadata.typesystem.types.HierarchicalTypeDefinition;
-import org.apache.hadoop.metadata.typesystem.types.Multiplicity;
-import org.apache.hadoop.metadata.typesystem.types.TypeSystem;
+import org.apache.atlas.MetadataException;
+import org.apache.atlas.bridge.ABridge;
+import org.apache.atlas.repository.MetadataRepository;
+import org.apache.atlas.typesystem.types.AttributeDefinition;
+import org.apache.atlas.typesystem.types.ClassType;
+import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.atlas.typesystem.types.Multiplicity;
+import org.apache.atlas.typesystem.types.TypeSystem;
 
 import javax.inject.Inject;
 import java.util.ArrayList;

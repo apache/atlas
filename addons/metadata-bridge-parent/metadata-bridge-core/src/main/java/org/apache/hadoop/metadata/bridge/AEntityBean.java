@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.metadata.bridge;
+package org.apache.atlas.bridge;
 
 public abstract class AEntityBean {
 

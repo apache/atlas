@@ -18,7 +18,7 @@
 import os
 import sys
 
-import metadata_config as mc
+import atlas_config as mc
 
 METADATA_LOG_OPTS="-Dmetadata.log.dir=%s"
 METADATA_COMMAND_OPTS="-Dmetadata.home=%s"
@@ -51,10 +51,10 @@ def main():
                        + os.path.join(web_app_dir, "metadata", "WEB-INF", "lib", "*" )  + p \
                        + os.path.join(metadata_home, "libext", "*")
 
-    process = mc.java("org.apache.hadoop.metadata.examples.QuickStart", sys.argv[1:], metadata_classpath, jvm_opts_list)
+    process = mc.java("org.apache.atlas.examples.QuickStart", sys.argv[1:], metadata_classpath, jvm_opts_list)
     process.wait()
 
-    print "Example data added to Metadata Server!!!\n"
+    print "Example data added to Apache Atlas Server!!!\n"
 
 if __name__ == '__main__':
     try:

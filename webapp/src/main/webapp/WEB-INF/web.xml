@@ -21,13 +21,13 @@
         "http://java.sun.com/dtd/web-app_2_3.dtd">
 
 <web-app>
-    <display-name>Apache Metadata Placeholder</display-name>
-    <description>Apache Metadata Placeholder</description>
+    <display-name>Apache Atlas</display-name>
+    <description>Metadata Management and Data Governance Platform over Hadoop</description>
 
     <context-param>
         <param-name>guice.packages</param-name>
         <param-value>
-            org.apache.hadoop.metadata.web.resources,org.apache.hadoop.metadata.web.params
+            org.apache.atlas.web.resources,org.apache.atlas.web.params
         </param-value>
     </context-param>
 
@@ -48,6 +48,6 @@
     </filter-mapping>
 
     <listener>
-        <listener-class>org.apache.hadoop.metadata.web.listeners.GuiceServletConfig</listener-class>
+        <listener-class>org.apache.atlas.web.listeners.GuiceServletConfig</listener-class>
     </listener>
 </web-app>

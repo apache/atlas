@@ -24,9 +24,9 @@ DgcControllers.controller("ListController", ['$scope','$http', function($scope, 
 			$scope.executeSearch = function executeSearch() {
 				 $scope.SearchQuery=$scope.query;   
 				$scope.iswiki=false;	
-				//$http.get('http://162.249.6.76:21000/api/metadata/entities/list/'+$scope.query)
+				//$http.get('http://162.249.6.76:21000/api/atlas/entities/list/'+$scope.query)
 		var searchQry=$scope.query.split(",");
-				$http.get('http://162.249.6.76:21000/api/metadata/discovery/search/fulltext?depth=1&'+searchQry[0]+'&'+searchQry[1])
+				$http.get('http://162.249.6.76:21000/api/atlas/discovery/search/fulltext?depth=1&'+searchQry[0]+'&'+searchQry[1])
 				.success(function (data) {
 
 					$scope.iserror=false;
@@ -59,7 +59,7 @@ DgcControllers.controller("DefinitionController", ['$scope','$http','$routeParam
 					$scope.selectedDefination={
 					"path":"wiki.html"
 					};
-					$http.get('http://162.249.6.76:21000/api/metadata/entities/definition/'+$routeParams.Id)
+					$http.get('http://162.249.6.76:21000/api/atlas/entities/definition/'+$routeParams.Id)
 					.success(function (data) {
 						$scope.iserror1=false;						
 						 $scope.details=angular.fromJson(data.definition);
@@ -87,7 +87,7 @@ DgcControllers.controller("LineageController", ['$scope','$http','$routeParams',
             
 
 
-$http.get('http://162.249.6.76:21000/api/metadata/discovery/search/relationships/'+$routeParams.Id+'?depth=3&&edgesToFollow=HiveLineage.sourceTables.0,HiveLineage.sourceTables.1,HiveLineage.tableName')
+$http.get('http://162.249.6.76:21000/api/atlas/discovery/search/relationships/'+$routeParams.Id+'?depth=3&&edgesToFollow=HiveLineage.sourceTables.0,HiveLineage.sourceTables.1,HiveLineage.tableName')
 					.success(function (data) {
 						$scope.iserror1=false;						
 						 $scope.lineage=angular.fromJson(data);

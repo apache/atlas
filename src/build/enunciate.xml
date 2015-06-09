@@ -18,9 +18,9 @@
 
 <enunciate xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xsi:noNamespaceSchemaLocation="http://enunciate.codehaus.org/schemas/enunciate-1.29.xsd">
-    <api-import pattern="org.apache.hadoop.metadata.web.resources.*"/>
+    <api-import pattern="org.apache.atlas.web.resources.*"/>
     <services>
-        <rest defaultRestSubcontext="/api/metadata/">
+        <rest defaultRestSubcontext="/api/atlas/">
             <custom-resource-parameter-annotation
                     qualifiedName="org.glassfish.jersey.media.multipart.FormDataParam"/>
         </rest>

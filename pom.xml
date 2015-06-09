@@ -28,11 +28,11 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.apache.hadoop.metadata</groupId>
-    <artifactId>metadata-governance</artifactId>
+    <groupId>org.apache.atlas</groupId>
+    <artifactId>apache-atlas</artifactId>
     <version>0.1-incubating-SNAPSHOT</version>
     <description>Metadata Management and Data Governance Platform over Hadoop</description>
-    <name>metadata-governance</name>
+    <name>apache-atlas</name>
     <packaging>pom</packaging>
     <url>http://www.apache.org/</url>
 
@@ -489,35 +489,35 @@
                 <version>${tinkerpop.version}</version>
             </dependency>
 
-            <!--  metadata modules -->
+            <!--  atlas modules -->
             <dependency>
-                <groupId>org.apache.hadoop.metadata</groupId>
-                <artifactId>metadata-typesystem</artifactId>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-typesystem</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>org.apache.hadoop.metadata</groupId>
-                <artifactId>metadata-repository</artifactId>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-repository</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>org.apache.hadoop.metadata</groupId>
-                <artifactId>metadata-webapp</artifactId>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-webapp</artifactId>
                 <version>${project.version}</version>
                 <classifier>classes</classifier>
             </dependency>
 
             <dependency>
-                <groupId>org.apache.hadoop.metadata</groupId>
-                <artifactId>metadata-client</artifactId>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>org.apache.hadoop.metadata</groupId>
-                <artifactId>metadata-client</artifactId>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-client</artifactId>
                 <version>${project.version}</version>
                 <type>test-jar</type>
                 <scope>test</scope>
@@ -894,7 +894,7 @@
                         <descriptor>src/main/assemblies/standalone-package.xml</descriptor>
                         <descriptor>src/main/assemblies/src-package.xml</descriptor>
                     </descriptors>
-                    <finalName>apache-metadata-governance-${project.version}</finalName>
+                    <finalName>apache-atlas-${project.version}</finalName>
                 </configuration>
             </plugin>
 
