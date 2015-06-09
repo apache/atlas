@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.ParamChecker;
+import org.apache.hadoop.metadata.TypeNotFoundException;
 import org.apache.hadoop.metadata.repository.EntityNotFoundException;
 import org.apache.hadoop.metadata.services.MetadataService;
 import org.apache.hadoop.metadata.typesystem.types.ValueConversionException;
@@ -48,7 +49,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
-import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 
@@ -300,11 +300,11 @@ public class EntityResource {
             response.put(MetadataServiceClient.GUID, guid);
 
             return Response.created(locationURI).entity(response).build();
-        } catch (EntityNotFoundException e) {
+        } catch (EntityNotFoundException | TypeNotFoundException e) {
             LOG.error("An entity with GUID={} does not exist", guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
-        } catch (MetadataException | IOException | IllegalArgumentException e) {
+        } catch (MetadataException | IllegalArgumentException e) {
             LOG.error("Unable to add trait for entity={}", guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
@@ -338,7 +338,7 @@ public class EntityResource {
             response.put(TRAIT_NAME, traitName);
 
             return Response.ok(response).build();
-        } catch (EntityNotFoundException e) {
+        } catch (EntityNotFoundException | TypeNotFoundException e) {
             LOG.error("An entity with GUID={} does not exist", guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));

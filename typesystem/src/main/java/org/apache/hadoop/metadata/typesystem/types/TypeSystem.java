@@ -22,6 +22,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import org.apache.hadoop.metadata.MetadataException;
+import org.apache.hadoop.metadata.TypeNotFoundException;
 import org.apache.hadoop.metadata.classification.InterfaceAudience;
 import org.apache.hadoop.metadata.typesystem.TypesDef;
 
@@ -160,7 +161,7 @@ public class TypeSystem {
             return cls.cast(dT);
         }
 
-        throw new MetadataException(String.format("Unknown datatype: %s", name));
+        throw new TypeNotFoundException(String.format("Unknown datatype: %s", name));
     }
 
     public StructType defineStructType(String name,

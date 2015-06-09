@@ -257,6 +257,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             ((TitanVertex) instanceVertex)
                     .addProperty(Constants.TRAIT_NAMES_PROPERTY_KEY, traitName);
 
+        } catch (RepositoryException e) {
+          throw e;
         } catch (Exception e) {
             throw new RepositoryException(e);
         }
@@ -279,7 +281,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
             List<String> traitNames = getTraitNames(instanceVertex);
             if (!traitNames.contains(traitNameToBeDeleted)) {
-                throw new RepositoryException("Could not find trait=" + traitNameToBeDeleted
+                throw new EntityNotFoundException("Could not find trait=" + traitNameToBeDeleted
                         + " in the repository for entity: " + guid);
             }
 
@@ -302,6 +304,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                     updateTraits(instanceVertex, traitNames);
                 }
             }
+        } catch (RepositoryException e) {
+            throw e;
         } catch (Exception e) {
             throw new RepositoryException(e);
         }
@@ -350,6 +354,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             instanceToGraphMapper.mapAttributesToVertex(getIdFromVertex(typeName, instanceVertex),
                     instance, instanceVertex, new HashMap<Id, Vertex>(),
                     attributeInfo, attributeInfo.dataType());
+        } catch (RepositoryException e) {
+            throw e;
         } catch (Exception e) {
             throw new RepositoryException(e);
         }

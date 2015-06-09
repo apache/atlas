@@ -21,9 +21,11 @@ package org.apache.hadoop.metadata.services;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Provider;
+import com.sun.jersey.api.NotFoundException;
 import org.apache.hadoop.metadata.MetadataException;
 import org.apache.hadoop.metadata.MetadataServiceClient;
 import org.apache.hadoop.metadata.ParamChecker;
+import org.apache.hadoop.metadata.TypeNotFoundException;
 import org.apache.hadoop.metadata.classification.InterfaceAudience;
 import org.apache.hadoop.metadata.discovery.SearchIndexer;
 import org.apache.hadoop.metadata.listener.EntityChangeListener;
@@ -293,7 +295,7 @@ public class DefaultMetadataService implements MetadataService {
 
         // verify if the type exists
         if (!typeSystem.isRegistered(entityType)) {
-            throw new MetadataException("type is not defined for : " + entityType);
+            throw new TypeNotFoundException("type is not defined for : " + entityType);
         }
     }
 
@@ -327,8 +329,12 @@ public class DefaultMetadataService implements MetadataService {
         final String traitName = traitInstance.getTypeName();
 
         // ensure trait type is already registered with the TS
-        Preconditions.checkArgument(typeSystem.isRegistered(traitName),
-                "trait=%s should be defined in type system before it can be added", traitName);
+        if ( !typeSystem.isRegistered(traitName) ) {
+            String msg = String.format("trait=%s should be defined in type system before it can be added", traitName);
+            LOG.error(msg);
+            throw new TypeNotFoundException(msg);
+        }
+
         // ensure trait is not already defined
         Preconditions.checkArgument(!getTraitNames(guid).contains(traitName),
                 "trait=%s is already defined for entity=%s", traitName, guid);
@@ -350,6 +356,8 @@ public class DefaultMetadataService implements MetadataService {
             TraitType traitType = typeSystem.getDataType(TraitType.class, entityTypeName);
             return traitType.convert(
                     traitInstance, Multiplicity.REQUIRED);
+        } catch ( TypeNotFoundException e ) {
+            throw e;
         } catch (Exception e) {
             throw new MetadataException("Error deserializing trait instance", e);
         }
@@ -369,9 +377,12 @@ public class DefaultMetadataService implements MetadataService {
         ParamChecker.notEmpty(traitNameToBeDeleted, "Trait name cannot be null");
 
         // ensure trait type is already registered with the TS
-        Preconditions.checkArgument(typeSystem.isRegistered(traitNameToBeDeleted),
-                "trait=%s should be defined in type system before it can be deleted",
-                traitNameToBeDeleted);
+        if ( !typeSystem.isRegistered(traitNameToBeDeleted)) {
+            final String msg = String.format("trait=%s should be defined in type system before it can be deleted",
+                    traitNameToBeDeleted);
+            LOG.error(msg);
+            throw new TypeNotFoundException(msg);
+        }
 
         repository.deleteTrait(guid, traitNameToBeDeleted);
 

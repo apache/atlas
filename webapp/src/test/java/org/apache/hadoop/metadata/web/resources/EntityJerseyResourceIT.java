@@ -424,7 +424,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .accept(Servlets.JSON_MEDIA_TYPE)
                 .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
     }
 
     @Test(dependsOnMethods = "testGetTraitNames")
@@ -494,7 +494,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .accept(Servlets.JSON_MEDIA_TYPE)
                 .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
     }
 
     @Test(dependsOnMethods = "testAddTrait")
@@ -532,7 +532,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 .accept(Servlets.JSON_MEDIA_TYPE)
                 .type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.DELETE, ClientResponse.class);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
 
         String responseAsString = clientResponse.getEntity(String.class);
         Assert.assertNotNull(responseAsString);
