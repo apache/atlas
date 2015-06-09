@@ -456,7 +456,7 @@ public class DataTypes {
 
         @Override
         public String convert(Object val, Multiplicity m) throws MetadataException {
-            if (StringUtils.isNotBlank((CharSequence) val)) {
+            if (val != null && (!(val instanceof String) || StringUtils.isNotBlank((CharSequence) val))) {
                 return val.toString();
             }
             return convertNull(m);

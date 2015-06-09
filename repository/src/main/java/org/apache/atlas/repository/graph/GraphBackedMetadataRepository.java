@@ -185,6 +185,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     }
 
     @Override
+    @GraphTransaction
     public List<String> getEntityList(String entityType) throws RepositoryException {
         LOG.info("Retrieving entity list for type={}", entityType);
         GraphQuery query = titanGraph.query()
