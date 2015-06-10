@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,11 +19,20 @@
 package org.apache.atlas.repository.graph;
 
 import com.google.common.collect.ImmutableList;
+import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanIndexQuery;
+import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
+import com.thinkaurelius.titan.diskstorage.BackendException;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
@@ -42,16 +51,21 @@ import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
+import org.apache.commons.io.FileUtils;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Random;
 
 @Test
-@Guice(modules = RepositoryMetadataModule.class)
 public class GraphRepoMapperScaleTest {
 
     private static final String DATABASE_TYPE = "hive_database_type";
@@ -59,9 +73,39 @@ public class GraphRepoMapperScaleTest {
     private static final String TABLE_TYPE = "hive_table_type";
     private static final String TABLE_NAME = "bar";
 
-    @Inject
-    private GraphProvider<TitanGraph> graphProvider;
-    @Inject
+    private static final String INDEX_DIR = System.getProperty("java.io.tmpdir", "/tmp") + "/atlas-test" + new Random().nextLong();
+
+    private GraphProvider<TitanGraph> graphProvider = new GraphProvider<TitanGraph>() {
+
+        private TitanGraph graph = null;
+
+        //Ensure separate directory for graph provider to avoid issues with index merging
+        @Override
+        public TitanGraph get() {
+            try {
+                if (graph == null) {
+                    synchronized (GraphRepoMapperScaleTest.class) {
+                        if (graph == null) {
+                            ReadConfiguration config = new CommonsConfiguration() {{
+                                set("storage.backend", "inmemory");
+                                set("index.search.directory", INDEX_DIR);
+                                set("index.search.backend", "elasticsearch");
+                                set("index.search.elasticsearch.local-mode", "true");
+                                set("index.search.elasticsearch.client-only", "false");
+                            }};
+                            GraphDatabaseConfiguration graphconfig = new GraphDatabaseConfiguration(config);
+                            graphconfig.getBackend().clearStorage();
+                            graph = TitanFactory.open(config);
+                        }
+                    }
+                }
+            } catch (BackendException e) {
+                e.printStackTrace();
+            }
+            return graph;
+        }
+    };
+
     private GraphBackedMetadataRepository repositoryService;
 
     private GraphBackedSearchIndexer searchIndexer;
@@ -69,12 +113,26 @@ public class GraphRepoMapperScaleTest {
     private String dbGUID;
 
     @BeforeClass
+    @GraphTransaction
     public void setUp() throws Exception {
+        //Make sure we can cleanup the index directory
+        repositoryService = new GraphBackedMetadataRepository(graphProvider);
+
         searchIndexer = new GraphBackedSearchIndexer(graphProvider);
 
         typeSystem = TypeSystem.getInstance();
 
         createHiveTypes();
+    }
+
+    @AfterClass
+    public void tearDown() throws Exception {
+        graphProvider.get().shutdown();
+        try {
+            FileUtils.deleteDirectory(new File(INDEX_DIR));
+        } catch(IOException ioe) {
+            System.err.println("Failed to cleanup index directory");
+        }
     }
 
     @Test
@@ -220,6 +278,7 @@ public class GraphRepoMapperScaleTest {
         for (Map.Entry<String, IDataType> entry : types.entrySet()) {
             searchIndexer.onAdd(entry.getKey(), entry.getValue());
         }
+        searchIndexer.commit();
     }
 
     private ITypedReferenceableInstance createHiveTableInstance(
@@ -270,3 +329,4 @@ public class GraphRepoMapperScaleTest {
         return tableType.convert(tableInstance, Multiplicity.REQUIRED);
     }
 }
+

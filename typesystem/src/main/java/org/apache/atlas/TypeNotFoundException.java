@@ -16,22 +16,29 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.discovery;
-
-import org.apache.atlas.listener.TypesChangeListener;
-import org.apache.atlas.repository.IndexException;
-
+package org.apache.atlas;
 
 /**
- * Interface for indexing types.
+ * A simple wrapper for 404.
  */
-public interface SearchIndexer extends TypesChangeListener {
+public class TypeNotFoundException extends MetadataException {
+    public TypeNotFoundException() {
+    }
 
-    /* Commit the indexes */
+    public TypeNotFoundException(String message) {
+        super(message);
+    }
 
-   void commit() throws IndexException;
+    public TypeNotFoundException(String message, Throwable cause) {
+        super(message, cause);
+    }
 
-    /* RollBack the index */
-   void rollback() throws IndexException;
+    public TypeNotFoundException(Throwable cause) {
+        super(cause);
+    }
 
+    public TypeNotFoundException(String message, Throwable cause, boolean enableSuppression,
+                                 boolean writableStackTrace) {
+        super(message, cause, enableSuppression, writableStackTrace);
+    }
 }

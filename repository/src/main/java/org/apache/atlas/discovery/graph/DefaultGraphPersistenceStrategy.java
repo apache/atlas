@@ -19,6 +19,7 @@
 package org.apache.atlas.discovery.graph;
 
 import com.thinkaurelius.titan.core.TitanVertex;
+import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.MetadataException;
 import org.apache.atlas.query.Expressions;
 import org.apache.atlas.query.GraphPersistenceStrategies;

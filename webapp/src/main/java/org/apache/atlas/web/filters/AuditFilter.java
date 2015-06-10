@@ -81,11 +81,12 @@ public class AuditFilter implements Filter {
         final String who = getUserFromRequest(httpRequest);
         final String fromHost = httpRequest.getRemoteHost();
         final String fromAddress = httpRequest.getRemoteAddr();
+        final String whatRequest = httpRequest.getMethod();
         final String whatURL = Servlets.getRequestURL(httpRequest);
         final String whatAddrs = httpRequest.getLocalAddr();
 
-        LOG.debug("Audit: {}/{} performed request {} ({}) at time {}",
-                who, fromAddress, whatURL, whatAddrs, whenISO9601);
+        LOG.debug("Audit: {}/{} performed request {} {} ({}) at time {}",
+                who, fromAddress, whatRequest, whatURL, whatAddrs, whenISO9601);
         audit(who, fromAddress, fromHost, whatURL, whatAddrs, whenISO9601);
     }
 

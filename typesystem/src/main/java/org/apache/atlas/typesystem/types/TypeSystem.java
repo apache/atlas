@@ -22,21 +22,14 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import org.apache.atlas.MetadataException;
+import org.apache.atlas.TypeNotFoundException;
 import org.apache.atlas.classification.InterfaceAudience;
 import org.apache.atlas.typesystem.TypesDef;
 
 import javax.inject.Singleton;
 import java.lang.reflect.Constructor;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Singleton
@@ -159,7 +152,7 @@ public class TypeSystem {
             return cls.cast(dT);
         }
 
-        throw new MetadataException(String.format("Unknown datatype: %s", name));
+        throw new TypeNotFoundException(String.format("Unknown datatype: %s", name));
     }
 
     public StructType defineStructType(String name,
@@ -306,8 +299,13 @@ public class TypeSystem {
         return false;
     }
 
-    public void removeTypes(ImmutableList<String> typeNames) {
-
+    public void removeTypes(Collection<String> typeNames) {
+        for(String typeName : typeNames) {
+            IDataType dataType = types.get(typeName);
+            final DataTypes.TypeCategory typeCategory = dataType.getTypeCategory();
+            typeCategoriesToTypeNamesMap.get(typeCategory).remove(typeName);
+            types.remove(typeName);
+        }
     }
 
     class TransientTypeSystem extends TypeSystem {
@@ -567,9 +565,10 @@ public class TypeSystem {
         }
 
         Map<String, IDataType> defineTypes() throws MetadataException {
-            step1();
-            step2();
             try {
+                step1();
+                step2();
+
                 step3();
                 step4();
             } catch (MetadataException me) {

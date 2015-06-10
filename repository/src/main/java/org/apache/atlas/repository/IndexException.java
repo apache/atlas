@@ -15,23 +15,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.atlas.discovery;
-
-import org.apache.atlas.listener.TypesChangeListener;
-import org.apache.atlas.repository.IndexException;
+package org.apache.atlas.repository;
 
 
-/**
- * Interface for indexing types.
- */
-public interface SearchIndexer extends TypesChangeListener {
+import org.apache.atlas.MetadataException;
 
-    /* Commit the indexes */
+public class IndexException extends MetadataException {
 
-   void commit() throws IndexException;
+    public IndexException() {
+    }
 
-    /* RollBack the index */
-   void rollback() throws IndexException;
+    public IndexException(String message) {
+        super(message);
+    }
+
+    public IndexException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public IndexException(Throwable cause) {
+        super(cause);
+    }
+
+    public IndexException(String message, Throwable cause, boolean enableSuppression,
+                          boolean writableStackTrace) {
+        super(message, cause, enableSuppression, writableStackTrace);
+    }
 
 }
