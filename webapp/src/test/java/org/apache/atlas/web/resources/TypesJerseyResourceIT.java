@@ -219,6 +219,9 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
                 ImmutableList.<String>of(),
                 TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                 TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE),
+                TypesUtil.createOptionalAttrDef("columnNames", DataTypes.arrayTypeName(DataTypes.STRING_TYPE)),
+                TypesUtil.createOptionalAttrDef("created", DataTypes.DATE_TYPE),
+                TypesUtil.createOptionalAttrDef("parameters", DataTypes.mapTypeName(DataTypes.STRING_TYPE, DataTypes.STRING_TYPE)),
                 TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE),
                 new AttributeDefinition("database",
                         "database", Multiplicity.REQUIRED, false, "database"));

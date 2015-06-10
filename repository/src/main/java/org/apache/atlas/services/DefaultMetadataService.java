@@ -20,14 +20,17 @@ package org.apache.atlas.services;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Provider;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.MetadataException;
 import org.apache.atlas.MetadataServiceClient;
 import org.apache.atlas.ParamChecker;
+import org.apache.atlas.TypeNotFoundException;
 import org.apache.atlas.classification.InterfaceAudience;
 import org.apache.atlas.discovery.SearchIndexer;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.listener.TypesChangeListener;
+import org.apache.atlas.repository.IndexCreationException;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.typestore.ITypeStore;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
@@ -56,6 +59,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -71,22 +77,22 @@ public class DefaultMetadataService implements MetadataService {
     private static final Logger LOG =
             LoggerFactory.getLogger(DefaultMetadataService.class);
 
-    private final Set<TypesChangeListener> typesChangeListeners = new LinkedHashSet<>();
     private final Set<EntityChangeListener> entityChangeListeners
             = new LinkedHashSet<>();
 
     private final TypeSystem typeSystem;
     private final MetadataRepository repository;
     private final ITypeStore typeStore;
+    private final Set<Provider<SearchIndexer>> typeChangeListeners;
 
     @Inject
-    DefaultMetadataService(MetadataRepository repository,
-                           SearchIndexer searchIndexer, ITypeStore typeStore) throws MetadataException {
+    DefaultMetadataService(final MetadataRepository repository,
+                           final Provider<SearchIndexer> searchIndexProvider, final ITypeStore typeStore) throws MetadataException {
         this.typeStore = typeStore;
         this.typeSystem = TypeSystem.getInstance();
         this.repository = repository;
 
-        registerListener(searchIndexer);
+        this.typeChangeListeners = new LinkedHashSet<Provider<SearchIndexer>>() {{ add(searchIndexProvider); }};
         restoreTypeSystem();
     }
 
@@ -149,30 +155,32 @@ public class DefaultMetadataService implements MetadataService {
      * @return a unique id for this type
      */
     @Override
-    @GraphTransaction
     public JSONObject createType(String typeDefinition) throws MetadataException {
         ParamChecker.notEmpty(typeDefinition, "type definition cannot be empty");
 
         TypesDef typesDef;
         try {
             typesDef = TypesSerialization.fromJson(typeDefinition);
-            if(typesDef.isEmpty()) {
+            if (typesDef.isEmpty()) {
                 throw new MetadataException("Invalid type definition");
             }
         } catch (Exception e) {
             LOG.error("Unable to deserialize json={}", typeDefinition, e);
-            throw new IllegalArgumentException("Unable to deserialize json");
+            throw new IllegalArgumentException("Unable to deserialize json ", e);
         }
 
         try {
             final Map<String, IDataType> typesAdded = typeSystem.defineTypes(typesDef);
 
             try {
-                typeStore.store(typeSystem, ImmutableList.copyOf(typesAdded.keySet()));
+                /* Create indexes first so that if index creation fails then we rollback
+                   the typesystem and also do not persist the graph
+                 */
                 onTypesAddedToRepo(typesAdded);
-            } catch(Throwable t) {
-                typeSystem.removeTypes(ImmutableList.copyOf(typesAdded.keySet()));
-                throw new MetadataException(t);
+                typeStore.store(typeSystem, ImmutableList.copyOf(typesAdded.keySet()));
+            } catch (Throwable t) {
+                typeSystem.removeTypes(typesAdded.keySet());
+                throw new MetadataException("Unable to persist types ", t);
             }
 
             return new JSONObject() {{
@@ -180,7 +188,7 @@ public class DefaultMetadataService implements MetadataService {
             }};
         } catch (JSONException e) {
             LOG.error("Unable to create response for types={}", typeDefinition, e);
-            throw new MetadataException("Unable to create response");
+            throw new MetadataException("Unable to create response ", e);
         }
     }
 
@@ -294,7 +302,7 @@ public class DefaultMetadataService implements MetadataService {
 
         // verify if the type exists
         if (!typeSystem.isRegistered(entityType)) {
-            throw new MetadataException("type is not defined for : " + entityType);
+            throw new TypeNotFoundException("type is not defined for : " + entityType);
         }
     }
 
@@ -328,8 +336,12 @@ public class DefaultMetadataService implements MetadataService {
         final String traitName = traitInstance.getTypeName();
 
         // ensure trait type is already registered with the TS
-        Preconditions.checkArgument(typeSystem.isRegistered(traitName),
-                "trait=%s should be defined in type system before it can be added", traitName);
+        if ( !typeSystem.isRegistered(traitName) ) {
+            String msg = String.format("trait=%s should be defined in type system before it can be added", traitName);
+            LOG.error(msg);
+            throw new TypeNotFoundException(msg);
+        }
+
         // ensure trait is not already defined
         Preconditions.checkArgument(!getTraitNames(guid).contains(traitName),
                 "trait=%s is already defined for entity=%s", traitName, guid);
@@ -340,7 +352,7 @@ public class DefaultMetadataService implements MetadataService {
     }
 
     private ITypedStruct deserializeTraitInstance(String traitInstanceDefinition)
-        throws MetadataException {
+            throws MetadataException {
 
         try {
             Struct traitInstance = InstanceSerialization.fromJsonStruct(
@@ -351,6 +363,8 @@ public class DefaultMetadataService implements MetadataService {
             TraitType traitType = typeSystem.getDataType(TraitType.class, entityTypeName);
             return traitType.convert(
                     traitInstance, Multiplicity.REQUIRED);
+        } catch ( TypeNotFoundException e ) {
+            throw e;
         } catch (Exception e) {
             throw new MetadataException("Error deserializing trait instance", e);
         }
@@ -370,9 +384,12 @@ public class DefaultMetadataService implements MetadataService {
         ParamChecker.notEmpty(traitNameToBeDeleted, "Trait name cannot be null");
 
         // ensure trait type is already registered with the TS
-        Preconditions.checkArgument(typeSystem.isRegistered(traitNameToBeDeleted),
-                "trait=%s should be defined in type system before it can be deleted",
-                traitNameToBeDeleted);
+        if ( !typeSystem.isRegistered(traitNameToBeDeleted)) {
+            final String msg = String.format("trait=%s should be defined in type system before it can be deleted",
+                    traitNameToBeDeleted);
+            LOG.error(msg);
+            throw new TypeNotFoundException(msg);
+        }
 
         repository.deleteTrait(guid, traitNameToBeDeleted);
 
@@ -380,23 +397,28 @@ public class DefaultMetadataService implements MetadataService {
     }
 
     private void onTypesAddedToRepo(Map<String, IDataType> typesAdded) throws MetadataException {
-        for (TypesChangeListener listener : typesChangeListeners) {
-            for (Map.Entry<String, IDataType> entry : typesAdded.entrySet()) {
-                listener.onAdd(entry.getKey(), entry.getValue());
+        Map<SearchIndexer, Throwable> caughtExceptions = new HashMap<>();
+        for(Provider<SearchIndexer> indexerProvider : typeChangeListeners) {
+            final SearchIndexer indexer = indexerProvider.get();
+            try {
+                for (Map.Entry<String, IDataType> entry : typesAdded.entrySet()) {
+                    indexer.onAdd(entry.getKey(), entry.getValue());
+                }
+                indexer.commit();
+            } catch (IndexCreationException ice) {
+                LOG.error("Index creation for listener {} failed ", indexerProvider, ice);
+                indexer.rollback();
+                caughtExceptions.put(indexer, ice);
             }
+        }
+
+        if (caughtExceptions.size() > 0) {
+           throw new IndexCreationException("Index creation failed for types " + typesAdded.keySet() + ". Aborting");
         }
     }
 
-    public void registerListener(TypesChangeListener listener) {
-        typesChangeListeners.add(listener);
-    }
-
-    public void unregisterListener(TypesChangeListener listener) {
-        typesChangeListeners.remove(listener);
-    }
-
     private void onEntityAddedToRepo(ITypedReferenceableInstance typedInstance)
-        throws MetadataException {
+            throws MetadataException {
 
         for (EntityChangeListener listener : entityChangeListeners) {
             listener.onEntityAdded(typedInstance);
@@ -424,4 +446,5 @@ public class DefaultMetadataService implements MetadataService {
     public void unregisterListener(EntityChangeListener listener) {
         entityChangeListeners.remove(listener);
     }
+
 }
