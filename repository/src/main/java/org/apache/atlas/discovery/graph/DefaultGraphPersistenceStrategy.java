@@ -97,7 +97,6 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
     }
 
     @Override
-    @GraphTransaction
     public Id getIdFromVertex(String dataTypeName, TitanVertex vertex) {
         return metadataRepository.getIdFromVertex(dataTypeName, vertex);
     }

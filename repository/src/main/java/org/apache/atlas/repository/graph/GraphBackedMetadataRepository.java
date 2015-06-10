@@ -938,7 +938,6 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
     public final class GraphToTypedInstanceMapper {
 
-        @GraphTransaction
         public ITypedReferenceableInstance mapGraphToTypedInstance(String guid,
                                                                    Vertex instanceVertex)
             throws MetadataException {
@@ -973,7 +972,6 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             }
         }
 
-        @GraphTransaction
         public void mapVertexToInstance(Vertex instanceVertex, ITypedInstance typedInstance,
                                         Map<String, AttributeInfo> fields)
         throws MetadataException {
