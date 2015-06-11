@@ -79,7 +79,7 @@ public class HiveLineageService implements LineageService {
                     "hive_table where name=\"%s\", columns");
             HIVE_TABLE_EXISTS_QUERY = conf.getString(
                     "atlas.lineage.hive.table.exists.query",
-                    "from hive_table where name=\"%s\"");
+                    "from " + HIVE_TABLE_TYPE_NAME + " where name=\"%s\"");
         } catch (AtlasException e) {
             throw new RuntimeException(e);
         }
