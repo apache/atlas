@@ -18,7 +18,7 @@
 
 package org.apache.atlas.typesystem;
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.types.FieldMapping;
 
 import java.math.BigDecimal;
@@ -37,49 +37,49 @@ public interface ITypedInstance extends IInstance {
 
     FieldMapping fieldMapping();
 
-    void setNull(String attrName) throws MetadataException;
+    void setNull(String attrName) throws AtlasException;
 
-    boolean getBoolean(String attrName) throws MetadataException;
+    boolean getBoolean(String attrName) throws AtlasException;
 
-    byte getByte(String attrName) throws MetadataException;
+    byte getByte(String attrName) throws AtlasException;
 
-    short getShort(String attrName) throws MetadataException;
+    short getShort(String attrName) throws AtlasException;
 
-    int getInt(String attrName) throws MetadataException;
+    int getInt(String attrName) throws AtlasException;
 
-    long getLong(String attrName) throws MetadataException;
+    long getLong(String attrName) throws AtlasException;
 
-    float getFloat(String attrName) throws MetadataException;
+    float getFloat(String attrName) throws AtlasException;
 
-    double getDouble(String attrName) throws MetadataException;
+    double getDouble(String attrName) throws AtlasException;
 
-    BigInteger getBigInt(String attrName) throws MetadataException;
+    BigInteger getBigInt(String attrName) throws AtlasException;
 
-    BigDecimal getBigDecimal(String attrName) throws MetadataException;
+    BigDecimal getBigDecimal(String attrName) throws AtlasException;
 
-    Date getDate(String attrName) throws MetadataException;
+    Date getDate(String attrName) throws AtlasException;
 
-    String getString(String attrName) throws MetadataException;
+    String getString(String attrName) throws AtlasException;
 
-    void setBoolean(String attrName, boolean val) throws MetadataException;
+    void setBoolean(String attrName, boolean val) throws AtlasException;
 
-    void setByte(String attrName, byte val) throws MetadataException;
+    void setByte(String attrName, byte val) throws AtlasException;
 
-    void setShort(String attrName, short val) throws MetadataException;
+    void setShort(String attrName, short val) throws AtlasException;
 
-    void setInt(String attrName, int val) throws MetadataException;
+    void setInt(String attrName, int val) throws AtlasException;
 
-    void setLong(String attrName, long val) throws MetadataException;
+    void setLong(String attrName, long val) throws AtlasException;
 
-    void setFloat(String attrName, float val) throws MetadataException;
+    void setFloat(String attrName, float val) throws AtlasException;
 
-    void setDouble(String attrName, double val) throws MetadataException;
+    void setDouble(String attrName, double val) throws AtlasException;
 
-    void setBigInt(String attrName, BigInteger val) throws MetadataException;
+    void setBigInt(String attrName, BigInteger val) throws AtlasException;
 
-    void setBigDecimal(String attrName, BigDecimal val) throws MetadataException;
+    void setBigDecimal(String attrName, BigDecimal val) throws AtlasException;
 
-    void setDate(String attrName, Date val) throws MetadataException;
+    void setDate(String attrName, Date val) throws AtlasException;
 
-    void setString(String attrName, String val) throws MetadataException;
+    void setString(String attrName, String val) throws AtlasException;
 }

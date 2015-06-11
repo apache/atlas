@@ -18,12 +18,12 @@
 
 package org.apache.atlas.repository;
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 
 /**
  * Base Exception class for Repository API.
  */
-public class RepositoryException extends MetadataException {
+public class RepositoryException extends AtlasException {
 
     public RepositoryException() {
     }

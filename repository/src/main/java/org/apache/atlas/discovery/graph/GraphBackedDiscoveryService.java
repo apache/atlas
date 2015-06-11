@@ -24,7 +24,7 @@ import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.atlas.GraphTransaction;
-import org.apache.atlas.MetadataServiceClient;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.discovery.DiscoveryException;
 import org.apache.atlas.discovery.DiscoveryService;
 import org.apache.atlas.query.Expressions;
@@ -98,7 +98,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
             if (guid != null) { //Filter non-class entities
                 try {
                     row.put("guid", guid);
-                    row.put(MetadataServiceClient.TYPENAME, vertex.<String>getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY));
+                    row.put(AtlasClient.TYPENAME, vertex.<String>getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY));
                     row.put(SCORE, result.getScore());
                 } catch (JSONException e) {
                     LOG.error("Unable to create response", e);

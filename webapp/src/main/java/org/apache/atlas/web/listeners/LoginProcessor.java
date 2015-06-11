@@ -16,7 +16,7 @@
  */
 package org.apache.atlas.web.listeners;
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.PropertiesUtil;
 import org.apache.atlas.security.SecurityProperties;
 import org.apache.commons.configuration.ConfigurationException;
@@ -139,7 +139,7 @@ public class LoginProcessor  {
     protected PropertiesConfiguration getPropertiesConfiguration() throws ConfigurationException {
         try {
             return PropertiesUtil.getApplicationProperties();
-        } catch (MetadataException e) {
+        } catch (AtlasException e) {
             throw new ConfigurationException(e);
         }
     }

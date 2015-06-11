@@ -20,7 +20,7 @@ package org.apache.atlas.typesystem.persistence;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
@@ -96,7 +96,7 @@ public class ReferenceableInstance extends StructInstance implements ITypedRefer
             fieldMapping.output(this, buf, prefix);
             return buf.toString();
 
-        } catch (MetadataException me) {
+        } catch (AtlasException me) {
             throw new RuntimeException(me);
         }
     }

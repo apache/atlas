@@ -21,7 +21,7 @@ package org.apache.atlas.web.resources;
 import com.google.common.collect.ImmutableList;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-import org.apache.atlas.MetadataServiceClient;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.TypesDef;
@@ -75,18 +75,18 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
         Assert.assertEquals(response.getString("query"), dslQuery);
         Assert.assertEquals(response.getString("queryType"), "dsl");
 
-        JSONObject results = response.getJSONObject(MetadataServiceClient.RESULTS);
+        JSONObject results = response.getJSONObject(AtlasClient.RESULTS);
         Assert.assertNotNull(results);
 
-        JSONArray rows = results.getJSONArray(MetadataServiceClient.ROWS);
+        JSONArray rows = results.getJSONArray(AtlasClient.ROWS);
         Assert.assertEquals(rows.length(), 1);
 
-        int numRows = response.getInt(MetadataServiceClient.COUNT);
+        int numRows = response.getInt(AtlasClient.COUNT);
         Assert.assertEquals(numRows, 1);
 
     }
@@ -123,7 +123,7 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
         Assert.assertEquals(response.getString("query"), query);
         Assert.assertEquals(response.getString("queryType"), "gremlin");
@@ -146,7 +146,7 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
         Assert.assertEquals(response.getString("query"), query);
         Assert.assertEquals(response.getString("queryType"), "dsl");
@@ -156,12 +156,12 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
     public void testSearchUsingFullText() throws Exception {
         String query = "foundation_etl";
         JSONObject response = serviceClient.searchByFullText(query);
-        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
         Assert.assertEquals(response.getString("query"), query);
         Assert.assertEquals(response.getString("queryType"), "full-text");
 
-        JSONArray results = response.getJSONArray(MetadataServiceClient.RESULTS);
+        JSONArray results = response.getJSONArray(AtlasClient.RESULTS);
         Assert.assertEquals(results.length(), 1);
 
         JSONObject row = results.getJSONObject(0);
@@ -169,7 +169,7 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         Assert.assertEquals(row.getString("typeName"), "dsl_test_type");
         Assert.assertNotNull(row.get("score"));
 
-        int numRows = response.getInt(MetadataServiceClient.COUNT);
+        int numRows = response.getInt(AtlasClient.COUNT);
         Assert.assertEquals(numRows, 1);
     }
 

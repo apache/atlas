@@ -21,7 +21,7 @@ package org.apache.atlas.typesystem.types;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
@@ -39,7 +39,7 @@ public abstract class BaseTest {
     public static final String TEST_DATE = "2014-12-11T02:35:58.440Z";
     public static final long TEST_DATE_IN_LONG=1418265358440L;
 
-    public static Struct createStruct() throws MetadataException {
+    public static Struct createStruct() throws AtlasException {
         StructType structType = TypeSystem.getInstance().getDataType(
                 StructType.class, STRUCT_TYPE_1);
         Struct s = new Struct(structType.getName());
@@ -102,13 +102,13 @@ public abstract class BaseTest {
     }
 
     protected Map<String, IDataType> defineTraits(HierarchicalTypeDefinition... tDefs)
-        throws MetadataException {
+        throws AtlasException {
 
         return getTypeSystem().defineTraitTypes(tDefs);
     }
 
     protected Map<String, IDataType> defineClasses(
-            HierarchicalTypeDefinition<ClassType>... classDefs) throws MetadataException {
+            HierarchicalTypeDefinition<ClassType>... classDefs) throws AtlasException {
         return getTypeSystem().defineClassTypes(classDefs);
     }
 
@@ -120,7 +120,7 @@ public abstract class BaseTest {
      *
      * Persons can have SecurityClearance(level : Int) clearance.
      */
-    protected void defineDeptEmployeeTypes(TypeSystem ts) throws MetadataException {
+    protected void defineDeptEmployeeTypes(TypeSystem ts) throws AtlasException {
 
         HierarchicalTypeDefinition<ClassType> deptTypeDef = TypesUtil
                 .createClassTypeDef("Department",
@@ -166,7 +166,7 @@ public abstract class BaseTest {
         );
     }
 
-    protected Referenceable createDeptEg1(TypeSystem ts) throws MetadataException {
+    protected Referenceable createDeptEg1(TypeSystem ts) throws AtlasException {
         Referenceable hrDept = new Referenceable("Department");
         Referenceable john = new Referenceable("Person");
         Referenceable jane = new Referenceable("Manager", "SecurityClearance");

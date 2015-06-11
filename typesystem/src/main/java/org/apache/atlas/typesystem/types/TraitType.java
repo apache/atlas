@@ -19,7 +19,7 @@
 package org.apache.atlas.typesystem.types;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedStruct;
 
@@ -44,7 +44,7 @@ public class TraitType extends HierarchicalType<TraitType, IStruct>
 
     TraitType(TypeSystem typeSystem, String name, ImmutableList<String> superTraits,
               AttributeInfo... fields)
-    throws MetadataException {
+    throws AtlasException {
         super(typeSystem, TraitType.class, name, superTraits, fields);
         handler = new TypedStructHandler(this);
         infoToNameMap = TypeUtils.buildAttrInfoToNameMap(fieldMapping);
@@ -56,7 +56,7 @@ public class TraitType extends HierarchicalType<TraitType, IStruct>
     }
 
     @Override
-    public ITypedStruct convert(Object val, Multiplicity m) throws MetadataException {
+    public ITypedStruct convert(Object val, Multiplicity m) throws AtlasException {
         return handler.convert(val, m);
     }
 
@@ -65,7 +65,7 @@ public class TraitType extends HierarchicalType<TraitType, IStruct>
     }
 
     @Override
-    public void output(IStruct s, Appendable buf, String prefix) throws MetadataException {
+    public void output(IStruct s, Appendable buf, String prefix) throws AtlasException {
         handler.output(s, buf, prefix);
     }
 

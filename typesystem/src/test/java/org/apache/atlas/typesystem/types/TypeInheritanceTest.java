@@ -19,7 +19,7 @@
 package org.apache.atlas.typesystem.types;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
@@ -50,7 +50,7 @@ public class TypeInheritanceTest extends BaseTest {
      *   B(b) extends A
      */
     @Test
-    public void testSimpleInheritance() throws MetadataException {
+    public void testSimpleInheritance() throws AtlasException {
         HierarchicalTypeDefinition A = createClassTypeDef("A", null,
                 createRequiredAttrDef("a", DataTypes.INT_TYPE));
 
@@ -79,7 +79,7 @@ public class TypeInheritanceTest extends BaseTest {
      *   B(b) extends A
      */
     @Test
-    public void testSimpleInheritanceWithOverrides() throws MetadataException {
+    public void testSimpleInheritanceWithOverrides() throws AtlasException {
         HierarchicalTypeDefinition A = createClassTypeDef("A", null,
                 createRequiredAttrDef("a", DataTypes.INT_TYPE),
                 createRequiredAttrDef("b", DataTypes.BOOLEAN_TYPE));
@@ -113,7 +113,7 @@ public class TypeInheritanceTest extends BaseTest {
      *   D(d) extends C
      */
     @Test
-    public void testMultiLevelInheritance() throws MetadataException {
+    public void testMultiLevelInheritance() throws AtlasException {
         HierarchicalTypeDefinition A = createClassTypeDef("A", null,
                 createRequiredAttrDef("a", DataTypes.INT_TYPE));
 
@@ -166,7 +166,7 @@ public class TypeInheritanceTest extends BaseTest {
      *   available as 'b'.
      */
     @Test
-    public void testDiamondInheritance() throws MetadataException {
+    public void testDiamondInheritance() throws AtlasException {
         HierarchicalTypeDefinition A = createTraitTypeDef("A", null,
                 createRequiredAttrDef("a", DataTypes.INT_TYPE),
                 createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE),

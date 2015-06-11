@@ -19,7 +19,7 @@
 package org.apache.atlas.repository.memory;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.BaseTest;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
@@ -45,7 +45,7 @@ import java.util.List;
 public class InstanceE2ETest extends BaseTest {
 
     protected List<HierarchicalTypeDefinition> createHiveTypes(TypeSystem typeSystem)
-    throws MetadataException {
+    throws AtlasException {
         ArrayList<HierarchicalTypeDefinition> typeDefinitions = new ArrayList<>();
 
         HierarchicalTypeDefinition<ClassType> databaseTypeDefinition =
@@ -80,7 +80,7 @@ public class InstanceE2ETest extends BaseTest {
     }
 
     protected Referenceable createHiveTableReferenceable()
-            throws MetadataException {
+            throws AtlasException {
         Referenceable databaseInstance = new Referenceable("hive_database");
         databaseInstance.set("name", "hive_database");
         databaseInstance.set("description", "foo database");
@@ -100,13 +100,13 @@ public class InstanceE2ETest extends BaseTest {
     }
 
     protected ITypedReferenceableInstance createHiveTableInstance(TypeSystem typeSystem)
-    throws MetadataException {
+    throws AtlasException {
         ClassType tableType = typeSystem.getDataType(ClassType.class, "hive_table");
         return tableType.convert(createHiveTableReferenceable(), Multiplicity.REQUIRED);
     }
 
     @Test
-    public void testType() throws MetadataException {
+    public void testType() throws AtlasException {
 
         TypeSystem ts = getTypeSystem();
 
@@ -128,7 +128,7 @@ public class InstanceE2ETest extends BaseTest {
     }
 
     @Test
-    public void testInstance() throws MetadataException {
+    public void testInstance() throws AtlasException {
 
         TypeSystem ts = getTypeSystem();
 
@@ -144,7 +144,7 @@ public class InstanceE2ETest extends BaseTest {
     }
 
     @Test
-    public void testInstanceSerialization() throws MetadataException {
+    public void testInstanceSerialization() throws AtlasException {
 
         TypeSystem ts = getTypeSystem();
 

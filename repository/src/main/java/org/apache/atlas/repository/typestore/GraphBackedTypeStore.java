@@ -26,7 +26,7 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.atlas.GraphTransaction;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphProvider;
 import org.apache.atlas.typesystem.TypesDef;
@@ -69,13 +69,13 @@ public class GraphBackedTypeStore implements ITypeStore {
     }
 
     @Override
-    public void store(TypeSystem typeSystem) throws MetadataException {
+    public void store(TypeSystem typeSystem) throws AtlasException {
         store(typeSystem, ImmutableList.copyOf(typeSystem.getTypeNames()));
     }
 
     @Override
     @GraphTransaction
-    public void store(TypeSystem typeSystem, ImmutableList<String> typeNames) throws MetadataException {
+    public void store(TypeSystem typeSystem, ImmutableList<String> typeNames) throws AtlasException {
         ImmutableList<String> coreTypes = typeSystem.getCoreTypes();
         for (String typeName : typeNames) {
             if (!coreTypes.contains(typeName)) {
@@ -135,7 +135,8 @@ public class GraphBackedTypeStore implements ITypeStore {
     }
 
     private void storeInGraph(TypeSystem typeSystem, DataTypes.TypeCategory category, String typeName,
-                              ImmutableList<AttributeInfo> attributes, ImmutableList<String> superTypes) throws MetadataException {
+                              ImmutableList<AttributeInfo> attributes, ImmutableList<String> superTypes) throws
+    AtlasException {
         Vertex vertex = createVertex(category, typeName);
         List<String> attrNames = new ArrayList<>();
         if (attributes != null) {
@@ -163,7 +164,8 @@ public class GraphBackedTypeStore implements ITypeStore {
     }
 
     //Add edges for complex attributes
-    private void addReferencesForAttribute(TypeSystem typeSystem, Vertex vertex, AttributeInfo attribute) throws MetadataException {
+    private void addReferencesForAttribute(TypeSystem typeSystem, Vertex vertex, AttributeInfo attribute) throws
+            AtlasException {
         ImmutableList<String> coreTypes = typeSystem.getCoreTypes();
         List<IDataType> attrDataTypes = new ArrayList<>();
         IDataType attrDataType = attribute.dataType();
@@ -213,7 +215,7 @@ public class GraphBackedTypeStore implements ITypeStore {
 
     @Override
     @GraphTransaction
-    public TypesDef restore() throws MetadataException {
+    public TypesDef restore() throws AtlasException {
         //Get all vertices for type system
         Iterator vertices =
                 titanGraph.query().has(Constants.VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE).vertices().iterator();
@@ -278,7 +280,7 @@ public class GraphBackedTypeStore implements ITypeStore {
         return ImmutableList.copyOf(superTypes);
     }
 
-    private AttributeDefinition[] getAttributes(Vertex vertex, String typeName) throws MetadataException {
+    private AttributeDefinition[] getAttributes(Vertex vertex, String typeName) throws AtlasException {
         List<AttributeDefinition> attributes = new ArrayList<>();
         List<String> attrNames = vertex.getProperty(getPropertyKey(typeName));
         if (attrNames != null) {
@@ -287,7 +289,7 @@ public class GraphBackedTypeStore implements ITypeStore {
                     String propertyKey = getPropertyKey(typeName, attrName);
                     attributes.add(AttributeInfo.fromJson((String) vertex.getProperty(propertyKey)));
                 } catch (JSONException e) {
-                    throw new MetadataException(e);
+                    throw new AtlasException(e);
                 }
             }
         }

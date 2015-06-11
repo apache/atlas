@@ -20,7 +20,7 @@ package org.apache.atlas.typesystem.types;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.persistence.Id;
@@ -40,14 +40,14 @@ public class ObjectGraphTraversal implements Iterator<ObjectGraphTraversal.Insta
     Set<Id> processedIds;
 
     public ObjectGraphTraversal(TypeSystem typeSystem, IReferenceableInstance start)
-    throws MetadataException {
+    throws AtlasException {
         this.typeSystem = typeSystem;
         queue = new LinkedList<InstanceTuple>();
         processedIds = new HashSet<Id>();
         processReferenceableInstance(start);
     }
 
-    void processValue(IDataType dT, Object val) throws MetadataException {
+    void processValue(IDataType dT, Object val) throws AtlasException {
         if (val != null) {
             if (dT.getTypeCategory() == DataTypes.TypeCategory.ARRAY) {
                 IDataType elemType = ((DataTypes.ArrayType) dT).getElemType();
@@ -65,7 +65,7 @@ public class ObjectGraphTraversal implements Iterator<ObjectGraphTraversal.Insta
         }
     }
 
-    void processMap(IDataType keyType, IDataType valueType, Object val) throws MetadataException {
+    void processMap(IDataType keyType, IDataType valueType, Object val) throws AtlasException {
         if (keyType.getTypeCategory() == DataTypes.TypeCategory.PRIMITIVE &&
                 valueType.getTypeCategory() == DataTypes.TypeCategory.PRIMITIVE) {
             return;
@@ -85,7 +85,7 @@ public class ObjectGraphTraversal implements Iterator<ObjectGraphTraversal.Insta
         }
     }
 
-    void processCollection(IDataType elemType, Object val) throws MetadataException {
+    void processCollection(IDataType elemType, Object val) throws AtlasException {
 
         if (elemType.getTypeCategory() == DataTypes.TypeCategory.PRIMITIVE) {
             return;
@@ -110,7 +110,7 @@ public class ObjectGraphTraversal implements Iterator<ObjectGraphTraversal.Insta
         }
     }
 
-    void processStruct(Object val) throws MetadataException {
+    void processStruct(Object val) throws AtlasException {
 
         if (val == null || !(val instanceof IStruct)) {
             return;
@@ -129,7 +129,7 @@ public class ObjectGraphTraversal implements Iterator<ObjectGraphTraversal.Insta
         }
     }
 
-    void processReferenceableInstance(Object val) throws MetadataException {
+    void processReferenceableInstance(Object val) throws AtlasException {
 
         if (val == null || !(val instanceof IReferenceableInstance || val instanceof Id)) {
             return;
@@ -175,7 +175,7 @@ public class ObjectGraphTraversal implements Iterator<ObjectGraphTraversal.Insta
             InstanceTuple t = queue.poll();
             processReferenceableInstance(t.instance);
             return t;
-        } catch (MetadataException me) {
+        } catch (AtlasException me) {
             throw new RuntimeException(me);
         }
     }

@@ -18,7 +18,7 @@
 
 package org.apache.atlas.repository.memory;
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.BaseTest;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
@@ -37,7 +37,7 @@ public class StorageTest extends BaseTest {
     }
 
     @Test
-    public void test1() throws MetadataException {
+    public void test1() throws AtlasException {
 
         TypeSystem ts = getTypeSystem();
 
@@ -68,7 +68,7 @@ public class StorageTest extends BaseTest {
     }
 
     @Test
-    public void testGetPerson() throws MetadataException {
+    public void testGetPerson() throws AtlasException {
         TypeSystem ts = getTypeSystem();
         defineDeptEmployeeTypes(ts);
 
@@ -86,7 +86,7 @@ public class StorageTest extends BaseTest {
     }
 
     @Test
-    public void testInvalidTypeName() throws MetadataException {
+    public void testInvalidTypeName() throws AtlasException {
         TypeSystem ts = getTypeSystem();
         defineDeptEmployeeTypes(ts);
 
@@ -104,7 +104,7 @@ public class StorageTest extends BaseTest {
     }
 
     @Test
-    public void testGetManager() throws MetadataException {
+    public void testGetManager() throws AtlasException {
         TypeSystem ts = getTypeSystem();
         defineDeptEmployeeTypes(ts);
 

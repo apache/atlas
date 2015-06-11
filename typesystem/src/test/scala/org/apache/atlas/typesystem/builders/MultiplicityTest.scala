@@ -18,7 +18,7 @@
 
 package org.apache.atlas.typesystem.builders
 
-import org.apache.atlas.MetadataException
+import org.apache.atlas.AtlasException
 import org.apache.atlas.typesystem.types.{ClassType, Multiplicity, TypeSystem}
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
@@ -117,7 +117,7 @@ class MultiplicityTest extends FunSuite with BeforeAndAfterAll {
         "stringSet" ~ (string, multiplicty(0, Int.MaxValue, true))
       }
     }
-    val me = intercept[MetadataException] {
+    val me = intercept[AtlasException] {
       TypeSystem.getInstance().defineTypes(tDef)
     }
     assert("A multiplicty of more than one requires a collection type for attribute 'stringSet'" == me.getMessage)

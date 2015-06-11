@@ -19,7 +19,7 @@ package org.apache.atlas.security;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.client.urlconnection.HttpURLConnectionFactory;
 import com.sun.jersey.client.urlconnection.URLConnectionClientHandler;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.PropertiesUtil;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.conf.Configuration;
@@ -146,7 +146,7 @@ public class SecureClientUtils {
         connection.setReadTimeout(socketTimeout);
     }
 
-    private static File getSSLClientFile() throws MetadataException {
+    private static File getSSLClientFile() throws AtlasException {
         String confLocation = System.getProperty("atlas.conf");
         File sslDir;
         try {
@@ -163,12 +163,12 @@ public class SecureClientUtils {
             }
             LOG.info("ssl-client.xml will be created in {}", sslDir);
         } catch (Exception e) {
-            throw new MetadataException("Failed to find client configuration directory", e);
+            throw new AtlasException("Failed to find client configuration directory", e);
         }
         return new File(sslDir, SecurityProperties.SSL_CLIENT_PROPERTIES);
     }
 
-    public static void persistSSLClientConfiguration(PropertiesConfiguration clientConfig) throws MetadataException, IOException {
+    public static void persistSSLClientConfiguration(PropertiesConfiguration clientConfig) throws AtlasException, IOException {
         //trust settings
         Configuration configuration = new Configuration(false);
         File sslClientFile = getSSLClientFile();

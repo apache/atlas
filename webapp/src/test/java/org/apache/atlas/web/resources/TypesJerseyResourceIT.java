@@ -21,7 +21,7 @@ package org.apache.atlas.web.resources;
 import com.google.common.collect.ImmutableList;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-import org.apache.atlas.MetadataServiceClient;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.typesystem.json.TypesSerialization$;
@@ -83,10 +83,10 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
             Assert.assertNotNull(responseAsString);
 
             JSONObject response = new JSONObject(responseAsString);
-            JSONArray typesAdded = response.getJSONArray(MetadataServiceClient.TYPES);
+            JSONArray typesAdded = response.getJSONArray(AtlasClient.TYPES);
             Assert.assertEquals(typesAdded.length(), 1);
             Assert.assertEquals(typesAdded.getJSONObject(0).getString("name"), typeDefinition.typeName);
-            Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+            Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
         }
     }
 
@@ -108,10 +108,10 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
             String responseAsString = clientResponse.getEntity(String.class);
             Assert.assertNotNull(responseAsString);
             JSONObject response = new JSONObject(responseAsString);
-            Assert.assertNotNull(response.get(MetadataServiceClient.DEFINITION));
-            Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+            Assert.assertNotNull(response.get(AtlasClient.DEFINITION));
+            Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-            String typesJson = response.getString(MetadataServiceClient.DEFINITION);
+            String typesJson = response.getString(AtlasClient.DEFINITION);
             final TypesDef typesDef = TypesSerialization.fromJson(typesJson);
             List<HierarchicalTypeDefinition<ClassType>> hierarchicalTypeDefinitions = typesDef.classTypesAsJavaList();
             for(HierarchicalTypeDefinition<ClassType> classType : hierarchicalTypeDefinitions) {
@@ -153,9 +153,9 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-        final JSONArray list = response.getJSONArray(MetadataServiceClient.RESULTS);
+        final JSONArray list = response.getJSONArray(AtlasClient.RESULTS);
         Assert.assertNotNull(list);
     }
 
@@ -177,9 +177,9 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-        final JSONArray list = response.getJSONArray(MetadataServiceClient.RESULTS);
+        final JSONArray list = response.getJSONArray(AtlasClient.RESULTS);
         Assert.assertNotNull(list);
         Assert.assertTrue(list.length() >= traitsAdded.length);
     }

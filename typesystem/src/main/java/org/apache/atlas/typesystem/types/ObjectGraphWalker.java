@@ -20,7 +20,7 @@ package org.apache.atlas.typesystem.types;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.persistence.Id;
@@ -48,13 +48,13 @@ public class ObjectGraphWalker {
     Set<Id> processedIds;
 
     public ObjectGraphWalker(TypeSystem typeSystem, NodeProcessor nodeProcessor)
-    throws MetadataException {
+    throws AtlasException {
         this(typeSystem, nodeProcessor, (IReferenceableInstance) null);
     }
 
     public ObjectGraphWalker(TypeSystem typeSystem, NodeProcessor nodeProcessor,
                              IReferenceableInstance start)
-    throws MetadataException {
+    throws AtlasException {
         this.typeSystem = typeSystem;
         this.nodeProcessor = nodeProcessor;
         queue = new LinkedList<IReferenceableInstance>();
@@ -66,7 +66,7 @@ public class ObjectGraphWalker {
 
     public ObjectGraphWalker(TypeSystem typeSystem, NodeProcessor nodeProcessor,
                              List<? extends IReferenceableInstance> roots)
-    throws MetadataException {
+    throws AtlasException {
         this.typeSystem = typeSystem;
         this.nodeProcessor = nodeProcessor;
         queue = new LinkedList<IReferenceableInstance>();
@@ -76,7 +76,7 @@ public class ObjectGraphWalker {
         }
     }
 
-    public void walk() throws MetadataException {
+    public void walk() throws AtlasException {
         while (!queue.isEmpty()) {
             IReferenceableInstance r = queue.poll();
             processReferenceableInstance(r);
@@ -87,7 +87,7 @@ public class ObjectGraphWalker {
         visitReferenceableInstance(root);
     }
 
-    void traverseValue(IDataType dT, Object val) throws MetadataException {
+    void traverseValue(IDataType dT, Object val) throws AtlasException {
         if (val != null) {
             if (dT.getTypeCategory() == DataTypes.TypeCategory.ARRAY) {
                 IDataType elemType = ((DataTypes.ArrayType) dT).getElemType();
@@ -105,7 +105,7 @@ public class ObjectGraphWalker {
         }
     }
 
-    void visitMap(IDataType keyType, IDataType valueType, Object val) throws MetadataException {
+    void visitMap(IDataType keyType, IDataType valueType, Object val) throws AtlasException {
         if (keyType.getTypeCategory() == DataTypes.TypeCategory.PRIMITIVE &&
                 valueType.getTypeCategory() == DataTypes.TypeCategory.PRIMITIVE) {
             return;
@@ -125,7 +125,7 @@ public class ObjectGraphWalker {
         }
     }
 
-    void visitCollection(IDataType elemType, Object val) throws MetadataException {
+    void visitCollection(IDataType elemType, Object val) throws AtlasException {
 
         if (elemType.getTypeCategory() == DataTypes.TypeCategory.PRIMITIVE) {
             return;
@@ -150,7 +150,7 @@ public class ObjectGraphWalker {
         }
     }
 
-    void visitStruct(Object val) throws MetadataException {
+    void visitStruct(Object val) throws AtlasException {
 
         if (val == null || !(val instanceof IStruct)) {
             return;
@@ -187,7 +187,7 @@ public class ObjectGraphWalker {
         }
     }
 
-    void processReferenceableInstance(IReferenceableInstance ref) throws MetadataException {
+    void processReferenceableInstance(IReferenceableInstance ref) throws AtlasException {
 
         nodeProcessor.processNode(new Node(ref, null, null, null));
         visitStruct(ref);
@@ -199,7 +199,7 @@ public class ObjectGraphWalker {
 
     public static interface NodeProcessor {
 
-        void processNode(Node nd) throws MetadataException;
+        void processNode(Node nd) throws AtlasException;
     }
 
     /**

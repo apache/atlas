@@ -19,7 +19,7 @@
 package org.apache.atlas.typesystem.types;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.Struct;
@@ -62,7 +62,7 @@ public class TraitTest extends BaseTest {
      *   available as 'b'.
      */
     @Test
-    public void test1() throws MetadataException {
+    public void test1() throws AtlasException {
         HierarchicalTypeDefinition A = createTraitTypeDef("A", null,
                 createRequiredAttrDef("a", DataTypes.INT_TYPE),
                 createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE),
@@ -171,7 +171,7 @@ public class TraitTest extends BaseTest {
     }
 
     @Test
-    public void testRandomOrder() throws MetadataException {
+    public void testRandomOrder() throws AtlasException {
         HierarchicalTypeDefinition A = createTraitTypeDef("A", null,
                 createRequiredAttrDef("a", DataTypes.INT_TYPE),
                 createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE),

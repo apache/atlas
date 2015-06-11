@@ -20,7 +20,7 @@ package org.apache.atlas.typesystem.types;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.Struct;
@@ -43,7 +43,7 @@ public class TypedStructHandler {
         fieldMapping = structType.fieldMapping();
     }
 
-    public ITypedStruct convert(Object val, Multiplicity m) throws MetadataException {
+    public ITypedStruct convert(Object val, Multiplicity m) throws AtlasException {
         if (val != null) {
             if (val instanceof ITypedStruct) {
                 ITypedStruct ts = (ITypedStruct) val;
@@ -110,7 +110,7 @@ public class TypedStructHandler {
                         : new Id[fieldMapping.numReferenceables]);
     }
 
-    public void output(IStruct s, Appendable buf, String prefix) throws MetadataException {
+    public void output(IStruct s, Appendable buf, String prefix) throws AtlasException {
         fieldMapping.output(s, buf, prefix);
     }
 

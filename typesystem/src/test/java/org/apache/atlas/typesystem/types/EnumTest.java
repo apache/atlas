@@ -21,7 +21,7 @@ package org.apache.atlas.typesystem.types;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
@@ -47,7 +47,7 @@ public class EnumTest extends BaseTest {
         super.setup();
     }
 
-    void defineEnums(TypeSystem ts) throws MetadataException {
+    void defineEnums(TypeSystem ts) throws AtlasException {
         ts.defineEnumType("HiveObjectType",
                 new EnumValue("GLOBAL", 1),
                 new EnumValue("DATABASE", 2),
@@ -72,7 +72,7 @@ public class EnumTest extends BaseTest {
 
     }
 
-    protected void fillStruct(Struct s) throws MetadataException {
+    protected void fillStruct(Struct s) throws AtlasException {
         s.set("a", 1);
         s.set("b", true);
         s.set("c", (byte) 1);
@@ -98,19 +98,19 @@ public class EnumTest extends BaseTest {
         s.set("enum4", 3);
     }
 
-    protected Struct createStructWithEnum(String typeName) throws MetadataException {
+    protected Struct createStructWithEnum(String typeName) throws AtlasException {
         Struct s = new Struct(typeName);
         fillStruct(s);
         return s;
     }
 
-    protected Referenceable createInstanceWithEnum(String typeName) throws MetadataException {
+    protected Referenceable createInstanceWithEnum(String typeName) throws AtlasException {
         Referenceable r = new Referenceable(typeName);
         fillStruct(r);
         return r;
     }
 
-    protected ClassType defineClassTypeWithEnum(TypeSystem ts) throws MetadataException {
+    protected ClassType defineClassTypeWithEnum(TypeSystem ts) throws AtlasException {
         return ts.defineClassType(createClassTypeDef("t4",
                 ImmutableList.<String>of(),
                 createRequiredAttrDef("a", DataTypes.INT_TYPE),
@@ -136,7 +136,7 @@ public class EnumTest extends BaseTest {
     }
 
     @Test
-    public void testStruct() throws MetadataException {
+    public void testStruct() throws AtlasException {
         TypeSystem ts = getTypeSystem();
         defineEnums(ts);
         StructType structType = ts.defineStructType("t3",
@@ -188,7 +188,7 @@ public class EnumTest extends BaseTest {
     }
 
     @Test
-    public void testClass() throws MetadataException {
+    public void testClass() throws AtlasException {
         TypeSystem ts = getTypeSystem();
         defineEnums(ts);
         ClassType clsType = defineClassTypeWithEnum(ts);

@@ -19,7 +19,7 @@
 package org.apache.atlas.typesystem.types;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedStruct;
 
@@ -52,7 +52,7 @@ public class StructType extends AbstractDataType<IStruct>
 
     protected StructType(TypeSystem typeSystem, String name,
                          ImmutableList<String> superTypes, AttributeInfo... fields)
-    throws MetadataException {
+    throws AtlasException {
         this.typeSystem = typeSystem;
         this.name = name;
         this.fieldMapping = constructFieldMapping(superTypes,
@@ -73,7 +73,7 @@ public class StructType extends AbstractDataType<IStruct>
 
     protected FieldMapping constructFieldMapping(ImmutableList<String> superTypes,
                                                  AttributeInfo... fields)
-    throws MetadataException {
+    throws AtlasException {
 
         Map<String, AttributeInfo> fieldsMap = new LinkedHashMap<String, AttributeInfo>();
         Map<String, Integer> fieldPos = new HashMap<String, Integer>();
@@ -96,7 +96,7 @@ public class StructType extends AbstractDataType<IStruct>
 
         for (AttributeInfo i : fields) {
             if (fieldsMap.containsKey(i.name)) {
-                throw new MetadataException(
+                throw new AtlasException(
                         String.format(
                                 "Struct defintion cannot contain multiple fields with the same " +
                                         "name %s",
@@ -154,7 +154,7 @@ public class StructType extends AbstractDataType<IStruct>
                 fieldPos.put(i.name, numReferenceables);
                 numReferenceables++;
             } else {
-                throw new MetadataException(String.format("Unknown datatype %s", i.dataType()));
+                throw new AtlasException(String.format("Unknown datatype %s", i.dataType()));
             }
         }
 
@@ -185,7 +185,7 @@ public class StructType extends AbstractDataType<IStruct>
     }
 
     @Override
-    public ITypedStruct convert(Object val, Multiplicity m) throws MetadataException {
+    public ITypedStruct convert(Object val, Multiplicity m) throws AtlasException {
         return handler.convert(val, m);
     }
 
@@ -194,7 +194,7 @@ public class StructType extends AbstractDataType<IStruct>
     }
 
     @Override
-    public void output(IStruct s, Appendable buf, String prefix) throws MetadataException {
+    public void output(IStruct s, Appendable buf, String prefix) throws AtlasException {
         handler.output(s, buf, prefix);
     }
 

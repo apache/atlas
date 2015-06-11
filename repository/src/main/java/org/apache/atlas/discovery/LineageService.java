@@ -18,7 +18,7 @@
 
 package org.apache.atlas.discovery;
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 
 /**
  * Lineage service interface.
@@ -31,7 +31,7 @@ public interface LineageService {
      * @param tableName tableName
      * @return Outputs as JSON
      */
-    String getOutputs(String tableName) throws MetadataException;
+    String getOutputs(String tableName) throws AtlasException;
 
     /**
      * Return the lineage outputs graph for the given tableName.
@@ -39,7 +39,7 @@ public interface LineageService {
      * @param tableName tableName
      * @return Outputs Graph as JSON
      */
-    String getOutputsGraph(String tableName) throws MetadataException;
+    String getOutputsGraph(String tableName) throws AtlasException;
 
     /**
      * Return the lineage inputs for the given tableName.
@@ -47,7 +47,7 @@ public interface LineageService {
      * @param tableName tableName
      * @return Inputs as JSON
      */
-    String getInputs(String tableName) throws MetadataException;
+    String getInputs(String tableName) throws AtlasException;
 
     /**
      * Return the lineage inputs graph for the given tableName.
@@ -55,7 +55,7 @@ public interface LineageService {
      * @param tableName tableName
      * @return Inputs Graph as JSON
      */
-    String getInputsGraph(String tableName) throws MetadataException;
+    String getInputsGraph(String tableName) throws AtlasException;
 
     /**
      * Return the schema for the given tableName.
@@ -63,5 +63,5 @@ public interface LineageService {
      * @param tableName tableName
      * @return Schema as JSON
      */
-    String getSchema(String tableName) throws MetadataException;
+    String getSchema(String tableName) throws AtlasException;
 }

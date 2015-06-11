@@ -19,14 +19,14 @@
 package org.apache.atlas.typesystem.types;
 
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.ITypedInstance;
 
 import java.util.List;
 
 public interface IConstructableType<U, T extends ITypedInstance> extends IDataType<U> {
 
-    T createInstance() throws MetadataException;
+    T createInstance() throws AtlasException;
 
     FieldMapping fieldMapping();
 

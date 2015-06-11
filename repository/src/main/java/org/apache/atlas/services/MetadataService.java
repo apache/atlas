@@ -18,7 +18,7 @@
 
 package org.apache.atlas.services;
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.codehaus.jettison.json.JSONObject;
 
@@ -36,7 +36,7 @@ public interface MetadataService {
      * @param typeDefinition definition as json
      * @return a unique id for this type
      */
-    JSONObject createType(String typeDefinition) throws MetadataException;
+    JSONObject createType(String typeDefinition) throws AtlasException;
 
     /**
      * Return the definition for the given type.
@@ -44,21 +44,21 @@ public interface MetadataService {
      * @param typeName name for this type, must be unique
      * @return type definition as JSON
      */
-    String getTypeDefinition(String typeName) throws MetadataException;
+    String getTypeDefinition(String typeName) throws AtlasException;
 
     /**
      * Return the list of types in the type system.
      *
      * @return list of type names in the type system
      */
-    List<String> getTypeNamesList() throws MetadataException;
+    List<String> getTypeNamesList() throws AtlasException;
 
     /**
      * Return the list of trait type names in the type system.
      *
      * @return list of trait type names in the type system
      */
-    List<String> getTypeNamesByCategory(DataTypes.TypeCategory typeCategory) throws MetadataException;
+    List<String> getTypeNamesByCategory(DataTypes.TypeCategory typeCategory) throws AtlasException;
 
     /**
      * Creates an entity, instance of the type.
@@ -66,7 +66,7 @@ public interface MetadataService {
      * @param entityDefinition definition
      * @return guid
      */
-    String createEntity(String entityDefinition) throws MetadataException;
+    String createEntity(String entityDefinition) throws AtlasException;
 
     /**
      * Return the definition for the given guid.
@@ -74,7 +74,7 @@ public interface MetadataService {
      * @param guid guid
      * @return entity definition as JSON
      */
-    String getEntityDefinition(String guid) throws MetadataException;
+    String getEntityDefinition(String guid) throws AtlasException;
 
     /**
      * Return the list of entity names for the given type in the repository.
@@ -82,7 +82,7 @@ public interface MetadataService {
      * @param entityType type
      * @return list of entity names for the given type in the repository
      */
-    List<String> getEntityList(String entityType) throws MetadataException;
+    List<String> getEntityList(String entityType) throws AtlasException;
 
     /**
      * Adds the property to the given entity id(guid).
@@ -91,7 +91,7 @@ public interface MetadataService {
      * @param property property name
      * @param value    property value
      */
-    void updateEntity(String guid, String property, String value) throws MetadataException;
+    void updateEntity(String guid, String property, String value) throws AtlasException;
 
     // Trait management functions
     /**
@@ -99,27 +99,27 @@ public interface MetadataService {
      *
      * @param guid globally unique identifier for the entity
      * @return a list of trait names for the given entity guid
-     * @throws MetadataException
+     * @throws AtlasException
      */
-    List<String> getTraitNames(String guid) throws MetadataException;
+    List<String> getTraitNames(String guid) throws AtlasException;
 
     /**
      * Adds a new trait to an existing entity represented by a guid.
      *
      * @param guid          globally unique identifier for the entity
      * @param traitInstanceDefinition trait instance that needs to be added to entity
-     * @throws MetadataException
+     * @throws AtlasException
      */
     void addTrait(String guid,
-                  String traitInstanceDefinition) throws MetadataException;
+                  String traitInstanceDefinition) throws AtlasException;
 
     /**
      * Deletes a given trait from an existing entity represented by a guid.
      *
      * @param guid                 globally unique identifier for the entity
      * @param traitNameToBeDeleted name of the trait
-     * @throws MetadataException
+     * @throws AtlasException
      */
     void deleteTrait(String guid,
-                     String traitNameToBeDeleted) throws MetadataException;
+                     String traitNameToBeDeleted) throws AtlasException;
 }
