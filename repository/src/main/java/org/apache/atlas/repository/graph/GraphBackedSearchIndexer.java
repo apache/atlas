@@ -18,6 +18,7 @@
 
 package org.apache.atlas.repository.graph;
 
+import com.google.inject.Provider;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanGraph;
@@ -28,6 +29,7 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.atlas.MetadataException;
 import org.apache.atlas.discovery.SearchIndexer;
+import org.apache.atlas.listener.TypesChangeListener;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.IndexCreationException;
 import org.apache.atlas.repository.IndexException;
@@ -51,7 +53,7 @@ import java.util.Map;
 /**
  * Adds index for properties of a given type when its added before any instances are added.
  */
-public class GraphBackedSearchIndexer implements SearchIndexer {
+public class GraphBackedSearchIndexer implements SearchIndexer, Provider<TypesChangeListener> {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphBackedSearchIndexer.class);
 
@@ -366,6 +368,11 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
             LOG.error("Index rollback failed " , e);
             throw new IndexException("Index rollback failed " , e);
         }
+    }
+
+    @Override
+    public TypesChangeListener get() {
+        return this;
     }
 
     /* Commenting this out since we do not need an index for edge label here

@@ -45,7 +45,6 @@ import org.apache.atlas.services.MetadataService;
  * Guice module for Repository module.
  */
 public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
-    private Multibinder<Provider<TypesChangeListener>> typesChangeListenerBinder;
 
     @Override
     protected void configure() {
@@ -63,13 +62,8 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
         // bind the ITypeStore interface to an implementation
         bind(ITypeStore.class).to(GraphBackedTypeStore.class).asEagerSingleton();
 
-        // bind the GraphService interface to an implementation
-        // bind(GraphService.class).to(graphServiceClass);
-
-        typesChangeListenerBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<TypesChangeListener>());
-        typesChangeListenerBinder.addBinding().to(GraphBackedSearchIndexer.class);
-
-        bind(TypesChangeListener.class).to(GraphBackedSearchIndexer.class);
+        Multibinder<TypesChangeListener> typesChangeListenerBinder = Multibinder.newSetBinder(binder(), TypesChangeListener.class);
+        typesChangeListenerBinder.addBinding().toProvider(GraphBackedSearchIndexer.class);
 
         // bind the MetadataService interface to an implementation
         bind(MetadataService.class).to(DefaultMetadataService.class).asEagerSingleton();
