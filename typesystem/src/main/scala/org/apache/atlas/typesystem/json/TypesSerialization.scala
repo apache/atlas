@@ -21,7 +21,7 @@ package org.apache.atlas.typesystem.json
 import java.text.SimpleDateFormat
 
 import com.google.common.collect.ImmutableList
-import org.apache.atlas.MetadataException
+import org.apache.atlas.AtlasException
 import org.apache.atlas.typesystem.TypesDef
 import org.apache.atlas.typesystem.types.DataTypes.{ArrayType, MapType, TypeCategory}
 import org.apache.atlas.typesystem.types._
@@ -234,7 +234,7 @@ trait TypeHelpers {
             sts, attrDefs.toArray)
     }
 
-    @throws(classOf[MetadataException])
+    @throws(classOf[AtlasException])
     def defineClassType(ts: TypeSystem, classDef: HierarchicalTypeDefinition[ClassType]): ClassType = {
         ts.defineTypes(ImmutableList.of[StructTypeDefinition],
             ImmutableList.of[HierarchicalTypeDefinition[TraitType]],

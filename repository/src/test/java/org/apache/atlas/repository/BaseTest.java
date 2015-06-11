@@ -21,7 +21,7 @@ package org.apache.atlas.repository;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.memory.MemRepository;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
@@ -53,7 +53,7 @@ public abstract class BaseTest {
     public static final long TEST_DATE_IN_LONG=1418265358440L;
     protected IRepository repo;
 
-    public static Struct createStruct() throws MetadataException {
+    public static Struct createStruct() throws AtlasException {
         StructType structType = (StructType) TypeSystem.getInstance()
                 .getDataType(StructType.class, STRUCT_TYPE_1);
         Struct s = new Struct(structType.getName());
@@ -120,7 +120,7 @@ public abstract class BaseTest {
     }
 
     protected Map<String, IDataType> defineTraits(HierarchicalTypeDefinition... tDefs)
-    throws MetadataException {
+    throws AtlasException {
 
         return getTypeSystem().defineTraitTypes(tDefs);
     }
@@ -133,7 +133,7 @@ public abstract class BaseTest {
      *
      * Persons can have SecurityClearance(level : Int) clearance.
      */
-    protected void defineDeptEmployeeTypes(TypeSystem ts) throws MetadataException {
+    protected void defineDeptEmployeeTypes(TypeSystem ts) throws AtlasException {
 
         HierarchicalTypeDefinition<ClassType> deptTypeDef =
                 TypesUtil.createClassTypeDef("Department", ImmutableList.<String>of(),
@@ -179,7 +179,7 @@ public abstract class BaseTest {
 
     }
 
-    protected Referenceable createDeptEg1(TypeSystem ts) throws MetadataException {
+    protected Referenceable createDeptEg1(TypeSystem ts) throws AtlasException {
         Referenceable hrDept = new Referenceable("Department");
         Referenceable john = new Referenceable("Person");
         Referenceable jane = new Referenceable("Manager", "SecurityClearance");

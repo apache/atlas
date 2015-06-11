@@ -19,8 +19,8 @@
 package org.apache.atlas.web.resources;
 
 import com.sun.jersey.api.client.ClientResponse;
-import org.apache.atlas.MetadataException;
-import org.apache.atlas.MetadataServiceClient;
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.web.util.Servlets;
@@ -82,21 +82,21 @@ public class TypesResource {
             LOG.debug("Creating type with definition {} ", typeDefinition);
 
             JSONObject typesJson = metadataService.createType(typeDefinition);
-            final JSONArray typesJsonArray = typesJson.getJSONArray(MetadataServiceClient.TYPES);
+            final JSONArray typesJsonArray = typesJson.getJSONArray(AtlasClient.TYPES);
 
             JSONArray typesResponse = new JSONArray();
             for (int i = 0; i < typesJsonArray.length(); i++) {
                 final String name = typesJsonArray.getString(i);
                 typesResponse.put(new JSONObject() {{
-                    put(MetadataServiceClient.NAME, name);
+                    put(AtlasClient.NAME, name);
                 }});
             }
 
             JSONObject response = new JSONObject();
-            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(MetadataServiceClient.TYPES, typesResponse);
+            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
+            response.put(AtlasClient.TYPES, typesResponse);
             return Response.status(ClientResponse.Status.CREATED).entity(response).build();
-        } catch (MetadataException | IllegalArgumentException e) {
+        } catch (AtlasException | IllegalArgumentException e) {
             LOG.error("Unable to persist types", e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
@@ -121,12 +121,12 @@ public class TypesResource {
             final String typeDefinition = metadataService.getTypeDefinition(typeName);
 
             JSONObject response = new JSONObject();
-            response.put(MetadataServiceClient.TYPENAME, typeName);
-            response.put(MetadataServiceClient.DEFINITION, typeDefinition);
-            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
+            response.put(AtlasClient.TYPENAME, typeName);
+            response.put(AtlasClient.DEFINITION, typeDefinition);
+            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
 
             return Response.ok(response).build();
-        } catch (MetadataException e) {
+        } catch (AtlasException e) {
             LOG.error("Unable to get type definition for type {}", typeName, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
@@ -163,12 +163,12 @@ public class TypesResource {
             }
 
             JSONObject response = new JSONObject();
-            response.put(MetadataServiceClient.RESULTS, new JSONArray(result));
-            response.put(MetadataServiceClient.COUNT, result.size());
-            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
+            response.put(AtlasClient.RESULTS, new JSONArray(result));
+            response.put(AtlasClient.COUNT, result.size());
+            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
 
             return Response.ok(response).build();
-        } catch (IllegalArgumentException | MetadataException ie) {
+        } catch (IllegalArgumentException | AtlasException ie) {
             LOG.error("Unsupported typeName while retrieving type list {}", type);
             throw new WebApplicationException(
                     Servlets.getErrorResponse("Unsupported type " + type, Response.Status.BAD_REQUEST));

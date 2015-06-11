@@ -18,7 +18,7 @@
 
 package org.apache.atlas.typesystem.types;
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
@@ -37,7 +37,7 @@ public class AttributeInfo {
     public final String reverseAttributeName;
     private IDataType dataType;
 
-    AttributeInfo(TypeSystem t, AttributeDefinition def, Map<String, IDataType> tempTypes) throws MetadataException {
+    AttributeInfo(TypeSystem t, AttributeDefinition def, Map<String, IDataType> tempTypes) throws AtlasException {
         this.name = def.name;
         this.dataType = (tempTypes != null && tempTypes.containsKey(def.dataTypeName)) ?
                 tempTypes.get(def.dataTypeName) : t.getDataType(IDataType.class, def.dataTypeName);

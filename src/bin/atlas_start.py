@@ -22,8 +22,8 @@ import traceback
 import atlas_config as mc
 
 METADATA_LOG_OPTS="-Datlas.log.dir=%s -Datlas.log.file=application.log"
-METADATA_COMMAND_OPTS="-Dmetadata.home=%s"
-METADATA_CONFIG_OPTS="-Dmetadata.conf=%s"
+METADATA_COMMAND_OPTS="-Datlas.home=%s"
+METADATA_CONFIG_OPTS="-Datlas.conf=%s"
 DEFAULT_JVM_OPTS="-Xmx1024m"
 
 def main():

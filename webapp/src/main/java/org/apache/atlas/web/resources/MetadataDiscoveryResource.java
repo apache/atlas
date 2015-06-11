@@ -19,7 +19,7 @@
 package org.apache.atlas.web.resources;
 
 import com.google.common.base.Preconditions;
-import org.apache.atlas.MetadataServiceClient;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.ParamChecker;
 import org.apache.atlas.discovery.DiscoveryException;
 import org.apache.atlas.discovery.DiscoveryService;
@@ -167,16 +167,16 @@ public class MetadataDiscoveryResource {
                 .searchByGremlin(gremlinQuery);
 
             JSONObject response = new JSONObject();
-            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(MetadataServiceClient.QUERY, gremlinQuery);
-            response.put(MetadataServiceClient.QUERY_TYPE, QUERY_TYPE_GREMLIN);
+            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
+            response.put(AtlasClient.QUERY, gremlinQuery);
+            response.put(AtlasClient.QUERY_TYPE, QUERY_TYPE_GREMLIN);
 
             JSONArray list = new JSONArray();
             for (Map<String, String> result : results) {
                 list.put(new JSONObject(result));
             }
-            response.put(MetadataServiceClient.RESULTS, list);
-            response.put(MetadataServiceClient.COUNT, list.length());
+            response.put(AtlasClient.RESULTS, list);
+            response.put(AtlasClient.COUNT, list.length());
 
             return Response.ok(response)
                 .build();
@@ -253,10 +253,10 @@ public class MetadataDiscoveryResource {
             Preconditions.checkNotNull(queryType, "Query Type must be specified");
             Preconditions.checkArgument(count >= 0, "Search Result count should be > 0");
 
-            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(MetadataServiceClient.QUERY, query);
-            response.put(MetadataServiceClient.QUERY_TYPE, queryType);
-            response.put(MetadataServiceClient.COUNT, count);
+            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
+            response.put(AtlasClient.QUERY, query);
+            response.put(AtlasClient.QUERY_TYPE, queryType);
+            response.put(AtlasClient.COUNT, count);
             return response;
         }
     }
@@ -281,11 +281,11 @@ public class MetadataDiscoveryResource {
         @Override
         public JSONObject build() throws JSONException {
             Preconditions.checkNotNull(dslResults);
-            JSONArray rowsJsonArr = dslResults.getJSONArray(MetadataServiceClient.ROWS);
+            JSONArray rowsJsonArr = dslResults.getJSONArray(AtlasClient.ROWS);
             count(rowsJsonArr.length());
             queryType(QUERY_TYPE_DSL);
             JSONObject response = super.build();
-            response.put(MetadataServiceClient.RESULTS, dslResults);
+            response.put(AtlasClient.RESULTS, dslResults);
             return response;
         }
 
@@ -315,7 +315,7 @@ public class MetadataDiscoveryResource {
             queryType(QUERY_TYPE_FULLTEXT);
 
             JSONObject response = super.build();
-            response.put(MetadataServiceClient.RESULTS, fullTextResults);
+            response.put(AtlasClient.RESULTS, fullTextResults);
             return response;
         }
     }

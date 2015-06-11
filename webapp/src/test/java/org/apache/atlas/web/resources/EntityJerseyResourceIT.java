@@ -21,8 +21,8 @@ package org.apache.atlas.web.resources;
 import com.google.common.collect.ImmutableList;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-import org.apache.atlas.MetadataServiceClient;
-import org.apache.atlas.MetadataServiceException;
+import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
@@ -111,7 +111,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         try {
             createInstance(databaseInstance);
             Assert.fail("Exptected MetadataServiceException");
-        } catch(MetadataServiceException e) {
+        } catch(AtlasServiceException e) {
             Assert.assertEquals(e.getStatus(), ClientResponse.Status.BAD_REQUEST);
         }
     }
@@ -150,7 +150,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
             tableId = createInstance(tableInstance);
             Assert.fail("Was expecting an  exception here ");
-        } catch (MetadataServiceException e) {
+        } catch (AtlasServiceException e) {
            Assert.assertTrue(
                    e.getMessage().contains("\"error\":\"Cannot convert value '2014-07-11' to datatype date\""));
         }
@@ -225,9 +225,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-        final String definition = response.getString(MetadataServiceClient.DEFINITION);
+        final String definition = response.getString(AtlasClient.DEFINITION);
         Assert.assertNotNull(definition);
         LOG.debug("tableInstanceAfterGet = " + definition);
         InstanceSerialization.fromJsonReferenceable(definition, true);
@@ -256,7 +256,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     private String getEntityDefinition(ClientResponse clientResponse) throws Exception {
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
         JSONObject response = new JSONObject(clientResponse.getEntity(String.class));
-        final String definition = response.getString(MetadataServiceClient.DEFINITION);
+        final String definition = response.getString(AtlasClient.DEFINITION);
         Assert.assertNotNull(definition);
 
         return definition;
@@ -278,8 +278,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(MetadataServiceClient.ERROR));
-        Assert.assertNotNull(response.get(MetadataServiceClient.STACKTRACE));
+        Assert.assertNotNull(response.get(AtlasClient.ERROR));
+        Assert.assertNotNull(response.get(AtlasClient.STACKTRACE));
     }
 
     @Test(dependsOnMethods = "testSubmitEntity")
@@ -296,9 +296,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-        final JSONArray list = response.getJSONArray(MetadataServiceClient.RESULTS);
+        final JSONArray list = response.getJSONArray(AtlasClient.RESULTS);
         Assert.assertNotNull(list);
         Assert.assertEquals(list.length(), 1);
     }
@@ -317,8 +317,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(MetadataServiceClient.ERROR));
-        Assert.assertNotNull(response.get(MetadataServiceClient.STACKTRACE));
+        Assert.assertNotNull(response.get(AtlasClient.ERROR));
+        Assert.assertNotNull(response.get(AtlasClient.STACKTRACE));
     }
 
 
@@ -338,9 +338,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-        final JSONArray list = response.getJSONArray(MetadataServiceClient.RESULTS);
+        final JSONArray list = response.getJSONArray(AtlasClient.RESULTS);
         Assert.assertEquals(list.length(), 0);
     }
 
@@ -370,10 +370,10 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
         Assert.assertNotNull(response.get("GUID"));
 
-        final JSONArray list = response.getJSONArray(MetadataServiceClient.RESULTS);
+        final JSONArray list = response.getJSONArray(AtlasClient.RESULTS);
         Assert.assertEquals(list.length(), 7);
     }
 
@@ -404,8 +404,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
-        Assert.assertNotNull(response.get(MetadataServiceClient.GUID));
+        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
+        Assert.assertNotNull(response.get(AtlasClient.GUID));
     }
 
     @Test(dependsOnMethods = "testAddTrait")
@@ -456,8 +456,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
-        Assert.assertNotNull(response.get(MetadataServiceClient.GUID));
+        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
+        Assert.assertNotNull(response.get(AtlasClient.GUID));
 
         // verify the response
         clientResponse = getEntityDefinition(guid);
@@ -465,9 +465,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         responseAsString = clientResponse.getEntity(String.class);
         Assert.assertNotNull(responseAsString);
         response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-        final String definition = response.getString(MetadataServiceClient.DEFINITION);
+        final String definition = response.getString(AtlasClient.DEFINITION);
         Assert.assertNotNull(definition);
         Referenceable entityRef = InstanceSerialization.fromJsonReferenceable(definition, true);
         IStruct traitRef = entityRef.getTrait(traitName);
@@ -515,7 +515,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
         Assert.assertNotNull(response.get("GUID"));
         Assert.assertNotNull(response.get("traitName"));
     }
@@ -538,10 +538,10 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(MetadataServiceClient.ERROR));
-        Assert.assertEquals(response.getString(MetadataServiceClient.ERROR),
+        Assert.assertNotNull(response.get(AtlasClient.ERROR));
+        Assert.assertEquals(response.getString(AtlasClient.ERROR),
                 "trait=" + traitName + " should be defined in type system before it can be deleted");
-        Assert.assertNotNull(response.get(MetadataServiceClient.STACKTRACE));
+        Assert.assertNotNull(response.get(AtlasClient.STACKTRACE));
     }
 
     private String random() {

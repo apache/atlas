@@ -19,8 +19,7 @@
 package org.apache.atlas.discovery.graph;
 
 import com.thinkaurelius.titan.core.TitanVertex;
-import org.apache.atlas.GraphTransaction;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.query.Expressions;
 import org.apache.atlas.query.GraphPersistenceStrategies;
 import org.apache.atlas.query.GraphPersistenceStrategies$class;
@@ -81,7 +80,7 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
     public String fieldNameInVertex(IDataType<?> dataType, AttributeInfo aInfo) {
         try {
             return metadataRepository.getFieldNameInVertex(dataType, aInfo);
-        } catch (MetadataException e) {
+        } catch (AtlasException e) {
             throw new RuntimeException(e);
         }
     }
@@ -160,7 +159,7 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
                     throw new UnsupportedOperationException(
                             "Load for type " + dataType + "is not supported");
             }
-        } catch (MetadataException e) {
+        } catch (AtlasException e) {
             LOG.error("error while constructing an instance", e);
         }
 

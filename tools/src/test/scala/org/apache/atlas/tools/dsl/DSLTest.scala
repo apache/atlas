@@ -85,7 +85,7 @@ class DSLTest {
             attrDef("o", mapType(STRING_TYPE, DOUBLE_TYPE)))
 
         // 2. 'mytype' available as a a Type
-        Assert.assertEquals(s"${listTypes}", "[array<bigdecimal>,array<int>,map<string,double>,mytype,t1,t2]")
+        Assert.assertEquals(s"${listTypes}", "[mytype,t1,t2]")
 
         // 3. Create a 'mytype' instance from Json
         val i = createInstance("mytype", """
@@ -125,7 +125,7 @@ class DSLTest {
     @Test def test2 {
 
         // 1. Existing Types in System
-        Assert.assertEquals(s"${listTypes}", "[array<bigdecimal>,array<int>,map<string,double>,t1,t2]")
+        Assert.assertEquals(s"${listTypes}", "[t1,t2]")
 
         val addrType = defineStructType("addressType",
             attrDef("houseNum", INT_TYPE, ATTR_REQUIRED),
@@ -143,7 +143,7 @@ class DSLTest {
         )
 
         // 2. updated Types in System
-        Assert.assertEquals(s"${listTypes}", "[addressType,array<bigdecimal>,array<int>,map<string,double>,personType,t1,t2]")
+        Assert.assertEquals(s"${listTypes}", "[addressType,personType,t1,t2]")
 
 
         // 3. Construct a Person in Code

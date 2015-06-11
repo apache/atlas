@@ -18,7 +18,7 @@
 
 package org.apache.atlas.listener;
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.types.IDataType;
 
 import java.util.Collection;
@@ -32,15 +32,15 @@ public interface TypesChangeListener {
      * This is upon adding new type(s) to Store.
      *
      * @param dataTypes data type
-     * @throws MetadataException
+     * @throws AtlasException
      */
-    void onAdd(Collection<? extends IDataType> dataTypes) throws MetadataException;
+    void onAdd(Collection<? extends IDataType> dataTypes) throws AtlasException;
 
     /**
      * This is upon removing an existing type from the Store.
      *
      * @param typeName type name
-     * @throws MetadataException
+     * @throws AtlasException
      */
     // void onRemove(String typeName) throws MetadataException;
 

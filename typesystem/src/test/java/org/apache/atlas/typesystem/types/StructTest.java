@@ -18,7 +18,7 @@
 
 package org.apache.atlas.typesystem.types;
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.Struct;
 import org.junit.Assert;
@@ -39,7 +39,7 @@ public class StructTest extends BaseTest {
     }
 
     @Test
-    public void test1() throws MetadataException {
+    public void test1() throws AtlasException {
         Struct s = createStruct();
         ITypedStruct ts = structType.convert(s, Multiplicity.REQUIRED);
         Assert.assertEquals(ts.toString(), "{\n" +
@@ -62,7 +62,7 @@ public class StructTest extends BaseTest {
     }
 
     @Test
-    public void testRecursive() throws MetadataException {
+    public void testRecursive() throws AtlasException {
         Struct s1 = new Struct(recursiveStructType.getName());
         s1.set("a", 1);
         Struct s2 = new Struct(recursiveStructType.getName());

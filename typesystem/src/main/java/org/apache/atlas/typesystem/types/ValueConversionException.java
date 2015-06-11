@@ -18,9 +18,9 @@
 
 package org.apache.atlas.typesystem.types;
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 
-public class ValueConversionException extends MetadataException {
+public class ValueConversionException extends AtlasException {
 
     public ValueConversionException(IDataType typ, Object val) {
         this(typ, val, (Throwable) null);

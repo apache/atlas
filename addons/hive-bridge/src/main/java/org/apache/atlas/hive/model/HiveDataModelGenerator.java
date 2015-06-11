@@ -19,8 +19,8 @@
 package org.apache.atlas.hive.model;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.atlas.MetadataException;
-import org.apache.atlas.MetadataServiceClient;
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.typesystem.types.AttributeDefinition;
@@ -73,7 +73,7 @@ public class HiveDataModelGenerator {
         structTypeDefinitionMap = new HashMap<>();
     }
 
-    public void createDataModel() throws MetadataException {
+    public void createDataModel() throws AtlasException {
         LOG.info("Generating the Hive Data Model....");
 
         // enums
@@ -130,7 +130,7 @@ public class HiveDataModelGenerator {
         return ImmutableList.of();
     }
 
-    private void createHiveObjectTypeEnum() throws MetadataException {
+    private void createHiveObjectTypeEnum() throws AtlasException {
         EnumValue values[] = {
                 new EnumValue("GLOBAL", 1),
                 new EnumValue("DATABASE", 2),
@@ -145,7 +145,7 @@ public class HiveDataModelGenerator {
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_OBJECT_TYPE.getName());
     }
 
-    private void createHivePrincipalTypeEnum() throws MetadataException {
+    private void createHivePrincipalTypeEnum() throws AtlasException {
         EnumValue values[] = {
                 new EnumValue("USER", 1),
                 new EnumValue("ROLE", 2),
@@ -159,7 +159,7 @@ public class HiveDataModelGenerator {
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_PRINCIPAL_TYPE.getName());
     }
 
-    private void createResourceTypeEnum() throws MetadataException {
+    private void createResourceTypeEnum() throws AtlasException {
         EnumValue values[] = {
                 new EnumValue("JAR", 1),
                 new EnumValue("FILE", 2),
@@ -171,7 +171,7 @@ public class HiveDataModelGenerator {
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_RESOURCE_TYPE.getName());
     }
 
-    private void createSerDeStruct() throws MetadataException {
+    private void createSerDeStruct() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition(NAME, DataTypes.STRING_TYPE.getName(),
                         Multiplicity.OPTIONAL, false, null),
@@ -186,7 +186,7 @@ public class HiveDataModelGenerator {
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_SERDE.getName());
     }
 
-    private void createOrderStruct() throws MetadataException {
+    private void createOrderStruct() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition("col", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
@@ -200,7 +200,7 @@ public class HiveDataModelGenerator {
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_ORDER.getName());
     }
 
-    private void createStorageDescClass() throws MetadataException {
+    private void createStorageDescClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition("cols",
                         String.format("array<%s>", HiveDataTypes.HIVE_COLUMN.getName()),
@@ -239,7 +239,7 @@ public class HiveDataModelGenerator {
 
     /** Revisit later after nested array types are handled by the typesystem **/
 
-    private void createResourceUriStruct() throws MetadataException {
+    private void createResourceUriStruct() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition("resourceType", HiveDataTypes.HIVE_RESOURCE_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
@@ -252,7 +252,7 @@ public class HiveDataModelGenerator {
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_RESOURCEURI.getName());
     }
 
-    private void createDBClass() throws MetadataException {
+    private void createDBClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition(NAME, DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
@@ -277,7 +277,7 @@ public class HiveDataModelGenerator {
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_DB.getName());
     }
 
-    private void createTypeClass() throws MetadataException {
+    private void createTypeClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition(NAME, DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
@@ -296,7 +296,7 @@ public class HiveDataModelGenerator {
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_TYPE.getName());
     }
 
-    private void createColumnClass() throws MetadataException {
+    private void createColumnClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition(NAME, DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
@@ -313,7 +313,7 @@ public class HiveDataModelGenerator {
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_COLUMN.getName());
     }
 
-    private void createPartitionClass() throws MetadataException {
+    private void createPartitionClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition("values", DataTypes.arrayTypeName(DataTypes.STRING_TYPE.getName()),
                         Multiplicity.OPTIONAL, false, null),
@@ -338,7 +338,7 @@ public class HiveDataModelGenerator {
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_PARTITION.getName());
     }
 
-    private void createTableClass() throws MetadataException {
+    private void createTableClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition(TABLE_NAME, DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
@@ -380,7 +380,7 @@ public class HiveDataModelGenerator {
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_TABLE.getName());
     }
 
-    private void createIndexClass() throws MetadataException {
+    private void createIndexClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition(NAME, DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
@@ -406,12 +406,12 @@ public class HiveDataModelGenerator {
 
         HierarchicalTypeDefinition<ClassType> definition =
                 new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_INDEX.getName(),
-                        ImmutableList.of(MetadataServiceClient.DATA_SET_SUPER_TYPE), attributeDefinitions);
+                        ImmutableList.of(AtlasClient.DATA_SET_SUPER_TYPE), attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_INDEX.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_INDEX.getName());
     }
 
-    private void createRoleClass() throws MetadataException {
+    private void createRoleClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition("roleName", DataTypes.STRING_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
@@ -427,7 +427,7 @@ public class HiveDataModelGenerator {
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_ROLE.getName());
     }
 
-    private void createProcessClass() throws MetadataException {
+    private void createProcessClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition("startTime", DataTypes.LONG_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
@@ -447,12 +447,12 @@ public class HiveDataModelGenerator {
 
         HierarchicalTypeDefinition<ClassType> definition = new HierarchicalTypeDefinition<>(
                 ClassType.class, HiveDataTypes.HIVE_PROCESS.getName(),
-                ImmutableList.of(MetadataServiceClient.PROCESS_SUPER_TYPE), attributeDefinitions);
+                ImmutableList.of(AtlasClient.PROCESS_SUPER_TYPE), attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_PROCESS.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_PROCESS.getName());
     }
 
-    public String getModelAsJson() throws MetadataException {
+    public String getModelAsJson() throws AtlasException {
         createDataModel();
         return getDataModelAsJSON();
     }

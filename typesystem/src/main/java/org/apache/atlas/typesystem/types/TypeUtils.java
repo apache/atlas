@@ -20,7 +20,7 @@ package org.apache.atlas.typesystem.types;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.TypesDef;
 import scala.collection.JavaConversions;
 
@@ -42,11 +42,11 @@ public class TypeUtils {
             Pattern.compile(String.format("map<(%s),(%s)>", NAME_REGEX, NAME_REGEX));
 
     public static void outputVal(String val, Appendable buf, String prefix)
-    throws MetadataException {
+    throws AtlasException {
         try {
             buf.append(prefix).append(val);
         } catch (IOException ie) {
-            throw new MetadataException(ie);
+            throw new AtlasException(ie);
         }
     }
 

@@ -18,14 +18,14 @@
 
 package org.apache.atlas.typesystem.types;
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 
 public interface IDataType<T> {
     String getName();
 
-    T convert(Object val, Multiplicity m) throws MetadataException;
+    T convert(Object val, Multiplicity m) throws AtlasException;
 
     DataTypes.TypeCategory getTypeCategory();
 
-    void output(T val, Appendable buf, String prefix) throws MetadataException;
+    void output(T val, Appendable buf, String prefix) throws AtlasException;
 }

@@ -18,9 +18,9 @@
 
 package org.apache.atlas.repository.typestore;
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 
-public class StorageException extends MetadataException {
+public class StorageException extends AtlasException {
     public StorageException(String type) {
         super("Failure in typesystem storage for type " + type);
     }

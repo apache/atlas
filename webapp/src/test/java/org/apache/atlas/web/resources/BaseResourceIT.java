@@ -22,7 +22,7 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
-import org.apache.atlas.MetadataServiceClient;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
@@ -46,7 +46,7 @@ import javax.ws.rs.core.UriBuilder;
 public abstract class BaseResourceIT {
 
     protected WebResource service;
-    protected MetadataServiceClient serviceClient;
+    protected AtlasClient serviceClient;
     public static String baseUrl = "http://localhost:21000/";
 
     @BeforeClass
@@ -57,7 +57,7 @@ public abstract class BaseResourceIT {
         client.resource(UriBuilder.fromUri(baseUrl).build());
 
         service = client.resource(UriBuilder.fromUri(baseUrl).build());
-        serviceClient = new MetadataServiceClient(baseUrl);
+        serviceClient = new AtlasClient(baseUrl);
     }
 
     protected void createType(TypesDef typesDef) throws Exception {
@@ -83,7 +83,7 @@ public abstract class BaseResourceIT {
 
         JSONObject response = new JSONObject(responseAsString);
         Assert.assertNotNull(response.get("types"));
-        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
     }
 
     protected Id createInstance(Referenceable referenceable) throws Exception {
@@ -93,7 +93,7 @@ public abstract class BaseResourceIT {
         String entityJSON = InstanceSerialization.toJson(referenceable, true);
         System.out.println("Submitting new entity= " + entityJSON);
         JSONObject jsonObject = serviceClient.createEntity(entityJSON);
-        String guid = jsonObject.getString(MetadataServiceClient.GUID);
+        String guid = jsonObject.getString(AtlasClient.GUID);
         System.out.println("created instance for type " + typeName + ", guid: " + guid);
 
         // return the reference to created instance with guid

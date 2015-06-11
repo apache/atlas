@@ -27,7 +27,7 @@ import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.discovery.SearchIndexer;
 import org.apache.atlas.listener.TypesChangeListener;
 import org.apache.atlas.repository.Constants;
@@ -53,7 +53,7 @@ import java.util.Map;
 /**
  * Adds index for properties of a given type when its added before any instances are added.
  */
-public class GraphBackedSearchIndexer implements SearchIndexer, Provider<TypesChangeListener> {
+public class GraphBackedSearchIndexer implements SearchIndexer {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphBackedSearchIndexer.class);
 
@@ -145,10 +145,10 @@ public class GraphBackedSearchIndexer implements SearchIndexer, Provider<TypesCh
      * This is upon adding a new type to Store.
      *
      * @param dataTypes data type
-     * @throws org.apache.atlas.MetadataException
+     * @throws org.apache.atlas.AtlasException
      */
     @Override
-    public void onAdd(Collection<? extends IDataType> dataTypes) throws MetadataException {
+    public void onAdd(Collection<? extends IDataType> dataTypes) throws AtlasException {
 
         for(IDataType dataType : dataTypes) {
             LOG.info("Creating indexes for type name={}, definition={}", dataType.getName(), dataType.getClass());
@@ -157,9 +157,13 @@ public class GraphBackedSearchIndexer implements SearchIndexer, Provider<TypesCh
                 LOG.info("Index creation for type {} complete", dataType.getName());
             } catch (Throwable throwable) {
                 LOG.error("Error creating index for type {}", dataType, throwable);
+                //Rollback indexes if any failure
+                rollback();
                 throw new IndexCreationException("Error while creating index for type " + dataType, throwable);
             }
         }
+        //Commit indexes
+        commit();
     }
 
     private void addIndexForType(IDataType dataType) {
@@ -350,7 +354,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, Provider<TypesCh
         return true;
     }
 
-    @Override
     public void commit() throws IndexException {
         try {
             management.commit();
@@ -360,7 +363,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, Provider<TypesCh
         }
     }
 
-    @Override
     public void rollback() throws IndexException {
         try {
             management.rollback();
@@ -368,11 +370,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, Provider<TypesCh
             LOG.error("Index rollback failed " , e);
             throw new IndexException("Index rollback failed " , e);
         }
-    }
-
-    @Override
-    public TypesChangeListener get() {
-        return this;
     }
 
     /* Commenting this out since we do not need an index for edge label here

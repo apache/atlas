@@ -21,7 +21,7 @@ package org.apache.atlas;
 /**
  * A simple wrapper for 404.
  */
-public class TypeNotFoundException extends MetadataException {
+public class TypeNotFoundException extends AtlasException {
     public TypeNotFoundException() {
     }
 

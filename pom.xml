@@ -65,9 +65,9 @@
     <inceptionYear>2015</inceptionYear>
 
     <scm>
-        <connection>scm:git:https://github.com/hortonworks/metadata</connection>
-        <developerConnection>scm:git:https://github.com/hortonworks/metadata</developerConnection>
-        <url>https://github.com/hortonworks/metadata</url>
+        <connection>scm:git:https://github.com/apache/incubator-atlas</connection>
+        <developerConnection>scm:git:https://github.com/apache/incubator-atlas</developerConnection>
+        <url>https://github.com/apache/incubator-atlas</url>
     </scm>
 
     <properties>

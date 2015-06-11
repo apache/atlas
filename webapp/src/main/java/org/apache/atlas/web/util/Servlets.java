@@ -18,7 +18,7 @@
 
 package org.apache.atlas.web.util;
 
-import org.apache.atlas.MetadataServiceClient;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.ParamChecker;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
@@ -106,7 +106,7 @@ public final class Servlets {
         Response response = getErrorResponse(e.getMessage(), status);
         JSONObject responseJson = (JSONObject) response.getEntity();
         try {
-            responseJson.put(MetadataServiceClient.STACKTRACE, printStackTrace(e));
+            responseJson.put(AtlasClient.STACKTRACE, printStackTrace(e));
         } catch (JSONException e1) {
             LOG.warn("Could not construct error Json rensponse", e1);
         }
@@ -123,7 +123,7 @@ public final class Servlets {
         JSONObject errorJson = new JSONObject();
         Object errorEntity = Servlets.escapeJsonString(message);
         try {
-            errorJson.put(MetadataServiceClient.ERROR, errorEntity);
+            errorJson.put(AtlasClient.ERROR, errorEntity);
             errorEntity = errorJson;
         } catch (JSONException jsonE) {
             LOG.warn("Could not construct error Json rensponse", jsonE);

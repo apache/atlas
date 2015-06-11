@@ -20,7 +20,7 @@ package org.apache.atlas.typesystem.types;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import scala.math.BigInt;
 
 public class EnumType extends AbstractDataType<EnumValue> {
@@ -50,7 +50,7 @@ public class EnumType extends AbstractDataType<EnumValue> {
     }
 
     @Override
-    public EnumValue convert(Object val, Multiplicity m) throws MetadataException {
+    public EnumValue convert(Object val, Multiplicity m) throws AtlasException {
         if (val != null) {
             EnumValue e = null;
             if (val instanceof EnumValue) {

@@ -20,7 +20,7 @@ package org.apache.atlas.examples;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import org.apache.atlas.MetadataServiceClient;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
@@ -84,10 +84,10 @@ public class QuickStart {
             "JdbcAccess", "ETL", "Metric", "PII", "Fact", "Dimension"
     };
 
-    private final MetadataServiceClient metadataServiceClient;
+    private final AtlasClient metadataServiceClient;
 
     QuickStart(String baseUrl) {
-        metadataServiceClient = new MetadataServiceClient(baseUrl);
+        metadataServiceClient = new AtlasClient(baseUrl);
     }
 
     void createTypes() throws Exception {
@@ -291,7 +291,7 @@ public class QuickStart {
         String entityJSON = InstanceSerialization.toJson(referenceable, true);
         System.out.println("Submitting new entity= " + entityJSON);
         JSONObject jsonObject = metadataServiceClient.createEntity(entityJSON);
-        String guid = jsonObject.getString(MetadataServiceClient.GUID);
+        String guid = jsonObject.getString(AtlasClient.GUID);
         System.out.println("created instance for type " + typeName + ", guid: " + guid);
 
         // return the Id for created instance with guid
@@ -466,7 +466,7 @@ public class QuickStart {
     private void search() throws Exception {
         for (String dslQuery : getDSLQueries()) {
             JSONObject response = metadataServiceClient.searchEntity(dslQuery);
-            JSONObject results = response.getJSONObject(MetadataServiceClient.RESULTS);
+            JSONObject results = response.getJSONObject(AtlasClient.RESULTS);
             if (!results.isNull("rows")) {
                 JSONArray rows = results.getJSONArray("rows");
                 System.out.println("query [" + dslQuery + "] returned [" + rows.length() + "] rows");

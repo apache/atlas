@@ -18,8 +18,8 @@
 
 package org.apache.atlas.hive.bridge;
 
-import org.apache.atlas.MetadataServiceClient;
-import org.apache.atlas.MetadataServiceException;
+import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.typesystem.Referenceable;
@@ -64,7 +64,7 @@ public class HiveMetaStoreBridge {
     private static final Logger LOG = LoggerFactory.getLogger(HiveMetaStoreBridge.class);
 
     private final Hive hiveClient;
-    private final MetadataServiceClient metadataServiceClient;
+    private final AtlasClient atlasClient;
 
     /**
      * Construct a HiveMetaStoreBridge.
@@ -73,11 +73,11 @@ public class HiveMetaStoreBridge {
     public HiveMetaStoreBridge(HiveConf hiveConf) throws Exception {
         clusterName = hiveConf.get(HIVE_CLUSTER_NAME, DEFAULT_CLUSTER_NAME);
         hiveClient = Hive.get(hiveConf);
-        metadataServiceClient = new MetadataServiceClient(hiveConf.get(DGI_URL_PROPERTY, DEFAULT_DGI_URL));
+        atlasClient = new AtlasClient(hiveConf.get(DGI_URL_PROPERTY, DEFAULT_DGI_URL));
     }
 
-    public MetadataServiceClient getMetadataServiceClient() {
-        return metadataServiceClient;
+    public AtlasClient getAtlasClient() {
+        return atlasClient;
     }
 
     public void importHiveMetadata() throws Exception {
@@ -124,8 +124,8 @@ public class HiveMetaStoreBridge {
 
         String entityJSON = InstanceSerialization.toJson(referenceable, true);
         LOG.debug("Submitting new entity {} = {}", referenceable.getTypeName(), entityJSON);
-        JSONObject jsonObject = metadataServiceClient.createEntity(entityJSON);
-        String guid = jsonObject.getString(MetadataServiceClient.GUID);
+        JSONObject jsonObject = atlasClient.createEntity(entityJSON);
+        String guid = jsonObject.getString(AtlasClient.GUID);
         LOG.debug("created instance for type " + typeName + ", guid: " + guid);
 
         return new Referenceable(guid, referenceable.getTypeName(), null);
@@ -179,7 +179,7 @@ public class HiveMetaStoreBridge {
     }
 
     private Referenceable getEntityReferenceFromDSL(String typeName, String dslQuery) throws Exception {
-        MetadataServiceClient dgiClient = getMetadataServiceClient();
+        AtlasClient dgiClient = getAtlasClient();
         JSONArray results = dgiClient.searchByDSL(dslQuery);
         if (results.length() == 0) {
             return null;
@@ -216,11 +216,12 @@ public class HiveMetaStoreBridge {
         return getEntityReferenceFromDSL(typeName, dslQuery);
     }
 
-    private Referenceable getEntityReferenceFromGremlin(String typeName, String gremlinQuery) throws MetadataServiceException,
+    private Referenceable getEntityReferenceFromGremlin(String typeName, String gremlinQuery) throws
+    AtlasServiceException,
     JSONException {
-        MetadataServiceClient client = getMetadataServiceClient();
+        AtlasClient client = getAtlasClient();
         JSONObject response = client.searchByGremlin(gremlinQuery);
-        JSONArray results = response.getJSONArray(MetadataServiceClient.RESULTS);
+        JSONArray results = response.getJSONArray(AtlasClient.RESULTS);
         if (results.length() == 0) {
             return null;
         }
@@ -238,7 +239,7 @@ public class HiveMetaStoreBridge {
         //                        + "dbName where name = '%s' and clusterName = '%s' select p", typeName, valuesStr, tableName,
         //                dbName, clusterName);
 
-        String datasetType = MetadataServiceClient.DATA_SET_SUPER_TYPE;
+        String datasetType = AtlasClient.DATA_SET_SUPER_TYPE;
         String tableEntityName = getTableName(clusterName, dbName, tableName);
 
         String gremlinQuery = String.format("g.V.has('__typeName', '%s').has('%s.values', %s).as('p')."
@@ -254,7 +255,7 @@ public class HiveMetaStoreBridge {
             throw new IllegalArgumentException("Table " + dbName + "." + tableName + " doesn't exist");
         }
 
-        MetadataServiceClient dgiClient = getMetadataServiceClient();
+        AtlasClient dgiClient = getAtlasClient();
         Referenceable tableInstance = dgiClient.getEntity(tableRef.getId().id);
         Id sdId = (Id) tableInstance.get("sd");
         return new Referenceable(sdId.id, sdId.getTypeName(), null);
@@ -485,7 +486,7 @@ public class HiveMetaStoreBridge {
 
     public synchronized void registerHiveDataModel() throws Exception {
         HiveDataModelGenerator dataModelGenerator = new HiveDataModelGenerator();
-        MetadataServiceClient dgiClient = getMetadataServiceClient();
+        AtlasClient dgiClient = getAtlasClient();
 
         //Register hive data model if its not already registered
         if (dgiClient.getType(HiveDataTypes.HIVE_PROCESS.getName()) == null ) {
@@ -502,8 +503,8 @@ public class HiveMetaStoreBridge {
         hiveMetaStoreBridge.importHiveMetadata();
     }
 
-    public void updateTable(Referenceable tableReferenceable, Table newTable) throws MetadataServiceException {
-        MetadataServiceClient client = getMetadataServiceClient();
+    public void updateTable(Referenceable tableReferenceable, Table newTable) throws AtlasServiceException {
+        AtlasClient client = getAtlasClient();
         client.updateEntity(tableReferenceable.getId()._getId(), HiveDataModelGenerator.TABLE_NAME,
                 newTable.getTableName().toLowerCase());
         client.updateEntity(tableReferenceable.getId()._getId(), HiveDataModelGenerator.NAME,

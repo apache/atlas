@@ -18,7 +18,7 @@
 
 package org.apache.atlas.repository.memory;
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.BaseTest;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.Struct;
@@ -43,7 +43,7 @@ public class StructTest extends BaseTest {
     }
 
     @Test
-    public void test1() throws MetadataException {
+    public void test1() throws AtlasException {
         Struct s = createStruct();
         ITypedStruct ts = structType.convert(s, Multiplicity.REQUIRED);
         Assert.assertEquals(ts.toString(), "{\n" +
@@ -66,7 +66,7 @@ public class StructTest extends BaseTest {
     }
 
     @Test
-    public void testRecursive() throws MetadataException {
+    public void testRecursive() throws AtlasException {
         Struct s1 = new Struct(recursiveStructType.getName());
         s1.set("a", 1);
         Struct s2 = new Struct(recursiveStructType.getName());
@@ -84,7 +84,7 @@ public class StructTest extends BaseTest {
     }
 
     @Test
-    public void testSerialization() throws MetadataException {
+    public void testSerialization() throws AtlasException {
         Struct s = createStruct();
         String jsonStr = InstanceSerialization$.MODULE$.toJson(s, true);
         Struct s1 = InstanceSerialization$.MODULE$.fromJsonStruct(jsonStr, true);

@@ -19,7 +19,7 @@
 package org.apache.atlas.typesystem.types;
 
 import com.google.common.collect.ImmutableMap;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.persistence.DownCastStructInstance;
 
 public class DownCastFieldMapping {
@@ -31,7 +31,7 @@ public class DownCastFieldMapping {
     }
 
     public void set(DownCastStructInstance s, String attrName, Object val)
-    throws MetadataException {
+    throws AtlasException {
 
         String mappedNm = fieldNameMap.get(attrName);
         if (mappedNm == null) {
@@ -41,7 +41,7 @@ public class DownCastFieldMapping {
         s.backingInstance.set(mappedNm, val);
     }
 
-    public Object get(DownCastStructInstance s, String attrName) throws MetadataException {
+    public Object get(DownCastStructInstance s, String attrName) throws AtlasException {
 
         String mappedNm = fieldNameMap.get(attrName);
         if (mappedNm == null) {

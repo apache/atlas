@@ -21,7 +21,7 @@ package org.apache.atlas.typesystem.types;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
@@ -55,7 +55,7 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
 
     ClassType(TypeSystem typeSystem, String name, ImmutableList<String> superTypes,
               AttributeInfo... fields)
-    throws MetadataException {
+    throws AtlasException {
         super(typeSystem, ClassType.class, name, superTypes, fields);
         infoToNameMap = TypeUtils.buildAttrInfoToNameMap(fieldMapping);
     }
@@ -65,27 +65,27 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
         return DataTypes.TypeCategory.CLASS;
     }
 
-    public void validateId(Id id) throws MetadataException {
+    public void validateId(Id id) throws AtlasException {
         if (id != null) {
             ClassType cType = typeSystem.getDataType(ClassType.class, id.className);
             if (isSubType(cType.getName())) {
                 return;
             }
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Id %s is not valid for class %s", id, getName()));
         }
     }
 
-    protected Id getId(Object val) throws MetadataException {
+    protected Id getId(Object val) throws AtlasException {
         if (val instanceof Referenceable) {
             return ((Referenceable) val).getId();
         }
-        throw new MetadataException(String.format("Cannot get id from class %s", val.getClass()));
+        throw new AtlasException(String.format("Cannot get id from class %s", val.getClass()));
     }
 
     @Override
     public ITypedReferenceableInstance convert(Object val, Multiplicity m)
-    throws MetadataException {
+    throws AtlasException {
 
         if (val != null) {
             if (val instanceof ITypedReferenceableInstance) {
@@ -163,23 +163,23 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
     }
 
     @Override
-    public ITypedReferenceableInstance createInstance() throws MetadataException {
+    public ITypedReferenceableInstance createInstance() throws AtlasException {
         return createInstance((String[])null);
     }
 
     public ITypedReferenceableInstance createInstance(String... traitNames)
-    throws MetadataException {
+    throws AtlasException {
         return createInstance(null, traitNames);
     }
 
     public ITypedReferenceableInstance createInstance(Id id, String... traitNames)
-    throws MetadataException {
+    throws AtlasException {
         return createInstanceWithTraits(id, null, traitNames);
     }
 
     public ITypedReferenceableInstance createInstanceWithTraits(Id id, Referenceable r,
                                                                 String... traitNames)
-    throws MetadataException {
+    throws AtlasException {
 
         ImmutableMap.Builder<String, ITypedStruct> b
                 = new ImmutableBiMap.Builder<String, ITypedStruct>();
@@ -220,7 +220,7 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
 
     @Override
     public void output(IReferenceableInstance s, Appendable buf, String prefix)
-    throws MetadataException {
+    throws AtlasException {
         fieldMapping.output(s, buf, prefix);
     }
 

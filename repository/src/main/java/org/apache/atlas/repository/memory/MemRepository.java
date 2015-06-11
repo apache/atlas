@@ -18,7 +18,7 @@
 
 package org.apache.atlas.repository.memory;
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.DiscoverInstances;
 import org.apache.atlas.repository.IRepository;
 import org.apache.atlas.repository.RepositoryException;
@@ -120,7 +120,7 @@ public class MemRepository implements IRepository {
          */
         try {
             new ObjectGraphWalker(typeSystem, discoverInstances, i).walk();
-        } catch (MetadataException me) {
+        } catch (AtlasException me) {
             throw new RepositoryException("TypeSystem error when walking the ObjectGraph", me);
         }
 
@@ -170,7 +170,7 @@ public class MemRepository implements IRepository {
                 MapIds mapIds = new MapIds(discoverInstances.idToNewIdMap);
                 new ObjectGraphWalker(typeSystem, mapIds, newInstances).walk();
 
-            } catch (MetadataException me) {
+            } catch (AtlasException me) {
                 throw new RepositoryException(
                         String.format("Failed to create Instance(id = %s",
                                 transientInstance.getId()), me);
@@ -255,7 +255,7 @@ public class MemRepository implements IRepository {
             ITypedReferenceableInstance r = getDuringWalk(id, walker);
             walker.walk();
             return r;
-        } catch (MetadataException me) {
+        } catch (AtlasException me) {
             throw new RepositoryException("TypeSystem error when walking the ObjectGraph", me);
         }
     }
