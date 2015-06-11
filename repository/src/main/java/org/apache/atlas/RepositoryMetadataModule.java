@@ -18,7 +18,10 @@
 
 package org.apache.atlas;
 
+import com.google.inject.Provider;
+import com.google.inject.TypeLiteral;
 import com.google.inject.matcher.Matchers;
+import com.google.inject.multibindings.Multibinder;
 import com.google.inject.throwingproviders.ThrowingProviderBinder;
 import com.thinkaurelius.titan.core.TitanGraph;
 import org.aopalliance.intercept.MethodInterceptor;
@@ -27,6 +30,7 @@ import org.apache.atlas.discovery.HiveLineageService;
 import org.apache.atlas.discovery.LineageService;
 import org.apache.atlas.discovery.SearchIndexer;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
+import org.apache.atlas.listener.TypesChangeListener;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.graph.GraphBackedMetadataRepository;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
@@ -41,6 +45,7 @@ import org.apache.atlas.services.MetadataService;
  * Guice module for Repository module.
  */
 public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
+    private Multibinder<Provider<TypesChangeListener>> typesChangeListenerBinder;
 
     @Override
     protected void configure() {
@@ -61,13 +66,16 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
         // bind the GraphService interface to an implementation
         // bind(GraphService.class).to(graphServiceClass);
 
+        typesChangeListenerBinder = Multibinder.newSetBinder(binder(), new TypeLiteral<TypesChangeListener>());
+        typesChangeListenerBinder.addBinding().to(GraphBackedSearchIndexer.class);
+
+        bind(TypesChangeListener.class).to(GraphBackedSearchIndexer.class);
+
         // bind the MetadataService interface to an implementation
         bind(MetadataService.class).to(DefaultMetadataService.class).asEagerSingleton();
 
         // bind the DiscoveryService interface to an implementation
         bind(DiscoveryService.class).to(GraphBackedDiscoveryService.class).asEagerSingleton();
-
-        bind(SearchIndexer.class).to(GraphBackedSearchIndexer.class);
 
         bind(LineageService.class).to(HiveLineageService.class).asEagerSingleton();
 

@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 
@@ -141,21 +142,21 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
     /**
      * This is upon adding a new type to Store.
      *
-     * @param typeName type name
-     * @param dataType data type
+     * @param dataTypes data type
      * @throws org.apache.atlas.MetadataException
      */
     @Override
-    public void onAdd(String typeName, IDataType dataType) throws MetadataException {
-        LOG.info("Creating indexes for type name={}, definition={}", typeName, dataType);
+    public void onAdd(Collection<? extends IDataType> dataTypes) throws MetadataException {
 
-        try {
-            addIndexForType(dataType);
-            LOG.info("Index creation for type {} complete", typeName);
-
-        } catch (Throwable throwable) {
-            LOG.error("Error creating index for type {}", dataType, throwable);
-            throw new IndexCreationException("Error while creating index for type " + dataType, throwable);
+        for(IDataType dataType : dataTypes) {
+            LOG.info("Creating indexes for type name={}, definition={}", dataType.getName(), dataType.getClass());
+            try {
+                addIndexForType(dataType);
+                LOG.info("Index creation for type {} complete", dataType.getName());
+            } catch (Throwable throwable) {
+                LOG.error("Error creating index for type {}", dataType, throwable);
+                throw new IndexCreationException("Error while creating index for type " + dataType, throwable);
+            }
         }
     }
 

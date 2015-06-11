@@ -21,19 +21,20 @@ package org.apache.atlas.listener;
 import org.apache.atlas.MetadataException;
 import org.apache.atlas.typesystem.types.IDataType;
 
+import java.util.Collection;
+
 /**
  * Types change notification listener.
  */
 public interface TypesChangeListener {
 
     /**
-     * This is upon adding a new type to Store.
+     * This is upon adding new type(s) to Store.
      *
-     * @param typeName type name
-     * @param dataType data type
+     * @param dataTypes data type
      * @throws MetadataException
      */
-    void onAdd(String typeName, IDataType dataType) throws MetadataException;
+    void onAdd(Collection<? extends IDataType> dataTypes) throws MetadataException;
 
     /**
      * This is upon removing an existing type from the Store.

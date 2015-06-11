@@ -56,9 +56,11 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.actors.threadpool.Arrays;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.management.ListenerNotFoundException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -77,22 +79,22 @@ public class DefaultMetadataService implements MetadataService {
     private static final Logger LOG =
             LoggerFactory.getLogger(DefaultMetadataService.class);
 
-    private final Set<EntityChangeListener> entityChangeListeners
+    private final Collection<EntityChangeListener> entityChangeListeners
             = new LinkedHashSet<>();
 
     private final TypeSystem typeSystem;
     private final MetadataRepository repository;
     private final ITypeStore typeStore;
-    private final Set<Provider<SearchIndexer>> typeChangeListeners;
+    private final Collection<Provider<TypesChangeListener>> typeChangeListeners;
 
     @Inject
-    DefaultMetadataService(final MetadataRepository repository,
-                           final Provider<SearchIndexer> searchIndexProvider, final ITypeStore typeStore) throws MetadataException {
+    DefaultMetadataService(final MetadataRepository repository, final ITypeStore typeStore,
+                           final Collection<Provider<TypesChangeListener>> typeChangeListeners) throws MetadataException {
         this.typeStore = typeStore;
         this.typeSystem = TypeSystem.getInstance();
         this.repository = repository;
 
-        this.typeChangeListeners = new LinkedHashSet<Provider<SearchIndexer>>() {{ add(searchIndexProvider); }};
+        this.typeChangeListeners = typeChangeListeners;
         restoreTypeSystem();
     }
 
@@ -176,7 +178,7 @@ public class DefaultMetadataService implements MetadataService {
                 /* Create indexes first so that if index creation fails then we rollback
                    the typesystem and also do not persist the graph
                  */
-                onTypesAddedToRepo(typesAdded);
+                onTypesAdded(typesAdded);
                 typeStore.store(typeSystem, ImmutableList.copyOf(typesAdded.keySet()));
             } catch (Throwable t) {
                 typeSystem.removeTypes(typesAdded.keySet());
@@ -396,19 +398,15 @@ public class DefaultMetadataService implements MetadataService {
         onTraitDeletedFromEntity(guid, traitNameToBeDeleted);
     }
 
-    private void onTypesAddedToRepo(Map<String, IDataType> typesAdded) throws MetadataException {
-        Map<SearchIndexer, Throwable> caughtExceptions = new HashMap<>();
-        for(Provider<SearchIndexer> indexerProvider : typeChangeListeners) {
-            final SearchIndexer indexer = indexerProvider.get();
+    private void onTypesAdded(Map<String, IDataType> typesAdded) throws MetadataException {
+        Map<TypesChangeListener, Throwable> caughtExceptions = new HashMap<>();
+        for(Provider<TypesChangeListener> indexerProvider : typeChangeListeners) {
+            final TypesChangeListener listener = indexerProvider.get();
             try {
-                for (Map.Entry<String, IDataType> entry : typesAdded.entrySet()) {
-                    indexer.onAdd(entry.getKey(), entry.getValue());
-                }
-                indexer.commit();
+                listener.onAdd(typesAdded.values());
             } catch (IndexCreationException ice) {
                 LOG.error("Index creation for listener {} failed ", indexerProvider, ice);
-                indexer.rollback();
-                caughtExceptions.put(indexer, ice);
+                caughtExceptions.put(listener, ice);
             }
         }
 

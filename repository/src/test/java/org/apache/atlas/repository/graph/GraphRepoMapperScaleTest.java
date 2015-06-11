@@ -222,8 +222,8 @@ public class GraphRepoMapperScaleTest {
         };
 
         EnumTypeDefinition enumTypeDefinition = new EnumTypeDefinition("table_type", values);
-        EnumType enumType = typeSystem.defineEnumType(enumTypeDefinition);
-        searchIndexer.onAdd("table_type", enumType);
+        final EnumType enumType = typeSystem.defineEnumType(enumTypeDefinition);
+        searchIndexer.onAdd(new ArrayList<IDataType>() {{ add(enumType); }});
 
         HierarchicalTypeDefinition<ClassType> columnsDefinition =
                 TypesUtil.createClassTypeDef("hive_column_type",
@@ -275,8 +275,8 @@ public class GraphRepoMapperScaleTest {
                 ImmutableList.of(classificationTypeDefinition),
                 ImmutableList.of(databaseTypeDefinition, columnsDefinition, tableTypeDefinition));
 
-        for (Map.Entry<String, IDataType> entry : types.entrySet()) {
-            searchIndexer.onAdd(entry.getKey(), entry.getValue());
+        for (final Map.Entry<String, IDataType> entry : types.entrySet()) {
+            searchIndexer.onAdd(new ArrayList<IDataType>() {{ add(entry.getValue()); }});
         }
         searchIndexer.commit();
     }
