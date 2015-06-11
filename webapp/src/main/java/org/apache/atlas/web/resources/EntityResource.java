@@ -19,8 +19,8 @@
 package org.apache.atlas.web.resources;
 
 import com.google.common.base.Preconditions;
-import org.apache.atlas.MetadataException;
-import org.apache.atlas.MetadataServiceClient;
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.ParamChecker;
 import org.apache.atlas.TypeNotFoundException;
 import org.apache.atlas.repository.EntityNotFoundException;
@@ -99,9 +99,9 @@ public class EntityResource {
             URI locationURI = ub.path(guid).build();
 
             JSONObject response = new JSONObject();
-            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(MetadataServiceClient.GUID, guid);
-            response.put(MetadataServiceClient.DEFINITION,
+            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
+            response.put(AtlasClient.GUID, guid);
+            response.put(AtlasClient.DEFINITION,
                     metadataService.getEntityDefinition(guid));
 
             return Response.created(locationURI).entity(response).build();
@@ -110,7 +110,7 @@ public class EntityResource {
             LOG.error("Unable to persist entity instance due to a desrialization error ", ve);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(ve.getCause(), Response.Status.BAD_REQUEST));
-        } catch (MetadataException | IllegalArgumentException e) {
+        } catch (AtlasException | IllegalArgumentException e) {
             LOG.error("Unable to persist entity instance", e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
@@ -136,15 +136,15 @@ public class EntityResource {
             final String entityDefinition = metadataService.getEntityDefinition(guid);
 
             JSONObject response = new JSONObject();
-            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(MetadataServiceClient.GUID, guid);
+            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
+            response.put(AtlasClient.GUID, guid);
 
             Response.Status status = Response.Status.NOT_FOUND;
             if (entityDefinition != null) {
-                response.put(MetadataServiceClient.DEFINITION, entityDefinition);
+                response.put(AtlasClient.DEFINITION, entityDefinition);
                 status = Response.Status.OK;
             } else {
-                response.put(MetadataServiceClient.ERROR, Servlets.escapeJsonString(
+                response.put(AtlasClient.ERROR, Servlets.escapeJsonString(
                         String.format("An entity with GUID={%s} does not exist", guid)));
             }
 
@@ -154,7 +154,7 @@ public class EntityResource {
             LOG.error("An entity with GUID={} does not exist", guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
-        } catch (MetadataException | IllegalArgumentException e) {
+        } catch (AtlasException | IllegalArgumentException e) {
             LOG.error("Bad GUID={}", guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
@@ -180,17 +180,17 @@ public class EntityResource {
             final List<String> entityList = metadataService.getEntityList(entityType);
 
             JSONObject response = new JSONObject();
-            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(MetadataServiceClient.TYPENAME, entityType);
-            response.put(MetadataServiceClient.RESULTS, new JSONArray(entityList));
-            response.put(MetadataServiceClient.COUNT, entityList.size());
+            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
+            response.put(AtlasClient.TYPENAME, entityType);
+            response.put(AtlasClient.RESULTS, new JSONArray(entityList));
+            response.put(AtlasClient.COUNT, entityList.size());
 
             return Response.ok(response).build();
         } catch (NullPointerException e) {
             LOG.error("Entity type cannot be null", e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (MetadataException | IllegalArgumentException e) {
+        } catch (AtlasException | IllegalArgumentException e) {
             LOG.error("Unable to get entity list for type {}", entityType, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
@@ -222,13 +222,13 @@ public class EntityResource {
             metadataService.updateEntity(guid, property, value);
 
             JSONObject response = new JSONObject();
-            response.put(MetadataServiceClient.REQUEST_ID, Thread.currentThread().getName());
+            response.put(AtlasClient.REQUEST_ID, Thread.currentThread().getName());
             return Response.ok(response).build();
         } catch (EntityNotFoundException e) {
             LOG.error("An entity with GUID={} does not exist", guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
-        } catch (MetadataException | IllegalArgumentException e) {
+        } catch (AtlasException | IllegalArgumentException e) {
             LOG.error("Unable to add property {} to entity id {}", property, guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
@@ -255,17 +255,17 @@ public class EntityResource {
             final List<String> traitNames = metadataService.getTraitNames(guid);
 
             JSONObject response = new JSONObject();
-            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(MetadataServiceClient.GUID, guid);
-            response.put(MetadataServiceClient.RESULTS, new JSONArray(traitNames));
-            response.put(MetadataServiceClient.COUNT, traitNames.size());
+            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
+            response.put(AtlasClient.GUID, guid);
+            response.put(AtlasClient.RESULTS, new JSONArray(traitNames));
+            response.put(AtlasClient.COUNT, traitNames.size());
 
             return Response.ok(response).build();
         } catch (EntityNotFoundException e) {
             LOG.error("An entity with GUID={} does not exist", guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
-        } catch (MetadataException | IllegalArgumentException e) {
+        } catch (AtlasException | IllegalArgumentException e) {
             LOG.error("Unable to get trait names for entity {}", guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
@@ -296,15 +296,15 @@ public class EntityResource {
             URI locationURI = ub.path(guid).build();
 
             JSONObject response = new JSONObject();
-            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(MetadataServiceClient.GUID, guid);
+            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
+            response.put(AtlasClient.GUID, guid);
 
             return Response.created(locationURI).entity(response).build();
         } catch (EntityNotFoundException | TypeNotFoundException e) {
             LOG.error("An entity with GUID={} does not exist", guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
-        } catch (MetadataException | IllegalArgumentException e) {
+        } catch (AtlasException | IllegalArgumentException e) {
             LOG.error("Unable to add trait for entity={}", guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
@@ -333,8 +333,8 @@ public class EntityResource {
             metadataService.deleteTrait(guid, traitName);
 
             JSONObject response = new JSONObject();
-            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(MetadataServiceClient.GUID, guid);
+            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
+            response.put(AtlasClient.GUID, guid);
             response.put(TRAIT_NAME, traitName);
 
             return Response.ok(response).build();
@@ -342,7 +342,7 @@ public class EntityResource {
             LOG.error("An entity with GUID={} does not exist", guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
-        } catch (MetadataException | IllegalArgumentException e) {
+        } catch (AtlasException | IllegalArgumentException e) {
             LOG.error("Unable to delete trait name={} for entity={}", traitName, guid, e);
             throw new WebApplicationException(
                     Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));

@@ -19,7 +19,7 @@
 package org.apache.atlas.repository.typestore;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.types.TypeSystem;
 
@@ -29,7 +29,7 @@ public interface ITypeStore {
      * @param typeSystem type system to persist
      * @throws StorageException
      */
-    void store(TypeSystem typeSystem) throws MetadataException;
+    void store(TypeSystem typeSystem) throws AtlasException;
 
     /**
      * Persist the given type in the type system - insert or update
@@ -37,12 +37,12 @@ public interface ITypeStore {
      * @param types types to persist
      * @throws StorageException
      */
-    void store(TypeSystem typeSystem, ImmutableList<String> types) throws MetadataException;
+    void store(TypeSystem typeSystem, ImmutableList<String> types) throws AtlasException;
 
     /**
      * Restore all type definitions
      * @return List of persisted type definitions
-     * @throws org.apache.atlas.MetadataException
+     * @throws AtlasException
      */
-    TypesDef restore() throws MetadataException;
+    TypesDef restore() throws AtlasException;
 }

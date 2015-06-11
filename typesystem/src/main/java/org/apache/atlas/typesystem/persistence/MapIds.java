@@ -20,7 +20,7 @@ package org.apache.atlas.typesystem.persistence;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.ObjectGraphWalker;
@@ -36,7 +36,7 @@ public class MapIds implements ObjectGraphWalker.NodeProcessor {
     }
 
     @Override
-    public void processNode(ObjectGraphWalker.Node nd) throws MetadataException {
+    public void processNode(ObjectGraphWalker.Node nd) throws AtlasException {
 
         IReferenceableInstance ref = null;
         Id id = null;

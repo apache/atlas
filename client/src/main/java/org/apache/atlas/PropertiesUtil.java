@@ -31,15 +31,15 @@ public class PropertiesUtil {
     private static final String APPLICATION_PROPERTIES = "application.properties";
     public static final String CLIENT_PROPERTIES = "client.properties";
 
-    public static PropertiesConfiguration getApplicationProperties() throws MetadataException {
+    public static PropertiesConfiguration getApplicationProperties() throws AtlasException {
         return getPropertiesConfiguration(APPLICATION_PROPERTIES);
     }
 
-    public static PropertiesConfiguration getClientProperties() throws MetadataException {
+    public static PropertiesConfiguration getClientProperties() throws AtlasException {
         return getPropertiesConfiguration(CLIENT_PROPERTIES);
     }
 
-    private static PropertiesConfiguration getPropertiesConfiguration(String name) throws MetadataException {
+    private static PropertiesConfiguration getPropertiesConfiguration(String name) throws AtlasException {
         String confLocation = System.getProperty("atlas.conf");
         URL url;
         try {
@@ -51,7 +51,7 @@ public class PropertiesUtil {
             LOG.info("Loading {} from {}", name, url);
             return new PropertiesConfiguration(url);
         } catch (Exception e) {
-            throw new MetadataException("Failed to load application properties", e);
+            throw new AtlasException("Failed to load application properties", e);
         }
     }
 

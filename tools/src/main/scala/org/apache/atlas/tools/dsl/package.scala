@@ -69,7 +69,7 @@ package object dsl {
         new AttributeDefinition(name, dT.getName, m, isComposite, reverseAttributeName)
     }
 
-    def listTypes = (ts.getTypeNames -- ts.getCoreTypes).sorted.toList.mkString("[", ",", "]")
+    def listTypes = ts.getTypeNames.sorted.toList.mkString("[", ",", "]")
 
     def ts = TypeSystem.getInstance
 

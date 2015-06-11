@@ -18,7 +18,7 @@
 
 package org.apache.atlas.tools.thrift
 
-import org.apache.atlas.MetadataException
+import org.apache.atlas.AtlasException
 import org.apache.atlas.typesystem.types.DataTypes
 
 import scala.util.parsing.combinator.lexical.StdLexical
@@ -37,7 +37,7 @@ object BASE_TYPES extends Enumeration {
     val I64 = Value("i64")
     val DOUBLE = Value("double")
 
-    @throws[MetadataException]
+    @throws[AtlasException]
     def toPrimitiveTypeName(t : BASE_TYPES.Value) : String = t match {
         case STRING => DataTypes.STRING_TYPE.getName
         case SLIST => DataTypes.STRING_TYPE.getName
@@ -47,7 +47,7 @@ object BASE_TYPES extends Enumeration {
         case I32 => DataTypes.INT_TYPE.getName
         case I64 => DataTypes.LONG_TYPE.getName
         case DOUBLE => DataTypes.DOUBLE_TYPE.getName
-        case _ => throw new MetadataException(s"Thrift BaseType ($t) not supported")
+        case _ => throw new AtlasException(s"Thrift BaseType ($t) not supported")
     }
 }
 

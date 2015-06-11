@@ -19,7 +19,7 @@
 package org.apache.atlas.tools.thrift
 
 import com.google.common.collect.ImmutableList
-import org.apache.atlas.MetadataException
+import org.apache.atlas.AtlasException
 import org.apache.atlas.typesystem.TypesDef
 import org.apache.atlas.typesystem.types.{DataTypes, HierarchicalTypeDefinition, Multiplicity, TraitType, _}
 import org.slf4j.{Logger, LoggerFactory}
@@ -89,12 +89,12 @@ class ThriftTypesGen(val structNames: List[String], val classNames: List[String]
 
             val sDef = thriftDef.structs.find(_.name == cr.typeName)
             if (!sDef.isDefined) {
-                throw new MetadataException(s"Unknown Struct (${cr.typeName}) specified in CompositeRelation")
+                throw new AtlasException(s"Unknown Struct (${cr.typeName}) specified in CompositeRelation")
 
             }
             val fDef = sDef.get.fields.find(_.name == cr.fieldName)
             if (!fDef.isDefined) {
-                throw new MetadataException(s"Unknown Field (${cr.fieldName}) specified in CompositeRelation")
+                throw new AtlasException(s"Unknown Field (${cr.fieldName}) specified in CompositeRelation")
 
             }
 
@@ -104,11 +104,11 @@ class ThriftTypesGen(val structNames: List[String], val classNames: List[String]
                 val reverseStructName = dataTypeName(fDef.get.fieldType)
                 val reverseStructDef = thriftDef.structs.find(_.name == reverseStructName)
                 if (!reverseStructDef.isDefined) {
-                    throw new MetadataException(s"Cannot find Struct $reverseStructName in CompositeRelation $cr")
+                    throw new AtlasException(s"Cannot find Struct $reverseStructName in CompositeRelation $cr")
                 }
                 val rfDef = reverseStructDef.get.fields.find(_.name == cr.reverseFieldName)
                 if (!rfDef.isDefined) {
-                    throw new MetadataException(s"Unknown Reverse Field (${cr.reverseFieldName}) specified in CompositeRelation")
+                    throw new AtlasException(s"Unknown Reverse Field (${cr.reverseFieldName}) specified in CompositeRelation")
                 }
 
                 List(cr, CompositeRelation(reverseStructName, cr.reverseFieldName.get, Some(cr.fieldName)))
@@ -155,13 +155,13 @@ class ThriftTypesGen(val structNames: List[String], val classNames: List[String]
                 case Some(s) => s
                 case None => {
                     LOG.debug("Parse for thrift resource {} failed", thriftResource)
-                    throw new MetadataException(s"Failed to parse thrift resource: $thriftResource")
+                    throw new AtlasException(s"Failed to parse thrift resource: $thriftResource")
                 }
             }
         }
     }
 
-    @throws[MetadataException]
+    @throws[AtlasException]
     private def dataTypeName(fT: FieldType): String = fT match {
         case IdentifierType(n) => n
         case BaseType(typ, _) => BASE_TYPES.toPrimitiveTypeName(typ)
@@ -185,7 +185,7 @@ class ThriftTypesGen(val structNames: List[String], val classNames: List[String]
     private def includeDef(td: TypesDef, i: IncludeDef): Try[TypesDef] = {
         Try {
             if (i.value != FB_INCLUDE) {
-                throw new MetadataException(s"Unsupported Include ${i.value}, only fb303.thrift is currently allowed.")
+                throw new AtlasException(s"Unsupported Include ${i.value}, only fb303.thrift is currently allowed.")
             }
             td
         }
@@ -193,7 +193,7 @@ class ThriftTypesGen(val structNames: List[String], val classNames: List[String]
 
     private def cppIncludeDef(td: TypesDef, i: CppIncludeDef): Try[TypesDef] = {
         Try {
-            throw new MetadataException(s"Unsupported CppInclude ${i.value}.")
+            throw new AtlasException(s"Unsupported CppInclude ${i.value}.")
         }
     }
 
@@ -213,7 +213,7 @@ class ThriftTypesGen(val structNames: List[String], val classNames: List[String]
 
     private def senumDef(td: TypesDef, i: SEnumDef): Try[TypesDef] = {
         Try {
-            throw new MetadataException(s"Unsupported SEnums ${i}.")
+            throw new AtlasException(s"Unsupported SEnums ${i}.")
         }
     }
 

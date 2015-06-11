@@ -27,7 +27,7 @@ import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.VertexQuery;
 import com.tinkerpop.blueprints.util.io.graphson.GraphSONMode;
 import com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility;
-import org.apache.atlas.MetadataServiceClient;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.repository.graph.GraphProvider;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.lang.StringUtils;
@@ -122,7 +122,7 @@ public class RexsterGraphResource {
             Vertex vertex = findVertex(vertexId);
 
             JSONObject response = new JSONObject();
-            response.put(MetadataServiceClient.RESULTS, GraphSONUtility.jsonFromElement(
+            response.put(AtlasClient.RESULTS, GraphSONUtility.jsonFromElement(
                     vertex, getVertexIndexedKeys(), GraphSONMode.NORMAL));
             return Response.ok(response).build();
         } catch (JSONException e) {
@@ -163,8 +163,8 @@ public class RexsterGraphResource {
             Map<String, String> vertexProperties = getVertexProperties(vertex);
 
             JSONObject response = new JSONObject();
-            response.put(MetadataServiceClient.RESULTS, new JSONObject(vertexProperties));
-            response.put(MetadataServiceClient.COUNT, vertexProperties.size());
+            response.put(AtlasClient.RESULTS, new JSONObject(vertexProperties));
+            response.put(AtlasClient.COUNT, vertexProperties.size());
             return Response.ok(response).build();
         } catch (JSONException e) {
             throw new WebApplicationException(
@@ -273,9 +273,9 @@ public class RexsterGraphResource {
 
         JSONObject response = new JSONObject();
         if (!countOnly) {
-            response.put(MetadataServiceClient.RESULTS, elementArray);
+            response.put(AtlasClient.RESULTS, elementArray);
         }
-        response.put(MetadataServiceClient.COUNT, counter);
+        response.put(AtlasClient.COUNT, counter);
         return Response.ok(response).build();
     }
 
@@ -301,7 +301,7 @@ public class RexsterGraphResource {
             }
 
             JSONObject response = new JSONObject();
-            response.put(MetadataServiceClient.RESULTS, GraphSONUtility.jsonFromElement(
+            response.put(AtlasClient.RESULTS, GraphSONUtility.jsonFromElement(
                     edge, getEdgeIndexedKeys(), GraphSONMode.NORMAL));
             return Response.ok(response).build();
         } catch (JSONException e) {
@@ -321,8 +321,8 @@ public class RexsterGraphResource {
         }
 
         JSONObject response = new JSONObject();
-        response.put(MetadataServiceClient.RESULTS, vertexArray);
-        response.put(MetadataServiceClient.COUNT, counter);
+        response.put(AtlasClient.RESULTS, vertexArray);
+        response.put(AtlasClient.COUNT, counter);
 
         return response;
     }

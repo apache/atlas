@@ -18,7 +18,7 @@
 
 package org.apache.atlas.typesystem.types;
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.persistence.Id;
@@ -74,7 +74,7 @@ public class FieldMapping {
     }
 
     protected void outputFields(IStruct s, Appendable buf, String fieldPrefix)
-    throws MetadataException {
+    throws AtlasException {
         for (Map.Entry<String, AttributeInfo> e : fields.entrySet()) {
             String attrName = e.getKey();
             AttributeInfo i = e.getValue();
@@ -89,7 +89,7 @@ public class FieldMapping {
         }
     }
 
-    public void output(IStruct s, Appendable buf, String prefix) throws MetadataException {
+    public void output(IStruct s, Appendable buf, String prefix) throws AtlasException {
         if (s == null) {
             TypeUtils.outputVal("<null>\n", buf, "");
             return;
@@ -105,7 +105,7 @@ public class FieldMapping {
     }
 
     public void output(IReferenceableInstance s, Appendable buf, String prefix)
-    throws MetadataException {
+    throws AtlasException {
         if (s == null) {
             TypeUtils.outputVal("<null>\n", buf, "");
             return;

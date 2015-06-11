@@ -21,7 +21,7 @@ package org.apache.atlas.repository.graph;
 import com.google.inject.Provides;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.PropertiesUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -43,7 +43,7 @@ public class TitanGraphProvider implements GraphProvider<TitanGraph> {
      */
     private static final String ATLAS_PREFIX = "atlas.graph.";
 
-    private static Configuration getConfiguration() throws MetadataException {
+    private static Configuration getConfiguration() throws AtlasException {
         PropertiesConfiguration configProperties = PropertiesUtil.getApplicationProperties();
 
         Configuration graphConfig = new PropertiesConfiguration();
@@ -69,7 +69,7 @@ public class TitanGraphProvider implements GraphProvider<TitanGraph> {
         Configuration config;
         try {
             config = getConfiguration();
-        } catch (MetadataException e) {
+        } catch (AtlasException e) {
             throw new RuntimeException(e);
         }
 

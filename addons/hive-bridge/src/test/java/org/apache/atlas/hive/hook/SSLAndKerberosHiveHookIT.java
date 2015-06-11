@@ -18,8 +18,8 @@
 
 package org.apache.atlas.hive.hook;
 
-import org.apache.atlas.MetadataException;
-import org.apache.atlas.MetadataServiceClient;
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.PropertiesUtil;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.security.SecurityProperties;
@@ -66,7 +66,7 @@ public class SSLAndKerberosHiveHookIT extends BaseSSLAndKerberosTest {
 
     private static final String DGI_URL = "https://localhost:21443/";
     private Driver driver;
-    private MetadataServiceClient dgiCLient;
+    private AtlasClient dgiCLient;
     private SessionState ss;
     private TestSecureEmbeddedServer secureEmbeddedServer;
     private Subject subject;
@@ -128,9 +128,9 @@ public class SSLAndKerberosHiveHookIT extends BaseSSLAndKerberosTest {
 
         configuration.save(new FileWriter(persistDir + File.separator + "application.properties"));
 
-        dgiCLient = new MetadataServiceClient(DGI_URL) {
+        dgiCLient = new AtlasClient(DGI_URL) {
             @Override
-            protected PropertiesConfiguration getClientProperties() throws MetadataException {
+            protected PropertiesConfiguration getClientProperties() throws AtlasException {
                 return configuration;
             }
         };

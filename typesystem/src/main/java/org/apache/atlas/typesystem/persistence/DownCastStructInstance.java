@@ -18,7 +18,7 @@
 
 package org.apache.atlas.typesystem.persistence;
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.types.DownCastFieldMapping;
 
@@ -44,12 +44,12 @@ public class DownCastStructInstance implements IStruct {
     }
 
     @Override
-    public Object get(String attrName) throws MetadataException {
+    public Object get(String attrName) throws AtlasException {
         return fieldMapping.get(this, attrName);
     }
 
     @Override
-    public void set(String attrName, Object val) throws MetadataException {
+    public void set(String attrName, Object val) throws AtlasException {
         fieldMapping.set(this, attrName, val);
     }
 
@@ -58,7 +58,7 @@ public class DownCastStructInstance implements IStruct {
      * @nonpublic
      */
     @Override
-    public Map<String, Object> getValuesMap() throws MetadataException {
+    public Map<String, Object> getValuesMap() throws AtlasException {
 
         Map<String,Object> m = new HashMap<>();
         for (String attr : fieldMapping.fieldNameMap.keySet()) {

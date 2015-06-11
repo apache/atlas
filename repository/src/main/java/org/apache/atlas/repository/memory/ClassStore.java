@@ -19,7 +19,7 @@
 package org.apache.atlas.repository.memory;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.persistence.ReferenceableInstance;
@@ -87,7 +87,7 @@ public class ClassStore extends HierarchicalTypeStore {
         try {
             ReferenceableInstance r = (ReferenceableInstance) classType.createInstance(id, tNs);
             return r;
-        } catch (MetadataException me) {
+        } catch (AtlasException me) {
             throw new RepositoryException(me);
         }
     }

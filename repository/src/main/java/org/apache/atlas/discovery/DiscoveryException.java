@@ -18,11 +18,11 @@
 
 package org.apache.atlas.discovery;
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 
 import java.security.PrivilegedActionException;
 
-public class DiscoveryException extends MetadataException {
+public class DiscoveryException extends AtlasException {
 
     /**
      * Constructs a new exception with the specified detail message.  The

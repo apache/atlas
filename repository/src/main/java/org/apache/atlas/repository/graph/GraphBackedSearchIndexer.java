@@ -26,7 +26,7 @@ import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.discovery.SearchIndexer;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.IndexCreationException;
@@ -143,10 +143,10 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
      *
      * @param typeName type name
      * @param dataType data type
-     * @throws org.apache.atlas.MetadataException
+     * @throws AtlasException
      */
     @Override
-    public void onAdd(String typeName, IDataType dataType) throws MetadataException {
+    public void onAdd(String typeName, IDataType dataType) throws AtlasException {
         LOG.info("Creating indexes for type name={}, definition={}", typeName, dataType);
 
         try {

@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.DataTypes;
@@ -49,7 +49,7 @@ public class ReplaceIdWithInstance implements ObjectGraphWalker.NodeProcessor {
     }
 
     @Override
-    public void processNode(ObjectGraphWalker.Node nd) throws MetadataException {
+    public void processNode(ObjectGraphWalker.Node nd) throws AtlasException {
         if (nd.attributeName == null) {
             // do nothing
         } else if (!nd.aInfo.isComposite || nd.value == null) {
@@ -74,7 +74,7 @@ public class ReplaceIdWithInstance implements ObjectGraphWalker.NodeProcessor {
 
     ImmutableCollection<?> convertToInstances(ImmutableCollection<?> val,
                                               Multiplicity m, DataTypes.ArrayType arrType)
-    throws MetadataException {
+    throws AtlasException {
 
         if (val == null ||
                 arrType.getElemType().getTypeCategory() != DataTypes.TypeCategory.CLASS) {
@@ -99,7 +99,7 @@ public class ReplaceIdWithInstance implements ObjectGraphWalker.NodeProcessor {
 
     ImmutableMap<?, ?> convertToInstances(ImmutableMap val, Multiplicity m,
                                           DataTypes.MapType mapType)
-    throws MetadataException {
+    throws AtlasException {
 
         if (val == null ||
                 (mapType.getKeyType().getTypeCategory() != DataTypes.TypeCategory.CLASS &&
@@ -130,7 +130,7 @@ public class ReplaceIdWithInstance implements ObjectGraphWalker.NodeProcessor {
         return b.build();
     }
 
-    ITypedReferenceableInstance getInstance(Id id) throws MetadataException {
+    ITypedReferenceableInstance getInstance(Id id) throws AtlasException {
 
         ITypedReferenceableInstance r = idToInstanceMap.get(id);
         if (r == null) {

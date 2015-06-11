@@ -88,7 +88,7 @@ public final class TestUtils {
      * <p/>
      * Persons can have SecurityClearance(level : Int) clearance.
      */
-    public static void defineDeptEmployeeTypes(TypeSystem ts) throws MetadataException {
+    public static void defineDeptEmployeeTypes(TypeSystem ts) throws AtlasException {
 
         EnumTypeDefinition orgLevelEnum =
                 new EnumTypeDefinition("OrgLevel", new EnumValue("L1", 1), new EnumValue("L2", 2));
@@ -135,7 +135,7 @@ public final class TestUtils {
                 ImmutableList.of(deptTypeDef, personTypeDef, managerTypeDef));
     }
 
-    public static Referenceable createDeptEg1(TypeSystem ts) throws MetadataException {
+    public static Referenceable createDeptEg1(TypeSystem ts) throws AtlasException {
         Referenceable hrDept = new Referenceable("Department");
         Referenceable john = new Referenceable("Person");
         Referenceable jane = new Referenceable("Manager", "SecurityClearance");

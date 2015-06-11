@@ -18,8 +18,8 @@
 
 package org.apache.atlas.hive.hook;
 
-import org.apache.atlas.MetadataException;
-import org.apache.atlas.MetadataServiceClient;
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.security.SecurityProperties;
@@ -61,7 +61,7 @@ import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_PASSWORD_K
 public class SSLHiveHookIT {
     private static final String DGI_URL = "https://localhost:21443/";
     private Driver driver;
-    private MetadataServiceClient dgiCLient;
+    private AtlasClient dgiCLient;
     private SessionState ss;
     private Path jksPath;
     private String providerUrl;
@@ -117,9 +117,9 @@ public class SSLHiveHookIT {
 
         configuration.save(new FileWriter(persistDir + File.separator + "client.properties"));
 
-        dgiCLient = new MetadataServiceClient(DGI_URL) {
+        dgiCLient = new AtlasClient(DGI_URL) {
             @Override
-            protected PropertiesConfiguration getClientProperties() throws MetadataException {
+            protected PropertiesConfiguration getClientProperties() throws AtlasException {
                 return configuration;
             }
         };

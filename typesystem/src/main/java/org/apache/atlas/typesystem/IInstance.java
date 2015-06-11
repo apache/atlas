@@ -18,7 +18,7 @@
 
 package org.apache.atlas.typesystem;
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 
 import java.util.Map;
 
@@ -29,10 +29,10 @@ public interface IInstance {
 
     String getTypeName();
 
-    Object get(String attrName) throws MetadataException;
+    Object get(String attrName) throws AtlasException;
 
-    void set(String attrName, Object val) throws MetadataException;
+    void set(String attrName, Object val) throws AtlasException;
 
-    Map<String, Object> getValuesMap() throws MetadataException;
+    Map<String, Object> getValuesMap() throws AtlasException;
 
 }

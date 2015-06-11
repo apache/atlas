@@ -18,9 +18,9 @@
 package org.apache.atlas.repository;
 
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 
-public class IndexException extends MetadataException {
+public class IndexException extends AtlasException {
 
     public IndexException() {
     }

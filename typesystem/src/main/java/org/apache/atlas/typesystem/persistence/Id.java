@@ -19,7 +19,7 @@
 package org.apache.atlas.typesystem.persistence;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.types.FieldMapping;
@@ -129,13 +129,13 @@ public class Id implements ITypedReferenceableInstance {
     }
 
     @Override
-    public Object get(String attrName) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public Object get(String attrName) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
     @Override
-    public void set(String attrName, Object val) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public void set(String attrName, Object val) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
     @Override
@@ -144,99 +144,99 @@ public class Id implements ITypedReferenceableInstance {
     }
 
     @Override
-    public Map<String, Object> getValuesMap() throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public Map<String, Object> getValuesMap() throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
-    public void setNull(String attrName) throws MetadataException {
+    public void setNull(String attrName) throws AtlasException {
         set(attrName, null);
     }
 
-    public boolean getBoolean(String attrName) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public boolean getBoolean(String attrName) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
-    public byte getByte(String attrName) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public byte getByte(String attrName) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
-    public short getShort(String attrName) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public short getShort(String attrName) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
-    public int getInt(String attrName) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public int getInt(String attrName) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
-    public long getLong(String attrName) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public long getLong(String attrName) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
-    public float getFloat(String attrName) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public float getFloat(String attrName) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
-    public double getDouble(String attrName) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public double getDouble(String attrName) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
-    public BigInteger getBigInt(String attrName) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public BigInteger getBigInt(String attrName) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
-    public BigDecimal getBigDecimal(String attrName) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public BigDecimal getBigDecimal(String attrName) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
-    public Date getDate(String attrName) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public Date getDate(String attrName) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
-    public String getString(String attrName) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public String getString(String attrName) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
-    public void setBoolean(String attrName, boolean val) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public void setBoolean(String attrName, boolean val) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
-    public void setByte(String attrName, byte val) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public void setByte(String attrName, byte val) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
-    public void setShort(String attrName, short val) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public void setShort(String attrName, short val) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
-    public void setInt(String attrName, int val) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public void setInt(String attrName, int val) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
-    public void setLong(String attrName, long val) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public void setLong(String attrName, long val) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
-    public void setFloat(String attrName, float val) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public void setFloat(String attrName, float val) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
-    public void setDouble(String attrName, double val) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public void setDouble(String attrName, double val) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
-    public void setBigInt(String attrName, BigInteger val) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public void setBigInt(String attrName, BigInteger val) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
-    public void setBigDecimal(String attrName, BigDecimal val) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public void setBigDecimal(String attrName, BigDecimal val) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
-    public void setDate(String attrName, Date val) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public void setDate(String attrName, Date val) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 
-    public void setString(String attrName, String val) throws MetadataException {
-        throw new MetadataException("Get/Set not supported on an Id object");
+    public void setString(String attrName, String val) throws AtlasException {
+        throw new AtlasException("Get/Set not supported on an Id object");
     }
 }

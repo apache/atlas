@@ -19,7 +19,7 @@
 package org.apache.atlas.typesystem.json;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.ITypedInstance;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
@@ -58,7 +58,7 @@ public class SerializationJavaTest extends BaseTest {
      * Persons can have SecurityClearance(level : Int) clearance.
      */
     @Test
-    public void test1() throws MetadataException {
+    public void test1() throws AtlasException {
 
         TypeSystem ts = getTypeSystem();
 
@@ -152,7 +152,7 @@ public class SerializationJavaTest extends BaseTest {
     }
 
     @Test
-    public void testTrait() throws MetadataException {
+    public void testTrait() throws AtlasException {
 
         TypeSystem ts = getTypeSystem();
         HierarchicalTypeDefinition<TraitType> securityClearanceTypeDef = createTraitTypeDef(
