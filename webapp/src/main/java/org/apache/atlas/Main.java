@@ -38,8 +38,8 @@ public final class Main {
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
     private static final String APP_PATH = "app";
     private static final String APP_PORT = "port";
-    private static final String METADATA_HOME = "atlas.home";
-    private static final String METADATA_LOG_DIR = "atlas.log.dir";
+    private static final String ATLAS_HOME = "atlas.home";
+    private static final String ATLAS_LOG_DIR = "atlas.log.dir";
 
     /**
      * Prevent users from constructing this.
@@ -85,11 +85,11 @@ public final class Main {
     }
 
     private static void setApplicationHome() {
-        if (System.getProperty(METADATA_HOME) == null) {
-            System.setProperty(METADATA_HOME, "target");
+        if (System.getProperty(ATLAS_HOME) == null) {
+            System.setProperty(ATLAS_HOME, "target");
         }
-        if (System.getProperty(METADATA_LOG_DIR) == null) {
-            System.setProperty(METADATA_LOG_DIR, "target/logs");
+        if (System.getProperty(ATLAS_LOG_DIR) == null) {
+            System.setProperty(ATLAS_LOG_DIR, "target/logs");
         }
     }
 
@@ -102,7 +102,7 @@ public final class Main {
         if (cmd.hasOption(APP_PORT)) {
             appPort = Integer.valueOf(cmd.getOptionValue(APP_PORT));
         } else {
-            // default : metadata.enableTLS is true
+            // default : atlas.enableTLS is true
             appPort = StringUtils.isEmpty(enableTLSFlag)
                     || enableTLSFlag.equals("true") ? 21443 : 21000;
         }
@@ -112,8 +112,7 @@ public final class Main {
 
     private static boolean isTLSEnabled(String enableTLSFlag, int appPort) {
         return Boolean.valueOf(StringUtils.isEmpty(enableTLSFlag)
-                ? System
-                .getProperty("atlas.enableTLS", (appPort % 1000) == 443 ? "true" : "false")
+                ? System.getProperty("atlas.enableTLS", (appPort % 1000) == 443 ? "true" : "false")
                 : enableTLSFlag);
     }
 

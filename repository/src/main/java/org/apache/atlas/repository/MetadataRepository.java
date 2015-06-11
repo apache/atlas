@@ -18,7 +18,7 @@
 
 package org.apache.atlas.repository;
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
@@ -62,7 +62,7 @@ public interface MetadataRepository {
      * @param aInfo    attribute info
      * @return property key used to store a given attribute
      */
-    String getFieldNameInVertex(IDataType<?> dataType, AttributeInfo aInfo) throws MetadataException;
+    String getFieldNameInVertex(IDataType<?> dataType, AttributeInfo aInfo) throws AtlasException;
 
     /**
      * Return the edge label for a given attribute in the repository.
@@ -130,7 +130,7 @@ public interface MetadataRepository {
      * @return a list of trait names for the given entity guid
      * @throws RepositoryException
      */
-    List<String> getTraitNames(String guid) throws MetadataException;
+    List<String> getTraitNames(String guid) throws AtlasException;
 
     /**
      * Adds a new trait to an existing entity represented by a guid.

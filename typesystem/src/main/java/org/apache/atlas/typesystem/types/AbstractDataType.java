@@ -18,11 +18,11 @@
 
 package org.apache.atlas.typesystem.types;
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 
 abstract class AbstractDataType<T> implements IDataType<T> {
 
-    protected T convertNull(Multiplicity m) throws MetadataException {
+    protected T convertNull(Multiplicity m) throws AtlasException {
         if (!m.nullAllowed()) {
             throw new ValueConversionException.NullConversionException(m);
         }
@@ -30,7 +30,7 @@ abstract class AbstractDataType<T> implements IDataType<T> {
     }
 
     @Override
-    public void output(T val, Appendable buf, String prefix) throws MetadataException {
+    public void output(T val, Appendable buf, String prefix) throws AtlasException {
         TypeUtils.outputVal(val == null ? "<null>" : val.toString(), buf, prefix);
     }
 }

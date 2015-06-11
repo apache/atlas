@@ -1,4 +1,4 @@
----+ Security Features of the Data Governance and Metadata platform for Hadoop
+---+ Security Features of Apache Atlas
 
 
 ---++ Overview
@@ -12,7 +12,7 @@ The following features are available for enhancing the security of the platform:
 
 Both SSL one-way (server authentication) and two-way (server and client authentication) are supported.  The following application properties (properties configured in the application.properties file) are available for configuring SSL:
 
-   * <code>metadata.enableTLS</code> (false|true) [default: false] - enable/disable the SSL listener
+   * <code>atlas.enableTLS</code> (false|true) [default: false] - enable/disable the SSL listener
    * <code>keystore.file</code> - the path to the keystore file leveraged by the server.  This file contains the server certificate.
    * <code>truststore.file</code> - the path to the truststore file. This file contains the certificates of other trusted entities (e.g. the certificates for client processes if two-way SSL is enabled).  In most instances this can be set to the same value as the keystore.file property (especially if one-way SSL is enabled).
    * <code>client.auth.enabled</code> (false|true) [default: false] - enable/disable client authentication.  If enabled, the client will have to authenticate to the server during the transport session key creation process (i.e. two-way SSL is in effect).
@@ -38,9 +38,9 @@ The DGI platform, upon startup, is associated to an authenticated identity.  By 
 
 The properties for configuring service authentication are:
 
-   * <code>metadata.authentication.method</code> (simple|kerberos) [default: simple] - the authentication method to utilize.  Simple will leverage the OS authenticated identity and is the default mechanism.  'kerberos' indicates that the service is required to authenticate to the KDC leveraging the configured keytab and principal.
-   * <code>metadata.authentication.keytab</code> - the path to the keytab file.
-   * <code>metadata.authentication.principal</code> - the principal to use for authenticating to the KDC.  The principal is generally of the form "user/host@realm".  You may use the '_HOST' token for the hostname and the local hostname will be substituted in by the runtime (e.g. "dgi/_HOST@EXAMPLE.COM").
+   * <code>atlas.authentication.method</code> (simple|kerberos) [default: simple] - the authentication method to utilize.  Simple will leverage the OS authenticated identity and is the default mechanism.  'kerberos' indicates that the service is required to authenticate to the KDC leveraging the configured keytab and principal.
+   * <code>atlas.authentication.keytab</code> - the path to the keytab file.
+   * <code>atlas.authentication.principal</code> - the principal to use for authenticating to the KDC.  The principal is generally of the form "user/host@realm".  You may use the '_HOST' token for the hostname and the local hostname will be substituted in by the runtime (e.g. "dgi/_HOST@EXAMPLE.COM").
 
 ---+++ SPNEGO-based HTTP Authentication
 
@@ -53,28 +53,28 @@ The kerberos support requires the client accessing the server to first authentic
 
 The properties for configuring the SPNEGO support are:
 
-   * <code>metadata.http.authentication.enabled</code> (true|false) [default: false] - a property indicating whether to enable HTTP authentication
-   * <code>metadata.http.authentication.type</code> (simple|kerberos) [default: simple] - the authentication type
-   * <code>metadata.http.authentication.kerberos.principal</code> - the web-application Kerberos principal name. The Kerberos principal name must start with "HTTP/...". For example: "HTTP/localhost@LOCALHOST". There is no default value.
-   * <code>metadata.http.authentication.kerberos.keytab</code> - the path to the keytab file containing the credentials for the kerberos principal.
+   * <code>atlas.http.authentication.enabled</code> (true|false) [default: false] - a property indicating whether to enable HTTP authentication
+   * <code>atlas.http.authentication.type</code> (simple|kerberos) [default: simple] - the authentication type
+   * <code>atlas.http.authentication.kerberos.principal</code> - the web-application Kerberos principal name. The Kerberos principal name must start with "HTTP/...". For example: "HTTP/localhost@LOCALHOST". There is no default value.
+   * <code>atlas.http.authentication.kerberos.keytab</code> - the path to the keytab file containing the credentials for the kerberos principal.
 	
-For a more detailed discussion of the HTTP authentication mechanism refer to [[http://hadoop.apache.org/docs/stable/hadoop-auth/Configuration.html][Hadoop Auth, Java HTTP SPNEGO 2.6.0 - Server Side Configuration]].  The prefix that document references is "metadata.http.authentication" in the case of the DGI authentication implementation.
+For a more detailed discussion of the HTTP authentication mechanism refer to [[http://hadoop.apache.org/docs/stable/hadoop-auth/Configuration.html][Hadoop Auth, Java HTTP SPNEGO 2.6.0 - Server Side Configuration]].  The prefix that document references is "atlas.http.authentication" in the case of the DGI authentication implementation.
 
 ---+++ Client security configuration
 
 When leveraging Atlas client code to communicate with an Atlas server configured for SSL transport and/or Kerberos authentication, there is a requirement to provide a client configuration file that provides the security properties that allow for communication with, or authenticating to, the server.
-Create a client.properties file with the appropriate settings (see below) and place it on the client's classpath or in the directory specified by the "metadata.conf" system property.
+Create a client.properties file with the appropriate settings (see below) and place it on the client's classpath or in the directory specified by the "atlas.conf" system property.
 
 The client properties for SSL communication are:
 
-   * <code>metadata.enableTLS</code> (false|true) [default: false] - enable/disable the SSL client communication infrastructure.
+   * <code>atlas.enableTLS</code> (false|true) [default: false] - enable/disable the SSL client communication infrastructure.
    * <code>keystore.file</code> - the path to the keystore file leveraged by the client.  This file is only required if 2-Way SSL is enabled at the server and contains the client certificate.
    * <code>truststore.file</code> - the path to the truststore file. This file contains the certificates of trusted entities (e.g. the certificates for the server or a shared certification authority). This file is required for both one-way or two-way SSL.
    * <code>cert.stores.credential.provider.path</code> - the path to the Credential Provider store file.  The passwords for the keystore, truststore, and client certificate are maintained in this secure file.
 
 The property required for authenticating to the server (if authentication is enabled):
 
-   * <code>metadata.http.authentication.type</code> (simple|kerberos) [default: simple] - the authentication type
+   * <code>atlas.http.authentication.type</code> (simple|kerberos) [default: simple] - the authentication type
 
 If the authentication type specified is 'kerberos', then the kerberos ticket cache will be accessed for authenticating to the server (Therefore the client is required to authenticate to the KDC prior to communication with the server using 'kinit' or a similar mechanism).
 

@@ -21,7 +21,7 @@ package org.apache.atlas.query
 import java.util
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.apache.atlas.MetadataException
+import org.apache.atlas.AtlasException
 import org.apache.atlas.query.Expressions.{PathExpression, SelectExpression}
 import org.apache.atlas.typesystem.types.DataTypes.{ArrayType, PrimitiveType, TypeCategory}
 import org.apache.atlas.typesystem.types._
@@ -52,7 +52,7 @@ object TypeUtils {
             return numericTypes(rIdx)
         }
 
-        throw new MetadataException(s"Cannot combine types: ${typ1.getName} and ${typ2.getName}")
+        throw new AtlasException(s"Cannot combine types: ${typ1.getName} and ${typ2.getName}")
     }
 
     var tempStructCounter : AtomicInteger = new AtomicInteger(0)
@@ -239,7 +239,7 @@ object TypeUtils {
                     }
                 }
             } catch {
-                case _ : MetadataException => None
+                case _ : AtlasException => None
             }
         }
         None
@@ -249,7 +249,7 @@ object TypeUtils {
         try {
             Some(typSystem.getDataType(classOf[ClassType], id))
         } catch {
-            case _ : MetadataException => None
+            case _ : AtlasException => None
         }
     }
 
@@ -257,7 +257,7 @@ object TypeUtils {
         try {
             Some(typSystem.getDataType(classOf[TraitType], id))
         } catch {
-            case _ : MetadataException => None
+            case _ : AtlasException => None
         }
     }
 }

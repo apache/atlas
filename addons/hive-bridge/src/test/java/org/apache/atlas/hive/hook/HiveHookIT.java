@@ -18,7 +18,7 @@
 
 package org.apache.atlas.hive.hook;
 
-import org.apache.atlas.MetadataServiceClient;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
@@ -48,7 +48,7 @@ public class HiveHookIT {
     private static final String CLUSTER_NAME = "test";
     public static final String DEFAULT_DB = "default";
     private Driver driver;
-    private MetadataServiceClient dgiCLient;
+    private AtlasClient dgiCLient;
     private SessionState ss;
 
     @BeforeClass
@@ -60,7 +60,7 @@ public class HiveHookIT {
         ss = SessionState.start(ss);
         SessionState.setCurrentSessionState(ss);
 
-        dgiCLient = new MetadataServiceClient(DGI_URL);
+        dgiCLient = new AtlasClient(DGI_URL);
     }
 
     private HiveConf getHiveConf() {
@@ -286,7 +286,7 @@ public class HiveHookIT {
         String gremlinQuery = String.format("g.V.has('__typeName', '%s').has('%s.queryText', \"%s\").toList()",
                 typeName, typeName, normalize(queryStr));
         JSONObject response = dgiCLient.searchByGremlin(gremlinQuery);
-        JSONArray results = response.getJSONArray(MetadataServiceClient.RESULTS);
+        JSONArray results = response.getJSONArray(AtlasClient.RESULTS);
         Assert.assertEquals(results.length(), 1);
     }
 
@@ -332,7 +332,7 @@ public class HiveHookIT {
                         + ".has('%s.clusterName', '%s').back('p').toList()", typeName, typeName, value, typeName,
                 tableType, tableName.toLowerCase(), tableType, dbType, dbName.toLowerCase(), dbType, CLUSTER_NAME);
         JSONObject response = dgiCLient.searchByGremlin(gremlinQuery);
-        JSONArray results = response.getJSONArray(MetadataServiceClient.RESULTS);
+        JSONArray results = response.getJSONArray(AtlasClient.RESULTS);
         Assert.assertEquals(results.length(), 1);
     }
 

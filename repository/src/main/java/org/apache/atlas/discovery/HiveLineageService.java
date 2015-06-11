@@ -20,7 +20,7 @@ package org.apache.atlas.discovery;
 
 import com.thinkaurelius.titan.core.TitanGraph;
 import org.apache.atlas.GraphTransaction;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.ParamChecker;
 import org.apache.atlas.PropertiesUtil;
 import org.apache.atlas.discovery.graph.DefaultGraphPersistenceStrategy;
@@ -80,7 +80,7 @@ public class HiveLineageService implements LineageService {
             HIVE_TABLE_EXISTS_QUERY = conf.getString(
                     "atlas.lineage.hive.table.exists.query",
                     "from hive_table where name=\"%s\"");
-        } catch (MetadataException e) {
+        } catch (AtlasException e) {
             throw new RuntimeException(e);
         }
     }
@@ -107,7 +107,7 @@ public class HiveLineageService implements LineageService {
      */
     @Override
     @GraphTransaction
-    public String getOutputs(String tableName) throws MetadataException {
+    public String getOutputs(String tableName) throws AtlasException {
         LOG.info("Fetching lineage outputs for tableName={}", tableName);
         ParamChecker.notEmpty(tableName, "table name cannot be null");
         validateTableExists(tableName);
@@ -135,7 +135,7 @@ public class HiveLineageService implements LineageService {
      */
     @Override
     @GraphTransaction
-    public String getOutputsGraph(String tableName) throws MetadataException {
+    public String getOutputsGraph(String tableName) throws AtlasException {
         LOG.info("Fetching lineage outputs graph for tableName={}", tableName);
         ParamChecker.notEmpty(tableName, "table name cannot be null");
         validateTableExists(tableName);
@@ -156,7 +156,7 @@ public class HiveLineageService implements LineageService {
      */
     @Override
     @GraphTransaction
-    public String getInputs(String tableName) throws MetadataException {
+    public String getInputs(String tableName) throws AtlasException {
         LOG.info("Fetching lineage inputs for tableName={}", tableName);
         ParamChecker.notEmpty(tableName, "table name cannot be null");
         validateTableExists(tableName);
@@ -184,7 +184,7 @@ public class HiveLineageService implements LineageService {
      */
     @Override
     @GraphTransaction
-    public String getInputsGraph(String tableName) throws MetadataException {
+    public String getInputsGraph(String tableName) throws AtlasException {
         LOG.info("Fetching lineage inputs graph for tableName={}", tableName);
         ParamChecker.notEmpty(tableName, "table name cannot be null");
         validateTableExists(tableName);
@@ -205,7 +205,7 @@ public class HiveLineageService implements LineageService {
      */
     @Override
     @GraphTransaction
-    public String getSchema(String tableName) throws MetadataException {
+    public String getSchema(String tableName) throws AtlasException {
         LOG.info("Fetching schema for tableName={}", tableName);
         ParamChecker.notEmpty(tableName, "table name cannot be null");
         validateTableExists(tableName);
@@ -219,7 +219,7 @@ public class HiveLineageService implements LineageService {
      *
      * @param tableName table name
      */
-    private void validateTableExists(String tableName) throws MetadataException {
+    private void validateTableExists(String tableName) throws AtlasException {
         final String tableExistsQuery = String.format(HIVE_TABLE_EXISTS_QUERY, tableName);
         GremlinQueryResult queryResult = discoveryService.evaluate(tableExistsQuery);
         if (!(queryResult.rows().length() > 0)) {

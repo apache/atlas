@@ -24,12 +24,12 @@ import com.google.inject.servlet.GuiceServletContextListener;
 import com.sun.jersey.api.core.PackagesResourceConfig;
 import com.sun.jersey.guice.JerseyServletModule;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
-import org.apache.atlas.MetadataException;
-import org.apache.atlas.MetadataServiceClient;
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.PropertiesUtil;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.web.filters.AuditFilter;
-import org.apache.atlas.web.filters.MetadataAuthenticationFilter;
+import org.apache.atlas.web.filters.AtlasAuthenticationFilter;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.slf4j.Logger;
@@ -75,16 +75,16 @@ public class GuiceServletConfig extends GuiceServletContextListener {
 
                             Map<String, String> params = new HashMap<>();
                             params.put(PackagesResourceConfig.PROPERTY_PACKAGES, packages);
-                            serve("/" + MetadataServiceClient.BASE_URI + "*").with(GuiceContainer.class, params);
+                            serve("/" + AtlasClient.BASE_URI + "*").with(GuiceContainer.class, params);
                         }
 
                         private void configureAuthenticationFilter() throws ConfigurationException {
                             try {
                                 PropertiesConfiguration configuration = PropertiesUtil.getApplicationProperties();
                                 if (Boolean.valueOf(configuration.getString(HTTP_AUTHENTICATION_ENABLED))) {
-                                    filter("/*").through(MetadataAuthenticationFilter.class);
+                                    filter("/*").through(AtlasAuthenticationFilter.class);
                                 }
-                            } catch (MetadataException e) {
+                            } catch (AtlasException e) {
                                 LOG.warn("Error loading configuration and initializing authentication filter", e);
                             }
                         }

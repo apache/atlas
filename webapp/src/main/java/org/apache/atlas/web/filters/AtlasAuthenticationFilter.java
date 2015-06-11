@@ -42,8 +42,8 @@ import java.util.Properties;
  * todo: Subclass of {@link org.apache.hadoop.security.authentication.server.AuthenticationFilter}.
  */
 @Singleton
-public class MetadataAuthenticationFilter extends AuthenticationFilter {
-    private static final Logger LOG = LoggerFactory.getLogger(MetadataAuthenticationFilter.class);
+public class AtlasAuthenticationFilter extends AuthenticationFilter {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthenticationFilter.class);
     static final String PREFIX = "atlas.http.authentication.";
 
     @Override

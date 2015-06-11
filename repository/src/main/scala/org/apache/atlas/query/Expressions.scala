@@ -18,7 +18,7 @@
 
 package org.apache.atlas.query
 
-import org.apache.atlas.MetadataException
+import org.apache.atlas.AtlasException
 import org.apache.atlas.typesystem.types.DataTypes.{ArrayType, PrimitiveType, TypeCategory}
 import org.apache.atlas.typesystem.types._
 
@@ -28,7 +28,7 @@ object Expressions {
 
     class ExpressionException(val e: Expression, message: String, cause: Throwable, enableSuppression: Boolean,
                               writableStackTrace: Boolean)
-        extends MetadataException(message, cause, enableSuppression, writableStackTrace) {
+        extends AtlasException(message, cause, enableSuppression, writableStackTrace) {
 
         def this(e: Expression, message: String) {
             this(e, message, null, false, false)
@@ -510,7 +510,7 @@ object Expressions {
         try {
             typSystem.getDataType(classOf[TraitType], traitName)
         } catch {
-            case me: MetadataException => throw new ExpressionException(this, "not a TraitType", me)
+            case me: AtlasException => throw new ExpressionException(this, "not a TraitType", me)
         }
 
         override lazy val resolved = classExpression.isDefined
@@ -580,7 +580,7 @@ object Expressions {
                     s"datatype. Can not resolve due to unresolved child")
             }
             if (!TypeUtils.fieldMapping(child.dataType).isDefined) {
-                throw new MetadataException(s"Cannot apply hasField on ${child.dataType.getName}")
+                throw new AtlasException(s"Cannot apply hasField on ${child.dataType.getName}")
             }
             DataTypes.BOOLEAN_TYPE
         }
@@ -615,7 +615,7 @@ object Expressions {
             }
             children.foreach { childExpr =>
                 if (childExpr.dataType != DataTypes.BOOLEAN_TYPE) {
-                    throw new MetadataException(
+                    throw new AtlasException(
                         s"Cannot apply logical operator '$symbol' on input of type '${childExpr.dataType}")
                 }
             }

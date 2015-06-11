@@ -18,7 +18,7 @@
 
 package org.apache.atlas.web.resources;
 
-import org.apache.atlas.MetadataServiceClient;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.ParamChecker;
 import org.apache.atlas.discovery.DiscoveryException;
 import org.apache.atlas.discovery.LineageService;
@@ -80,9 +80,9 @@ public class HiveLineageResource {
             final String jsonResult = lineageService.getInputsGraph(tableName);
 
             JSONObject response = new JSONObject();
-            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
+            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
             response.put("tableName", tableName);
-            response.put(MetadataServiceClient.RESULTS, new JSONObject(jsonResult));
+            response.put(AtlasClient.RESULTS, new JSONObject(jsonResult));
 
             return Response.ok(response).build();
         } catch (EntityNotFoundException e) {
@@ -118,9 +118,9 @@ public class HiveLineageResource {
             final String jsonResult = lineageService.getOutputsGraph(tableName);
 
             JSONObject response = new JSONObject();
-            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
+            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
             response.put("tableName", tableName);
-            response.put(MetadataServiceClient.RESULTS, new JSONObject(jsonResult));
+            response.put(AtlasClient.RESULTS, new JSONObject(jsonResult));
 
             return Response.ok(response).build();
         } catch (EntityNotFoundException e) {
@@ -156,9 +156,9 @@ public class HiveLineageResource {
             final String jsonResult = lineageService.getSchema(tableName);
 
             JSONObject response = new JSONObject();
-            response.put(MetadataServiceClient.REQUEST_ID, Servlets.getRequestId());
+            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
             response.put("tableName", tableName);
-            response.put(MetadataServiceClient.RESULTS, new JSONObject(jsonResult));
+            response.put(AtlasClient.RESULTS, new JSONObject(jsonResult));
 
             return Response.ok(response).build();
         } catch (EntityNotFoundException e) {

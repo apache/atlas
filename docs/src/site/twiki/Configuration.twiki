@@ -18,8 +18,8 @@ This section sets up the graph db - titan - to use a persistence engine. Please 
 details. The example below uses BerkeleyDBJE.
 
 <verbatim>
-metadata.graph.storage.backend=berkeleyje
-metadata.graph.storage.directory=data/berkley
+atlas.graph.storage.backend=berkeleyje
+atlas.graph.storage.directory=data/berkley
 </verbatim>
 
 ---++++ Graph Search Index
@@ -27,11 +27,11 @@ This section sets up the graph db - titan - to use an search indexing system. Th
 configuration below setsup to use an embedded Elastic search indexing system.
 
 <verbatim>
-metadata.graph.index.search.backend=elasticsearch
-metadata.graph.index.search.directory=data/es
-metadata.graph.index.search.elasticsearch.client-only=false
-metadata.graph.index.search.elasticsearch.local-mode=true
-metadata.graph.index.search.elasticsearch.create.sleep=2000
+atlas.graph.index.search.backend=elasticsearch
+atlas.graph.index.search.directory=data/es
+atlas.graph.index.search.elasticsearch.client-only=false
+atlas.graph.index.search.elasticsearch.local-mode=true
+atlas.graph.index.search.elasticsearch.create.sleep=2000
 </verbatim>
 
 ---+++ Hive Lineage Configs
@@ -40,13 +40,13 @@ section encodes the specific types for the hive data model.
 
 # This models reflects the base super types for Data and Process
 <verbatim>
-metadata.lineage.hive.table.type.name=DataSet
-metadata.lineage.hive.process.type.name=Process
-metadata.lineage.hive.process.inputs.name=inputs
-metadata.lineage.hive.process.outputs.name=outputs
+atlas.lineage.hive.table.type.name=DataSet
+atlas.lineage.hive.process.type.name=Process
+atlas.lineage.hive.process.inputs.name=inputs
+atlas.lineage.hive.process.outputs.name=outputs
 
 ## Schema
-metadata.lineage.hive.table.schema.query=hive_table where name=?, columns
+atlas.lineage.hive.table.schema.query=hive_table where name=?, columns
 </verbatim>
 
 ---+++ Security Properties
@@ -55,6 +55,6 @@ metadata.lineage.hive.table.schema.query=hive_table where name=?, columns
 The following property is used to toggle the SSL feature.
 
 <verbatim>
-metadata.enableTLS=false
+atlas.enableTLS=false
 </verbatim>
 

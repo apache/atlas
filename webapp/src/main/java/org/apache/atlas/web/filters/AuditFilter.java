@@ -19,7 +19,7 @@
 package org.apache.atlas.web.filters;
 
 import com.google.inject.Singleton;
-import org.apache.atlas.MetadataServiceClient;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.web.util.DateTimeHelper;
 import org.apache.atlas.web.util.Servlets;
 import org.slf4j.Logger;
@@ -68,7 +68,7 @@ public class AuditFilter implements Filter {
             filterChain.doFilter(request, response);
         } finally {
             // put the request id into the response so users can trace logs for this request
-            ((HttpServletResponse) response).setHeader(MetadataServiceClient.REQUEST_ID, requestId);
+            ((HttpServletResponse) response).setHeader(AtlasClient.REQUEST_ID, requestId);
             currentThread.setName(oldName);
         }
     }

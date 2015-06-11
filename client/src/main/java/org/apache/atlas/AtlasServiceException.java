@@ -20,14 +20,14 @@ package org.apache.atlas;
 
 import com.sun.jersey.api.client.ClientResponse;
 
-public class MetadataServiceException extends Exception {
+public class AtlasServiceException extends Exception {
     private ClientResponse.Status status;
 
-    public MetadataServiceException(MetadataServiceClient.API api, Exception e) {
+    public AtlasServiceException(AtlasClient.API api, Exception e) {
         super("Metadata service API " + api + " failed", e);
     }
 
-    public MetadataServiceException(MetadataServiceClient.API api, ClientResponse response) {
+    public AtlasServiceException(AtlasClient.API api, ClientResponse response) {
         super("Metadata service API " + api + " failed with status " +
                 response.getClientResponseStatus().getStatusCode() + "(" +
                 response.getClientResponseStatus().getReasonPhrase() + ") Response Body (" +
@@ -35,7 +35,7 @@ public class MetadataServiceException extends Exception {
         this.status = response.getClientResponseStatus();
     }
 
-    public MetadataServiceException(Exception e) {
+    public AtlasServiceException(Exception e) {
         super(e);
     }
 

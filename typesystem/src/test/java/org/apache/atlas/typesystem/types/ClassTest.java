@@ -18,7 +18,7 @@
 
 package org.apache.atlas.typesystem.types;
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.junit.Assert;
@@ -33,7 +33,7 @@ public class ClassTest extends BaseTest {
     }
 
     @Test
-    public void test1() throws MetadataException {
+    public void test1() throws AtlasException {
 
         TypeSystem ts = getTypeSystem();
 

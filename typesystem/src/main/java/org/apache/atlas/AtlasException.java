@@ -21,25 +21,24 @@ package org.apache.atlas;
 /**
  * Base Exception class for metadata API.
  */
-public class MetadataException extends Exception {
+public class AtlasException extends Exception {
 
-    public MetadataException() {
+    public AtlasException() {
     }
 
-    public MetadataException(String message) {
+    public AtlasException(String message) {
         super(message);
     }
 
-    public MetadataException(String message, Throwable cause) {
+    public AtlasException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public MetadataException(Throwable cause) {
+    public AtlasException(Throwable cause) {
         super(cause);
     }
 
-    public MetadataException(String message, Throwable cause, boolean enableSuppression,
-                             boolean writableStackTrace) {
+    public AtlasException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 }

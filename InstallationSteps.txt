@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-A. Building & Installing Metadata
+A. Building & Installing Atlas
 =================================
 
 0. Prerequisites
@@ -26,14 +26,14 @@ You would need the following installed:
 * Maven 3.x
 
 
-1. Building Metadata
+1. Building Atlas
 --------------------
 
 Building DGI from the source repository
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* git clone git@github.com:hortonworks/metadata.git metadata
-* cd metadata
+* git clone git@github.com:hortonworks/atlas.git atlas
+* cd atlas
 * export MAVEN_OPTS="-Xmx1024m -XX:MaxPermSize=256m" && mvn clean install
 
 
@@ -44,13 +44,13 @@ Once the build successfully completes, artifacts can be packaged for deployment.
 
 * mvn clean assembly:assembly -DskipTests -DskipITs
 
-Tar can be found in {project dir}/target/apache-metadata-${project.version}-bin.tar.gz
+Tar can be found in {project dir}/target/apache-atlas-${project.version}-bin.tar.gz
 
 Tar is structured as follows
 
 |- bin
-   |- metadata-start.sh
-   |- metadata-stop.sh
+   |- atlas-start.sh
+   |- atlas-stop.sh
 |- conf
    |- application.properties
    |- graph.properties
@@ -58,7 +58,7 @@ Tar is structured as follows
 |- docs
 |- server
    |- webapp
-      |- metadata.war
+      |- atlas.war
 |- README
 |- NOTICE.txt
 |- LICENSE.txt
@@ -71,13 +71,13 @@ Tar is structured as follows
 a. Installing DGI
 ~~~~~~~~~~~~~~~~~~~~~~
 
-* tar -xzvf apache-metadata-${project.version}-bin.tar.gz
-* cd metadata-${project.version}
+* tar -xzvf apache-atlas-${project.version}-bin.tar.gz
+* cd atlas-${project.version}
 
 b. Starting DGI Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* bin/metadata-start.sh
+* bin/atlas-start.sh
 
 c. Using DGI
 ~~~~~~~~~~~~~~~
@@ -102,4 +102,4 @@ c. Using DGI
 d. Stopping DGI Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* bin/metadata-stop.sh
+* bin/atlas-stop.sh

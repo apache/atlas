@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.commons.lang3.StringUtils;
@@ -103,7 +103,7 @@ public class DataTypes {
         }
 
         @Override
-        public Boolean convert(Object val, Multiplicity m) throws MetadataException {
+        public Boolean convert(Object val, Multiplicity m) throws AtlasException {
             if (val != null) {
                 if (val instanceof Boolean) {
                     return (Boolean) val;
@@ -136,7 +136,7 @@ public class DataTypes {
         }
 
         @Override
-        public Byte convert(Object val, Multiplicity m) throws MetadataException {
+        public Byte convert(Object val, Multiplicity m) throws AtlasException {
             if (val != null) {
                 if (val instanceof Byte) {
                     return (Byte) val;
@@ -169,7 +169,7 @@ public class DataTypes {
         }
 
         @Override
-        public Short convert(Object val, Multiplicity m) throws MetadataException {
+        public Short convert(Object val, Multiplicity m) throws AtlasException {
             if (val != null) {
                 if (val instanceof Short) {
                     return (Short) val;
@@ -202,7 +202,7 @@ public class DataTypes {
         }
 
         @Override
-        public Integer convert(Object val, Multiplicity m) throws MetadataException {
+        public Integer convert(Object val, Multiplicity m) throws AtlasException {
             if (val != null) {
                 if (val instanceof Integer) {
                     return (Integer) val;
@@ -235,7 +235,7 @@ public class DataTypes {
         }
 
         @Override
-        public Long convert(Object val, Multiplicity m) throws MetadataException {
+        public Long convert(Object val, Multiplicity m) throws AtlasException {
             if (val != null) {
                 if (val instanceof Long) {
                     return (Long) val;
@@ -268,7 +268,7 @@ public class DataTypes {
         }
 
         @Override
-        public Float convert(Object val, Multiplicity m) throws MetadataException {
+        public Float convert(Object val, Multiplicity m) throws AtlasException {
             if (val != null) {
                 if (val instanceof Float) {
                     return (Float) val;
@@ -301,7 +301,7 @@ public class DataTypes {
         }
 
         @Override
-        public Double convert(Object val, Multiplicity m) throws MetadataException {
+        public Double convert(Object val, Multiplicity m) throws AtlasException {
             if (val != null) {
                 if (val instanceof Double) {
                     return (Double) val;
@@ -334,7 +334,7 @@ public class DataTypes {
         }
 
         @Override
-        public BigInteger convert(Object val, Multiplicity m) throws MetadataException {
+        public BigInteger convert(Object val, Multiplicity m) throws AtlasException {
             if (val != null) {
                 if (val instanceof BigInteger) {
                     return (BigInteger) val;
@@ -373,7 +373,7 @@ public class DataTypes {
         }
 
         @Override
-        public BigDecimal convert(Object val, Multiplicity m) throws MetadataException {
+        public BigDecimal convert(Object val, Multiplicity m) throws AtlasException {
             if (val != null) {
                 if (val instanceof BigDecimal) {
                     return (BigDecimal) val;
@@ -412,7 +412,7 @@ public class DataTypes {
         }
 
         @Override
-        public Date convert(Object val, Multiplicity m) throws MetadataException {
+        public Date convert(Object val, Multiplicity m) throws AtlasException {
             if (val != null) {
                 if (val instanceof Date) {
                     return (Date) val;
@@ -432,7 +432,7 @@ public class DataTypes {
         }
 
         @Override
-        public void output(Date val, Appendable buf, String prefix) throws MetadataException {
+        public void output(Date val, Appendable buf, String prefix) throws AtlasException {
             TypeUtils.outputVal(val == null ? "<null>" :
                     TypeSystem.getInstance().getDateFormat().format(val), buf, prefix);
         }
@@ -455,7 +455,7 @@ public class DataTypes {
         }
 
         @Override
-        public String convert(Object val, Multiplicity m) throws MetadataException {
+        public String convert(Object val, Multiplicity m) throws AtlasException {
             if (val != null && (!(val instanceof String) || StringUtils.isNotBlank((CharSequence) val))) {
                 return val.toString();
             }
@@ -491,7 +491,7 @@ public class DataTypes {
         }
 
         @Override
-        public ImmutableCollection<?> convert(Object val, Multiplicity m) throws MetadataException {
+        public ImmutableCollection<?> convert(Object val, Multiplicity m) throws AtlasException {
             if (val != null) {
                 Iterator it = null;
                 if (val instanceof Collection) {
@@ -528,7 +528,7 @@ public class DataTypes {
 
         public ImmutableCollection<?> mapIds(ImmutableCollection<?> val, Multiplicity m,
                                              Map<Id, Id> transientToNewIds)
-        throws MetadataException {
+        throws AtlasException {
 
             if (val == null || elemType.getTypeCategory() != TypeCategory.CLASS) {
                 return val;
@@ -591,7 +591,7 @@ public class DataTypes {
         }
 
         @Override
-        public ImmutableMap<?, ?> convert(Object val, Multiplicity m) throws MetadataException {
+        public ImmutableMap<?, ?> convert(Object val, Multiplicity m) throws AtlasException {
             if (val != null) {
                 Iterator<Map.Entry> it = null;
                 if (Map.class.isAssignableFrom(val.getClass())) {
@@ -619,7 +619,7 @@ public class DataTypes {
 
         public ImmutableMap<?, ?> mapIds(ImmutableMap val, Multiplicity m,
                                          Map<Id, Id> transientToNewIds)
-        throws MetadataException {
+        throws AtlasException {
 
             if (val == null || (keyType.getTypeCategory() != TypeCategory.CLASS &&
                     valueType.getTypeCategory() != TypeCategory.CLASS)) {

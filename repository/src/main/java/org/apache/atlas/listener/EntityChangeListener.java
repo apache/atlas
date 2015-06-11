@@ -18,7 +18,7 @@
 
 package org.apache.atlas.listener;
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 
 /**
@@ -30,25 +30,25 @@ public interface EntityChangeListener {
      * This is upon adding a new typed instance to the repository.
      *
      * @param typedInstance a typed instance
-     * @throws org.apache.atlas.MetadataException
+     * @throws AtlasException
      */
-    void onEntityAdded(ITypedReferenceableInstance typedInstance) throws MetadataException;
+    void onEntityAdded(ITypedReferenceableInstance typedInstance) throws AtlasException;
 
     /**
      * This is upon adding a new trait to a typed instance.
      *
      * @param guid          globally unique identifier for the entity
      * @param traitName     trait name for the instance that needs to be added to entity
-     * @throws org.apache.atlas.MetadataException
+     * @throws AtlasException
      */
-    void onTraitAdded(String guid, String traitName) throws MetadataException;
+    void onTraitAdded(String guid, String traitName) throws AtlasException;
 
     /**
      * This is upon deleting a trait from a typed instance.
      *
      * @param guid          globally unique identifier for the entity
      * @param traitName     trait name for the instance that needs to be deleted from entity
-     * @throws org.apache.atlas.MetadataException
+     * @throws AtlasException
      */
-    void onTraitDeleted(String guid, String traitName) throws MetadataException;
+    void onTraitDeleted(String guid, String traitName) throws AtlasException;
 }

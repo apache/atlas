@@ -20,7 +20,7 @@ package org.apache.atlas.typesystem.persistence;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.types.AttributeInfo;
@@ -105,7 +105,7 @@ public class StructInstance implements ITypedStruct {
         return fieldMapping;
     }
 
-    public void set(String attrName, Object val) throws MetadataException {
+    public void set(String attrName, Object val) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
             throw new ValueConversionException(getTypeName(), val, "Unknown field " + attrName);
@@ -165,14 +165,14 @@ public class StructInstance implements ITypedStruct {
                 referenceables[pos] = (ReferenceableInstance) cVal;
             }
         } else {
-            throw new MetadataException(String.format("Unknown datatype %s", i.dataType()));
+            throw new AtlasException(String.format("Unknown datatype %s", i.dataType()));
         }
     }
 
-    public Object get(String attrName) throws MetadataException {
+    public Object get(String attrName) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
         int pos = fieldMapping.fieldPos.get(attrName);
@@ -220,14 +220,14 @@ public class StructInstance implements ITypedStruct {
                 return referenceables[pos];
             }
         } else {
-            throw new MetadataException(String.format("Unknown datatype %s", i.dataType()));
+            throw new AtlasException(String.format("Unknown datatype %s", i.dataType()));
         }
     }
 
-    public void setNull(String attrName) throws MetadataException {
+    public void setNull(String attrName) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
         int nullPos = fieldMapping.fieldNullPos.get(attrName);
@@ -239,7 +239,7 @@ public class StructInstance implements ITypedStruct {
      * @nonpublic
      */
     @Override
-    public Map<String, Object> getValuesMap() throws MetadataException {
+    public Map<String, Object> getValuesMap() throws AtlasException {
 
         Map<String,Object> m = new HashMap<>();
         for (String attr : fieldMapping.fields.keySet()) {
@@ -248,15 +248,15 @@ public class StructInstance implements ITypedStruct {
         return m;
     }
 
-    public boolean getBoolean(String attrName) throws MetadataException {
+    public boolean getBoolean(String attrName) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
         if (i.dataType() != DataTypes.BOOLEAN_TYPE) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Field %s for Struct %s is not a %s, call generic get method",
                             attrName, getTypeName(), DataTypes.BOOLEAN_TYPE.getName()));
         }
@@ -271,15 +271,15 @@ public class StructInstance implements ITypedStruct {
         return bools[pos];
     }
 
-    public byte getByte(String attrName) throws MetadataException {
+    public byte getByte(String attrName) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
         if (i.dataType() != DataTypes.BYTE_TYPE) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Field %s for Struct %s is not a %s, call generic get method",
                             attrName, getTypeName(), DataTypes.BYTE_TYPE.getName()));
         }
@@ -294,15 +294,15 @@ public class StructInstance implements ITypedStruct {
         return bytes[pos];
     }
 
-    public short getShort(String attrName) throws MetadataException {
+    public short getShort(String attrName) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
         if (i.dataType() != DataTypes.SHORT_TYPE) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Field %s for Struct %s is not a %s, call generic get method",
                             attrName, getTypeName(), DataTypes.SHORT_TYPE.getName()));
         }
@@ -317,16 +317,16 @@ public class StructInstance implements ITypedStruct {
         return shorts[pos];
     }
 
-    public int getInt(String attrName) throws MetadataException {
+    public int getInt(String attrName) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
 
         if (i.dataType() != DataTypes.INT_TYPE && !(i.dataType() instanceof EnumType)) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Field %s for Struct %s is not a %s, call generic get method",
                             attrName, getTypeName(), DataTypes.INT_TYPE.getName()));
         }
@@ -341,15 +341,15 @@ public class StructInstance implements ITypedStruct {
         return ints[pos];
     }
 
-    public long getLong(String attrName) throws MetadataException {
+    public long getLong(String attrName) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
         if (i.dataType() != DataTypes.LONG_TYPE) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Field %s for Struct %s is not a %s, call generic get method",
                             attrName, getTypeName(), DataTypes.LONG_TYPE.getName()));
         }
@@ -364,15 +364,15 @@ public class StructInstance implements ITypedStruct {
         return longs[pos];
     }
 
-    public float getFloat(String attrName) throws MetadataException {
+    public float getFloat(String attrName) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
         if (i.dataType() != DataTypes.FLOAT_TYPE) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Field %s for Struct %s is not a %s, call generic get method",
                             attrName, getTypeName(), DataTypes.FLOAT_TYPE.getName()));
         }
@@ -387,15 +387,15 @@ public class StructInstance implements ITypedStruct {
         return floats[pos];
     }
 
-    public double getDouble(String attrName) throws MetadataException {
+    public double getDouble(String attrName) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
         if (i.dataType() != DataTypes.DOUBLE_TYPE) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Field %s for Struct %s is not a %s, call generic get method",
                             attrName, getTypeName(), DataTypes.DOUBLE_TYPE.getName()));
         }
@@ -410,15 +410,15 @@ public class StructInstance implements ITypedStruct {
         return doubles[pos];
     }
 
-    public BigInteger getBigInt(String attrName) throws MetadataException {
+    public BigInteger getBigInt(String attrName) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
         if (i.dataType() != DataTypes.BIGINTEGER_TYPE) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Field %s for Struct %s is not a %s, call generic get method",
                             attrName, getTypeName(), DataTypes.BIGINTEGER_TYPE.getName()));
         }
@@ -433,15 +433,15 @@ public class StructInstance implements ITypedStruct {
         return bigIntegers[pos];
     }
 
-    public BigDecimal getBigDecimal(String attrName) throws MetadataException {
+    public BigDecimal getBigDecimal(String attrName) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
         if (i.dataType() != DataTypes.BIGDECIMAL_TYPE) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Field %s for Struct %s is not a %s, call generic get method",
                             attrName, getTypeName(), DataTypes.BIGDECIMAL_TYPE.getName()));
         }
@@ -456,15 +456,15 @@ public class StructInstance implements ITypedStruct {
         return bigDecimals[pos];
     }
 
-    public Date getDate(String attrName) throws MetadataException {
+    public Date getDate(String attrName) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
         if (i.dataType() != DataTypes.DATE_TYPE) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Field %s for Struct %s is not a %s, call generic get method",
                             attrName, getTypeName(), DataTypes.DATE_TYPE.getName()));
         }
@@ -479,15 +479,15 @@ public class StructInstance implements ITypedStruct {
         return dates[pos];
     }
 
-    public String getString(String attrName) throws MetadataException {
+    public String getString(String attrName) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
         if (i.dataType() != DataTypes.STRING_TYPE) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Field %s for Struct %s is not a %s, call generic get method",
                             attrName, getTypeName(), DataTypes.STRING_TYPE.getName()));
         }
@@ -502,15 +502,15 @@ public class StructInstance implements ITypedStruct {
         return strings[pos];
     }
 
-    public void setBoolean(String attrName, boolean val) throws MetadataException {
+    public void setBoolean(String attrName, boolean val) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
         if (i.dataType() != DataTypes.BOOLEAN_TYPE) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Field %s for Struct %s is not a %s, call generic set method",
                             attrName, getTypeName(), DataTypes.BOOLEAN_TYPE.getName()));
         }
@@ -522,15 +522,15 @@ public class StructInstance implements ITypedStruct {
         bools[pos] = val;
     }
 
-    public void setByte(String attrName, byte val) throws MetadataException {
+    public void setByte(String attrName, byte val) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
         if (i.dataType() != DataTypes.BYTE_TYPE) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Field %s for Struct %s is not a %s, call generic set method",
                             attrName, getTypeName(), DataTypes.BYTE_TYPE.getName()));
         }
@@ -542,15 +542,15 @@ public class StructInstance implements ITypedStruct {
         bytes[pos] = val;
     }
 
-    public void setShort(String attrName, short val) throws MetadataException {
+    public void setShort(String attrName, short val) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
         if (i.dataType() != DataTypes.SHORT_TYPE) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Field %s for Struct %s is not a %s, call generic set method",
                             attrName, getTypeName(), DataTypes.SHORT_TYPE.getName()));
         }
@@ -562,15 +562,15 @@ public class StructInstance implements ITypedStruct {
         shorts[pos] = val;
     }
 
-    public void setInt(String attrName, int val) throws MetadataException {
+    public void setInt(String attrName, int val) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
         if (i.dataType() != DataTypes.INT_TYPE && !(i.dataType() instanceof EnumType)) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Field %s for Struct %s is not a %s, call generic set method",
                             attrName, getTypeName(), DataTypes.INT_TYPE.getName()));
         }
@@ -582,15 +582,15 @@ public class StructInstance implements ITypedStruct {
         ints[pos] = val;
     }
 
-    public void setLong(String attrName, long val) throws MetadataException {
+    public void setLong(String attrName, long val) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
         if (i.dataType() != DataTypes.LONG_TYPE) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Field %s for Struct %s is not a %s, call generic set method",
                             attrName, getTypeName(), DataTypes.LONG_TYPE.getName()));
         }
@@ -602,15 +602,15 @@ public class StructInstance implements ITypedStruct {
         longs[pos] = val;
     }
 
-    public void setFloat(String attrName, float val) throws MetadataException {
+    public void setFloat(String attrName, float val) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
         if (i.dataType() != DataTypes.FLOAT_TYPE) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Field %s for Struct %s is not a %s, call generic set method",
                             attrName, getTypeName(), DataTypes.FLOAT_TYPE.getName()));
         }
@@ -622,15 +622,15 @@ public class StructInstance implements ITypedStruct {
         floats[pos] = val;
     }
 
-    public void setDouble(String attrName, double val) throws MetadataException {
+    public void setDouble(String attrName, double val) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
         if (i.dataType() != DataTypes.DOUBLE_TYPE) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Field %s for Struct %s is not a %s, call generic set method",
                             attrName, getTypeName(), DataTypes.DOUBLE_TYPE.getName()));
         }
@@ -642,15 +642,15 @@ public class StructInstance implements ITypedStruct {
         doubles[pos] = val;
     }
 
-    public void setBigInt(String attrName, BigInteger val) throws MetadataException {
+    public void setBigInt(String attrName, BigInteger val) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
         if (i.dataType() != DataTypes.BIGINTEGER_TYPE) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Field %s for Struct %s is not a %s, call generic set method",
                             attrName, getTypeName(), DataTypes.BIGINTEGER_TYPE.getName()));
         }
@@ -662,15 +662,15 @@ public class StructInstance implements ITypedStruct {
         bigIntegers[pos] = val;
     }
 
-    public void setBigDecimal(String attrName, BigDecimal val) throws MetadataException {
+    public void setBigDecimal(String attrName, BigDecimal val) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
         if (i.dataType() != DataTypes.BIGDECIMAL_TYPE) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Field %s for Struct %s is not a %s, call generic set method",
                             attrName, getTypeName(), DataTypes.BIGDECIMAL_TYPE.getName()));
         }
@@ -682,15 +682,15 @@ public class StructInstance implements ITypedStruct {
         bigDecimals[pos] = val;
     }
 
-    public void setDate(String attrName, Date val) throws MetadataException {
+    public void setDate(String attrName, Date val) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
         if (i.dataType() != DataTypes.DATE_TYPE) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Field %s for Struct %s is not a %s, call generic set method",
                             attrName, getTypeName(), DataTypes.DATE_TYPE.getName()));
         }
@@ -702,15 +702,15 @@ public class StructInstance implements ITypedStruct {
         dates[pos] = val;
     }
 
-    public void setString(String attrName, String val) throws MetadataException {
+    public void setString(String attrName, String val) throws AtlasException {
         AttributeInfo i = fieldMapping.fields.get(attrName);
         if (i == null) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Unknown field %s for Struct %s", attrName, getTypeName()));
         }
 
         if (i.dataType() != DataTypes.STRING_TYPE) {
-            throw new MetadataException(
+            throw new AtlasException(
                     String.format("Field %s for Struct %s is not a %s, call generic set method",
                             attrName, getTypeName(), DataTypes.STRING_TYPE.getName()));
         }
@@ -722,7 +722,7 @@ public class StructInstance implements ITypedStruct {
         strings[pos] = val;
     }
 
-    public void output(IStruct s, Appendable buf, String prefix) throws MetadataException {
+    public void output(IStruct s, Appendable buf, String prefix) throws AtlasException {
         TypeUtils.outputVal("{", buf, prefix);
         if (s == null) {
             TypeUtils.outputVal("<null>\n", buf, "");
@@ -750,7 +750,7 @@ public class StructInstance implements ITypedStruct {
             fieldMapping.output(this, buf, prefix);
             return buf.toString();
 
-        } catch (MetadataException me) {
+        } catch (AtlasException me) {
             throw new RuntimeException(me);
         }
     }

@@ -45,8 +45,8 @@ import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
 /**
  * Client for metadata.
  */
-public class MetadataServiceClient {
-    private static final Logger LOG = LoggerFactory.getLogger(MetadataServiceClient.class);
+public class AtlasClient {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasClient.class);
     public static final String NAME = "name";
     public static final String GUID = "GUID";
     public static final String TYPENAME = "typeName";
@@ -80,7 +80,7 @@ public class MetadataServiceClient {
 
     private WebResource service;
 
-    public MetadataServiceClient(String baseUrl) {
+    public AtlasClient(String baseUrl) {
         DefaultClientConfig config = new DefaultClientConfig();
         PropertiesConfiguration clientConfig = null;
         try {
@@ -102,7 +102,7 @@ public class MetadataServiceClient {
         service = client.resource(UriBuilder.fromUri(baseUrl).build());
     }
 
-    protected PropertiesConfiguration getClientProperties() throws MetadataException {
+    protected PropertiesConfiguration getClientProperties() throws AtlasException {
         return PropertiesUtil.getClientProperties();
     }
 
@@ -157,16 +157,16 @@ public class MetadataServiceClient {
      * Register the given type(meta model)
      * @param typeAsJson type definition a jaon
      * @return result json object
-     * @throws MetadataServiceException
+     * @throws AtlasServiceException
      */
-    public JSONObject createType(String typeAsJson) throws MetadataServiceException {
+    public JSONObject createType(String typeAsJson) throws AtlasServiceException {
         return callAPI(API.CREATE_TYPE, typeAsJson);
     }
 
-    public List<String> listTypes() throws MetadataServiceException {
+    public List<String> listTypes() throws AtlasServiceException {
         try {
             final JSONObject jsonObject = callAPI(API.LIST_TYPES, null);
-            final JSONArray list = jsonObject.getJSONArray(MetadataServiceClient.RESULTS);
+            final JSONArray list = jsonObject.getJSONArray(AtlasClient.RESULTS);
             ArrayList<String> types = new ArrayList<>();
             for (int index = 0; index < list.length(); index++) {
                 types.add(list.getString(index));
@@ -174,22 +174,22 @@ public class MetadataServiceClient {
 
             return types;
         } catch (JSONException e) {
-            throw new MetadataServiceException(API.LIST_TYPES, e);
+            throw new AtlasServiceException(API.LIST_TYPES, e);
         }
     }
 
-    public String getType(String typeName) throws MetadataServiceException {
+    public String getType(String typeName) throws AtlasServiceException {
         WebResource resource = getResource(API.GET_TYPE, typeName);
         try {
             JSONObject response = callAPIWithResource(API.GET_TYPE, resource);
             return response.getString(DEFINITION);
-        } catch (MetadataServiceException e) {
+        } catch (AtlasServiceException e) {
             if (e.getStatus() == ClientResponse.Status.NOT_FOUND) {
                 return null;
             }
             throw e;
         } catch (JSONException e) {
-            throw new MetadataServiceException(e);
+            throw new AtlasServiceException(e);
         }
     }
 
@@ -197,9 +197,9 @@ public class MetadataServiceClient {
      * Create the given entity
      * @param entityAsJson entity(type instance) as json
      * @return result json object
-     * @throws MetadataServiceException
+     * @throws AtlasServiceException
      */
-    public JSONObject createEntity(String entityAsJson) throws MetadataServiceException {
+    public JSONObject createEntity(String entityAsJson) throws AtlasServiceException {
         return callAPI(API.CREATE_ENTITY, entityAsJson);
     }
 
@@ -207,15 +207,15 @@ public class MetadataServiceClient {
      * Get an entity given the entity id
      * @param guid entity id
      * @return result json object
-     * @throws MetadataServiceException
+     * @throws AtlasServiceException
      */
-    public Referenceable getEntity(String guid) throws MetadataServiceException {
+    public Referenceable getEntity(String guid) throws AtlasServiceException {
         JSONObject jsonResponse = callAPI(API.GET_ENTITY, null, guid);
         try {
-            String entityInstanceDefinition = jsonResponse.getString(MetadataServiceClient.DEFINITION);
+            String entityInstanceDefinition = jsonResponse.getString(AtlasClient.DEFINITION);
             return InstanceSerialization.fromJsonReferenceable(entityInstanceDefinition, true);
         } catch (JSONException e) {
-            throw new MetadataServiceException(e);
+            throw new AtlasServiceException(e);
         }
     }
 
@@ -225,14 +225,14 @@ public class MetadataServiceClient {
      * @param property  property key
      * @param value     property value
      */
-    public JSONObject updateEntity(String guid, String property, String value) throws MetadataServiceException {
+    public JSONObject updateEntity(String guid, String property, String value) throws AtlasServiceException {
         WebResource resource = getResource(API.UPDATE_ENTITY, guid);
         resource = resource.queryParam(ATTRIBUTE_NAME, property);
         resource = resource.queryParam(ATTRIBUTE_VALUE, value);
         return callAPIWithResource(API.UPDATE_ENTITY, resource);
     }
 
-    public JSONObject searchEntity(String searchQuery) throws MetadataServiceException {
+    public JSONObject searchEntity(String searchQuery) throws AtlasServiceException {
         WebResource resource = getResource(API.SEARCH);
         resource = resource.queryParam(QUERY, searchQuery);
         return callAPIWithResource(API.SEARCH, resource);
@@ -244,10 +244,10 @@ public class MetadataServiceClient {
      * @param attributeName attribute name
      * @param attributeValue attribute value
      * @return result json object
-     * @throws MetadataServiceException
+     * @throws AtlasServiceException
      */
     public JSONArray rawSearch(String typeName, String attributeName, Object attributeValue) throws
-            MetadataServiceException {
+            AtlasServiceException {
 //        String gremlinQuery = String.format(
 //                "g.V.has(\"typeName\",\"%s\").and(_().has(\"%s.%s\", T.eq, \"%s\")).toList()",
 //                typeName, typeName, attributeName, attributeValue);
@@ -260,9 +260,9 @@ public class MetadataServiceClient {
      * Search given query DSL
      * @param query DSL query
      * @return result json object
-     * @throws MetadataServiceException
+     * @throws AtlasServiceException
      */
-    public JSONArray searchByDSL(String query) throws MetadataServiceException {
+    public JSONArray searchByDSL(String query) throws AtlasServiceException {
         LOG.debug("DSL query: {}", query);
         WebResource resource = getResource(API.SEARCH_DSL);
         resource = resource.queryParam(QUERY, query);
@@ -270,7 +270,7 @@ public class MetadataServiceClient {
         try {
             return result.getJSONObject(RESULTS).getJSONArray(ROWS);
         } catch (JSONException e) {
-            throw new MetadataServiceException(e);
+            throw new AtlasServiceException(e);
         }
     }
 
@@ -278,9 +278,9 @@ public class MetadataServiceClient {
      * Search given gremlin query
      * @param gremlinQuery Gremlin query
      * @return result json object
-     * @throws MetadataServiceException
+     * @throws AtlasServiceException
      */
-    public JSONObject searchByGremlin(String gremlinQuery) throws MetadataServiceException {
+    public JSONObject searchByGremlin(String gremlinQuery) throws AtlasServiceException {
         LOG.debug("Gremlin query: " + gremlinQuery);
         WebResource resource = getResource(API.SEARCH_GREMLIN);
         resource = resource.queryParam(QUERY, gremlinQuery);
@@ -291,37 +291,37 @@ public class MetadataServiceClient {
      * Search given full text search
      * @param query Query
      * @return result json object
-     * @throws MetadataServiceException
+     * @throws AtlasServiceException
      */
-    public JSONObject searchByFullText(String query) throws MetadataServiceException {
+    public JSONObject searchByFullText(String query) throws AtlasServiceException {
         WebResource resource = getResource(API.SEARCH_FULL_TEXT);
         resource = resource.queryParam(QUERY, query);
         return callAPIWithResource(API.SEARCH_FULL_TEXT, resource);
     }
 
-    public JSONObject getInputGraph(String datasetName) throws MetadataServiceException {
+    public JSONObject getInputGraph(String datasetName) throws AtlasServiceException {
         JSONObject response = callAPI(API.LINEAGE_INPUTS_GRAPH, null, datasetName, "/inputs/graph");
         try {
-            return response.getJSONObject(MetadataServiceClient.RESULTS);
+            return response.getJSONObject(AtlasClient.RESULTS);
         } catch (JSONException e) {
-            throw new MetadataServiceException(e);
+            throw new AtlasServiceException(e);
         }
     }
 
-    public JSONObject getOutputGraph(String datasetName) throws MetadataServiceException {
+    public JSONObject getOutputGraph(String datasetName) throws AtlasServiceException {
         JSONObject response = callAPI(API.LINEAGE_OUTPUTS_GRAPH, null, datasetName, "/outputs/graph");
         try {
-            return response.getJSONObject(MetadataServiceClient.RESULTS);
+            return response.getJSONObject(AtlasClient.RESULTS);
         } catch (JSONException e) {
-            throw new MetadataServiceException(e);
+            throw new AtlasServiceException(e);
         }
     }
 
-    public String getRequestId(JSONObject json) throws MetadataServiceException {
+    public String getRequestId(JSONObject json) throws AtlasServiceException {
         try {
             return json.getString(REQUEST_ID);
         } catch (JSONException e) {
-            throw new MetadataServiceException(e);
+            throw new AtlasServiceException(e);
         }
     }
 
@@ -335,12 +335,12 @@ public class MetadataServiceClient {
         return resource;
     }
 
-    private JSONObject callAPIWithResource(API api, WebResource resource) throws MetadataServiceException {
+    private JSONObject callAPIWithResource(API api, WebResource resource) throws AtlasServiceException {
         return callAPIWithResource(api, resource, null);
     }
 
     private JSONObject callAPIWithResource(API api, WebResource resource, Object requestObject)
-            throws MetadataServiceException {
+            throws AtlasServiceException {
         ClientResponse clientResponse = resource
                 .accept(JSON_MEDIA_TYPE)
                 .type(JSON_MEDIA_TYPE)
@@ -353,15 +353,15 @@ public class MetadataServiceClient {
             try {
                 return new JSONObject(responseAsString);
             } catch (JSONException e) {
-                throw new MetadataServiceException(api, e);
+                throw new AtlasServiceException(api, e);
             }
         }
 
-        throw new MetadataServiceException(api, clientResponse);
+        throw new AtlasServiceException(api, clientResponse);
     }
 
     private JSONObject callAPI(API api, Object requestObject,
-                               String... pathParams) throws MetadataServiceException {
+                               String... pathParams) throws AtlasServiceException {
         WebResource resource = getResource(api, pathParams);
         return callAPIWithResource(api, resource, requestObject);
     }

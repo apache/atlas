@@ -22,7 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-import org.apache.atlas.MetadataServiceClient;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.persistence.Id;
@@ -82,9 +82,9 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
         System.out.println("inputs graph = " + responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-        JSONObject results = response.getJSONObject(MetadataServiceClient.RESULTS);
+        JSONObject results = response.getJSONObject(AtlasClient.RESULTS);
         Assert.assertNotNull(results);
 
         JSONObject values = results.getJSONObject("values");
@@ -116,9 +116,9 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
         System.out.println("outputs graph= " + responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-        JSONObject results = response.getJSONObject(MetadataServiceClient.RESULTS);
+        JSONObject results = response.getJSONObject(AtlasClient.RESULTS);
         Assert.assertNotNull(results);
 
         JSONObject values = results.getJSONObject("values");
@@ -149,9 +149,9 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
         System.out.println("schema = " + responseAsString);
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertNotNull(response.get(MetadataServiceClient.REQUEST_ID));
+        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
-        JSONObject results = response.getJSONObject(MetadataServiceClient.RESULTS);
+        JSONObject results = response.getJSONObject(AtlasClient.RESULTS);
         Assert.assertNotNull(results);
 
         JSONArray rows = results.getJSONArray("rows");
@@ -288,27 +288,19 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
     }
 
     private void setupInstances() throws Exception {
-        Id salesDB = database(
-                "Sales", "Sales Database", "John ETL", "hdfs://host:8000/apps/warehouse/sales");
+        Id salesDB = database("Sales", "Sales Database", "John ETL", "hdfs://host:8000/apps/warehouse/sales");
 
-        List<Referenceable> salesFactColumns = ImmutableList.of(
-                column("time_id", "int", "time id"),
-                column("product_id", "int", "product id"),
-                column("customer_id", "int", "customer id", "PII"),
-                column("sales", "double", "product id", "Metric")
-        );
+        List<Referenceable> salesFactColumns = ImmutableList.of(column("time_id", "int", "time id"),
+                column("product_id", "int", "product id"), column("customer_id", "int", "customer id", "PII"),
+                column("sales", "double", "product id", "Metric"));
 
-        Id salesFact = table("sales_fact", "sales fact table",
-                salesDB, "Joe", "Managed", salesFactColumns, "Fact");
+        Id salesFact = table("sales_fact", "sales fact table", salesDB, "Joe", "Managed", salesFactColumns, "Fact");
 
-        List<Referenceable> timeDimColumns = ImmutableList.of(
-                column("time_id", "int", "time id"),
-                column("dayOfYear", "int", "day Of Year"),
-                column("weekDay", "int", "week Day")
-        );
+        List<Referenceable> timeDimColumns = ImmutableList.of(column("time_id", "int", "time id"),
+                column("dayOfYear", "int", "day Of Year"), column("weekDay", "int", "week Day"));
 
-        Id timeDim = table("time_dim", "time dimension table",
-                salesDB, "John Doe", "External", timeDimColumns, "Dimension");
+        Id timeDim = table("time_dim", "time dimension table", salesDB, "John Doe", "External", timeDimColumns,
+                "Dimension");
 
         Id reportingDB = database("Reporting", "reporting database", "Jane BI",
                 "hdfs://host:8000/apps/warehouse/reporting");

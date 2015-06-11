@@ -1,4 +1,4 @@
-Apache Metadata Governance is an effort undergoing incubation at the Apache
+Apache Atlas is an effort undergoing incubation at the Apache
 Software Foundation (ASF), sponsored by the Apache Incubator PMC.
 
 Incubation is required of all newly accepted projects until a further
@@ -10,7 +10,7 @@ While incubation status is not necessarily a reflection of the
 completeness or stability of the code, it does indicate that the
 project has yet to be fully endorsed by the ASF.
 
-For more information about the incubation status of the Metadata Governance
+For more information about the incubation status of the Apache Atlas
 project you can go to the following page:
 
-http://incubator.apache.org/projects/Metadata-Governance.html
+http://incubator.apache.org/projects/atlas.html

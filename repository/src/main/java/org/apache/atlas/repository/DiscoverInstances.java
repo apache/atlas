@@ -18,7 +18,7 @@
 
 package org.apache.atlas.repository;
 
-import org.apache.atlas.MetadataException;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.DataTypes;
@@ -43,7 +43,7 @@ public class DiscoverInstances implements ObjectGraphWalker.NodeProcessor {
     }
 
     @Override
-    public void processNode(ObjectGraphWalker.Node nd) throws MetadataException {
+    public void processNode(ObjectGraphWalker.Node nd) throws AtlasException {
 
         IReferenceableInstance ref = null;
         Id id = null;
