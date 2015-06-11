@@ -76,32 +76,29 @@ public class GraphBackedTypeStore implements ITypeStore {
     @Override
     @GraphTransaction
     public void store(TypeSystem typeSystem, ImmutableList<String> typeNames) throws AtlasException {
-        ImmutableList<String> coreTypes = typeSystem.getCoreTypes();
         for (String typeName : typeNames) {
-            if (!coreTypes.contains(typeName)) {
-                IDataType dataType = typeSystem.getDataType(IDataType.class, typeName);
-                LOG.debug("Processing {}.{} in type store", dataType.getTypeCategory(), dataType.getName());
-                switch (dataType.getTypeCategory()) {
-                    case ENUM:
-                        storeInGraph((EnumType)dataType);
-                        break;
+            IDataType dataType = typeSystem.getDataType(IDataType.class, typeName);
+            LOG.debug("Processing {}.{} in type store", dataType.getTypeCategory(), dataType.getName());
+            switch (dataType.getTypeCategory()) {
+                case ENUM:
+                    storeInGraph((EnumType)dataType);
+                    break;
 
-                    case STRUCT:
-                        StructType structType = (StructType) dataType;
-                        storeInGraph(typeSystem, dataType.getTypeCategory(), dataType.getName(),
-                                ImmutableList.copyOf(structType.infoToNameMap.keySet()), ImmutableList.<String>of());
-                        break;
+                case STRUCT:
+                    StructType structType = (StructType) dataType;
+                    storeInGraph(typeSystem, dataType.getTypeCategory(), dataType.getName(),
+                            ImmutableList.copyOf(structType.infoToNameMap.keySet()), ImmutableList.<String>of());
+                    break;
 
-                    case TRAIT:
-                    case CLASS:
-                        HierarchicalType type = (HierarchicalType) dataType;
-                        storeInGraph(typeSystem, dataType.getTypeCategory(), dataType.getName(),
-                                type.immediateAttrs, type.superTypes);
-                        break;
+                case TRAIT:
+                case CLASS:
+                    HierarchicalType type = (HierarchicalType) dataType;
+                    storeInGraph(typeSystem, dataType.getTypeCategory(), dataType.getName(),
+                            type.immediateAttrs, type.superTypes);
+                    break;
 
-                    default:    //Ignore primitive/collection types as they are covered under references
-                        break;
-                }
+                default:    //Ignore primitive/collection types as they are covered under references
+                    break;
             }
         }
     }
@@ -209,7 +206,7 @@ public class GraphBackedTypeStore implements ITypeStore {
     }
 
     private void addEdge(Vertex fromVertex, Vertex toVertex, String label) {
-        LOG.debug("Adding edge from {} to {} with label {}" + toString(fromVertex), toString(toVertex), label);
+        LOG.debug("Adding edge from {} to {} with label {}", toString(fromVertex), toString(toVertex), label);
         titanGraph.addEdge(null, fromVertex, toVertex, label);
     }
 
@@ -297,7 +294,7 @@ public class GraphBackedTypeStore implements ITypeStore {
     }
 
     private String toString(Vertex vertex) {
-        return PROPERTY_PREFIX + "." + vertex.getProperty(Constants.TYPENAME_PROPERTY_KEY);
+        return PROPERTY_PREFIX + vertex.getProperty(Constants.TYPENAME_PROPERTY_KEY);
     }
 
     /**

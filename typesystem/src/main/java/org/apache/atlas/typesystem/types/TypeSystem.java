@@ -85,7 +85,9 @@ public class TypeSystem {
     }
 
     public ImmutableList<String> getTypeNames() {
-        return ImmutableList.copyOf(types.keySet());
+        List<String> typeNames = new ArrayList<>(types.keySet());
+        typeNames.removeAll(getCoreTypes());
+        return ImmutableList.copyOf(typeNames);
     }
 
     public ImmutableList<String> getTypeNamesByCategory(DataTypes.TypeCategory typeCategory) {
@@ -259,8 +261,8 @@ public class TypeSystem {
     public DataTypes.ArrayType defineArrayType(IDataType elemType) throws AtlasException {
         assert elemType != null;
         DataTypes.ArrayType dT = new DataTypes.ArrayType(elemType);
-        types.put(dT.getName(), dT);
-        typeCategoriesToTypeNamesMap.put(DataTypes.TypeCategory.ARRAY, dT.getName());
+//        types.put(dT.getName(), dT);
+//        typeCategoriesToTypeNamesMap.put(DataTypes.TypeCategory.ARRAY, dT.getName());
         return dT;
     }
 
@@ -269,8 +271,8 @@ public class TypeSystem {
         assert keyType != null;
         assert valueType != null;
         DataTypes.MapType dT = new DataTypes.MapType(keyType, valueType);
-        types.put(dT.getName(), dT);
-        typeCategoriesToTypeNamesMap.put(DataTypes.TypeCategory.MAP, dT.getName());
+//        types.put(dT.getName(), dT);
+//        typeCategoriesToTypeNamesMap.put(DataTypes.TypeCategory.MAP, dT.getName());
         return dT;
     }
 

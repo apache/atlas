@@ -157,6 +157,11 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
 
         final JSONArray list = response.getJSONArray(AtlasClient.RESULTS);
         Assert.assertNotNull(list);
+
+        //Verify that primitive and core types are not returned
+        String typesString = list.join(" ");
+        Assert.assertFalse(typesString.contains(" \"__IdType\" "));
+        Assert.assertFalse(typesString.contains(" \"string\" "));
     }
 
     @Test
