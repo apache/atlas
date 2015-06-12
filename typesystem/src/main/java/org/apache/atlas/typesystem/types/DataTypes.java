@@ -62,8 +62,7 @@ public class DataTypes {
     }
 
     public static String mapTypeName(String keyTypeName, String valueTypeName) {
-        return String.format("%s%s,%s%s", MAP_TYPE_PREFIX,
-                keyTypeName, valueTypeName, MAP_TYPE_SUFFIX);
+        return String.format("%s%s,%s%s", MAP_TYPE_PREFIX, keyTypeName, valueTypeName, MAP_TYPE_SUFFIX);
     }
 
     public static String mapTypeName(IDataType keyType, IDataType valueType) {
@@ -433,8 +432,8 @@ public class DataTypes {
 
         @Override
         public void output(Date val, Appendable buf, String prefix) throws AtlasException {
-            TypeUtils.outputVal(val == null ? "<null>" :
-                    TypeSystem.getInstance().getDateFormat().format(val), buf, prefix);
+            TypeUtils.outputVal(val == null ? "<null>" : TypeSystem.getInstance().getDateFormat().format(val), buf,
+                    prefix);
         }
 
         public Date nullValue() {
@@ -502,19 +501,18 @@ public class DataTypes {
                     it = (Iterator) val;
                 }
                 if (it != null) {
-                    ImmutableCollection.Builder b = m.isUnique ? ImmutableSet.builder()
-                            : ImmutableList.builder();
+                    ImmutableCollection.Builder b = m.isUnique ? ImmutableSet.builder() : ImmutableList.builder();
                     while (it.hasNext()) {
                         b.add(elemType.convert(it.next(),
-                                TypeSystem.getInstance().allowNullsInCollections()
-                                        ? Multiplicity.OPTIONAL : Multiplicity.REQUIRED));
+                                TypeSystem.getInstance().allowNullsInCollections() ? Multiplicity.OPTIONAL :
+                                        Multiplicity.REQUIRED));
                     }
                     return m.isUnique ? b.build().asList() : b.build();
                 } else {
                     try {
                         return ImmutableList.of(elemType.convert(val,
-                                TypeSystem.getInstance().allowNullsInCollections()
-                                        ? Multiplicity.OPTIONAL : Multiplicity.REQUIRED));
+                                TypeSystem.getInstance().allowNullsInCollections() ? Multiplicity.OPTIONAL :
+                                        Multiplicity.REQUIRED));
                     } catch (Exception e) {
                         throw new ValueConversionException(this, val, e);
                     }
@@ -526,15 +524,13 @@ public class DataTypes {
             return null;
         }
 
-        public ImmutableCollection<?> mapIds(ImmutableCollection<?> val, Multiplicity m,
-                                             Map<Id, Id> transientToNewIds)
+        public ImmutableCollection<?> mapIds(ImmutableCollection<?> val, Multiplicity m, Map<Id, Id> transientToNewIds)
         throws AtlasException {
 
             if (val == null || elemType.getTypeCategory() != TypeCategory.CLASS) {
                 return val;
             }
-            ImmutableCollection.Builder b = m.isUnique ? ImmutableSet.builder()
-                    : ImmutableList.builder();
+            ImmutableCollection.Builder b = m.isUnique ? ImmutableSet.builder() : ImmutableList.builder();
             Iterator it = val.iterator();
             while (it.hasNext()) {
                 Object elem = it.next();
@@ -600,11 +596,10 @@ public class DataTypes {
                     while (it.hasNext()) {
                         Map.Entry e = it.next();
                         b.put(keyType.convert(e.getKey(),
-                                        TypeSystem.getInstance().allowNullsInCollections()
-                                                ? Multiplicity.OPTIONAL : Multiplicity.REQUIRED),
-                                valueType.convert(e.getValue(),
-                                        TypeSystem.getInstance().allowNullsInCollections()
-                                                ? Multiplicity.OPTIONAL : Multiplicity.REQUIRED));
+                                        TypeSystem.getInstance().allowNullsInCollections() ? Multiplicity.OPTIONAL :
+                                                Multiplicity.REQUIRED), valueType.convert(e.getValue(),
+                                        TypeSystem.getInstance().allowNullsInCollections() ? Multiplicity.OPTIONAL :
+                                                Multiplicity.REQUIRED));
                     }
                     return b.build();
                 } else {
@@ -617,12 +612,11 @@ public class DataTypes {
             return null;
         }
 
-        public ImmutableMap<?, ?> mapIds(ImmutableMap val, Multiplicity m,
-                                         Map<Id, Id> transientToNewIds)
+        public ImmutableMap<?, ?> mapIds(ImmutableMap val, Multiplicity m, Map<Id, Id> transientToNewIds)
         throws AtlasException {
 
-            if (val == null || (keyType.getTypeCategory() != TypeCategory.CLASS &&
-                    valueType.getTypeCategory() != TypeCategory.CLASS)) {
+            if (val == null || (keyType.getTypeCategory() != TypeCategory.CLASS
+                    && valueType.getTypeCategory() != TypeCategory.CLASS)) {
                 return val;
             }
             ImmutableMap.Builder b = ImmutableMap.builder();

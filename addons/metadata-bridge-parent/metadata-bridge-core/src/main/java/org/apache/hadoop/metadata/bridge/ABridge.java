@@ -41,19 +41,15 @@ import java.util.Map.Entry;
 public abstract class ABridge implements IBridge {
 
     protected static final Logger LOG = BridgeManager.LOG;
-    protected ArrayList<Class<? extends AEntityBean>> typeBeanClasses
-            = new ArrayList<Class<? extends AEntityBean>>();
+    protected ArrayList<Class<? extends AEntityBean>> typeBeanClasses = new ArrayList<Class<? extends AEntityBean>>();
     MetadataRepository repo;
 
     protected ABridge(MetadataRepository repo) {
         this.repo = repo;
     }
 
-    protected HierarchicalTypeDefinition<ClassType> createClassTypeDef(String name,
-                                                                       ImmutableList<String>
-																			   superTypes,
-                                                                       AttributeDefinition...
-																			   attrDefs) {
+    protected HierarchicalTypeDefinition<ClassType> createClassTypeDef(String name, ImmutableList<String> superTypes,
+            AttributeDefinition... attrDefs) {
         return new HierarchicalTypeDefinition(ClassType.class, name, superTypes, attrDefs);
     }
 
@@ -67,11 +63,10 @@ public abstract class ABridge implements IBridge {
         // turn into a HiveLineageBean
         try {
             Class<AEntityBean> c = getTypeBeanInListByName(ref.getTypeName());
-            return this.convertFromITypedReferenceable(ref,
-                    getTypeBeanInListByName(ref.getTypeName()));
+            return this.convertFromITypedReferenceable(ref, getTypeBeanInListByName(ref.getTypeName()));
         } catch (BridgeException | InstantiationException | IllegalAccessException |
-				IllegalArgumentException | InvocationTargetException | NoSuchMethodException |
-				SecurityException e) {
+                IllegalArgumentException | InvocationTargetException | NoSuchMethodException |
+                SecurityException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
@@ -80,8 +75,7 @@ public abstract class ABridge implements IBridge {
 
     public String create(AEntityBean bean) throws MetadataException {
 
-        ClassType type = TypeSystem.getInstance()
-                .getDataType(ClassType.class, bean.getClass().getSimpleName());
+        ClassType type = TypeSystem.getInstance().getDataType(ClassType.class, bean.getClass().getSimpleName());
         ITypedReferenceableInstance refBean = null;
         try {
             refBean = type.convert(this.convertToReferencable(bean), Multiplicity.REQUIRED);
@@ -140,10 +134,10 @@ public abstract class ABridge implements IBridge {
         return selfAware;
     }
 
-    protected final <T extends AEntityBean> T convertFromITypedReferenceable(
-            ITypedReferenceableInstance instance, Class<? extends AEntityBean> c)
-    throws InstantiationException, IllegalAccessException, IllegalArgumentException,
-    InvocationTargetException, NoSuchMethodException, SecurityException, BridgeException {
+    protected final <T extends AEntityBean> T convertFromITypedReferenceable(ITypedReferenceableInstance instance,
+            Class<? extends AEntityBean> c)
+    throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException,
+    NoSuchMethodException, SecurityException, BridgeException {
         if (!instance.getTypeName().equals(c.getSimpleName())) {
             throw new BridgeException("ReferenceableInstance type not the same as bean");
         }
@@ -151,10 +145,8 @@ public abstract class ABridge implements IBridge {
         for (Entry<String, AttributeInfo> e : instance.fieldMapping().fields.entrySet()) {
             try {
 
-                String convertedName = e.getKey().substring(0, 1).toUpperCase() +
-                        e.getKey().substring(1);
-                this.getClass().getMethod("set" + convertedName,
-                        Class.forName(e.getValue().dataType().getName()))
+                String convertedName = e.getKey().substring(0, 1).toUpperCase() + e.getKey().substring(1);
+                this.getClass().getMethod("set" + convertedName, Class.forName(e.getValue().dataType().getName()))
                         .invoke(this, instance.get(e.getKey()));
             } catch (MetadataException | ClassNotFoundException e1) {
                 // TODO Auto-generated catch block

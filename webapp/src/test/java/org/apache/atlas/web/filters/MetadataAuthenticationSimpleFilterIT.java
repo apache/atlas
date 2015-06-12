@@ -33,7 +33,7 @@ import java.util.Properties;
  */
 public class MetadataAuthenticationSimpleFilterIT extends BaseSecurityTest {
 
-     class TestEmbeddedServer extends EmbeddedServer {
+    class TestEmbeddedServer extends EmbeddedServer {
         public TestEmbeddedServer(int port, String path) throws IOException {
             super(port, path);
         }
@@ -43,7 +43,7 @@ public class MetadataAuthenticationSimpleFilterIT extends BaseSecurityTest {
         }
     }
 
-    @Test (enabled = false)
+    @Test(enabled = false)
     public void testSimpleLogin() throws Exception {
         String originalConf = System.getProperty("metadata.conf");
         System.setProperty("metadata.conf", System.getProperty("user.dir"));
@@ -55,7 +55,7 @@ public class MetadataAuthenticationSimpleFilterIT extends BaseSecurityTest {
             startEmbeddedServer(server.getServer());
 
             URL url = new URL("http://localhost:23001");
-            HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.connect();
 
@@ -66,7 +66,7 @@ public class MetadataAuthenticationSimpleFilterIT extends BaseSecurityTest {
             }
 
             url = new URL("http://localhost:23001/?user.name=testuser");
-            connection = (HttpURLConnection)url.openConnection();
+            connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.connect();
 

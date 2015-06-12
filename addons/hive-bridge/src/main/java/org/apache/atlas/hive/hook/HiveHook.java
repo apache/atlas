@@ -104,18 +104,18 @@ public class HiveHook implements ExecuteWithHookContext {
 
         try {
             Runtime.getRuntime().addShutdownHook(new Thread() {
-                        @Override
-                        public void run() {
-                            try {
-                                executor.shutdown();
-                                executor.awaitTermination(WAIT_TIME, TimeUnit.SECONDS);
-                                executor = null;
-                            } catch (InterruptedException ie) {
-                                LOG.info("Interrupt received in shutdown.");
-                            }
-                            // shutdown client
-                        }
-                    });
+                @Override
+                public void run() {
+                    try {
+                        executor.shutdown();
+                        executor.awaitTermination(WAIT_TIME, TimeUnit.SECONDS);
+                        executor = null;
+                    } catch (InterruptedException ie) {
+                        LOG.info("Interrupt received in shutdown.");
+                    }
+                    // shutdown client
+                }
+            });
         } catch (IllegalStateException is) {
             LOG.info("Attempting to send msg while shutdown in progress.");
         }
@@ -163,15 +163,15 @@ public class HiveHook implements ExecuteWithHookContext {
             fireAndForget(event);
         } else {
             executor.submit(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                fireAndForget(event);
-                            } catch (Throwable e) {
-                                LOG.info("DGI hook failed", e);
-                            }
-                        }
-                    });
+                @Override
+                public void run() {
+                    try {
+                        fireAndForget(event);
+                    } catch (Throwable e) {
+                        LOG.info("DGI hook failed", e);
+                    }
+                }
+            });
         }
     }
 
@@ -348,7 +348,7 @@ public class HiveHook implements ExecuteWithHookContext {
             explain.initialize(event.conf, event.queryPlan, null);
             List<Task<?>> rootTasks = event.queryPlan.getRootTasks();
             return explain.getJSONPlan(null, null, rootTasks, event.queryPlan.getFetchTask(), true, false, false);
-        } catch(Exception e) {
+        } catch (Exception e) {
             LOG.warn("Failed to get queryplan", e);
             return new JSONObject();
         }

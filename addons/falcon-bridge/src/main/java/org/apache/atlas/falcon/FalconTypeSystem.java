@@ -54,7 +54,7 @@ public class FalconTypeSystem {
 
     public static FalconTypeSystem getInstance() throws MetadataException {
         if (INSTANCE == null) {
-            synchronized(LOG) {
+            synchronized (LOG) {
                 if (INSTANCE == null) {
                     INSTANCE = new FalconTypeSystem();
                 }
@@ -73,12 +73,16 @@ public class FalconTypeSystem {
                 new AttributeDefinition("name", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("acl", DefinedTypes.ACL.name(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("tags", DefinedTypes.TAG.name(), Multiplicity.COLLECTION, false, null),
-                new AttributeDefinition("locations", TYPE_SYSTEM.defineMapType(DataTypes.STRING_TYPE, DataTypes.STRING_TYPE).getName(), Multiplicity.COLLECTION, false, null),
-                new AttributeDefinition("interfaces", DefinedTypes.CLUSTER_INTERFACE.name(), Multiplicity.COLLECTION, false, null),
-                new AttributeDefinition("properties", TYPE_SYSTEM.defineMapType(DataTypes.STRING_TYPE, DataTypes.STRING_TYPE).getName(), Multiplicity.OPTIONAL, false, null),
-        };
+                new AttributeDefinition("locations",
+                        TYPE_SYSTEM.defineMapType(DataTypes.STRING_TYPE, DataTypes.STRING_TYPE).getName(),
+                        Multiplicity.COLLECTION, false, null),
+                new AttributeDefinition("interfaces", DefinedTypes.CLUSTER_INTERFACE.name(), Multiplicity.COLLECTION,
+                        false, null), new AttributeDefinition("properties",
+                TYPE_SYSTEM.defineMapType(DataTypes.STRING_TYPE, DataTypes.STRING_TYPE).getName(),
+                Multiplicity.OPTIONAL, false, null),};
         HierarchicalTypeDefinition<ClassType> cluster =
-                new HierarchicalTypeDefinition<>(ClassType.class, DefinedTypes.CLUSTER.name(), ImmutableList.<String>of(), attributeDefinitions);
+                new HierarchicalTypeDefinition<>(ClassType.class, DefinedTypes.CLUSTER.name(),
+                        ImmutableList.<String>of(), attributeDefinitions);
         LOG.debug("Created definition for " + DefinedTypes.CLUSTER.name());
         return cluster;
     }
@@ -86,57 +90,52 @@ public class FalconTypeSystem {
     private HierarchicalTypeDefinition<TraitType> defineTags() {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition("name", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("value", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null)
-        };
+                new AttributeDefinition("value", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null)};
 
-        HierarchicalTypeDefinition<TraitType> traitType = new HierarchicalTypeDefinition<>(TraitType.class, DefinedTypes.TAG.name(), ImmutableList.<String>of(), attributeDefinitions);
+        HierarchicalTypeDefinition<TraitType> traitType =
+                new HierarchicalTypeDefinition<>(TraitType.class, DefinedTypes.TAG.name(), ImmutableList.<String>of(),
+                        attributeDefinitions);
         LOG.debug("Created definition for " + DefinedTypes.TAG.name());
         traitTypeDefinitions.add(traitType);
         return traitType;
     }
 
     private StructTypeDefinition defineClusterLocation() throws MetadataException {
-        EnumValue values[] = {
-                new EnumValue("WORKING", 1),
-                new EnumValue("STAGING", 2),
-                new EnumValue("TEMP", 3),
-        };
+        EnumValue values[] = {new EnumValue("WORKING", 1), new EnumValue("STAGING", 2), new EnumValue("TEMP", 3),};
 
         LOG.debug("Created definition for " + DefinedTypes.CLUSTER_LOCATION_TYPE.name());
         EnumTypeDefinition locationType = new EnumTypeDefinition(DefinedTypes.CLUSTER_LOCATION_TYPE.name(), values);
         TYPE_SYSTEM.defineEnumType(locationType);
 
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition("type", DefinedTypes.CLUSTER_LOCATION_TYPE.name(), Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("path", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
-        };
+                new AttributeDefinition("type", DefinedTypes.CLUSTER_LOCATION_TYPE.name(), Multiplicity.REQUIRED, false,
+                        null),
+                new AttributeDefinition("path", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),};
         LOG.debug("Created definition for " + DefinedTypes.CLUSTER_LOCATION.name());
-        StructTypeDefinition location = new StructTypeDefinition(DefinedTypes.CLUSTER_LOCATION.name(), attributeDefinitions);
+        StructTypeDefinition location =
+                new StructTypeDefinition(DefinedTypes.CLUSTER_LOCATION.name(), attributeDefinitions);
         structTypeDefinitions.add(location);
         return location;
     }
 
     private StructTypeDefinition defineClusterInterface() throws MetadataException {
-        EnumValue values[] = {
-                new EnumValue("READONLY", 1),
-                new EnumValue("WRITE", 2),
-                new EnumValue("EXECUTE", 3),
-                new EnumValue("WORKFLOW", 4),
-                new EnumValue("MESSAGING", 5),
-                new EnumValue("REGISTRY", 6),
-        };
+        EnumValue values[] = {new EnumValue("READONLY", 1), new EnumValue("WRITE", 2), new EnumValue("EXECUTE", 3),
+                new EnumValue("WORKFLOW", 4), new EnumValue("MESSAGING", 5), new EnumValue("REGISTRY", 6),};
 
         LOG.debug("Created definition for " + DefinedTypes.CLUSTER_INTERFACE_TYPE.name());
         EnumTypeDefinition interfaceType = new EnumTypeDefinition(DefinedTypes.CLUSTER_INTERFACE_TYPE.name(), values);
         TYPE_SYSTEM.defineEnumType(interfaceType);
 
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition("type", DefinedTypes.CLUSTER_INTERFACE_TYPE.name(), Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("endpoint", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("version", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
-        };
+                new AttributeDefinition("type", DefinedTypes.CLUSTER_INTERFACE_TYPE.name(), Multiplicity.REQUIRED,
+                        false, null),
+                new AttributeDefinition("endpoint", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
+                        null),
+                new AttributeDefinition("version", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
+                        null),};
         LOG.debug("Created definition for " + DefinedTypes.CLUSTER_INTERFACE.name());
-        StructTypeDefinition interfaceEntity = new StructTypeDefinition(DefinedTypes.CLUSTER_INTERFACE.name(), attributeDefinitions);
+        StructTypeDefinition interfaceEntity =
+                new StructTypeDefinition(DefinedTypes.CLUSTER_INTERFACE.name(), attributeDefinitions);
         structTypeDefinitions.add(interfaceEntity);
         return interfaceEntity;
     }
@@ -154,13 +153,10 @@ public class FalconTypeSystem {
 
     private StructTypeDefinition defineACL() {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition("owner", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("group", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("permission", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-        };
+                new AttributeDefinition("owner", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("group", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("permission", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                        null),};
         LOG.debug("Created definition for " + DefinedTypes.ACL.name());
         StructTypeDefinition acl = new StructTypeDefinition(DefinedTypes.ACL.name(), attributeDefinitions);
         structTypeDefinitions.add(acl);

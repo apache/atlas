@@ -53,9 +53,8 @@ public class AuditFilter implements Filter {
     }
 
     @Override
-    public void doFilter(ServletRequest request,
-                         ServletResponse response,
-                         FilterChain filterChain) throws IOException, ServletException {
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain)
+    throws IOException, ServletException {
         final String requestTimeISO9601 = DateTimeHelper.formatDateUTC(new Date());
         final HttpServletRequest httpRequest = (HttpServletRequest) request;
         final String requestId = UUID.randomUUID().toString();
@@ -85,8 +84,8 @@ public class AuditFilter implements Filter {
         final String whatURL = Servlets.getRequestURL(httpRequest);
         final String whatAddrs = httpRequest.getLocalAddr();
 
-        LOG.debug("Audit: {}/{} performed request {} {} ({}) at time {}",
-                who, fromAddress, whatRequest, whatURL, whatAddrs, whenISO9601);
+        LOG.debug("Audit: {}/{} performed request {} {} ({}) at time {}", who, fromAddress, whatRequest, whatURL,
+                whatAddrs, whenISO9601);
         audit(who, fromAddress, fromHost, whatURL, whatAddrs, whenISO9601);
     }
 
@@ -96,10 +95,10 @@ public class AuditFilter implements Filter {
         return userFromRequest == null ? "UNKNOWN" : userFromRequest;
     }
 
-    private void audit(String who, String fromAddress, String fromHost, String whatURL,
-                       String whatAddrs, String whenISO9601) {
-        AUDIT_LOG.info("Audit: {}/{}-{} performed request {} ({}) at time {}",
-                who, fromAddress, fromHost, whatURL, whatAddrs, whenISO9601);
+    private void audit(String who, String fromAddress, String fromHost, String whatURL, String whatAddrs,
+            String whenISO9601) {
+        AUDIT_LOG.info("Audit: {}/{}-{} performed request {} ({}) at time {}", who, fromAddress, fromHost, whatURL,
+                whatAddrs, whenISO9601);
     }
 
     @Override

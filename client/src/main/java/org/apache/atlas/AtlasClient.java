@@ -86,7 +86,8 @@ public class AtlasClient {
         try {
             clientConfig = getClientProperties();
             if (clientConfig.getBoolean(TLS_ENABLED, false)) {
-                // create an SSL properties configuration if one doesn't exist.  SSLFactory expects a file, so forced to create a
+                // create an SSL properties configuration if one doesn't exist.  SSLFactory expects a file, so forced
+                // to create a
                 // configuration object, persist it, then subsequently pass in an empty configuration to SSLFactory
                 SecureClientUtils.persistSSLClientConfiguration(clientConfig);
             }
@@ -246,12 +247,12 @@ public class AtlasClient {
      * @return result json object
      * @throws AtlasServiceException
      */
-    public JSONArray rawSearch(String typeName, String attributeName, Object attributeValue) throws
-            AtlasServiceException {
-//        String gremlinQuery = String.format(
-//                "g.V.has(\"typeName\",\"%s\").and(_().has(\"%s.%s\", T.eq, \"%s\")).toList()",
-//                typeName, typeName, attributeName, attributeValue);
-//        return searchByGremlin(gremlinQuery);
+    public JSONArray rawSearch(String typeName, String attributeName, Object attributeValue)
+            throws AtlasServiceException {
+        //        String gremlinQuery = String.format(
+        //                "g.V.has(\"typeName\",\"%s\").and(_().has(\"%s.%s\", T.eq, \"%s\")).toList()",
+        //                typeName, typeName, attributeName, attributeValue);
+        //        return searchByGremlin(gremlinQuery);
         String dslQuery = String.format("%s where %s = \"%s\"", typeName, attributeName, attributeValue);
         return searchByDSL(dslQuery);
     }
@@ -340,14 +341,12 @@ public class AtlasClient {
     }
 
     private JSONObject callAPIWithResource(API api, WebResource resource, Object requestObject)
-            throws AtlasServiceException {
-        ClientResponse clientResponse = resource
-                .accept(JSON_MEDIA_TYPE)
-                .type(JSON_MEDIA_TYPE)
+    throws AtlasServiceException {
+        ClientResponse clientResponse = resource.accept(JSON_MEDIA_TYPE).type(JSON_MEDIA_TYPE)
                 .method(api.getMethod(), ClientResponse.class, requestObject);
 
-        Response.Status expectedStatus = HttpMethod.POST.equals(api.getMethod())
-            ? Response.Status.CREATED : Response.Status.OK;
+        Response.Status expectedStatus =
+                HttpMethod.POST.equals(api.getMethod()) ? Response.Status.CREATED : Response.Status.OK;
         if (clientResponse.getStatus() == expectedStatus.getStatusCode()) {
             String responseAsString = clientResponse.getEntity(String.class);
             try {
@@ -360,8 +359,7 @@ public class AtlasClient {
         throw new AtlasServiceException(api, clientResponse);
     }
 
-    private JSONObject callAPI(API api, Object requestObject,
-                               String... pathParams) throws AtlasServiceException {
+    private JSONObject callAPI(API api, Object requestObject, String... pathParams) throws AtlasServiceException {
         WebResource resource = getResource(api, pathParams);
         return callAPIWithResource(api, resource, requestObject);
     }

@@ -53,8 +53,7 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
         infoToNameMap = null;
     }
 
-    ClassType(TypeSystem typeSystem, String name, ImmutableList<String> superTypes,
-              AttributeInfo... fields)
+    ClassType(TypeSystem typeSystem, String name, ImmutableList<String> superTypes, AttributeInfo... fields)
     throws AtlasException {
         super(typeSystem, ClassType.class, name, superTypes, fields);
         infoToNameMap = TypeUtils.buildAttrInfoToNameMap(fieldMapping);
@@ -71,8 +70,7 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
             if (isSubType(cType.getName())) {
                 return;
             }
-            throw new AtlasException(
-                    String.format("Id %s is not valid for class %s", id, getName()));
+            throw new AtlasException(String.format("Id %s is not valid for class %s", id, getName()));
         }
     }
 
@@ -84,8 +82,7 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
     }
 
     @Override
-    public ITypedReferenceableInstance convert(Object val, Multiplicity m)
-    throws AtlasException {
+    public ITypedReferenceableInstance convert(Object val, Multiplicity m) throws AtlasException {
 
         if (val != null) {
             if (val instanceof ITypedReferenceableInstance) {
@@ -122,9 +119,9 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
                     id = r.getId();
                 }
 
-                ITypedReferenceableInstance tr = r != null ?
-                        createInstanceWithTraits(id, r, r.getTraits().toArray(new String[0]))
-                        : createInstance(id);
+                ITypedReferenceableInstance tr =
+                        r != null ? createInstanceWithTraits(id, r, r.getTraits().toArray(new String[0])) :
+                                createInstance(id);
 
                 if (id != null && id.isAssigned()) {
                     return tr;
@@ -134,8 +131,7 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
                     String attrKey = e.getKey();
                     AttributeInfo i = e.getValue();
                     Object aVal = s.get(attrKey);
-                    if (aVal != null &&
-                            i.dataType().getTypeCategory() == DataTypes.TypeCategory.CLASS) {
+                    if (aVal != null && i.dataType().getTypeCategory() == DataTypes.TypeCategory.CLASS) {
                         if (!i.isComposite) {
                             aVal = ((IReferenceableInstance) aVal).getId();
                         }
@@ -164,25 +160,21 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
 
     @Override
     public ITypedReferenceableInstance createInstance() throws AtlasException {
-        return createInstance((String[])null);
+        return createInstance((String[]) null);
     }
 
-    public ITypedReferenceableInstance createInstance(String... traitNames)
-    throws AtlasException {
+    public ITypedReferenceableInstance createInstance(String... traitNames) throws AtlasException {
         return createInstance(null, traitNames);
     }
 
-    public ITypedReferenceableInstance createInstance(Id id, String... traitNames)
-    throws AtlasException {
+    public ITypedReferenceableInstance createInstance(Id id, String... traitNames) throws AtlasException {
         return createInstanceWithTraits(id, null, traitNames);
     }
 
-    public ITypedReferenceableInstance createInstanceWithTraits(Id id, Referenceable r,
-                                                                String... traitNames)
+    public ITypedReferenceableInstance createInstanceWithTraits(Id id, Referenceable r, String... traitNames)
     throws AtlasException {
 
-        ImmutableMap.Builder<String, ITypedStruct> b
-                = new ImmutableBiMap.Builder<String, ITypedStruct>();
+        ImmutableMap.Builder<String, ITypedStruct> b = new ImmutableBiMap.Builder<String, ITypedStruct>();
         if (traitNames != null) {
             for (String t : traitNames) {
                 TraitType tType = typeSystem.getDataType(TraitType.class, t);
@@ -193,9 +185,7 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
             }
         }
 
-        return new ReferenceableInstance(id == null ? new Id(getName()) : id,
-                getName(),
-                fieldMapping,
+        return new ReferenceableInstance(id == null ? new Id(getName()) : id, getName(), fieldMapping,
                 new boolean[fieldMapping.fields.size()],
                 fieldMapping.numBools == 0 ? null : new boolean[fieldMapping.numBools],
                 fieldMapping.numBytes == 0 ? null : new byte[fieldMapping.numBytes],
@@ -204,23 +194,19 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
                 fieldMapping.numLongs == 0 ? null : new long[fieldMapping.numLongs],
                 fieldMapping.numFloats == 0 ? null : new float[fieldMapping.numFloats],
                 fieldMapping.numDoubles == 0 ? null : new double[fieldMapping.numDoubles],
-                fieldMapping.numBigDecimals == 0 ? null
-                        : new BigDecimal[fieldMapping.numBigDecimals],
+                fieldMapping.numBigDecimals == 0 ? null : new BigDecimal[fieldMapping.numBigDecimals],
                 fieldMapping.numBigInts == 0 ? null : new BigInteger[fieldMapping.numBigInts],
                 fieldMapping.numDates == 0 ? null : new Date[fieldMapping.numDates],
                 fieldMapping.numStrings == 0 ? null : new String[fieldMapping.numStrings],
                 fieldMapping.numArrays == 0 ? null : new ImmutableList[fieldMapping.numArrays],
                 fieldMapping.numMaps == 0 ? null : new ImmutableMap[fieldMapping.numMaps],
                 fieldMapping.numStructs == 0 ? null : new StructInstance[fieldMapping.numStructs],
-                fieldMapping.numReferenceables == 0 ? null
-                        : new ReferenceableInstance[fieldMapping.numReferenceables],
-                fieldMapping.numReferenceables == 0 ? null : new Id[fieldMapping.numReferenceables],
-                b.build());
+                fieldMapping.numReferenceables == 0 ? null : new ReferenceableInstance[fieldMapping.numReferenceables],
+                fieldMapping.numReferenceables == 0 ? null : new Id[fieldMapping.numReferenceables], b.build());
     }
 
     @Override
-    public void output(IReferenceableInstance s, Appendable buf, String prefix)
-    throws AtlasException {
+    public void output(IReferenceableInstance s, Appendable buf, String prefix) throws AtlasException {
         fieldMapping.output(s, buf, prefix);
     }
 

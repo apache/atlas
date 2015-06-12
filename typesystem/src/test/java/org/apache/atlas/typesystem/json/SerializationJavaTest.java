@@ -62,38 +62,26 @@ public class SerializationJavaTest extends BaseTest {
 
         TypeSystem ts = getTypeSystem();
 
-        HierarchicalTypeDefinition<ClassType> deptTypeDef = createClassTypeDef("Department",
-                ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<ClassType> deptTypeDef = createClassTypeDef("Department", ImmutableList.<String>of(),
                 createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                new AttributeDefinition("employees",
-                        String.format("array<%s>", "Person"), Multiplicity.COLLECTION, true,
-                        "department")
-        );
-        HierarchicalTypeDefinition<ClassType> personTypeDef = createClassTypeDef("Person",
-                ImmutableList.<String>of(),
+                new AttributeDefinition("employees", String.format("array<%s>", "Person"), Multiplicity.COLLECTION,
+                        true, "department"));
+        HierarchicalTypeDefinition<ClassType> personTypeDef = createClassTypeDef("Person", ImmutableList.<String>of(),
                 createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                new AttributeDefinition("department",
-                        "Department", Multiplicity.REQUIRED, false, "employees"),
-                new AttributeDefinition("manager",
-                        "Manager", Multiplicity.OPTIONAL, false, "subordinates")
-        );
-        HierarchicalTypeDefinition<ClassType> managerTypeDef = createClassTypeDef("Manager",
-                ImmutableList.<String>of("Person"),
-                new AttributeDefinition("subordinates",
-                        String.format("array<%s>", "Person"), Multiplicity.COLLECTION, false,
-                        "manager")
-        );
+                new AttributeDefinition("department", "Department", Multiplicity.REQUIRED, false, "employees"),
+                new AttributeDefinition("manager", "Manager", Multiplicity.OPTIONAL, false, "subordinates"));
+        HierarchicalTypeDefinition<ClassType> managerTypeDef =
+                createClassTypeDef("Manager", ImmutableList.<String>of("Person"),
+                        new AttributeDefinition("subordinates", String.format("array<%s>", "Person"),
+                                Multiplicity.COLLECTION, false, "manager"));
 
-        HierarchicalTypeDefinition<TraitType> securityClearanceTypeDef = createTraitTypeDef(
-                "SecurityClearance",
-                ImmutableList.<String>of(),
-                createRequiredAttrDef("level", DataTypes.INT_TYPE)
-        );
+        HierarchicalTypeDefinition<TraitType> securityClearanceTypeDef =
+                createTraitTypeDef("SecurityClearance", ImmutableList.<String>of(),
+                        createRequiredAttrDef("level", DataTypes.INT_TYPE));
 
         ts.defineTypes(ImmutableList.<StructTypeDefinition>of(),
                 ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(securityClearanceTypeDef),
-                ImmutableList.<HierarchicalTypeDefinition<ClassType>>of(deptTypeDef, personTypeDef,
-                        managerTypeDef));
+                ImmutableList.<HierarchicalTypeDefinition<ClassType>>of(deptTypeDef, personTypeDef, managerTypeDef));
 
         Referenceable hrDept = new Referenceable("Department");
         Referenceable john = new Referenceable("Person");
@@ -155,11 +143,9 @@ public class SerializationJavaTest extends BaseTest {
     public void testTrait() throws AtlasException {
 
         TypeSystem ts = getTypeSystem();
-        HierarchicalTypeDefinition<TraitType> securityClearanceTypeDef = createTraitTypeDef(
-                "SecurityClearance2",
-                ImmutableList.<String>of(),
-                createRequiredAttrDef("level", DataTypes.INT_TYPE)
-        );
+        HierarchicalTypeDefinition<TraitType> securityClearanceTypeDef =
+                createTraitTypeDef("SecurityClearance2", ImmutableList.<String>of(),
+                        createRequiredAttrDef("level", DataTypes.INT_TYPE));
 
         ts.defineTypes(ImmutableList.<StructTypeDefinition>of(),
                 ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(securityClearanceTypeDef),

@@ -39,8 +39,7 @@ public class ObjectGraphTraversal implements Iterator<ObjectGraphTraversal.Insta
     final TypeSystem typeSystem;
     Set<Id> processedIds;
 
-    public ObjectGraphTraversal(TypeSystem typeSystem, IReferenceableInstance start)
-    throws AtlasException {
+    public ObjectGraphTraversal(TypeSystem typeSystem, IReferenceableInstance start) throws AtlasException {
         this.typeSystem = typeSystem;
         queue = new LinkedList<InstanceTuple>();
         processedIds = new HashSet<Id>();
@@ -56,8 +55,8 @@ public class ObjectGraphTraversal implements Iterator<ObjectGraphTraversal.Insta
                 IDataType keyType = ((DataTypes.MapType) dT).getKeyType();
                 IDataType valueType = ((DataTypes.MapType) dT).getKeyType();
                 processMap(keyType, valueType, val);
-            } else if (dT.getTypeCategory() == DataTypes.TypeCategory.STRUCT ||
-                    dT.getTypeCategory() == DataTypes.TypeCategory.TRAIT) {
+            } else if (dT.getTypeCategory() == DataTypes.TypeCategory.STRUCT
+                    || dT.getTypeCategory() == DataTypes.TypeCategory.TRAIT) {
                 processStruct(val);
             } else if (dT.getTypeCategory() == DataTypes.TypeCategory.CLASS) {
                 processReferenceableInstance(val);
@@ -66,8 +65,8 @@ public class ObjectGraphTraversal implements Iterator<ObjectGraphTraversal.Insta
     }
 
     void processMap(IDataType keyType, IDataType valueType, Object val) throws AtlasException {
-        if (keyType.getTypeCategory() == DataTypes.TypeCategory.PRIMITIVE &&
-                valueType.getTypeCategory() == DataTypes.TypeCategory.PRIMITIVE) {
+        if (keyType.getTypeCategory() == DataTypes.TypeCategory.PRIMITIVE
+                && valueType.getTypeCategory() == DataTypes.TypeCategory.PRIMITIVE) {
             return;
         }
 

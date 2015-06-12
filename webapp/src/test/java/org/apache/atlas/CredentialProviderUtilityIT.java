@@ -56,25 +56,24 @@ public class CredentialProviderUtilityIT {
                 System.out.print(String.format(fmt, params));
             }
 
-            public String readLine(String fmt, Object ... args) {
+            public String readLine(String fmt, Object... args) {
                 return finalTestPath.toString();
             }
 
             @Override
-            public char[] readPassword(String fmt, Object ... args) {
+            public char[] readPassword(String fmt, Object... args) {
                 return defaultPass;
             }
         };
 
-        CredentialProviderUtility.main(new String[] {});
+        CredentialProviderUtility.main(new String[]{});
 
         String providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file" + testPath.toUri();
         Configuration conf = new Configuration(false);
 
         conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, providerUrl);
 
-        CredentialProvider provider =
-                CredentialProviderFactory.getProviders(conf).get(0);
+        CredentialProvider provider = CredentialProviderFactory.getProviders(conf).get(0);
 
         CredentialProvider.CredentialEntry entry =
                 provider.getCredentialEntry(SecurityProperties.KEYSTORE_PASSWORD_KEY);
@@ -113,12 +112,12 @@ public class CredentialProviderUtilityIT {
                 System.out.print(String.format(fmt, params));
             }
 
-            public String readLine(String fmt, Object ... args) {
+            public String readLine(String fmt, Object... args) {
                 return finalTestPath.toString();
             }
 
             @Override
-            public char[] readPassword(String fmt, Object ... args) {
+            public char[] readPassword(String fmt, Object... args) {
                 List<char[]> responses = new ArrayList<>();
                 responses.add(new char[0]);
                 responses.add(defaultPass);
@@ -129,15 +128,14 @@ public class CredentialProviderUtilityIT {
             }
         };
 
-        CredentialProviderUtility.main(new String[] {});
+        CredentialProviderUtility.main(new String[]{});
 
         String providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file" + testPath.toUri();
         Configuration conf = new Configuration(false);
 
         conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, providerUrl);
 
-        CredentialProvider provider =
-                CredentialProviderFactory.getProviders(conf).get(0);
+        CredentialProvider provider = CredentialProviderFactory.getProviders(conf).get(0);
 
         CredentialProvider.CredentialEntry entry =
                 provider.getCredentialEntry(SecurityProperties.KEYSTORE_PASSWORD_KEY);
@@ -161,20 +159,21 @@ public class CredentialProviderUtilityIT {
         CredentialProviderUtility.textDevice = new CredentialProviderUtility.TextDevice() {
 
             int i = 0;
+
             @Override
             public void printf(String fmt, Object... params) {
                 System.out.print(String.format(fmt, params));
             }
 
-            public String readLine(String fmt, Object ... args) {
+            public String readLine(String fmt, Object... args) {
                 return finalTestPath.toString();
             }
 
             @Override
-            public char[] readPassword(String fmt, Object ... args) {
+            public char[] readPassword(String fmt, Object... args) {
                 List<char[]> responses = new ArrayList<>();
                 responses.add(defaultPass);
-                responses.add(new char[] {'b', 'a', 'd', 'p', 'a', 's', 's'});
+                responses.add(new char[]{'b', 'a', 'd', 'p', 'a', 's', 's'});
                 responses.add(defaultPass);
 
                 int item = i % 3;
@@ -183,15 +182,14 @@ public class CredentialProviderUtilityIT {
             }
         };
 
-        CredentialProviderUtility.main(new String[] {});
+        CredentialProviderUtility.main(new String[]{});
 
         String providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file" + testPath.toUri();
         Configuration conf = new Configuration(false);
 
         conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, providerUrl);
 
-        CredentialProvider provider =
-                CredentialProviderFactory.getProviders(conf).get(0);
+        CredentialProvider provider = CredentialProviderFactory.getProviders(conf).get(0);
 
         CredentialProvider.CredentialEntry entry =
                 provider.getCredentialEntry(SecurityProperties.KEYSTORE_PASSWORD_KEY);
@@ -218,17 +216,17 @@ public class CredentialProviderUtilityIT {
                 System.out.print(String.format(fmt, params));
             }
 
-            public String readLine(String fmt, Object ... args) {
+            public String readLine(String fmt, Object... args) {
                 return finalTestPath.toString();
             }
 
             @Override
-            public char[] readPassword(String fmt, Object ... args) {
+            public char[] readPassword(String fmt, Object... args) {
                 return defaultPass;
             }
         };
 
-        CredentialProviderUtility.main(new String[] {});
+        CredentialProviderUtility.main(new String[]{});
 
         // now attempt to overwrite values
         CredentialProviderUtility.textDevice = new CredentialProviderUtility.TextDevice() {
@@ -240,25 +238,24 @@ public class CredentialProviderUtilityIT {
                 System.out.print(String.format(fmt, params));
             }
 
-            public String readLine(String fmt, Object ... args) {
+            public String readLine(String fmt, Object... args) {
                 return i++ == 0 ? finalTestPath.toString() : "y";
             }
 
             @Override
-            public char[] readPassword(String fmt, Object ... args) {
-                return new char[] {'n', 'e', 'w', 'p', 'a', 's', 's'};
+            public char[] readPassword(String fmt, Object... args) {
+                return new char[]{'n', 'e', 'w', 'p', 'a', 's', 's'};
             }
         };
 
-        CredentialProviderUtility.main(new String[] {});
+        CredentialProviderUtility.main(new String[]{});
 
         String providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file" + testPath.toUri();
         Configuration conf = new Configuration(false);
 
         conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, providerUrl);
 
-        CredentialProvider provider =
-                CredentialProviderFactory.getProviders(conf).get(0);
+        CredentialProvider provider = CredentialProviderFactory.getProviders(conf).get(0);
 
         char[] newpass = "newpass".toCharArray();
         CredentialProvider.CredentialEntry entry =

@@ -64,11 +64,9 @@ public class SecureEmbeddedServerITBase {
 
     static {
         //for localhost testing only
-        javax.net.ssl.HttpsURLConnection.setDefaultHostnameVerifier(
-                new javax.net.ssl.HostnameVerifier(){
+        javax.net.ssl.HttpsURLConnection.setDefaultHostnameVerifier(new javax.net.ssl.HostnameVerifier() {
 
-                    public boolean verify(String hostname,
-                                          javax.net.ssl.SSLSession sslSession) {
+                    public boolean verify(String hostname, javax.net.ssl.SSLSession sslSession) {
                         if (hostname.equals("localhost")) {
                             return true;
                         }
@@ -81,7 +79,7 @@ public class SecureEmbeddedServerITBase {
     }
 
     @BeforeClass
-    public void setupServerURI () throws Exception {
+    public void setupServerURI() throws Exception {
         BaseResourceIT.baseUrl = "https://localhost:21443";
     }
 
@@ -118,7 +116,8 @@ public class SecureEmbeddedServerITBase {
 
             Assert.fail("Should have thrown an exception");
         } catch (IOException e) {
-            Assert.assertEquals("No credential provider path configured for storage of certificate store passwords", e.getMessage());
+            Assert.assertEquals("No credential provider path configured for storage of certificate store passwords",
+                    e.getMessage());
         } finally {
             secureEmbeddedServer.server.stop();
         }
@@ -173,8 +172,9 @@ public class SecureEmbeddedServerITBase {
 
             TestListenerAdapter tla = new TestListenerAdapter();
             TestNG testng = new TestNG();
-            testng.setTestClasses(new Class[] { AdminJerseyResourceIT.class, EntityJerseyResourceIT.class,
-                    MetadataDiscoveryJerseyResourceIT.class, RexsterGraphJerseyResourceIT.class, TypesJerseyResourceIT.class});
+            testng.setTestClasses(new Class[]{AdminJerseyResourceIT.class, EntityJerseyResourceIT.class,
+                    MetadataDiscoveryJerseyResourceIT.class, RexsterGraphJerseyResourceIT.class,
+                    TypesJerseyResourceIT.class});
             testng.addListener(tla);
             testng.run();
 
@@ -185,8 +185,8 @@ public class SecureEmbeddedServerITBase {
     }
 
     protected String getWarPath() {
-        return String.format("/target/atlas-webapp-%s",
-                System.getProperty("project.version", "0.1-incubating-SNAPSHOT"));
+        return String
+                .format("/target/atlas-webapp-%s", System.getProperty("project.version", "0.1-incubating-SNAPSHOT"));
     }
 
     protected void setupCredentials() throws Exception {
@@ -196,23 +196,19 @@ public class SecureEmbeddedServerITBase {
         file.delete();
         conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, providerUrl);
 
-        CredentialProvider provider =
-                CredentialProviderFactory.getProviders(conf).get(0);
+        CredentialProvider provider = CredentialProviderFactory.getProviders(conf).get(0);
 
         // create new aliases
         try {
 
             char[] storepass = {'k', 'e', 'y', 'p', 'a', 's', 's'};
-            provider.createCredentialEntry(
-                    KEYSTORE_PASSWORD_KEY, storepass);
+            provider.createCredentialEntry(KEYSTORE_PASSWORD_KEY, storepass);
 
             char[] trustpass = {'k', 'e', 'y', 'p', 'a', 's', 's'};
-            provider.createCredentialEntry(
-                    TRUSTSTORE_PASSWORD_KEY, trustpass);
+            provider.createCredentialEntry(TRUSTSTORE_PASSWORD_KEY, trustpass);
 
             char[] certpass = {'k', 'e', 'y', 'p', 'a', 's', 's'};
-            provider.createCredentialEntry(
-                    SERVER_CERT_PASSWORD_KEY, certpass);
+            provider.createCredentialEntry(SERVER_CERT_PASSWORD_KEY, certpass);
 
             // write out so that it can be found in checks
             provider.flush();

@@ -39,8 +39,9 @@ public class AttributeInfo {
 
     AttributeInfo(TypeSystem t, AttributeDefinition def, Map<String, IDataType> tempTypes) throws AtlasException {
         this.name = def.name;
-        this.dataType = (tempTypes != null && tempTypes.containsKey(def.dataTypeName)) ?
-                tempTypes.get(def.dataTypeName) : t.getDataType(IDataType.class, def.dataTypeName);
+        this.dataType =
+                (tempTypes != null && tempTypes.containsKey(def.dataTypeName)) ? tempTypes.get(def.dataTypeName) :
+                        t.getDataType(IDataType.class, def.dataTypeName);
         this.multiplicity = def.multiplicity;
         this.isComposite = def.isComposite;
         this.isUnique = def.isUnique;

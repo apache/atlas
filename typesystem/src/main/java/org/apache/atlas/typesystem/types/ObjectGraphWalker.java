@@ -47,13 +47,11 @@ public class ObjectGraphWalker {
     final NodeProcessor nodeProcessor;
     Set<Id> processedIds;
 
-    public ObjectGraphWalker(TypeSystem typeSystem, NodeProcessor nodeProcessor)
-    throws AtlasException {
+    public ObjectGraphWalker(TypeSystem typeSystem, NodeProcessor nodeProcessor) throws AtlasException {
         this(typeSystem, nodeProcessor, (IReferenceableInstance) null);
     }
 
-    public ObjectGraphWalker(TypeSystem typeSystem, NodeProcessor nodeProcessor,
-                             IReferenceableInstance start)
+    public ObjectGraphWalker(TypeSystem typeSystem, NodeProcessor nodeProcessor, IReferenceableInstance start)
     throws AtlasException {
         this.typeSystem = typeSystem;
         this.nodeProcessor = nodeProcessor;
@@ -65,8 +63,7 @@ public class ObjectGraphWalker {
     }
 
     public ObjectGraphWalker(TypeSystem typeSystem, NodeProcessor nodeProcessor,
-                             List<? extends IReferenceableInstance> roots)
-    throws AtlasException {
+            List<? extends IReferenceableInstance> roots) throws AtlasException {
         this.typeSystem = typeSystem;
         this.nodeProcessor = nodeProcessor;
         queue = new LinkedList<IReferenceableInstance>();
@@ -96,8 +93,8 @@ public class ObjectGraphWalker {
                 IDataType keyType = ((DataTypes.MapType) dT).getKeyType();
                 IDataType valueType = ((DataTypes.MapType) dT).getKeyType();
                 visitMap(keyType, valueType, val);
-            } else if (dT.getTypeCategory() == DataTypes.TypeCategory.STRUCT ||
-                    dT.getTypeCategory() == DataTypes.TypeCategory.TRAIT) {
+            } else if (dT.getTypeCategory() == DataTypes.TypeCategory.STRUCT
+                    || dT.getTypeCategory() == DataTypes.TypeCategory.TRAIT) {
                 visitStruct(val);
             } else if (dT.getTypeCategory() == DataTypes.TypeCategory.CLASS) {
                 visitReferenceableInstance(val);
@@ -106,8 +103,8 @@ public class ObjectGraphWalker {
     }
 
     void visitMap(IDataType keyType, IDataType valueType, Object val) throws AtlasException {
-        if (keyType.getTypeCategory() == DataTypes.TypeCategory.PRIMITIVE &&
-                valueType.getTypeCategory() == DataTypes.TypeCategory.PRIMITIVE) {
+        if (keyType.getTypeCategory() == DataTypes.TypeCategory.PRIMITIVE
+                && valueType.getTypeCategory() == DataTypes.TypeCategory.PRIMITIVE) {
             return;
         }
 

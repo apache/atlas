@@ -31,8 +31,7 @@ public class DownCastStructInstance implements IStruct {
     public final DownCastFieldMapping fieldMapping;
     public final IStruct backingInstance;
 
-    public DownCastStructInstance(String typeName, DownCastFieldMapping fieldMapping,
-                                  IStruct backingInstance) {
+    public DownCastStructInstance(String typeName, DownCastFieldMapping fieldMapping, IStruct backingInstance) {
         this.typeName = typeName;
         this.fieldMapping = fieldMapping;
         this.backingInstance = backingInstance;
@@ -60,7 +59,7 @@ public class DownCastStructInstance implements IStruct {
     @Override
     public Map<String, Object> getValuesMap() throws AtlasException {
 
-        Map<String,Object> m = new HashMap<>();
+        Map<String, Object> m = new HashMap<>();
         for (String attr : fieldMapping.fieldNameMap.keySet()) {
             m.put(attr, get(attr));
         }

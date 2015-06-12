@@ -50,8 +50,7 @@ public class TestHiveLineageBridge {
     String oneId;
 
     private HiveLineage loadHiveLineageBean(String path) throws IOException {
-        return new Gson().fromJson(new InputStreamReader(this.getClass().getResourceAsStream(path)),
-                HiveLineage.class);
+        return new Gson().fromJson(new InputStreamReader(this.getClass().getResourceAsStream(path)), HiveLineage.class);
     }
 
     @BeforeClass

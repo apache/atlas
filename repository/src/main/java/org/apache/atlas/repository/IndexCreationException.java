@@ -35,7 +35,7 @@ public class IndexCreationException extends IndexException {
     }
 
     public IndexCreationException(String message, Throwable cause, boolean enableSuppression,
-                          boolean writableStackTrace) {
+            boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 }

@@ -65,8 +65,7 @@ public class StructStore extends AttributeStores.AbstractAttributeStore implemen
     }
 
     @Override
-    protected void store(StructInstance instance, int colPos, String attrName,
-                         Map<String, Object> m) {
+    protected void store(StructInstance instance, int colPos, String attrName, Map<String, Object> m) {
         m.put(attrName, instance.structs[colPos]);
     }
 

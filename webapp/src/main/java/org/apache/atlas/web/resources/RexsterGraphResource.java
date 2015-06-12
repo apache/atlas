@@ -86,10 +86,8 @@ public class RexsterGraphResource {
     private static void validateInputs(String errorMsg, String... inputs) {
         for (String input : inputs) {
             if (StringUtils.isEmpty(input)) {
-                throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST)
-                        .entity(errorMsg)
-                        .type("text/plain")
-                        .build());
+                throw new WebApplicationException(
+                        Response.status(Response.Status.BAD_REQUEST).entity(errorMsg).type("text/plain").build());
             }
         }
     }
@@ -122,12 +120,11 @@ public class RexsterGraphResource {
             Vertex vertex = findVertex(vertexId);
 
             JSONObject response = new JSONObject();
-            response.put(AtlasClient.RESULTS, GraphSONUtility.jsonFromElement(
-                    vertex, getVertexIndexedKeys(), GraphSONMode.NORMAL));
+            response.put(AtlasClient.RESULTS,
+                    GraphSONUtility.jsonFromElement(vertex, getVertexIndexedKeys(), GraphSONMode.NORMAL));
             return Response.ok(response).build();
         } catch (JSONException e) {
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
 
@@ -136,8 +133,7 @@ public class RexsterGraphResource {
         if (vertex == null) {
             String message = "Vertex with [" + vertexId + "] cannot be found.";
             LOG.info(message);
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(message, Response.Status.NOT_FOUND));
+            throw new WebApplicationException(Servlets.getErrorResponse(message, Response.Status.NOT_FOUND));
         }
 
         return vertex;
@@ -153,8 +149,7 @@ public class RexsterGraphResource {
     @Path("/vertices/properties/{id}")
     @Produces({Servlets.JSON_MEDIA_TYPE})
     public Response getVertexProperties(@PathParam("id") final String vertexId,
-                                        @DefaultValue("false") @QueryParam("relationships")
-                                        final String relationships) {
+            @DefaultValue("false") @QueryParam("relationships") final String relationships) {
         LOG.info("Get vertex for vertexId= {}", vertexId);
         validateInputs("Invalid argument: vertex id passed is null or empty.", vertexId);
         try {
@@ -167,8 +162,7 @@ public class RexsterGraphResource {
             response.put(AtlasClient.COUNT, vertexProperties.size());
             return Response.ok(response).build();
         } catch (JSONException e) {
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
 
@@ -192,8 +186,7 @@ public class RexsterGraphResource {
     @GET
     @Path("/vertices")
     @Produces({Servlets.JSON_MEDIA_TYPE})
-    public Response getVertices(@QueryParam("key") final String key,
-                                @QueryParam("value") final String value) {
+    public Response getVertices(@QueryParam("key") final String key, @QueryParam("value") final String value) {
         LOG.info("Get vertices for property key= {}, value= {}", key, value);
         validateInputs("Invalid argument: key or value passed is null or empty.", key, value);
         try {
@@ -201,8 +194,7 @@ public class RexsterGraphResource {
             return Response.ok(response).build();
 
         } catch (JSONException e) {
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
 
@@ -216,20 +208,17 @@ public class RexsterGraphResource {
     @GET
     @Path("vertices/{id}/{direction}")
     @Produces({Servlets.JSON_MEDIA_TYPE})
-    public Response getVertexEdges(@PathParam("id") String vertexId,
-                                   @PathParam("direction") String direction) {
+    public Response getVertexEdges(@PathParam("id") String vertexId, @PathParam("direction") String direction) {
         LOG.info("Get vertex edges for vertexId= {}, direction= {}", vertexId, direction);
         // Validate vertex id. Direction is validated in VertexQueryArguments.
-        validateInputs("Invalid argument: vertex id or direction passed is null or empty.",
-                vertexId, direction);
+        validateInputs("Invalid argument: vertex id or direction passed is null or empty.", vertexId, direction);
         try {
             Vertex vertex = findVertex(vertexId);
 
             return getVertexEdges(vertex, direction);
 
         } catch (JSONException e) {
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
 
@@ -253,8 +242,7 @@ public class RexsterGraphResource {
             Iterable<Vertex> vertexQueryResults = query.vertices();
             for (Vertex v : vertexQueryResults) {
                 if (returnType.equals(ReturnType.VERTICES)) {
-                    elementArray.put(GraphSONUtility.jsonFromElement(
-                            v, getVertexIndexedKeys(), GraphSONMode.NORMAL));
+                    elementArray.put(GraphSONUtility.jsonFromElement(v, getVertexIndexedKeys(), GraphSONMode.NORMAL));
                 } else {
                     elementArray.put(v.getId());
                 }
@@ -263,8 +251,7 @@ public class RexsterGraphResource {
         } else if (returnType == ReturnType.EDGES) {
             Iterable<Edge> edgeQueryResults = query.edges();
             for (Edge e : edgeQueryResults) {
-                elementArray.put(GraphSONUtility.jsonFromElement(
-                        e, getEdgeIndexedKeys(), GraphSONMode.NORMAL));
+                elementArray.put(GraphSONUtility.jsonFromElement(e, getEdgeIndexedKeys(), GraphSONMode.NORMAL));
                 counter++;
             }
         } else if (returnType == ReturnType.COUNT) {
@@ -296,28 +283,25 @@ public class RexsterGraphResource {
             if (edge == null) {
                 String message = "Edge with [" + edgeId + "] cannot be found.";
                 LOG.info(message);
-                throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND)
-                        .entity(Servlets.escapeJsonString(message)).build());
+                throw new WebApplicationException(
+                        Response.status(Response.Status.NOT_FOUND).entity(Servlets.escapeJsonString(message)).build());
             }
 
             JSONObject response = new JSONObject();
-            response.put(AtlasClient.RESULTS, GraphSONUtility.jsonFromElement(
-                    edge, getEdgeIndexedKeys(), GraphSONMode.NORMAL));
+            response.put(AtlasClient.RESULTS,
+                    GraphSONUtility.jsonFromElement(edge, getEdgeIndexedKeys(), GraphSONMode.NORMAL));
             return Response.ok(response).build();
         } catch (JSONException e) {
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
 
-    private <T extends Element> JSONObject buildJSONResponse(Iterable<T> elements)
-    throws JSONException {
+    private <T extends Element> JSONObject buildJSONResponse(Iterable<T> elements) throws JSONException {
         JSONArray vertexArray = new JSONArray();
         long counter = 0;
         for (Element element : elements) {
             counter++;
-            vertexArray.put(GraphSONUtility.jsonFromElement(
-                    element, getVertexIndexedKeys(), GraphSONMode.NORMAL));
+            vertexArray.put(GraphSONUtility.jsonFromElement(element, getVertexIndexedKeys(), GraphSONMode.NORMAL));
         }
 
         JSONObject response = new JSONObject();
@@ -326,6 +310,7 @@ public class RexsterGraphResource {
 
         return response;
     }
+
     private enum ReturnType {VERTICES, EDGES, COUNT, VERTEX_IDS}
 
     /**
@@ -388,8 +373,7 @@ public class RexsterGraphResource {
                 countOnly = false;
             } else {
                 throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST)
-                        .entity(Servlets.escapeJsonString(directionSegment + " segment was invalid."))
-                        .build());
+                        .entity(Servlets.escapeJsonString(directionSegment + " segment was invalid.")).build());
             }
         }
 

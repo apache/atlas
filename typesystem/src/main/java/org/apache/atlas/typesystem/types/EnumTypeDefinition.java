@@ -34,13 +34,21 @@ public final class EnumTypeDefinition {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         EnumTypeDefinition that = (EnumTypeDefinition) o;
 
-        if (!Arrays.equals(enumValues, that.enumValues)) return false;
-        if (!name.equals(that.name)) return false;
+        if (!Arrays.equals(enumValues, that.enumValues)) {
+            return false;
+        }
+        if (!name.equals(that.name)) {
+            return false;
+        }
 
         return true;
     }

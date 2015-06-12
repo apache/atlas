@@ -19,8 +19,8 @@
 package org.apache.atlas.web.resources;
 
 import com.sun.jersey.api.client.ClientResponse;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.web.util.Servlets;
@@ -98,12 +98,10 @@ public class TypesResource {
             return Response.status(ClientResponse.Status.CREATED).entity(response).build();
         } catch (AtlasException | IllegalArgumentException e) {
             LOG.error("Unable to persist types", e);
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
             LOG.error("Unable to persist types", e);
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
 
@@ -115,8 +113,7 @@ public class TypesResource {
     @GET
     @Path("{typeName}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response getDefinition(@Context HttpServletRequest request,
-                                  @PathParam("typeName") String typeName) {
+    public Response getDefinition(@Context HttpServletRequest request, @PathParam("typeName") String typeName) {
         try {
             final String typeDefinition = metadataService.getTypeDefinition(typeName);
 
@@ -128,16 +125,13 @@ public class TypesResource {
             return Response.ok(response).build();
         } catch (AtlasException e) {
             LOG.error("Unable to get type definition for type {}", typeName, e);
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (JSONException | IllegalArgumentException e) {
             LOG.error("Unable to get type definition for type {}", typeName, e);
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
             LOG.error("Unable to get type definition for type {}", typeName, e);
-            throw new WebApplicationException(
-                Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
 
@@ -152,7 +146,7 @@ public class TypesResource {
     @GET
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getTypesByFilter(@Context HttpServletRequest request,
-                                     @DefaultValue(TYPE_ALL) @QueryParam("type") String type) {
+            @DefaultValue(TYPE_ALL) @QueryParam("type") String type) {
         try {
             List<String> result;
             if (TYPE_ALL.equals(type)) {
@@ -174,8 +168,7 @@ public class TypesResource {
                     Servlets.getErrorResponse("Unsupported type " + type, Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
             LOG.error("Unable to get types list", e);
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
 }

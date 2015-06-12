@@ -80,13 +80,11 @@ public class AdminResource {
     public Response getVersion() {
         if (version == null) {
             try {
-                PropertiesConfiguration configProperties =
-                        new PropertiesConfiguration("atlas-buildinfo.properties");
+                PropertiesConfiguration configProperties = new PropertiesConfiguration("atlas-buildinfo.properties");
 
                 JSONObject response = new JSONObject();
                 response.put("Version", configProperties.getString("build.version", "UNKNOWN"));
-                response.put("Name",
-                        configProperties.getString("project.name", "apache-atlas"));
+                response.put("Name", configProperties.getString("project.name", "apache-atlas"));
                 response.put("Description", configProperties.getString("project.description",
                         "Metadata Management and Data Governance Platform over Hadoop"));
 
@@ -94,8 +92,7 @@ public class AdminResource {
                 // response.put("Hadoop", VersionInfo.getVersion() + "-r" + VersionInfo.getRevision());
                 version = Response.ok(response).build();
             } catch (JSONException | ConfigurationException e) {
-                throw new WebApplicationException(
-                        Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+                throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
             }
         }
 

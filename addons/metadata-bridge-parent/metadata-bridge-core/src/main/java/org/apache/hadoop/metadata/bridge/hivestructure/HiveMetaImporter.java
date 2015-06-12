@@ -79,8 +79,7 @@ public class HiveMetaImporter {
     public static boolean databasesImport() throws MetaException, RepositoryException {
         ClassType classType = null;
         try {
-            classType = TypeSystem.getInstance()
-                    .getDataType(ClassType.class, HiveStructureBridge.DB_CLASS_TYPE);
+            classType = TypeSystem.getInstance().getDataType(ClassType.class, HiveStructureBridge.DB_CLASS_TYPE);
         } catch (MetadataException e1) {
             e1.printStackTrace();
         }
@@ -118,8 +117,7 @@ public class HiveMetaImporter {
     public static boolean tablesImport(String dbName) throws MetaException, RepositoryException {
         ClassType classType = null;
         try {
-            classType = TypeSystem.getInstance()
-                    .getDataType(ClassType.class, HiveStructureBridge.TB_CLASS_TYPE);
+            classType = TypeSystem.getInstance().getDataType(ClassType.class, HiveStructureBridge.TB_CLASS_TYPE);
         } catch (MetadataException e1) {
             e1.printStackTrace();
         }
@@ -129,8 +127,7 @@ public class HiveMetaImporter {
         return true;
     }
 
-    public static boolean tableImport(String dbName, String tbName)
-    throws MetaException, RepositoryException {
+    public static boolean tableImport(String dbName, String tbName) throws MetaException, RepositoryException {
         try {
             Table tb = msc.getTable(dbName, tbName);
             Referenceable tbRef = new Referenceable(HiveStructureBridge.TB_CLASS_TYPE);
@@ -157,12 +154,10 @@ public class HiveMetaImporter {
         return true;
     }
 
-    public static boolean fieldsImport(String dbName, String tbName)
-    throws MetaException, RepositoryException {
+    public static boolean fieldsImport(String dbName, String tbName) throws MetaException, RepositoryException {
         ClassType classType = null;
         try {
-            classType = TypeSystem.getInstance()
-                    .getDataType(ClassType.class, HiveStructureBridge.FD_CLASS_TYPE);
+            classType = TypeSystem.getInstance().getDataType(ClassType.class, HiveStructureBridge.FD_CLASS_TYPE);
         } catch (MetadataException e1) {
             e1.printStackTrace();
         }
@@ -190,8 +185,7 @@ public class HiveMetaImporter {
         return true;
     }
 
-    public static boolean fieldImport(String dbName, String tbName, String fdName)
-    throws MetaException {
+    public static boolean fieldImport(String dbName, String tbName, String fdName) throws MetaException {
         try {
             for (FieldSchema fs : msc.getFields(dbName, tbName)) {
                 if (fs.getName().equals(fs)) {

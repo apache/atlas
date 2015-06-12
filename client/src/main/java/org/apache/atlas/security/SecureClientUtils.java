@@ -61,10 +61,8 @@ public class SecureClientUtils {
 
 
     public static URLConnectionClientHandler getClientConnectionHandler(DefaultClientConfig config,
-                                                                        PropertiesConfiguration clientConfig) {
-        config.getProperties().put(
-                URLConnectionClientHandler.PROPERTY_HTTP_URL_CONNECTION_SET_METHOD_WORKAROUND,
-                true);
+            PropertiesConfiguration clientConfig) {
+        config.getProperties().put(URLConnectionClientHandler.PROPERTY_HTTP_URL_CONNECTION_SET_METHOD_WORKAROUND, true);
         Configuration conf = new Configuration(false);
         conf.addResource(conf.get(SSLFactory.SSL_CLIENT_CONF_KEY, "ssl-client.xml"));
         String authType = "simple";
@@ -95,28 +93,25 @@ public class SecureClientUtils {
         return new URLConnectionClientHandler(httpURLConnectionFactory);
     }
 
-    private final static ConnectionConfigurator DEFAULT_TIMEOUT_CONN_CONFIGURATOR =
-            new ConnectionConfigurator() {
-                @Override
-                public HttpURLConnection configure(HttpURLConnection conn)
-                        throws IOException {
-                    setTimeouts(conn, DEFAULT_SOCKET_TIMEOUT);
-                    return conn;
-                }
-            };
+    private final static ConnectionConfigurator DEFAULT_TIMEOUT_CONN_CONFIGURATOR = new ConnectionConfigurator() {
+        @Override
+        public HttpURLConnection configure(HttpURLConnection conn) throws IOException {
+            setTimeouts(conn, DEFAULT_SOCKET_TIMEOUT);
+            return conn;
+        }
+    };
 
     private static ConnectionConfigurator newConnConfigurator(Configuration conf) {
         try {
             return newSslConnConfigurator(DEFAULT_SOCKET_TIMEOUT, conf);
         } catch (Exception e) {
-            LOG.debug("Cannot load customized ssl related configuration. " +
-                    "Fallback to system-generic settings.", e);
+            LOG.debug("Cannot load customized ssl related configuration. " + "Fallback to system-generic settings.", e);
             return DEFAULT_TIMEOUT_CONN_CONFIGURATOR;
         }
     }
 
-    private static ConnectionConfigurator newSslConnConfigurator(final int timeout,
-                                                          Configuration conf) throws IOException, GeneralSecurityException {
+    private static ConnectionConfigurator newSslConnConfigurator(final int timeout, Configuration conf)
+    throws IOException, GeneralSecurityException {
         final SSLFactory factory;
         final SSLSocketFactory sf;
         final HostnameVerifier hv;
@@ -128,8 +123,7 @@ public class SecureClientUtils {
 
         return new ConnectionConfigurator() {
             @Override
-            public HttpURLConnection configure(HttpURLConnection conn)
-                    throws IOException {
+            public HttpURLConnection configure(HttpURLConnection conn) throws IOException {
                 if (conn instanceof HttpsURLConnection) {
                     HttpsURLConnection c = (HttpsURLConnection) conn;
                     c.setSSLSocketFactory(sf);
@@ -168,7 +162,8 @@ public class SecureClientUtils {
         return new File(sslDir, SecurityProperties.SSL_CLIENT_PROPERTIES);
     }
 
-    public static void persistSSLClientConfiguration(PropertiesConfiguration clientConfig) throws AtlasException, IOException {
+    public static void persistSSLClientConfiguration(PropertiesConfiguration clientConfig)
+    throws AtlasException, IOException {
         //trust settings
         Configuration configuration = new Configuration(false);
         File sslClientFile = getSSLClientFile();

@@ -32,19 +32,20 @@ import static org.apache.atlas.security.SecurityProperties.SERVER_CERT_PASSWORD_
 import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_PASSWORD_KEY;
 
 /**
- * A utility class for generating a credential provider containing the entries required for supporting the SSL implementation
+ * A utility class for generating a credential provider containing the entries required for supporting the SSL
+ * implementation
  * of the DGC server.
  */
 public class CredentialProviderUtility {
-    private static final String[] KEYS = new String[] {KEYSTORE_PASSWORD_KEY,
-            TRUSTSTORE_PASSWORD_KEY, SERVER_CERT_PASSWORD_KEY};
+    private static final String[] KEYS =
+            new String[]{KEYSTORE_PASSWORD_KEY, TRUSTSTORE_PASSWORD_KEY, SERVER_CERT_PASSWORD_KEY};
 
     public static abstract class TextDevice {
         public abstract void printf(String fmt, Object... params);
 
-        public abstract String readLine(String fmt, Object ... args);
+        public abstract String readLine(String fmt, Object... args);
 
-        public abstract char[] readPassword(String fmt, Object ... args);
+        public abstract char[] readPassword(String fmt, Object... args);
 
     }
 
@@ -57,12 +58,12 @@ public class CredentialProviderUtility {
         }
 
         @Override
-        public String readLine(String fmt, Object ... args) {
+        public String readLine(String fmt, Object... args) {
             return console.readLine(fmt, args);
         }
 
         @Override
-        public char[] readPassword(String fmt, Object ... args) {
+        public char[] readPassword(String fmt, Object... args) {
             return console.readPassword(fmt, args);
         }
     };
@@ -101,7 +102,7 @@ public class CredentialProviderUtility {
      * Retrieves a password from the command line.
      * @param textDevice  the system console.
      * @param key   the password key/alias.
-     * @return  the password.
+     * @return the password.
      */
     private static char[] getPassword(TextDevice textDevice, String key) {
         boolean noMatch;
@@ -113,7 +114,9 @@ public class CredentialProviderUtility {
             passwd2 = textDevice.readPassword("Please enter the password value for %s again:", key);
             noMatch = !Arrays.equals(passwd1, passwd2);
             if (noMatch) {
-                if (passwd1 != null) Arrays.fill(passwd1, ' ');
+                if (passwd1 != null) {
+                    Arrays.fill(passwd1, ' ');
+                }
                 textDevice.printf("Password entries don't match. Please try again.\n");
             } else {
                 if (passwd1.length == 0) {
@@ -123,7 +126,9 @@ public class CredentialProviderUtility {
                     cred = passwd1;
                 }
             }
-            if (passwd2 != null) Arrays.fill(passwd2, ' ');
+            if (passwd2 != null) {
+                Arrays.fill(passwd2, ' ');
+            }
         } while (noMatch);
         return cred;
     }
@@ -131,15 +136,17 @@ public class CredentialProviderUtility {
     /**\
      * Returns a credential provider for the entered JKS path.
      * @param textDevice the system console.
-     * @return  the Credential provider
+     * @return the Credential provider
      * @throws IOException
      */
     private static CredentialProvider getCredentialProvider(TextDevice textDevice) throws IOException {
         String providerPath = textDevice.readLine("Please enter the full path to the credential provider:");
         File file = new File(providerPath);
         if (file.exists()) {
-            textDevice.printf("%s already exists.  You will need to specify whether existing entries should be overwritten " +
-                    "(default is 'yes')\n", providerPath);
+            textDevice
+                    .printf("%s already exists.  You will need to specify whether existing entries should be "
+                            + "overwritten "
+                            + "(default is 'yes')\n", providerPath);
         }
         String providerURI = JavaKeyStoreProvider.SCHEME_NAME + "://file" + providerPath;
         Configuration conf = new Configuration(false);

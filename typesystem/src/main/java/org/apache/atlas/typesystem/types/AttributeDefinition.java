@@ -35,15 +35,14 @@ public final class AttributeDefinition {
      */
     public final String reverseAttributeName;
 
-    public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity,
-                               boolean isComposite, String reverseAttributeName) {
+    public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
+            String reverseAttributeName) {
         this(name, dataTypeName, multiplicity, isComposite, false, true, reverseAttributeName);
 
     }
 
-    public AttributeDefinition(String name, String dataTypeName,
-                               Multiplicity multiplicity, boolean isComposite, boolean isUnique,
-                               boolean isIndexable, String reverseAttributeName) {
+    public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
+            boolean isUnique, boolean isIndexable, String reverseAttributeName) {
         this.name = ParamChecker.notEmpty(name, "Attribute name");
         this.dataTypeName = ParamChecker.notEmpty(dataTypeName, "Attribute type");
         this.multiplicity = multiplicity;
@@ -55,21 +54,37 @@ public final class AttributeDefinition {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         AttributeDefinition that = (AttributeDefinition) o;
 
-        if (isComposite != that.isComposite) return false;
-        if (isUnique != that.isUnique) return false;
-        if (isIndexable != that.isIndexable) return false;
-        if (!dataTypeName.equals(that.dataTypeName)) return false;
-        if (!multiplicity.equals(that.multiplicity)) return false;
-        if (!name.equals(that.name)) return false;
-        if (reverseAttributeName != null
-                ? !reverseAttributeName.equals(that.reverseAttributeName)
-                : that.reverseAttributeName != null)
+        if (isComposite != that.isComposite) {
             return false;
+        }
+        if (isUnique != that.isUnique) {
+            return false;
+        }
+        if (isIndexable != that.isIndexable) {
+            return false;
+        }
+        if (!dataTypeName.equals(that.dataTypeName)) {
+            return false;
+        }
+        if (!multiplicity.equals(that.multiplicity)) {
+            return false;
+        }
+        if (!name.equals(that.name)) {
+            return false;
+        }
+        if (reverseAttributeName != null ? !reverseAttributeName.equals(that.reverseAttributeName) :
+                that.reverseAttributeName != null) {
+            return false;
+        }
 
         return true;
     }

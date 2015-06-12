@@ -36,13 +36,11 @@ public class TypeUtils {
 
     public static final String NAME_REGEX = "[a-zA-z][a-zA-Z0-9_]*";
     public static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
-    public static final Pattern ARRAY_TYPE_NAME_PATTERN = Pattern
-            .compile(String.format("array<(%s)>", NAME_REGEX));
+    public static final Pattern ARRAY_TYPE_NAME_PATTERN = Pattern.compile(String.format("array<(%s)>", NAME_REGEX));
     public static final Pattern MAP_TYPE_NAME_PATTERN =
             Pattern.compile(String.format("map<(%s),(%s)>", NAME_REGEX, NAME_REGEX));
 
-    public static void outputVal(String val, Appendable buf, String prefix)
-    throws AtlasException {
+    public static void outputVal(String val, Appendable buf, String prefix) throws AtlasException {
         try {
             buf.append(prefix).append(val);
         } catch (IOException ie) {
@@ -73,14 +71,14 @@ public class TypeUtils {
         return ImmutableMap.copyOf(b);
     }
 
-    public static TypesDef getTypesDef(ImmutableList<EnumTypeDefinition> enums, ImmutableList<StructTypeDefinition> structs,
-                                         ImmutableList<HierarchicalTypeDefinition<TraitType>> traits,
-                                         ImmutableList<HierarchicalTypeDefinition<ClassType>> classes) {
+    public static TypesDef getTypesDef(ImmutableList<EnumTypeDefinition> enums,
+            ImmutableList<StructTypeDefinition> structs, ImmutableList<HierarchicalTypeDefinition<TraitType>> traits,
+            ImmutableList<HierarchicalTypeDefinition<ClassType>> classes) {
         return new TypesDef(JavaConversions.asScalaBuffer(enums), JavaConversions.asScalaBuffer(structs),
                 JavaConversions.asScalaBuffer(traits), JavaConversions.asScalaBuffer(classes));
     }
 
-    protected static class Pair<L,R> {
+    protected static class Pair<L, R> {
         protected L left;
         protected R right;
 

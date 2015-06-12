@@ -37,11 +37,10 @@ public abstract class BaseTest {
     public static final String STRUCT_TYPE_1 = "t1";
     public static final String STRUCT_TYPE_2 = "t2";
     public static final String TEST_DATE = "2014-12-11T02:35:58.440Z";
-    public static final long TEST_DATE_IN_LONG=1418265358440L;
+    public static final long TEST_DATE_IN_LONG = 1418265358440L;
 
     public static Struct createStruct() throws AtlasException {
-        StructType structType = TypeSystem.getInstance().getDataType(
-                StructType.class, STRUCT_TYPE_1);
+        StructType structType = TypeSystem.getInstance().getDataType(StructType.class, STRUCT_TYPE_1);
         Struct s = new Struct(structType.getName());
         s.set("a", 1);
         s.set("b", true);
@@ -56,8 +55,7 @@ public abstract class BaseTest {
         s.set("k", new BigDecimal(1));
         s.set("l", new Date(1418265358440L));
         s.set("m", Lists.asList(1, new Integer[]{1}));
-        s.set("n", Lists.asList(BigDecimal.valueOf(1.1),
-                new BigDecimal[]{BigDecimal.valueOf(1.1)}));
+        s.set("n", Lists.asList(BigDecimal.valueOf(1.1), new BigDecimal[]{BigDecimal.valueOf(1.1)}));
         Map<String, Double> hm = Maps.newHashMap();
         hm.put("a", 1.0);
         hm.put("b", 2.0);
@@ -74,41 +72,38 @@ public abstract class BaseTest {
         TypeSystem ts = TypeSystem.getInstance();
         ts.reset();
 
-        StructType structType = ts.defineStructType(STRUCT_TYPE_1,
-                true,
-                TypesUtil.createRequiredAttrDef("a", DataTypes.INT_TYPE),
-                TypesUtil.createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE),
-                TypesUtil.createOptionalAttrDef("c", DataTypes.BYTE_TYPE),
-                TypesUtil.createOptionalAttrDef("d", DataTypes.SHORT_TYPE),
-                TypesUtil.createOptionalAttrDef("e", DataTypes.INT_TYPE),
-                TypesUtil.createOptionalAttrDef("f", DataTypes.INT_TYPE),
-                TypesUtil.createOptionalAttrDef("g", DataTypes.LONG_TYPE),
-                TypesUtil.createOptionalAttrDef("h", DataTypes.FLOAT_TYPE),
-                TypesUtil.createOptionalAttrDef("i", DataTypes.DOUBLE_TYPE),
-                TypesUtil.createOptionalAttrDef("j", DataTypes.BIGINTEGER_TYPE),
-                TypesUtil.createOptionalAttrDef("k", DataTypes.BIGDECIMAL_TYPE),
-                TypesUtil.createOptionalAttrDef("l", DataTypes.DATE_TYPE),
-                TypesUtil.createOptionalAttrDef("m", ts.defineArrayType(DataTypes.INT_TYPE)),
-                TypesUtil.createOptionalAttrDef("n", ts.defineArrayType(DataTypes.BIGDECIMAL_TYPE)),
-                TypesUtil.createOptionalAttrDef("o",
-                        ts.defineMapType(DataTypes.STRING_TYPE, DataTypes.DOUBLE_TYPE)));
+        StructType structType =
+                ts.defineStructType(STRUCT_TYPE_1, true, TypesUtil.createRequiredAttrDef("a", DataTypes.INT_TYPE),
+                        TypesUtil.createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE),
+                        TypesUtil.createOptionalAttrDef("c", DataTypes.BYTE_TYPE),
+                        TypesUtil.createOptionalAttrDef("d", DataTypes.SHORT_TYPE),
+                        TypesUtil.createOptionalAttrDef("e", DataTypes.INT_TYPE),
+                        TypesUtil.createOptionalAttrDef("f", DataTypes.INT_TYPE),
+                        TypesUtil.createOptionalAttrDef("g", DataTypes.LONG_TYPE),
+                        TypesUtil.createOptionalAttrDef("h", DataTypes.FLOAT_TYPE),
+                        TypesUtil.createOptionalAttrDef("i", DataTypes.DOUBLE_TYPE),
+                        TypesUtil.createOptionalAttrDef("j", DataTypes.BIGINTEGER_TYPE),
+                        TypesUtil.createOptionalAttrDef("k", DataTypes.BIGDECIMAL_TYPE),
+                        TypesUtil.createOptionalAttrDef("l", DataTypes.DATE_TYPE),
+                        TypesUtil.createOptionalAttrDef("m", ts.defineArrayType(DataTypes.INT_TYPE)),
+                        TypesUtil.createOptionalAttrDef("n", ts.defineArrayType(DataTypes.BIGDECIMAL_TYPE)), TypesUtil
+                                .createOptionalAttrDef("o",
+                                        ts.defineMapType(DataTypes.STRING_TYPE, DataTypes.DOUBLE_TYPE)));
         System.out.println("defined structType = " + structType);
 
-        StructType recursiveStructType = ts.defineStructType(STRUCT_TYPE_2,
-                true,
-                TypesUtil.createRequiredAttrDef("a", DataTypes.INT_TYPE),
-                TypesUtil.createOptionalAttrDef("s", STRUCT_TYPE_2));
+        StructType recursiveStructType =
+                ts.defineStructType(STRUCT_TYPE_2, true, TypesUtil.createRequiredAttrDef("a", DataTypes.INT_TYPE),
+                        TypesUtil.createOptionalAttrDef("s", STRUCT_TYPE_2));
         System.out.println("defined recursiveStructType = " + recursiveStructType);
     }
 
-    protected Map<String, IDataType> defineTraits(HierarchicalTypeDefinition... tDefs)
-        throws AtlasException {
+    protected Map<String, IDataType> defineTraits(HierarchicalTypeDefinition... tDefs) throws AtlasException {
 
         return getTypeSystem().defineTraitTypes(tDefs);
     }
 
-    protected Map<String, IDataType> defineClasses(
-            HierarchicalTypeDefinition<ClassType>... classDefs) throws AtlasException {
+    protected Map<String, IDataType> defineClasses(HierarchicalTypeDefinition<ClassType>... classDefs)
+    throws AtlasException {
         return getTypeSystem().defineClassTypes(classDefs);
     }
 
@@ -123,47 +118,30 @@ public abstract class BaseTest {
     protected void defineDeptEmployeeTypes(TypeSystem ts) throws AtlasException {
 
         HierarchicalTypeDefinition<ClassType> deptTypeDef = TypesUtil
-                .createClassTypeDef("Department",
-                        ImmutableList.<String>of(),
+                .createClassTypeDef("Department", ImmutableList.<String>of(),
                         TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        new AttributeDefinition("employees",
-                                String.format("array<%s>", "Person"), Multiplicity.COLLECTION, true,
-                                "department")
-                );
-        HierarchicalTypeDefinition<ClassType> personTypeDef = TypesUtil.createClassTypeDef("Person",
-                ImmutableList.<String>of(),
-                TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                new AttributeDefinition("department",
-                        "Department", Multiplicity.REQUIRED, false, "employees"),
-                new AttributeDefinition("manager",
-                        "Manager", Multiplicity.OPTIONAL, false, "subordinates")
-        );
-        HierarchicalTypeDefinition<ClassType> managerTypeDef =
-                TypesUtil.createClassTypeDef("Manager",
-                        ImmutableList.of("Person"),
-                        new AttributeDefinition("subordinates",
-                                String.format("array<%s>", "Person"),
-                                Multiplicity.COLLECTION, false, "manager")
-                );
+                        new AttributeDefinition("employees", String.format("array<%s>", "Person"),
+                                Multiplicity.COLLECTION, true, "department"));
+        HierarchicalTypeDefinition<ClassType> personTypeDef = TypesUtil
+                .createClassTypeDef("Person", ImmutableList.<String>of(),
+                        TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        new AttributeDefinition("department", "Department", Multiplicity.REQUIRED, false, "employees"),
+                        new AttributeDefinition("manager", "Manager", Multiplicity.OPTIONAL, false, "subordinates"));
+        HierarchicalTypeDefinition<ClassType> managerTypeDef = TypesUtil
+                .createClassTypeDef("Manager", ImmutableList.of("Person"),
+                        new AttributeDefinition("subordinates", String.format("array<%s>", "Person"),
+                                Multiplicity.COLLECTION, false, "manager"));
 
-        HierarchicalTypeDefinition<TraitType> securityClearanceTypeDef =
-                TypesUtil.createTraitTypeDef(
-                        "SecurityClearance",
-                        ImmutableList.<String>of(),
-                        TypesUtil.createRequiredAttrDef("level", DataTypes.INT_TYPE)
-                );
+        HierarchicalTypeDefinition<TraitType> securityClearanceTypeDef = TypesUtil
+                .createTraitTypeDef("SecurityClearance", ImmutableList.<String>of(),
+                        TypesUtil.createRequiredAttrDef("level", DataTypes.INT_TYPE));
 
-        ts.defineTypes(ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.of(securityClearanceTypeDef),
-                ImmutableList.of(deptTypeDef, personTypeDef,
-                        managerTypeDef));
+        ts.defineTypes(ImmutableList.<StructTypeDefinition>of(), ImmutableList.of(securityClearanceTypeDef),
+                ImmutableList.of(deptTypeDef, personTypeDef, managerTypeDef));
 
-        ImmutableList.of(
-                ts.getDataType(HierarchicalType.class, "SecurityClearance"),
-                ts.getDataType(ClassType.class, "Department"),
-                ts.getDataType(ClassType.class, "Person"),
-                ts.getDataType(ClassType.class, "Manager")
-        );
+        ImmutableList.of(ts.getDataType(HierarchicalType.class, "SecurityClearance"),
+                ts.getDataType(ClassType.class, "Department"), ts.getDataType(ClassType.class, "Person"),
+                ts.getDataType(ClassType.class, "Manager"));
     }
 
     protected Referenceable createDeptEg1(TypeSystem ts) throws AtlasException {

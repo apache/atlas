@@ -29,7 +29,9 @@ public class FalconTypeSystemTest {
     @Test
     public void testTypeSystem() throws MetadataException {
         FalconTypeSystem.getInstance();
-        Assert.assertNotNull(TypeSystem.getInstance().getDataType(ClassType.class, FalconTypeSystem.DefinedTypes.CLUSTER.name()));
-        Assert.assertNotNull(TypeSystem.getInstance().getDataType(TraitType.class, FalconTypeSystem.DefinedTypes.TAG.name()));
+        Assert.assertNotNull(
+                TypeSystem.getInstance().getDataType(ClassType.class, FalconTypeSystem.DefinedTypes.CLUSTER.name()));
+        Assert.assertNotNull(
+                TypeSystem.getInstance().getDataType(TraitType.class, FalconTypeSystem.DefinedTypes.TAG.name()));
     }
 }

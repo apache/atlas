@@ -34,8 +34,7 @@ public class StructTest extends BaseTest {
     public void setup() throws Exception {
         super.setup();
         structType = getTypeSystem().getDataType(StructType.class, STRUCT_TYPE_1);
-        recursiveStructType = getTypeSystem()
-                .getDataType(StructType.class, STRUCT_TYPE_2);
+        recursiveStructType = getTypeSystem().getDataType(StructType.class, STRUCT_TYPE_2);
     }
 
     @Test

@@ -32,13 +32,21 @@ public class EnumValue {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         EnumValue enumValue = (EnumValue) o;
 
-        if (ordinal != enumValue.ordinal) return false;
-        if (!value.equals(enumValue.value)) return false;
+        if (ordinal != enumValue.ordinal) {
+            return false;
+        }
+        if (!value.equals(enumValue.value)) {
+            return false;
+        }
 
         return true;
     }

@@ -94,44 +94,31 @@ public final class TestUtils {
                 new EnumTypeDefinition("OrgLevel", new EnumValue("L1", 1), new EnumValue("L2", 2));
         ts.defineEnumType(orgLevelEnum);
 
-        StructTypeDefinition addressDetails = createStructTypeDef("Address",
-                createRequiredAttrDef("street", DataTypes.STRING_TYPE),
-                createRequiredAttrDef("city", DataTypes.STRING_TYPE));
+        StructTypeDefinition addressDetails =
+                createStructTypeDef("Address", createRequiredAttrDef("street", DataTypes.STRING_TYPE),
+                        createRequiredAttrDef("city", DataTypes.STRING_TYPE));
 
-        HierarchicalTypeDefinition<ClassType> deptTypeDef =
-                createClassTypeDef("Department", ImmutableList.<String>of(),
-                        createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        new AttributeDefinition("employees",
-                                String.format("array<%s>", "Person"), Multiplicity.COLLECTION, true,
-                                "department")
-                );
+        HierarchicalTypeDefinition<ClassType> deptTypeDef = createClassTypeDef("Department", ImmutableList.<String>of(),
+                createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                new AttributeDefinition("employees", String.format("array<%s>", "Person"), Multiplicity.COLLECTION,
+                        true, "department"));
 
-        HierarchicalTypeDefinition<ClassType> personTypeDef = createClassTypeDef("Person",
-                ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<ClassType> personTypeDef = createClassTypeDef("Person", ImmutableList.<String>of(),
                 createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                 createOptionalAttrDef("orgLevel", ts.getDataType(EnumType.class, "OrgLevel")),
                 createOptionalAttrDef("address", "Address"),
-                new AttributeDefinition("department",
-                        "Department", Multiplicity.REQUIRED, false, "employees"),
-                new AttributeDefinition("manager",
-                        "Manager", Multiplicity.OPTIONAL, false, "subordinates")
-        );
+                new AttributeDefinition("department", "Department", Multiplicity.REQUIRED, false, "employees"),
+                new AttributeDefinition("manager", "Manager", Multiplicity.OPTIONAL, false, "subordinates"));
 
-        HierarchicalTypeDefinition<ClassType> managerTypeDef = createClassTypeDef("Manager",
-                ImmutableList.of("Person"),
-                new AttributeDefinition("subordinates",
-                        String.format("array<%s>", "Person"), Multiplicity.COLLECTION, false,
-                        "manager")
-        );
+        HierarchicalTypeDefinition<ClassType> managerTypeDef = createClassTypeDef("Manager", ImmutableList.of("Person"),
+                new AttributeDefinition("subordinates", String.format("array<%s>", "Person"), Multiplicity.COLLECTION,
+                        false, "manager"));
 
-        HierarchicalTypeDefinition<TraitType> securityClearanceTypeDef = createTraitTypeDef(
-                "SecurityClearance",
-                ImmutableList.<String>of(),
-                createRequiredAttrDef("level", DataTypes.INT_TYPE)
-        );
+        HierarchicalTypeDefinition<TraitType> securityClearanceTypeDef =
+                createTraitTypeDef("SecurityClearance", ImmutableList.<String>of(),
+                        createRequiredAttrDef("level", DataTypes.INT_TYPE));
 
-        ts.defineTypes(ImmutableList.of(addressDetails),
-                ImmutableList.of(securityClearanceTypeDef),
+        ts.defineTypes(ImmutableList.of(addressDetails), ImmutableList.of(securityClearanceTypeDef),
                 ImmutableList.of(deptTypeDef, personTypeDef, managerTypeDef));
     }
 

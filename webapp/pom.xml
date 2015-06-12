@@ -307,7 +307,7 @@
                         </systemProperty>
                         <systemProperty>
                             <name>truststore.file</name>
-                            <value>${project.build.directory}/../../webapp/target/atlas.keystore </value>
+                            <value>${project.build.directory}/../../webapp/target/atlas.keystore</value>
                         </systemProperty>
                         <systemProperty>
                             <name>atlas.home</name>

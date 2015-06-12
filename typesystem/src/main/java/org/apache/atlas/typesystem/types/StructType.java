@@ -28,8 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class StructType extends AbstractDataType<IStruct>
-        implements IConstructableType<IStruct, ITypedStruct> {
+public class StructType extends AbstractDataType<IStruct> implements IConstructableType<IStruct, ITypedStruct> {
 
     public final TypeSystem typeSystem;
     public final String name;
@@ -50,13 +49,11 @@ public class StructType extends AbstractDataType<IStruct>
         this.handler = null;
     }
 
-    protected StructType(TypeSystem typeSystem, String name,
-                         ImmutableList<String> superTypes, AttributeInfo... fields)
+    protected StructType(TypeSystem typeSystem, String name, ImmutableList<String> superTypes, AttributeInfo... fields)
     throws AtlasException {
         this.typeSystem = typeSystem;
         this.name = name;
-        this.fieldMapping = constructFieldMapping(superTypes,
-                fields);
+        this.fieldMapping = constructFieldMapping(superTypes, fields);
         infoToNameMap = TypeUtils.buildAttrInfoToNameMap(this.fieldMapping);
         this.numFields = this.fieldMapping.fields.size();
         this.handler = new TypedStructHandler(this);
@@ -71,8 +68,7 @@ public class StructType extends AbstractDataType<IStruct>
         return name;
     }
 
-    protected FieldMapping constructFieldMapping(ImmutableList<String> superTypes,
-                                                 AttributeInfo... fields)
+    protected FieldMapping constructFieldMapping(ImmutableList<String> superTypes, AttributeInfo... fields)
     throws AtlasException {
 
         Map<String, AttributeInfo> fieldsMap = new LinkedHashMap<String, AttributeInfo>();
@@ -97,9 +93,7 @@ public class StructType extends AbstractDataType<IStruct>
         for (AttributeInfo i : fields) {
             if (fieldsMap.containsKey(i.name)) {
                 throw new AtlasException(
-                        String.format(
-                                "Struct defintion cannot contain multiple fields with the same " +
-                                        "name %s",
+                        String.format("Struct defintion cannot contain multiple fields with the same " + "name %s",
                                 i.name));
             }
             fieldsMap.put(i.name, i);
@@ -146,8 +140,8 @@ public class StructType extends AbstractDataType<IStruct>
             } else if (i.dataType().getTypeCategory() == DataTypes.TypeCategory.MAP) {
                 fieldPos.put(i.name, numMaps);
                 numMaps++;
-            } else if (i.dataType().getTypeCategory() == DataTypes.TypeCategory.STRUCT ||
-                    i.dataType().getTypeCategory() == DataTypes.TypeCategory.TRAIT) {
+            } else if (i.dataType().getTypeCategory() == DataTypes.TypeCategory.STRUCT
+                    || i.dataType().getTypeCategory() == DataTypes.TypeCategory.TRAIT) {
                 fieldPos.put(i.name, numStructs);
                 numStructs++;
             } else if (i.dataType().getTypeCategory() == DataTypes.TypeCategory.CLASS) {
@@ -158,23 +152,8 @@ public class StructType extends AbstractDataType<IStruct>
             }
         }
 
-        return new FieldMapping(fieldsMap,
-                fieldPos,
-                fieldNullPos,
-                numBools,
-                numBytes,
-                numShorts,
-                numInts,
-                numLongs,
-                numFloats,
-                numDoubles,
-                numBigInts,
-                numBigDecimals,
-                numDates,
-                numStrings,
-                numArrays,
-                numMaps,
-                numStructs,
+        return new FieldMapping(fieldsMap, fieldPos, fieldNullPos, numBools, numBytes, numShorts, numInts, numLongs,
+                numFloats, numDoubles, numBigInts, numBigDecimals, numDates, numStrings, numArrays, numMaps, numStructs,
                 numReferenceables);
     }
 

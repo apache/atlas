@@ -19,8 +19,8 @@
 package org.apache.atlas.discovery;
 
 import com.thinkaurelius.titan.core.TitanGraph;
-import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.ParamChecker;
 import org.apache.atlas.PropertiesUtil;
 import org.apache.atlas.discovery.graph.DefaultGraphPersistenceStrategy;
@@ -65,20 +65,14 @@ public class HiveLineageService implements LineageService {
         // todo - externalize this using type system - dog food
         try {
             PropertiesConfiguration conf = PropertiesUtil.getApplicationProperties();
-            HIVE_TABLE_TYPE_NAME =
-                conf.getString("atlas.lineage.hive.table.type.name",  "DataSet");
-            HIVE_PROCESS_TYPE_NAME =
-                conf.getString("atlas.lineage.hive.process.type.name", "Process");
-            HIVE_PROCESS_INPUT_ATTRIBUTE_NAME =
-                conf.getString("atlas.lineage.hive.process.inputs.name", "inputs");
-            HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME =
-                conf.getString("atlas.lineage.hive.process.outputs.name", "outputs");
+            HIVE_TABLE_TYPE_NAME = conf.getString("atlas.lineage.hive.table.type.name", "DataSet");
+            HIVE_PROCESS_TYPE_NAME = conf.getString("atlas.lineage.hive.process.type.name", "Process");
+            HIVE_PROCESS_INPUT_ATTRIBUTE_NAME = conf.getString("atlas.lineage.hive.process.inputs.name", "inputs");
+            HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME = conf.getString("atlas.lineage.hive.process.outputs.name", "outputs");
 
-            HIVE_TABLE_SCHEMA_QUERY = conf.getString(
-                    "atlas.lineage.hive.table.schema.query",
-                    "hive_table where name=\"%s\", columns");
-            HIVE_TABLE_EXISTS_QUERY = conf.getString(
-                    "atlas.lineage.hive.table.exists.query",
+            HIVE_TABLE_SCHEMA_QUERY =
+                    conf.getString("atlas.lineage.hive.table.schema.query", "hive_table where name=\"%s\", columns");
+            HIVE_TABLE_EXISTS_QUERY = conf.getString("atlas.lineage.hive.table.exists.query",
                     "from " + HIVE_TABLE_TYPE_NAME + " where name=\"%s\"");
         } catch (AtlasException e) {
             throw new RuntimeException(e);
@@ -91,9 +85,8 @@ public class HiveLineageService implements LineageService {
     private final GraphBackedDiscoveryService discoveryService;
 
     @Inject
-    HiveLineageService(GraphProvider<TitanGraph> graphProvider,
-                       MetadataRepository metadataRepository,
-                       GraphBackedDiscoveryService discoveryService) throws DiscoveryException {
+    HiveLineageService(GraphProvider<TitanGraph> graphProvider, MetadataRepository metadataRepository,
+            GraphBackedDiscoveryService discoveryService) throws DiscoveryException {
         this.titanGraph = graphProvider.get();
         this.graphPersistenceStrategy = new DefaultGraphPersistenceStrategy(metadataRepository);
         this.discoveryService = discoveryService;
@@ -112,14 +105,13 @@ public class HiveLineageService implements LineageService {
         ParamChecker.notEmpty(tableName, "table name cannot be null");
         validateTableExists(tableName);
 
-        HiveWhereUsedQuery outputsQuery = new HiveWhereUsedQuery(
-                HIVE_TABLE_TYPE_NAME, tableName, HIVE_PROCESS_TYPE_NAME,
-                HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME,
-                Option.empty(), SELECT_ATTRIBUTES, true,
-                graphPersistenceStrategy, titanGraph);
+        HiveWhereUsedQuery outputsQuery =
+                new HiveWhereUsedQuery(HIVE_TABLE_TYPE_NAME, tableName, HIVE_PROCESS_TYPE_NAME,
+                        HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME, Option.empty(),
+                        SELECT_ATTRIBUTES, true, graphPersistenceStrategy, titanGraph);
 
         Expressions.Expression expression = outputsQuery.expr();
-        LOG.debug("Expression is [" + expression.toString() +"]");
+        LOG.debug("Expression is [" + expression.toString() + "]");
         try {
             return discoveryService.evaluate(expression).toJson();
         } catch (Exception e) { // unable to catch ExpressionException
@@ -140,11 +132,10 @@ public class HiveLineageService implements LineageService {
         ParamChecker.notEmpty(tableName, "table name cannot be null");
         validateTableExists(tableName);
 
-        HiveWhereUsedQuery outputsQuery = new HiveWhereUsedQuery(
-                HIVE_TABLE_TYPE_NAME, tableName, HIVE_PROCESS_TYPE_NAME,
-                HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME,
-                Option.empty(), SELECT_ATTRIBUTES, true,
-                graphPersistenceStrategy, titanGraph);
+        HiveWhereUsedQuery outputsQuery =
+                new HiveWhereUsedQuery(HIVE_TABLE_TYPE_NAME, tableName, HIVE_PROCESS_TYPE_NAME,
+                        HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME, Option.empty(),
+                        SELECT_ATTRIBUTES, true, graphPersistenceStrategy, titanGraph);
         return outputsQuery.graph().toInstanceJson();
     }
 
@@ -161,14 +152,12 @@ public class HiveLineageService implements LineageService {
         ParamChecker.notEmpty(tableName, "table name cannot be null");
         validateTableExists(tableName);
 
-        HiveLineageQuery inputsQuery = new HiveLineageQuery(
-                HIVE_TABLE_TYPE_NAME, tableName, HIVE_PROCESS_TYPE_NAME,
-                HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME,
-                Option.empty(), SELECT_ATTRIBUTES, true,
-                graphPersistenceStrategy, titanGraph);
+        HiveLineageQuery inputsQuery = new HiveLineageQuery(HIVE_TABLE_TYPE_NAME, tableName, HIVE_PROCESS_TYPE_NAME,
+                HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME, Option.empty(),
+                SELECT_ATTRIBUTES, true, graphPersistenceStrategy, titanGraph);
 
         Expressions.Expression expression = inputsQuery.expr();
-        LOG.debug("Expression is [" + expression.toString() +"]");
+        LOG.debug("Expression is [" + expression.toString() + "]");
         try {
             return discoveryService.evaluate(expression).toJson();
         } catch (Exception e) { // unable to catch ExpressionException
@@ -189,11 +178,9 @@ public class HiveLineageService implements LineageService {
         ParamChecker.notEmpty(tableName, "table name cannot be null");
         validateTableExists(tableName);
 
-        HiveLineageQuery inputsQuery = new HiveLineageQuery(
-                HIVE_TABLE_TYPE_NAME, tableName, HIVE_PROCESS_TYPE_NAME,
-                HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME,
-                Option.empty(), SELECT_ATTRIBUTES, true,
-                graphPersistenceStrategy, titanGraph);
+        HiveLineageQuery inputsQuery = new HiveLineageQuery(HIVE_TABLE_TYPE_NAME, tableName, HIVE_PROCESS_TYPE_NAME,
+                HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME, Option.empty(),
+                SELECT_ATTRIBUTES, true, graphPersistenceStrategy, titanGraph);
         return inputsQuery.graph().toInstanceJson();
     }
 

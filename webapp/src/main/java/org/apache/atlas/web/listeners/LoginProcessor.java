@@ -35,10 +35,9 @@ import java.net.UnknownHostException;
 /**
  * A class capable of performing a simple or kerberos login.
  */
-public class LoginProcessor  {
+public class LoginProcessor {
 
-    private static final Logger LOG = LoggerFactory
-            .getLogger(LoginProcessor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LoginProcessor.class);
     public static final String METADATA_AUTHENTICATION_PREFIX = "atlas.authentication.";
     public static final String AUTHENTICATION_METHOD = METADATA_AUTHENTICATION_PREFIX + "method";
     public static final String AUTHENTICATION_PRINCIPAL = METADATA_AUTHENTICATION_PREFIX + "principal";
@@ -107,9 +106,9 @@ public class LoginProcessor  {
             LOG.info("No authentication method configured.  Defaulting to simple authentication");
             authMethod = "simple";
         }
-        SecurityUtil.setAuthenticationMethod(
-                UserGroupInformation.AuthenticationMethod.valueOf(authMethod.toUpperCase()),
-                hadoopConfig);
+        SecurityUtil
+                .setAuthenticationMethod(UserGroupInformation.AuthenticationMethod.valueOf(authMethod.toUpperCase()),
+                        hadoopConfig);
     }
 
     /**
@@ -146,7 +145,7 @@ public class LoginProcessor  {
 
     /**
      * Uses a hadoop shell to discern whether a hadoop cluster is available/configured.
-     * @return  true if a hadoop cluster is detected.
+     * @return true if a hadoop cluster is detected.
      */
     protected boolean isHadoopCluster() {
         boolean isHadoopCluster = false;

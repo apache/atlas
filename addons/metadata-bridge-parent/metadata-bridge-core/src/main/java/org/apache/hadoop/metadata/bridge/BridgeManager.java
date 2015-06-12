@@ -50,13 +50,12 @@ public class BridgeManager {
 
     @Inject
     BridgeManager(MetadataRepository rs)
-    throws ConfigurationException, ClassNotFoundException, InstantiationException,
-    IllegalAccessException, IllegalArgumentException, InvocationTargetException,
-    NoSuchMethodException, SecurityException {
+    throws ConfigurationException, ClassNotFoundException, InstantiationException, IllegalAccessException,
+    IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
         this.ts = TypeSystem.getInstance();
         this.rs = rs;
-        if (System.getProperty("bridgeManager.propsFile") != null &&
-                System.getProperty("bridgeManager.propsFile").length() != 0) {
+        if (System.getProperty("bridgeManager.propsFile") != null
+                && System.getProperty("bridgeManager.propsFile").length() != 0) {
             setActiveBridges(System.getProperty("bridgeManager.propsFile"));
         } else {
             setActiveBridges(bridgeFileDefault);
@@ -73,8 +72,7 @@ public class BridgeManager {
 
     }
 
-    public final static HierarchicalTypeDefinition<ClassType>
-    convertEntityBeanToClassTypeDefinition(
+    public final static HierarchicalTypeDefinition<ClassType> convertEntityBeanToClassTypeDefinition(
             Class<? extends AEntityBean> class1) {
         ArrayList<AttributeDefinition> attDefAL = new ArrayList<AttributeDefinition>();
         for (Field f : class1.getFields()) {
@@ -87,18 +85,16 @@ public class BridgeManager {
             }
         }
 
-        HierarchicalTypeDefinition<ClassType> typeDef = new HierarchicalTypeDefinition<>(
-                ClassType.class, class1.getSimpleName(),
-                null, (AttributeDefinition[]) attDefAL.toArray(new AttributeDefinition[0]));
+        HierarchicalTypeDefinition<ClassType> typeDef =
+                new HierarchicalTypeDefinition<>(ClassType.class, class1.getSimpleName(), null,
+                        (AttributeDefinition[]) attDefAL.toArray(new AttributeDefinition[0]));
 
         return typeDef;
     }
 
-    public final static AttributeDefinition convertFieldtoAttributeDefiniton(Field f)
-    throws MetadataException {
+    public final static AttributeDefinition convertFieldtoAttributeDefiniton(Field f) throws MetadataException {
 
-        return new AttributeDefinition(f.getName(), f.getType().getSimpleName(),
-                Multiplicity.REQUIRED, false, null);
+        return new AttributeDefinition(f.getName(), f.getType().getSimpleName(), Multiplicity.REQUIRED, false, null);
     }
 
     public ArrayList<ABridge> getActiveBridges() {
@@ -116,8 +112,7 @@ public class BridgeManager {
         try {
             BridgeManager.LOG.info("Loading : Active Bridge List");
             config.load(bridgePropFileName);
-            String[] activeBridgeList = ((String) config.getProperty("BridgeManager.activeBridges"))
-                    .split(",");
+            String[] activeBridgeList = ((String) config.getProperty("BridgeManager.activeBridges")).split(",");
             BridgeManager.LOG.info("Loaded : Active Bridge List");
             BridgeManager.LOG.info("First Loaded :" + activeBridgeList[0]);
 
@@ -125,8 +120,7 @@ public class BridgeManager {
                 Class<?> bridgeCls = (Class<?>) Class.forName(s);
                 if (ABridge.class.isAssignableFrom(bridgeCls)) {
                     System.out.println(s + " is able to be instaciated");
-                    aBList.add((ABridge) bridgeCls.getConstructor(MetadataRepository.class)
-                            .newInstance(rs));
+                    aBList.add((ABridge) bridgeCls.getConstructor(MetadataRepository.class).newInstance(rs));
                 }
             }
 

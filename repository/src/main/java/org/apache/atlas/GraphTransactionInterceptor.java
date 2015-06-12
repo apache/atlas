@@ -42,7 +42,7 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
             titanGraph.commit();
             LOG.debug("graph commit");
             return response;
-        } catch (Throwable t){
+        } catch (Throwable t) {
             titanGraph.rollback();
             LOG.error("graph rollback due to exception ", t);
             throw t;

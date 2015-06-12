@@ -123,6 +123,7 @@ public interface MetadataRepository {
 
 
     // Trait management functions
+
     /**
      * Gets the list of trait names for a given entity represented by a guid.
      *
@@ -139,8 +140,7 @@ public interface MetadataRepository {
      * @param traitInstance trait instance that needs to be added to entity
      * @throws RepositoryException
      */
-    void addTrait(String guid,
-                  ITypedStruct traitInstance) throws RepositoryException;
+    void addTrait(String guid, ITypedStruct traitInstance) throws RepositoryException;
 
     /**
      * Deletes a given trait from an existing entity represented by a guid.
@@ -149,8 +149,7 @@ public interface MetadataRepository {
      * @param traitNameToBeDeleted name of the trait
      * @throws RepositoryException
      */
-    void deleteTrait(String guid,
-                     String traitNameToBeDeleted) throws RepositoryException;
+    void deleteTrait(String guid, String traitNameToBeDeleted) throws RepositoryException;
 
     /**
      * Adds the property to the entity that corresponds to the GUID

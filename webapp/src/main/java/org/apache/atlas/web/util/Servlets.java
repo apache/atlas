@@ -41,6 +41,7 @@ import java.io.StringWriter;
 public final class Servlets {
 
     private static final Logger LOG = LoggerFactory.getLogger(Servlets.class);
+
     private Servlets() {
         /* singleton */
     }
@@ -128,11 +129,7 @@ public final class Servlets {
         } catch (JSONException jsonE) {
             LOG.warn("Could not construct error Json rensponse", jsonE);
         }
-        return Response
-                .status(status)
-                .entity(errorEntity)
-                .type(JSON_MEDIA_TYPE)
-                .build();
+        return Response.status(status).entity(errorEntity).type(JSON_MEDIA_TYPE).build();
     }
 
     public static String getRequestPayload(HttpServletRequest request) throws IOException {

@@ -49,48 +49,46 @@ public class AttributeStores {
 
     static IAttributeStore createStore(AttributeInfo i) throws RepositoryException {
         switch (i.dataType().getTypeCategory()) {
-            case PRIMITIVE:
-                if (i.dataType() == DataTypes.BOOLEAN_TYPE) {
-                    return new BooleanAttributeStore(i);
-                } else if (i.dataType() == DataTypes.BYTE_TYPE) {
-                    return new ByteAttributeStore(i);
-                } else if (i.dataType() == DataTypes.SHORT_TYPE) {
-                    new ShortAttributeStore(i);
-                } else if (i.dataType() == DataTypes.INT_TYPE) {
-                    return new IntAttributeStore(i);
-                } else if (i.dataType() == DataTypes.LONG_TYPE) {
-                    return new LongAttributeStore(i);
-                } else if (i.dataType() == DataTypes.FLOAT_TYPE) {
-                    return new FloatAttributeStore(i);
-                } else if (i.dataType() == DataTypes.DOUBLE_TYPE) {
-                    return new DoubleAttributeStore(i);
-                } else if (i.dataType() == DataTypes.BIGINTEGER_TYPE) {
-                    return new BigIntStore(i);
-                } else if (i.dataType() == DataTypes.BIGDECIMAL_TYPE) {
-                    return new BigDecimalStore(i);
-                } else if (i.dataType() == DataTypes.DATE_TYPE) {
-                    return new DateStore(i);
-                } else if (i.dataType() == DataTypes.STRING_TYPE) {
-                    return new StringStore(i);
-                } else if (i.dataType() == DataTypes.STRING_TYPE) {
-                    return new StringStore(i);
-                } else {
-                    throw new RepositoryException(
-                            String.format("Unknown datatype %s", i.dataType()));
-                }
-            case ENUM:
+        case PRIMITIVE:
+            if (i.dataType() == DataTypes.BOOLEAN_TYPE) {
+                return new BooleanAttributeStore(i);
+            } else if (i.dataType() == DataTypes.BYTE_TYPE) {
+                return new ByteAttributeStore(i);
+            } else if (i.dataType() == DataTypes.SHORT_TYPE) {
+                new ShortAttributeStore(i);
+            } else if (i.dataType() == DataTypes.INT_TYPE) {
                 return new IntAttributeStore(i);
-            case ARRAY:
-                return new ImmutableListStore(i);
-            case MAP:
-                return new ImmutableMapStore(i);
-            case STRUCT:
-                return new StructStore(i);
-            case CLASS:
-                return new IdStore(i);
-            default:
-                throw new RepositoryException(
-                        String.format("Unknown Category for datatype %s", i.dataType()));
+            } else if (i.dataType() == DataTypes.LONG_TYPE) {
+                return new LongAttributeStore(i);
+            } else if (i.dataType() == DataTypes.FLOAT_TYPE) {
+                return new FloatAttributeStore(i);
+            } else if (i.dataType() == DataTypes.DOUBLE_TYPE) {
+                return new DoubleAttributeStore(i);
+            } else if (i.dataType() == DataTypes.BIGINTEGER_TYPE) {
+                return new BigIntStore(i);
+            } else if (i.dataType() == DataTypes.BIGDECIMAL_TYPE) {
+                return new BigDecimalStore(i);
+            } else if (i.dataType() == DataTypes.DATE_TYPE) {
+                return new DateStore(i);
+            } else if (i.dataType() == DataTypes.STRING_TYPE) {
+                return new StringStore(i);
+            } else if (i.dataType() == DataTypes.STRING_TYPE) {
+                return new StringStore(i);
+            } else {
+                throw new RepositoryException(String.format("Unknown datatype %s", i.dataType()));
+            }
+        case ENUM:
+            return new IntAttributeStore(i);
+        case ARRAY:
+            return new ImmutableListStore(i);
+        case MAP:
+            return new ImmutableMapStore(i);
+        case STRUCT:
+            return new StructStore(i);
+        case CLASS:
+            return new IdStore(i);
+        default:
+            throw new RepositoryException(String.format("Unknown Category for datatype %s", i.dataType()));
         }
     }
 
@@ -113,8 +111,7 @@ public class AttributeStores {
             return nullList.get(pos);
         }
 
-        void storeHiddenVals(int pos, IConstructableType type, StructInstance instance)
-        throws RepositoryException {
+        void storeHiddenVals(int pos, IConstructableType type, StructInstance instance) throws RepositoryException {
             List<String> attrNames = type.getNames(attrInfo);
             Map<String, Object> m = hiddenVals.get(pos);
             if (m == null) {
@@ -134,8 +131,7 @@ public class AttributeStores {
             }
         }
 
-        void loadHiddenVals(int pos, IConstructableType type, StructInstance instance)
-        throws RepositoryException {
+        void loadHiddenVals(int pos, IConstructableType type, StructInstance instance) throws RepositoryException {
             List<String> attrNames = type.getNames(attrInfo);
             Map<String, Object> m = hiddenVals.get(pos);
             for (int i = 2; i < attrNames.size(); i++) {
@@ -153,8 +149,7 @@ public class AttributeStores {
         }
 
         @Override
-        public void store(int pos, IConstructableType type, StructInstance instance)
-        throws RepositoryException {
+        public void store(int pos, IConstructableType type, StructInstance instance) throws RepositoryException {
             List<String> attrNames = type.getNames(attrInfo);
             String attrName = attrNames.get(0);
             int nullPos = instance.fieldMapping().fieldNullPos.get(attrName);
@@ -175,8 +170,7 @@ public class AttributeStores {
         }
 
         @Override
-        public void load(int pos, IConstructableType type, StructInstance instance)
-        throws RepositoryException {
+        public void load(int pos, IConstructableType type, StructInstance instance) throws RepositoryException {
             List<String> attrNames = type.getNames(attrInfo);
             String attrName = attrNames.get(0);
             int nullPos = instance.fieldMapping().fieldNullPos.get(attrName);
@@ -197,20 +191,17 @@ public class AttributeStores {
         /*
          * store the value from colPos in instance into the list.
          */
-        protected abstract void store(StructInstance instance, int colPos, int pos)
-                throws RepositoryException;
+        protected abstract void store(StructInstance instance, int colPos, int pos) throws RepositoryException;
 
         /*
          * load the value from pos in list into colPos in instance.
          */
-        protected abstract void load(StructInstance instance, int colPos, int pos)
-                throws RepositoryException;
+        protected abstract void load(StructInstance instance, int colPos, int pos) throws RepositoryException;
 
         /*
          * store the value from colPos in map as attrName
          */
-        protected abstract void store(StructInstance instance, int colPos, String attrName,
-                                      Map<String, Object> m);
+        protected abstract void store(StructInstance instance, int colPos, String attrName, Map<String, Object> m);
 
         /*
          * load the val into colPos in instance.
@@ -219,8 +210,7 @@ public class AttributeStores {
 
     }
 
-    static abstract class PrimitiveAttributeStore extends AbstractAttributeStore
-            implements IAttributeStore {
+    static abstract class PrimitiveAttributeStore extends AbstractAttributeStore implements IAttributeStore {
 
 
         public PrimitiveAttributeStore(AttributeInfo attrInfo) {
@@ -246,8 +236,7 @@ public class AttributeStores {
             instance.bools[colPos] = list.get(pos);
         }
 
-        protected void store(StructInstance instance, int colPos, String attrName,
-                             Map<String, Object> m) {
+        protected void store(StructInstance instance, int colPos, String attrName, Map<String, Object> m) {
             m.put(attrName, instance.bools[colPos]);
         }
 
@@ -279,8 +268,7 @@ public class AttributeStores {
             instance.bytes[colPos] = list.get(pos);
         }
 
-        protected void store(StructInstance instance, int colPos, String attrName,
-                             Map<String, Object> m) {
+        protected void store(StructInstance instance, int colPos, String attrName, Map<String, Object> m) {
             m.put(attrName, instance.bytes[colPos]);
         }
 
@@ -312,8 +300,7 @@ public class AttributeStores {
             instance.shorts[colPos] = list.get(pos);
         }
 
-        protected void store(StructInstance instance, int colPos, String attrName,
-                             Map<String, Object> m) {
+        protected void store(StructInstance instance, int colPos, String attrName, Map<String, Object> m) {
             m.put(attrName, instance.shorts[colPos]);
         }
 
@@ -345,8 +332,7 @@ public class AttributeStores {
             instance.ints[colPos] = list.get(pos);
         }
 
-        protected void store(StructInstance instance, int colPos, String attrName,
-                             Map<String, Object> m) {
+        protected void store(StructInstance instance, int colPos, String attrName, Map<String, Object> m) {
             m.put(attrName, instance.ints[colPos]);
         }
 
@@ -378,8 +364,7 @@ public class AttributeStores {
             instance.longs[colPos] = list.get(pos);
         }
 
-        protected void store(StructInstance instance, int colPos, String attrName,
-                             Map<String, Object> m) {
+        protected void store(StructInstance instance, int colPos, String attrName, Map<String, Object> m) {
             m.put(attrName, instance.longs[colPos]);
         }
 
@@ -411,8 +396,7 @@ public class AttributeStores {
             instance.floats[colPos] = list.get(pos);
         }
 
-        protected void store(StructInstance instance, int colPos, String attrName,
-                             Map<String, Object> m) {
+        protected void store(StructInstance instance, int colPos, String attrName, Map<String, Object> m) {
             m.put(attrName, instance.floats[colPos]);
         }
 
@@ -444,8 +428,7 @@ public class AttributeStores {
             instance.doubles[colPos] = list.get(pos);
         }
 
-        protected void store(StructInstance instance, int colPos, String attrName,
-                             Map<String, Object> m) {
+        protected void store(StructInstance instance, int colPos, String attrName, Map<String, Object> m) {
             m.put(attrName, instance.doubles[colPos]);
         }
 
@@ -492,8 +475,7 @@ public class AttributeStores {
             instance.bigIntegers[colPos] = list.get(pos);
         }
 
-        protected void store(StructInstance instance, int colPos, String attrName,
-                             Map<String, Object> m) {
+        protected void store(StructInstance instance, int colPos, String attrName, Map<String, Object> m) {
             m.put(attrName, instance.bigIntegers[colPos]);
         }
 
@@ -517,8 +499,7 @@ public class AttributeStores {
             instance.bigDecimals[colPos] = list.get(pos);
         }
 
-        protected void store(StructInstance instance, int colPos, String attrName,
-                             Map<String, Object> m) {
+        protected void store(StructInstance instance, int colPos, String attrName, Map<String, Object> m) {
             m.put(attrName, instance.bigDecimals[colPos]);
         }
 
@@ -542,8 +523,7 @@ public class AttributeStores {
             instance.dates[colPos] = list.get(pos);
         }
 
-        protected void store(StructInstance instance, int colPos, String attrName,
-                             Map<String, Object> m) {
+        protected void store(StructInstance instance, int colPos, String attrName, Map<String, Object> m) {
             m.put(attrName, instance.dates[colPos]);
         }
 
@@ -567,8 +547,7 @@ public class AttributeStores {
             instance.strings[colPos] = list.get(pos);
         }
 
-        protected void store(StructInstance instance, int colPos, String attrName,
-                             Map<String, Object> m) {
+        protected void store(StructInstance instance, int colPos, String attrName, Map<String, Object> m) {
             m.put(attrName, instance.strings[colPos]);
         }
 
@@ -592,8 +571,7 @@ public class AttributeStores {
             instance.ids[colPos] = list.get(pos);
         }
 
-        protected void store(StructInstance instance, int colPos, String attrName,
-                             Map<String, Object> m) {
+        protected void store(StructInstance instance, int colPos, String attrName, Map<String, Object> m) {
             m.put(attrName, instance.ids[colPos]);
         }
 
@@ -617,8 +595,7 @@ public class AttributeStores {
             instance.arrays[colPos] = list.get(pos);
         }
 
-        protected void store(StructInstance instance, int colPos, String attrName,
-                             Map<String, Object> m) {
+        protected void store(StructInstance instance, int colPos, String attrName, Map<String, Object> m) {
             m.put(attrName, instance.arrays[colPos]);
         }
 
@@ -642,8 +619,7 @@ public class AttributeStores {
             instance.maps[colPos] = list.get(pos);
         }
 
-        protected void store(StructInstance instance, int colPos, String attrName,
-                             Map<String, Object> m) {
+        protected void store(StructInstance instance, int colPos, String attrName, Map<String, Object> m) {
             m.put(attrName, instance.maps[colPos]);
         }
 

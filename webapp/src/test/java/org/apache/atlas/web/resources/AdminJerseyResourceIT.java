@@ -42,28 +42,21 @@ public class AdminJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testGetVersion() throws Exception {
-        WebResource resource = service
-                .path("api/atlas/admin/version");
+        WebResource resource = service.path("api/atlas/admin/version");
 
-        ClientResponse clientResponse = resource
-                .accept(Servlets.JSON_MEDIA_TYPE)
-                .type(Servlets.JSON_MEDIA_TYPE)
+        ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
         String responseAsString = clientResponse.getEntity(String.class);
         Assert.assertNotNull(responseAsString);
 
-        PropertiesConfiguration buildConfiguration =
-                new PropertiesConfiguration("atlas-buildinfo.properties");
+        PropertiesConfiguration buildConfiguration = new PropertiesConfiguration("atlas-buildinfo.properties");
 
 
         JSONObject response = new JSONObject(responseAsString);
-        Assert.assertEquals(response.get("Version"),
-                buildConfiguration.getString("build.version"));
-        Assert.assertEquals(response.get("Name"),
-                buildConfiguration.getString("project.name"));
-        Assert.assertEquals(response.get("Description"),
-                buildConfiguration.getString("project.description"));
+        Assert.assertEquals(response.get("Version"), buildConfiguration.getString("build.version"));
+        Assert.assertEquals(response.get("Name"), buildConfiguration.getString("project.name"));
+        Assert.assertEquals(response.get("Description"), buildConfiguration.getString("project.description"));
     }
 }

@@ -97,7 +97,7 @@
         <MaxPermGen>512m</MaxPermGen>
         <SnapshotsId>apache.snapshots.repo</SnapshotsId>
         <SnapshotsName>Apache Snapshot Repository</SnapshotsName>
-        <SnapshotsUrl> https://repository.apache.org/content/groups/snapshots</SnapshotsUrl>
+        <SnapshotsUrl>https://repository.apache.org/content/groups/snapshots</SnapshotsUrl>
         <StagingId>apache-staging</StagingId>
         <StagingName>Apache Release Distribution Repository</StagingName>
         <StagingUrl>https://repository.apache.org/content/groups/staging</StagingUrl>
@@ -110,20 +110,28 @@
         <profile>
             <id>Windows</id>
             <activation>
-                <os><family>windows</family></os>
+                <os>
+                    <family>windows</family>
+                </os>
             </activation>
             <properties>
-                <python.path.l>${project.basedir}\src\bin;${project.basedir}\src\test\python\scripts;${project.basedir}\src\test\mock</python.path.l>
+                <python.path.l>
+                    ${project.basedir}\src\bin;${project.basedir}\src\test\python\scripts;${project.basedir}\src\test\mock
+                </python.path.l>
             </properties>
         </profile>
 
         <profile>
             <id>Linux</id>
             <activation>
-                <os><family>!windows</family></os>
+                <os>
+                    <family>!windows</family>
+                </os>
             </activation>
             <properties>
-                <python.path.l>${project.basedir}/src/bin:${project.basedir}/src/test/mock:${project.basedir}/src/test/python/scripts</python.path.l>
+                <python.path.l>
+                    ${project.basedir}/src/bin:${project.basedir}/src/test/mock:${project.basedir}/src/test/python/scripts
+                </python.path.l>
             </properties>
         </profile>
     </profiles>
@@ -192,18 +200,18 @@
             <url>http://repo.typesafe.com/typesafe/releases/</url>
         </repository>
     </repositories>
-     <distributionManagement>
-          <repository>
-              <id>${StagingId}</id>
-             <name>${StagingName}</name>
-             <url>${StagingUrl}</url>
-           </repository>
-         <snapshotRepository>
-             <id>${SnapshotsId}</id>
-             <name>${SnapshotsName}</name>
-             <url>${SnapshotsUrl}</url>
-           </snapshotRepository>
-       </distributionManagement>
+    <distributionManagement>
+        <repository>
+            <id>${StagingId}</id>
+            <name>${StagingName}</name>
+            <url>${StagingUrl}</url>
+        </repository>
+        <snapshotRepository>
+            <id>${SnapshotsId}</id>
+            <name>${SnapshotsName}</name>
+            <url>${SnapshotsUrl}</url>
+        </snapshotRepository>
+    </distributionManagement>
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -913,7 +921,8 @@
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}
                         -Dhadoop.tmp.dir=${project.build.directory}/tmp-hadoop-${user.name}
-                        -Xmx1024m -XX:MaxPermSize=512m</argLine>
+                        -Xmx1024m -XX:MaxPermSize=512m
+                    </argLine>
                 </configuration>
                 <dependencies>
                     <dependency>

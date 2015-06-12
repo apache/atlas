@@ -40,44 +40,39 @@ public class BridgeTypeBootstrapper {
     private boolean isSetup = false;
 
     @Inject
-    BridgeTypeBootstrapper(Map<Class, IBridge> bridges)
-    throws MetadataException {
+    BridgeTypeBootstrapper(Map<Class, IBridge> bridges) throws MetadataException {
         this.bridges = bridges;
     }
 
-    public final static HierarchicalTypeDefinition<ClassType>
-    convertEntityBeanToClassTypeDefinition(
+    public final static HierarchicalTypeDefinition<ClassType> convertEntityBeanToClassTypeDefinition(
             Class<? extends AEntityBean> class1) {
         ArrayList<AttributeDefinition> attDefAL = new ArrayList<AttributeDefinition>();
         for (Field f : class1.getFields()) {
             try {
                 attDefAL.add(BridgeTypeBootstrapper.convertFieldtoAttributeDefiniton(f));
             } catch (MetadataException e) {
-                BridgeManager.LOG.error("Class " + class1.getName()
-                        + " cannot be converted to TypeDefinition");
+                BridgeManager.LOG.error("Class " + class1.getName() + " cannot be converted to TypeDefinition");
                 e.printStackTrace();
             }
         }
 
-        HierarchicalTypeDefinition<ClassType> typeDef = new HierarchicalTypeDefinition<>(
-                ClassType.class, class1.getSimpleName(), null,
-                (AttributeDefinition[]) attDefAL
-                        .toArray(new AttributeDefinition[0]));
+        HierarchicalTypeDefinition<ClassType> typeDef =
+                new HierarchicalTypeDefinition<>(ClassType.class, class1.getSimpleName(), null,
+                        (AttributeDefinition[]) attDefAL.toArray(new AttributeDefinition[0]));
 
         return typeDef;
     }
 
-    public final static AttributeDefinition convertFieldtoAttributeDefiniton(
-            Field f) throws MetadataException {
+    public final static AttributeDefinition convertFieldtoAttributeDefiniton(Field f) throws MetadataException {
 
-        return new AttributeDefinition(f.getName(),
-                f.getType().getSimpleName().toLowerCase(), Multiplicity.REQUIRED, false, null);
+        return new AttributeDefinition(f.getName(), f.getType().getSimpleName().toLowerCase(), Multiplicity.REQUIRED,
+                false, null);
     }
 
     public synchronized boolean bootstrap() throws MetadataException {
-        if (isSetup)
+        if (isSetup) {
             return false;
-        else {
+        } else {
             LOG.info("Bootstrapping types");
             _bootstrap();
             isSetup = true;
@@ -94,12 +89,10 @@ public class BridgeTypeBootstrapper {
         }
     }
 
-    private final boolean loadTypes(IBridge bridge, TypeSystem ts)
-    throws MetadataException {
+    private final boolean loadTypes(IBridge bridge, TypeSystem ts) throws MetadataException {
         for (Class<? extends AEntityBean> clazz : bridge.getTypeBeanClasses()) {
             LOG.info("Registering %s", clazz.getSimpleName());
-            ts.defineClassType(BridgeTypeBootstrapper
-                    .convertEntityBeanToClassTypeDefinition(clazz));
+            ts.defineClassType(BridgeTypeBootstrapper.convertEntityBeanToClassTypeDefinition(clazz));
         }
         return false;
     }

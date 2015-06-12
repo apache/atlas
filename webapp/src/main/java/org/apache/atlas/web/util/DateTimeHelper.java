@@ -33,8 +33,7 @@ public final class DateTimeHelper {
 
     public static final String ISO8601_FORMAT = "yyyy-MM-dd'T'HH:mm'Z'";
     private static final String DATE_PATTERN =
-            "(2\\d\\d\\d|19\\d\\d)-(0[1-9]|1[012])-(0[1-9]|1[0-9]|2[0-9]|3[01])T" +
-                    "([0-1][0-9]|2[0-3]):([0-5][0-9])Z";
+            "(2\\d\\d\\d|19\\d\\d)-(0[1-9]|1[012])-(0[1-9]|1[0-9]|2[0-9]|3[01])T" + "([0-1][0-9]|2[0-3]):([0-5][0-9])Z";
     private static final Pattern PATTERN = Pattern.compile(DATE_PATTERN);
 
     private DateTimeHelper() {
@@ -65,12 +64,10 @@ public final class DateTimeHelper {
         }
     }
 
-    public static String formatDateUTCToISO8601(final String dateString,
-                                                final String dateStringFormat) {
+    public static String formatDateUTCToISO8601(final String dateString, final String dateStringFormat) {
 
         try {
-            DateFormat dateFormat = new SimpleDateFormat(
-                    dateStringFormat.substring(0, dateString.length()));
+            DateFormat dateFormat = new SimpleDateFormat(dateStringFormat.substring(0, dateString.length()));
             dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
             return DateTimeHelper.formatDateUTC(dateFormat.parse(dateString));
         } catch (ParseException e) {
@@ -98,10 +95,8 @@ public final class DateTimeHelper {
                 String month = matcher.group(2);
                 String day = matcher.group(3);
 
-                if (day.equals("31")
-                        && (month.equals("4") || month.equals("6")
-                        || month.equals("9") || month.equals("11")
-                        || month.equals("04") || month.equals("06") || month.equals("09"))) {
+                if (day.equals("31") && (month.equals("4") || month.equals("6") || month.equals("9") || month
+                        .equals("11") || month.equals("04") || month.equals("06") || month.equals("09"))) {
                     return false; // only 1,3,5,7,8,10,12 has 31 days
                 } else if (month.equals("2") || month.equals("02")) {
                     // leap year

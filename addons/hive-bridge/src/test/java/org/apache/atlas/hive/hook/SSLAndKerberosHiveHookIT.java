@@ -18,8 +18,8 @@
 
 package org.apache.atlas.hive.hook;
 
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.PropertiesUtil;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.security.SecurityProperties;
@@ -107,7 +107,8 @@ public class SSLAndKerberosHiveHookIT extends BaseSSLAndKerberosTest {
         configuration.setProperty(KEYSTORE_FILE_KEY, "../../webapp/target/atlas.keystore");
         configuration.setProperty(CERT_STORES_CREDENTIAL_PROVIDER_PATH, providerUrl);
         configuration.setProperty("atlas.http.authentication.type", "kerberos");
-        configuration.setProperty(SSLFactory.SSL_HOSTNAME_VERIFIER_KEY, SSLHostnameVerifier.DEFAULT_AND_LOCALHOST.toString());
+        configuration.setProperty(SSLFactory.SSL_HOSTNAME_VERIFIER_KEY,
+                SSLHostnameVerifier.DEFAULT_AND_LOCALHOST.toString());
 
         configuration.save(new FileWriter(persistDir + File.separator + "client.properties"));
 
@@ -215,7 +216,8 @@ public class SSLAndKerberosHiveHookIT extends BaseSSLAndKerberosTest {
         assertInstanceIsRegistered(HiveDataTypes.HIVE_DB.getName(), "name", dbName);
     }
 
-    private void assertInstanceIsRegistered(final String typeName, final String colName, final String colValue) throws Exception {
+    private void assertInstanceIsRegistered(final String typeName, final String colName, final String colValue)
+    throws Exception {
         Subject.doAs(subject, new PrivilegedExceptionAction<Object>() {
             @Override
             public Object run() throws Exception {

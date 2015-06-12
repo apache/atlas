@@ -33,8 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BridgeModule extends AbstractModule {
-    public static final Logger LOG = LoggerFactory
-            .getLogger(BridgeModule.class);
+    public static final Logger LOG = LoggerFactory.getLogger(BridgeModule.class);
 
     @Override
     protected void configure() {
@@ -44,11 +43,9 @@ public class BridgeModule extends AbstractModule {
         bind(BridgeTypeBootstrapper.class).in(Scopes.SINGLETON);
 
         // Load the configured bridge classes and add them to the map binder
-        MapBinder<Class, IBridge> mapbinder = MapBinder.newMapBinder(binder(),
-                Class.class, IBridge.class);
+        MapBinder<Class, IBridge> mapbinder = MapBinder.newMapBinder(binder(), Class.class, IBridge.class);
 
-        String propsURI = System.getProperty("bridgeManager.propsFile",
-                "bridge-manager.properties");
+        String propsURI = System.getProperty("bridgeManager.propsFile", "bridge-manager.properties");
 
         List<Class<? extends IBridge>> bridges = getBridgeClasses(propsURI);
         for (Class<? extends IBridge> bridgeClass : bridges) {
@@ -59,8 +56,7 @@ public class BridgeModule extends AbstractModule {
     /*
      * Get the bridge classes from the configuration file
      */
-    private List<Class<? extends IBridge>> getBridgeClasses(
-            String bridgePropFileName) {
+    private List<Class<? extends IBridge>> getBridgeClasses(String bridgePropFileName) {
         List<Class<? extends IBridge>> aBList = new ArrayList<Class<? extends IBridge>>();
 
         PropertiesConfiguration config = new PropertiesConfiguration();
@@ -68,13 +64,11 @@ public class BridgeModule extends AbstractModule {
         try {
             LOG.info("Loading : Active Bridge List");
             config.load(bridgePropFileName);
-            String[] activeBridgeList = ((String) config
-                    .getProperty("BridgeManager.activeBridges")).split(",");
+            String[] activeBridgeList = ((String) config.getProperty("BridgeManager.activeBridges")).split(",");
             LOG.info("Loaded : Active Bridge List");
 
             for (String s : activeBridgeList) {
-                Class<? extends IBridge> bridgeCls = (Class<? extends IBridge>) Class
-                        .forName(s);
+                Class<? extends IBridge> bridgeCls = (Class<? extends IBridge>) Class.forName(s);
                 aBList.add(bridgeCls);
             }
 

@@ -45,11 +45,10 @@ public final class GraphHelper {
     private GraphHelper() {
     }
 
-    public static Vertex createVertexWithIdentity(Graph graph,
-                                                  ITypedReferenceableInstance typedInstance,
-                                                  Set<String> superTypeNames) {
-        final Vertex vertexWithIdentity = createVertexWithoutIdentity(
-                graph, typedInstance.getTypeName(), typedInstance.getId(), superTypeNames);
+    public static Vertex createVertexWithIdentity(Graph graph, ITypedReferenceableInstance typedInstance,
+            Set<String> superTypeNames) {
+        final Vertex vertexWithIdentity =
+                createVertexWithoutIdentity(graph, typedInstance.getTypeName(), typedInstance.getId(), superTypeNames);
 
         // add identity
         final String guid = UUID.randomUUID().toString();
@@ -58,10 +57,8 @@ public final class GraphHelper {
         return vertexWithIdentity;
     }
 
-    public static Vertex createVertexWithoutIdentity(Graph graph,
-                                                     String typeName,
-                                                     Id typedInstanceId,
-                                                     Set<String> superTypeNames) {
+    public static Vertex createVertexWithoutIdentity(Graph graph, String typeName, Id typedInstanceId,
+            Set<String> superTypeNames) {
         final Vertex vertexWithoutIdentity = graph.addVertex(null);
 
         // add type information
@@ -69,34 +66,28 @@ public final class GraphHelper {
 
         // add super types
         for (String superTypeName : superTypeNames) {
-            ((TitanVertex) vertexWithoutIdentity).addProperty(
-                    Constants.SUPER_TYPES_PROPERTY_KEY, superTypeName);
+            ((TitanVertex) vertexWithoutIdentity).addProperty(Constants.SUPER_TYPES_PROPERTY_KEY, superTypeName);
         }
 
         // add version information
         vertexWithoutIdentity.setProperty(Constants.VERSION_PROPERTY_KEY, typedInstanceId.version);
 
         // add timestamp information
-        vertexWithoutIdentity.setProperty(
-                Constants.TIMESTAMP_PROPERTY_KEY, System.currentTimeMillis());
+        vertexWithoutIdentity.setProperty(Constants.TIMESTAMP_PROPERTY_KEY, System.currentTimeMillis());
 
         return vertexWithoutIdentity;
     }
 
-    public static Edge addEdge(TitanGraph titanGraph, Vertex fromVertex, Vertex toVertex,
-                               String edgeLabel) {
-        LOG.debug("Adding edge for {} -> label {} -> {}",
-                fromVertex, edgeLabel, toVertex);
+    public static Edge addEdge(TitanGraph titanGraph, Vertex fromVertex, Vertex toVertex, String edgeLabel) {
+        LOG.debug("Adding edge for {} -> label {} -> {}", fromVertex, edgeLabel, toVertex);
 
         return titanGraph.addEdge(null, fromVertex, toVertex, edgeLabel);
     }
 
-    public static Vertex findVertexByGUID(TitanGraph titanGraph,
-                                          String value) {
+    public static Vertex findVertexByGUID(TitanGraph titanGraph, String value) {
         LOG.debug("Finding vertex for key={}, value={}", Constants.GUID_PROPERTY_KEY, value);
 
-        GraphQuery query = titanGraph.query()
-                .has(Constants.GUID_PROPERTY_KEY, value);
+        GraphQuery query = titanGraph.query().has(Constants.GUID_PROPERTY_KEY, value);
         Iterator<Vertex> results = query.vertices().iterator();
         // returning one since guid should be unique
         return results.hasNext() ? results.next() : null;
@@ -105,20 +96,15 @@ public final class GraphHelper {
     public static String vertexString(final Vertex vertex) {
         StringBuilder properties = new StringBuilder();
         for (String propertyKey : vertex.getPropertyKeys()) {
-            properties.append(propertyKey)
-                    .append("=").append(vertex.getProperty(propertyKey))
-                    .append(", ");
+            properties.append(propertyKey).append("=").append(vertex.getProperty(propertyKey)).append(", ");
         }
 
         return "v[" + vertex.getId() + "], Properties[" + properties + "]";
     }
 
     public static String edgeString(final Edge edge) {
-        return "e[" + edge.getLabel() + "], ["
-                + edge.getVertex(Direction.OUT)
-                + " -> " + edge.getLabel() + " -> "
-                + edge.getVertex(Direction.IN)
-                + "]";
+        return "e[" + edge.getLabel() + "], [" + edge.getVertex(Direction.OUT) + " -> " + edge.getLabel() + " -> "
+                + edge.getVertex(Direction.IN) + "]";
     }
 
 /*

@@ -66,8 +66,7 @@ public class EmbeddedServer {
 
     private Integer getBufferSize() {
         try {
-            PropertiesConfiguration configuration = new PropertiesConfiguration(
-                    "application.properties");
+            PropertiesConfiguration configuration = new PropertiesConfiguration("application.properties");
             return configuration.getInt("atlas.jetty.request.buffer.size", DEFAULT_BUFFER_SIZE);
         } catch (ConfigurationException e) {
             // do nothing

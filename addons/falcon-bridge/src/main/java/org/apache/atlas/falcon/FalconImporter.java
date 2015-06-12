@@ -61,14 +61,16 @@ public class FalconImporter {
         this.repository = repo;
     }
 
-    private Entity getEntity(FalconClient client, EntityType type, String name) throws FalconCLIException, JAXBException {
+    private Entity getEntity(FalconClient client, EntityType type, String name)
+    throws FalconCLIException, JAXBException {
         String entityStr = client.getDefinition(type.name(), name);
         return (Entity) type.getUnmarshaller().unmarshal(new StringReader(entityStr));
     }
 
     public void importClusters() throws MetadataException {
         try {
-            EntityList clusters = client.getEntityList(EntityType.CLUSTER.name(), null, null, null, null, null, null, null);
+            EntityList clusters =
+                    client.getEntityList(EntityType.CLUSTER.name(), null, null, null, null, null, null, null);
             for (EntityList.EntityElement element : clusters.getElements()) {
                 Cluster cluster = (Cluster) getEntity(client, EntityType.CLUSTER, element.name);
 
@@ -80,7 +82,8 @@ public class FalconImporter {
                     acl.set("owner", cluster.getACL().getOwner());
                     acl.set("group", cluster.getACL().getGroup());
                     acl.set("permission", cluster.getACL().getPermission());
-                    StructType aclType = typeSystem.getDataType(StructType.class, FalconTypeSystem.DefinedTypes.ACL.name());
+                    StructType aclType =
+                            typeSystem.getDataType(StructType.class, FalconTypeSystem.DefinedTypes.ACL.name());
                     clusterRef.set("acl", aclType.convert(acl, Multiplicity.REQUIRED));
                 }
 
@@ -88,7 +91,8 @@ public class FalconImporter {
                     String[] parts = cluster.getTags().split(",");
                     List<ITypedInstance> tags = new ArrayList<>();
                     for (String part : parts) {
-                        TraitType tagType = typeSystem.getDataType(TraitType.class, FalconTypeSystem.DefinedTypes.TAG.name());
+                        TraitType tagType =
+                                typeSystem.getDataType(TraitType.class, FalconTypeSystem.DefinedTypes.TAG.name());
                         String[] kv = part.trim().split("=");
                         Struct tag = new Struct(FalconTypeSystem.DefinedTypes.TAG.name());
                         tag.set("name", kv[0]);
@@ -106,10 +110,12 @@ public class FalconImporter {
                     List<ITypedInstance> locations = new ArrayList<>();
                     for (Location loc : cluster.getLocations().getLocations()) {
                         Struct location = new Struct(FalconTypeSystem.DefinedTypes.CLUSTER_LOCATION.name());
-                        EnumType locationType = typeSystem.getDataType(EnumType.class, FalconTypeSystem.DefinedTypes.CLUSTER_LOCATION_TYPE.name());
+                        EnumType locationType = typeSystem.getDataType(EnumType.class,
+                                FalconTypeSystem.DefinedTypes.CLUSTER_LOCATION_TYPE.name());
                         location.set("type", locationType.fromValue(loc.getName().toUpperCase()));
                         location.set("path", loc.getPath());
-                        StructType type = typeSystem.getDataType(StructType.class, FalconTypeSystem.DefinedTypes.CLUSTER_LOCATION.name());
+                        StructType type = typeSystem
+                                .getDataType(StructType.class, FalconTypeSystem.DefinedTypes.CLUSTER_LOCATION.name());
                         locations.add(type.convert(location, Multiplicity.REQUIRED));
                     }
                     clusterRef.set("locations", locations);
@@ -122,7 +128,8 @@ public class FalconImporter {
                         interfaceStruct.set("type", interfaceFld.getType().name());
                         interfaceStruct.set("endpoint", interfaceFld.getEndpoint());
                         interfaceStruct.set("version", interfaceFld.getVersion());
-                        StructType type = typeSystem.getDataType(StructType.class, FalconTypeSystem.DefinedTypes.CLUSTER_INTERFACE.name());
+                        StructType type = typeSystem
+                                .getDataType(StructType.class, FalconTypeSystem.DefinedTypes.CLUSTER_INTERFACE.name());
                         interfaces.add(type.convert(interfaceStruct, Multiplicity.REQUIRED));
                     }
                     clusterRef.set("interfaces", interfaces);

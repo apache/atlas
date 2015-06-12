@@ -18,8 +18,6 @@
 
 package org.apache.atlas;
 
-import com.google.inject.Provider;
-import com.google.inject.TypeLiteral;
 import com.google.inject.matcher.Matchers;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.throwingproviders.ThrowingProviderBinder;
@@ -28,7 +26,6 @@ import org.aopalliance.intercept.MethodInterceptor;
 import org.apache.atlas.discovery.DiscoveryService;
 import org.apache.atlas.discovery.HiveLineageService;
 import org.apache.atlas.discovery.LineageService;
-import org.apache.atlas.discovery.SearchIndexer;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.atlas.listener.TypesChangeListener;
 import org.apache.atlas.repository.MetadataRepository;
@@ -49,9 +46,7 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
     @Override
     protected void configure() {
         // special wiring for Titan Graph
-        ThrowingProviderBinder.create(binder())
-                .bind(GraphProvider.class, TitanGraph.class)
-                .to(TitanGraphProvider.class)
+        ThrowingProviderBinder.create(binder()).bind(GraphProvider.class, TitanGraph.class).to(TitanGraphProvider.class)
                 .asEagerSingleton();
 
         // allow for dynamic binding of the metadata repo & graph service
@@ -62,7 +57,8 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
         // bind the ITypeStore interface to an implementation
         bind(ITypeStore.class).to(GraphBackedTypeStore.class).asEagerSingleton();
 
-        Multibinder<TypesChangeListener> typesChangeListenerBinder = Multibinder.newSetBinder(binder(), TypesChangeListener.class);
+        Multibinder<TypesChangeListener> typesChangeListenerBinder =
+                Multibinder.newSetBinder(binder(), TypesChangeListener.class);
         typesChangeListenerBinder.addBinding().to(GraphBackedSearchIndexer.class);
 
         // bind the MetadataService interface to an implementation

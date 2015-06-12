@@ -71,8 +71,7 @@ public class HiveLineageResource {
     @Path("table/{tableName}/inputs/graph")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response inputsGraph(@Context HttpServletRequest request,
-                                @PathParam("tableName") String tableName) {
+    public Response inputsGraph(@Context HttpServletRequest request, @PathParam("tableName") String tableName) {
         LOG.info("Fetching lineage inputs graph for tableName={}", tableName);
 
         try {
@@ -87,16 +86,13 @@ public class HiveLineageResource {
             return Response.ok(response).build();
         } catch (EntityNotFoundException e) {
             LOG.error("table entity not found for {}", tableName, e);
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get lineage inputs graph for table {}", tableName, e);
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
             LOG.error("Unable to get lineage inputs graph for table {}", tableName, e);
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
 
@@ -109,8 +105,7 @@ public class HiveLineageResource {
     @Path("table/{tableName}/outputs/graph")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response outputsGraph(@Context HttpServletRequest request,
-                                 @PathParam("tableName") String tableName) {
+    public Response outputsGraph(@Context HttpServletRequest request, @PathParam("tableName") String tableName) {
         LOG.info("Fetching lineage outputs graph for tableName={}", tableName);
 
         try {
@@ -125,16 +120,13 @@ public class HiveLineageResource {
             return Response.ok(response).build();
         } catch (EntityNotFoundException e) {
             LOG.error("table entity not found for {}", tableName, e);
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get lineage outputs graph for table {}", tableName, e);
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
             LOG.error("Unable to get lineage outputs graph for table {}", tableName, e);
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
 
@@ -147,8 +139,7 @@ public class HiveLineageResource {
     @Path("table/{tableName}/schema")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response schema(@Context HttpServletRequest request,
-                           @PathParam("tableName") String tableName) {
+    public Response schema(@Context HttpServletRequest request, @PathParam("tableName") String tableName) {
         LOG.info("Fetching schema for tableName={}", tableName);
 
         try {
@@ -163,16 +154,13 @@ public class HiveLineageResource {
             return Response.ok(response).build();
         } catch (EntityNotFoundException e) {
             LOG.error("table entity not found for {}", tableName, e);
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get schema for table {}", tableName, e);
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
             LOG.error("Unable to get schema for table {}", tableName, e);
-            throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
 }

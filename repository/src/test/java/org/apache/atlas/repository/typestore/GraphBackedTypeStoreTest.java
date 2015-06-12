@@ -23,8 +23,8 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import junit.framework.Assert;
-import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.graph.GraphHelper;
@@ -80,7 +80,7 @@ public class GraphBackedTypeStoreTest {
         }
     }
 
-    @Test (dependsOnMethods = "testStore")
+    @Test(dependsOnMethods = "testStore")
     public void testRestore() throws Exception {
         TypesDef types = typeStore.restore();
 

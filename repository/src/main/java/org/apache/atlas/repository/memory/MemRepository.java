@@ -129,9 +129,8 @@ public class MemRepository implements IRepository {
          */
         for (Id oldId : discoverInstances.idToNewIdMap.keySet()) {
             if (!discoverInstances.idToInstanceMap.containsKey(oldId)) {
-                throw new RepositoryException(String.format("Invalid Object Graph: " +
-                        "Encountered an unassignedId %s that is not associated with an Instance",
-                        oldId));
+                throw new RepositoryException(String.format("Invalid Object Graph: "
+                                + "Encountered an unassignedId %s that is not associated with an Instance", oldId));
             }
         }
 
@@ -140,18 +139,14 @@ public class MemRepository implements IRepository {
          * - create a ITypedReferenceableInstance.
          *   replace any old References ( ids or object references) with new Ids.
         */
-        List<ITypedReferenceableInstance> newInstances
-                = new ArrayList<ITypedReferenceableInstance>();
+        List<ITypedReferenceableInstance> newInstances = new ArrayList<ITypedReferenceableInstance>();
         ITypedReferenceableInstance retInstance = null;
         Set<ClassType> classTypes = new TreeSet<ClassType>();
         Set<TraitType> traitTypes = new TreeSet<TraitType>();
-        for (IReferenceableInstance transientInstance : discoverInstances.idToInstanceMap
-                .values()) {
+        for (IReferenceableInstance transientInstance : discoverInstances.idToInstanceMap.values()) {
             try {
-                ClassType cT = typeSystem
-                        .getDataType(ClassType.class, transientInstance.getTypeName());
-                ITypedReferenceableInstance newInstance = cT
-                        .convert(transientInstance, Multiplicity.REQUIRED);
+                ClassType cT = typeSystem.getDataType(ClassType.class, transientInstance.getTypeName());
+                ITypedReferenceableInstance newInstance = cT.convert(transientInstance, Multiplicity.REQUIRED);
                 newInstances.add(newInstance);
 
                 classTypes.add(cT);
@@ -172,8 +167,7 @@ public class MemRepository implements IRepository {
 
             } catch (AtlasException me) {
                 throw new RepositoryException(
-                        String.format("Failed to create Instance(id = %s",
-                                transientInstance.getId()), me);
+                        String.format("Failed to create Instance(id = %s", transientInstance.getId()), me);
             }
         }
 
@@ -237,8 +231,7 @@ public class MemRepository implements IRepository {
         return retInstance;
     }
 
-    public ITypedReferenceableInstance update(ITypedReferenceableInstance i)
-    throws RepositoryException {
+    public ITypedReferenceableInstance update(ITypedReferenceableInstance i) throws RepositoryException {
         throw new RepositoryException("not implemented");
     }
 
@@ -267,8 +260,7 @@ public class MemRepository implements IRepository {
      * - load instance traits
      * - add to GraphWalker
      */
-    ITypedReferenceableInstance getDuringWalk(Id id, ObjectGraphWalker walker)
-            throws RepositoryException {
+    ITypedReferenceableInstance getDuringWalk(Id id, ObjectGraphWalker walker) throws RepositoryException {
         ClassStore cS = getClassStore(id.getTypeName());
         if (cS == null) {
             throw new RepositoryException(String.format("Unknown Class %s", id.getTypeName()));

@@ -61,13 +61,9 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testSearchByDSL() throws Exception {
         String dslQuery = "from dsl_test_type";
-        WebResource resource = service
-                .path("api/atlas/discovery/search/dsl")
-                .queryParam("query", dslQuery);
+        WebResource resource = service.path("api/atlas/discovery/search/dsl").queryParam("query", dslQuery);
 
-        ClientResponse clientResponse = resource
-                .accept(Servlets.JSON_MEDIA_TYPE)
-                .type(Servlets.JSON_MEDIA_TYPE)
+        ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
@@ -94,28 +90,19 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testSearchByDSLForUnknownType() throws Exception {
         String dslQuery = "from blah";
-        WebResource resource = service
-                .path("api/atlas/discovery/search/dsl")
-                .queryParam("query", dslQuery);
+        WebResource resource = service.path("api/atlas/discovery/search/dsl").queryParam("query", dslQuery);
 
-        ClientResponse clientResponse = resource
-                .accept(Servlets.JSON_MEDIA_TYPE)
-                .type(Servlets.JSON_MEDIA_TYPE)
+        ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
-        Assert.assertEquals(clientResponse.getStatus(),
-                Response.Status.BAD_REQUEST.getStatusCode());
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
     }
 
     @Test
     public void testSearchUsingGremlin() throws Exception {
         String query = "g.V.has('type', 'dsl_test_type').toList()";
-        WebResource resource = service
-                .path("api/atlas/discovery/search")
-                .queryParam("query", query);
+        WebResource resource = service.path("api/atlas/discovery/search").queryParam("query", query);
 
-        ClientResponse clientResponse = resource
-                .accept(Servlets.JSON_MEDIA_TYPE)
-                .type(Servlets.JSON_MEDIA_TYPE)
+        ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
@@ -132,13 +119,9 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testSearchUsingDSL() throws Exception {
         String query = "from dsl_test_type";
-        WebResource resource = service
-                .path("api/atlas/discovery/search")
-                .queryParam("query", query);
+        WebResource resource = service.path("api/atlas/discovery/search").queryParam("query", query);
 
-        ClientResponse clientResponse = resource
-                .accept(Servlets.JSON_MEDIA_TYPE)
-                .type(Servlets.JSON_MEDIA_TYPE)
+        ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
@@ -174,15 +157,13 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
     }
 
     private void createTypes() throws Exception {
-        HierarchicalTypeDefinition<ClassType> dslTestTypeDefinition =
-                TypesUtil.createClassTypeDef("dsl_test_type",
-                        ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<ClassType> dslTestTypeDefinition = TypesUtil
+                .createClassTypeDef("dsl_test_type", ImmutableList.<String>of(),
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
 
-        HierarchicalTypeDefinition<TraitType> classificationTraitDefinition =
-                TypesUtil.createTraitTypeDef("Classification",
-                        ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<TraitType> classificationTraitDefinition = TypesUtil
+                .createTraitTypeDef("Classification", ImmutableList.<String>of(),
                         TypesUtil.createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
         HierarchicalTypeDefinition<TraitType> piiTrait =
                 TypesUtil.createTraitTypeDef("PII_TYPE", ImmutableList.<String>of());
@@ -197,18 +178,17 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         HierarchicalTypeDefinition<TraitType> financeTrait =
                 TypesUtil.createTraitTypeDef("Finance", ImmutableList.<String>of());
 
-        TypesDef typesDef = TypeUtils.getTypesDef(
-                ImmutableList.<EnumTypeDefinition>of(),
-                ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.of(classificationTraitDefinition, piiTrait, phiTrait, pciTrait,
-                        soxTrait, secTrait, financeTrait),
-                ImmutableList.of(dslTestTypeDefinition));
+        TypesDef typesDef = TypeUtils
+                .getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
+                        ImmutableList
+                                .of(classificationTraitDefinition, piiTrait, phiTrait, pciTrait, soxTrait, secTrait,
+                                        financeTrait), ImmutableList.of(dslTestTypeDefinition));
         createType(typesDef);
     }
 
     private Id createInstance() throws Exception {
-        Referenceable entityInstance = new Referenceable("dsl_test_type",
-                "Classification", "PII_TYPE", "PHI", "PCI", "SOX", "SEC", "Finance");
+        Referenceable entityInstance =
+                new Referenceable("dsl_test_type", "Classification", "PII_TYPE", "PHI", "PCI", "SOX", "SEC", "Finance");
         entityInstance.set("name", "foo name");
         entityInstance.set("description", "bar description");
 

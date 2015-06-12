@@ -64,8 +64,7 @@ public final class Main {
 
     public static void main(String[] args) throws Exception {
         CommandLine cmd = parseArgs(args);
-        PropertiesConfiguration buildConfiguration =
-                new PropertiesConfiguration("atlas-buildinfo.properties");
+        PropertiesConfiguration buildConfiguration = new PropertiesConfiguration("atlas-buildinfo.properties");
         String appPath = "webapp/target/atlas-webapp-" + getProjectVersion(buildConfiguration);
 
         if (cmd.hasOption(APP_PATH)) {
@@ -103,21 +102,18 @@ public final class Main {
             appPort = Integer.valueOf(cmd.getOptionValue(APP_PORT));
         } else {
             // default : atlas.enableTLS is true
-            appPort = StringUtils.isEmpty(enableTLSFlag)
-                    || enableTLSFlag.equals("true") ? 21443 : 21000;
+            appPort = StringUtils.isEmpty(enableTLSFlag) || enableTLSFlag.equals("true") ? 21443 : 21000;
         }
 
         return appPort;
     }
 
     private static boolean isTLSEnabled(String enableTLSFlag, int appPort) {
-        return Boolean.valueOf(StringUtils.isEmpty(enableTLSFlag)
-                ? System.getProperty("atlas.enableTLS", (appPort % 1000) == 443 ? "true" : "false")
-                : enableTLSFlag);
+        return Boolean.valueOf(StringUtils.isEmpty(enableTLSFlag) ?
+                System.getProperty("atlas.enableTLS", (appPort % 1000) == 443 ? "true" : "false") : enableTLSFlag);
     }
 
-    private static void showStartupInfo(PropertiesConfiguration buildConfiguration,
-                                        boolean enableTLS, int appPort) {
+    private static void showStartupInfo(PropertiesConfiguration buildConfiguration, boolean enableTLS, int appPort) {
         StringBuilder buffer = new StringBuilder();
         buffer.append("\n############################################");
         buffer.append("############################################");

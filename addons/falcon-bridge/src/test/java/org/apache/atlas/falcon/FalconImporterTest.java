@@ -48,11 +48,12 @@ public class FalconImporterTest {
         FalconTypeSystem.getInstance();
 
         FalconImporter importer = new FalconImporter(client, repo);
-        when(client.getEntityList(EntityType.CLUSTER.name(), null, null, null, null, null, null,
-                null)).thenReturn(getEntityList());
+        when(client.getEntityList(EntityType.CLUSTER.name(), null, null, null, null, null, null, null))
+                .thenReturn(getEntityList());
         //TODO Set other fields in cluster
         when(client.getDefinition(anyString(), anyString())).thenReturn(getCluster());
-        when(repo.createEntity(any(IReferenceableInstance.class), anyString())).thenReturn(UUID.randomUUID().toString());
+        when(repo.createEntity(any(IReferenceableInstance.class), anyString()))
+                .thenReturn(UUID.randomUUID().toString());
 
         importer.importClusters();
     }

@@ -73,7 +73,7 @@ public class SecureEmbeddedServer extends EmbeddedServer {
      * configured credential provider.
      * @param config application configuration
      * @param key the key/alias for the password.
-     * @return  the password.
+     * @return the password.
      * @throws IOException
      */
     private String getPassword(PropertiesConfiguration config, String key) throws IOException {
@@ -85,12 +85,11 @@ public class SecureEmbeddedServer extends EmbeddedServer {
             LOG.info("Attempting to retrieve password from configured credential provider path");
             Configuration c = new Configuration();
             c.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, provider);
-            CredentialProvider credentialProvider =
-                    CredentialProviderFactory.getProviders(c).get(0);
+            CredentialProvider credentialProvider = CredentialProviderFactory.getProviders(c).get(0);
             CredentialProvider.CredentialEntry entry = credentialProvider.getCredentialEntry(key);
             if (entry == null) {
-                throw new IOException(String.format("No credential entry found for %s. " +
-                        "Please create an entry in the configured credential provider", key));
+                throw new IOException(String.format("No credential entry found for %s. "
+                        + "Please create an entry in the configured credential provider", key));
             } else {
                 password = String.valueOf(entry.getCredential());
             }

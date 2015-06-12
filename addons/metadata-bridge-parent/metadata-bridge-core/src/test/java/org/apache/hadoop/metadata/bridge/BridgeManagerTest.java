@@ -38,8 +38,7 @@ public class BridgeManagerTest {
         BridgeManager bm = new BridgeManager(repo);
         System.out.println(bm.getActiveBridges().size());
 
-        Assert.assertEquals(bm.activeBridges.get(0).getClass().getSimpleName(),
-                "HiveLineageBridge");
+        Assert.assertEquals(bm.activeBridges.get(0).getClass().getSimpleName(), "HiveLineageBridge");
     }
 
     @Test

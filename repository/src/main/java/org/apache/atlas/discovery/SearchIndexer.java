@@ -19,7 +19,6 @@
 package org.apache.atlas.discovery;
 
 import org.apache.atlas.listener.TypesChangeListener;
-import org.apache.atlas.repository.IndexException;
 
 
 /**

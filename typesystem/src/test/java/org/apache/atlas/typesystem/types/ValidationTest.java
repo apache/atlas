@@ -25,11 +25,10 @@ import org.testng.annotations.Test;
 public class ValidationTest {
     @DataProvider(name = "attributeData")
     private Object[][] createAttributeData() {
-        return new String[][]{
-                {null, "type"}, {"", "type"}, {"name", null}, {"name", ""}};
+        return new String[][]{{null, "type"}, {"", "type"}, {"name", null}, {"name", ""}};
     }
 
-    @Test (dataProvider = "attributeData", expectedExceptions = {IllegalArgumentException.class})
+    @Test(dataProvider = "attributeData", expectedExceptions = {IllegalArgumentException.class})
     public void testAttributes(String name, String type) {
         TypesUtil.createRequiredAttrDef(name, type);
     }
@@ -39,7 +38,7 @@ public class ValidationTest {
         return new String[][]{{null}, {""}};
     }
 
-    @Test (dataProvider = "enumValueData", expectedExceptions = {IllegalArgumentException.class})
+    @Test(dataProvider = "enumValueData", expectedExceptions = {IllegalArgumentException.class})
     public void testEnumValue(String name) {
         new EnumValue(name, 1);
     }
@@ -50,7 +49,7 @@ public class ValidationTest {
         return new Object[][]{{null, value}, {"", value}, {"name"}};
     }
 
-    @Test (dataProvider = "enumTypeData", expectedExceptions = {IllegalArgumentException.class})
+    @Test(dataProvider = "enumTypeData", expectedExceptions = {IllegalArgumentException.class})
     public void testEnumType(String name, EnumValue... values) {
         new EnumTypeDefinition(name, values);
     }
@@ -61,7 +60,7 @@ public class ValidationTest {
         return new Object[][]{{null, value}, {"", value}, {"name"}};
     }
 
-    @Test (dataProvider = "structTypeData", expectedExceptions = {IllegalArgumentException.class})
+    @Test(dataProvider = "structTypeData", expectedExceptions = {IllegalArgumentException.class})
     public void testStructType(String name, AttributeDefinition... values) {
         new StructTypeDefinition(name, values);
     }
@@ -71,15 +70,17 @@ public class ValidationTest {
         return new Object[][]{{null}, {""}};
     }
 
-    @Test (dataProvider = "classTypeData", expectedExceptions = {IllegalArgumentException.class})
+    @Test(dataProvider = "classTypeData", expectedExceptions = {IllegalArgumentException.class})
     public void testClassType(String name) {
-        AttributeDefinition value = TypesUtil.createRequiredAttrDef("name", "type");;
+        AttributeDefinition value = TypesUtil.createRequiredAttrDef("name", "type");
+        ;
         TypesUtil.createClassTypeDef(name, ImmutableList.of("super"), value);
     }
 
-    @Test (dataProvider = "classTypeData", expectedExceptions = {IllegalArgumentException.class})
+    @Test(dataProvider = "classTypeData", expectedExceptions = {IllegalArgumentException.class})
     public void testTraitType(String name) {
-        AttributeDefinition value = TypesUtil.createRequiredAttrDef("name", "type");;
+        AttributeDefinition value = TypesUtil.createRequiredAttrDef("name", "type");
+        ;
         TypesUtil.createTraitTypeDef(name, ImmutableList.of("super"), value);
     }
 
