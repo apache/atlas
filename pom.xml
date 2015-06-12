@@ -1041,8 +1041,13 @@
                         <exclude>**/data.txt</exclude>
                         <exclude>**/maven-eclipse.xml</exclude>
                         <exclude>**/.externalToolBuilders/**</exclude>
-                        <exclude>dashboard/**</exclude>
                         <exclude>**/build.log</exclude>
+                        <exclude>dashboard/**/.bower*/**</exclude>
+                        <exclude>dashboard/v2/.bower*/**</exclude>
+                        <exclude>dashboard/v2/lib/**</exclude>
+                        <exclude>dashboard/v2/node*/**</exclude>
+                        <exclude>dashboard/v2/dist/**</exclude>
+                        <exclude>dashboard/v2/**/*.min.js*</exclude>
                     </excludes>
                 </configuration>
                 <executions>
