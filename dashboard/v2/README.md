@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-# DGC Metadata
+# Apache Atlas
 
 ## Instructions
 
@@ -27,7 +27,7 @@
 ### Setup:
 
 ```
-git clone https://github.com/MPR-Global/metadata.git
+git clone $git-repo-url
 cd dashboard/v2
 npm install
 grunt server

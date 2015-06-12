@@ -1,6 +1,6 @@
 {
     "name": "dgc-metadata",
-    "description": "DGC Metadata",
+    "description": "Apache Atlas",
     "version": "1.0.0-SNAPSHOT",
     "private": true,
     "bin": "server.js",
