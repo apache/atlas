@@ -211,8 +211,33 @@ licenses.
 
 ================================
 
-This product bundles d3 3.3.9, which is available under a
+This product bundles AngularJS v1.2.28, which is available under a
+MIT license. For details, see docs/license/angularjs-LICENSE.txt
+
+This product bundles angular-bootstrap v0.12.1, which is available under a
+MIT license. For details, see docs/license/angular-bootstrap-LICENSE.txt
+
+This product bundles angular-ui-router v0.2.13, which is available under a
+MIT license. For details, see docs/license/angular-ui-router-LICENSE.txt
+
+This product bundles angular-ui-utils v0.1.1, which is available under a
+MIT license. For details, see docs/license/angular-ui-utils-LICENSE.txt
+
+This product bundles Bootstrap v3.1.1, which is available under a
+MIT license. For details, see docs/license/bootstrap-LICENSE.txt
+
+This product bundles d3 v3.5.5, which is available under a
 "3-clause BSD" license. For details, see docs/license/d3-LICENSE.txt
 
-This product bundles jquery 1.11.0, which is available under a
+This product bundles d3.tip v0.6.6, which is available under a
+MIT license. For details, see docs/license/d3-tip-LICENSE.txt
+
+This product bundles lodash v3.0.0, which is available under a
+MIT license. For details, see docs/license/lodash-LICENSE.txt
+
+This product bundles jquery v2.1.4, which is available under a
 MIT license. For details, see docs/license/jquery-LICENSE.txt
+
+This product bundles font-awesome v4.2.0,
+Font is available under a SIL OFL 1.1, CSS is available under a
+MIT license. For details, see docs/license/font-awesome-LICENSE.txt
