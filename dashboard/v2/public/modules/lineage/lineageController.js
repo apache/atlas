@@ -110,9 +110,9 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
 
             var margin = {
                 top: 100,
-                right: 70,
+                right: 80,
                 bottom: 30,
-                left: 70
+                left: 80
             };
             width = width - margin.right - margin.left;
             height = height - margin.top - margin.bottom;

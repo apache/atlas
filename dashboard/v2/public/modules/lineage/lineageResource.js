@@ -19,5 +19,5 @@
 'use strict';
 
 angular.module('dgc.lineage').factory('LineageResource', ['$resource', function($resource) {
-    return $resource('/api/metadata/lineage/hive/table/:tableName/:type/graph', {});
+    return $resource('/api/atlas/lineage/hive/table/:tableName/:type/graph', {});
 }]);

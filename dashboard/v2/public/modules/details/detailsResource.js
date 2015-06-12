@@ -19,7 +19,7 @@
 'use strict';
 
 angular.module('dgc.details').factory('DetailsResource', ['$resource', function($resource) {
-    return $resource('/api/metadata/entities/:id', {}, {
+    return $resource('/api/atlas/entities/:id', {}, {
         get: {
             method: 'GET',
             transformResponse: function(data) {
@@ -30,23 +30,5 @@ angular.module('dgc.details').factory('DetailsResource', ['$resource', function(
             responseType: 'json'
         }
     });
-
-    //$scope.getSchema= function (tableName) {
-    //
-    //    $http.get('/api/metadata/lineage/hive/table/'+tableName +'/schema')
-    //        .success(function (data) {
-    //            $scope.iserror1=false;
-    //            $scope.schema=  angular.fromJson(data.results.rows);
-    //            //  console.log(tableName);
-    //
-    //
-    //        })
-    //        .error(function () {
-    //            //     alert("Sorry No response");
-    //
-    //
-    //
-    //        });
-    //}
 
 }]);

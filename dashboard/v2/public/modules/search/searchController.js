@@ -67,7 +67,7 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
                 $scope.$watch('currentPage + itemsPerPage', function() {
                     var begin = (($scope.currentPage - 1) * $scope.itemsPerPage),
                         end = begin + $scope.itemsPerPage;
-                    if ($scope.transformedResults)$scope.filteredResults = $scope.transformedResults.slice(begin, end);
+                    if ($scope.transformedResults) $scope.filteredResults = $scope.transformedResults.slice(begin, end);
                     $scope.pageCount = function() {
                         return Math.ceil($scope.resultCount / $scope.itemsPerPage);
                     };

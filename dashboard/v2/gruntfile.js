@@ -152,7 +152,7 @@ module.exports = function(grunt) {
                         'hostnames': ['*'],
                         'routes': {
                             '/': 'dist',
-                            '/api': 'http://162.249.6.39:21000/api'
+                            '/api': 'http://162.249.6.50:21000/api'
                         }
                     }]
                 }
