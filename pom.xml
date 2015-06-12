@@ -134,7 +134,6 @@
         <module>repository</module>
         <module>webapp</module>
         <module>docs</module>
-        <module>tools</module>
         <module>addons/hive-bridge</module>
     </modules>
 
