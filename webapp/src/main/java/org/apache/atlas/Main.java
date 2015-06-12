@@ -117,7 +117,7 @@ public final class Main {
         StringBuilder buffer = new StringBuilder();
         buffer.append("\n############################################");
         buffer.append("############################################");
-        buffer.append("\n                               DGI Server (STARTUP)");
+        buffer.append("\n                               Atlas Server (STARTUP)");
         buffer.append("\n");
         try {
             final Iterator<String> keys = buildConfiguration.getKeys();

@@ -3,7 +3,7 @@
 
 ---++ Overview
 
-DGI is a scalable and extensible set of core foundational governance services – enabling
+Atlas is a scalable and extensible set of core foundational governance services – enabling
 enterprises to effectively and efficiently meet their compliance requirements within Hadoop and
 allows integration with the whole enterprise data ecosystem.
 
@@ -56,4 +56,4 @@ allows integration with the whole enterprise data ecosystem.
 #LicenseInfo
 ---+ Licensing Information
 
-Metadata (DGI) is distributed under [[http://www.apache.org/licenses/LICENSE-2.0][Apache License 2.0]].
+Metadata (Atlas) is distributed under [[http://www.apache.org/licenses/LICENSE-2.0][Apache License 2.0]].

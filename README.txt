@@ -16,7 +16,7 @@
 
 Metadata and Governance Overview
 
-The Data Governance Initiative, DGI, framework is an extensible set of core
+The Data Governance Initiative, Atlas, framework is an extensible set of core
 foundational governance services – enabling enterprises to effectively and
 efficiently meet their compliance requirements within Hadoop and allows
 integration with the whole enterprise data ecosystem.

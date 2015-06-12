@@ -65,7 +65,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
- * DgiHook sends lineage information to the DgiSever.
+ * AtlasHook sends lineage information to the AtlasSever.
  */
 public class HiveHook implements ExecuteWithHookContext {
 
@@ -100,7 +100,7 @@ public class HiveHook implements ExecuteWithHookContext {
 
         executor = new ThreadPoolExecutor(minThreads, maxThreads, keepAliveTime, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<Runnable>(),
-                new ThreadFactoryBuilder().setDaemon(true).setNameFormat("DGI Logger %d").build());
+                new ThreadFactoryBuilder().setDaemon(true).setNameFormat("Atlas Logger %d").build());
 
         try {
             Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -120,7 +120,7 @@ public class HiveHook implements ExecuteWithHookContext {
             LOG.info("Attempting to send msg while shutdown in progress.");
         }
 
-        LOG.info("Created DGI Hook");
+        LOG.info("Created Atlas Hook");
     }
 
     class HiveEvent {
@@ -168,7 +168,7 @@ public class HiveHook implements ExecuteWithHookContext {
                     try {
                         fireAndForget(event);
                     } catch (Throwable e) {
-                        LOG.info("DGI hook failed", e);
+                        LOG.info("Atlas hook failed", e);
                     }
                 }
             });
@@ -178,7 +178,7 @@ public class HiveHook implements ExecuteWithHookContext {
     private void fireAndForget(HiveEvent event) throws Exception {
         assert event.hookType == HookContext.HookType.POST_EXEC_HOOK : "Non-POST_EXEC_HOOK not supported!";
 
-        LOG.info("Entered DGI hook for hook type {} operation {}", event.hookType, event.operation);
+        LOG.info("Entered Atlas hook for hook type {} operation {}", event.hookType, event.operation);
         HiveMetaStoreBridge dgiBridge = new HiveMetaStoreBridge(event.conf);
 
         if (!typesRegistered) {

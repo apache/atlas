@@ -51,7 +51,7 @@ import java.util.Set;
 
 /**
  * A Bridge Utility that imports metadata from the Hive Meta Store
- * and registers then in DGI.
+ * and registers then in Atlas.
  */
 public class HiveMetaStoreBridge {
     private static final String DEFAULT_DGI_URL = "http://localhost:21000/";

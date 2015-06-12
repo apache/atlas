@@ -1,4 +1,4 @@
-Apache DGI (incubating)
+Apache Atlas (incubating)
 
 Copyright 2011-2014 The Apache Software Foundation
 

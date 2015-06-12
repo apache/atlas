@@ -20,9 +20,9 @@ Both SSL one-way (server authentication) and two-way (server and client authenti
 	
 ---++++ Credential Provider Utility Script
 
-In order to prevent the use of clear-text passwords, the DGI platofrm makes use of the Credential Provider facility for secure password storage (see [[http://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/CommandsManual.html#credential][Hadoop Credential Command Reference]] for more information about this facility).  The cputil script in the 'bin' directory can be leveraged to create the password store required.  
+In order to prevent the use of clear-text passwords, the Atlas platofrm makes use of the Credential Provider facility for secure password storage (see [[http://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/CommandsManual.html#credential][Hadoop Credential Command Reference]] for more information about this facility).  The cputil script in the 'bin' directory can be leveraged to create the password store required.
 
-To create the credential provdier for DGI:
+To create the credential provdier for Atlas:
 
    * cd to the '<code>bin</code>' directory
    * type '<code>./cputil.sh</code>'
@@ -34,17 +34,17 @@ To create the credential provdier for DGI:
 
 ---+++ Service Authentication
 
-The DGI platform, upon startup, is associated to an authenticated identity.  By default, in an insecure environment, that identity is the same as the OS authenticated user launching the server.  However, in a secure cluster leveraging kerberos, it is considered a best practice to configure a keytab and principal in order for the platform to authenticate to the KDC. This allows the service to subsequently interact with other secure cluster services (e.g. HDFS).
+The Atlas platform, upon startup, is associated to an authenticated identity.  By default, in an insecure environment, that identity is the same as the OS authenticated user launching the server.  However, in a secure cluster leveraging kerberos, it is considered a best practice to configure a keytab and principal in order for the platform to authenticate to the KDC. This allows the service to subsequently interact with other secure cluster services (e.g. HDFS).
 
 The properties for configuring service authentication are:
 
    * <code>atlas.authentication.method</code> (simple|kerberos) [default: simple] - the authentication method to utilize.  Simple will leverage the OS authenticated identity and is the default mechanism.  'kerberos' indicates that the service is required to authenticate to the KDC leveraging the configured keytab and principal.
    * <code>atlas.authentication.keytab</code> - the path to the keytab file.
-   * <code>atlas.authentication.principal</code> - the principal to use for authenticating to the KDC.  The principal is generally of the form "user/host@realm".  You may use the '_HOST' token for the hostname and the local hostname will be substituted in by the runtime (e.g. "dgi/_HOST@EXAMPLE.COM").
+   * <code>atlas.authentication.principal</code> - the principal to use for authenticating to the KDC.  The principal is generally of the form "user/host@realm".  You may use the '_HOST' token for the hostname and the local hostname will be substituted in by the runtime (e.g. "Atlas/_HOST@EXAMPLE.COM").
 
 ---+++ SPNEGO-based HTTP Authentication
 
-HTTP access to the DGI platform can be secured by enabling the platform's SPNEGO support.  There are currently two supported authentication mechanisms:
+HTTP access to the Atlas platform can be secured by enabling the platform's SPNEGO support.  There are currently two supported authentication mechanisms:
 
    * <code>simple</code> - authentication is performed via a provided user name
    * <code>kerberos</code> - the KDC authenticated identity of the client is leveraged to authenticate to the server
@@ -58,7 +58,7 @@ The properties for configuring the SPNEGO support are:
    * <code>atlas.http.authentication.kerberos.principal</code> - the web-application Kerberos principal name. The Kerberos principal name must start with "HTTP/...". For example: "HTTP/localhost@LOCALHOST". There is no default value.
    * <code>atlas.http.authentication.kerberos.keytab</code> - the path to the keytab file containing the credentials for the kerberos principal.
 	
-For a more detailed discussion of the HTTP authentication mechanism refer to [[http://hadoop.apache.org/docs/stable/hadoop-auth/Configuration.html][Hadoop Auth, Java HTTP SPNEGO 2.6.0 - Server Side Configuration]].  The prefix that document references is "atlas.http.authentication" in the case of the DGI authentication implementation.
+For a more detailed discussion of the HTTP authentication mechanism refer to [[http://hadoop.apache.org/docs/stable/hadoop-auth/Configuration.html][Hadoop Auth, Java HTTP SPNEGO 2.6.0 - Server Side Configuration]].  The prefix that document references is "atlas.http.authentication" in the case of the Atlas authentication implementation.
 
 ---+++ Client security configuration
 

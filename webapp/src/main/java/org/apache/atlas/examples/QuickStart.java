@@ -53,10 +53,10 @@ public class QuickStart {
         String baseUrl = getServerUrl(args);
         QuickStart quickStart = new QuickStart(baseUrl);
 
-        // Shows how to create types in DGI for your meta model
+        // Shows how to create types in Atlas for your meta model
         quickStart.createTypes();
 
-        // Shows how to create entities (instances) for the added types in DGI
+        // Shows how to create entities (instances) for the added types in Atlas
         quickStart.createEntities();
 
         // Shows some search queries using DSL based on types
