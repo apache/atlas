@@ -18,6 +18,7 @@
 
 package org.apache.atlas.repository.graph;
 
+import com.google.inject.Provider;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanGraph;
@@ -28,6 +29,7 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.discovery.SearchIndexer;
+import org.apache.atlas.listener.TypesChangeListener;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.IndexCreationException;
 import org.apache.atlas.repository.IndexException;
@@ -44,6 +46,7 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 
@@ -141,22 +144,26 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
     /**
      * This is upon adding a new type to Store.
      *
-     * @param typeName type name
-     * @param dataType data type
-     * @throws AtlasException
+     * @param dataTypes data type
+     * @throws org.apache.atlas.AtlasException
      */
     @Override
-    public void onAdd(String typeName, IDataType dataType) throws AtlasException {
-        LOG.info("Creating indexes for type name={}, definition={}", typeName, dataType);
+    public void onAdd(Collection<? extends IDataType> dataTypes) throws AtlasException {
 
-        try {
-            addIndexForType(dataType);
-            LOG.info("Index creation for type {} complete", typeName);
-
-        } catch (Throwable throwable) {
-            LOG.error("Error creating index for type {}", dataType, throwable);
-            throw new IndexCreationException("Error while creating index for type " + dataType, throwable);
+        for(IDataType dataType : dataTypes) {
+            LOG.info("Creating indexes for type name={}, definition={}", dataType.getName(), dataType.getClass());
+            try {
+                addIndexForType(dataType);
+                LOG.info("Index creation for type {} complete", dataType.getName());
+            } catch (Throwable throwable) {
+                LOG.error("Error creating index for type {}", dataType, throwable);
+                //Rollback indexes if any failure
+                rollback();
+                throw new IndexCreationException("Error while creating index for type " + dataType, throwable);
+            }
         }
+        //Commit indexes
+        commit();
     }
 
     private void addIndexForType(IDataType dataType) {
@@ -347,7 +354,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
         return true;
     }
 
-    @Override
     public void commit() throws IndexException {
         try {
             management.commit();
@@ -357,7 +363,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
         }
     }
 
-    @Override
     public void rollback() throws IndexException {
         try {
             management.rollback();
