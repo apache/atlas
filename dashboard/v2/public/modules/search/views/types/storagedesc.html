@@ -1,4 +1,3 @@
-<!doctype html>
 <!--
   ~ Licensed to the Apache Software Foundation (ASF) under one
   ~ or more contributor license agreements.  See the NOTICE file
@@ -17,23 +16,6 @@
   ~ limitations under the License.
   -->
 
-<html lang="en" xmlns="http://www.w3.org/1999/xhtml" itemscope="itemscope" itemtype="http://schema.org/Product">
-{% include 'includes/head.html' %}
-
-<body>
-<header class="navbar navbar-static-top navbar-top" data-role="navigation">
-    <div class="container" data-ng-include="'/modules/home/views/header.html'"></div>
-</header>
-<div class="content">
-    <div data-ng-include="'/modules/notification/views/notifications.html'"></div>
-    <div data-ui-view></div>
-</div>
-<footer class="footer navbar-bottom">
-    <div class="container">
-        <p align="right">Powered by<img src="modules/home/img/logo-green.png"></p>
-    </div>
-</footer>
-{% include 'includes/foot.html' %}
-</body>
-
-</html>
+<h4><a data-ui-sref="details({id:result['$id$'].id})">{{result.name}}</a></h4>
+<p><b>compressed: </b>{{result.compressed}},<b>outputFormat: </b>{{result.outputFormat}},<b>location: </b>{{result.location}}, <b>inputFormat: </b>{{result.inputFormat}}</p>
+<h5>Tags :  <a ng-repeat="(key, value) in result['$traits$']" data-ui-sref="search.results({query: key})">{{key}}</a> </h5>

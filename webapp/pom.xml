@@ -184,6 +184,47 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>0.0.23</version>
+                <!-- optional -->
+                <configuration>
+                    <workingDirectory>../dashboard/v2/</workingDirectory>
+                </configuration>
+                <executions>
+                  <execution>
+                    <id>install node and npm</id>
+                    <goals>
+                      <goal>install-node-and-npm</goal>
+                    </goals>
+                    <configuration>
+                      <nodeVersion>v0.10.30</nodeVersion>
+                      <npmVersion>1.4.3</npmVersion>
+                    </configuration>
+                  </execution>
+
+                  <execution>
+                    <id>npm install</id>
+                    <goals>
+                      <goal>npm</goal>
+                    </goals>
+                    <configuration>
+                      <arguments>install</arguments>
+                    </configuration>
+                  </execution>
+
+                  <execution>
+                    <id>grunt dist</id>
+                    <goals>
+                      <goal>grunt</goal>
+                    </goals>
+                    <configuration>
+                      <arguments>build</arguments>
+                    </configuration>
+                  </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <executions>
@@ -212,8 +253,8 @@
                     <attachClasses>true</attachClasses>
                     <webResources>
                         <resource>
-                            <directory>../dashboard/v3</directory>
-                            <targetPath>dashboard</targetPath>
+                            <directory>../dashboard/v2/dist</directory>
+                            <targetPath>/</targetPath>
                         </resource>
                         <resource>
                             <directory>src/main/webapp/WEB-INF</directory>

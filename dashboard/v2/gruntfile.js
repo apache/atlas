@@ -1,3 +1,21 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 'use strict';
 
 var git = require('git-rev');
@@ -10,48 +28,35 @@ module.exports = function(grunt) {
     grunt.initConfig({
         watch: {
             options: {
-                livereload: 35730
+                livereload: 35729
             },
             js: {
-                files: ['public/**/*.js', '!public/lib/**', '!public/dist/**'],
-                tasks: ['shell']
+                files: ['public/**/*.js', '!public/lib/**', '!public/dist/**', '!public/js/app.min.js'],
+                tasks: ['shell', 'copy:mainjs']
             },
             html: {
-                files: ['public/**/*.html']
+                files: ['public/**/*.html'],
+                tasks: ['copy:dist']
             },
             css: {
-                files: ['public/**/*.css']
+                files: ['public/**/*.css'],
+                tasks: ['copy:dist']
+            },
+            image: {
+                files: ['public/**/*.{ico,gif,png}'],
+                tasks: ['copy:dist']
             }
         },
         jshint: {
             all: {
-                src: ['gruntfile.js', 'package.json', 'server.js', 'server/**/*.js', 'public/**/*.js', '!public/lib/**', '!public/dist/**'],
+                src: ['gruntfile.js', 'package.json', 'server.js', 'server/**/*.js', 'public/**/*.js', '!public/lib/**', '!public/dist/**', '!public/**/app.min.js'],
                 options: {
                     jshintrc: true
                 }
             }
         },
-        nodemon: {
-            local: {
-                script: 'server.js',
-                options: {
-                    ext: 'js,json',
-                    ignore: ['public/**', 'node_modules/**'],
-                    nodeArgs: ['--debug=6868']
-                }
-            },
-            prod: {
-                script: 'server.js',
-                options: {
-                    ignore: ['.'],
-                    env: {
-                        NODE_ENV: 'production'
-                    }
-                }
-            }
-        },
         concurrent: {
-            tasks: ['nodemon:local', 'watch'],
+            tasks: ['watch', 'proxitserver'],
             options: {
                 logConcurrentOutput: true
             }
@@ -81,7 +86,7 @@ module.exports = function(grunt) {
                 }
             }
         },
-        dist: 'public/dist/app.min.js',
+        dist: 'public/js/app.min.js',
         modules: grunt.file.expand(
             'public/js/app.js',
             'public/js/routes.js',
@@ -92,8 +97,8 @@ module.exports = function(grunt) {
         shell: {
             min: {
                 command: 'java ' +
-                    '-cp public/lib/closure-compiler/compiler.jar' + classPathSep +
-                    'public/lib/ng-closure-runner/ngcompiler.jar ' +
+                    '-cp dist/lib/closure-compiler/compiler.jar' + classPathSep +
+                    'dist/lib/ng-closure-runner/ngcompiler.jar ' +
                     'org.angularjs.closurerunner.NgClosureRunner ' +
                     '--compilation_level SIMPLE_OPTIMIZATIONS ' +
                     //'--formatting PRETTY_PRINT ' +
@@ -120,24 +125,58 @@ module.exports = function(grunt) {
                 },
                 src: ['node_modules/**', 'package.json', 'server.js', 'server/**', 'public/**', '!public/js/**', '!public/modules/**/*.js']
             }
+        },
+        copy: {
+            dist: {
+                expand: true,
+                cwd: 'public/',
+                src: '**',
+                dest: 'dist',
+            },
+            mainjs: {
+                expand: true,
+                cwd: 'public/',
+                src: 'js/app.min.js',
+                dest: 'dist/js/',
+                flatten: true,
+                filter: 'isFile'
+            }
+        },
+        clean: ['public/lib', 'dist'],
+        proxit: {
+            dev: {
+                options: {
+                    'port': 3010,
+                    'verbose': true,
+                    'hosts': [{
+                        'hostnames': ['*'],
+                        'routes': {
+                            '/': 'dist',
+                            '/api': 'http://162.249.6.50:21000/api'
+                        }
+                    }]
+                }
+            }
         }
     });
 
     require('load-grunt-tasks')(grunt);
-
     grunt.registerTask('default', ['devUpdate', 'bower', 'jshint', 'jsbeautifier:default']);
 
-    grunt.registerTask('server', ['bower', 'jshint', 'minify', 'concurrent']);
-    grunt.registerTask('server:prod', ['nodemon:prod']);
-    grunt.registerTask('server:prod', ['nodemon:prod']);
+    grunt.registerTask('server', ['jshint', 'build', 'concurrent']);
+    grunt.registerTask('build', ['clean', 'bower', 'copy:dist', 'minify', 'copy:mainjs']);
 
     grunt.registerTask('minify', 'Minify the all js', function() {
         var done = this.async();
-        grunt.file.mkdir('public/dist');
         grunt.task.run(['shell:min']);
         done();
     });
-
+    grunt.loadNpmTasks('proxit');
+    grunt.registerTask('proxitserver', 'Proxit', function() {
+        var done = this.async();
+        grunt.task.run(['proxit:dev']);
+        done();
+    });
     grunt.registerTask('release', 'Create release package', function() {
         var done = this.async();
         git.short(function(str) {

@@ -19,7 +19,7 @@
 'use strict';
 
 angular.module('dgc.details').factory('DetailsResource', ['$resource', function($resource) {
-    return $resource('/api/atlas/entities/definition/:id', {}, {
+    return $resource('/api/atlas/entities/:id', {}, {
         get: {
             method: 'GET',
             transformResponse: function(data) {
@@ -30,4 +30,5 @@ angular.module('dgc.details').factory('DetailsResource', ['$resource', function(
             responseType: 'json'
         }
     });
+
 }]);
