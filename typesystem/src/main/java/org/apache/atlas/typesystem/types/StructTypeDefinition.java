@@ -42,13 +42,21 @@ public class StructTypeDefinition {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         StructTypeDefinition that = (StructTypeDefinition) o;
 
-        if (!Arrays.equals(attributeDefinitions, that.attributeDefinitions)) return false;
-        if (!typeName.equals(that.typeName)) return false;
+        if (!Arrays.equals(attributeDefinitions, that.attributeDefinitions)) {
+            return false;
+        }
+        if (!typeName.equals(that.typeName)) {
+            return false;
+        }
 
         return true;
     }

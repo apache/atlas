@@ -44,43 +44,36 @@ import java.util.List;
 
 public class InstanceE2ETest extends BaseTest {
 
-    protected List<HierarchicalTypeDefinition> createHiveTypes(TypeSystem typeSystem)
-    throws AtlasException {
+    protected List<HierarchicalTypeDefinition> createHiveTypes(TypeSystem typeSystem) throws AtlasException {
         ArrayList<HierarchicalTypeDefinition> typeDefinitions = new ArrayList<>();
 
-        HierarchicalTypeDefinition<ClassType> databaseTypeDefinition =
-                TypesUtil.createClassTypeDef("hive_database",
-                        ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<ClassType> databaseTypeDefinition = TypesUtil
+                .createClassTypeDef("hive_database", ImmutableList.<String>of(),
                         TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
         typeDefinitions.add(databaseTypeDefinition);
 
-        HierarchicalTypeDefinition<ClassType> tableTypeDefinition = TypesUtil.createClassTypeDef(
-                "hive_table",
-                ImmutableList.<String>of(),
-                TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE),
-                TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE),
-                new AttributeDefinition("hive_database",
-                        "hive_database", Multiplicity.REQUIRED, false, "hive_database"));
+        HierarchicalTypeDefinition<ClassType> tableTypeDefinition = TypesUtil
+                .createClassTypeDef("hive_table", ImmutableList.<String>of(),
+                        TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE),
+                        TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE),
+                        new AttributeDefinition("hive_database", "hive_database", Multiplicity.REQUIRED, false,
+                                "hive_database"));
         typeDefinitions.add(tableTypeDefinition);
 
-        HierarchicalTypeDefinition<TraitType> fetlTypeDefinition = TypesUtil.createTraitTypeDef(
-                "hive_fetl",
-                ImmutableList.<String>of(),
-                TypesUtil.createRequiredAttrDef("level", DataTypes.INT_TYPE));
+        HierarchicalTypeDefinition<TraitType> fetlTypeDefinition = TypesUtil
+                .createTraitTypeDef("hive_fetl", ImmutableList.<String>of(),
+                        TypesUtil.createRequiredAttrDef("level", DataTypes.INT_TYPE));
         typeDefinitions.add(fetlTypeDefinition);
 
-        typeSystem.defineTypes(
-                ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.of(fetlTypeDefinition),
+        typeSystem.defineTypes(ImmutableList.<StructTypeDefinition>of(), ImmutableList.of(fetlTypeDefinition),
                 ImmutableList.of(databaseTypeDefinition, tableTypeDefinition));
 
         return typeDefinitions;
     }
 
-    protected Referenceable createHiveTableReferenceable()
-            throws AtlasException {
+    protected Referenceable createHiveTableReferenceable() throws AtlasException {
         Referenceable databaseInstance = new Referenceable("hive_database");
         databaseInstance.set("name", "hive_database");
         databaseInstance.set("description", "foo database");
@@ -99,8 +92,7 @@ public class InstanceE2ETest extends BaseTest {
         return tableInstance;
     }
 
-    protected ITypedReferenceableInstance createHiveTableInstance(TypeSystem typeSystem)
-    throws AtlasException {
+    protected ITypedReferenceableInstance createHiveTableInstance(TypeSystem typeSystem) throws AtlasException {
         ClassType tableType = typeSystem.getDataType(ClassType.class, "hive_table");
         return tableType.convert(createHiveTableReferenceable(), Multiplicity.REQUIRED);
     }
@@ -112,8 +104,7 @@ public class InstanceE2ETest extends BaseTest {
 
         createHiveTypes(ts);
 
-        String jsonStr = TypesSerialization$.MODULE$
-                .toJson(ts, ImmutableList.of("hive_database", "hive_table"));
+        String jsonStr = TypesSerialization$.MODULE$.toJson(ts, ImmutableList.of("hive_database", "hive_table"));
         System.out.println(jsonStr);
 
         TypesDef typesDef1 = TypesSerialization$.MODULE$.fromJson(jsonStr);
@@ -121,8 +112,7 @@ public class InstanceE2ETest extends BaseTest {
 
         ts.reset();
         ts.defineTypes(typesDef1);
-        jsonStr = TypesSerialization$.MODULE$
-                .toJson(ts, ImmutableList.of("hive_database", "hive_table"));
+        jsonStr = TypesSerialization$.MODULE$.toJson(ts, ImmutableList.of("hive_database", "hive_table"));
         System.out.println(jsonStr);
 
     }
@@ -152,7 +142,7 @@ public class InstanceE2ETest extends BaseTest {
 
         Referenceable r = createHiveTableReferenceable();
         String jsonStr = InstanceSerialization$.MODULE$.toJson(r, true);
-        Referenceable  r1 = InstanceSerialization$.MODULE$.fromJsonReferenceable(jsonStr, true);
+        Referenceable r1 = InstanceSerialization$.MODULE$.fromJsonReferenceable(jsonStr, true);
         ClassType tableType = ts.getDataType(ClassType.class, "hive_table");
 
         ITypedReferenceableInstance i = tableType.convert(r1, Multiplicity.REQUIRED);

@@ -67,9 +67,8 @@ public class Referenceable extends Struct implements IReferenceableInstance {
      * @param values
      */
     @InterfaceAudience.Private
-    public Referenceable(String guid, String typeName, Map<String, Object> values,
-                         List<String> _traitNames,
-                         Map<String, IStruct> _traits) {
+    public Referenceable(String guid, String typeName, Map<String, Object> values, List<String> _traitNames,
+            Map<String, IStruct> _traits) {
         super(typeName, values);
         id = new Id(guid, 0, typeName);
         traitNames = ImmutableList.copyOf(_traitNames);

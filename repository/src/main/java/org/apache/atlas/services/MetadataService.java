@@ -94,6 +94,7 @@ public interface MetadataService {
     void updateEntity(String guid, String property, String value) throws AtlasException;
 
     // Trait management functions
+
     /**
      * Gets the list of trait names for a given entity represented by a guid.
      *
@@ -110,8 +111,7 @@ public interface MetadataService {
      * @param traitInstanceDefinition trait instance that needs to be added to entity
      * @throws AtlasException
      */
-    void addTrait(String guid,
-                  String traitInstanceDefinition) throws AtlasException;
+    void addTrait(String guid, String traitInstanceDefinition) throws AtlasException;
 
     /**
      * Deletes a given trait from an existing entity represented by a guid.
@@ -120,6 +120,5 @@ public interface MetadataService {
      * @param traitNameToBeDeleted name of the trait
      * @throws AtlasException
      */
-    void deleteTrait(String guid,
-                     String traitNameToBeDeleted) throws AtlasException;
+    void deleteTrait(String guid, String traitNameToBeDeleted) throws AtlasException;
 }

@@ -26,7 +26,7 @@ import java.net.URL;
 
 import static org.apache.atlas.security.SecurityProperties.CERT_STORES_CREDENTIAL_PROVIDER_PATH;
 
-public class SecureEmbeddedServerIT extends SecureEmbeddedServerITBase{
+public class SecureEmbeddedServerIT extends SecureEmbeddedServerITBase {
     @Test
     public void testServerConfiguredUsingCredentialProvider() throws Exception {
         // setup the configuration
@@ -47,7 +47,7 @@ public class SecureEmbeddedServerIT extends SecureEmbeddedServerITBase{
             secureEmbeddedServer.server.start();
 
             URL url = new URL("https://localhost:21443/");
-            HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.connect();
 

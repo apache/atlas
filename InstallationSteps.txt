@@ -29,7 +29,7 @@ You would need the following installed:
 1. Building Atlas
 --------------------
 
-Building DGI from the source repository
+Building Atlas from the source repository
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * git clone git@github.com:hortonworks/atlas.git atlas
@@ -37,7 +37,7 @@ Building DGI from the source repository
 * export MAVEN_OPTS="-Xmx1024m -XX:MaxPermSize=256m" && mvn clean install
 
 
-2. Deploying DGI
+2. Deploying Atlas
 ---------------------
 
 Once the build successfully completes, artifacts can be packaged for deployment.
@@ -65,21 +65,21 @@ Tar is structured as follows
 |- DISCLAIMER.txt
 |- CHANGES.txt
 
-3. Installing & running DGI
+3. Installing & running Atlas
 --------------------------------
 
-a. Installing DGI
+a. Installing Atlas
 ~~~~~~~~~~~~~~~~~~~~~~
 
 * tar -xzvf apache-atlas-${project.version}-bin.tar.gz
 * cd atlas-${project.version}
 
-b. Starting DGI Server
+b. Starting Atlas Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * bin/atlas-start.sh
 
-c. Using DGI
+c. Using Atlas
 ~~~~~~~~~~~~~~~
 
 * Verify if the server is up and running
@@ -99,7 +99,14 @@ c. Using DGI
 * Search for entities (instances) in the repository
   curl -v http://localhost:21000/api/atlas/discovery/search/dsl?query="from hive_table"
 
-d. Stopping DGI Server
+
+d. Using Atlas Dashboard
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Navigate to http(s)://$host:$port/
+Port by default is 21000
+
+e. Stopping Atlas Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * bin/atlas-stop.sh

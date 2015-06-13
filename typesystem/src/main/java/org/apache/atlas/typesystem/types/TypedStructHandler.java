@@ -68,8 +68,7 @@ public class TypedStructHandler {
                     }
                 }
                 return ts;
-            } else if (val instanceof StructInstance &&
-                    ((StructInstance) val).getTypeName() == structType.getName()) {
+            } else if (val instanceof StructInstance && ((StructInstance) val).getTypeName() == structType.getName()) {
                 return (StructInstance) val;
             } else {
                 throw new ValueConversionException(structType, val);
@@ -86,9 +85,7 @@ public class TypedStructHandler {
     }
 
     public ITypedStruct createInstance() {
-        return new StructInstance(structType.getName(),
-                fieldMapping,
-                new boolean[fieldMapping.fields.size()],
+        return new StructInstance(structType.getName(), fieldMapping, new boolean[fieldMapping.fields.size()],
                 fieldMapping.numBools == 0 ? null : new boolean[fieldMapping.numBools],
                 fieldMapping.numBytes == 0 ? null : new byte[fieldMapping.numBytes],
                 fieldMapping.numShorts == 0 ? null : new short[fieldMapping.numShorts],
@@ -96,18 +93,15 @@ public class TypedStructHandler {
                 fieldMapping.numLongs == 0 ? null : new long[fieldMapping.numLongs],
                 fieldMapping.numFloats == 0 ? null : new float[fieldMapping.numFloats],
                 fieldMapping.numDoubles == 0 ? null : new double[fieldMapping.numDoubles],
-                fieldMapping.numBigDecimals == 0 ? null
-                        : new BigDecimal[fieldMapping.numBigDecimals],
+                fieldMapping.numBigDecimals == 0 ? null : new BigDecimal[fieldMapping.numBigDecimals],
                 fieldMapping.numBigInts == 0 ? null : new BigInteger[fieldMapping.numBigInts],
                 fieldMapping.numDates == 0 ? null : new Date[fieldMapping.numDates],
                 fieldMapping.numStrings == 0 ? null : new String[fieldMapping.numStrings],
                 fieldMapping.numArrays == 0 ? null : new ImmutableList[fieldMapping.numArrays],
                 fieldMapping.numMaps == 0 ? null : new ImmutableMap[fieldMapping.numMaps],
                 fieldMapping.numStructs == 0 ? null : new StructInstance[fieldMapping.numStructs],
-                fieldMapping.numReferenceables == 0 ? null
-                        : new ReferenceableInstance[fieldMapping.numReferenceables],
-                fieldMapping.numReferenceables == 0 ? null
-                        : new Id[fieldMapping.numReferenceables]);
+                fieldMapping.numReferenceables == 0 ? null : new ReferenceableInstance[fieldMapping.numReferenceables],
+                fieldMapping.numReferenceables == 0 ? null : new Id[fieldMapping.numReferenceables]);
     }
 
     public void output(IStruct s, Appendable buf, String prefix) throws AtlasException {

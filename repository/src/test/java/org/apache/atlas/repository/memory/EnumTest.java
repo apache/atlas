@@ -55,26 +55,16 @@ public class EnumTest extends BaseTest {
     }
 
     void defineEnums(TypeSystem ts) throws AtlasException {
-        ts.defineEnumType("HiveObjectType",
-                new EnumValue("GLOBAL", 1),
-                new EnumValue("DATABASE", 2),
-                new EnumValue("TABLE", 3),
-                new EnumValue("PARTITION", 4),
-                new EnumValue("COLUMN", 5));
+        ts.defineEnumType("HiveObjectType", new EnumValue("GLOBAL", 1), new EnumValue("DATABASE", 2),
+                new EnumValue("TABLE", 3), new EnumValue("PARTITION", 4), new EnumValue("COLUMN", 5));
 
-        ts.defineEnumType("PrincipalType",
-                new EnumValue("USER", 1),
-                new EnumValue("ROLE", 2),
+        ts.defineEnumType("PrincipalType", new EnumValue("USER", 1), new EnumValue("ROLE", 2),
                 new EnumValue("GROUP", 3));
 
-        ts.defineEnumType("TxnState",
-                new EnumValue("COMMITTED", 1),
-                new EnumValue("ABORTED", 2),
+        ts.defineEnumType("TxnState", new EnumValue("COMMITTED", 1), new EnumValue("ABORTED", 2),
                 new EnumValue("OPEN", 3));
 
-        ts.defineEnumType("LockLevel",
-                new EnumValue("DB", 1),
-                new EnumValue("TABLE", 2),
+        ts.defineEnumType("LockLevel", new EnumValue("DB", 1), new EnumValue("TABLE", 2),
                 new EnumValue("PARTITION", 3));
 
     }
@@ -93,8 +83,7 @@ public class EnumTest extends BaseTest {
         s.set("k", new BigDecimal(1));
         s.set("l", new Date(1418265358440L));
         s.set("m", Lists.asList(1, new Integer[]{1}));
-        s.set("n",
-                Lists.asList(BigDecimal.valueOf(1.1), new BigDecimal[]{BigDecimal.valueOf(1.1)}));
+        s.set("n", Lists.asList(BigDecimal.valueOf(1.1), new BigDecimal[]{BigDecimal.valueOf(1.1)}));
         Map<String, Double> hm = Maps.newHashMap();
         hm.put("a", 1.0);
         hm.put("b", 2.0);
@@ -118,65 +107,54 @@ public class EnumTest extends BaseTest {
     }
 
     protected ClassType defineClassTypeWithEnum(TypeSystem ts) throws AtlasException {
-        return ts.defineClassType(TypesUtil.createClassTypeDef("t4",
-                ImmutableList.<String>of(),
+        return ts.defineClassType(TypesUtil.createClassTypeDef("t4", ImmutableList.<String>of(),
                 TypesUtil.createRequiredAttrDef("a", DataTypes.INT_TYPE),
                 TypesUtil.createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE),
                 TypesUtil.createOptionalAttrDef("c", DataTypes.BYTE_TYPE),
                 TypesUtil.createOptionalAttrDef("d", DataTypes.SHORT_TYPE),
-                TypesUtil.createOptionalAttrDef("enum1",
-                        ts.getDataType(EnumType.class, "HiveObjectType")),
+                TypesUtil.createOptionalAttrDef("enum1", ts.getDataType(EnumType.class, "HiveObjectType")),
                 TypesUtil.createOptionalAttrDef("e", DataTypes.INT_TYPE),
                 TypesUtil.createOptionalAttrDef("f", DataTypes.INT_TYPE),
                 TypesUtil.createOptionalAttrDef("g", DataTypes.LONG_TYPE),
-                TypesUtil.createOptionalAttrDef("enum2",
-                        ts.getDataType(EnumType.class, "PrincipalType")),
+                TypesUtil.createOptionalAttrDef("enum2", ts.getDataType(EnumType.class, "PrincipalType")),
                 TypesUtil.createOptionalAttrDef("h", DataTypes.FLOAT_TYPE),
                 TypesUtil.createOptionalAttrDef("i", DataTypes.DOUBLE_TYPE),
                 TypesUtil.createOptionalAttrDef("j", DataTypes.BIGINTEGER_TYPE),
                 TypesUtil.createOptionalAttrDef("k", DataTypes.BIGDECIMAL_TYPE),
-                TypesUtil
-                        .createOptionalAttrDef("enum3", ts.getDataType(EnumType.class, "TxnState")),
+                TypesUtil.createOptionalAttrDef("enum3", ts.getDataType(EnumType.class, "TxnState")),
                 TypesUtil.createOptionalAttrDef("l", DataTypes.DATE_TYPE),
                 TypesUtil.createOptionalAttrDef("m", ts.defineArrayType(DataTypes.INT_TYPE)),
                 TypesUtil.createOptionalAttrDef("n", ts.defineArrayType(DataTypes.BIGDECIMAL_TYPE)),
-                TypesUtil.createOptionalAttrDef("o",
-                        ts.defineMapType(DataTypes.STRING_TYPE, DataTypes.DOUBLE_TYPE)),
-                TypesUtil.createOptionalAttrDef("enum4",
-                        ts.getDataType(EnumType.class, "LockLevel"))));
+                TypesUtil.createOptionalAttrDef("o", ts.defineMapType(DataTypes.STRING_TYPE, DataTypes.DOUBLE_TYPE)),
+                TypesUtil.createOptionalAttrDef("enum4", ts.getDataType(EnumType.class, "LockLevel"))));
     }
 
     @Test
     public void testStruct() throws AtlasException {
         TypeSystem ts = getTypeSystem();
         defineEnums(ts);
-        StructType structType = ts.defineStructType("t3",
-                true,
-                TypesUtil.createRequiredAttrDef("a", DataTypes.INT_TYPE),
-                TypesUtil.createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE),
-                TypesUtil.createOptionalAttrDef("c", DataTypes.BYTE_TYPE),
-                TypesUtil.createOptionalAttrDef("d", DataTypes.SHORT_TYPE),
-                TypesUtil.createOptionalAttrDef("enum1",
-                        ts.getDataType(EnumType.class, "HiveObjectType")),
-                TypesUtil.createOptionalAttrDef("e", DataTypes.INT_TYPE),
-                TypesUtil.createOptionalAttrDef("f", DataTypes.INT_TYPE),
-                TypesUtil.createOptionalAttrDef("g", DataTypes.LONG_TYPE),
-                TypesUtil.createOptionalAttrDef("enum2",
-                        ts.getDataType(EnumType.class, "PrincipalType")),
-                TypesUtil.createOptionalAttrDef("h", DataTypes.FLOAT_TYPE),
-                TypesUtil.createOptionalAttrDef("i", DataTypes.DOUBLE_TYPE),
-                TypesUtil.createOptionalAttrDef("j", DataTypes.BIGINTEGER_TYPE),
-                TypesUtil.createOptionalAttrDef("k", DataTypes.BIGDECIMAL_TYPE),
-                TypesUtil
-                        .createOptionalAttrDef("enum3", ts.getDataType(EnumType.class, "TxnState")),
+        StructType structType =
+                ts.defineStructType("t3", true, TypesUtil.createRequiredAttrDef("a", DataTypes.INT_TYPE),
+                        TypesUtil.createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE),
+                        TypesUtil.createOptionalAttrDef("c", DataTypes.BYTE_TYPE),
+                        TypesUtil.createOptionalAttrDef("d", DataTypes.SHORT_TYPE),
+                        TypesUtil.createOptionalAttrDef("enum1", ts.getDataType(EnumType.class, "HiveObjectType")),
+                        TypesUtil.createOptionalAttrDef("e", DataTypes.INT_TYPE),
+                        TypesUtil.createOptionalAttrDef("f", DataTypes.INT_TYPE),
+                        TypesUtil.createOptionalAttrDef("g", DataTypes.LONG_TYPE),
+                        TypesUtil.createOptionalAttrDef("enum2", ts.getDataType(EnumType.class, "PrincipalType")),
+                        TypesUtil.createOptionalAttrDef("h", DataTypes.FLOAT_TYPE),
+                        TypesUtil.createOptionalAttrDef("i", DataTypes.DOUBLE_TYPE),
+                        TypesUtil.createOptionalAttrDef("j", DataTypes.BIGINTEGER_TYPE),
+                        TypesUtil.createOptionalAttrDef("k", DataTypes.BIGDECIMAL_TYPE),
+                        TypesUtil.createOptionalAttrDef("enum3", ts.getDataType(EnumType.class, "TxnState")),
 
-                TypesUtil.createOptionalAttrDef("l", DataTypes.DATE_TYPE),
-                TypesUtil.createOptionalAttrDef("m", ts.defineArrayType(DataTypes.INT_TYPE)),
-                TypesUtil.createOptionalAttrDef("n", ts.defineArrayType(DataTypes.BIGDECIMAL_TYPE)),
-                TypesUtil.createOptionalAttrDef("o",
-                        ts.defineMapType(DataTypes.STRING_TYPE, DataTypes.DOUBLE_TYPE)),
-                TypesUtil.createOptionalAttrDef("enum4",
-                        ts.getDataType(EnumType.class, "LockLevel")));
+                        TypesUtil.createOptionalAttrDef("l", DataTypes.DATE_TYPE),
+                        TypesUtil.createOptionalAttrDef("m", ts.defineArrayType(DataTypes.INT_TYPE)),
+                        TypesUtil.createOptionalAttrDef("n", ts.defineArrayType(DataTypes.BIGDECIMAL_TYPE)), TypesUtil
+                                .createOptionalAttrDef("o",
+                                        ts.defineMapType(DataTypes.STRING_TYPE, DataTypes.DOUBLE_TYPE)),
+                        TypesUtil.createOptionalAttrDef("enum4", ts.getDataType(EnumType.class, "LockLevel")));
 
         Struct s = createStructWithEnum("t3");
         ITypedStruct typedS = structType.convert(s, Multiplicity.REQUIRED);

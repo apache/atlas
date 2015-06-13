@@ -37,8 +37,7 @@ public class IndexException extends AtlasException {
         super(cause);
     }
 
-    public IndexException(String message, Throwable cause, boolean enableSuppression,
-                          boolean writableStackTrace) {
+    public IndexException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 

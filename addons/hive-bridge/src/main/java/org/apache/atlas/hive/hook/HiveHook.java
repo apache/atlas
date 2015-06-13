@@ -48,7 +48,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
- * DgiHook sends lineage information to the DgiSever.
+ * AtlasHook sends lineage information to the AtlasSever.
  */
 public class HiveHook implements ExecuteWithHookContext {
 
@@ -83,27 +83,27 @@ public class HiveHook implements ExecuteWithHookContext {
 
         executor = new ThreadPoolExecutor(minThreads, maxThreads, keepAliveTime, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<Runnable>(),
-                new ThreadFactoryBuilder().setDaemon(true).setNameFormat("DGI Logger %d").build());
+                new ThreadFactoryBuilder().setDaemon(true).setNameFormat("Atlas Logger %d").build());
 
         try {
             Runtime.getRuntime().addShutdownHook(new Thread() {
-                        @Override
-                        public void run() {
-                            try {
-                                executor.shutdown();
-                                executor.awaitTermination(WAIT_TIME, TimeUnit.SECONDS);
-                                executor = null;
-                            } catch (InterruptedException ie) {
-                                LOG.info("Interrupt received in shutdown.");
-                            }
-                            // shutdown client
-                        }
-                    });
+                @Override
+                public void run() {
+                    try {
+                        executor.shutdown();
+                        executor.awaitTermination(WAIT_TIME, TimeUnit.SECONDS);
+                        executor = null;
+                    } catch (InterruptedException ie) {
+                        LOG.info("Interrupt received in shutdown.");
+                    }
+                    // shutdown client
+                }
+            });
         } catch (IllegalStateException is) {
             LOG.info("Attempting to send msg while shutdown in progress.");
         }
 
-        LOG.info("Created DGI Hook");
+        LOG.info("Created Atlas Hook");
     }
 
     class HiveEvent {
@@ -146,22 +146,22 @@ public class HiveHook implements ExecuteWithHookContext {
             fireAndForget(event);
         } else {
             executor.submit(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                fireAndForget(event);
-                            } catch (Throwable e) {
-                                LOG.info("DGI hook failed", e);
-                            }
-                        }
-                    });
+                @Override
+                public void run() {
+                    try {
+                        fireAndForget(event);
+                    } catch (Throwable e) {
+                        LOG.info("Atlas hook failed", e);
+                    }
+                }
+            });
         }
     }
 
     private void fireAndForget(HiveEvent event) throws Exception {
         assert event.hookType == HookContext.HookType.POST_EXEC_HOOK : "Non-POST_EXEC_HOOK not supported!";
 
-        LOG.info("Entered DGI hook for hook type {} operation {}", event.hookType, event.operation);
+        LOG.info("Entered Atlas hook for hook type {} operation {}", event.hookType, event.operation);
         HiveMetaStoreBridge dgiBridge = new HiveMetaStoreBridge(event.conf);
 
         if (!typesRegistered) {
@@ -331,7 +331,7 @@ public class HiveHook implements ExecuteWithHookContext {
             explain.initialize(event.conf, event.queryPlan, null);
             List<Task<?>> rootTasks = event.queryPlan.getRootTasks();
             return explain.getJSONPlan(null, null, rootTasks, event.queryPlan.getFetchTask(), true, false, false);
-        } catch(Exception e) {
+        } catch (Exception e) {
             LOG.warn("Failed to get queryplan", e);
             return new JSONObject();
         }

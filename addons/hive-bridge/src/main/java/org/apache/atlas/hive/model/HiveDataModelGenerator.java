@@ -19,8 +19,8 @@
 package org.apache.atlas.hive.model;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.typesystem.types.AttributeDefinition;
@@ -102,12 +102,8 @@ public class HiveDataModelGenerator {
     }
 
     public TypesDef getTypesDef() {
-        return TypeUtils.getTypesDef(
-                getEnumTypeDefinitions(),
-                getStructTypeDefinitions(),
-                getTraitTypeDefinitions(),
-                getClassTypeDefinitions()
-        );
+        return TypeUtils.getTypesDef(getEnumTypeDefinitions(), getStructTypeDefinitions(), getTraitTypeDefinitions(),
+                getClassTypeDefinitions());
     }
 
     public String getDataModelAsJSON() {
@@ -131,108 +127,82 @@ public class HiveDataModelGenerator {
     }
 
     private void createHiveObjectTypeEnum() throws AtlasException {
-        EnumValue values[] = {
-                new EnumValue("GLOBAL", 1),
-                new EnumValue("DATABASE", 2),
-                new EnumValue("TABLE", 3),
-                new EnumValue("PARTITION", 4),
-                new EnumValue("COLUMN", 5),
-        };
+        EnumValue values[] = {new EnumValue("GLOBAL", 1), new EnumValue("DATABASE", 2), new EnumValue("TABLE", 3),
+                new EnumValue("PARTITION", 4), new EnumValue("COLUMN", 5),};
 
-        EnumTypeDefinition definition = new EnumTypeDefinition(
-                HiveDataTypes.HIVE_OBJECT_TYPE.getName(), values);
+        EnumTypeDefinition definition = new EnumTypeDefinition(HiveDataTypes.HIVE_OBJECT_TYPE.getName(), values);
         enumTypeDefinitionMap.put(HiveDataTypes.HIVE_OBJECT_TYPE.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_OBJECT_TYPE.getName());
     }
 
     private void createHivePrincipalTypeEnum() throws AtlasException {
-        EnumValue values[] = {
-                new EnumValue("USER", 1),
-                new EnumValue("ROLE", 2),
-                new EnumValue("GROUP", 3),
-        };
+        EnumValue values[] = {new EnumValue("USER", 1), new EnumValue("ROLE", 2), new EnumValue("GROUP", 3),};
 
-        EnumTypeDefinition definition = new EnumTypeDefinition(
-                HiveDataTypes.HIVE_PRINCIPAL_TYPE.getName(), values);
+        EnumTypeDefinition definition = new EnumTypeDefinition(HiveDataTypes.HIVE_PRINCIPAL_TYPE.getName(), values);
 
         enumTypeDefinitionMap.put(HiveDataTypes.HIVE_PRINCIPAL_TYPE.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_PRINCIPAL_TYPE.getName());
     }
 
     private void createResourceTypeEnum() throws AtlasException {
-        EnumValue values[] = {
-                new EnumValue("JAR", 1),
-                new EnumValue("FILE", 2),
-                new EnumValue("ARCHIVE", 3),
-        };
-        EnumTypeDefinition definition = new EnumTypeDefinition(
-                HiveDataTypes.HIVE_RESOURCE_TYPE.getName(), values);
+        EnumValue values[] = {new EnumValue("JAR", 1), new EnumValue("FILE", 2), new EnumValue("ARCHIVE", 3),};
+        EnumTypeDefinition definition = new EnumTypeDefinition(HiveDataTypes.HIVE_RESOURCE_TYPE.getName(), values);
         enumTypeDefinitionMap.put(HiveDataTypes.HIVE_RESOURCE_TYPE.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_RESOURCE_TYPE.getName());
     }
 
     private void createSerDeStruct() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition(NAME, DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("serializationLib", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-        };
-        StructTypeDefinition definition = new StructTypeDefinition(
-                HiveDataTypes.HIVE_SERDE.getName(), attributeDefinitions);
+                new AttributeDefinition(NAME, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition("serializationLib", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL,
+                        false, null),
+                new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(), Multiplicity.OPTIONAL, false, null),};
+        StructTypeDefinition definition =
+                new StructTypeDefinition(HiveDataTypes.HIVE_SERDE.getName(), attributeDefinitions);
         structTypeDefinitionMap.put(HiveDataTypes.HIVE_SERDE.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_SERDE.getName());
     }
 
     private void createOrderStruct() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition("col", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("order", DataTypes.INT_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-        };
+                new AttributeDefinition("col", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("order", DataTypes.INT_TYPE.getName(), Multiplicity.REQUIRED, false, null),};
 
-        StructTypeDefinition definition = new StructTypeDefinition(
-                HiveDataTypes.HIVE_ORDER.getName(), attributeDefinitions);
+        StructTypeDefinition definition =
+                new StructTypeDefinition(HiveDataTypes.HIVE_ORDER.getName(), attributeDefinitions);
         structTypeDefinitionMap.put(HiveDataTypes.HIVE_ORDER.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_ORDER.getName());
     }
 
     private void createStorageDescClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition("cols",
-                        String.format("array<%s>", HiveDataTypes.HIVE_COLUMN.getName()),
+                new AttributeDefinition("cols", String.format("array<%s>", HiveDataTypes.HIVE_COLUMN.getName()),
                         Multiplicity.COLLECTION, false, null),
-                new AttributeDefinition("location", DataTypes.STRING_TYPE.getName(),
+                new AttributeDefinition("location", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                        null),
+                new AttributeDefinition("inputFormat", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                        null),
+                new AttributeDefinition("outputFormat", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                        null),
+                new AttributeDefinition("compressed", DataTypes.BOOLEAN_TYPE.getName(), Multiplicity.REQUIRED, false,
+                        null),
+                new AttributeDefinition(STORAGE_NUM_BUCKETS, DataTypes.INT_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                        null),
+                new AttributeDefinition("serdeInfo", HiveDataTypes.HIVE_SERDE.getName(), Multiplicity.OPTIONAL, false,
+                        null),
+                new AttributeDefinition("bucketCols", String.format("array<%s>", DataTypes.STRING_TYPE.getName()),
                         Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("inputFormat", DataTypes.STRING_TYPE.getName(),
+                new AttributeDefinition("sortCols", String.format("array<%s>", HiveDataTypes.HIVE_ORDER.getName()),
                         Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("outputFormat", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("compressed", DataTypes.BOOLEAN_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition(STORAGE_NUM_BUCKETS, DataTypes.INT_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("serdeInfo", HiveDataTypes.HIVE_SERDE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("bucketCols",
-                        String.format("array<%s>", DataTypes.STRING_TYPE.getName()),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("sortCols",
-                        String.format("array<%s>", HiveDataTypes.HIVE_ORDER.getName()),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 //new AttributeDefinition("skewedInfo", DefinedTypes.HIVE_SKEWEDINFO.getName(),
                 // Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition(STORAGE_IS_STORED_AS_SUB_DIRS, DataTypes.BOOLEAN_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-        };
+                        Multiplicity.OPTIONAL, false, null),};
 
-        HierarchicalTypeDefinition<ClassType> definition = new HierarchicalTypeDefinition<>(
-                ClassType.class, HiveDataTypes.HIVE_STORAGEDESC.getName(), null, attributeDefinitions);
+        HierarchicalTypeDefinition<ClassType> definition =
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_STORAGEDESC.getName(), null,
+                        attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_STORAGEDESC.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_STORAGEDESC.getName());
     }
@@ -243,54 +213,45 @@ public class HiveDataModelGenerator {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition("resourceType", HiveDataTypes.HIVE_RESOURCE_TYPE.getName(),
                         Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("uri", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-        };
-        StructTypeDefinition definition = new StructTypeDefinition(
-                HiveDataTypes.HIVE_RESOURCEURI.getName(), attributeDefinitions);
+                new AttributeDefinition("uri", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),};
+        StructTypeDefinition definition =
+                new StructTypeDefinition(HiveDataTypes.HIVE_RESOURCEURI.getName(), attributeDefinitions);
         structTypeDefinitionMap.put(HiveDataTypes.HIVE_RESOURCEURI.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_RESOURCEURI.getName());
     }
 
     private void createDBClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition(NAME, DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition(CLUSTER_NAME, DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("description", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("locationUri", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("ownerName", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("ownerType", HiveDataTypes.HIVE_PRINCIPAL_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-        };
+                new AttributeDefinition(NAME, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition(CLUSTER_NAME, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
+                        null),
+                new AttributeDefinition("description", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                        null),
+                new AttributeDefinition("locationUri", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
+                        null),
+                new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition("ownerName", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                        null),
+                new AttributeDefinition("ownerType", HiveDataTypes.HIVE_PRINCIPAL_TYPE.getName(), Multiplicity.OPTIONAL,
+                        false, null),};
 
         HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_DB.getName(),
-                        null, attributeDefinitions);
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_DB.getName(), null,
+                        attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_DB.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_DB.getName());
     }
 
     private void createTypeClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition(NAME, DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("type1", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("type2", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("fields", String.format("array<%s>",
-                        HiveDataTypes.HIVE_COLUMN.getName()), Multiplicity.OPTIONAL, false, null),
-        };
+                new AttributeDefinition(NAME, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("type1", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition("type2", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition("fields", String.format("array<%s>", HiveDataTypes.HIVE_COLUMN.getName()),
+                        Multiplicity.OPTIONAL, false, null),};
         HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_TYPE.getName(),
-                        null, attributeDefinitions);
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_TYPE.getName(), null,
+                        attributeDefinitions);
 
         classTypeDefinitions.put(HiveDataTypes.HIVE_TYPE.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_TYPE.getName());
@@ -298,17 +259,12 @@ public class HiveDataModelGenerator {
 
     private void createColumnClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition(NAME, DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("type", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition(COMMENT, DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-        };
+                new AttributeDefinition(NAME, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("type", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition(COMMENT, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),};
         HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(
-                        ClassType.class, HiveDataTypes.HIVE_COLUMN.getName(),
-                        null, attributeDefinitions);
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_COLUMN.getName(), null,
+                        attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_COLUMN.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_COLUMN.getName());
     }
@@ -317,62 +273,50 @@ public class HiveDataModelGenerator {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition("values", DataTypes.arrayTypeName(DataTypes.STRING_TYPE.getName()),
                         Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition(TABLE, HiveDataTypes.HIVE_TABLE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("createTime", DataTypes.LONG_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("lastAccessTime", DataTypes.LONG_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("sd", HiveDataTypes.HIVE_STORAGEDESC.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("columns",
-                        DataTypes.arrayTypeName(HiveDataTypes.HIVE_COLUMN.getName()),
+                new AttributeDefinition(TABLE, HiveDataTypes.HIVE_TABLE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("createTime", DataTypes.LONG_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                        null),
+                new AttributeDefinition("lastAccessTime", DataTypes.LONG_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                        null),
+                new AttributeDefinition("sd", HiveDataTypes.HIVE_STORAGEDESC.getName(), Multiplicity.REQUIRED, false,
+                        null),
+                new AttributeDefinition("columns", DataTypes.arrayTypeName(HiveDataTypes.HIVE_COLUMN.getName()),
                         Multiplicity.OPTIONAL, true, null),
-                new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-        };
+                new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(), Multiplicity.OPTIONAL, false, null),};
         HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class,
-                        HiveDataTypes.HIVE_PARTITION.getName(), null, attributeDefinitions);
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_PARTITION.getName(), null,
+                        attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_PARTITION.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_PARTITION.getName());
     }
 
     private void createTableClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition(TABLE_NAME, DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition(DB, HiveDataTypes.HIVE_DB.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("owner", DataTypes.STRING_TYPE.getName(),
+                new AttributeDefinition(TABLE_NAME, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
+                        null),
+                new AttributeDefinition(DB, HiveDataTypes.HIVE_DB.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("owner", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition("createTime", DataTypes.LONG_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                        null),
+                new AttributeDefinition("lastAccessTime", DataTypes.LONG_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                        null),
+                new AttributeDefinition(COMMENT, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition("retention", DataTypes.INT_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition("sd", HiveDataTypes.HIVE_STORAGEDESC.getName(), Multiplicity.OPTIONAL, false,
+                        null),
+                new AttributeDefinition("partitionKeys", DataTypes.arrayTypeName(HiveDataTypes.HIVE_COLUMN.getName()),
                         Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("createTime", DataTypes.LONG_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("lastAccessTime", DataTypes.LONG_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition(COMMENT, DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("retention", DataTypes.INT_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("sd", HiveDataTypes.HIVE_STORAGEDESC.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("partitionKeys",
-                        DataTypes.arrayTypeName(HiveDataTypes.HIVE_COLUMN.getName()),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("columns",
-                        DataTypes.arrayTypeName(HiveDataTypes.HIVE_COLUMN.getName()),
+                new AttributeDefinition("columns", DataTypes.arrayTypeName(HiveDataTypes.HIVE_COLUMN.getName()),
                         Multiplicity.OPTIONAL, true, null),
-                new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("viewOriginalText", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("viewExpandedText", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("tableType", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("temporary", DataTypes.BOOLEAN_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-        };
+                new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition("viewOriginalText", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL,
+                        false, null),
+                new AttributeDefinition("viewExpandedText", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL,
+                        false, null),
+                new AttributeDefinition("tableType", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                        null),
+                new AttributeDefinition("temporary", DataTypes.BOOLEAN_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                        null),};
         HierarchicalTypeDefinition<ClassType> definition =
                 new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_TABLE.getName(),
                         ImmutableList.of("DataSet"), attributeDefinitions);
@@ -382,27 +326,23 @@ public class HiveDataModelGenerator {
 
     private void createIndexClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition(NAME, DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("indexHandlerClass", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition(DB, HiveDataTypes.HIVE_DB.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("createTime", DataTypes.LONG_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("lastAccessTime", DataTypes.LONG_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("origTable", HiveDataTypes.HIVE_TABLE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("indexTable", HiveDataTypes.HIVE_TABLE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("sd", HiveDataTypes.HIVE_STORAGEDESC.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("deferredRebuild", DataTypes.BOOLEAN_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-        };
+                new AttributeDefinition(NAME, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("indexHandlerClass", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED,
+                        false, null),
+                new AttributeDefinition(DB, HiveDataTypes.HIVE_DB.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("createTime", DataTypes.LONG_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                        null),
+                new AttributeDefinition("lastAccessTime", DataTypes.LONG_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                        null),
+                new AttributeDefinition("origTable", HiveDataTypes.HIVE_TABLE.getName(), Multiplicity.REQUIRED, false,
+                        null),
+                new AttributeDefinition("indexTable", HiveDataTypes.HIVE_TABLE.getName(), Multiplicity.OPTIONAL, false,
+                        null),
+                new AttributeDefinition("sd", HiveDataTypes.HIVE_STORAGEDESC.getName(), Multiplicity.REQUIRED, false,
+                        null),
+                new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition("deferredRebuild", DataTypes.BOOLEAN_TYPE.getName(), Multiplicity.OPTIONAL,
+                        false, null),};
 
         HierarchicalTypeDefinition<ClassType> definition =
                 new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_INDEX.getName(),
@@ -413,15 +353,15 @@ public class HiveDataModelGenerator {
 
     private void createRoleClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition("roleName", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("createTime", DataTypes.LONG_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("ownerName", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-        };
-        HierarchicalTypeDefinition<ClassType> definition = new HierarchicalTypeDefinition<>(
-                ClassType.class, HiveDataTypes.HIVE_ROLE.getName(), null, attributeDefinitions);
+                new AttributeDefinition("roleName", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
+                        null),
+                new AttributeDefinition("createTime", DataTypes.LONG_TYPE.getName(), Multiplicity.REQUIRED, false,
+                        null),
+                new AttributeDefinition("ownerName", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
+                        null),};
+        HierarchicalTypeDefinition<ClassType> definition =
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_ROLE.getName(), null,
+                        attributeDefinitions);
 
         classTypeDefinitions.put(HiveDataTypes.HIVE_ROLE.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_ROLE.getName());
@@ -429,25 +369,21 @@ public class HiveDataModelGenerator {
 
     private void createProcessClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition("startTime", DataTypes.LONG_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("endTime", DataTypes.LONG_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("userName", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("queryText", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("queryPlan", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("queryId", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("queryGraph", DataTypes.STRING_TYPE.getName(),
-                        Multiplicity.OPTIONAL, false, null),
-        };
+                new AttributeDefinition("startTime", DataTypes.LONG_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("endTime", DataTypes.LONG_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("userName", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
+                        null),
+                new AttributeDefinition("queryText", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
+                        null),
+                new AttributeDefinition("queryPlan", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
+                        null),
+                new AttributeDefinition("queryId", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("queryGraph", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                        null),};
 
-        HierarchicalTypeDefinition<ClassType> definition = new HierarchicalTypeDefinition<>(
-                ClassType.class, HiveDataTypes.HIVE_PROCESS.getName(),
-                ImmutableList.of(AtlasClient.PROCESS_SUPER_TYPE), attributeDefinitions);
+        HierarchicalTypeDefinition<ClassType> definition =
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_PROCESS.getName(),
+                        ImmutableList.of(AtlasClient.PROCESS_SUPER_TYPE), attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_PROCESS.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_PROCESS.getName());
     }

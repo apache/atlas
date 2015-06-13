@@ -31,6 +31,7 @@ public final class Multiplicity {
     public final int lower;
     public final int upper;
     public final boolean isUnique;
+
     public Multiplicity(int lower, int upper, boolean isUnique) {
         assert lower >= 0;
         assert upper >= 1;
@@ -46,14 +47,24 @@ public final class Multiplicity {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         Multiplicity that = (Multiplicity) o;
 
-        if (isUnique != that.isUnique) return false;
-        if (lower != that.lower) return false;
-        if (upper != that.upper) return false;
+        if (isUnique != that.isUnique) {
+            return false;
+        }
+        if (lower != that.lower) {
+            return false;
+        }
+        if (upper != that.upper) {
+            return false;
+        }
 
         return true;
     }

@@ -92,7 +92,8 @@ public class NegativeSSLAndKerberosHiveHookIT extends BaseSSLAndKerberosTest {
         configuration.setProperty(KEYSTORE_FILE_KEY, "../../webapp/target/atlas.keystore");
         configuration.setProperty(CERT_STORES_CREDENTIAL_PROVIDER_PATH, providerUrl);
         configuration.setProperty("atlas.http.authentication.type", "kerberos");
-        configuration.setProperty(SSLFactory.SSL_HOSTNAME_VERIFIER_KEY, SSLHostnameVerifier.DEFAULT_AND_LOCALHOST.toString());
+        configuration.setProperty(SSLFactory.SSL_HOSTNAME_VERIFIER_KEY,
+                SSLHostnameVerifier.DEFAULT_AND_LOCALHOST.toString());
 
         configuration.save(new FileWriter(persistDir + File.separator + "client.properties"));
 

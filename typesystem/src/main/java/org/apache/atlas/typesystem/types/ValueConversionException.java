@@ -27,19 +27,16 @@ public class ValueConversionException extends AtlasException {
     }
 
     public ValueConversionException(IDataType typ, Object val, Throwable t) {
-        super(String
-                .format("Cannot convert value '%s' to datatype %s", val.toString(), typ.getName()),
-                t);
+        super(String.format("Cannot convert value '%s' to datatype %s", val.toString(), typ.getName()), t);
     }
 
     public ValueConversionException(IDataType typ, Object val, String msg) {
-        super(String.format("Cannot convert value '%s' to datatype %s because: %s",
-                val.toString(), typ.getName(), msg));
+        super(String
+                .format("Cannot convert value '%s' to datatype %s because: %s", val.toString(), typ.getName(), msg));
     }
 
     public ValueConversionException(String typeName, Object val, String msg) {
-        super(String.format("Cannot convert value '%s' to datatype %s because: %s",
-                val.toString(), typeName, msg));
+        super(String.format("Cannot convert value '%s' to datatype %s because: %s", val.toString(), typeName, msg));
     }
 
     protected ValueConversionException(String msg) {

@@ -85,11 +85,9 @@ public class MetadataDiscoveryResource {
             if (query.startsWith("g.")) { // raw gremlin query
                 return searchUsingGremlinQuery(query);
             }
-            
+
             final String jsonResultStr = discoveryService.searchByDSL(query);
-            response = new DSLJSONResponseBuilder().results(jsonResultStr)
-                .query(query)
-                .build();
+            response = new DSLJSONResponseBuilder().results(jsonResultStr).query(query).build();
 
         } catch (IllegalArgumentException e) {
             LOG.error("Unable to get entity list for empty query", e);
@@ -99,22 +97,18 @@ public class MetadataDiscoveryResource {
 
             try {   //fall back to full-text
                 final String jsonResultStr = discoveryService.searchByFullText(query);
-                response = new FullTextJSonResponseBuilder().results(jsonResultStr)
-                    .query(query)
-                    .build();
+                response = new FullTextJSonResponseBuilder().results(jsonResultStr).query(query).build();
 
             } catch (DiscoveryException | IllegalArgumentException e) {
                 LOG.error("Unable to get entity list for query {}", query, e);
                 throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-            } catch(Throwable e) {
+            } catch (Throwable e) {
                 LOG.error("Unable to get entity list for query {}", query, e);
-                throw new WebApplicationException(
-                    Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+                throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
             }
         }
 
-        return Response.ok(response)
-            .build();
+        return Response.ok(response).build();
 
     }
 
@@ -133,20 +127,15 @@ public class MetadataDiscoveryResource {
             ParamChecker.notEmpty(dslQuery, "dslQuery cannot be null");
             final String jsonResultStr = discoveryService.searchByDSL(dslQuery);
 
-            JSONObject response = new DSLJSONResponseBuilder().results(jsonResultStr)
-                .query(dslQuery)
-                .build();
+            JSONObject response = new DSLJSONResponseBuilder().results(jsonResultStr).query(dslQuery).build();
 
-            return Response.ok(response)
-                .build();
+            return Response.ok(response).build();
         } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get entity list for dslQuery {}", dslQuery, e);
-            throw new WebApplicationException(
-                Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch(Throwable e) {
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (Throwable e) {
             LOG.error("Unable to get entity list for dslQuery {}", dslQuery, e);
-            throw new WebApplicationException(
-                Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
 
@@ -163,8 +152,7 @@ public class MetadataDiscoveryResource {
     public Response searchUsingGremlinQuery(@QueryParam("query") String gremlinQuery) {
         try {
             ParamChecker.notEmpty(gremlinQuery, "gremlinQuery cannot be null or empty");
-            final List<Map<String, String>> results = discoveryService
-                .searchByGremlin(gremlinQuery);
+            final List<Map<String, String>> results = discoveryService.searchByGremlin(gremlinQuery);
 
             JSONObject response = new JSONObject();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
@@ -178,16 +166,13 @@ public class MetadataDiscoveryResource {
             response.put(AtlasClient.RESULTS, list);
             response.put(AtlasClient.COUNT, list.length());
 
-            return Response.ok(response)
-                .build();
+            return Response.ok(response).build();
         } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get entity list for gremlinQuery {}", gremlinQuery, e);
-            throw new WebApplicationException(
-                Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch(Throwable e) {
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (Throwable e) {
             LOG.error("Unable to get entity list for gremlinQuery {}", gremlinQuery, e);
-            throw new WebApplicationException(
-                Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
 
@@ -207,15 +192,12 @@ public class MetadataDiscoveryResource {
             final String jsonResultStr = discoveryService.searchByFullText(query);
             JSONArray rowsJsonArr = new JSONArray(jsonResultStr);
 
-            JSONObject response = new FullTextJSonResponseBuilder().results(rowsJsonArr)
-                .query(query)
-                .build();
-            return Response.ok(response)
-                .build();
+            JSONObject response = new FullTextJSonResponseBuilder().results(rowsJsonArr).query(query).build();
+            return Response.ok(response).build();
         } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get entity list for query {}", query, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch(Throwable e) {
+        } catch (Throwable e) {
             LOG.error("Unable to get entity list for query {}", query, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }

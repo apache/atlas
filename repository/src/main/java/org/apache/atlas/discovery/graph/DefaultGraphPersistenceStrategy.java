@@ -47,8 +47,7 @@ import java.util.List;
  */
 public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategies {
 
-    private static final Logger LOG = LoggerFactory
-            .getLogger(DefaultGraphPersistenceStrategy.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultGraphPersistenceStrategy.class);
 
     private final GraphBackedMetadataRepository metadataRepository;
 
@@ -104,60 +103,56 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
     public <U> U constructInstance(IDataType<U> dataType, Object value) {
         try {
             switch (dataType.getTypeCategory()) {
-                case PRIMITIVE:
-                case ENUM:
-                    return dataType.convert(value, Multiplicity.OPTIONAL);
+            case PRIMITIVE:
+            case ENUM:
+                return dataType.convert(value, Multiplicity.OPTIONAL);
 
-                case ARRAY:
-                    // todo
-                    break;
+            case ARRAY:
+                // todo
+                break;
 
-                case MAP:
-                    // todo
-                    break;
+            case MAP:
+                // todo
+                break;
 
-                case STRUCT:
-                    TitanVertex structVertex = (TitanVertex) value;
-                    StructType structType = (StructType) dataType;
-                    ITypedStruct structInstance = structType.createInstance();
+            case STRUCT:
+                TitanVertex structVertex = (TitanVertex) value;
+                StructType structType = (StructType) dataType;
+                ITypedStruct structInstance = structType.createInstance();
 
-                    TypeSystem.IdType idType = TypeSystem.getInstance().getIdType();
+                TypeSystem.IdType idType = TypeSystem.getInstance().getIdType();
 
-                    if (dataType.getName().equals(idType.getName())) {
-                        structInstance.set(idType.typeNameAttrName(),
-                                structVertex.getProperty(typeAttributeName()));
-                        structInstance.set(idType.idAttrName(),
-                                structVertex.getProperty(idAttributeName()));
+                if (dataType.getName().equals(idType.getName())) {
+                    structInstance.set(idType.typeNameAttrName(), structVertex.getProperty(typeAttributeName()));
+                    structInstance.set(idType.idAttrName(), structVertex.getProperty(idAttributeName()));
 
-                    } else {
-                        metadataRepository.getGraphToInstanceMapper().mapVertexToInstance(
-                                structVertex, structInstance, structType.fieldMapping().fields);
-                    }
-                    return dataType.convert(structInstance, Multiplicity.OPTIONAL);
+                } else {
+                    metadataRepository.getGraphToInstanceMapper()
+                            .mapVertexToInstance(structVertex, structInstance, structType.fieldMapping().fields);
+                }
+                return dataType.convert(structInstance, Multiplicity.OPTIONAL);
 
-                case TRAIT:
-                    TitanVertex traitVertex = (TitanVertex) value;
-                    TraitType traitType = (TraitType) dataType;
-                    ITypedStruct traitInstance = traitType.createInstance();
-                    // todo - this is not right, we should load the Instance associated with this
-                    // trait. for now just loading the trait struct.
-                    // metadataRepository.getGraphToInstanceMapper().mapVertexToTraitInstance(
-                    //        traitVertex, dataType.getName(), , traitType, traitInstance);
-                    metadataRepository.getGraphToInstanceMapper().mapVertexToInstance(
-                            traitVertex, traitInstance, traitType.fieldMapping().fields);
-                    break;
+            case TRAIT:
+                TitanVertex traitVertex = (TitanVertex) value;
+                TraitType traitType = (TraitType) dataType;
+                ITypedStruct traitInstance = traitType.createInstance();
+                // todo - this is not right, we should load the Instance associated with this
+                // trait. for now just loading the trait struct.
+                // metadataRepository.getGraphToInstanceMapper().mapVertexToTraitInstance(
+                //        traitVertex, dataType.getName(), , traitType, traitInstance);
+                metadataRepository.getGraphToInstanceMapper()
+                        .mapVertexToInstance(traitVertex, traitInstance, traitType.fieldMapping().fields);
+                break;
 
-                case CLASS:
-                    TitanVertex classVertex = (TitanVertex) value;
-                    ITypedReferenceableInstance classInstance =
-                            metadataRepository.getGraphToInstanceMapper().mapGraphToTypedInstance(
-                                    classVertex.<String>getProperty(Constants.GUID_PROPERTY_KEY),
-                                    classVertex);
-                    return dataType.convert(classInstance, Multiplicity.OPTIONAL);
+            case CLASS:
+                TitanVertex classVertex = (TitanVertex) value;
+                ITypedReferenceableInstance classInstance = metadataRepository.getGraphToInstanceMapper()
+                        .mapGraphToTypedInstance(classVertex.<String>getProperty(Constants.GUID_PROPERTY_KEY),
+                                classVertex);
+                return dataType.convert(classInstance, Multiplicity.OPTIONAL);
 
-                default:
-                    throw new UnsupportedOperationException(
-                            "Load for type " + dataType + "is not supported");
+            default:
+                throw new UnsupportedOperationException("Load for type " + dataType + "is not supported");
             }
         } catch (AtlasException e) {
             LOG.error("error while constructing an instance", e);
@@ -168,9 +163,8 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
 
     @Override
     public String edgeLabel(TypeUtils.FieldInfo fInfo) {
-        return fInfo.reverseDataType() == null
-                ? edgeLabel(fInfo.dataType(), fInfo.attrInfo())
-                : edgeLabel(fInfo.reverseDataType(), fInfo.attrInfo());
+        return fInfo.reverseDataType() == null ? edgeLabel(fInfo.dataType(), fInfo.attrInfo()) :
+                edgeLabel(fInfo.reverseDataType(), fInfo.attrInfo());
     }
 
     @Override
@@ -184,13 +178,19 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
     }
 
     @Override
-    public String instanceToTraitEdgeDirection() { return "out"; }
+    public String instanceToTraitEdgeDirection() {
+        return "out";
+    }
 
     @Override
-    public String traitToInstanceEdgeDirection() { return "in"; }
+    public String traitToInstanceEdgeDirection() {
+        return "in";
+    }
 
     @Override
-    public String idAttributeName() { return metadataRepository.getIdAttributeName(); }
+    public String idAttributeName() {
+        return metadataRepository.getIdAttributeName();
+    }
 
     @Override
     public scala.collection.Seq<String> typeTestExpression(String typeName, IntSequence intSeq) {

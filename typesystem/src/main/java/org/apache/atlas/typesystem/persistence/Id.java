@@ -70,8 +70,7 @@ public class Id implements ITypedReferenceableInstance {
     }
 
     public String toString() {
-        return String
-                .format("(type: %s, id: %s)", className, isUnassigned() ? "<unassigned>" : "" + id);
+        return String.format("(type: %s, id: %s)", className, isUnassigned() ? "<unassigned>" : "" + id);
     }
 
     public String getClassName() {
@@ -88,14 +87,24 @@ public class Id implements ITypedReferenceableInstance {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         Id id1 = (Id) o;
 
-        if (version != id1.version) return false;
-        if (!className.equals(id1.className)) return false;
-        if (!id.equals(id1.id)) return false;
+        if (version != id1.version) {
+            return false;
+        }
+        if (!className.equals(id1.className)) {
+            return false;
+        }
+        if (!id.equals(id1.id)) {
+            return false;
+        }
 
         return true;
     }

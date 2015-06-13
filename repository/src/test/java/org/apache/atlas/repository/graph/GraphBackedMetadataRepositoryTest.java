@@ -128,7 +128,7 @@ public class GraphBackedMetadataRepositoryTest {
         Assert.assertNotNull(entity);
     }
 
-    @Test (expectedExceptions = RepositoryException.class)
+    @Test(expectedExceptions = RepositoryException.class)
     public void testGetEntityDefinitionNonExistent() throws Exception {
         repositoryService.getEntityDefinition("blah");
         Assert.fail();
@@ -144,15 +144,14 @@ public class GraphBackedMetadataRepositoryTest {
 
     @Test
     public void testGetTypeAttributeName() throws Exception {
-        Assert.assertEquals(
-                repositoryService.getTypeAttributeName(), Constants.ENTITY_TYPE_PROPERTY_KEY);
+        Assert.assertEquals(repositoryService.getTypeAttributeName(), Constants.ENTITY_TYPE_PROPERTY_KEY);
     }
 
-    @Test (dependsOnMethods = "testSubmitEntity")
+    @Test(dependsOnMethods = "testSubmitEntity")
     public void testGetTraitLabel() throws Exception {
-        Assert.assertEquals(repositoryService.getTraitLabel(
-                typeSystem.getDataType(ClassType.class, TABLE_TYPE),
-                CLASSIFICATION), TABLE_TYPE + "." + CLASSIFICATION);
+        Assert.assertEquals(
+                repositoryService.getTraitLabel(typeSystem.getDataType(ClassType.class, TABLE_TYPE), CLASSIFICATION),
+                TABLE_TYPE + "." + CLASSIFICATION);
     }
 
     @Test
@@ -174,8 +173,7 @@ public class GraphBackedMetadataRepositoryTest {
         String dbGUID = repositoryService.createEntity(db);
         System.out.println("added db = " + dbGUID);
 
-        Referenceable dbInstance = new Referenceable(
-                dbGUID, DATABASE_TYPE, databaseInstance.getValuesMap());
+        Referenceable dbInstance = new Referenceable(dbGUID, DATABASE_TYPE, databaseInstance.getValuesMap());
 
         ITypedReferenceableInstance table = createHiveTableInstance(dbInstance);
         String tableGUID = repositoryService.createEntity(table);
@@ -203,8 +201,7 @@ public class GraphBackedMetadataRepositoryTest {
 
     private Vertex getTableEntityVertex() {
         TitanGraph graph = graphProvider.get();
-        GraphQuery query = graph.query()
-                .has(Constants.ENTITY_TYPE_PROPERTY_KEY, Compare.EQUAL, TABLE_TYPE);
+        GraphQuery query = graph.query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, Compare.EQUAL, TABLE_TYPE);
         Iterator<Vertex> results = query.vertices().iterator();
         // returning one since guid should be unique
         Vertex tableVertex = results.hasNext() ? results.next() : null;
@@ -215,7 +212,7 @@ public class GraphBackedMetadataRepositoryTest {
         return tableVertex;
     }
 
-    @Test (dependsOnMethods = "testCreateEntity")
+    @Test(dependsOnMethods = "testCreateEntity")
     public void testGetTraitNames() throws Exception {
         final List<String> traitNames = repositoryService.getTraitNames(getGUID());
         Assert.assertEquals(traitNames.size(), 1);
@@ -228,13 +225,13 @@ public class GraphBackedMetadataRepositoryTest {
         Assert.assertEquals(traitNames.size(), 0);
     }
 
-    @Test (expectedExceptions = EntityNotFoundException.class)
+    @Test(expectedExceptions = EntityNotFoundException.class)
     public void testGetTraitNamesForBadEntity() throws Exception {
         repositoryService.getTraitNames(UUID.randomUUID().toString());
         Assert.fail();
     }
 
-    @Test (dependsOnMethods = "testGetTraitNames")
+    @Test(dependsOnMethods = "testGetTraitNames")
     public void testAddTrait() throws Exception {
         final String aGUID = getGUID();
 
@@ -244,8 +241,7 @@ public class GraphBackedMetadataRepositoryTest {
         Assert.assertTrue(traitNames.contains(CLASSIFICATION));
         Assert.assertFalse(traitNames.contains(PII));
 
-        HierarchicalTypeDefinition<TraitType> piiTrait =
-                TypesUtil.createTraitTypeDef(PII, ImmutableList.<String>of());
+        HierarchicalTypeDefinition<TraitType> piiTrait = TypesUtil.createTraitTypeDef(PII, ImmutableList.<String>of());
         TraitType traitType = typeSystem.defineTraitType(piiTrait);
         ITypedStruct traitInstance = traitType.createInstance();
 
@@ -258,14 +254,14 @@ public class GraphBackedMetadataRepositoryTest {
         Assert.assertTrue(traitNames.contains(CLASSIFICATION));
     }
 
-    @Test (dependsOnMethods = "testAddTrait")
+    @Test(dependsOnMethods = "testAddTrait")
     public void testAddTraitWithAttribute() throws Exception {
         final String aGUID = getGUID();
         final String traitName = "P_I_I";
 
-        HierarchicalTypeDefinition<TraitType> piiTrait =
-                TypesUtil.createTraitTypeDef(traitName, ImmutableList.<String>of(),
-                TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
+        HierarchicalTypeDefinition<TraitType> piiTrait = TypesUtil
+                .createTraitTypeDef(traitName, ImmutableList.<String>of(),
+                        TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
         TraitType traitType = typeSystem.defineTraitType(piiTrait);
         ITypedStruct traitInstance = traitType.createInstance();
         traitInstance.set("type", "SSN");
@@ -285,13 +281,13 @@ public class GraphBackedMetadataRepositoryTest {
         Assert.assertEquals(type, "SSN");
     }
 
-    @Test (expectedExceptions = NullPointerException.class)
+    @Test(expectedExceptions = NullPointerException.class)
     public void testAddTraitWithNullInstance() throws Exception {
         repositoryService.addTrait(getGUID(), null);
         Assert.fail();
     }
 
-    @Test (dependsOnMethods = "testAddTrait", expectedExceptions = RepositoryException.class)
+    @Test(dependsOnMethods = "testAddTrait", expectedExceptions = RepositoryException.class)
     public void testAddTraitForBadEntity() throws Exception {
         TraitType traitType = typeSystem.getDataType(TraitType.class, PII);
         ITypedStruct traitInstance = traitType.createInstance();
@@ -300,7 +296,7 @@ public class GraphBackedMetadataRepositoryTest {
         Assert.fail();
     }
 
-    @Test (dependsOnMethods = "testAddTrait")
+    @Test(dependsOnMethods = "testAddTrait")
     public void testDeleteTrait() throws Exception {
         final String aGUID = getGUID();
 
@@ -319,20 +315,20 @@ public class GraphBackedMetadataRepositoryTest {
         Assert.assertFalse(traitNames.contains(PII));
     }
 
-    @Test (expectedExceptions = RepositoryException.class)
+    @Test(expectedExceptions = RepositoryException.class)
     public void testDeleteTraitForNonExistentEntity() throws Exception {
         repositoryService.deleteTrait(UUID.randomUUID().toString(), PII);
         Assert.fail();
     }
 
-    @Test (expectedExceptions = RepositoryException.class)
+    @Test(expectedExceptions = RepositoryException.class)
     public void testDeleteTraitForNonExistentTrait() throws Exception {
         final String aGUID = getGUID();
         repositoryService.deleteTrait(aGUID, "PCI");
         Assert.fail();
     }
 
-    @Test (dependsOnMethods = "testCreateEntity")
+    @Test(dependsOnMethods = "testCreateEntity")
     public void testGetIdFromVertex() throws Exception {
         Vertex tableVertex = getTableEntityVertex();
 
@@ -341,12 +337,11 @@ public class GraphBackedMetadataRepositoryTest {
             Assert.fail();
         }
 
-        Id expected = new Id(guid,
-                tableVertex.<Integer>getProperty(Constants.VERSION_PROPERTY_KEY), TABLE_TYPE);
+        Id expected = new Id(guid, tableVertex.<Integer>getProperty(Constants.VERSION_PROPERTY_KEY), TABLE_TYPE);
         Assert.assertEquals(repositoryService.getIdFromVertex(TABLE_TYPE, tableVertex), expected);
     }
 
-    @Test (dependsOnMethods = "testCreateEntity")
+    @Test(dependsOnMethods = "testCreateEntity")
     public void testGetTypeName() throws Exception {
         Vertex tableVertex = getTableEntityVertex();
         Assert.assertEquals(repositoryService.getTypeName(tableVertex), TABLE_TYPE);
@@ -414,9 +409,8 @@ public class GraphBackedMetadataRepositoryTest {
 
     @Test(dependsOnMethods = "testCreateEntity")
     public void testBug37860() throws Exception {
-        String dslQuery =
-                "hive_table as t where name = 'bar' " +
-                        "database where name = 'foo' and description = 'foo database' select t";
+        String dslQuery = "hive_table as t where name = 'bar' "
+                + "database where name = 'foo' and description = 'foo database' select t";
         System.out.println("Executing dslQuery = " + dslQuery);
         String jsonResults = discoveryService.searchByDSL(dslQuery);
         Assert.assertNotNull(jsonResults);
@@ -437,10 +431,10 @@ public class GraphBackedMetadataRepositoryTest {
     }
 
     /**
-      * Full text search requires GraphBackedSearchIndexer, and GraphBackedSearchIndexer can't be enabled in
-      * GraphBackedDiscoveryServiceTest because of its test data. So, test for full text search is in
-      * GraphBackedMetadataRepositoryTest:(
-      */
+     * Full text search requires GraphBackedSearchIndexer, and GraphBackedSearchIndexer can't be enabled in
+     * GraphBackedDiscoveryServiceTest because of its test data. So, test for full text search is in
+     * GraphBackedMetadataRepositoryTest:(
+     */
     @Test(dependsOnMethods = "testSubmitEntity")
     public void testFullTextSearch() throws Exception {
         //todo fix this
@@ -475,114 +469,88 @@ public class GraphBackedMetadataRepositoryTest {
     }
 
     private void createHiveTypes() throws Exception {
-        HierarchicalTypeDefinition<ClassType> superTypeDefinition =
-                TypesUtil.createClassTypeDef(SUPER_TYPE_NAME,
-                        ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<ClassType> superTypeDefinition = TypesUtil
+                .createClassTypeDef(SUPER_TYPE_NAME, ImmutableList.<String>of(),
                         TypesUtil.createOptionalAttrDef("namespace", DataTypes.STRING_TYPE),
                         TypesUtil.createOptionalAttrDef("cluster", DataTypes.STRING_TYPE),
                         TypesUtil.createOptionalAttrDef("colo", DataTypes.STRING_TYPE));
 
-        HierarchicalTypeDefinition<ClassType> databaseTypeDefinition =
-                TypesUtil.createClassTypeDef(DATABASE_TYPE,
-                        ImmutableList.of(SUPER_TYPE_NAME),
+        HierarchicalTypeDefinition<ClassType> databaseTypeDefinition = TypesUtil
+                .createClassTypeDef(DATABASE_TYPE, ImmutableList.of(SUPER_TYPE_NAME),
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createOptionalAttrDef("created", DataTypes.DATE_TYPE),
                         TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
 
 
-        StructTypeDefinition structTypeDefinition =
-                new StructTypeDefinition("serdeType",
-                        new AttributeDefinition[]{
-                                TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                                TypesUtil.createRequiredAttrDef("serde", DataTypes.STRING_TYPE)
-                        });
+        StructTypeDefinition structTypeDefinition = new StructTypeDefinition("serdeType",
+                new AttributeDefinition[]{TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        TypesUtil.createRequiredAttrDef("serde", DataTypes.STRING_TYPE)});
 
-        EnumValue values[] = {
-                new EnumValue("MANAGED", 1),
-                new EnumValue("EXTERNAL", 2),
-        };
+        EnumValue values[] = {new EnumValue("MANAGED", 1), new EnumValue("EXTERNAL", 2),};
 
         EnumTypeDefinition enumTypeDefinition = new EnumTypeDefinition("tableType", values);
         typeSystem.defineEnumType(enumTypeDefinition);
 
-        HierarchicalTypeDefinition<ClassType> columnsDefinition =
-                TypesUtil.createClassTypeDef("column_type",
-                        ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<ClassType> columnsDefinition = TypesUtil
+                .createClassTypeDef("column_type", ImmutableList.<String>of(),
                         TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
 
-        StructTypeDefinition partitionDefinition =
-                new StructTypeDefinition("partition_type",
-                        new AttributeDefinition[]{
-                                TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        });
+        StructTypeDefinition partitionDefinition = new StructTypeDefinition("partition_type",
+                new AttributeDefinition[]{TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),});
 
-        HierarchicalTypeDefinition<ClassType> tableTypeDefinition =
-                TypesUtil.createClassTypeDef(TABLE_TYPE,
-                        ImmutableList.of(SUPER_TYPE_NAME),
+        HierarchicalTypeDefinition<ClassType> tableTypeDefinition = TypesUtil
+                .createClassTypeDef(TABLE_TYPE, ImmutableList.of(SUPER_TYPE_NAME),
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE),
                         TypesUtil.createOptionalAttrDef("created", DataTypes.DATE_TYPE),
                         // enum
-                        new AttributeDefinition("tableType", "tableType",
-                                Multiplicity.REQUIRED, false, null),
+                        new AttributeDefinition("tableType", "tableType", Multiplicity.REQUIRED, false, null),
                         // array of strings
                         new AttributeDefinition("columnNames",
-                                String.format("array<%s>", DataTypes.STRING_TYPE.getName()),
-                                Multiplicity.COLLECTION, false, null),
+                                String.format("array<%s>", DataTypes.STRING_TYPE.getName()), Multiplicity.COLLECTION,
+                                false, null),
                         // array of classes
-                        new AttributeDefinition("columns",
-                                String.format("array<%s>", "column_type"),
+                        new AttributeDefinition("columns", String.format("array<%s>", "column_type"),
                                 Multiplicity.COLLECTION, true, null),
                         // array of structs
-                        new AttributeDefinition("partitions",
-                                String.format("array<%s>", "partition_type"),
+                        new AttributeDefinition("partitions", String.format("array<%s>", "partition_type"),
                                 Multiplicity.COLLECTION, true, null),
                         // map of primitives
                         new AttributeDefinition("parametersMap",
-                                DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),
-                                        DataTypes.STRING_TYPE.getName()),
+                                DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(), DataTypes.STRING_TYPE.getName()),
                                 Multiplicity.COLLECTION, true, null),
                         // map of classes - todo - enable this
-//                        new AttributeDefinition("columnsMap",
-//                                DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),
-//                                        "column_type"),
-//                                Multiplicity.COLLECTION, true, null),
+                        //                        new AttributeDefinition("columnsMap",
+                        //                                DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),
+                        //                                        "column_type"),
+                        //                                Multiplicity.COLLECTION, true, null),
                         // map of structs   todo - enable this
-//                        new AttributeDefinition("partitionsMap",
-//                                DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),
-//                                        "partition_type"),
-//                                Multiplicity.COLLECTION, true, null),
+                        //                        new AttributeDefinition("partitionsMap",
+                        //                                DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),
+                        //                                        "partition_type"),
+                        //                                Multiplicity.COLLECTION, true, null),
                         // struct reference
-                        new AttributeDefinition("serde1",
-                                "serdeType", Multiplicity.REQUIRED, false, null),
-                        new AttributeDefinition("serde2",
-                                "serdeType", Multiplicity.REQUIRED, false, null),
+                        new AttributeDefinition("serde1", "serdeType", Multiplicity.REQUIRED, false, null),
+                        new AttributeDefinition("serde2", "serdeType", Multiplicity.REQUIRED, false, null),
                         // class reference
-                        new AttributeDefinition("database",
-                                DATABASE_TYPE, Multiplicity.REQUIRED, true, null)
-                );
+                        new AttributeDefinition("database", DATABASE_TYPE, Multiplicity.REQUIRED, true, null));
 
-        HierarchicalTypeDefinition<TraitType> classificationTypeDefinition =
-                TypesUtil.createTraitTypeDef(CLASSIFICATION,
-                        ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<TraitType> classificationTypeDefinition = TypesUtil
+                .createTraitTypeDef(CLASSIFICATION, ImmutableList.<String>of(),
                         TypesUtil.createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
 
-        HierarchicalTypeDefinition<TraitType> fetlClassificationTypeDefinition =
-                TypesUtil.createTraitTypeDef("fetl" + CLASSIFICATION,
-                        ImmutableList.of(CLASSIFICATION),
+        HierarchicalTypeDefinition<TraitType> fetlClassificationTypeDefinition = TypesUtil
+                .createTraitTypeDef("fetl" + CLASSIFICATION, ImmutableList.of(CLASSIFICATION),
                         TypesUtil.createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
 
-        typeSystem.defineTypes(
-                ImmutableList.of(structTypeDefinition, partitionDefinition),
+        typeSystem.defineTypes(ImmutableList.of(structTypeDefinition, partitionDefinition),
                 ImmutableList.of(classificationTypeDefinition, fetlClassificationTypeDefinition),
-                ImmutableList.of(superTypeDefinition, databaseTypeDefinition,
-                        columnsDefinition, tableTypeDefinition));
+                ImmutableList.of(superTypeDefinition, databaseTypeDefinition, columnsDefinition, tableTypeDefinition));
     }
 
-    private ITypedReferenceableInstance createHiveTableInstance(
-            Referenceable databaseInstance) throws Exception {
+    private ITypedReferenceableInstance createHiveTableInstance(Referenceable databaseInstance) throws Exception {
         Referenceable tableInstance = new Referenceable(TABLE_TYPE, CLASSIFICATION);
         tableInstance.set("name", TABLE_NAME);
         tableInstance.set("description", "bar table");
@@ -630,7 +598,7 @@ public class GraphBackedMetadataRepositoryTest {
         tableInstance.set("columns", columns);
         // tableInstance.set("columnsMap", columnsMap);
 
-//        HashMap<String, Struct> partitionsMap = new HashMap<>();
+        //        HashMap<String, Struct> partitionsMap = new HashMap<>();
         ArrayList<Struct> partitions = new ArrayList<>();
         for (int index = 0; index < 5; index++) {
             Struct partitionInstance = new Struct("partition_type");
@@ -638,10 +606,10 @@ public class GraphBackedMetadataRepositoryTest {
             partitionInstance.set("name", name);
 
             partitions.add(partitionInstance);
-//            partitionsMap.put(name, partitionInstance);
+            //            partitionsMap.put(name, partitionInstance);
         }
         tableInstance.set("partitions", partitions);
-//        tableInstance.set("partitionsMap", partitionsMap);
+        //        tableInstance.set("partitionsMap", partitionsMap);
 
         HashMap<String, String> parametersMap = new HashMap<>();
         parametersMap.put("foo", "bar");

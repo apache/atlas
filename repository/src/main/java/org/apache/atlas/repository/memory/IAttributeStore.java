@@ -29,8 +29,7 @@ public interface IAttributeStore {
      * @param instance
      * @throws RepositoryException
      */
-    void store(int pos, IConstructableType type, StructInstance instance)
-            throws RepositoryException;
+    void store(int pos, IConstructableType type, StructInstance instance) throws RepositoryException;
 
     /**
      * load the Instance with the value from position 'pos' for the attribute.

@@ -36,18 +36,10 @@ import java.util.Properties;
  *
  */
 public class BaseSecurityTest {
-    private static final String JAAS_ENTRY =
-            "%s { \n"
-                    + " %s required\n"
-                    // kerberos module
-                    + " keyTab=\"%s\"\n"
-                    + " debug=true\n"
-                    + " principal=\"%s\"\n"
-                    + " useKeyTab=true\n"
-                    + " useTicketCache=false\n"
-                    + " doNotPrompt=true\n"
-                    + " storeKey=true;\n"
-                    + "}; \n";
+    private static final String JAAS_ENTRY = "%s { \n" + " %s required\n"
+            // kerberos module
+            + " keyTab=\"%s\"\n" + " debug=true\n" + " principal=\"%s\"\n" + " useKeyTab=true\n"
+            + " useTicketCache=false\n" + " doNotPrompt=true\n" + " storeKey=true;\n" + "}; \n";
     protected MiniKdc kdc;
 
     protected String getWarPath() {
@@ -56,8 +48,8 @@ public class BaseSecurityTest {
     }
 
     protected void generateTestProperties(Properties props) throws ConfigurationException, IOException {
-        PropertiesConfiguration config = new PropertiesConfiguration(System.getProperty("user.dir") +
-                "/../src/conf/application.properties");
+        PropertiesConfiguration config =
+                new PropertiesConfiguration(System.getProperty("user.dir") + "/../src/conf/application.properties");
         for (String propName : props.stringPropertyNames()) {
             config.setProperty(propName, props.getProperty(propName));
         }
@@ -88,20 +80,11 @@ public class BaseSecurityTest {
         return kdcWorkDir;
     }
 
-    public String createJAASEntry(
-            String context,
-            String principal,
-            File keytab) {
+    public String createJAASEntry(String context, String principal, File keytab) {
         String keytabpath = keytab.getAbsolutePath();
         // fix up for windows; no-op on unix
-        keytabpath =  keytabpath.replace('\\', '/');
-        return String.format(
-                Locale.ENGLISH,
-                JAAS_ENTRY,
-                context,
-                getKerberosAuthModuleForJVM(),
-                keytabpath,
-                principal);
+        keytabpath = keytabpath.replace('\\', '/');
+        return String.format(Locale.ENGLISH, JAAS_ENTRY, context, getKerberosAuthModuleForJVM(), keytabpath, principal);
     }
 
     protected String getKerberosAuthModuleForJVM() {
@@ -119,10 +102,7 @@ public class BaseSecurityTest {
 
     protected File createKeytab(MiniKdc kdc, File kdcWorkDir, String principal, String filename) throws Exception {
         File keytab = new File(kdcWorkDir, filename);
-        kdc.createPrincipal(keytab,
-                principal,
-                principal + "/localhost",
-                principal + "/127.0.0.1");
+        kdc.createPrincipal(keytab, principal, principal + "/localhost", principal + "/127.0.0.1");
         return keytab;
     }
 }

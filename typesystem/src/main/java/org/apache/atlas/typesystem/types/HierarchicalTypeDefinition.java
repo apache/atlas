@@ -36,17 +36,14 @@ public class HierarchicalTypeDefinition<T extends HierarchicalType> extends Stru
      * @throws ClassNotFoundException
      */
     @InterfaceAudience.Private
-    public HierarchicalTypeDefinition(String hierarchicalMetaTypeName,
-                                      String typeName, String[] superTypes,
-                                      AttributeDefinition[] attributeDefinitions)
-            throws ClassNotFoundException {
-        this((Class<T>) Class.forName(hierarchicalMetaTypeName),
-                typeName, ImmutableList.copyOf(superTypes), attributeDefinitions);
+    public HierarchicalTypeDefinition(String hierarchicalMetaTypeName, String typeName, String[] superTypes,
+            AttributeDefinition[] attributeDefinitions) throws ClassNotFoundException {
+        this((Class<T>) Class.forName(hierarchicalMetaTypeName), typeName, ImmutableList.copyOf(superTypes),
+                attributeDefinitions);
     }
 
-    public HierarchicalTypeDefinition(Class<T> hierarchicalMetaType,
-                                      String typeName, ImmutableList<String> superTypes,
-                                      AttributeDefinition[] attributeDefinitions) {
+    public HierarchicalTypeDefinition(Class<T> hierarchicalMetaType, String typeName, ImmutableList<String> superTypes,
+            AttributeDefinition[] attributeDefinitions) {
         super(typeName, false, attributeDefinitions);
         hierarchicalMetaTypeName = hierarchicalMetaType.getName();
         this.superTypes = superTypes == null ? ImmutableList.<String>of() : superTypes;
@@ -54,14 +51,24 @@ public class HierarchicalTypeDefinition<T extends HierarchicalType> extends Stru
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
 
         HierarchicalTypeDefinition that = (HierarchicalTypeDefinition) o;
 
-        if (!hierarchicalMetaTypeName.equals(that.hierarchicalMetaTypeName)) return false;
-        if (!superTypes.equals(that.superTypes)) return false;
+        if (!hierarchicalMetaTypeName.equals(that.hierarchicalMetaTypeName)) {
+            return false;
+        }
+        if (!superTypes.equals(that.superTypes)) {
+            return false;
+        }
 
         return true;
     }

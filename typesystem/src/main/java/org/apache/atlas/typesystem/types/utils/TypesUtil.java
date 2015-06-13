@@ -37,40 +37,32 @@ public class TypesUtil {
     private TypesUtil() {
     }
 
-    public static AttributeDefinition createOptionalAttrDef(String name,
-                                                            IDataType dataType) {
-        return new AttributeDefinition(name, dataType.getName(),
-                Multiplicity.OPTIONAL, false, null);
+    public static AttributeDefinition createOptionalAttrDef(String name, IDataType dataType) {
+        return new AttributeDefinition(name, dataType.getName(), Multiplicity.OPTIONAL, false, null);
     }
 
-    public static AttributeDefinition createOptionalAttrDef(String name,
-                                                            String dataType) {
+    public static AttributeDefinition createOptionalAttrDef(String name, String dataType) {
         return new AttributeDefinition(name, dataType, Multiplicity.OPTIONAL, false, null);
     }
 
-    public static AttributeDefinition createRequiredAttrDef(String name,
-                                                            String dataType) {
+    public static AttributeDefinition createRequiredAttrDef(String name, String dataType) {
         return new AttributeDefinition(name, dataType, Multiplicity.REQUIRED, false, null);
     }
 
-    public static AttributeDefinition createUniqueRequiredAttrDef(String name,
-                                                                  IDataType dataType) {
-        return new AttributeDefinition(name, dataType.getName(),
-                Multiplicity.REQUIRED, false, true, true, null);
+    public static AttributeDefinition createUniqueRequiredAttrDef(String name, IDataType dataType) {
+        return new AttributeDefinition(name, dataType.getName(), Multiplicity.REQUIRED, false, true, true, null);
     }
 
-    public static AttributeDefinition createRequiredAttrDef(String name,
-                                                            IDataType dataType) {
-        return new AttributeDefinition(name, dataType.getName(),
-                Multiplicity.REQUIRED, false, null);
+    public static AttributeDefinition createRequiredAttrDef(String name, IDataType dataType) {
+        return new AttributeDefinition(name, dataType.getName(), Multiplicity.REQUIRED, false, null);
     }
 
     public static EnumTypeDefinition createEnumTypeDef(String name, EnumValue... enumValues) {
         return new EnumTypeDefinition(name, enumValues);
     }
 
-    public static HierarchicalTypeDefinition<TraitType> createTraitTypeDef(
-            String name, ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
+    public static HierarchicalTypeDefinition<TraitType> createTraitTypeDef(String name,
+            ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
         return new HierarchicalTypeDefinition<>(TraitType.class, name, superTypes, attrDefs);
     }
 
@@ -78,8 +70,8 @@ public class TypesUtil {
         return new StructTypeDefinition(name, attrDefs);
     }
 
-    public static HierarchicalTypeDefinition<ClassType> createClassTypeDef(
-            String name, ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
+    public static HierarchicalTypeDefinition<ClassType> createClassTypeDef(String name,
+            ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
         return new HierarchicalTypeDefinition<>(ClassType.class, name, superTypes, attrDefs);
     }
 }

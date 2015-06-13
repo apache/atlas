@@ -54,13 +54,13 @@ public class EnumType extends AbstractDataType<EnumValue> {
         if (val != null) {
             EnumValue e = null;
             if (val instanceof EnumValue) {
-                e = valueMap.get(((EnumValue)val).value);
-            } else if ( val instanceof Integer || val instanceof BigInt) {
+                e = valueMap.get(((EnumValue) val).value);
+            } else if (val instanceof Integer || val instanceof BigInt) {
                 e = ordinalMap.get(val);
-            } else if ( val instanceof  String) {
+            } else if (val instanceof String) {
                 e = valueMap.get(val);
-            } else if ( val instanceof Number ) {
-                e = ordinalMap.get(((Number)val).intValue());
+            } else if (val instanceof Number) {
+                e = ordinalMap.get(((Number) val).intValue());
             }
 
             if (e == null) {

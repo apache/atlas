@@ -18,8 +18,8 @@
 
 package org.apache.atlas.hive.hook;
 
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.security.SecurityProperties;
@@ -73,7 +73,9 @@ public class SSLHiveHookIT {
             super(port, path);
         }
 
-        public Server getServer () { return server; }
+        public Server getServer() {
+            return server;
+        }
 
         @Override
         public PropertiesConfiguration getConfiguration() {
@@ -113,7 +115,8 @@ public class SSLHiveHookIT {
         configuration.setProperty(TRUSTSTORE_FILE_KEY, "../../webapp/target/atlas.keystore");
         configuration.setProperty(KEYSTORE_FILE_KEY, "../../webapp/target/atlas.keystore");
         configuration.setProperty(CERT_STORES_CREDENTIAL_PROVIDER_PATH, providerUrl);
-        configuration.setProperty(SSLFactory.SSL_HOSTNAME_VERIFIER_KEY, SSLHostnameVerifier.DEFAULT_AND_LOCALHOST.toString());
+        configuration.setProperty(SSLFactory.SSL_HOSTNAME_VERIFIER_KEY,
+                SSLHostnameVerifier.DEFAULT_AND_LOCALHOST.toString());
 
         configuration.save(new FileWriter(persistDir + File.separator + "client.properties"));
 
@@ -153,27 +156,22 @@ public class SSLHiveHookIT {
         file.delete();
         conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, providerUrl);
 
-        CredentialProvider provider =
-                CredentialProviderFactory.getProviders(conf).get(0);
+        CredentialProvider provider = CredentialProviderFactory.getProviders(conf).get(0);
 
         // create new aliases
         try {
 
             char[] storepass = {'k', 'e', 'y', 'p', 'a', 's', 's'};
-            provider.createCredentialEntry(
-                    KEYSTORE_PASSWORD_KEY, storepass);
+            provider.createCredentialEntry(KEYSTORE_PASSWORD_KEY, storepass);
 
             char[] trustpass = {'k', 'e', 'y', 'p', 'a', 's', 's'};
-            provider.createCredentialEntry(
-                    TRUSTSTORE_PASSWORD_KEY, trustpass);
+            provider.createCredentialEntry(TRUSTSTORE_PASSWORD_KEY, trustpass);
 
             char[] trustpass2 = {'k', 'e', 'y', 'p', 'a', 's', 's'};
-            provider.createCredentialEntry(
-                    "ssl.client.truststore.password", trustpass2);
+            provider.createCredentialEntry("ssl.client.truststore.password", trustpass2);
 
             char[] certpass = {'k', 'e', 'y', 'p', 'a', 's', 's'};
-            provider.createCredentialEntry(
-                    SERVER_CERT_PASSWORD_KEY, certpass);
+            provider.createCredentialEntry(SERVER_CERT_PASSWORD_KEY, certpass);
 
             // write out so that it can be found in checks
             provider.flush();
@@ -217,7 +215,7 @@ public class SSLHiveHookIT {
         assertInstanceIsRegistered(HiveDataTypes.HIVE_DB.getName(), "name", dbName);
     }
 
-    private void assertInstanceIsRegistered(String typeName, String colName, String colValue) throws Exception{
+    private void assertInstanceIsRegistered(String typeName, String colName, String colValue) throws Exception {
         JSONArray results = dgiCLient.rawSearch(typeName, colName, colValue);
         Assert.assertEquals(results.length(), 1);
     }

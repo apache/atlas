@@ -29,8 +29,7 @@ public class TraitStore extends HierarchicalTypeStore {
 
     final ArrayList<String> classNameStore;
 
-    public TraitStore(MemRepository repository, TraitType hierarchicalType)
-    throws RepositoryException {
+    public TraitStore(MemRepository repository, TraitType hierarchicalType) throws RepositoryException {
         super(repository, hierarchicalType);
         classNameStore = new ArrayList<>();
     }

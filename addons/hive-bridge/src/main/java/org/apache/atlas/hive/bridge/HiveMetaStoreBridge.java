@@ -51,7 +51,7 @@ import java.util.Set;
 
 /**
  * A Bridge Utility that imports metadata from the Hive Meta Store
- * and registers then in DGI.
+ * and registers then in Atlas.
  */
 public class HiveMetaStoreBridge {
     private static final String DEFAULT_DGI_URL = "http://localhost:21000/";
@@ -159,9 +159,8 @@ public class HiveMetaStoreBridge {
         LOG.debug("Getting reference for database {}", databaseName);
         String typeName = HiveDataTypes.HIVE_DB.getName();
 
-        String dslQuery = String.format("%s where %s = '%s' and %s = '%s'", typeName,
-                HiveDataModelGenerator.NAME, databaseName.toLowerCase(), HiveDataModelGenerator.CLUSTER_NAME,
-                clusterName);
+        String dslQuery = String.format("%s where %s = '%s' and %s = '%s'", typeName, HiveDataModelGenerator.NAME,
+                databaseName.toLowerCase(), HiveDataModelGenerator.CLUSTER_NAME, clusterName);
         return getEntityReferenceFromDSL(typeName, dslQuery);
     }
 
@@ -170,11 +169,12 @@ public class HiveMetaStoreBridge {
         String typeName = HiveDataTypes.HIVE_PROCESS.getName();
 
         //todo enable DSL
-//        String dslQuery = String.format("%s where queryText = \"%s\"", typeName, queryStr);
-//        return getEntityReferenceFromDSL(typeName, dslQuery);
+        //        String dslQuery = String.format("%s where queryText = \"%s\"", typeName, queryStr);
+        //        return getEntityReferenceFromDSL(typeName, dslQuery);
 
-        String gremlinQuery = String.format("g.V.has('__typeName', '%s').has('%s.queryText', \"%s\").toList()",
-                typeName, typeName, StringEscapeUtils.escapeJava(queryStr));
+        String gremlinQuery =
+                String.format("g.V.has('__typeName', '%s').has('%s.queryText', \"%s\").toList()", typeName, typeName,
+                        StringEscapeUtils.escapeJava(queryStr));
         return getEntityReferenceFromGremlin(typeName, gremlinQuery);
     }
 
@@ -216,9 +216,8 @@ public class HiveMetaStoreBridge {
         return getEntityReferenceFromDSL(typeName, dslQuery);
     }
 
-    private Referenceable getEntityReferenceFromGremlin(String typeName, String gremlinQuery) throws
-    AtlasServiceException,
-    JSONException {
+    private Referenceable getEntityReferenceFromGremlin(String typeName, String gremlinQuery)
+    throws AtlasServiceException, JSONException {
         AtlasClient client = getAtlasClient();
         JSONObject response = client.searchByGremlin(gremlinQuery);
         JSONArray results = response.getJSONArray(AtlasClient.RESULTS);
@@ -236,7 +235,8 @@ public class HiveMetaStoreBridge {
 
         //todo replace gremlin with DSL
         //        String dslQuery = String.format("%s as p where values = %s, tableName where name = '%s', "
-        //                        + "dbName where name = '%s' and clusterName = '%s' select p", typeName, valuesStr, tableName,
+        //                        + "dbName where name = '%s' and clusterName = '%s' select p", typeName, valuesStr,
+        // tableName,
         //                dbName, clusterName);
 
         String datasetType = AtlasClient.DATA_SET_SUPER_TYPE;
@@ -373,9 +373,8 @@ public class HiveMetaStoreBridge {
         return partRef;
     }
 
-    private void importIndexes(String db, String table,
-                               Referenceable dbReferenceable,
-                               Referenceable tableReferenceable) throws Exception {
+    private void importIndexes(String db, String table, Referenceable dbReferenceable, Referenceable tableReferenceable)
+    throws Exception {
         List<Index> indexes = hiveClient.getIndexes(db, table, Short.MAX_VALUE);
         if (indexes.size() > 0) {
             for (Index index : indexes) {
@@ -385,9 +384,8 @@ public class HiveMetaStoreBridge {
     }
 
     //todo should be idempotent
-    private void importIndex(Index index,
-                             Referenceable dbReferenceable,
-                             Referenceable tableReferenceable) throws Exception {
+    private void importIndex(Index index, Referenceable dbReferenceable, Referenceable tableReferenceable)
+            throws Exception {
         LOG.info("Importing index {} for {}.{}", index.getIndexName(), dbReferenceable, tableReferenceable);
         Referenceable indexRef = new Referenceable(HiveDataTypes.HIVE_INDEX.getName());
 
@@ -411,7 +409,8 @@ public class HiveMetaStoreBridge {
         createInstance(indexRef);
     }
 
-    private Referenceable fillStorageDescStruct(StorageDescriptor storageDesc, List<Referenceable> colList) throws Exception {
+    private Referenceable fillStorageDescStruct(StorageDescriptor storageDesc, List<Referenceable> colList)
+    throws Exception {
         LOG.debug("Filling storage descriptor information for " + storageDesc);
 
         Referenceable sdReferenceable = new Referenceable(HiveDataTypes.HIVE_STORAGEDESC.getName());
@@ -429,7 +428,8 @@ public class HiveMetaStoreBridge {
 
         sdReferenceable.set("serdeInfo", serdeInfoStruct);
         sdReferenceable.set(HiveDataModelGenerator.STORAGE_NUM_BUCKETS, storageDesc.getNumBuckets());
-        sdReferenceable.set(HiveDataModelGenerator.STORAGE_IS_STORED_AS_SUB_DIRS, storageDesc.isStoredAsSubDirectories());
+        sdReferenceable
+                .set(HiveDataModelGenerator.STORAGE_IS_STORED_AS_SUB_DIRS, storageDesc.isStoredAsSubDirectories());
 
         //Use the passed column list if not null, ex: use same references for table and SD
         List<FieldSchema> columns = storageDesc.getCols();
@@ -469,8 +469,7 @@ public class HiveMetaStoreBridge {
         return createInstance(sdReferenceable);
     }
 
-    private List<Referenceable> getColumns(List<FieldSchema> schemaList) throws Exception
-    {
+    private List<Referenceable> getColumns(List<FieldSchema> schemaList) throws Exception {
         List<Referenceable> colList = new ArrayList<>();
         for (FieldSchema fs : schemaList) {
             LOG.debug("Processing field " + fs);
@@ -489,7 +488,7 @@ public class HiveMetaStoreBridge {
         AtlasClient dgiClient = getAtlasClient();
 
         //Register hive data model if its not already registered
-        if (dgiClient.getType(HiveDataTypes.HIVE_PROCESS.getName()) == null ) {
+        if (dgiClient.getType(HiveDataTypes.HIVE_PROCESS.getName()) == null) {
             LOG.info("Registering Hive data model");
             dgiClient.createType(dataModelGenerator.getModelAsJson());
         } else {

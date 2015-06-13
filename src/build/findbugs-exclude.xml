@@ -18,7 +18,7 @@
   -->
 <FindBugsFilter>
     <!--
-    Disable encoding as this might give an impression that DGI code base is
+    Disable encoding as this might give an impression that Atlas code base is
     "Internationalization" ready, but we haven't done anything consciously to guarantee that.
     -->
     <Match>

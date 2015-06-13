@@ -32,8 +32,7 @@ import java.io.File;
  */
 public class LoginProcessorIT extends BaseSecurityTest {
 
-    protected static final String kerberosRule =
-            "RULE:[1:$1@$0](.*@EXAMPLE.COM)s/@.*//\nDEFAULT";
+    protected static final String kerberosRule = "RULE:[1:$1@$0](.*@EXAMPLE.COM)s/@.*//\nDEFAULT";
 
     @Test
     public void testDefaultSimpleLogin() throws Exception {

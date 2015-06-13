@@ -63,15 +63,13 @@ public class TraitTest extends BaseTest {
      */
     @Test
     public void test1() throws AtlasException {
-        HierarchicalTypeDefinition A = createTraitTypeDef("A", null,
-                createRequiredAttrDef("a", DataTypes.INT_TYPE),
-                createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE),
-                createOptionalAttrDef("c", DataTypes.BYTE_TYPE),
+        HierarchicalTypeDefinition A = createTraitTypeDef("A", null, createRequiredAttrDef("a", DataTypes.INT_TYPE),
+                createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE), createOptionalAttrDef("c", DataTypes.BYTE_TYPE),
                 createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
         HierarchicalTypeDefinition B = createTraitTypeDef("B", ImmutableList.<String>of("A"),
                 createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE));
-        HierarchicalTypeDefinition C = createTraitTypeDef("C", ImmutableList.<String>of("A"),
-                createOptionalAttrDef("c", DataTypes.BYTE_TYPE));
+        HierarchicalTypeDefinition C =
+                createTraitTypeDef("C", ImmutableList.<String>of("A"), createOptionalAttrDef("c", DataTypes.BYTE_TYPE));
         HierarchicalTypeDefinition D = createTraitTypeDef("D", ImmutableList.<String>of("B", "C"),
                 createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
 
@@ -79,11 +77,12 @@ public class TraitTest extends BaseTest {
 
         TraitType DType = (TraitType) getTypeSystem().getDataType(TraitType.class, "D");
 
-//        for(String aName : DType.fieldMapping().fields.keySet()) {
-//            System.out.println(String.format("nameToQualifiedName.put(\"%s\", \"%s\");", aName, DType.getQualifiedName(aName)));
-//        }
+        //        for(String aName : DType.fieldMapping().fields.keySet()) {
+        //            System.out.println(String.format("nameToQualifiedName.put(\"%s\", \"%s\");", aName, DType
+        // .getQualifiedName(aName)));
+        //        }
 
-        Map<String,String> nameToQualifiedName = new HashMap();
+        Map<String, String> nameToQualifiedName = new HashMap();
         {
             nameToQualifiedName.put("d", "D.d");
             nameToQualifiedName.put("b", "B.b");
@@ -172,15 +171,13 @@ public class TraitTest extends BaseTest {
 
     @Test
     public void testRandomOrder() throws AtlasException {
-        HierarchicalTypeDefinition A = createTraitTypeDef("A", null,
-                createRequiredAttrDef("a", DataTypes.INT_TYPE),
-                createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE),
-                createOptionalAttrDef("c", DataTypes.BYTE_TYPE),
+        HierarchicalTypeDefinition A = createTraitTypeDef("A", null, createRequiredAttrDef("a", DataTypes.INT_TYPE),
+                createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE), createOptionalAttrDef("c", DataTypes.BYTE_TYPE),
                 createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
         HierarchicalTypeDefinition B = createTraitTypeDef("B", ImmutableList.<String>of("A"),
                 createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE));
-        HierarchicalTypeDefinition C = createTraitTypeDef("C", ImmutableList.<String>of("A"),
-                createOptionalAttrDef("c", DataTypes.BYTE_TYPE));
+        HierarchicalTypeDefinition C =
+                createTraitTypeDef("C", ImmutableList.<String>of("A"), createOptionalAttrDef("c", DataTypes.BYTE_TYPE));
         HierarchicalTypeDefinition D = createTraitTypeDef("D", ImmutableList.<String>of("B", "C"),
                 createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
 

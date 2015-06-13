@@ -49,29 +49,22 @@ public class TypeSystemTest extends BaseTest {
 
     @Test
     public void testGetTypeNames() throws Exception {
-        getTypeSystem().defineEnumType("enum_test",
-                new EnumValue("0", 0),
-                new EnumValue("1", 1),
-                new EnumValue("2", 2),
+        getTypeSystem().defineEnumType("enum_test", new EnumValue("0", 0), new EnumValue("1", 1), new EnumValue("2", 2),
                 new EnumValue("3", 3));
         Assert.assertTrue(getTypeSystem().getTypeNames().contains("enum_test"));
     }
 
     @Test
     public void testIsRegistered() throws Exception {
-        getTypeSystem().defineEnumType("enum_test",
-                new EnumValue("0", 0),
-                new EnumValue("1", 1),
-                new EnumValue("2", 2),
+        getTypeSystem().defineEnumType("enum_test", new EnumValue("0", 0), new EnumValue("1", 1), new EnumValue("2", 2),
                 new EnumValue("3", 3));
         Assert.assertTrue(getTypeSystem().isRegistered("enum_test"));
     }
 
     @Test
     public void testGetTraitsNames() throws Exception {
-        HierarchicalTypeDefinition<TraitType> classificationTraitDefinition =
-                TypesUtil.createTraitTypeDef("Classification",
-                        ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<TraitType> classificationTraitDefinition = TypesUtil
+                .createTraitTypeDef("Classification", ImmutableList.<String>of(),
                         TypesUtil.createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
         HierarchicalTypeDefinition<TraitType> piiTrait =
                 TypesUtil.createTraitTypeDef("PII", ImmutableList.<String>of());
@@ -86,23 +79,13 @@ public class TypeSystemTest extends BaseTest {
         HierarchicalTypeDefinition<TraitType> financeTrait =
                 TypesUtil.createTraitTypeDef("Finance", ImmutableList.<String>of());
 
-        getTypeSystem().defineTypes(
-                ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.of(classificationTraitDefinition, piiTrait, phiTrait, pciTrait,
-                        soxTrait, secTrait, financeTrait),
-                ImmutableList.<HierarchicalTypeDefinition<ClassType>>of());
+        getTypeSystem().defineTypes(ImmutableList.<StructTypeDefinition>of(), ImmutableList
+                        .of(classificationTraitDefinition, piiTrait, phiTrait, pciTrait, soxTrait, secTrait,
+                                financeTrait), ImmutableList.<HierarchicalTypeDefinition<ClassType>>of());
 
         final ImmutableList<String> traitsNames = getTypeSystem().getTypeNamesByCategory(DataTypes.TypeCategory.TRAIT);
         Assert.assertEquals(traitsNames.size(), 7);
-        List traits = Arrays.asList(new String[]{
-                "Classification",
-                "PII",
-                "PHI",
-                "PCI",
-                "SOX",
-                "SEC",
-                "Finance",
-        });
+        List traits = Arrays.asList(new String[]{"Classification", "PII", "PHI", "PCI", "SOX", "SEC", "Finance",});
 
         Assert.assertFalse(Collections.disjoint(traitsNames, traits));
     }
@@ -122,17 +105,16 @@ public class TypeSystemTest extends BaseTest {
 
         String structName = random();
         String attrType = random();
-        StructTypeDefinition structType = createStructTypeDef(structName,
-                createRequiredAttrDef(attrType, DataTypes.STRING_TYPE));
+        StructTypeDefinition structType =
+                createStructTypeDef(structName, createRequiredAttrDef(attrType, DataTypes.STRING_TYPE));
 
         String className = random();
-        HierarchicalTypeDefinition<ClassType> classType =
-                createClassTypeDef(className, ImmutableList.<String>of(),
-                        createRequiredAttrDef(attrType, DataTypes.STRING_TYPE));
+        HierarchicalTypeDefinition<ClassType> classType = createClassTypeDef(className, ImmutableList.<String>of(),
+                createRequiredAttrDef(attrType, DataTypes.STRING_TYPE));
 
         String traitName = random();
-        HierarchicalTypeDefinition<TraitType> traitType = createTraitTypeDef(traitName,
-                ImmutableList.<String>of(), createRequiredAttrDef(attrType, DataTypes.INT_TYPE));
+        HierarchicalTypeDefinition<TraitType> traitType = createTraitTypeDef(traitName, ImmutableList.<String>of(),
+                createRequiredAttrDef(attrType, DataTypes.INT_TYPE));
 
         ts.defineTypes(ImmutableList.of(structType), ImmutableList.of(traitType), ImmutableList.of(classType));
     }

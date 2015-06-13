@@ -30,8 +30,7 @@ public class DownCastFieldMapping {
         this.fieldNameMap = fieldNameMap;
     }
 
-    public void set(DownCastStructInstance s, String attrName, Object val)
-    throws AtlasException {
+    public void set(DownCastStructInstance s, String attrName, Object val) throws AtlasException {
 
         String mappedNm = fieldNameMap.get(attrName);
         if (mappedNm == null) {

@@ -70,27 +70,22 @@ public class BaseSSLAndKerberosTest extends BaseSecurityTest {
         file.delete();
         conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, providerUrl);
 
-        CredentialProvider provider =
-                CredentialProviderFactory.getProviders(conf).get(0);
+        CredentialProvider provider = CredentialProviderFactory.getProviders(conf).get(0);
 
         // create new aliases
         try {
 
             char[] storepass = {'k', 'e', 'y', 'p', 'a', 's', 's'};
-            provider.createCredentialEntry(
-                    KEYSTORE_PASSWORD_KEY, storepass);
+            provider.createCredentialEntry(KEYSTORE_PASSWORD_KEY, storepass);
 
             char[] trustpass = {'k', 'e', 'y', 'p', 'a', 's', 's'};
-            provider.createCredentialEntry(
-                    TRUSTSTORE_PASSWORD_KEY, trustpass);
+            provider.createCredentialEntry(TRUSTSTORE_PASSWORD_KEY, trustpass);
 
             char[] trustpass2 = {'k', 'e', 'y', 'p', 'a', 's', 's'};
-            provider.createCredentialEntry(
-                    "ssl.client.truststore.password", trustpass2);
+            provider.createCredentialEntry("ssl.client.truststore.password", trustpass2);
 
             char[] certpass = {'k', 'e', 'y', 'p', 'a', 's', 's'};
-            provider.createCredentialEntry(
-                    SERVER_CERT_PASSWORD_KEY, certpass);
+            provider.createCredentialEntry(SERVER_CERT_PASSWORD_KEY, certpass);
 
             // write out so that it can be found in checks
             provider.flush();
@@ -132,8 +127,7 @@ public class BaseSSLAndKerberosTest extends BaseSecurityTest {
         hiveConf.setVar(HiveConf.ConfVars.PREEXECHOOKS, "");
         hiveConf.setVar(HiveConf.ConfVars.POSTEXECHOOKS, HiveHook.class.getName());
         hiveConf.setBoolVar(HiveConf.ConfVars.HIVE_SUPPORT_CONCURRENCY, false);
-        hiveConf.setVar(HiveConf.ConfVars.METASTOREWAREHOUSE,
-                System.getProperty("user.dir") + "/target/atlas");
+        hiveConf.setVar(HiveConf.ConfVars.METASTOREWAREHOUSE, System.getProperty("user.dir") + "/target/atlas");
         hiveConf.set(HiveMetaStoreBridge.DGI_URL_PROPERTY, DGI_URL);
         hiveConf.set("javax.jdo.option.ConnectionURL", "jdbc:derby:./target/metastore_db;create=true");
         hiveConf.set("hive.hook.dgi.synchronous", "true");

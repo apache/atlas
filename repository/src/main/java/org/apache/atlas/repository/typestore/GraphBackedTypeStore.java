@@ -25,8 +25,8 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
-import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphProvider;
 import org.apache.atlas.typesystem.TypesDef;
@@ -80,25 +80,25 @@ public class GraphBackedTypeStore implements ITypeStore {
             IDataType dataType = typeSystem.getDataType(IDataType.class, typeName);
             LOG.debug("Processing {}.{} in type store", dataType.getTypeCategory(), dataType.getName());
             switch (dataType.getTypeCategory()) {
-                case ENUM:
-                    storeInGraph((EnumType)dataType);
-                    break;
+            case ENUM:
+                storeInGraph((EnumType) dataType);
+                break;
 
-                case STRUCT:
-                    StructType structType = (StructType) dataType;
-                    storeInGraph(typeSystem, dataType.getTypeCategory(), dataType.getName(),
-                            ImmutableList.copyOf(structType.infoToNameMap.keySet()), ImmutableList.<String>of());
-                    break;
+            case STRUCT:
+                StructType structType = (StructType) dataType;
+                storeInGraph(typeSystem, dataType.getTypeCategory(), dataType.getName(),
+                        ImmutableList.copyOf(structType.infoToNameMap.keySet()), ImmutableList.<String>of());
+                break;
 
-                case TRAIT:
-                case CLASS:
-                    HierarchicalType type = (HierarchicalType) dataType;
-                    storeInGraph(typeSystem, dataType.getTypeCategory(), dataType.getName(),
-                            type.immediateAttrs, type.superTypes);
-                    break;
+            case TRAIT:
+            case CLASS:
+                HierarchicalType type = (HierarchicalType) dataType;
+                storeInGraph(typeSystem, dataType.getTypeCategory(), dataType.getName(), type.immediateAttrs,
+                        type.superTypes);
+                break;
 
-                default:    //Ignore primitive/collection types as they are covered under references
-                    break;
+            default:    //Ignore primitive/collection types as they are covered under references
+                break;
             }
         }
     }
@@ -132,8 +132,7 @@ public class GraphBackedTypeStore implements ITypeStore {
     }
 
     private void storeInGraph(TypeSystem typeSystem, DataTypes.TypeCategory category, String typeName,
-                              ImmutableList<AttributeInfo> attributes, ImmutableList<String> superTypes) throws
-    AtlasException {
+            ImmutableList<AttributeInfo> attributes, ImmutableList<String> superTypes) throws AtlasException {
         Vertex vertex = createVertex(category, typeName);
         List<String> attrNames = new ArrayList<>();
         if (attributes != null) {
@@ -161,39 +160,40 @@ public class GraphBackedTypeStore implements ITypeStore {
     }
 
     //Add edges for complex attributes
-    private void addReferencesForAttribute(TypeSystem typeSystem, Vertex vertex, AttributeInfo attribute) throws
-            AtlasException {
+    private void addReferencesForAttribute(TypeSystem typeSystem, Vertex vertex, AttributeInfo attribute)
+            throws AtlasException {
         ImmutableList<String> coreTypes = typeSystem.getCoreTypes();
         List<IDataType> attrDataTypes = new ArrayList<>();
         IDataType attrDataType = attribute.dataType();
         String vertexTypeName = vertex.getProperty(Constants.TYPENAME_PROPERTY_KEY);
 
         switch (attrDataType.getTypeCategory()) {
-            case ARRAY:
-                String attrType = TypeUtils.parseAsArrayType(attrDataType.getName());
-                IDataType elementType = typeSystem.getDataType(IDataType.class, attrType);
-                attrDataTypes.add(elementType);
-                break;
+        case ARRAY:
+            String attrType = TypeUtils.parseAsArrayType(attrDataType.getName());
+            IDataType elementType = typeSystem.getDataType(IDataType.class, attrType);
+            attrDataTypes.add(elementType);
+            break;
 
-            case MAP:
-                String[] attrTypes = TypeUtils.parseAsMapType(attrDataType.getName());
-                IDataType keyType = typeSystem.getDataType(IDataType.class, attrTypes[0]);
-                IDataType valueType = typeSystem.getDataType(IDataType.class, attrTypes[1]);
-                attrDataTypes.add(keyType);
-                attrDataTypes.add(valueType);
-                break;
+        case MAP:
+            String[] attrTypes = TypeUtils.parseAsMapType(attrDataType.getName());
+            IDataType keyType = typeSystem.getDataType(IDataType.class, attrTypes[0]);
+            IDataType valueType = typeSystem.getDataType(IDataType.class, attrTypes[1]);
+            attrDataTypes.add(keyType);
+            attrDataTypes.add(valueType);
+            break;
 
-            case ENUM:
-            case STRUCT:
-            case CLASS:
-                attrDataTypes.add(attrDataType);
-                break;
+        case ENUM:
+        case STRUCT:
+        case CLASS:
+            attrDataTypes.add(attrDataType);
+            break;
 
-            case PRIMITIVE: //no vertex for primitive type, hence no edge required
-                break;
+        case PRIMITIVE: //no vertex for primitive type, hence no edge required
+            break;
 
-            default:
-                throw new IllegalArgumentException("Attribute cannot reference instances of type : " + attrDataType.getTypeCategory());
+        default:
+            throw new IllegalArgumentException(
+                    "Attribute cannot reference instances of type : " + attrDataType.getTypeCategory());
         }
 
         for (IDataType attrType : attrDataTypes) {

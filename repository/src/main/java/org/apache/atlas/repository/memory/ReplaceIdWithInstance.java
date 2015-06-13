@@ -67,22 +67,18 @@ public class ReplaceIdWithInstance implements ObjectGraphWalker.NodeProcessor {
                     convertToInstances((ImmutableCollection) nd.value, nd.aInfo.multiplicity, aT));
         } else if (nd.aInfo.dataType().getTypeCategory() == DataTypes.TypeCategory.MAP) {
             DataTypes.MapType mT = (DataTypes.MapType) nd.aInfo.dataType();
-            nd.instance.set(nd.attributeName,
-                    convertToInstances((ImmutableMap) nd.value, nd.aInfo.multiplicity, mT));
+            nd.instance.set(nd.attributeName, convertToInstances((ImmutableMap) nd.value, nd.aInfo.multiplicity, mT));
         }
     }
 
-    ImmutableCollection<?> convertToInstances(ImmutableCollection<?> val,
-                                              Multiplicity m, DataTypes.ArrayType arrType)
+    ImmutableCollection<?> convertToInstances(ImmutableCollection<?> val, Multiplicity m, DataTypes.ArrayType arrType)
     throws AtlasException {
 
-        if (val == null ||
-                arrType.getElemType().getTypeCategory() != DataTypes.TypeCategory.CLASS) {
+        if (val == null || arrType.getElemType().getTypeCategory() != DataTypes.TypeCategory.CLASS) {
             return val;
         }
 
-        ImmutableCollection.Builder b = m.isUnique ? ImmutableSet.builder()
-                : ImmutableList.builder();
+        ImmutableCollection.Builder b = m.isUnique ? ImmutableSet.builder() : ImmutableList.builder();
         Iterator it = val.iterator();
         while (it.hasNext()) {
             Object elem = it.next();
@@ -97,13 +93,11 @@ public class ReplaceIdWithInstance implements ObjectGraphWalker.NodeProcessor {
         return b.build();
     }
 
-    ImmutableMap<?, ?> convertToInstances(ImmutableMap val, Multiplicity m,
-                                          DataTypes.MapType mapType)
+    ImmutableMap<?, ?> convertToInstances(ImmutableMap val, Multiplicity m, DataTypes.MapType mapType)
     throws AtlasException {
 
-        if (val == null ||
-                (mapType.getKeyType().getTypeCategory() != DataTypes.TypeCategory.CLASS &&
-                        mapType.getValueType().getTypeCategory() != DataTypes.TypeCategory.CLASS)) {
+        if (val == null || (mapType.getKeyType().getTypeCategory() != DataTypes.TypeCategory.CLASS
+                && mapType.getValueType().getTypeCategory() != DataTypes.TypeCategory.CLASS)) {
             return val;
         }
         ImmutableMap.Builder b = ImmutableMap.builder();

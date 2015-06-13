@@ -4,13 +4,13 @@
  * distributed with this work for additional information
  * regarding copyright ownership.  The ASF licenses this file
  * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
+ * 'License'); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
+ * distributed under the License is distributed on an 'AS IS' BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -21,169 +21,189 @@
 angular.module('dgc.lineage').controller('LineageController', ['$element', '$scope', '$state', '$stateParams', 'lodash', 'LineageResource', 'd3',
     function($element, $scope, $state, $stateParams, _, LineageResource, d3) {
 
-        $scope.lineageData = LineageResource.get({
-            id: $stateParams.id
-        }, function(data) {
-            var nodes = {};
-
-            function getNode(nodeId) {
-                if (!nodes[nodeId]) {
-                    var node;
-                    if (data.vertices[nodeId]) {
-                        node = angular.copy(data.vertices[nodeId]);
-                        node.__key = nodeId;
-                        node.__name = node['hive_table.name'] || node.__key;
-                        node.__tooltip = node['hive_table.description'] || node['HiveLineage.query'];
-                    } else {
-                        node = {};
-                        node.__key = nodeId;
-                        node.__tooltip = node.__name = nodeId + ', Node Missing';
+        function getLineageData(tableData, callRender) {
+            LineageResource.get({
+                tableName: tableData.tableName,
+                type: tableData.type
+            }, function lineageSuccess(response) {
+                if (!_.isEmpty(response.results.values.vertices)) {
+                    $scope.lineageData = transformData(response.results);
+                    if (callRender) {
+                        render();
                     }
-                    nodes[nodeId] = node;
                 }
-                return nodes[nodeId];
-            }
-
-            var edges = [],
-                edgeTypes = [];
-
-            angular.forEach(data.edges, function(edge) {
-                /* Put the head (edge) inside tail (edge)
-                 * Tail is parent
-                 * Head is child
-                 * */
-                var parentNode = getNode(edge.tail);
-                edge.source = parentNode;
-                edge.target = getNode(edge.head);
-
-                parentNode.__hasChild = true;
-
-                edge.__type = edge.label;
-                edgeTypes.push(edge.label);
-                edges.push(edge);
+                $scope.requested = false;
             });
-            edgeTypes = _.uniq(edgeTypes);
-            render(nodes, edges, edgeTypes);
+        }
+
+        $scope.type = $element.parent().attr('data-table-type');
+        $scope.requested = false;
+
+        function render() {
+            renderGraph($scope.lineageData, {
+                element: $element[0],
+                height: $element[0].offsetHeight,
+                width: $element[0].offsetWidth
+            });
+            $scope.rendered = true;
+        }
+
+        $scope.$on('render-lineage', function(event, lineageData) {
+            if (lineageData.type === $scope.type) {
+                if (!$scope.lineageData) {
+                    if (!$scope.requested) {
+                        getLineageData(lineageData, true);
+                        $scope.requested = true;
+                    }
+                } else {
+                    render();
+                }
+            }
         });
 
-        function render(nodes, links, linkTypes) {
-            // Use elliptical arc path segments to doubly-encode directionality.
-            function click(node) {
-                if (node.guid) {
-                    $state.go('details', {
-                        id: node.guid
-                    }, {
-                        location: 'replace'
-                    });
+        function transformData(metaData) {
+            var edges = metaData.values.edges,
+                vertices = metaData.values.vertices,
+                nodes = {};
+
+            function getNode(guid) {
+                var vertex = {
+                    guid: guid,
+                    name: vertices.hasOwnProperty(guid) ? vertices[guid].values.name : 'Load Process',
+                    type: vertices.hasOwnProperty(guid) ? vertices[guid].values.vertexId.values.typeName : 'LoadProcess'
+                };
+                if (!nodes.hasOwnProperty(guid)) {
+                    nodes[guid] = vertex;
                 }
+                return nodes[guid];
             }
 
-            function tick() {
-                path.attr("d", linkArc);
-                circle.attr("transform", transform);
-                text.attr("transform", transform);
+            function attachParent(edge, node) {
+                edge.forEach(function eachPoint(childGuid) {
+                    var childNode = getNode(childGuid);
+                    node.children = node.children || [];
+                    node.children.push(childNode);
+                    childNode.parent = node.guid;
+                });
             }
 
-            function linkArc(d) {
-                var dx = d.target.x - d.source.x,
-                    dy = d.target.y - d.source.y,
-                    dr = Math.sqrt(dx * dx + dy * dy);
-                return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
+            /* Loop through all edges and attach them to correct parent */
+            for (var guid in edges) {
+                var edge = edges[guid],
+                    node = getNode(guid);
+
+                /* Attach parent to each endpoint of edge */
+                attachParent(edge, node);
             }
 
-            function transform(d) {
-                return "translate(" + d.x + "," + d.y + ")";
-            }
+            /* Return the first node w/o parent, this is root node*/
+            return _.find(nodes, function(node) {
+                return !node.hasOwnProperty('parent');
+            });
+        }
 
-            var width = Math.max($element[0].offsetWidth, 960),
-                height = Math.max($element[0].offsetHeight, 350);
+        function renderGraph(data, container) {
+            // ************** Generate the tree diagram	 *****************
+            var element = d3.select(container.element),
+                width = Math.max(container.width, 960),
+                height = Math.max(container.height, 350);
 
-            var force = d3.layout.force()
-                .nodes(d3.values(nodes))
-                .links(links)
-                .size([width, height])
-                .linkDistance(200)
-                .charge(-120)
-                .gravity(0.05)
-                .on("tick", tick)
-                .start();
+            var margin = {
+                top: 100,
+                right: 80,
+                bottom: 30,
+                left: 80
+            };
+            width = width - margin.right - margin.left;
+            height = height - margin.top - margin.bottom;
 
-            var svg = d3.select($element[0]).select('svg')
-                .attr("width", width)
-                .attr("height", height);
+            var i = 0;
 
-            /* Initialize tooltip */
-            var tooltip = d3.tip()
-                .attr('class', 'd3-tip')
-                .html(function(d) {
-                    return '<pre class="alert alert-success">' + d.__tooltip + '</pre>';
+            var tree = d3.layout.tree()
+                .size([height, width]);
+
+            var diagonal = d3.svg.diagonal()
+                .projection(function(d) {
+                    return [d.y, d.x];
                 });
 
-            /* Invoke the tip in the context of your visualization */
-            svg.call(tooltip);
+            var svg = element.select('svg')
+                .attr('width', width + margin.right + margin.left)
+                .attr('height', height + margin.top + margin.bottom)
+                .select('g')
 
-            // Per-type markers, as they don't inherit styles.
-            var defs = svg.append("defs");
+            .attr('transform',
+                'translate(' + margin.left + ',' + margin.right + ')');
+            //arrow
+            svg.append("svg:defs").append("svg:marker").attr("id", "arrow").attr("viewBox", "0 0 10 10").attr("refX", 26).attr("refY", 5).attr("markerUnits", "strokeWidth").attr("markerWidth", 6).attr("markerHeight", 9).attr("orient", "auto").append("svg:path").attr("d", "M 0 0 L 10 5 L 0 10 z");
 
-            var imageDim = 10;
-            defs.append('svg:pattern')
-                .attr('id', 'process-image')
-                .attr('patternUnits', 'userSpaceOnUse')
-                .attr('width', imageDim)
-                .attr('height', imageDim)
-                .append('svg:image')
-                .attr('xlink:href', '/img/process.png')
-                .attr('x', 0)
-                .attr('y', 0)
-                .attr('width', imageDim)
-                .attr('height', imageDim);
+            var root = data;
 
-            defs.selectAll("marker")
-                .data(linkTypes)
-                .enter().append("marker")
-                .attr("id", function(d) {
-                    return d;
-                })
-                .attr("viewBox", "0 -5 10 10")
-                .attr("refX", 15)
-                .attr("refY", -1.5)
-                .attr("markerWidth", 6)
-                .attr("markerHeight", 6)
-                .attr("orient", "auto")
-                .append("path")
-                .attr("d", "M0,-5L10,0L0,5");
+            function update(source) {
 
-            var path = svg.append("g").selectAll("path")
-                .data(force.links())
-                .enter().append("path")
-                .attr("class", function(d) {
-                    return "link " + d.__type;
-                })
-                .attr("marker-end", function(d) {
-                    return "url(#" + d.__type + ")";
+                // Compute the new tree layout.
+                var nodes = tree.nodes(source).reverse(),
+                    links = tree.links(nodes);
+
+                // Normalize for fixed-depth.
+                nodes.forEach(function(d) {
+                    d.y = d.depth * 180;
                 });
 
-            var circle = svg.append("g").selectAll("circle")
-                .data(force.nodes())
-                .enter().append("circle")
-                .on('click', click)
-                .on('mouseover', tooltip.show)
-                .on('mouseout', tooltip.hide)
-                .attr('class', function(d) {
-                    return d.__hasChild ? '' : 'empty';
-                })
-                .attr("r", function(d) {
-                    return d.__hasChild ? 15 : 10;
-                })
-                .call(force.drag);
+                // Declare the nodes…
+                var node = svg.selectAll('g.node')
+                    .data(nodes, function(d) {
+                        return d.id || (d.id = ++i);
+                    });
 
-            var text = svg.append("g").selectAll("text")
-                .data(force.nodes())
-                .enter().append("text")
-                .attr('dy', '2em')
-                .text(function(d) {
-                    return d.__name;
-                });
+                // Enter the nodes.
+                var nodeEnter = node.enter().append('g')
+                    .attr('class', 'node')
+                    .attr('transform', function(d) {
+                        return 'translate(' + d.y + ',' + d.x + ')';
+                    });
+
+                nodeEnter.append("image")
+                    .attr("xlink:href", function(d) {
+                        //return d.icon;
+                        return d.type === 'Table' ? '../img/tableicon.png' : '../img/process.png';
+                    })
+                    .attr("x", "-18px")
+                    .attr("y", "-18px")
+                    .attr("width", "34px")
+                    .attr("height", "34px");
+
+                nodeEnter.append('text')
+                    .attr('x', function(d) {
+                        return d.children || d._children ?
+                            (5) * -1 : +15;
+                    })
+                    .attr('dy', '-1.75em')
+                    .attr('text-anchor', function(d) {
+                        return d.children || d._children ? 'middle' : 'middle';
+                    })
+                    .text(function(d) {
+                        return d.name;
+                    })
+
+                .style('fill-opacity', 1);
+
+                // Declare the links…
+                var link = svg.selectAll('path.link')
+                    .data(links, function(d) {
+                        return d.target.id;
+                    });
+
+                link.enter().insert('path', 'g')
+                    .attr('class', 'link')
+                    //.style('stroke', function(d) { return d.target.level; })
+                    .style('stroke', 'green')
+                    .attr('d', diagonal);
+                link.attr("marker-end", "url(#arrow)");
+
+            }
+
+            update(root);
         }
 
     }

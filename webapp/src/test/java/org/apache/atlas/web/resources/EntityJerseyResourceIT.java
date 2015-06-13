@@ -98,8 +98,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @DataProvider
     public Object[][] invalidAttrValues() {
-        return new Object[][]{
-                {null}, {""}, {" "}};
+        return new Object[][]{{null}, {""}, {" "}};
     }
 
     @Test(dataProvider = "invalidAttrValues")
@@ -111,7 +110,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         try {
             createInstance(databaseInstance);
             Assert.fail("Exptected MetadataServiceException");
-        } catch(AtlasServiceException e) {
+        } catch (AtlasServiceException e) {
             Assert.assertEquals(e.getStatus(), ClientResponse.Status.BAD_REQUEST);
         }
     }
@@ -124,8 +123,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
             databaseInstance.set("name", DATABASE_NAME);
             databaseInstance.set("description", "foo database");
 
-            Referenceable tableInstance = new Referenceable(TABLE_TYPE,
-                    "classification", "pii", "phi", "pci", "sox", "sec", "finance");
+            Referenceable tableInstance =
+                    new Referenceable(TABLE_TYPE, "classification", "pii", "phi", "pci", "sox", "sec", "finance");
             tableInstance.set("name", TABLE_NAME);
             tableInstance.set("description", "bar table");
             tableInstance.set("date", "2014-07-11");
@@ -151,8 +150,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
             tableId = createInstance(tableInstance);
             Assert.fail("Was expecting an  exception here ");
         } catch (AtlasServiceException e) {
-           Assert.assertTrue(
-                   e.getMessage().contains("\"error\":\"Cannot convert value '2014-07-11' to datatype date\""));
+            Assert.assertTrue(
+                    e.getMessage().contains("\"error\":\"Cannot convert value '2014-07-11' to datatype date\""));
         }
     }
 
@@ -234,22 +233,15 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     }
 
     private ClientResponse addProperty(String guid, String property, String value) {
-        WebResource resource = service
-                .path("api/atlas/entities")
-                .path(guid);
+        WebResource resource = service.path("api/atlas/entities").path(guid);
 
-        return resource.queryParam("property", property).queryParam("value", value)
-                .accept(Servlets.JSON_MEDIA_TYPE)
-                .type(Servlets.JSON_MEDIA_TYPE)
-                .method(HttpMethod.PUT, ClientResponse.class);
+        return resource.queryParam("property", property).queryParam("value", value).accept(Servlets.JSON_MEDIA_TYPE)
+                .type(Servlets.JSON_MEDIA_TYPE).method(HttpMethod.PUT, ClientResponse.class);
     }
 
     private ClientResponse getEntityDefinition(String guid) {
-        WebResource resource = service
-                .path("api/atlas/entities")
-                .path(guid);
-        return resource.accept(Servlets.JSON_MEDIA_TYPE)
-                .type(Servlets.JSON_MEDIA_TYPE)
+        WebResource resource = service.path("api/atlas/entities").path(guid);
+        return resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
     }
 
@@ -264,13 +256,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testGetInvalidEntityDefinition() throws Exception {
-        WebResource resource = service
-                .path("api/atlas/entities")
-                .path("blah");
+        WebResource resource = service.path("api/atlas/entities").path("blah");
 
-        ClientResponse clientResponse = resource
-                .accept(Servlets.JSON_MEDIA_TYPE)
-                .type(Servlets.JSON_MEDIA_TYPE)
+        ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
 
@@ -284,12 +272,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test(dependsOnMethods = "testSubmitEntity")
     public void testGetEntityList() throws Exception {
-        ClientResponse clientResponse = service
-                .path("api/atlas/entities")
-                .queryParam("type", TABLE_TYPE)
-                .accept(Servlets.JSON_MEDIA_TYPE)
-                .type(Servlets.JSON_MEDIA_TYPE)
-                .method(HttpMethod.GET, ClientResponse.class);
+        ClientResponse clientResponse =
+                service.path("api/atlas/entities").queryParam("type", TABLE_TYPE).accept(Servlets.JSON_MEDIA_TYPE)
+                        .type(Servlets.JSON_MEDIA_TYPE).method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
         String responseAsString = clientResponse.getEntity(String.class);
@@ -305,12 +290,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testGetEntityListForBadEntityType() throws Exception {
-        ClientResponse clientResponse = service
-                .path("api/atlas/entities")
-                .queryParam("type", "blah")
-                .accept(Servlets.JSON_MEDIA_TYPE)
-                .type(Servlets.JSON_MEDIA_TYPE)
-                .method(HttpMethod.GET, ClientResponse.class);
+        ClientResponse clientResponse =
+                service.path("api/atlas/entities").queryParam("type", "blah").accept(Servlets.JSON_MEDIA_TYPE)
+                        .type(Servlets.JSON_MEDIA_TYPE).method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
 
         String responseAsString = clientResponse.getEntity(String.class);
@@ -326,12 +308,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     public void testGetEntityListForNoInstances() throws Exception {
         addNewType();
 
-        ClientResponse clientResponse = service
-                .path("api/atlas/entities")
-                .queryParam("type", "test")
-                .accept(Servlets.JSON_MEDIA_TYPE)
-                .type(Servlets.JSON_MEDIA_TYPE)
-                .method(HttpMethod.GET, ClientResponse.class);
+        ClientResponse clientResponse =
+                service.path("api/atlas/entities").queryParam("type", "test").accept(Servlets.JSON_MEDIA_TYPE)
+                        .type(Servlets.JSON_MEDIA_TYPE).method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
         String responseAsString = clientResponse.getEntity(String.class);
@@ -345,8 +324,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     }
 
     private void addNewType() throws Exception {
-        HierarchicalTypeDefinition<ClassType> testTypeDefinition =
-                TypesUtil.createClassTypeDef("test", ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<ClassType> testTypeDefinition = TypesUtil
+                .createClassTypeDef("test", ImmutableList.<String>of(),
                         TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
 
@@ -357,13 +336,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test(dependsOnMethods = "testSubmitEntity")
     public void testGetTraitNames() throws Exception {
         final String guid = tableId._getId();
-        ClientResponse clientResponse = service
-                .path("api/atlas/entities")
-                .path(guid)
-                .path(TRAITS)
-                .accept(Servlets.JSON_MEDIA_TYPE)
-                .type(Servlets.JSON_MEDIA_TYPE)
-                .method(HttpMethod.GET, ClientResponse.class);
+        ClientResponse clientResponse =
+                service.path("api/atlas/entities").path(guid).path(TRAITS).accept(Servlets.JSON_MEDIA_TYPE)
+                        .type(Servlets.JSON_MEDIA_TYPE).method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
         String responseAsString = clientResponse.getEntity(String.class);
@@ -391,13 +366,10 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
 
         final String guid = tableId._getId();
-        ClientResponse clientResponse = service
-                .path("api/atlas/entities")
-                .path(guid)
-                .path(TRAITS)
-                .accept(Servlets.JSON_MEDIA_TYPE)
-                .type(Servlets.JSON_MEDIA_TYPE)
-                .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
+        ClientResponse clientResponse =
+                service.path("api/atlas/entities").path(guid).path(TRAITS).accept(Servlets.JSON_MEDIA_TYPE)
+                        .type(Servlets.JSON_MEDIA_TYPE)
+                        .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.CREATED.getStatusCode());
 
         String responseAsString = clientResponse.getEntity(String.class);
@@ -417,21 +389,18 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
 
         final String guid = tableId._getId();
-        ClientResponse clientResponse = service
-                .path("api/atlas/entities")
-                .path(guid)
-                .path(TRAITS)
-                .accept(Servlets.JSON_MEDIA_TYPE)
-                .type(Servlets.JSON_MEDIA_TYPE)
-                .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
+        ClientResponse clientResponse =
+                service.path("api/atlas/entities").path(guid).path(TRAITS).accept(Servlets.JSON_MEDIA_TYPE)
+                        .type(Servlets.JSON_MEDIA_TYPE)
+                        .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
     }
 
     @Test(dependsOnMethods = "testGetTraitNames")
     public void testAddTraitWithAttribute() throws Exception {
         final String traitName = "PII_Trait" + randomString();
-        HierarchicalTypeDefinition<TraitType> piiTrait =
-                TypesUtil.createTraitTypeDef(traitName, ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<TraitType> piiTrait = TypesUtil
+                .createTraitTypeDef(traitName, ImmutableList.<String>of(),
                         TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
         String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
         LOG.debug("traitDefinitionAsJSON = " + traitDefinitionAsJSON);
@@ -443,13 +412,10 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
 
         final String guid = tableId._getId();
-        ClientResponse clientResponse = service
-                .path("api/atlas/entities")
-                .path(guid)
-                .path(TRAITS)
-                .accept(Servlets.JSON_MEDIA_TYPE)
-                .type(Servlets.JSON_MEDIA_TYPE)
-                .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
+        ClientResponse clientResponse =
+                service.path("api/atlas/entities").path(guid).path(TRAITS).accept(Servlets.JSON_MEDIA_TYPE)
+                        .type(Servlets.JSON_MEDIA_TYPE)
+                        .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.CREATED.getStatusCode());
 
         String responseAsString = clientResponse.getEntity(String.class);
@@ -487,13 +453,10 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         String traitInstanceAsJSON = InstanceSerialization$.MODULE$.toJson(traitInstance, true);
         LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
 
-        ClientResponse clientResponse = service
-                .path("api/atlas/entities")
-                .path("random")
-                .path(TRAITS)
-                .accept(Servlets.JSON_MEDIA_TYPE)
-                .type(Servlets.JSON_MEDIA_TYPE)
-                .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
+        ClientResponse clientResponse =
+                service.path("api/atlas/entities").path("random").path(TRAITS).accept(Servlets.JSON_MEDIA_TYPE)
+                        .type(Servlets.JSON_MEDIA_TYPE)
+                        .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
     }
 
@@ -501,13 +464,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     public void testDeleteTrait() throws Exception {
         final String guid = tableId._getId();
 
-        ClientResponse clientResponse = service
-                .path("api/atlas/entities")
-                .path(guid)
-                .path(TRAITS)
-                .path(traitName)
-                .accept(Servlets.JSON_MEDIA_TYPE)
-                .type(Servlets.JSON_MEDIA_TYPE)
+        ClientResponse clientResponse = service.path("api/atlas/entities").path(guid).path(TRAITS).path(traitName)
+                .accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.DELETE, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
@@ -524,13 +482,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     public void testDeleteTraitNonExistent() throws Exception {
         final String traitName = "blah_trait";
 
-        ClientResponse clientResponse = service
-                .path("api/atlas/entities")
-                .path("random")
-                .path(TRAITS)
-                .path(traitName)
-                .accept(Servlets.JSON_MEDIA_TYPE)
-                .type(Servlets.JSON_MEDIA_TYPE)
+        ClientResponse clientResponse = service.path("api/atlas/entities").path("random").path(TRAITS).path(traitName)
+                .accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.DELETE, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
 
@@ -558,12 +511,13 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         String attrName = random();
         String attrValue = random();
 
-        HierarchicalTypeDefinition<ClassType> classTypeDefinition =
-                TypesUtil.createClassTypeDef(classType, ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<ClassType> classTypeDefinition = TypesUtil
+                .createClassTypeDef(classType, ImmutableList.<String>of(),
                         TypesUtil.createUniqueRequiredAttrDef(attrName, DataTypes.STRING_TYPE));
-        TypesDef typesDef = TypeUtils.getTypesDef(ImmutableList.<EnumTypeDefinition>of(),
-                ImmutableList.<StructTypeDefinition>of(), ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
-                ImmutableList.of(classTypeDefinition));
+        TypesDef typesDef = TypeUtils
+                .getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
+                        ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
+                        ImmutableList.of(classTypeDefinition));
         createType(typesDef);
 
         Referenceable instance = new Referenceable(classType);
@@ -577,48 +531,35 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     }
 
     private void createHiveTypes() throws Exception {
-        HierarchicalTypeDefinition<ClassType> databaseTypeDefinition =
-                TypesUtil.createClassTypeDef(DATABASE_TYPE,
-                        ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<ClassType> databaseTypeDefinition = TypesUtil
+                .createClassTypeDef(DATABASE_TYPE, ImmutableList.<String>of(),
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
 
-        StructTypeDefinition structTypeDefinition =
-                new StructTypeDefinition("serdeType",
-                        new AttributeDefinition[]{
-                                TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                                TypesUtil.createRequiredAttrDef("serde", DataTypes.STRING_TYPE)
-                        });
+        StructTypeDefinition structTypeDefinition = new StructTypeDefinition("serdeType",
+                new AttributeDefinition[]{TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        TypesUtil.createRequiredAttrDef("serde", DataTypes.STRING_TYPE)});
 
-        EnumValue values[] = {
-                new EnumValue("MANAGED", 1),
-                new EnumValue("EXTERNAL", 2),
-        };
+        EnumValue values[] = {new EnumValue("MANAGED", 1), new EnumValue("EXTERNAL", 2),};
 
         EnumTypeDefinition enumTypeDefinition = new EnumTypeDefinition("tableType", values);
 
-        HierarchicalTypeDefinition<ClassType> tableTypeDefinition =
-                TypesUtil.createClassTypeDef(TABLE_TYPE,
-                        ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<ClassType> tableTypeDefinition = TypesUtil
+                .createClassTypeDef(TABLE_TYPE, ImmutableList.<String>of(),
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createOptionalAttrDef("description", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("date", DataTypes.DATE_TYPE),
                         TypesUtil.createRequiredAttrDef("level", DataTypes.INT_TYPE),
-                        new AttributeDefinition("tableType", "tableType",
-                                Multiplicity.REQUIRED, false, null),
-                        new AttributeDefinition("serde1",
-                                "serdeType", Multiplicity.REQUIRED, false, null),
-                        new AttributeDefinition("serde2",
-                                "serdeType", Multiplicity.REQUIRED, false, null),
-                        new AttributeDefinition("database",
-                                DATABASE_TYPE, Multiplicity.REQUIRED, true, null),
-                        new AttributeDefinition("compressed",
-                                DataTypes.BOOLEAN_TYPE.getName(), Multiplicity.OPTIONAL, true, null));
+                        new AttributeDefinition("tableType", "tableType", Multiplicity.REQUIRED, false, null),
+                        new AttributeDefinition("serde1", "serdeType", Multiplicity.REQUIRED, false, null),
+                        new AttributeDefinition("serde2", "serdeType", Multiplicity.REQUIRED, false, null),
+                        new AttributeDefinition("database", DATABASE_TYPE, Multiplicity.REQUIRED, true, null),
+                        new AttributeDefinition("compressed", DataTypes.BOOLEAN_TYPE.getName(), Multiplicity.OPTIONAL,
+                                true, null));
 
-        HierarchicalTypeDefinition<TraitType> classificationTraitDefinition =
-                TypesUtil.createTraitTypeDef("classification",
-                        ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<TraitType> classificationTraitDefinition = TypesUtil
+                .createTraitTypeDef("classification", ImmutableList.<String>of(),
                         TypesUtil.createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
         HierarchicalTypeDefinition<TraitType> piiTrait =
                 TypesUtil.createTraitTypeDef("pii", ImmutableList.<String>of());
@@ -633,12 +574,10 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         HierarchicalTypeDefinition<TraitType> financeTrait =
                 TypesUtil.createTraitTypeDef("finance", ImmutableList.<String>of());
 
-        TypesDef typesDef = TypeUtils.getTypesDef(
-                ImmutableList.of(enumTypeDefinition),
-                ImmutableList.of(structTypeDefinition),
-                ImmutableList.of(classificationTraitDefinition, piiTrait, phiTrait, pciTrait,
-                        soxTrait, secTrait, financeTrait),
-                ImmutableList.of(databaseTypeDefinition, tableTypeDefinition));
+        TypesDef typesDef = TypeUtils
+                .getTypesDef(ImmutableList.of(enumTypeDefinition), ImmutableList.of(structTypeDefinition), ImmutableList
+                                .of(classificationTraitDefinition, piiTrait, phiTrait, pciTrait, soxTrait, secTrait,
+                                        financeTrait), ImmutableList.of(databaseTypeDefinition, tableTypeDefinition));
         createType(typesDef);
     }
 
@@ -647,8 +586,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         databaseInstance.set("name", DATABASE_NAME);
         databaseInstance.set("description", "foo database");
 
-        Referenceable tableInstance = new Referenceable(TABLE_TYPE,
-                "classification", "pii", "phi", "pci", "sox", "sec", "finance");
+        Referenceable tableInstance =
+                new Referenceable(TABLE_TYPE, "classification", "pii", "phi", "pci", "sox", "sec", "finance");
         tableInstance.set("name", TABLE_NAME);
         tableInstance.set("description", "bar table");
         tableInstance.set("date", "2014-07-11T08:00:00.000Z");

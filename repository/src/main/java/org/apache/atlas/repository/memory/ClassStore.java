@@ -32,8 +32,7 @@ public class ClassStore extends HierarchicalTypeStore {
     final ArrayList<ImmutableList<String>> traitNamesStore;
     final ClassType classType;
 
-    public ClassStore(MemRepository repository, ClassType hierarchicalType)
-    throws RepositoryException {
+    public ClassStore(MemRepository repository, ClassType hierarchicalType) throws RepositoryException {
         super(repository, hierarchicalType);
         classType = hierarchicalType;
         traitNamesStore = new ArrayList<ImmutableList<String>>();
@@ -64,8 +63,7 @@ public class ClassStore extends HierarchicalTypeStore {
         String typeName = typeNameList.get(pos);
         if (typeName != hierarchicalType.getName()) {
             throw new RepositoryException(
-                    String.format("Invalid Id (incorrect typeName, type is %s) : %s",
-                            typeName, id));
+                    String.format("Invalid Id (incorrect typeName, type is %s) : %s", typeName, id));
         }
 
         return true;

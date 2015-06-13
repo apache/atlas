@@ -16,31 +16,52 @@
   ~ limitations under the License.
   -->
 
-<div data-ng-controller="SearchController">
-    <div class="search">
-        <form name="form" novalidate class="container">
-            <div class="col-lg-7">
-                <div class="row input-group">
-                    <input type="text" class="form-control" placeholder="Search" data-ng-model="query" data-typeahead="type for type in types" required/>
-                    <span class="input-group-btn">
-                        <button class="btn btn-success" type="submit" data-ng-disabled="form.$invalid" data-ng-click="search(query)">
-                            <i class="glyphicon glyphicon-search white "></i>
-                        </button>
-                    </span>
+<div class="row mt20px">
+    <form class="col-lg-offset-3 col-lg-9" name="form" novalidate>
+        <div class="input-group">
+            <input type="text" class="form-control" placeholder="Search" data-ng-model="query" required/>
+                <span class="input-group-btn">
+                    <button class="btn btn-success" type="submit" data-ng-disabled="form.$invalid" ui-sref="search({ query: query })">
+                        <i class="glyphicon glyphicon-search white "></i>
+                    </button>
+                </span>
+        </div>
+        <div>
+            <small class="small-txt">Search: Table, DB, Column</small>
+        </div>
+    </form>
+</div>
+<div class="row mt10px">
+    <div class="col-lg-3" data-ng-include="'/modules/navigation/views/navigation.html'"></div>
+    <div class="col-lg-9">
+        <div ng-switch on="searchMessage">
+            <div ng-switch-when="load-gif" class="search-spinner"><img src="../img/spinner.gif" align="middle" /></div>
+            <div ng-switch-default><h4 ng-show="searchMessage">{{searchMessage}}</h4></div>
+        </div>
+        <ul class="list-unstyled"  ng-show='resultCount > 0'>
+            <li ng-repeat="result in filteredResults" class="searchresults">
+                <h4><a data-ui-sref="details({id:result['$id$'].id || result.guid})">{{result.name || result.guid}}</a></h4>
+
+                <p>{{result.description}}</p>
+                            <span ng-repeat="(key, value) in filterSearchResults(result)">
+                                <span ng-show="$index <= 3  "><b>{{key}}: </b>{{value}} {{(($index+1 === limit) || $last ) ? '' : ', '}}</span>
+                            </span>
+
+                <div collapse="isCollapsed">
+                                <span ng-repeat="(key, value) in filterSearchResults(result)">
+                                <span ng-show="$index > 3"><b>{{key}}: </b>{{value}}{{$last ? '' : ', '}}</span>
+                            </span>
                 </div>
-                <div class="row">
-                    <small class="small-txt">Examples : property=HiveLineage.executionEngine&text=tez</small>
-                    <br/>
-                    <small class="small-txt">property=type&text=HiveLineage</small>
-                    <br/>
-                    <small class="small-txt">property=type&text=hive_table</small>
-                </div>
-            </div>
-        </form>
-    </div>
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-11" data-ui-view=""></div>
+                <a href ng-show="isCollapsed && (keyLength > 4)" ng-click="doToggle($event,isCollapsed)">..show more</a>
+                <a href ng-show="!isCollapsed" ng-click="doToggle($event,isCollapsed)">..show less</a>
+
+                <h5 ng-show="!dataTransitioned">Tags : <a ng-repeat="(key, value) in result['$traits$']" data-ui-sref="search({query: key})">{{key}}</a></h5>
+
+            </li>
+        </ul>
+        <div class="pull-right" ng-show='resultCount > 0'>
+            <pagination total-items="totalItems" items-per-page="itemsPerPage" ng-model="currentPage" ng-change="pageChanged()"></pagination>
+            <p>
         </div>
     </div>
 </div>

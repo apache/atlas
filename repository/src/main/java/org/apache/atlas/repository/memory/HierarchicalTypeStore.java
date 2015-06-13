@@ -60,13 +60,11 @@ public abstract class HierarchicalTypeStore {
      */
     ReentrantReadWriteLock lock;
 
-    HierarchicalTypeStore(MemRepository repository, HierarchicalType hierarchicalType)
-    throws RepositoryException {
+    HierarchicalTypeStore(MemRepository repository, HierarchicalType hierarchicalType) throws RepositoryException {
         this.hierarchicalType = (IConstructableType) hierarchicalType;
         this.repository = repository;
-        ImmutableMap.Builder<AttributeInfo, IAttributeStore> b
-                = new ImmutableBiMap.Builder<AttributeInfo,
-                IAttributeStore>();
+        ImmutableMap.Builder<AttributeInfo, IAttributeStore> b =
+                new ImmutableBiMap.Builder<AttributeInfo, IAttributeStore>();
         typeNameList = Lists.newArrayList((String) null);
         ImmutableList<AttributeInfo> l = hierarchicalType.immediateAttrs;
         for (AttributeInfo i : l) {
@@ -74,8 +72,7 @@ public abstract class HierarchicalTypeStore {
         }
         attrStores = b.build();
 
-        ImmutableList.Builder<HierarchicalTypeStore> b1
-                = new ImmutableList.Builder<HierarchicalTypeStore>();
+        ImmutableList.Builder<HierarchicalTypeStore> b1 = new ImmutableList.Builder<HierarchicalTypeStore>();
         Set<String> allSuperTypeNames = hierarchicalType.getAllSuperTypeNames();
         for (String s : allSuperTypeNames) {
             b1.add(repository.getStore(s));

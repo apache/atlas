@@ -24,12 +24,12 @@ import com.google.inject.servlet.GuiceServletContextListener;
 import com.sun.jersey.api.core.PackagesResourceConfig;
 import com.sun.jersey.guice.JerseyServletModule;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.PropertiesUtil;
 import org.apache.atlas.RepositoryMetadataModule;
-import org.apache.atlas.web.filters.AuditFilter;
 import org.apache.atlas.web.filters.AtlasAuthenticationFilter;
+import org.apache.atlas.web.filters.AuditFilter;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.slf4j.Logger;
@@ -57,9 +57,7 @@ public class GuiceServletConfig extends GuiceServletContextListener {
 		 * .html
 		 */
         if (injector == null) {
-            injector = Guice.createInjector(
-                    new RepositoryMetadataModule(),
-                    new JerseyServletModule() {
+            injector = Guice.createInjector(new RepositoryMetadataModule(), new JerseyServletModule() {
                         @Override
                         protected void configureServlets() {
                             filter("/*").through(AuditFilter.class);

@@ -19,19 +19,10 @@
 package org.apache.atlas.discovery;
 
 import org.apache.atlas.listener.TypesChangeListener;
-import org.apache.atlas.repository.IndexException;
 
 
 /**
  * Interface for indexing types.
  */
 public interface SearchIndexer extends TypesChangeListener {
-
-    /* Commit the indexes */
-
-   void commit() throws IndexException;
-
-    /* RollBack the index */
-   void rollback() throws IndexException;
-
 }

@@ -44,13 +44,9 @@ public class RexsterGraphJerseyResourceIT extends BaseResourceIT {
     public void testGetVertex() throws Exception {
         // todo: add a vertex before fetching it
 
-        WebResource resource = service
-                .path("api/atlas/graph/vertices")
-                .path("0");
+        WebResource resource = service.path("api/atlas/graph/vertices").path("0");
 
-        ClientResponse clientResponse = resource
-                .accept(Servlets.JSON_MEDIA_TYPE)
-                .type(Servlets.JSON_MEDIA_TYPE)
+        ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
         String response = clientResponse.getEntity(String.class);
@@ -58,12 +54,9 @@ public class RexsterGraphJerseyResourceIT extends BaseResourceIT {
     }
 
     public void testGetVertexWithInvalidId() throws Exception {
-        WebResource resource = service
-                .path("api/atlas/graph/vertices/blah");
+        WebResource resource = service.path("api/atlas/graph/vertices/blah");
 
-        ClientResponse clientResponse = resource
-                .accept(Servlets.JSON_MEDIA_TYPE)
-                .type(Servlets.JSON_MEDIA_TYPE)
+        ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
     }

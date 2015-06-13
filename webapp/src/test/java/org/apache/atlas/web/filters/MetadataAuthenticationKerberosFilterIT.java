@@ -61,7 +61,7 @@ public class MetadataAuthenticationKerberosFilterIT extends BaseSecurityTest {
         }
     }
 
-    @Test (enabled = false)
+    @Test(enabled = false)
     public void testKerberosBasedLogin() throws Exception {
         String originalConf = System.getProperty("metadata.conf");
         System.setProperty("metadata.conf", System.getProperty("user.dir"));

@@ -35,8 +35,7 @@ public abstract class AbstractParam<T> {
      *
      * @param input an input value from a client request
      */
-    @SuppressWarnings({"AbstractMethodCallInConstructor",
-            "OverriddenMethodCallDuringObjectConstruction"})
+    @SuppressWarnings({"AbstractMethodCallInConstructor", "OverriddenMethodCallDuringObjectConstruction"})
     protected AbstractParam(String input) {
         try {
             this.value = parse(input);
@@ -57,10 +56,7 @@ public abstract class AbstractParam<T> {
      * @return the {@link javax.ws.rs.core.Response} to be sent to the client
      */
     protected Response error(String input, Exception e) {
-        return Response.status(getErrorStatus())
-                .entity(errorMessage(input, e))
-                .type(mediaType())
-                .build();
+        return Response.status(getErrorStatus()).entity(errorMessage(input, e)).type(mediaType()).build();
     }
 
     /**

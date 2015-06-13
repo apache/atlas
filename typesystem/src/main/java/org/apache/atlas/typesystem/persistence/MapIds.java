@@ -59,8 +59,7 @@ public class MapIds implements ObjectGraphWalker.NodeProcessor {
             }
         } else if (nd.aInfo.dataType().getTypeCategory() == DataTypes.TypeCategory.ARRAY) {
             DataTypes.ArrayType aT = (DataTypes.ArrayType) nd.aInfo.dataType();
-            Object v = aT
-                    .mapIds((ImmutableCollection) nd.value, nd.aInfo.multiplicity, idToNewIdMap);
+            Object v = aT.mapIds((ImmutableCollection) nd.value, nd.aInfo.multiplicity, idToNewIdMap);
             nd.instance.set(nd.attributeName, v);
         } else if (nd.aInfo.dataType().getTypeCategory() == DataTypes.TypeCategory.MAP) {
             DataTypes.MapType mT = (DataTypes.MapType) nd.aInfo.dataType();

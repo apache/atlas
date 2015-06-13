@@ -62,19 +62,16 @@ public abstract class BaseResourceIT {
 
     protected void createType(TypesDef typesDef) throws Exception {
         HierarchicalTypeDefinition<ClassType> sampleType = typesDef.classTypesAsJavaList().get(0);
-        if (serviceClient.getType(sampleType.typeName) == null ) {
+        if (serviceClient.getType(sampleType.typeName) == null) {
             String typesAsJSON = TypesSerialization.toJson(typesDef);
             createType(typesAsJSON);
         }
     }
 
     protected void createType(String typesAsJSON) throws Exception {
-        WebResource resource = service
-                .path("api/atlas/types");
+        WebResource resource = service.path("api/atlas/types");
 
-        ClientResponse clientResponse = resource
-                .accept(Servlets.JSON_MEDIA_TYPE)
-                .type(Servlets.JSON_MEDIA_TYPE)
+        ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.POST, ClientResponse.class, typesAsJSON);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.CREATED.getStatusCode());
 

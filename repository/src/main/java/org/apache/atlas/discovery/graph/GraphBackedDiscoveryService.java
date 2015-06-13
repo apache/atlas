@@ -23,8 +23,8 @@ import com.thinkaurelius.titan.core.TitanIndexQuery;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.tinkerpop.blueprints.Vertex;
-import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.discovery.DiscoveryException;
 import org.apache.atlas.discovery.DiscoveryService;
 import org.apache.atlas.query.Expressions;
@@ -71,8 +71,8 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
     public final static String SCORE = "score";
 
     @Inject
-    GraphBackedDiscoveryService(GraphProvider<TitanGraph> graphProvider,
-                                MetadataRepository metadataRepository) throws DiscoveryException {
+    GraphBackedDiscoveryService(GraphProvider<TitanGraph> graphProvider, MetadataRepository metadataRepository)
+    throws DiscoveryException {
         this.titanGraph = graphProvider.get();
         this.graphPersistenceStrategy = new DefaultGraphPersistenceStrategy(metadataRepository);
     }
@@ -86,7 +86,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
         String graphQuery = String.format("v.%s:(%s)", Constants.ENTITY_TEXT_PROPERTY_KEY, query);
         LOG.debug("Full text query: {}", graphQuery);
         Iterator<TitanIndexQuery.Result<Vertex>> results =
-                        titanGraph.indexQuery(Constants.FULLTEXT_INDEX, graphQuery).vertices().iterator();
+                titanGraph.indexQuery(Constants.FULLTEXT_INDEX, graphQuery).vertices().iterator();
         JSONArray response = new JSONArray();
 
         while (results.hasNext()) {
@@ -143,8 +143,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
 
     public GremlinQueryResult evaluate(Expressions.Expression expression) {
         Expressions.Expression validatedExpression = QueryProcessor.validate(expression);
-        GremlinQuery gremlinQuery =
-                new GremlinTranslator(validatedExpression, graphPersistenceStrategy).translate();
+        GremlinQuery gremlinQuery = new GremlinTranslator(validatedExpression, graphPersistenceStrategy).translate();
         LOG.debug("Query = {}", validatedExpression);
         LOG.debug("Expression Tree = {}", validatedExpression.treeString());
         LOG.debug("Gremlin Query = {}", gremlinQuery.queryStr());
@@ -162,8 +161,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
      */
     @Override
     @GraphTransaction
-    public List<Map<String, String>> searchByGremlin(String gremlinQuery)
-            throws DiscoveryException {
+    public List<Map<String, String>> searchByGremlin(String gremlinQuery) throws DiscoveryException {
         LOG.info("Executing gremlin query={}", gremlinQuery);
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName("gremlin-groovy");
@@ -189,8 +187,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
 
             Map<String, String> oRow = new HashMap<>();
             if (r instanceof Map) {
-                @SuppressWarnings("unchecked")
-                Map<Object, Object> iRow = (Map) r;
+                @SuppressWarnings("unchecked") Map<Object, Object> iRow = (Map) r;
                 for (Map.Entry e : iRow.entrySet()) {
                     Object k = e.getKey();
                     Object v = e.getValue();

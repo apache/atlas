@@ -18,13 +18,33 @@
 
 'use strict';
 
-angular.module('dgc.details').controller('DetailsController', ['$scope', '$stateParams', 'DetailsResource',
-    function($scope, $stateParams, DetailsResource) {
+angular.module('dgc.details').controller('DetailsController', ['$window', '$scope', '$stateParams', 'DetailsResource',
+    function($window, $scope, $stateParams, DetailsResource) {
 
-        $scope.details = DetailsResource.get({
+        $scope.tableName = false;
+        DetailsResource.get({
             id: $stateParams.id
+        }, function(data) {
+            $scope.details = data;
+            $scope.tableName = data.values.name;
         });
 
         $scope.isString = angular.isString;
+
+        $scope.schemas = DetailsResource.get({
+            id: $stateParams.id
+        });
+
+        $scope.onActivate = function tabActivate(tabname) {
+            $scope.$broadcast('render-lineage', {
+                type: tabname,
+                tableName: $scope.tableName
+            });
+        };
+
+        $scope.goBack = function() {
+            $window.history.back();
+        };
+
     }
 ]);

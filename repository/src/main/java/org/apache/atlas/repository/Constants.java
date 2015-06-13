@@ -23,7 +23,7 @@ public final class Constants {
     /**
      * Globally Unique identifier property key.
      */
-    
+
     public static final String INTERNAL_PROPERTY_KEY_PREFIX = "__";
     public static final String GUID_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "guid";
     public static final String GUID_INDEX = "guid_index";

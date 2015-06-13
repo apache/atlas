@@ -90,14 +90,14 @@
         <log4j.version>1.2.17</log4j.version>
         <akka.version>2.3.7</akka.version>
         <spray.version>1.3.1</spray.version>
-        <guava.version>11.0.2</guava.version>
+        <guava.version>14.0</guava.version>
         <fastutil.version>6.5.16</fastutil.version>
 
         <PermGen>64m</PermGen>
         <MaxPermGen>512m</MaxPermGen>
         <SnapshotsId>apache.snapshots.repo</SnapshotsId>
         <SnapshotsName>Apache Snapshot Repository</SnapshotsName>
-        <SnapshotsUrl> https://repository.apache.org/content/groups/snapshots</SnapshotsUrl>
+        <SnapshotsUrl>https://repository.apache.org/content/groups/snapshots</SnapshotsUrl>
         <StagingId>apache-staging</StagingId>
         <StagingName>Apache Release Distribution Repository</StagingName>
         <StagingUrl>https://repository.apache.org/content/groups/staging</StagingUrl>
@@ -110,20 +110,28 @@
         <profile>
             <id>Windows</id>
             <activation>
-                <os><family>windows</family></os>
+                <os>
+                    <family>windows</family>
+                </os>
             </activation>
             <properties>
-                <python.path.l>${project.basedir}\src\bin;${project.basedir}\src\test\python\scripts;${project.basedir}\src\test\mock</python.path.l>
+                <python.path.l>
+                    ${project.basedir}\src\bin;${project.basedir}\src\test\python\scripts;${project.basedir}\src\test\mock
+                </python.path.l>
             </properties>
         </profile>
 
         <profile>
             <id>Linux</id>
             <activation>
-                <os><family>!windows</family></os>
+                <os>
+                    <family>!windows</family>
+                </os>
             </activation>
             <properties>
-                <python.path.l>${project.basedir}/src/bin:${project.basedir}/src/test/mock:${project.basedir}/src/test/python/scripts</python.path.l>
+                <python.path.l>
+                    ${project.basedir}/src/bin:${project.basedir}/src/test/mock:${project.basedir}/src/test/python/scripts
+                </python.path.l>
             </properties>
         </profile>
     </profiles>
@@ -134,7 +142,6 @@
         <module>repository</module>
         <module>webapp</module>
         <module>docs</module>
-        <module>tools</module>
         <module>addons/hive-bridge</module>
     </modules>
 
@@ -193,18 +200,18 @@
             <url>http://repo.typesafe.com/typesafe/releases/</url>
         </repository>
     </repositories>
-     <distributionManagement>
-          <repository>
-              <id>${StagingId}</id>
-             <name>${StagingName}</name>
-             <url>${StagingUrl}</url>
-           </repository>
-         <snapshotRepository>
-             <id>${SnapshotsId}</id>
-             <name>${SnapshotsName}</name>
-             <url>${SnapshotsUrl}</url>
-           </snapshotRepository>
-       </distributionManagement>
+    <distributionManagement>
+        <repository>
+            <id>${StagingId}</id>
+            <name>${StagingName}</name>
+            <url>${StagingUrl}</url>
+        </repository>
+        <snapshotRepository>
+            <id>${SnapshotsId}</id>
+            <name>${SnapshotsName}</name>
+            <url>${SnapshotsUrl}</url>
+        </snapshotRepository>
+    </distributionManagement>
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -317,19 +324,25 @@
             <dependency>
                 <groupId>com.google.inject</groupId>
                 <artifactId>guice</artifactId>
-                <version>3.0</version>
+                <version>4.0</version>
             </dependency>
 
             <dependency>
                 <groupId>com.google.inject.extensions</groupId>
                 <artifactId>guice-throwingproviders</artifactId>
-                <version>3.0</version>
+                <version>4.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.google.inject.extensions</groupId>
+                <artifactId>guice-multibindings</artifactId>
+                <version>4.0</version>
             </dependency>
 
             <dependency>
                 <groupId>com.google.inject.extensions</groupId>
                 <artifactId>guice-servlet</artifactId>
-                <version>3.0</version>
+                <version>4.0</version>
             </dependency>
 
             <dependency>
@@ -908,7 +921,8 @@
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}
                         -Dhadoop.tmp.dir=${project.build.directory}/tmp-hadoop-${user.name}
-                        -Xmx1024m -XX:MaxPermSize=512m</argLine>
+                        -Xmx1024m -XX:MaxPermSize=512m
+                    </argLine>
                 </configuration>
                 <dependencies>
                     <dependency>
@@ -1027,8 +1041,13 @@
                         <exclude>**/data.txt</exclude>
                         <exclude>**/maven-eclipse.xml</exclude>
                         <exclude>**/.externalToolBuilders/**</exclude>
-                        <exclude>dashboard/**</exclude>
                         <exclude>**/build.log</exclude>
+                        <exclude>dashboard/**/.bower*/**</exclude>
+                        <exclude>dashboard/v2/.bower*/**</exclude>
+                        <exclude>dashboard/v2/lib/**</exclude>
+                        <exclude>dashboard/v2/node*/**</exclude>
+                        <exclude>dashboard/v2/dist/**</exclude>
+                        <exclude>dashboard/v2/**/*.min.js*</exclude>
                     </excludes>
                 </configuration>
                 <executions>

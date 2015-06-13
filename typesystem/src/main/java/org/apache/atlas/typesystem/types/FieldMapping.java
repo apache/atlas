@@ -47,12 +47,9 @@ public class FieldMapping {
     public final int numReferenceables;
 
     public FieldMapping(Map<String, AttributeInfo> fields, Map<String, Integer> fieldPos,
-                        Map<String, Integer> fieldNullPos, int numBools, int numBytes,
-                        int numShorts,
-                        int numInts, int numLongs, int numFloats, int numDoubles, int numBigInts,
-                        int numBigDecimals,
-                        int numDates, int numStrings, int numArrays, int numMaps, int numStructs,
-                        int numReferenceables) {
+            Map<String, Integer> fieldNullPos, int numBools, int numBytes, int numShorts, int numInts, int numLongs,
+            int numFloats, int numDoubles, int numBigInts, int numBigDecimals, int numDates, int numStrings,
+            int numArrays, int numMaps, int numStructs, int numReferenceables) {
         this.fields = fields;
         this.fieldPos = fieldPos;
         this.fieldNullPos = fieldNullPos;
@@ -73,8 +70,7 @@ public class FieldMapping {
         this.numReferenceables = numReferenceables;
     }
 
-    protected void outputFields(IStruct s, Appendable buf, String fieldPrefix)
-    throws AtlasException {
+    protected void outputFields(IStruct s, Appendable buf, String fieldPrefix) throws AtlasException {
         for (Map.Entry<String, AttributeInfo> e : fields.entrySet()) {
             String attrName = e.getKey();
             AttributeInfo i = e.getValue();
@@ -104,8 +100,7 @@ public class FieldMapping {
         TypeUtils.outputVal("}", buf, prefix);
     }
 
-    public void output(IReferenceableInstance s, Appendable buf, String prefix)
-    throws AtlasException {
+    public void output(IReferenceableInstance s, Appendable buf, String prefix) throws AtlasException {
         if (s == null) {
             TypeUtils.outputVal("<null>\n", buf, "");
             return;

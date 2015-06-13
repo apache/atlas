@@ -22,10 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanIndexQuery;
-import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -33,7 +30,6 @@ import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.atlas.GraphTransaction;
-import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
@@ -54,14 +50,11 @@ import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.commons.io.FileUtils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 
@@ -73,7 +66,8 @@ public class GraphRepoMapperScaleTest {
     private static final String TABLE_TYPE = "hive_table_type";
     private static final String TABLE_NAME = "bar";
 
-    private static final String INDEX_DIR = System.getProperty("java.io.tmpdir", "/tmp") + "/atlas-test" + new Random().nextLong();
+    private static final String INDEX_DIR =
+            System.getProperty("java.io.tmpdir", "/tmp") + "/atlas-test" + new Random().nextLong();
 
     private GraphProvider<TitanGraph> graphProvider = new GraphProvider<TitanGraph>() {
 
@@ -130,7 +124,7 @@ public class GraphRepoMapperScaleTest {
         graphProvider.get().shutdown();
         try {
             FileUtils.deleteDirectory(new File(INDEX_DIR));
-        } catch(IOException ioe) {
+        } catch (IOException ioe) {
             System.err.println("Failed to cleanup index directory");
         }
     }
@@ -147,8 +141,7 @@ public class GraphRepoMapperScaleTest {
 
         dbGUID = repositoryService.createEntity(db);
 
-        Referenceable dbInstance = new Referenceable(
-                dbGUID, DATABASE_TYPE, databaseInstance.getValuesMap());
+        Referenceable dbInstance = new Referenceable(dbGUID, DATABASE_TYPE, databaseInstance.getValuesMap());
 
         for (int index = 0; index < 1000; index++) {
             ITypedReferenceableInstance table = createHiveTableInstance(dbInstance, index);
@@ -175,14 +168,13 @@ public class GraphRepoMapperScaleTest {
         long start = System.currentTimeMillis();
         int count = 0;
         try {
-            GraphQuery query = graph.query()
-                    .has(key, Compare.EQUAL, value);
+            GraphQuery query = graph.query().has(key, Compare.EQUAL, value);
             for (Vertex ignored : query.vertices()) {
                 count++;
             }
         } finally {
-            System.out.println("Search on [" + key + "=" + value + "] returned results: " + count
-                    + ", took " + (System.currentTimeMillis() - start) + " ms");
+            System.out.println("Search on [" + key + "=" + value + "] returned results: " + count + ", took " + (
+                    System.currentTimeMillis() - start) + " ms");
         }
     }
 
@@ -197,92 +189,74 @@ public class GraphRepoMapperScaleTest {
                 count++;
             }
         } finally {
-            System.out.println("Search on [" + key + "=" + value + "] returned results: " + count
-                    + ", took " + (System.currentTimeMillis() - start) + " ms");
+            System.out.println("Search on [" + key + "=" + value + "] returned results: " + count + ", took " + (
+                    System.currentTimeMillis() - start) + " ms");
         }
     }
 
     private void createHiveTypes() throws Exception {
-        HierarchicalTypeDefinition<ClassType> databaseTypeDefinition =
-                TypesUtil.createClassTypeDef(DATABASE_TYPE,
-                        ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<ClassType> databaseTypeDefinition = TypesUtil
+                .createClassTypeDef(DATABASE_TYPE, ImmutableList.<String>of(),
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
 
-        StructTypeDefinition structTypeDefinition =
-                new StructTypeDefinition("hive_serde_type",
-                        new AttributeDefinition[]{
-                                TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                                TypesUtil.createRequiredAttrDef("serde", DataTypes.STRING_TYPE)
-                        });
+        StructTypeDefinition structTypeDefinition = new StructTypeDefinition("hive_serde_type",
+                new AttributeDefinition[]{TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        TypesUtil.createRequiredAttrDef("serde", DataTypes.STRING_TYPE)});
 
-        EnumValue values[] = {
-                new EnumValue("MANAGED", 1),
-                new EnumValue("EXTERNAL", 2),
-        };
+        EnumValue values[] = {new EnumValue("MANAGED", 1), new EnumValue("EXTERNAL", 2),};
 
         EnumTypeDefinition enumTypeDefinition = new EnumTypeDefinition("table_type", values);
-        EnumType enumType = typeSystem.defineEnumType(enumTypeDefinition);
-        searchIndexer.onAdd("table_type", enumType);
+        final EnumType enumType = typeSystem.defineEnumType(enumTypeDefinition);
 
-        HierarchicalTypeDefinition<ClassType> columnsDefinition =
-                TypesUtil.createClassTypeDef("hive_column_type",
-                        ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<ClassType> columnsDefinition = TypesUtil
+                .createClassTypeDef("hive_column_type", ImmutableList.<String>of(),
                         TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
 
-        StructTypeDefinition partitionDefinition =
-                new StructTypeDefinition("hive_partition_type",
-                        new AttributeDefinition[]{
-                                TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        });
+        StructTypeDefinition partitionDefinition = new StructTypeDefinition("hive_partition_type",
+                new AttributeDefinition[]{TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),});
 
-        HierarchicalTypeDefinition<ClassType> tableTypeDefinition =
-                TypesUtil.createClassTypeDef(TABLE_TYPE,
-                        ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<ClassType> tableTypeDefinition = TypesUtil
+                .createClassTypeDef(TABLE_TYPE, ImmutableList.<String>of(),
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE),
                         // enum
-                        new AttributeDefinition("tableType", "table_type",
-                                Multiplicity.REQUIRED, false, null),
+                        new AttributeDefinition("tableType", "table_type", Multiplicity.REQUIRED, false, null),
                         // array of strings
                         new AttributeDefinition("columnNames",
-                                String.format("array<%s>", DataTypes.STRING_TYPE.getName()),
-                                Multiplicity.COLLECTION, false, null),
+                                String.format("array<%s>", DataTypes.STRING_TYPE.getName()), Multiplicity.COLLECTION,
+                                false, null),
                         // array of classes
-                        new AttributeDefinition("columns",
-                                String.format("array<%s>", "hive_column_type"),
+                        new AttributeDefinition("columns", String.format("array<%s>", "hive_column_type"),
                                 Multiplicity.COLLECTION, true, null),
                         // array of structs
-                        new AttributeDefinition("partitions",
-                                String.format("array<%s>", "hive_partition_type"),
+                        new AttributeDefinition("partitions", String.format("array<%s>", "hive_partition_type"),
                                 Multiplicity.COLLECTION, true, null),
                         // struct reference
-                        new AttributeDefinition("serde1",
-                                "hive_serde_type", Multiplicity.REQUIRED, false, null),
-                        new AttributeDefinition("serde2",
-                                "hive_serde_type", Multiplicity.REQUIRED, false, null),
+                        new AttributeDefinition("serde1", "hive_serde_type", Multiplicity.REQUIRED, false, null),
+                        new AttributeDefinition("serde2", "hive_serde_type", Multiplicity.REQUIRED, false, null),
                         // class reference
-                        new AttributeDefinition("database",
-                                DATABASE_TYPE, Multiplicity.REQUIRED, true, null));
+                        new AttributeDefinition("database", DATABASE_TYPE, Multiplicity.REQUIRED, true, null));
 
         HierarchicalTypeDefinition<TraitType> classificationTypeDefinition =
                 TypesUtil.createTraitTypeDef("pii_type", ImmutableList.<String>of());
 
-        Map<String, IDataType> types = typeSystem.defineTypes(
-                ImmutableList.of(structTypeDefinition, partitionDefinition),
-                ImmutableList.of(classificationTypeDefinition),
-                ImmutableList.of(databaseTypeDefinition, columnsDefinition, tableTypeDefinition));
+        Map<String, IDataType> types = typeSystem
+                .defineTypes(ImmutableList.of(structTypeDefinition, partitionDefinition),
+                        ImmutableList.of(classificationTypeDefinition),
+                        ImmutableList.of(databaseTypeDefinition, columnsDefinition, tableTypeDefinition));
 
-        for (Map.Entry<String, IDataType> entry : types.entrySet()) {
-            searchIndexer.onAdd(entry.getKey(), entry.getValue());
-        }
-        searchIndexer.commit();
+
+        ArrayList<IDataType> typesAdded = new ArrayList<IDataType>();
+        typesAdded.add(enumType);
+        typesAdded.addAll(types.values());
+        searchIndexer.onAdd(typesAdded);
     }
 
-    private ITypedReferenceableInstance createHiveTableInstance(
-            Referenceable databaseInstance, int uberIndex) throws Exception {
+    private ITypedReferenceableInstance createHiveTableInstance(Referenceable databaseInstance, int uberIndex)
+    throws Exception {
 
         Referenceable tableInstance = new Referenceable(TABLE_TYPE, "pii_type");
         tableInstance.set("name", TABLE_NAME + "-" + uberIndex);
