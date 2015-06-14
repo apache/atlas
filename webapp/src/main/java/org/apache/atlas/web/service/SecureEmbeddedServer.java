@@ -59,11 +59,11 @@ public class SecureEmbeddedServer extends EmbeddedServer {
         connector.setHost("0.0.0.0");
         connector.setKeystore(config.getString(KEYSTORE_FILE_KEY,
                 System.getProperty(KEYSTORE_FILE_KEY, DEFAULT_KEYSTORE_FILE_LOCATION)));
-        connector.setKeyPassword(getPassword(config, KEYSTORE_PASSWORD_KEY));
+        connector.setKeyPassword(getPassword(config, SERVER_CERT_PASSWORD_KEY));
         connector.setTruststore(config.getString(TRUSTSTORE_FILE_KEY,
                 System.getProperty(TRUSTSTORE_FILE_KEY, DEFATULT_TRUSTORE_FILE_LOCATION)));
         connector.setTrustPassword(getPassword(config, TRUSTSTORE_PASSWORD_KEY));
-        connector.setPassword(getPassword(config, SERVER_CERT_PASSWORD_KEY));
+        connector.setPassword(getPassword(config, KEYSTORE_PASSWORD_KEY));
         connector.setWantClientAuth(config.getBoolean(CLIENT_AUTH_KEY, Boolean.getBoolean(CLIENT_AUTH_KEY)));
         return connector;
     }
