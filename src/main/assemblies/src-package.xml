@@ -35,7 +35,7 @@
                 <exclude>**/.idea/**</exclude>
                 <exclude>**/*.iml</exclude>
                 <exclude>**/*.log</exclude>
-                <exclude>dashboard/v2/.bower*/**</exclude>
+                <exclude>dashboard/v2/.bower-*/**</exclude>
                 <exclude>dashboard/v2/lib/**</exclude>
                 <exclude>dashboard/v2/node*/**</exclude>
                 <exclude>dashboard/v2/dist/**</exclude>
