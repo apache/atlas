@@ -29,14 +29,24 @@
 
     <custom>
         <fluidoSkin>
-            <project>Apache Metadata and Governance</project>
+            <project>Apache Atlas</project>
+            <topBarEnabled>true</topBarEnabled>
+            <topBarContainerStyle>width: 68%;</topBarContainerStyle>
             <sideBarEnabled>false</sideBarEnabled>
+            <leftColumnClass>span2</leftColumnClass>
+            <bodyColumnClass>span10</bodyColumnClass>
+            <googleSearch>
+                <sitesearch>http://atlas.incubator.apache.org</sitesearch>
+            </googleSearch>
+            <facebookLike/>
+            <googlePlusOne/>
         </fluidoSkin>
     </custom>
 
     <bannerLeft>
-        <name>DGC - Metadata</name>
-        <src>./images/metadata-logo.png</src>
+        <name>Apache Atlas</name>
+        <src>./images/atlas-logo.png</src>
+        <href>http://atlas.incubator.apache.org</href>
         <width>200px</width>
         <height>45px</height>
     </bannerLeft>
@@ -57,12 +67,61 @@
             </script>
         </head>
 
-        <breadcrumbs position="left">
-            <item name="MetadataGovernance" title="Apache Metadata and Governance" href="index.html"/>
+        <breadcrumbs>
+            <item name="Apache" href="http://www.apache.org"/>
+            <item name="Atlas" title="Apache Atlas" href="index.html"/>
         </breadcrumbs>
 
+        <menu name="Atlas">
+            <item name="About" href="index.html"/>
+            <item name="Wiki" href="https://cwiki.apache.org/confluence/display/ATLAS"/>
+            <item name="News" href="https://cwiki.apache.org/confluence/display/ATLAS"/>
+            <item name="Git" href="https://git-wip-us.apache.org/repos/asf/incubator-atlas.git" />
+            <item name="Svn" href="https://svn.apache.org/repos/asf/incubator/atlas" />
+            <item name="Jira" href="https://issues.apache.org/jira/browse/ATLAS" />
+            <item name="Powered by" href="https://cwiki.apache.org/confluence/display/ATLAS/PoweredBy" />
+            <item name="Blog" href="http://blogs.apache.org/atlas/" />
+        </menu>
+
+        <menu name="Project Information">
+            <item name="Summary" href="project-info.html" />
+            <item name="Mailing Lists" href="mail-lists.html" />
+            <item name="IRC" href="http://webchat.freenode.net?channels=apacheatlas&amp;uio=d4" />
+            <item name="Team" href="team-list.html" />
+            <item name="Issue Tracking" href="issue-tracking.html" />
+            <item name="Source Repository" href="source-repository.html" />
+            <item name="License" href="license.html" />
+        </menu>
+
+        <menu name="Releases">
+            <item name="Coming soon" href="https://cwiki.apache.org/confluence/display/ATLAS"/>
+        </menu>
+
+        <menu name="Documentation">
+            <!-- current points to latest release -->
+            <item name="current" href="index.html"/>
+        </menu>
+
+        <menu name="Resources">
+            <item name="Overview" href="index.html"/>
+            <item name="Getting Started" href="./QuickStart.html"/>
+            <item name="Architecture" href="./Architecture.html"/>
+            <item name="Installation" href="./InstallationSteps.html"/>
+            <item name="Type System" href="./TypeSystem.html"/>
+            <item name="Configuration" href="./Configuration.html"/>
+            <item name="Security" href="./Security.html"/>
+            <item name="Rest API" href="./api/rest.html"/>
+        </menu>
+
+        <menu name="ASF">
+            <item name="How Apache Works" href="http://www.apache.org/foundation/how-it-works.html"/>
+            <item name="Foundation" href="http://www.apache.org/foundation/"/>
+            <item name="Sponsoring Apache" href="http://www.apache.org/foundation/sponsorship.html"/>
+            <item name="Thanks" href="http://www.apache.org/foundation/thanks.html"/>
+        </menu>
+
         <footer>
-            Â© 2011-2012 The Apache Software Foundation. Apache Metadata and Governance, Apache,
+            Â© 2011-2012 The Apache Software Foundation. Apache Atlas, Atlas, Apache,
             the Apache feather logo, and the Apache Metadata and Governance project logo are
             trademarks of The Apache Software Foundation.
         </footer>
