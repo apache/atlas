@@ -24,7 +24,7 @@
     <parent>
         <artifactId>apache-atlas</artifactId>
         <groupId>org.apache.atlas</groupId>
-        <version>0.1-incubating-SNAPSHOT</version>
+        <version>0.6-incubating-SNAPSHOT</version>
     </parent>
     <artifactId>atlas-client</artifactId>
     <description>Apache Atlas Client</description>

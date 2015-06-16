@@ -6,9 +6,10 @@ Apache Atlas Release Notes
 INCOMPATIBLE CHANGES:
 
 ALL CHANGES:
-
+ATLAS-10 Update trunk version to 0.6-incubating-SNAPSHOT (shwethags)
 
 --Release 0.5-incubating
 
 ALL CHANGES:
+ATLAS-9 Create branch-0.5 and update version to 0.5-incubating (shwethags)
 ATLAS-14 Change the github repo url in installation steps to point to Apache repo (ajayyadava via shwethags)
