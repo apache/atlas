@@ -18,8 +18,9 @@
 
 'use strict';
 
-angular.module('dgc.lineage').controller('LineageController', ['$element', '$scope', '$state', '$stateParams', 'lodash', 'LineageResource', 'd3',
-    function($element, $scope, $state, $stateParams, _, LineageResource, d3) {
+angular.module('dgc.lineage').controller('LineageController', ['$element', '$scope', '$state', '$stateParams', 'lodash', 'LineageResource', 'd3', 'DetailsResource', '$q',
+    function($element, $scope, $state, $stateParams, _, LineageResource, d3, DetailsResource, $q) {
+        var guidsList = [];
 
         function getLineageData(tableData, callRender) {
             LineageResource.get({
@@ -27,13 +28,36 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                 type: tableData.type
             }, function lineageSuccess(response) {
                 if (!_.isEmpty(response.results.values.vertices)) {
-                    $scope.lineageData = transformData(response.results);
-                    if (callRender) {
-                        render();
-                    }
+                    var allGuids = loadProcess(response.results.values.edges, response.results.values.vertices);
+                    allGuids.then(function(res) {
+                        guidsList = res;
+                        $scope.lineageData = transformData(response.results);
+                        if (callRender) {
+                            render();
+                        }
+                    });
                 }
                 $scope.requested = false;
             });
+        }
+
+        function loadProcess(edges, vertices) {
+
+            var urlCalls = [];
+            var deferred = $q.defer();
+            for (var guid in edges) {
+                if (!vertices.hasOwnProperty(guid)) {
+                    urlCalls.push(DetailsResource.get({
+                        id: guid
+                    }).$promise);
+                }
+
+            }
+            $q.all(urlCalls)
+                .then(function(results) {
+                    deferred.resolve(results);
+                });
+            return deferred.promise;
         }
 
         $scope.type = $element.parent().attr('data-table-type');
@@ -67,15 +91,43 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                 nodes = {};
 
             function getNode(guid) {
+                var name, type, tip;
+                if (vertices.hasOwnProperty(guid)) {
+                    name = vertices[guid].values.name;
+                    type = vertices[guid].values.vertexId.values.typeName;
+                } else {
+                    var loadProcess = getLoadProcessTypes(guid);
+                    if (typeof loadProcess !== "undefined") {
+                        name = loadProcess.name;
+                        type = loadProcess.typeName;
+                        tip = loadProcess.tip;
+                    } else {
+                        name = 'Load Process';
+                        type = 'Load Process';
+                    }
+                }
                 var vertex = {
                     guid: guid,
-                    name: vertices.hasOwnProperty(guid) ? vertices[guid].values.name : 'Load Process',
-                    type: vertices.hasOwnProperty(guid) ? vertices[guid].values.vertexId.values.typeName : 'LoadProcess'
+                    name: name,
+                    type: type,
+                    tip: tip
                 };
                 if (!nodes.hasOwnProperty(guid)) {
                     nodes[guid] = vertex;
                 }
                 return nodes[guid];
+            }
+
+            function getLoadProcessTypes(guid) {
+                var procesRes = [];
+                angular.forEach(guidsList, function(value) {
+                    if (value.id.id === guid) {
+                        procesRes.name = value.values.name;
+                        procesRes.typeName = value.typeName;
+                        procesRes.tip = value.values.queryText;
+                    }
+                });
+                return procesRes;
             }
 
             function attachParent(edge, node) {
@@ -127,15 +179,37 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                     return [d.y, d.x];
                 });
 
+            /* Initialize tooltip */
+            var tooltip = d3.tip()
+                .attr('class', 'd3-tip')
+                .html(function(d) {
+                    return '<pre class="alert alert-success">' + d.tip + '</pre>';
+                });
+
             var svg = element.select('svg')
                 .attr('width', width + margin.right + margin.left)
                 .attr('height', height + margin.top + margin.bottom)
+                /* Invoke the tip in the context of your visualization */
+                .call(tooltip)
                 .select('g')
-
-            .attr('transform',
-                'translate(' + margin.left + ',' + margin.right + ')');
+                .attr('transform',
+                    'translate(' + margin.left + ',' + margin.right + ')');
             //arrow
             svg.append("svg:defs").append("svg:marker").attr("id", "arrow").attr("viewBox", "0 0 10 10").attr("refX", 26).attr("refY", 5).attr("markerUnits", "strokeWidth").attr("markerWidth", 6).attr("markerHeight", 9).attr("orient", "auto").append("svg:path").attr("d", "M 0 0 L 10 5 L 0 10 z");
+            
+            //marker for input type graph
+            svg.append("svg:defs")
+            .append("svg:marker")
+            .attr("id", "input-arrow")
+            .attr("viewBox", "0 0 10 10")
+            .attr("refX", -15)
+            .attr("refY", 5)
+            .attr("markerUnits", "strokeWidth")
+            .attr("markerWidth", 6)
+            .attr("markerHeight", 9)
+            .attr("orient", "auto")
+            .append("svg:path")
+            .attr("d", "M -2 5 L 8 0 L 8 10 z");
 
             var root = data;
 
@@ -168,6 +242,16 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                         //return d.icon;
                         return d.type === 'Table' ? '../img/tableicon.png' : '../img/process.png';
                     })
+                    .on('mouseover', function(d) {
+                        if (d.type === 'LoadProcess') {
+                            tooltip.show(d);
+                        }
+                    })
+                    .on('mouseout', function(d) {
+                        if (d.type === 'LoadProcess') {
+                            tooltip.hide(d);
+                        }
+                    })
                     .attr("x", "-18px")
                     .attr("y", "-18px")
                     .attr("width", "34px")
@@ -199,7 +283,12 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                     //.style('stroke', function(d) { return d.target.level; })
                     .style('stroke', 'green')
                     .attr('d', diagonal);
-                link.attr("marker-end", "url(#arrow)");
+
+                if($scope.type === 'inputs') {
+                    link.attr("marker-start", "url(#input-arrow)");//if input
+                } else {
+                    link.attr("marker-end", "url(#arrow)");//if input
+                }
 
             }
 

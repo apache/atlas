@@ -341,7 +341,8 @@ public class DefaultMetadataService implements MetadataService {
         onTraitAddedToEntity(guid, traitName);
     }
 
-    private ITypedStruct deserializeTraitInstance(String traitInstanceDefinition) throws AtlasException {
+    private ITypedStruct deserializeTraitInstance(String traitInstanceDefinition)
+    throws AtlasException {
 
         try {
             Struct traitInstance = InstanceSerialization.fromJsonStruct(traitInstanceDefinition, true);
@@ -399,7 +400,8 @@ public class DefaultMetadataService implements MetadataService {
         }
     }
 
-    private void onEntityAddedToRepo(ITypedReferenceableInstance typedInstance) throws AtlasException {
+    private void onEntityAddedToRepo(ITypedReferenceableInstance typedInstance)
+    throws AtlasException {
 
         for (EntityChangeListener listener : entityChangeListeners) {
             listener.onEntityAdded(typedInstance);
@@ -425,5 +427,4 @@ public class DefaultMetadataService implements MetadataService {
     public void unregisterListener(EntityChangeListener listener) {
         entityChangeListeners.remove(listener);
     }
-
 }
