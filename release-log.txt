@@ -1,0 +1,14 @@
+Apache Atlas Release Notes
+==========================
+
+--trunk - unreleased
+
+INCOMPATIBLE CHANGES:
+
+ALL CHANGES:
+
+
+--Release 0.5-incubating
+
+ALL CHANGES:
+ATLAS-14 Change the github repo url in installation steps to point to Apache repo (ajayyadava via shwethags)

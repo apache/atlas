@@ -32,7 +32,7 @@ You would need the following installed:
 Building Atlas from the source repository
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* git clone git@github.com:hortonworks/atlas.git atlas
+* git clone https://git-wip-us.apache.org/repos/asf/incubator-atlas.git atlas
 * cd atlas
 * export MAVEN_OPTS="-Xmx1024m -XX:MaxPermSize=256m" && mvn clean install
 
