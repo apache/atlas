@@ -91,7 +91,7 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                 nodes = {};
 
             function getNode(guid) {
-                var name, type;
+                var name, type, tip;
                 if (vertices.hasOwnProperty(guid)) {
                     name = vertices[guid].values.name;
                     type = vertices[guid].values.vertexId.values.typeName;
@@ -100,6 +100,7 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                     if (typeof loadProcess !== "undefined") {
                         name = loadProcess.name;
                         type = loadProcess.typeName;
+                        tip = loadProcess.tip;
                     } else {
                         name = 'Load Process';
                         type = 'Load Process';
@@ -108,7 +109,8 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                 var vertex = {
                     guid: guid,
                     name: name,
-                    type: type
+                    type: type,
+                    tip: tip
                 };
                 if (!nodes.hasOwnProperty(guid)) {
                     nodes[guid] = vertex;
@@ -122,6 +124,7 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                     if (value.id.id === guid) {
                         procesRes.name = value.values.name;
                         procesRes.typeName = value.typeName;
+                        procesRes.tip = value.values.queryText;
                     }
                 });
                 return procesRes;
@@ -176,13 +179,21 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                     return [d.y, d.x];
                 });
 
+            /* Initialize tooltip */
+            var tooltip = d3.tip()
+                .attr('class', 'd3-tip')
+                .html(function(d) {
+                    return '<pre class="alert alert-success">' + d.tip + '</pre>';
+                });
+
             var svg = element.select('svg')
                 .attr('width', width + margin.right + margin.left)
                 .attr('height', height + margin.top + margin.bottom)
+                /* Invoke the tip in the context of your visualization */
+                .call(tooltip)
                 .select('g')
-
-            .attr('transform',
-                'translate(' + margin.left + ',' + margin.right + ')');
+                .attr('transform',
+                    'translate(' + margin.left + ',' + margin.right + ')');
             //arrow
             svg.append("svg:defs").append("svg:marker").attr("id", "arrow").attr("viewBox", "0 0 10 10").attr("refX", 26).attr("refY", 5).attr("markerUnits", "strokeWidth").attr("markerWidth", 6).attr("markerHeight", 9).attr("orient", "auto").append("svg:path").attr("d", "M 0 0 L 10 5 L 0 10 z");
 
@@ -217,10 +228,21 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                         //return d.icon;
                         return d.type === 'Table' ? '../img/tableicon.png' : '../img/process.png';
                     })
+                    .on('mouseover', function(d) {
+                        if (d.type === 'LoadProcess') {
+                            tooltip.show(d);
+                        }
+                    })
+                    .on('mouseout', function(d) {
+                        if (d.type === 'LoadProcess') {
+                            tooltip.hide(d);
+                        }
+                    })
                     .attr("x", "-18px")
                     .attr("y", "-18px")
                     .attr("width", "34px")
                     .attr("height", "34px");
+
                 nodeEnter.append('text')
                     .attr('x', function(d) {
                         return d.children || d._children ?
