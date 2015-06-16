@@ -18,8 +18,9 @@
 
 'use strict';
 
-angular.module('dgc.lineage').controller('LineageController', ['$element', '$scope', '$state', '$stateParams', 'lodash', 'LineageResource', 'd3',
-    function($element, $scope, $state, $stateParams, _, LineageResource, d3) {
+angular.module('dgc.lineage').controller('LineageController', ['$element', '$scope', '$state', '$stateParams', 'lodash', 'LineageResource', 'd3', 'DetailsResource', '$q',
+    function($element, $scope, $state, $stateParams, _, LineageResource, d3, DetailsResource, $q) {
+        var guidsList = [];
 
         function getLineageData(tableData, callRender) {
             LineageResource.get({
@@ -27,13 +28,36 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                 type: tableData.type
             }, function lineageSuccess(response) {
                 if (!_.isEmpty(response.results.values.vertices)) {
-                    $scope.lineageData = transformData(response.results);
-                    if (callRender) {
-                        render();
-                    }
+                    var allGuids = loadProcess(response.results.values.edges, response.results.values.vertices);
+                    allGuids.then(function(res) {
+                        guidsList = JSON.parse(res);
+                        $scope.lineageData = transformData(response.results);
+                        if (callRender) {
+                            render();
+                        }
+                    });
                 }
                 $scope.requested = false;
             });
+        }
+
+        function loadProcess(edges, vertices) {
+
+            var urlCalls = [];
+            var deferred = $q.defer();
+            for (var guid in edges) {
+                if (!vertices.hasOwnProperty(guid)) {
+                    urlCalls.push(DetailsResource.get({
+                        id: guid
+                    }).$promise);
+                }
+
+            }
+            $q.all(urlCalls)
+                .then(function(results) {
+                    deferred.resolve(JSON.stringify(results));
+                });
+            return deferred.promise;
         }
 
         $scope.type = $element.parent().attr('data-table-type');
@@ -67,15 +91,40 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                 nodes = {};
 
             function getNode(guid) {
+                var name, type;
+                if (vertices.hasOwnProperty(guid)) {
+                    name = vertices[guid].values.name;
+                    type = vertices[guid].values.vertexId.values.typeName;
+                } else {
+                    var loadProcess = getLoadProcessTypes(guid);
+                    if (typeof loadProcess !== "undefined") {
+                        name = loadProcess.name;
+                        type = loadProcess.typeName;
+                    } else {
+                        name = 'Load Process';
+                        type = 'Load Process';
+                    }
+                }
                 var vertex = {
                     guid: guid,
-                    name: vertices.hasOwnProperty(guid) ? vertices[guid].values.name : 'Load Process',
-                    type: vertices.hasOwnProperty(guid) ? vertices[guid].values.vertexId.values.typeName : 'LoadProcess'
+                    name: name,
+                    type: type
                 };
                 if (!nodes.hasOwnProperty(guid)) {
                     nodes[guid] = vertex;
                 }
                 return nodes[guid];
+            }
+
+            function getLoadProcessTypes(guid) {
+                var procesRes = [];
+                angular.forEach(guidsList, function(value) {
+                    if (value.id.id === guid) {
+                        procesRes.name = value.values.name;
+                        procesRes.typeName = value.typeName;
+                    }
+                });
+                return procesRes;
             }
 
             function attachParent(edge, node) {
@@ -172,7 +221,6 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                     .attr("y", "-18px")
                     .attr("width", "34px")
                     .attr("height", "34px");
-
                 nodeEnter.append('text')
                     .attr('x', function(d) {
                         return d.children || d._children ?
