@@ -13,6 +13,7 @@ ATLAS-10 Update trunk version to 0.6-incubating-SNAPSHOT (shwethags)
 
 ALL CHANGES:
 
+ATLAS-18 Build fails because of a missing artifact (Ajay Yadava via Venkatesh Seetharam)
 ATLAS-13 Add project website (Venkatesh Seetharam)
 ATLAS-12 Update the copyright in Notice and License files (Venkatesh Seetharam)
 ATLAS-9 Create branch-0.5 and update version to 0.5-incubating (shwethags)
