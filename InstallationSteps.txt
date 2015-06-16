@@ -42,7 +42,7 @@ Building Atlas from the source repository
 
 Once the build successfully completes, artifacts can be packaged for deployment.
 
-* mvn clean assembly:assembly -DskipTests -DskipITs
+* mvn clean verify assembly:assembly -DskipTests
 
 Tar can be found in atlas/target/apache-atlas-${project.version}-bin.tar.gz
 
