@@ -186,7 +186,7 @@ public class SecureEmbeddedServerITBase {
 
     protected String getWarPath() {
         return String
-                .format("/target/atlas-webapp-%s", System.getProperty("project.version", "0.1-incubating-SNAPSHOT"));
+                .format("/target/atlas-webapp-%s", System.getProperty("project.version", "0.5-incubating"));
     }
 
     protected void setupCredentials() throws Exception {

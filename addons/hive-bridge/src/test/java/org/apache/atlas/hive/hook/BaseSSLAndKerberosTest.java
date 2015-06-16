@@ -119,7 +119,7 @@ public class BaseSSLAndKerberosTest extends BaseSecurityTest {
 
     protected String getWarPath() {
         return String.format("/../../webapp/target/atlas-webapp-%s",
-                System.getProperty("project.version", "0.1-incubating-SNAPSHOT"));
+                System.getProperty("project.version", "0.5-incubating"));
     }
 
     protected HiveConf getHiveConf() {
