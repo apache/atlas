@@ -30,7 +30,7 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                 if (!_.isEmpty(response.results.values.vertices)) {
                     var allGuids = loadProcess(response.results.values.edges, response.results.values.vertices);
                     allGuids.then(function(res) {
-                        guidsList = JSON.parse(res);
+                        guidsList = res;
                         $scope.lineageData = transformData(response.results);
                         if (callRender) {
                             render();
@@ -55,7 +55,7 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
             }
             $q.all(urlCalls)
                 .then(function(results) {
-                    deferred.resolve(JSON.stringify(results));
+                    deferred.resolve(results);
                 });
             return deferred.promise;
         }
