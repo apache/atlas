@@ -14,9 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-Metadata and Governance Overview
+Apache Atlas (incubating) Overview
 
-The Data Governance Initiative, Atlas, framework is an extensible set of core
+Apache Atlas framework is an extensible set of core
 foundational governance services – enabling enterprises to effectively and
 efficiently meet their compliance requirements within Hadoop and allows
 integration with the whole enterprise data ecosystem.
@@ -30,3 +30,11 @@ each other -- the metadata store is common.
 The metadata veracity is maintained by leveraging Apache Ranger to prevent
 non-authorized access paths to data at runtime.
 Security is both role based (RBAC) and attribute based (ABAC).
+
+
+Apache Atlas is an effort undergoing incubation at the Apache
+Software Foundation (ASF), sponsored by the Apache Incubator PMC.
+
+For more information about the incubation status of the Apache Atlas
+project you can go to the following page:
+http://incubator.apache.org/projects/atlas.html
