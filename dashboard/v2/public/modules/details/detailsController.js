@@ -22,18 +22,18 @@ angular.module('dgc.details').controller('DetailsController', ['$window', '$scop
     function($window, $scope, $stateParams, DetailsResource) {
 
         $scope.tableName = false;
+        $scope.isTable = false;
+
         DetailsResource.get({
             id: $stateParams.id
         }, function(data) {
             $scope.details = data;
+            $scope.schemas = data;
             $scope.tableName = data.values.name;
+            $scope.isTable = data.typeName === 'Table';
         });
 
         $scope.isString = angular.isString;
-
-        $scope.schemas = DetailsResource.get({
-            id: $stateParams.id
-        });
 
         $scope.onActivate = function tabActivate(tabname) {
             $scope.$broadcast('render-lineage', {
