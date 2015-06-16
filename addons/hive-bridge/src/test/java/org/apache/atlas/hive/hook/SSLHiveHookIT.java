@@ -183,7 +183,7 @@ public class SSLHiveHookIT {
 
     protected String getWarPath() {
         return String.format("/../../webapp/target/atlas-webapp-%s",
-                System.getProperty("project.version", "0.6-incubating-SNAPSHOT"));
+                System.getProperty("project.version"));
     }
 
     private HiveConf getHiveConf() {
