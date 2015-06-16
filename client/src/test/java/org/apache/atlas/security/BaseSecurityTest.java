@@ -44,7 +44,7 @@ public class BaseSecurityTest {
 
     protected String getWarPath() {
         return String.format("/target/atlas-webapp-%s.war",
-                System.getProperty("release.version", "0.5-incubating"));
+                System.getProperty("release.version"));
     }
 
     protected void generateTestProperties(Properties props) throws ConfigurationException, IOException {
