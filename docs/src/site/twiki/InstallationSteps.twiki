@@ -1,0 +1,155 @@
+---++ Building & Installing Apache Atlas
+
+---+++ Building Atlas
+
+<verbatim>
+git clone https://git-wip-us.apache.org/repos/asf/incubator-atlas.git atlas
+
+cd atlas
+
+export MAVEN_OPTS="-Xmx1024m -XX:MaxPermSize=256m" && mvn clean install
+</verbatim>
+
+Once the build successfully completes, artifacts can be packaged for deployment.
+
+<verbatim>
+
+mvn clean assembly:assembly -DskipTests
+
+</verbatim>
+
+Tar can be found in atlas/target/apache-atlas-${project.version}-bin.tar.gz
+
+Tar is structured as follows
+
+<verbatim>
+
+|- bin
+   |- atlas_start.py
+   |- atlas_stop.py
+   |- atlas_config.py
+   |- quick_start.py
+   |- cputil.py
+|- conf
+   |- application.properties
+   |- client.properties
+   |- atlas-env.sh
+   |- log4j.xml
+|- docs
+|- server
+   |- webapp
+      |- atlas.war
+|- README
+|- NOTICE.txt
+|- LICENSE.txt
+|- DISCLAIMER.txt
+|- CHANGES.txt
+
+</verbatim>
+
+---+++ Installing & Running Atlas
+
+*Installing Atlas*
+<verbatim>
+tar -xzvf apache-atlas-${project.version}-bin.tar.gz
+* cd atlas-${project.version}
+</verbatim>
+
+*Configuring Atlas*
+
+By default config directory used by Atlas is {package dir}/conf. To override this set environment
+variable METADATA_CONF to the path of the conf dir.
+
+atlas-env.sh has been added to the Atlas conf. This file can be used to set various environment
+variables that you need for you services. In addition you can set any other environment
+variables you might need. This file will be sourced by atlas scripts before any commands are
+executed. The following environment variables are available to set.
+
+<verbatim>
+# The java implementation to use. If JAVA_HOME is not found we expect java and jar to be in path
+#export JAVA_HOME=
+
+# any additional java opts you want to set. This will apply to both client and server operations
+#export METADATA_OPTS=
+
+# any additional java opts that you want to set for client only
+#export METADATA_CLIENT_OPTS=
+
+# java heap size we want to set for the client. Default is 1024MB
+#export METADATA_CLIENT_HEAP=
+
+# any additional opts you want to set for atlas service.
+#export METADATA_SERVER_OPTS=
+
+# java heap size we want to set for the atlas server. Default is 1024MB
+#export METADATA_SERVER_HEAP=
+
+# What is is considered as atlas home dir. Default is the base locaion of the installed software
+#export METADATA_HOME_DIR=
+
+# Where log files are stored. Defatult is logs directory under the base install location
+#export METADATA_LOG_DIR=
+
+# Where pid files are stored. Defatult is logs directory under the base install location
+#export METADATA_PID_DIR=
+
+# where the atlas titan db data is stored. Defatult is logs/data directory under the base install location
+#export METADATA_DATA_DIR=
+
+# Where do you want to expand the war file. By Default it is in /server/webapp dir under the base install dir.
+#export METADATA_EXPANDED_WEBAPP_DIR=
+</verbatim>
+
+
+*NOTE for Mac OS users*
+<verbatim>
+If you are using a Mac OS, you will need to configure the METADATA_SERVER_OPTS (explained above).
+
+In  {package dir}/conf/atlas-env.sh uncomment the following line
+#export METADATA_SERVER_OPTS=
+
+and change it to look as below
+export METADATA_SERVER_OPTS="-Djava.awt.headless=true -Djava.security.krb5.realm= -Djava.security.krb5.kdc="
+</verbatim>
+
+*Starting Atlas Server*
+<verbatim>
+bin/atlas_start.py [-port <port>]
+</verbatim>
+
+By default,
+* To change the port, use -port option.
+* atlas server starts with conf from {package dir}/conf. To override this (to use the same conf
+with multiple atlas upgrades), set environment variable METADATA_CONF to the path of conf dir
+
+*Using Atlas*
+<verbatim>
+* Verify if the server is up and running
+  curl -v http://localhost:21000/api/atlas/admin/version
+  {"Version":"v0.1"}
+
+* List the types in the repository
+  curl -v http://localhost:21000/api/atlas/types
+  {"list":["biginteger","short","byte","int","string","bigdecimal","boolean","date","double","long","float"],"requestId":"902580786@qtp-1479771328-0"}
+
+* List the instances for a given type
+  curl -v http://localhost:21000/api/atlas/entities?type=hive_table
+  {"requestId":"788558007@qtp-44808654-5","list":["cb9b5513-c672-42cb-8477-b8f3e537a162","ec985719-a794-4c98-b98f-0509bd23aac0","48998f81-f1d3-45a2-989a-223af5c1ed6e","a54b386e-c759-4651-8779-a099294244c4"]}
+
+  curl -v http://localhost:21000/api/atlas/entities/list/hive_db
+
+* Search for entities (instances) in the repository
+  curl -v http://localhost:21000/api/atlas/discovery/search/dsl?query="from hive_table"
+</verbatim>
+
+
+*Dashboard*
+
+Once atlas is started, you can view the status of atlas entities using the Web-based
+dashboard. \You can open your browser at the corresponding port to use the web UI.
+
+
+*Stopping Atlas Server*
+<verbatim>
+bin/atlas_stop.py
+</verbatim>

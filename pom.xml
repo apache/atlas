@@ -34,7 +34,7 @@
     <description>Metadata Management and Data Governance Platform over Hadoop</description>
     <name>apache-atlas</name>
     <packaging>pom</packaging>
-    <url>http://www.apache.org/</url>
+    <url>http://atlas.incubator.apache.org</url>
 
     <prerequisites>
         <maven>3.0.4</maven>
@@ -54,21 +54,267 @@
 
     <issueManagement>
         <system>JIRA</system>
-        <url>https://issues.apache.org/jira/browse/XXX</url>
+        <url>https://issues.apache.org/jira/browse/ATLAS</url>
     </issueManagement>
 
     <ciManagement>
         <system>Jenkins</system>
-        <url>https://builds.apache.org/job/XXX</url>
+        <url>https://builds.apache.org/job/atlas</url>
     </ciManagement>
 
     <inceptionYear>2015</inceptionYear>
 
+    <mailingLists>
+        <mailingList>
+            <name>atlas-dev</name>
+            <subscribe>dev-subscribe@atlas.incubator.apache.org</subscribe>
+            <unsubscribe>dev-unsubscribe@atlas.incubator.apache.org</unsubscribe>
+            <post>dev@atlas.incubator.apache.org</post>
+            <archive>http://mail-archives.apache.org/mod_mbox/atlas-dev/</archive>
+        </mailingList>
+        <mailingList>
+            <name>atlas-commits</name>
+            <subscribe>commits-subscribe@atlas.incubator.apache.org</subscribe>
+            <unsubscribe>commits-unsubscribe@atlas.incubator.apache.org</unsubscribe>
+            <post>commits@atlas.incubator.apache.org</post>
+            <archive>http://mail-archives.apache.org/mod_mbox/atlas-commits/</archive>
+        </mailingList>
+    </mailingLists>
+
     <scm>
-        <connection>scm:git:https://github.com/apache/incubator-atlas</connection>
-        <developerConnection>scm:git:https://github.com/apache/incubator-atlas</developerConnection>
-        <url>https://github.com/apache/incubator-atlas</url>
+        <connection>scm:https://git-wip-us.apache.org/repos/asf/incubator-atlas.git</connection>
+        <developerConnection>scm:https://git-wip-us.apache.org/repos/asf/incubator-atlas.git</developerConnection>
+        <tag>HEAD</tag>
+        <url>https://git-wip-us.apache.org/repos/asf/incubator-atlas.git</url>
     </scm>
+
+    <developers>
+        <developer>
+            <id>venkatesh</id>
+            <name>Venkatesh Seetharam</name>
+            <email>venkatesh@apache.org</email>
+            <timezone>-8</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PPMC</role>
+            </roles>
+            <organization>Hortonworks Inc.</organization>
+            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>rhbutani</id>
+            <name>Harish Butani</name>
+            <email>rhbutani@apache.org</email>
+            <timezone>-8</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PPMC</role>
+            </roles>
+            <organization>Hortonworks Inc.</organization>
+            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>shwethags</id>
+            <name>Shwetha GS</name>
+            <email>shwethags@apache.org</email>
+            <timezone>+05:30</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PPMC</role>
+            </roles>
+            <organization>Hortonworks Inc.</organization>
+            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>jmaron</id>
+            <name>Jon Maron</name>
+            <email>jmaron@hortonworks.com</email>
+            <timezone>-5</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Hortonworks Inc.</organization>
+            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>AAhn</id>
+            <name>Andrew Ahn</name>
+            <email>aahn@hortonworks.com</email>
+            <timezone>-8</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Hortonworks Inc.</organization>
+            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>dkaspar</id>
+            <name>David Kaspar</name>
+            <email>dkaspar@merk.com</email>
+            <timezone>+1</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Merck &amp; Co Inc.</organization>
+            <!--<organizationUrl>http://www.merck.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>ilasek</id>
+            <name>Ivo Lasek</name>
+            <email>ilasek@merck.com</email>
+            <timezone>+1</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Merck &amp; Co Inc.</organization>
+            <!--<organizationUrl>http://www.merck.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>dfusaro</id>
+            <name>Dennis Fusaro</name>
+            <email>dfusaro@aetna.com</email>
+            <timezone>-5</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Aetna Inc.</organization>
+            <!--<organizationUrl>http://www.aetna.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>chyzer</id>
+            <name>Chris Hyzer</name>
+            <email>chyzer@aetna.com</email>
+            <timezone>-5</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Aetna Inc.</organization>
+            <!--<organizationUrl>http://www.aetna.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>dmarkwat</id>
+            <name>Daniel Markwat</name>
+            <email>dmarkwat@aetna.com</email>
+            <timezone>-5</timezone>
+            <roles>
+                <role>committer</role>
+
+            </roles>
+            <organization>Aetna Inc.</organization>
+            <!--<organizationUrl>http://www.aetna.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>gsenia</id>
+            <name>Greg Senia</name>
+            <email>gsenia@aetna.com</email>
+            <timezone>-5</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Aetna Inc.</organization>
+            <!--<organizationUrl>http://www.aetna.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>james</id>
+            <name>James Vollmer</name>
+            <email>james@target.com</email>
+            <timezone>-6</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Target Inc.</organization>
+            <!--<organizationUrl>http://www.target.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>adossett</id>
+            <name>Aaron Dossett</name>
+            <email>adossett@target.com</email>
+            <timezone>-6</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Target Inc.</organization>
+            <!--<organizationUrl>http://www.target.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>mschussler</id>
+            <name>Mitch Schussler</name>
+            <email>mschussler@apache.org</email>
+            <timezone>-5</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>JPMC</organization>
+            <!--<organizationUrl>http://</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>vavasarala</id>
+            <name>Viswanath Avasarala</name>
+            <email>vavasarala@slb.com</email>
+            <timezone>-6</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Schlumberger Inc.</organization>
+            <!--<organizationUrl>http://www.slb.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>avarma</id>
+            <name>Anil Varma</name>
+            <email>avarma@slb.com</email>
+            <timezone>-6</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Schlumberger Inc.</organization>
+            <!--<organizationUrl>http://www.slb.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>bstortz</id>
+            <name>Barbara Stortz</name>
+            <email>bstortz@sap</email>
+            <timezone>-8</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>SAP Inc.</organization>
+            <!--<organizationUrl>http://www.sap.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>sriksun</id>
+            <name>Srikanth Sundarrajan</name>
+            <email>sriksun@apache.org</email>
+            <timezone>+05:30</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PPMC</role>
+            </roles>
+            <organization>InMobi</organization>
+            <!--<organizationUrl>http://www.inmobi.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>ssuresh</id>
+            <name>Suresh Srinivas</name>
+            <email> ssuresh@apache.org</email>
+            <timezone>-8</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Hortonworks Inc.</organization>
+            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>vranganathan</id>
+            <name>Venkat Ranganathan</name>
+            <email> vranganathan@apache.org</email>
+            <timezone>-8</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Hortonworks Inc.</organization>
+            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+        </developer>
+    </developers>
 
     <properties>
         <!-- platform encoding override -->
@@ -473,6 +719,10 @@
                     <exclusion>
                         <groupId>org.ow2.asm</groupId>
                         <artifactId>asm</artifactId>
+                    </exclusion>
+                    <exclusion> <!-- GPL license imported from ganglia -->
+                        <groupId>org.acplt</groupId>
+                        <artifactId>oncrpc</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
