@@ -12,6 +12,8 @@ ATLAS-10 Update trunk version to 0.6-incubating-SNAPSHOT (shwethags)
 --Release 0.5-incubating
 
 ALL CHANGES:
+
+ATLAS-26 Minor issues with release prep (Venkatesh Seetharam)
 ATLAS-17 Parameterize schema API query per typeName (shwethags)
 ATLAS-13 Add project website (Venkatesh Seetharam)
 ATLAS-12 Update the copyright in Notice and License files (Venkatesh Seetharam)
