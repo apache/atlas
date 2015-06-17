@@ -4,15 +4,15 @@ Apache Atlas Release Notes
 --trunk - unreleased
 
 INCOMPATIBLE CHANGES:
+ATLAS-17 Parameterize schema API query per typeName (shwethags)
 
 ALL CHANGES:
-
 ATLAS-10 Update trunk version to 0.6-incubating-SNAPSHOT (shwethags)
+
 
 --Release 0.5-incubating
 
 ALL CHANGES:
-
 ATLAS-13 Add project website (Venkatesh Seetharam)
 ATLAS-12 Update the copyright in Notice and License files (Venkatesh Seetharam)
 ATLAS-9 Create branch-0.5 and update version to 0.5-incubating (shwethags)
