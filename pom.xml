@@ -1268,7 +1268,6 @@
                     <excludeSubProjects>true</excludeSubProjects>
                     <excludes>
                         <exclude>*.txt</exclude>
-                        <exclude>**/*.txt</exclude>
                         <exclude>**/*.json</exclude>
                         <exclude>.git/**</exclude>
                         <exclude>.gitignore</exclude>
@@ -1276,7 +1275,6 @@
                         <exclude>**/*.twiki</exclude>
                         <exclude>**/*.iml</exclude>
                         <exclude>**/*.json</exclude>
-                        <exclude>**/*.uml</exclude>
                         <exclude>**/target/**</exclude>
                         <exclude>**/build/**</exclude>
                         <exclude>**/*.patch</exclude>
@@ -1288,7 +1286,6 @@
                         <exclude>**/test-output/**</exclude>
                         <exclude>**/mock/**</exclude>
                         <exclude>**/data/**</exclude>
-                        <exclude>**/data.txt</exclude>
                         <exclude>**/maven-eclipse.xml</exclude>
                         <exclude>**/.externalToolBuilders/**</exclude>
                         <exclude>**/build.log</exclude>
@@ -1297,7 +1294,7 @@
                         <exclude>dashboard/v2/lib/**</exclude>  <!-- temp libs -->
                         <exclude>dashboard/v2/node*/**</exclude>  <!-- temp libs -->
                         <exclude>dashboard/v2/dist/**</exclude>  <!-- package -->
-                        <exclude>dashboard/v2/**/*.min.js*</exclude>
+                        <exclude>dashboard/v2/**/*.min.js*</exclude> <!-- minified JS -->
                     </excludes>
                 </configuration>
                 <executions>

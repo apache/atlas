@@ -4,6 +4,8 @@ Apache Atlas Release Notes
 --Release 0.5-incubating
 
 ALL CHANGES:
+
+ATLAS-26 Minor issues with release prep (Venkatesh Seetharam)
 ATLAS-17 Parameterize schema API query per typeName (shwethags)
 ATLAS-18 Build fails because of a missing artifact (Ajay Yadava via Venkatesh Seetharam)
 ATLAS-13 Add project website (Venkatesh Seetharam)
