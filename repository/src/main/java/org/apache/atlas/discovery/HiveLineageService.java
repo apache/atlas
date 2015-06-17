@@ -32,6 +32,7 @@ import org.apache.atlas.query.HiveWhereUsedQuery;
 import org.apache.atlas.repository.EntityNotFoundException;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.graph.GraphProvider;
+import org.apache.atlas.typesystem.persistence.ReferenceableInstance;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,26 +54,27 @@ public class HiveLineageService implements LineageService {
     private static final Option<List<String>> SELECT_ATTRIBUTES =
             Some.<List<String>>apply(List.<String>fromArray(new String[]{"name"}));
 
+    public static final String HIVE_TABLE_SCHEMA_QUERY_PREFIX = "atlas.lineage.hive.table.schema.query.";
+
     private static final String HIVE_TABLE_TYPE_NAME;
     private static final String HIVE_PROCESS_TYPE_NAME;
     private static final String HIVE_PROCESS_INPUT_ATTRIBUTE_NAME;
     private static final String HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME;
 
-    private static final String HIVE_TABLE_SCHEMA_QUERY;
     private static final String HIVE_TABLE_EXISTS_QUERY;
+
+    private static final PropertiesConfiguration propertiesConf;
 
     static {
         // todo - externalize this using type system - dog food
         try {
-            PropertiesConfiguration conf = PropertiesUtil.getApplicationProperties();
-            HIVE_TABLE_TYPE_NAME = conf.getString("atlas.lineage.hive.table.type.name", "DataSet");
-            HIVE_PROCESS_TYPE_NAME = conf.getString("atlas.lineage.hive.process.type.name", "Process");
-            HIVE_PROCESS_INPUT_ATTRIBUTE_NAME = conf.getString("atlas.lineage.hive.process.inputs.name", "inputs");
-            HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME = conf.getString("atlas.lineage.hive.process.outputs.name", "outputs");
+            propertiesConf = PropertiesUtil.getApplicationProperties();
+            HIVE_TABLE_TYPE_NAME = propertiesConf.getString("atlas.lineage.hive.table.type.name", "DataSet");
+            HIVE_PROCESS_TYPE_NAME = propertiesConf.getString("atlas.lineage.hive.process.type.name", "Process");
+            HIVE_PROCESS_INPUT_ATTRIBUTE_NAME = propertiesConf.getString("atlas.lineage.hive.process.inputs.name", "inputs");
+            HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME = propertiesConf.getString("atlas.lineage.hive.process.outputs.name", "outputs");
 
-            HIVE_TABLE_SCHEMA_QUERY =
-                    conf.getString("atlas.lineage.hive.table.schema.query", "hive_table where name=\"%s\", columns");
-            HIVE_TABLE_EXISTS_QUERY = conf.getString("atlas.lineage.hive.table.exists.query",
+            HIVE_TABLE_EXISTS_QUERY = propertiesConf.getString("atlas.lineage.hive.table.exists.query",
                     "from " + HIVE_TABLE_TYPE_NAME + " where name=\"%s\"");
         } catch (AtlasException e) {
             throw new RuntimeException(e);
@@ -195,9 +197,10 @@ public class HiveLineageService implements LineageService {
     public String getSchema(String tableName) throws AtlasException {
         LOG.info("Fetching schema for tableName={}", tableName);
         ParamChecker.notEmpty(tableName, "table name cannot be null");
-        validateTableExists(tableName);
+        String typeName = validateTableExists(tableName);
 
-        final String schemaQuery = String.format(HIVE_TABLE_SCHEMA_QUERY, tableName);
+        final String schemaQuery =
+                String.format(propertiesConf.getString(HIVE_TABLE_SCHEMA_QUERY_PREFIX + typeName), tableName);
         return discoveryService.searchByDSL(schemaQuery);
     }
 
@@ -206,11 +209,14 @@ public class HiveLineageService implements LineageService {
      *
      * @param tableName table name
      */
-    private void validateTableExists(String tableName) throws AtlasException {
+    private String validateTableExists(String tableName) throws AtlasException {
         final String tableExistsQuery = String.format(HIVE_TABLE_EXISTS_QUERY, tableName);
         GremlinQueryResult queryResult = discoveryService.evaluate(tableExistsQuery);
         if (!(queryResult.rows().length() > 0)) {
             throw new EntityNotFoundException(tableName + " does not exist");
         }
+
+        ReferenceableInstance referenceable = (ReferenceableInstance)queryResult.rows().apply(0);
+        return referenceable.getTypeName();
     }
 }
