@@ -38,15 +38,27 @@ angular.module('dgc').factory('lodash', ['$window',
     function($window) {
         return $window.d3;
     }
-]).factory('Global', ['$window',
-    function($window) {
+]).factory('Global', ['$window', '$location',
+    function($window, $location) {
         return {
-            user: $window.user,
+            user: $location.search()['user.name'],
             authenticated: !!$window.user,
             renderErrors: $window.renderErrors
         };
     }
-]).run(['$rootScope', 'Global', 'NotificationService', 'lodash', 'd3', function($rootScope, Global, NotificationService, lodash, d3) {
+]).factory('HttpInterceptor', ['Global', function(Global) {
+    return {
+        'request': function(config) {
+            if (config.url && (config.url.indexOf('api/atlas/') === 0 || config.url.indexOf('/api/atlas/') === 0)) {
+                config.params = config.params || {};
+                config.params['user.name'] = Global.user;
+            }
+            return config;
+        }
+    };
+}]).config(['$httpProvider', function($httpProvider) {
+    $httpProvider.interceptors.push('HttpInterceptor');
+}]).run(['$rootScope', 'Global', 'NotificationService', 'lodash', 'd3', function($rootScope, Global, NotificationService, lodash, d3) {
     var errors = Global.renderErrors;
     if (angular.isArray(errors) || angular.isObject(errors)) {
         lodash.forEach(errors, function(err) {
