@@ -63,14 +63,14 @@ public class SecureClientUtils {
     public static URLConnectionClientHandler getClientConnectionHandler(DefaultClientConfig config,
             PropertiesConfiguration clientConfig) {
         config.getProperties().put(URLConnectionClientHandler.PROPERTY_HTTP_URL_CONNECTION_SET_METHOD_WORKAROUND, true);
-        Configuration conf = new Configuration(false);
+        Configuration conf = new Configuration();
         conf.addResource(conf.get(SSLFactory.SSL_CLIENT_CONF_KEY, "ssl-client.xml"));
+        UserGroupInformation.setConfiguration(conf);
+        final ConnectionConfigurator connConfigurator = newConnConfigurator(conf);
         String authType = "simple";
         if (clientConfig != null) {
             authType = clientConfig.getString("atlas.http.authentication.type", "simple");
         }
-        UserGroupInformation.setConfiguration(conf);
-        final ConnectionConfigurator connConfigurator = newConnConfigurator(conf);
         Authenticator authenticator = new PseudoDelegationTokenAuthenticator();
         if (!authType.equals("simple")) {
             authenticator = new KerberosDelegationTokenAuthenticator();
