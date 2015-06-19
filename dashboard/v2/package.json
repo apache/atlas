@@ -1,9 +1,8 @@
 {
-    "name": "dgc-metadata",
+    "name": "atlas-metadata",
     "description": "Apache Atlas",
     "version": "1.0.0-SNAPSHOT",
     "private": true,
-    "bin": "server.js",
     "repository": {
         "type": "git",
         "url": "https://github.com/hortonworks/metadata"
@@ -13,7 +12,8 @@
         "npm": "1.3.x"
     },
     "keywords": [
-        "DGC",
+        "Apache",
+        "Atlas",
         "HortonWorks"
     ],
     "scripts": {
