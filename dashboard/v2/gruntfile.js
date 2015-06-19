@@ -32,7 +32,7 @@ module.exports = function(grunt) {
             },
             js: {
                 files: ['public/**/*.js', '!public/lib/**', '!public/dist/**', '!public/js/app.min.js'],
-                tasks: ['shell', 'copy:mainjs']
+                tasks: ['shell']
             },
             html: {
                 files: ['public/**/*.html'],
@@ -86,7 +86,7 @@ module.exports = function(grunt) {
                 }
             }
         },
-        dist: 'public/js/app.min.js',
+        dist: 'dist/js/app.min.js',
         modules: grunt.file.expand(
             'public/js/app.js',
             'public/js/routes.js',
@@ -130,16 +130,8 @@ module.exports = function(grunt) {
             dist: {
                 expand: true,
                 cwd: 'public/',
-                src: '**',
-                dest: 'dist',
-            },
-            mainjs: {
-                expand: true,
-                cwd: 'public/',
-                src: 'js/app.min.js',
-                dest: 'dist/js/',
-                flatten: true,
-                filter: 'isFile'
+                src: ['**', '!js/**/*.js', '!modules/**/*.js'],
+                dest: 'dist'
             }
         },
         clean: ['public/lib', 'dist'],
@@ -164,7 +156,7 @@ module.exports = function(grunt) {
     grunt.registerTask('default', ['devUpdate', 'bower', 'jshint', 'jsbeautifier:default']);
 
     grunt.registerTask('server', ['jshint', 'build', 'concurrent']);
-    grunt.registerTask('build', ['clean', 'bower', 'copy:dist', 'minify', 'copy:mainjs']);
+    grunt.registerTask('build', ['clean', 'bower', 'copy:dist', 'minify']);
 
     grunt.registerTask('minify', 'Minify the all js', function() {
         var done = this.async();
