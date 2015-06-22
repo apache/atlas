@@ -1,5 +1,5 @@
 {
-    "name": "dgc-metadata",
+    "name": "atlas-metadata",
     "description": "Apache Atlas",
     "version": "1.0.0-SNAPSHOT",
     "devDependencies": {

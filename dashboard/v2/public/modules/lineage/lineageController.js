@@ -196,20 +196,20 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                     'translate(' + margin.left + ',' + margin.right + ')');
             //arrow
             svg.append("svg:defs").append("svg:marker").attr("id", "arrow").attr("viewBox", "0 0 10 10").attr("refX", 26).attr("refY", 5).attr("markerUnits", "strokeWidth").attr("markerWidth", 6).attr("markerHeight", 9).attr("orient", "auto").append("svg:path").attr("d", "M 0 0 L 10 5 L 0 10 z");
-            
+
             //marker for input type graph
             svg.append("svg:defs")
-            .append("svg:marker")
-            .attr("id", "input-arrow")
-            .attr("viewBox", "0 0 10 10")
-            .attr("refX", -15)
-            .attr("refY", 5)
-            .attr("markerUnits", "strokeWidth")
-            .attr("markerWidth", 6)
-            .attr("markerHeight", 9)
-            .attr("orient", "auto")
-            .append("svg:path")
-            .attr("d", "M -2 5 L 8 0 L 8 10 z");
+                .append("svg:marker")
+                .attr("id", "input-arrow")
+                .attr("viewBox", "0 0 10 10")
+                .attr("refX", -15)
+                .attr("refY", 5)
+                .attr("markerUnits", "strokeWidth")
+                .attr("markerWidth", 6)
+                .attr("markerHeight", 9)
+                .attr("orient", "auto")
+                .append("svg:path")
+                .attr("d", "M -2 5 L 8 0 L 8 10 z");
 
             var root = data;
 
@@ -284,10 +284,10 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                     .style('stroke', 'green')
                     .attr('d', diagonal);
 
-                if($scope.type === 'inputs') {
-                    link.attr("marker-start", "url(#input-arrow)");//if input
+                if ($scope.type === 'inputs') {
+                    link.attr("marker-start", "url(#input-arrow)"); //if input
                 } else {
-                    link.attr("marker-end", "url(#arrow)");//if input
+                    link.attr("marker-end", "url(#arrow)"); //if input
                 }
 
             }
