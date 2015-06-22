@@ -19,6 +19,7 @@
 package org.apache.atlas.typesystem.types;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.Assert;
@@ -117,5 +118,24 @@ public class TypeSystemTest extends BaseTest {
                 createRequiredAttrDef(attrType, DataTypes.INT_TYPE));
 
         ts.defineTypes(ImmutableList.of(structType), ImmutableList.of(traitType), ImmutableList.of(classType));
+    }
+
+    @Test
+    public void testHierarchy() throws AtlasException {
+        HierarchicalTypeDefinition<ClassType> a = TypesUtil.createClassTypeDef("a", ImmutableList.<String>of());
+        HierarchicalTypeDefinition<ClassType> b = TypesUtil.createClassTypeDef("B", ImmutableList.of("a"));
+        HierarchicalTypeDefinition<ClassType> c = TypesUtil.createClassTypeDef("C", ImmutableList.of("B"));
+
+        TypeSystem ts = getTypeSystem();
+        ts.defineTypes(ImmutableList.<StructTypeDefinition>of(),
+                ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
+                ImmutableList.of(a, b, c));
+        ClassType ac = ts.getDataType(ClassType.class, "a");
+        ClassType bc = ts.getDataType(ClassType.class, "B");
+        ClassType cc = ts.getDataType(ClassType.class, "C");
+
+        Assert.assertTrue(ac.compareTo(bc) < 0);
+        Assert.assertTrue(bc.compareTo(cc) < 0);
+        Assert.assertTrue(ac.compareTo(cc) < 0);
     }
 }

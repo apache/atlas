@@ -340,12 +340,16 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
     @Override
     public int compareTo(ST o) {
         String oName = o.getName();
-        if (superTypes.contains(oName)) {
-            return 1;
-        } else if (o.superTypes.contains(getName())) {
-            return -1;
-        } else {
-            return getName().compareTo(oName);
+        try {
+            if (o.isSubType(getName())) {
+                return 1;
+            } else if (isSubType(oName)) {
+                return -1;
+            } else {
+                return getName().compareTo(oName);
+            }
+        } catch(AtlasException e) {
+            throw new RuntimeException(e);
         }
     }
 
