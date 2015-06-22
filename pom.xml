@@ -408,13 +408,6 @@
             </snapshots>
         </repository>
         <repository>
-            <id>Codehaus repository</id>
-            <url>http://repository.codehaus.org/</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
             <id>apache.snapshots.repo</id>
             <url>https://repository.apache.org/content/groups/snapshots</url>
             <name>Apache Snapshots Repository</name>

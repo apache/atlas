@@ -6,6 +6,7 @@ Apache Atlas Release Notes
 INCOMPATIBLE CHANGES:
 
 ALL CHANGES:
+ATLAS-31 ATLAS build fails with clean repo (suma.shivaprasad via shwethags)
 ATLAS-33 Atlas restart fails (shwethags)
 ATLAS-10 Update trunk version to 0.6-incubating-SNAPSHOT (shwethags)
 
