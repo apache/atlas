@@ -43,7 +43,7 @@ class GremlinTest extends FunSuite with BeforeAndAfterAll with BaseGremlinTest {
 
     test("testClass") {
         val r = QueryProcessor.evaluate(_class("DB"), g)
-        validateJson(r, "{\n  \"query\":\"DB\",\n  \"dataType\":{\n    \"superTypes\":[\n      \n    ],\n    \"hierarchicalMetaTypeName\":\"org.apache.atlas.typesystem.types.ClassType\",\n    \"typeName\":\"DB\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"name\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"owner\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"createTime\",\n        \"dataTypeName\":\"int\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"DB\",\n      \"$id$\":{\n        \"id\":\"256\",\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"owner\":\"John ETL\",\n      \"name\":\"Sales\",\n      \"createTime\":1000\n    },\n    {\n      \"$typeName$\":\"DB\",\n      \"$id$\":{\n        \"id\":\"7168\",\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"owner\":\"Jane BI\",\n      \"name\":\"Reporting\",\n      \"createTime\":1500\n    }\n  ]\n}")
+        validateJson(r, "{\n  \"query\":\"DB\",\n  \"dataType\":{\n    \"superTypes\":[\n      \n    ],\n    \"hierarchicalMetaTypeName\":\"org.apache.atlas.typesystem.types.ClassType\",\n    \"typeName\":\"DB\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"name\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"owner\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"createTime\",\n        \"dataTypeName\":\"int\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"DB\",\n      \"$id$\":{\n        \"id\":\"256\",\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"owner\":\"John ETL\",\n      \"name\":\"Sales\",\n      \"createTime\":1000\n    },\n    {\n      \"$typeName$\":\"DB\",\n      \"$id$\":{\n        \"id\":\"7424\",\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"owner\":\"Jane BI\",\n      \"name\":\"Reporting\",\n      \"createTime\":1500\n    }\n  ]\n}")
     }
 
     test("testName") {
@@ -53,12 +53,12 @@ class GremlinTest extends FunSuite with BeforeAndAfterAll with BaseGremlinTest {
 
     test("testFilter") {
         var r = QueryProcessor.evaluate(_class("DB").where(id("name").`=`(string("Reporting"))), g)
-        validateJson(r, "{\n  \"query\":\"DB where (name = \\\"Reporting\\\")\",\n  \"dataType\":{\n    \"superTypes\":[\n      \n    ],\n    \"hierarchicalMetaTypeName\":\"org.apache.atlas.typesystem.types.ClassType\",\n    \"typeName\":\"DB\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"name\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"owner\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"createTime\",\n        \"dataTypeName\":\"int\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"DB\",\n      \"$id$\":{\n        \"id\":\"7168\",\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"owner\":\"Jane BI\",\n      \"name\":\"Reporting\",\n      \"createTime\":1500\n    }\n  ]\n}")
+        validateJson(r, "{\n  \"query\":\"DB where (name = \\\"Reporting\\\")\",\n  \"dataType\":{\n    \"superTypes\":[\n      \n    ],\n    \"hierarchicalMetaTypeName\":\"org.apache.atlas.typesystem.types.ClassType\",\n    \"typeName\":\"DB\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"name\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"owner\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"createTime\",\n        \"dataTypeName\":\"int\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"DB\",\n      \"$id$\":{\n        \"id\":\"7424\",\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"owner\":\"Jane BI\",\n      \"name\":\"Reporting\",\n      \"createTime\":1500\n    }\n  ]\n}")
     }
 
     test("testFilter2") {
         var r = QueryProcessor.evaluate(_class("DB").where(id("DB").field("name").`=`(string("Reporting"))), g)
-        validateJson(r, "{\n  \"query\":\"DB where (name = \\\"Reporting\\\")\",\n  \"dataType\":{\n    \"superTypes\":[\n      \n    ],\n    \"hierarchicalMetaTypeName\":\"org.apache.atlas.typesystem.types.ClassType\",\n    \"typeName\":\"DB\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"name\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"owner\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"createTime\",\n        \"dataTypeName\":\"int\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"DB\",\n      \"$id$\":{\n        \"id\":\"7168\",\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"owner\":\"Jane BI\",\n      \"name\":\"Reporting\",\n      \"createTime\":1500\n    }\n  ]\n}")
+        validateJson(r, "{\n  \"query\":\"DB where (name = \\\"Reporting\\\")\",\n  \"dataType\":{\n    \"superTypes\":[\n      \n    ],\n    \"hierarchicalMetaTypeName\":\"org.apache.atlas.typesystem.types.ClassType\",\n    \"typeName\":\"DB\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"name\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"owner\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"createTime\",\n        \"dataTypeName\":\"int\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"DB\",\n      \"$id$\":{\n        \"id\":\"7424\",\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"owner\":\"Jane BI\",\n      \"name\":\"Reporting\",\n      \"createTime\":1500\n    }\n  ]\n}")
     }
 
 
@@ -70,17 +70,400 @@ class GremlinTest extends FunSuite with BeforeAndAfterAll with BaseGremlinTest {
 
     test("testIsTrait") {
         val r = QueryProcessor.evaluate(_class("Table").where(isTrait("Dimension")), g)
-        validateJson(r, "{\n  \"query\":\"Table where Table is Dimension\",\n  \"dataType\":{\n    \"superTypes\":[\n      \n    ],\n    \"hierarchicalMetaTypeName\":\"org.apache.atlas.typesystem.types.ClassType\",\n    \"typeName\":\"Table\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"name\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"db\",\n        \"dataTypeName\":\"DB\",\n        \"multiplicity\":{\n          \"lower\":1,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"sd\",\n        \"dataTypeName\":\"StorageDesc\",\n        \"multiplicity\":{\n          \"lower\":1,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"Table\",\n      \"$id$\":{\n        \"id\":\"3328\",\n        \"$typeName$\":\"Table\",\n        \"version\":0\n      },\n      \"sd\":{\n        \"id\":\"2304\",\n        \"$typeName$\":\"StorageDesc\",\n        \"version\":0\n      },\n      \"db\":{\n        \"id\":\"256\",\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"name\":\"product_dim\",\n      \"$traits$\":{\n        \"Dimension\":{\n          \"$typeName$\":\"Dimension\"\n        }\n      }\n    },\n    {\n      \"$typeName$\":\"Table\",\n      \"$id$\":{\n        \"id\":\"4864\",\n        \"$typeName$\":\"Table\",\n        \"version\":0\n      },\n      \"sd\":{\n        \"id\":\"3840\",\n        \"$typeName$\":\"StorageDesc\",\n        \"version\":0\n      },\n      \"db\":{\n        \"id\":\"256\",\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"name\":\"time_dim\",\n      \"$traits$\":{\n        \"Dimension\":{\n          \"$typeName$\":\"Dimension\"\n        }\n      }\n    },\n    {\n      \"$typeName$\":\"Table\",\n      \"$id$\":{\n        \"id\":\"6656\",\n        \"$typeName$\":\"Table\",\n        \"version\":0\n      },\n      \"sd\":{\n        \"id\":\"5376\",\n        \"$typeName$\":\"StorageDesc\",\n        \"version\":0\n      },\n      \"db\":{\n        \"id\":\"256\",\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"name\":\"customer_dim\",\n      \"$traits$\":{\n        \"Dimension\":{\n          \"$typeName$\":\"Dimension\"\n        }\n      }\n    }\n  ]\n}")
+        validateJson(r, """{
+                          |  "query":"Table where Table is Dimension",
+                          |  "dataType":{
+                          |    "superTypes":[
+                          |
+                          |    ],
+                          |    "hierarchicalMetaTypeName":"org.apache.atlas.typesystem.types.ClassType",
+                          |    "typeName":"Table",
+                          |    "attributeDefinitions":[
+                          |      {
+                          |        "name":"name",
+                          |        "dataTypeName":"string",
+                          |        "multiplicity":{
+                          |          "lower":0,
+                          |          "upper":1,
+                          |          "isUnique":false
+                          |        },
+                          |        "isComposite":false,
+                          |        "isUnique":false,
+                          |        "isIndexable":true,
+                          |        "reverseAttributeName":null
+                          |      },
+                          |      {
+                          |        "name":"db",
+                          |        "dataTypeName":"DB",
+                          |        "multiplicity":{
+                          |          "lower":1,
+                          |          "upper":1,
+                          |          "isUnique":false
+                          |        },
+                          |        "isComposite":false,
+                          |        "isUnique":false,
+                          |        "isIndexable":true,
+                          |        "reverseAttributeName":null
+                          |      },
+                          |      {
+                          |        "name":"sd",
+                          |        "dataTypeName":"StorageDesc",
+                          |        "multiplicity":{
+                          |          "lower":1,
+                          |          "upper":1,
+                          |          "isUnique":false
+                          |        },
+                          |        "isComposite":false,
+                          |        "isUnique":false,
+                          |        "isIndexable":true,
+                          |        "reverseAttributeName":null
+                          |      },
+                          |      {
+                          |        "name":"created",
+                          |        "dataTypeName":"date",
+                          |        "multiplicity":{
+                          |          "lower":0,
+                          |          "upper":1,
+                          |          "isUnique":false
+                          |        },
+                          |        "isComposite":false,
+                          |        "isUnique":false,
+                          |        "isIndexable":true,
+                          |        "reverseAttributeName":null
+                          |      }
+                          |    ]
+                          |  },
+                          |  "rows":[
+                          |    {
+                          |      "$typeName$":"Table",
+                          |      "$id$":{
+                          |        "$typeName$":"Table",
+                          |        "version":0
+                          |      },
+                          |      "created":"2014-12-11T02:35:58.440Z",
+                          |      "sd":{
+                          |        "$typeName$":"StorageDesc",
+                          |        "version":0
+                          |      },
+                          |      "db":{
+                          |        "$typeName$":"DB",
+                          |        "version":0
+                          |      },
+                          |      "name":"product_dim",
+                          |      "$traits$":{
+                          |        "Dimension":{
+                          |          "$typeName$":"Dimension"
+                          |        }
+                          |      }
+                          |    },
+                          |    {
+                          |      "$typeName$":"Table",
+                          |      "$id$":{
+                          |        "$typeName$":"Table",
+                          |        "version":0
+                          |      },
+                          |      "created":"2014-12-11T02:35:58.440Z",
+                          |      "sd":{
+                          |        "$typeName$":"StorageDesc",
+                          |        "version":0
+                          |      },
+                          |      "db":{
+                          |        "$typeName$":"DB",
+                          |        "version":0
+                          |      },
+                          |      "name":"time_dim",
+                          |      "$traits$":{
+                          |        "Dimension":{
+                          |          "$typeName$":"Dimension"
+                          |        }
+                          |      }
+                          |    },
+                          |    {
+                          |      "$typeName$":"Table",
+                          |      "$id$":{
+                          |        "$typeName$":"Table",
+                          |        "version":0
+                          |      },
+                          |      "created":"2014-12-11T02:35:58.440Z",
+                          |      "sd":{
+                          |        "$typeName$":"StorageDesc",
+                          |        "version":0
+                          |      },
+                          |      "db":{
+                          |        "$typeName$":"DB",
+                          |        "version":0
+                          |      },
+                          |      "name":"customer_dim",
+                          |      "$traits$":{
+                          |        "Dimension":{
+                          |          "$typeName$":"Dimension"
+                          |        }
+                          |      }
+                          |    }
+                          |  ]
+                          |}""".stripMargin)
     }
 
     test("testhasField") {
         val r = QueryProcessor.evaluate(_class("DB").where(hasField("name")), g)
-        validateJson(r, "{\n  \"query\":\"DB where DB has name\",\n  \"dataType\":{\n    \"superTypes\":[\n      \n    ],\n    \"hierarchicalMetaTypeName\":\"org.apache.atlas.typesystem.types.ClassType\",\n    \"typeName\":\"DB\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"name\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"owner\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"createTime\",\n        \"dataTypeName\":\"int\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"DB\",\n      \"$id$\":{\n        \"id\":\"256\",\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"owner\":\"John ETL\",\n      \"name\":\"Sales\",\n      \"createTime\":1000\n    },\n    {\n      \"$typeName$\":\"DB\",\n      \"$id$\":{\n        \"id\":\"7168\",\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"owner\":\"Jane BI\",\n      \"name\":\"Reporting\",\n      \"createTime\":1500\n    }\n  ]\n}")
+        validateJson(r, """{
+                          |  "query":"DB where DB has name",
+                          |  "dataType":{
+                          |    "superTypes":[
+                          |
+                          |    ],
+                          |    "hierarchicalMetaTypeName":"org.apache.atlas.typesystem.types.ClassType",
+                          |    "typeName":"DB",
+                          |    "attributeDefinitions":[
+                          |      {
+                          |        "name":"name",
+                          |        "dataTypeName":"string",
+                          |        "multiplicity":{
+                          |          "lower":0,
+                          |          "upper":1,
+                          |          "isUnique":false
+                          |        },
+                          |        "isComposite":false,
+                          |        "isUnique":false,
+                          |        "isIndexable":true,
+                          |        "reverseAttributeName":null
+                          |      },
+                          |      {
+                          |        "name":"owner",
+                          |        "dataTypeName":"string",
+                          |        "multiplicity":{
+                          |          "lower":0,
+                          |          "upper":1,
+                          |          "isUnique":false
+                          |        },
+                          |        "isComposite":false,
+                          |        "isUnique":false,
+                          |        "isIndexable":true,
+                          |        "reverseAttributeName":null
+                          |      },
+                          |      {
+                          |        "name":"createTime",
+                          |        "dataTypeName":"int",
+                          |        "multiplicity":{
+                          |          "lower":0,
+                          |          "upper":1,
+                          |          "isUnique":false
+                          |        },
+                          |        "isComposite":false,
+                          |        "isUnique":false,
+                          |        "isIndexable":true,
+                          |        "reverseAttributeName":null
+                          |      }
+                          |    ]
+                          |  },
+                          |  "rows":[
+                          |    {
+                          |      "$typeName$":"DB",
+                          |      "$id$":{
+                          |        "$typeName$":"DB",
+                          |        "version":0
+                          |      },
+                          |      "owner":"John ETL",
+                          |      "name":"Sales",
+                          |      "createTime":1000
+                          |    },
+                          |    {
+                          |      "$typeName$":"DB",
+                          |      "$id$":{
+                          |        "$typeName$":"DB",
+                          |        "version":0
+                          |      },
+                          |      "owner":"Jane BI",
+                          |      "name":"Reporting",
+                          |      "createTime":1500
+                          |    }
+                          |  ]
+                          |}""".stripMargin)
     }
 
     test("testFieldReference") {
         val r = QueryProcessor.evaluate(_class("DB").field("Table"), g)
-        validateJson(r, "{\n  \"query\":\"DB Table\",\n  \"dataType\":{\n    \"superTypes\":[\n      \n    ],\n    \"hierarchicalMetaTypeName\":\"org.apache.atlas.typesystem.types.ClassType\",\n    \"typeName\":\"Table\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"name\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"db\",\n        \"dataTypeName\":\"DB\",\n        \"multiplicity\":{\n          \"lower\":1,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"sd\",\n        \"dataTypeName\":\"StorageDesc\",\n        \"multiplicity\":{\n          \"lower\":1,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"Table\",\n      \"$id$\":{\n        \"id\":\"2048\",\n        \"$typeName$\":\"Table\",\n        \"version\":0\n      },\n      \"sd\":{\n        \"id\":\"512\",\n        \"$typeName$\":\"StorageDesc\",\n        \"version\":0\n      },\n      \"db\":{\n        \"id\":\"256\",\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"name\":\"sales_fact\"\n    },\n    {\n      \"$typeName$\":\"Table\",\n      \"$id$\":{\n        \"id\":\"3328\",\n        \"$typeName$\":\"Table\",\n        \"version\":0\n      },\n      \"sd\":{\n        \"id\":\"2304\",\n        \"$typeName$\":\"StorageDesc\",\n        \"version\":0\n      },\n      \"db\":{\n        \"id\":\"256\",\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"name\":\"product_dim\",\n      \"$traits$\":{\n        \"Dimension\":{\n          \"$typeName$\":\"Dimension\"\n        }\n      }\n    },\n    {\n      \"$typeName$\":\"Table\",\n      \"$id$\":{\n        \"id\":\"4864\",\n        \"$typeName$\":\"Table\",\n        \"version\":0\n      },\n      \"sd\":{\n        \"id\":\"3840\",\n        \"$typeName$\":\"StorageDesc\",\n        \"version\":0\n      },\n      \"db\":{\n        \"id\":\"256\",\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"name\":\"time_dim\",\n      \"$traits$\":{\n        \"Dimension\":{\n          \"$typeName$\":\"Dimension\"\n        }\n      }\n    },\n    {\n      \"$typeName$\":\"Table\",\n      \"$id$\":{\n        \"id\":\"6656\",\n        \"$typeName$\":\"Table\",\n        \"version\":0\n      },\n      \"sd\":{\n        \"id\":\"5376\",\n        \"$typeName$\":\"StorageDesc\",\n        \"version\":0\n      },\n      \"db\":{\n        \"id\":\"256\",\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"name\":\"customer_dim\",\n      \"$traits$\":{\n        \"Dimension\":{\n          \"$typeName$\":\"Dimension\"\n        }\n      }\n    },\n    {\n      \"$typeName$\":\"Table\",\n      \"$id$\":{\n        \"id\":\"8960\",\n        \"$typeName$\":\"Table\",\n        \"version\":0\n      },\n      \"sd\":{\n        \"id\":\"7424\",\n        \"$typeName$\":\"StorageDesc\",\n        \"version\":0\n      },\n      \"db\":{\n        \"id\":\"7168\",\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"name\":\"sales_fact_daily_mv\"\n    },\n    {\n      \"$typeName$\":\"Table\",\n      \"$id$\":{\n        \"id\":\"12800\",\n        \"$typeName$\":\"Table\",\n        \"version\":0\n      },\n      \"sd\":{\n        \"id\":\"11264\",\n        \"$typeName$\":\"StorageDesc\",\n        \"version\":0\n      },\n      \"db\":{\n        \"id\":\"7168\",\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"name\":\"sales_fact_monthly_mv\"\n    }\n  ]\n}")
+        validateJson(r, """{
+                          |  "query":"DB Table",
+                          |  "dataType":{
+                          |    "superTypes":[      ],
+                          |    "hierarchicalMetaTypeName":"org.apache.atlas.typesystem.types.ClassType",
+                          |    "typeName":"Table",
+                          |    "attributeDefinitions":[
+                          |      {
+                          |        "name":"name",
+                          |        "dataTypeName":"string",
+                          |        "multiplicity":{
+                          |          "lower":0,
+                          |          "upper":1,
+                          |          "isUnique":false
+                          |        },
+                          |        "isComposite":false,
+                          |        "isUnique":false,
+                          |        "isIndexable":true,
+                          |        "reverseAttributeName":null
+                          |      },
+                          |      {
+                          |        "name":"db",
+                          |        "dataTypeName":"DB",
+                          |        "multiplicity":{
+                          |          "lower":1,
+                          |          "upper":1,
+                          |          "isUnique":false
+                          |        },
+                          |        "isComposite":false,
+                          |        "isUnique":false,
+                          |        "isIndexable":true,
+                          |        "reverseAttributeName":null
+                          |      },
+                          |      {
+                          |        "name":"sd",
+                          |        "dataTypeName":"StorageDesc",
+                          |        "multiplicity":{
+                          |          "lower":1,
+                          |          "upper":1,
+                          |          "isUnique":false
+                          |        },
+                          |        "isComposite":false,
+                          |        "isUnique":false,
+                          |        "isIndexable":true,
+                          |        "reverseAttributeName":null
+                          |      },
+                          |      {
+                          |        "name":"created",
+                          |        "dataTypeName":"date",
+                          |        "multiplicity":{
+                          |          "lower":0,
+                          |          "upper":1,
+                          |          "isUnique":false
+                          |        },
+                          |        "isComposite":false,
+                          |        "isUnique":false,
+                          |        "isIndexable":true,
+                          |        "reverseAttributeName":null
+                          |      }
+                          |    ]
+                          |  },
+                          |  "rows":[
+                          |    {
+                          |      "$typeName$":"Table",
+                          |      "$id$":{
+                          |        "$typeName$":"Table",
+                          |        "version":0
+                          |      },
+                          |      "created":"2014-12-11T02:35:58.440Z",
+                          |      "sd":{
+                          |        "$typeName$":"StorageDesc",
+                          |        "version":0
+                          |      },
+                          |      "db":{
+                          |        "$typeName$":"DB",
+                          |        "version":0
+                          |      },
+                          |      "name":"sales_fact"
+                          |    },
+                          |    {
+                          |      "$typeName$":"Table",
+                          |      "$id$":{
+                          |        "$typeName$":"Table",
+                          |        "version":0
+                          |      },
+                          |      "created":"2014-12-11T02:35:58.440Z",
+                          |      "sd":{
+                          |        "$typeName$":"StorageDesc",
+                          |        "version":0
+                          |      },
+                          |      "db":{
+                          |        "$typeName$":"DB",
+                          |        "version":0
+                          |      },
+                          |      "name":"product_dim",
+                          |      "$traits$":{
+                          |        "Dimension":{
+                          |          "$typeName$":"Dimension"
+                          |        }
+                          |      }
+                          |    },
+                          |    {
+                          |      "$typeName$":"Table",
+                          |      "$id$":{
+                          |        "$typeName$":"Table",
+                          |        "version":0
+                          |      },
+                          |      "created":"2014-12-11T02:35:58.440Z",
+                          |      "sd":{
+                          |        "$typeName$":"StorageDesc",
+                          |        "version":0
+                          |      },
+                          |      "db":{
+                          |        "$typeName$":"DB",
+                          |        "version":0
+                          |      },
+                          |      "name":"time_dim",
+                          |      "$traits$":{
+                          |        "Dimension":{
+                          |          "$typeName$":"Dimension"
+                          |        }
+                          |      }
+                          |    },
+                          |    {
+                          |      "$typeName$":"Table",
+                          |      "$id$":{
+                          |        "$typeName$":"Table",
+                          |        "version":0
+                          |      },
+                          |      "created":"2014-12-11T02:35:58.440Z",
+                          |      "sd":{
+                          |        "$typeName$":"StorageDesc",
+                          |        "version":0
+                          |      },
+                          |      "db":{
+                          |        "$typeName$":"DB",
+                          |        "version":0
+                          |      },
+                          |      "name":"customer_dim",
+                          |      "$traits$":{
+                          |        "Dimension":{
+                          |          "$typeName$":"Dimension"
+                          |        }
+                          |      }
+                          |    },
+                          |    {
+                          |      "$typeName$":"Table",
+                          |      "$id$":{
+                          |        "$typeName$":"Table",
+                          |        "version":0
+                          |      },
+                          |      "created":"2014-12-11T02:35:58.440Z",
+                          |      "sd":{
+                          |        "$typeName$":"StorageDesc",
+                          |        "version":0
+                          |      },
+                          |      "db":{
+                          |        "$typeName$":"DB",
+                          |        "version":0
+                          |      },
+                          |      "name":"sales_fact_daily_mv"
+                          |    },
+                          |    {
+                          |      "$typeName$":"Table",
+                          |      "$id$":{
+                          |        "$typeName$":"Table",
+                          |        "version":0
+                          |      },
+                          |      "created":"2014-12-11T02:35:58.440Z",
+                          |      "sd":{
+                          |        "$typeName$":"StorageDesc",
+                          |        "version":0
+                          |      },
+                          |      "db":{
+                          |        "$typeName$":"DB",
+                          |        "version":0
+                          |      },
+                          |      "name":"sales_fact_monthly_mv"
+                          |    }
+                          |  ]
+                          |}""".stripMargin);
     }
 
     test("testBackReference") {
@@ -98,7 +481,7 @@ class GremlinTest extends FunSuite with BeforeAndAfterAll with BaseGremlinTest {
     test("testComparisonLogical") {
         val r = QueryProcessor.evaluate(_class("DB").where(id("name").`=`(string("Reporting")).
             and(id("createTime") > int(0))), g)
-        validateJson(r, "{\n  \"query\":\"DB where (name = \\\"Reporting\\\") and (createTime > 0)\",\n  \"dataType\":{\n    \"superTypes\":[\n      \n    ],\n    \"hierarchicalMetaTypeName\":\"org.apache.atlas.typesystem.types.ClassType\",\n    \"typeName\":\"DB\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"name\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"owner\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"createTime\",\n        \"dataTypeName\":\"int\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"DB\",\n      \"$id$\":{\n        \"id\":\"7168\",\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"owner\":\"Jane BI\",\n      \"name\":\"Reporting\",\n      \"createTime\":1500\n    }\n  ]\n}")
+        validateJson(r, "{\n  \"query\":\"DB where (name = \\\"Reporting\\\") and (createTime > 0)\",\n  \"dataType\":{\n    \"superTypes\":[\n      \n    ],\n    \"hierarchicalMetaTypeName\":\"org.apache.atlas.typesystem.types.ClassType\",\n    \"typeName\":\"DB\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"name\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"owner\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"createTime\",\n        \"dataTypeName\":\"int\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"DB\",\n      \"$id$\":{\n        \"id\":\"7424\",\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"owner\":\"Jane BI\",\n      \"name\":\"Reporting\",\n      \"createTime\":1500\n    }\n  ]\n}")
     }
 
     test("testJoinAndSelect1") {

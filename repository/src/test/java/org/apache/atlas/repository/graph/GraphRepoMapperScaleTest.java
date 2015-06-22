@@ -21,15 +21,20 @@ package org.apache.atlas.repository.graph;
 import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.TitanGraphQuery;
 import com.thinkaurelius.titan.core.TitanIndexQuery;
+import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.tinkerpop.blueprints.Compare;
+import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.GraphQuery;
+import com.tinkerpop.blueprints.Predicate;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.atlas.GraphTransaction;
+import org.apache.atlas.repository.BaseTest;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
@@ -55,6 +60,7 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Map;
 import java.util.Random;
 
@@ -157,6 +163,7 @@ public class GraphRepoMapperScaleTest {
 
         searchWithOutIndex("hive_table_type.name", "bar-999");
         searchWithIndex("hive_table_type.name", "bar-999");
+        searchWithIndex("hive_table_type.created", Compare.GREATER_THAN_EQUAL, BaseTest.TEST_DATE_IN_LONG);
 
         for (int index = 500; index < 600; index++) {
             searchWithIndex("hive_table_type.name", "bar-" + index);
@@ -186,6 +193,21 @@ public class GraphRepoMapperScaleTest {
             String queryString = "v.\"" + key + "\":(" + value + ")";
             TitanIndexQuery query = graph.indexQuery(Constants.VERTEX_INDEX, queryString);
             for (TitanIndexQuery.Result<Vertex> ignored : query.vertices()) {
+                count++;
+            }
+        } finally {
+            System.out.println("Search on [" + key + "=" + value + "] returned results: " + count + ", took " + (
+                System.currentTimeMillis() - start) + " ms");
+        }
+    }
+
+    private void searchWithIndex(String key, Predicate searchPredicate, Object value) {
+        TitanGraph graph = graphProvider.get();
+        long start = System.currentTimeMillis();
+        int count = 0;
+        try {
+            GraphQuery query = graph.query().has(key, searchPredicate, value);
+            for (Vertex ignored : query.vertices()) {
                 count++;
             }
         } finally {
@@ -222,6 +244,7 @@ public class GraphRepoMapperScaleTest {
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE),
+                        TypesUtil.createOptionalAttrDef("created", DataTypes.DATE_TYPE),
                         // enum
                         new AttributeDefinition("tableType", "table_type", Multiplicity.REQUIRED, false, null),
                         // array of strings
@@ -262,6 +285,7 @@ public class GraphRepoMapperScaleTest {
         tableInstance.set("name", TABLE_NAME + "-" + uberIndex);
         tableInstance.set("description", "bar table" + "-" + uberIndex);
         tableInstance.set("type", "managed");
+        tableInstance.set("created", new Date(BaseTest.TEST_DATE_IN_LONG));
         tableInstance.set("tableType", 1); // enum
 
         // refer to an existing class

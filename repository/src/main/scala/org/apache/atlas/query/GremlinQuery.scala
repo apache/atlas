@@ -19,7 +19,9 @@
 package org.apache.atlas.query
 
 import org.apache.atlas.query.Expressions._
+import org.apache.atlas.typesystem.types.{TypeSystem, DataTypes}
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory
+import org.joda.time.format.ISODateTimeFormat
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -227,12 +229,29 @@ class GremlinTranslator(expr: Expression,
           }
         }
         case c@ComparisonExpression(symb, f@FieldExpression(fieldName, fInfo, ch), l) => {
+          val QUOTE = "\"";
           val fieldGremlinExpr = s"${gPersistenceBehavior.fieldNameInVertex(fInfo.dataType, fInfo.attrInfo)}"
             ch match {
                 case Some(child) => {
                   s"""${genQuery(child, inSelect)}.has("$fieldGremlinExpr", ${gPersistenceBehavior.gremlinCompOp(c)}, $l)"""
                 }
-                case None => s"""has("$fieldGremlinExpr", ${gPersistenceBehavior.gremlinCompOp(c)}, $l)"""
+                case None => {
+                    if (fInfo.attrInfo.dataType == DataTypes.DATE_TYPE) {
+                        try {
+                            //Accepts both date, datetime formats
+                            val dateStr = l.toString.stripPrefix(QUOTE).stripSuffix(QUOTE)
+                            val dateVal = ISODateTimeFormat.dateOptionalTimeParser().parseDateTime(dateStr).getMillis
+                            s"""has("$fieldGremlinExpr", ${gPersistenceBehavior.gremlinCompOp(c)},${dateVal})"""
+                        } catch {
+                            case pe: java.text.ParseException =>
+                                throw new GremlinTranslationException(c,
+                                    "Date format " + l + " not supported. Should be of the format " + TypeSystem.getInstance().getDateFormat.toPattern);
+
+                        }
+                    }
+                    else
+                        s"""has("$fieldGremlinExpr", ${gPersistenceBehavior.gremlinCompOp(c)}, $l)"""
+                }
             }
         }
         case fil@FilterExpression(child, condExpr) => {

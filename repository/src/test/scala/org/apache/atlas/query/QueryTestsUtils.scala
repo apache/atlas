@@ -28,7 +28,10 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.atlas.typesystem.types._
 import org.apache.commons.configuration.{Configuration, ConfigurationException, MapConfiguration}
 import org.apache.commons.io.FileUtils
+import org.json.JSONObject
 import org.scalatest.{Assertions, BeforeAndAfterAll, FunSuite}
+import org.skyscreamer.jsonassert.JSONAssert
+
 
 trait GraphUtils {
 
@@ -96,7 +99,8 @@ object QueryTestsUtils extends GraphUtils {
             Array(
                 attrDef("name", DataTypes.STRING_TYPE),
                 new AttributeDefinition("db", "DB", Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("sd", "StorageDesc", Multiplicity.REQUIRED, false, null)
+                new AttributeDefinition("sd", "StorageDesc", Multiplicity.REQUIRED, false, null),
+                attrDef("created", DataTypes.DATE_TYPE)
             ))
 
         def loadProcessClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "LoadProcess", null,
@@ -160,7 +164,9 @@ trait BaseGremlinTest {
     if (expected != null) {
       val a = STRUCT_NAME_REGEX.replaceAllIn(rJ, "")
       val b = STRUCT_NAME_REGEX.replaceAllIn(expected, "")
-      Assertions.assert(a == b)
+      val actualjsonObj = new JSONObject(a)
+      val expectedjsonObj = new JSONObject(b)
+      JSONAssert.assertEquals(expectedjsonObj, actualjsonObj, false)
     } else {
       println(rJ)
     }

@@ -19,12 +19,14 @@
 package org.apache.atlas.query
 
 import java.io.File
-import java.util.UUID
+import java.util.{Date, UUID}
 import java.util.concurrent.atomic.AtomicInteger
 import javax.script.{Bindings, ScriptEngine, ScriptEngineManager}
 
 import com.thinkaurelius.titan.core.TitanGraph
 import com.typesafe.config.ConfigFactory
+import org.apache.atlas.repository.BaseTest
+import org.apache.atlas.typesystem.types.TypeSystem
 import org.apache.commons.io.FileUtils
 
 import scala.collection.mutable.ArrayBuffer
@@ -54,18 +56,19 @@ object HiveTitanSample {
 
             this.getClass.getDeclaredFields filter (_.getName != "traits") foreach { f =>
                 f.setAccessible(true)
-                var fV = f.get(this)
-                fV = fV match {
+                val fV = f.get(this)
+                val convertedVal = fV match {
                     case _: String => s""""$fV""""
+                    case d: Date => d.getTime
                     case _ => fV
                 }
 
-                fV match {
+                convertedVal match {
                     case x: Vertex => addEdge(x, s"${this.getClass.getSimpleName}.${f.getName}", edges)
                     case l: List[_] => l.foreach(x => addEdge(x.asInstanceOf[Vertex],
                         s"${this.getClass.getSimpleName}.${f.getName}", edges))
-                    case _ => sb.append( s""", "${f.getName}" : $fV""")
-                        sb.append( s""", "${this.getClass.getSimpleName}.${f.getName}" : $fV""")
+                    case _ => sb.append( s""", "${f.getName}" : $convertedVal""")
+                        sb.append( s""", "${this.getClass.getSimpleName}.${f.getName}" : $convertedVal""")
                 }
             }
 
@@ -127,17 +130,23 @@ object HiveTitanSample {
                       _id: String = "" + nextVertexId.incrementAndGet()) extends Instance
 
     case class Table(name: String, db: DB, sd: StorageDescriptor,
+                     created: Date,
                      traits: Option[List[Trait]] = None,
                      _id: String = "" + nextVertexId.incrementAndGet()) extends Instance
 
     case class TableDef(name: String, db: DB, inputFormat: String, outputFormat: String,
                         columns: List[(String, String, Option[List[Trait]])],
-                        traits: Option[List[Trait]] = None) {
+                        traits: Option[List[Trait]] = None,
+                        created: Option[Date] = None) {
+        val createdDate : Date = created match {
+            case Some(x) => x
+            case None => new Date(BaseTest.TEST_DATE_IN_LONG)
+        }
         val sd = StorageDescriptor(inputFormat, outputFormat)
         val colDefs = columns map { c =>
             Column(c._1, c._2, sd, c._3)
         }
-        val tablDef = Table(name, db, sd, traits)
+        val tablDef = Table(name, db, sd, createdDate, traits)
 
         def toGSon(vertices: ArrayBuffer[String],
                    edges: ArrayBuffer[String]): Unit = {
@@ -167,6 +176,7 @@ object HiveTitanSample {
             ("time_id", "int", None),
             ("product_id", "int", None),
             ("customer_id", "int", None),
+            ("created", "date", None),
             ("sales", "double", Some(List(Metric())))
         ))
     val productDim = TableDef("product_dim",
@@ -268,6 +278,7 @@ object HiveTitanSample {
     def writeGson(fileName: String): Unit = {
         FileUtils.writeStringToFile(new File(fileName), toGSon())
     }
+
 
     val GremlinQueries = List(
         // 1. List all DBs

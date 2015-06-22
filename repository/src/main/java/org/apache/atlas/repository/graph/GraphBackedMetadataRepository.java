@@ -857,7 +857,9 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             } else if (attributeInfo.dataType() == DataTypes.BIGDECIMAL_TYPE) {
                 propertyValue = typedInstance.getBigDecimal(attributeInfo.name);
             } else if (attributeInfo.dataType() == DataTypes.DATE_TYPE) {
-                propertyValue = typedInstance.getDate(attributeInfo.name);
+                final Date dateVal = typedInstance.getDate(attributeInfo.name);
+                //Convert Property value to Long  while persisting
+                propertyValue = dateVal.getTime();
             }
             addProperty(instanceVertex, vertexPropertyName, propertyValue);
         }
@@ -1180,7 +1182,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 typedInstance
                         .setBigDecimal(attributeInfo.name, instanceVertex.<BigDecimal>getProperty(vertexPropertyName));
             } else if (attributeInfo.dataType() == DataTypes.DATE_TYPE) {
-                typedInstance.setDate(attributeInfo.name, instanceVertex.<Date>getProperty(vertexPropertyName));
+                final Long dateVal = instanceVertex.<Long>getProperty(vertexPropertyName);
+                typedInstance.setDate(attributeInfo.name, new Date(dateVal));
             }
         }
     }

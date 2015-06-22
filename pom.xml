@@ -338,6 +338,7 @@
         <spray.version>1.3.1</spray.version>
         <guava.version>14.0</guava.version>
         <fastutil.version>6.5.16</fastutil.version>
+        <guice.version>4.0</guice.version>
 
         <PermGen>64m</PermGen>
         <MaxPermGen>512m</MaxPermGen>
@@ -563,31 +564,38 @@
             <dependency>
                 <groupId>com.google.inject</groupId>
                 <artifactId>guice</artifactId>
-                <version>4.0</version>
+                <version>${guice.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>com.google.inject.extensions</groupId>
                 <artifactId>guice-throwingproviders</artifactId>
-                <version>4.0</version>
+                <version>${guice.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>com.google.inject.extensions</groupId>
                 <artifactId>guice-multibindings</artifactId>
-                <version>4.0</version>
+                <version>${guice.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>com.google.inject.extensions</groupId>
                 <artifactId>guice-servlet</artifactId>
-                <version>4.0</version>
+                <version>${guice.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>com.sun.jersey.contribs</groupId>
                 <artifactId>jersey-guice</artifactId>
                 <version>1.18.3</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.skyscreamer</groupId>
+                <artifactId>jsonassert</artifactId>
+                <version>1.2.0</version>
+                <scope>test</scope>
             </dependency>
 
             <dependency>
