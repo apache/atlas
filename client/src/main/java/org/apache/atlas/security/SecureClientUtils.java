@@ -45,6 +45,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.security.GeneralSecurityException;
+import java.security.PrivilegedExceptionAction;
 
 import static org.apache.atlas.security.SecurityProperties.CERT_STORES_CREDENTIAL_PROVIDER_PATH;
 import static org.apache.atlas.security.SecurityProperties.CLIENT_AUTH_KEY;
@@ -61,7 +62,7 @@ public class SecureClientUtils {
 
 
     public static URLConnectionClientHandler getClientConnectionHandler(DefaultClientConfig config,
-            PropertiesConfiguration clientConfig) {
+            PropertiesConfiguration clientConfig, final String doAsUser, final UserGroupInformation ugi) {
         config.getProperties().put(URLConnectionClientHandler.PROPERTY_HTTP_URL_CONNECTION_SET_METHOD_WORKAROUND, true);
         Configuration conf = new Configuration();
         conf.addResource(conf.get(SSLFactory.SSL_CLIENT_CONF_KEY, "ssl-client.xml"));
@@ -78,17 +79,47 @@ public class SecureClientUtils {
         authenticator.setConnectionConfigurator(connConfigurator);
         final DelegationTokenAuthenticator finalAuthenticator = (DelegationTokenAuthenticator) authenticator;
         final DelegationTokenAuthenticatedURL.Token token = new DelegationTokenAuthenticatedURL.Token();
-        HttpURLConnectionFactory httpURLConnectionFactory = new HttpURLConnectionFactory() {
-            @Override
-            public HttpURLConnection getHttpURLConnection(final URL url) throws IOException {
-                try {
-                    return new DelegationTokenAuthenticatedURL(finalAuthenticator, connConfigurator)
-                            .openConnection(url, token, null);
-                } catch (Exception e) {
-                    throw new IOException(e);
+        HttpURLConnectionFactory httpURLConnectionFactory = null;
+        try {
+            UserGroupInformation ugiToUse = ugi != null ?
+                ugi : UserGroupInformation.getCurrentUser();
+            final UserGroupInformation actualUgi =
+                (ugiToUse.getAuthenticationMethod() ==
+                 UserGroupInformation.AuthenticationMethod.PROXY)
+                    ? ugiToUse.getRealUser()
+                    : ugiToUse;
+            LOG.info("Real User: {}, is from ticket cache? {}",
+                     actualUgi,
+                     actualUgi.isLoginTicketBased());
+            LOG.info("doAsUser: {}", doAsUser);
+            httpURLConnectionFactory = new HttpURLConnectionFactory() {
+                @Override
+                public HttpURLConnection getHttpURLConnection(final URL url) throws IOException {
+                    try {
+                        return actualUgi.doAs(new PrivilegedExceptionAction<HttpURLConnection>() {
+                            @Override
+                            public HttpURLConnection run() throws Exception {
+                                try {
+                                    return new DelegationTokenAuthenticatedURL(
+                                        finalAuthenticator, connConfigurator)
+                                        .openConnection(url, token, doAsUser);
+                                } catch (Exception e) {
+                                    throw new IOException(e);
+                                }
+                            }
+                        });
+                    } catch (Exception e) {
+                        if (e instanceof IOException) {
+                            throw (IOException) e;
+                        } else {
+                            throw new IOException(e);
+                        }
+                    }
                 }
-            }
-        };
+            };
+        } catch (IOException e) {
+            LOG.warn("Error obtaining user", e);
+        }
 
         return new URLConnectionClientHandler(httpURLConnectionFactory);
     }

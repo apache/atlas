@@ -27,6 +27,7 @@ import org.apache.atlas.security.SecureClientUtils;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -81,6 +82,10 @@ public class AtlasClient {
     private WebResource service;
 
     public AtlasClient(String baseUrl) {
+        this(baseUrl, null, null);
+    }
+
+    public AtlasClient(String baseUrl, UserGroupInformation ugi, String doAsUser) {
         DefaultClientConfig config = new DefaultClientConfig();
         PropertiesConfiguration clientConfig = null;
         try {
@@ -95,7 +100,8 @@ public class AtlasClient {
             LOG.info("Error processing client configuration.", e);
         }
 
-        URLConnectionClientHandler handler = SecureClientUtils.getClientConnectionHandler(config, clientConfig);
+        URLConnectionClientHandler handler =
+            SecureClientUtils.getClientConnectionHandler(config, clientConfig, doAsUser, ugi);
 
         Client client = new Client(handler, config);
         client.resource(UriBuilder.fromUri(baseUrl).build());

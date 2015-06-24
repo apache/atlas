@@ -29,6 +29,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.Driver;
 import org.apache.hadoop.hive.ql.session.SessionState;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.alias.JavaKeyStoreProvider;
 import org.apache.hadoop.security.ssl.SSLFactory;
 import org.apache.hadoop.security.ssl.SSLHostnameVerifier;
@@ -129,12 +130,23 @@ public class SSLAndKerberosHiveHookIT extends BaseSSLAndKerberosTest {
 
         configuration.save(new FileWriter(persistDir + File.separator + "application.properties"));
 
-        dgiCLient = new AtlasClient(DGI_URL) {
+        subject = loginTestUser();
+        UserGroupInformation.loginUserFromSubject(subject);
+        UserGroupInformation proxyUser = UserGroupInformation.createProxyUser(
+            "testUser",
+            UserGroupInformation.getLoginUser());
+
+        dgiCLient = proxyUser.doAs(new PrivilegedExceptionAction<AtlasClient>() {
             @Override
-            protected PropertiesConfiguration getClientProperties() throws AtlasException {
-                return configuration;
+            public AtlasClient run() throws Exception {
+                return new AtlasClient(DGI_URL) {
+                    @Override
+                    protected PropertiesConfiguration getClientProperties() throws AtlasException {
+                        return configuration;
+                    }
+                };
             }
-        };
+        });
 
         secureEmbeddedServer = new TestSecureEmbeddedServer(21443, "webapp/target/apache-atlas") {
             @Override
@@ -152,7 +164,6 @@ public class SSLAndKerberosHiveHookIT extends BaseSSLAndKerberosTest {
         System.setProperty("atlas.conf", persistDir);
         secureEmbeddedServer.getServer().start();
 
-        subject = loginTestUser();
     }
 
     @AfterClass
@@ -194,7 +205,11 @@ public class SSLAndKerberosHiveHookIT extends BaseSSLAndKerberosTest {
 
     private void runCommand(final String cmd) throws Exception {
         ss.setCommandType(null);
-        Subject.doAs(subject, new PrivilegedExceptionAction<Object>() {
+        UserGroupInformation.loginUserFromSubject(subject);
+        UserGroupInformation proxyUser = UserGroupInformation.createProxyUser(
+            "testUser",
+            UserGroupInformation.getLoginUser());
+        proxyUser.doAs(new PrivilegedExceptionAction<Object>() {
             @Override
             public Object run() throws Exception {
                 driver.run(cmd);
@@ -218,7 +233,11 @@ public class SSLAndKerberosHiveHookIT extends BaseSSLAndKerberosTest {
 
     private void assertInstanceIsRegistered(final String typeName, final String colName, final String colValue)
     throws Exception {
-        Subject.doAs(subject, new PrivilegedExceptionAction<Object>() {
+        UserGroupInformation.loginUserFromSubject(subject);
+        UserGroupInformation proxyUser = UserGroupInformation.createProxyUser(
+            "testUser",
+            UserGroupInformation.getLoginUser());
+        proxyUser.doAs(new PrivilegedExceptionAction<Object>() {
             @Override
             public Object run() throws Exception {
                 JSONArray results = dgiCLient.rawSearch(typeName, colName, colValue);

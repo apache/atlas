@@ -35,6 +35,7 @@ import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,6 +114,7 @@ public class HiveHook implements ExecuteWithHookContext {
         public Set<WriteEntity> outputs;
 
         public String user;
+        public UserGroupInformation ugi;
         public HiveOperation operation;
         public QueryPlan queryPlan;
         public HookContext.HookType hookType;
@@ -136,6 +138,7 @@ public class HiveHook implements ExecuteWithHookContext {
         event.outputs = hookContext.getOutputs();
 
         event.user = hookContext.getUserName() == null ? hookContext.getUgi().getUserName() : hookContext.getUserName();
+        event.ugi = hookContext.getUgi();
         event.operation = HiveOperation.valueOf(hookContext.getOperationName());
         event.queryPlan = hookContext.getQueryPlan();
         event.hookType = hookContext.getHookType();
@@ -162,7 +165,7 @@ public class HiveHook implements ExecuteWithHookContext {
         assert event.hookType == HookContext.HookType.POST_EXEC_HOOK : "Non-POST_EXEC_HOOK not supported!";
 
         LOG.info("Entered Atlas hook for hook type {} operation {}", event.hookType, event.operation);
-        HiveMetaStoreBridge dgiBridge = new HiveMetaStoreBridge(event.conf);
+        HiveMetaStoreBridge dgiBridge = new HiveMetaStoreBridge(event.conf, event.user, event.ugi);
 
         if (!typesRegistered) {
             dgiBridge.registerHiveDataModel();
