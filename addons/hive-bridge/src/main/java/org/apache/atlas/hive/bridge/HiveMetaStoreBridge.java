@@ -56,11 +56,11 @@ import java.util.Set;
  */
 public class HiveMetaStoreBridge {
     private static final String DEFAULT_DGI_URL = "http://localhost:21000/";
-    public static final String HIVE_CLUSTER_NAME = "hive.cluster.name";
+    public static final String HIVE_CLUSTER_NAME = "atlas.cluster.name";
     public static final String DEFAULT_CLUSTER_NAME = "primary";
     private final String clusterName;
 
-    public static final String DGI_URL_PROPERTY = "hive.hook.dgi.url";
+    public static final String ATLAS_ENDPOINT = "atlas.rest.address";
 
     private static final Logger LOG = LoggerFactory.getLogger(HiveMetaStoreBridge.class);
 
@@ -78,7 +78,7 @@ public class HiveMetaStoreBridge {
     public HiveMetaStoreBridge(HiveConf hiveConf, String doAsUser, UserGroupInformation ugi) throws Exception {
         clusterName = hiveConf.get(HIVE_CLUSTER_NAME, DEFAULT_CLUSTER_NAME);
         hiveClient = Hive.get(hiveConf);
-        atlasClient = new AtlasClient(hiveConf.get(DGI_URL_PROPERTY, DEFAULT_DGI_URL), ugi, doAsUser);
+        atlasClient = new AtlasClient(hiveConf.get(ATLAS_ENDPOINT, DEFAULT_DGI_URL), ugi, doAsUser);
     }
 
     public AtlasClient getAtlasClient() {

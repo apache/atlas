@@ -60,9 +60,12 @@ public class HiveHook implements ExecuteWithHookContext {
     private static final int WAIT_TIME = 3;
     private static ExecutorService executor;
 
-    private static final String MIN_THREADS = "hive.hook.dgi.minThreads";
-    private static final String MAX_THREADS = "hive.hook.dgi.maxThreads";
-    private static final String KEEP_ALIVE_TIME = "hive.hook.dgi.keepAliveTime";
+    public static final String CONF_PREFIX = "atlas.hook.hive.";
+
+    private static final String MIN_THREADS = CONF_PREFIX + "minThreads";
+    private static final String MAX_THREADS = CONF_PREFIX + "maxThreads";
+    private static final String KEEP_ALIVE_TIME = CONF_PREFIX + "keepAliveTime";
+    public static final String CONF_SYNC = CONF_PREFIX + "synchronous";
 
     private static final int minThreadsDefault = 5;
     private static final int maxThreadsDefault = 5;
@@ -131,7 +134,7 @@ public class HiveHook implements ExecuteWithHookContext {
         // clone to avoid concurrent access
         final HiveEvent event = new HiveEvent();
         final HiveConf conf = new HiveConf(hookContext.getConf());
-        boolean debug = conf.get("hive.hook.dgi.synchronous", "false").equals("true");
+        boolean debug = conf.get(CONF_SYNC, "false").equals("true");
 
         event.conf = conf;
         event.inputs = hookContext.getInputs();

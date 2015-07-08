@@ -54,7 +54,7 @@ public class HiveHookIT {
     @BeforeClass
     public void setUp() throws Exception {
         //Set-up hive session
-        HiveConf conf = getHiveConf();
+        HiveConf conf = createHiveConf();
         driver = new Driver(conf);
         ss = new SessionState(conf, System.getProperty("user.name"));
         ss = SessionState.start(ss);
@@ -63,15 +63,19 @@ public class HiveHookIT {
         dgiCLient = new AtlasClient(DGI_URL);
     }
 
-    private HiveConf getHiveConf() {
-        HiveConf hiveConf = new HiveConf(this.getClass());
+    public static HiveConf createHiveConf() {
+        return createHiveConf(DGI_URL);
+    }
+
+    public static HiveConf createHiveConf(String atlasEndpoint) {
+        HiveConf hiveConf = new HiveConf(HiveHookIT.class);
         hiveConf.setVar(HiveConf.ConfVars.PREEXECHOOKS, "");
         hiveConf.setVar(HiveConf.ConfVars.POSTEXECHOOKS, HiveHook.class.getName());
         hiveConf.setBoolVar(HiveConf.ConfVars.HIVE_SUPPORT_CONCURRENCY, false);
         hiveConf.setVar(HiveConf.ConfVars.METASTOREWAREHOUSE, System.getProperty("user.dir") + "/target/metastore");
-        hiveConf.set(HiveMetaStoreBridge.DGI_URL_PROPERTY, DGI_URL);
-        hiveConf.set("javax.jdo.option.ConnectionURL", "jdbc:derby:./target/metastore_db;create=true");
-        hiveConf.set("hive.hook.dgi.synchronous", "true");
+        hiveConf.set(HiveMetaStoreBridge.ATLAS_ENDPOINT, atlasEndpoint);
+        hiveConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, "jdbc:derby:./target/metastore_db;create=true");
+        hiveConf.set(HiveHook.CONF_SYNC, "true");
         hiveConf.set(HiveMetaStoreBridge.HIVE_CLUSTER_NAME, CLUSTER_NAME);
         hiveConf.setBoolVar(HiveConf.ConfVars.HIVETESTMODE, true);  //to not use hdfs
         hiveConf.setVar(HiveConf.ConfVars.HIVETESTMODEPREFIX, "");

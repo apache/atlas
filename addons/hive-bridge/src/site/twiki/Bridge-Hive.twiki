@@ -25,11 +25,11 @@ hive conf directory:
    * Atlas endpoint - Add the following property with the Atlas endpoint for your set-up
 <verbatim>
 <property>
-  <name>hive.hook.dgi.url</name>
+  <name>atlas.rest.address</name>
   <value>http://localhost:21000/</value>
 </property>
 <property>
-  <name>hive.cluster.name</name>
+  <name>atlas.cluster.name</name>
   <value>primary</value>
 </property>
 </verbatim>
@@ -50,21 +50,21 @@ The hook submits the request to a thread pool executor to avoid blocking the com
    * Add the following properties in hive-ste.xml with the Atlas endpoint for your set-up
 <verbatim>
 <property>
-  <name>hive.hook.dgi.url</name>
+  <name>atlas.rest.address</name>
   <value>http://localhost:21000/</value>
 </property>
 <property>
-  <name>hive.cluster.name</name>
+  <name>atlas.cluster.name</name>
   <value>primary</value>
 </property>
 </verbatim>
    * Add 'export HIVE_AUX_JARS_PATH=<dgi package>/hook/hive' in hive-env.sh
 
 The following properties in hive-site.xml control the thread pool details:
-   * hive.hook.dgi.minThreads - core number of threads. default 5
-   * hive.hook.dgi.maxThreads - maximum number of threads. default 5
-   * hive.hook.dgi.keepAliveTime - keep alive time in msecs. default 10
-   * hive.hook.dgi.synchronous - boolean, true to run the hook synchronously. default false
+   * atlas.hook.hive.minThreads - core number of threads. default 5
+   * atlas.hook.hive.maxThreads - maximum number of threads. default 5
+   * atlas.hook.hive.keepAliveTime - keep alive time in msecs. default 10
+   * atlas.hook.hive.synchronous - boolean, true to run the hook synchronously. default false
 
 ---++ Limitations
    * Since database name, table name and column names are case insensitive in hive, the corresponding names in entities are lowercase. So, any search APIs should use lowercase while querying on the entity names

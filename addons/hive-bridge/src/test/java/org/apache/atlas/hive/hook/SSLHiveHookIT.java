@@ -187,15 +187,7 @@ public class SSLHiveHookIT {
     }
 
     private HiveConf getHiveConf() {
-        HiveConf hiveConf = new HiveConf(this.getClass());
-        hiveConf.setVar(HiveConf.ConfVars.PREEXECHOOKS, "");
-        hiveConf.setVar(HiveConf.ConfVars.POSTEXECHOOKS, HiveHook.class.getName());
-        hiveConf.setBoolVar(HiveConf.ConfVars.HIVE_SUPPORT_CONCURRENCY, false);
-        hiveConf.setVar(HiveConf.ConfVars.METASTOREWAREHOUSE, System.getProperty("user.dir") + "/target/atlas");
-        hiveConf.set(HiveMetaStoreBridge.DGI_URL_PROPERTY, DGI_URL);
-        hiveConf.set("javax.jdo.option.ConnectionURL", "jdbc:derby:./target/metastore_db;create=true");
-        hiveConf.set("hive.hook.dgi.synchronous", "true");
-        return hiveConf;
+        return HiveHookIT.createHiveConf(DGI_URL);
     }
 
     private void runCommand(String cmd) throws Exception {

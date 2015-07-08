@@ -4,6 +4,7 @@ Apache Atlas Release Notes
 --trunk - unreleased
 
 INCOMPATIBLE CHANGES:
+ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (suma.shivaprasad via shwethags)
 
 ALL CHANGES:
