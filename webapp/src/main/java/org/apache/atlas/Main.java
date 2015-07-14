@@ -40,6 +40,10 @@ public final class Main {
     private static final String APP_PORT = "port";
     private static final String ATLAS_HOME = "atlas.home";
     private static final String ATLAS_LOG_DIR = "atlas.log.dir";
+    public static final String ATLAS_SERVER_HTTPS_PORT =
+        "atlas.server.https.port";
+    public static final String ATLAS_SERVER_HTTP_PORT =
+        "atlas.server.http.port";
 
     /**
      * Prevent users from constructing this.
@@ -47,7 +51,7 @@ public final class Main {
     private Main() {
     }
 
-    private static CommandLine parseArgs(String[] args) throws ParseException {
+    protected static CommandLine parseArgs(String[] args) throws ParseException {
         Options options = new Options();
         Option opt;
 
@@ -74,7 +78,7 @@ public final class Main {
         setApplicationHome();
         PropertiesConfiguration configuration = PropertiesUtil.getApplicationProperties();
         final String enableTLSFlag = configuration.getString("atlas.enableTLS");
-        final int appPort = getApplicationPort(cmd, enableTLSFlag);
+        final int appPort = getApplicationPort(cmd, enableTLSFlag, configuration);
         final boolean enableTLS = isTLSEnabled(enableTLSFlag, appPort);
         configuration.setProperty("atlas.enableTLS", String.valueOf(enableTLS));
 
@@ -96,15 +100,27 @@ public final class Main {
         return buildConfiguration.getString("project.version");
     }
 
-    private static int getApplicationPort(CommandLine cmd, String enableTLSFlag) {
+    static int getApplicationPort(CommandLine cmd,
+                                          String enableTLSFlag,
+                                          PropertiesConfiguration configuration) {
         final int appPort;
         if (cmd.hasOption(APP_PORT)) {
             appPort = Integer.valueOf(cmd.getOptionValue(APP_PORT));
         } else {
             // default : atlas.enableTLS is true
-            appPort = StringUtils.isEmpty(enableTLSFlag) || enableTLSFlag.equals("true") ? 21443 : 21000;
+            appPort = getPortValue(configuration, enableTLSFlag);
         }
 
+        return appPort;
+    }
+
+    private static int getPortValue(PropertiesConfiguration configuration, String enableTLSFlag) {
+        int appPort;
+
+        assert configuration != null;
+        appPort = StringUtils.isEmpty(enableTLSFlag) || enableTLSFlag.equals("true") ?
+            configuration.getInt(ATLAS_SERVER_HTTPS_PORT, 21443) :
+            configuration.getInt(ATLAS_SERVER_HTTP_PORT, 21000);
         return appPort;
     }
 
