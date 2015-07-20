@@ -8,6 +8,7 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (suma.shivaprasad via shwethags)
 
 ALL CHANGES:
+ATLAS-81 atlas debian packaing fails in maven build (vijay_k via shwethags)
 ATLAS-31 ATLAS build fails with clean repo (suma.shivaprasad via shwethags)
 ATLAS-33 Atlas restart fails (shwethags)
 ATLAS-10 Update trunk version to 0.6-incubating-SNAPSHOT (shwethags)
