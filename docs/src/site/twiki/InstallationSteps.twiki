@@ -130,7 +130,7 @@ with multiple atlas upgrades), set environment variable METADATA_CONF to the pat
 
 * List the types in the repository
   curl -v http://localhost:21000/api/atlas/types
-  {"list":["biginteger","short","byte","int","string","bigdecimal","boolean","date","double","long","float"],"requestId":"902580786@qtp-1479771328-0"}
+  {"results":["Process","Infrastructure","DataSet"],"count":3,"requestId":"1867493731@qtp-262860041-0 - 82d43a27-7c34-4573-85d1-a01525705091"}
 
 * List the instances for a given type
   curl -v http://localhost:21000/api/atlas/entities?type=hive_table

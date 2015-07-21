@@ -24,6 +24,7 @@ import atlas_config as mc
 METADATA_LOG_OPTS="-Datlas.log.dir=%s -Datlas.log.file=application.log"
 METADATA_COMMAND_OPTS="-Datlas.home=%s"
 METADATA_CONFIG_OPTS="-Datlas.conf=%s"
+ATLAS_USER_DIR="-Duser.dir=%s"
 DEFAULT_JVM_OPTS="-Xmx1024m"
 
 def main():
@@ -38,6 +39,9 @@ def main():
 
     cmd_opts = (METADATA_COMMAND_OPTS % metadata_home)
     jvm_opts_list.extend(cmd_opts.split())
+
+    user_dir = (ATLAS_USER_DIR % metadata_home)
+    jvm_opts_list.extend(user_dir.split())
 
     config_opts = (METADATA_CONFIG_OPTS % confdir)
     jvm_opts_list.extend(config_opts.split())
