@@ -8,6 +8,7 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (suma.shivaprasad via shwethags)
 
 ALL CHANGES:
+ATLAS-56 atlas_config.py should give an informative error if jar or java binaries can't be found (dossett@gmail.com via shwethags)
 ATLAS-45 Entity submit fails (suma.shivaprasad via shwethags)
 ATLAS-46 Different data directory with restart (shwethags)
 ATLAS-81 atlas debian packaing fails in maven build (vijay_k via shwethags)

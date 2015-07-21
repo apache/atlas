@@ -116,6 +116,9 @@ def java(classname, args, classpath, jvm_opts_list, logdir=None):
     else:
         prg = which("java")
 
+    if prg is None:
+        raise EnvironmentError('The java binary could not be found in your path or JAVA_HOME')
+
     commandline = [prg]
     commandline.extend(jvm_opts_list)
     commandline.append("-classpath")
@@ -130,6 +133,9 @@ def jar(path):
         prg = os.path.join(java_home, "bin", "jar")
     else:
         prg = which("jar")
+
+    if prg is None:
+        raise EnvironmentError('The jar binary could not be found in your path or JAVA_HOME')
 
     commandline = [prg]
     commandline.append("-xf")

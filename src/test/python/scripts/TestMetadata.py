@@ -19,6 +19,7 @@ limitations under the License.
 '''
 import sys
 
+from os import environ
 from mock import patch
 import unittest
 import logging
@@ -59,6 +60,28 @@ class TestMetadata(unittest.TestCase):
         ['-Datlas.log.dir=metadata_home/logs', '-Datlas.log.file=application.log', '-Datlas.home=metadata_home', '-Duser.dir=metadata_home', '-Datlas.conf=metadata_home/conf', '-Xmx1024m'],  'metadata_home/logs')
     pass
 
+  def test_jar_java_lookups_fail(self):
+    java_home = environ['JAVA_HOME']
+    del environ['JAVA_HOME']
+    orig_path = environ['PATH']
+    environ['PATH'] = "/dev/null"
+
+    self.assertRaises(EnvironmentError, mc.jar, "foo")
+    self.assertRaises(EnvironmentError, mc.java, "empty", "empty", "empty", "empty")
+
+    environ['JAVA_HOME'] = java_home
+    environ['PATH'] = orig_path
+
+  @patch.object(mc, "runProcess")
+  @patch.object(mc, "which", return_value="foo")
+  def test_jar_java_lookups_succeed_from_path(self, which_mock, runProcess_mock):
+    java_home = environ['JAVA_HOME']
+    del environ['JAVA_HOME']
+
+    mc.jar("foo")
+    mc.java("empty", "empty", "empty", "empty")
+
+    environ['JAVA_HOME'] = java_home
 
 if __name__ == "__main__":
   logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG)
