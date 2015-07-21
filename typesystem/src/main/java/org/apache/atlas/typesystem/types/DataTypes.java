@@ -87,6 +87,14 @@ public class DataTypes {
 
         public abstract T nullValue();
 
+        @Override
+        protected T convertNull(Multiplicity m) throws AtlasException {
+            if (!m.nullAllowed()) {
+                throw new ValueConversionException.NullConversionException(m);
+            }
+
+            return nullValue();
+        }
     }
 
     public static class BooleanType extends PrimitiveType<Boolean> {
@@ -455,7 +463,7 @@ public class DataTypes {
 
         @Override
         public String convert(Object val, Multiplicity m) throws AtlasException {
-            if (val != null && (!(val instanceof String) || StringUtils.isNotBlank((CharSequence) val))) {
+            if (val != null && (!(val instanceof String) || StringUtils.isNotEmpty((CharSequence) val))) {
                 return val.toString();
             }
             return convertNull(m);

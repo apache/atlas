@@ -98,7 +98,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @DataProvider
     public Object[][] invalidAttrValues() {
-        return new Object[][]{{null}, {""}, {" "}};
+        return new Object[][]{{null}, {""}};
     }
 
     @Test(dataProvider = "invalidAttrValues")
@@ -109,7 +109,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         try {
             createInstance(databaseInstance);
-            Assert.fail("Exptected MetadataServiceException");
+            Assert.fail("Expected AtlasServiceException");
         } catch (AtlasServiceException e) {
             Assert.assertEquals(e.getStatus(), ClientResponse.Status.BAD_REQUEST);
         }
