@@ -38,6 +38,7 @@ public class SecureEmbeddedServerIT extends SecureEmbeddedServerITBase {
         SecureEmbeddedServer secureEmbeddedServer = null;
         try {
             String appPath = System.getProperty("user.dir") + getWarPath();
+
             secureEmbeddedServer = new SecureEmbeddedServer(21443, appPath) {
                 @Override
                 protected PropertiesConfiguration getConfiguration() {
@@ -53,6 +54,8 @@ public class SecureEmbeddedServerIT extends SecureEmbeddedServerITBase {
 
             // test to see whether server is up and root page can be served
             Assert.assertEquals(connection.getResponseCode(), 200);
+        } catch(Throwable e) {
+            Assert.fail("War deploy failed", e);
         } finally {
             secureEmbeddedServer.server.stop();
         }

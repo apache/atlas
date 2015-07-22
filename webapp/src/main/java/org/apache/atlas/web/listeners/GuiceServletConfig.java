@@ -20,14 +20,20 @@ package org.apache.atlas.web.listeners;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Key;
+import com.google.inject.Provider;
+import com.google.inject.TypeLiteral;
 import com.google.inject.servlet.GuiceServletContextListener;
 import com.sun.jersey.api.core.PackagesResourceConfig;
 import com.sun.jersey.guice.JerseyServletModule;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.tinkerpop.blueprints.Graph;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.PropertiesUtil;
 import org.apache.atlas.RepositoryMetadataModule;
+import org.apache.atlas.repository.graph.GraphProvider;
 import org.apache.atlas.web.filters.AtlasAuthenticationFilter;
 import org.apache.atlas.web.filters.AuditFilter;
 import org.apache.commons.configuration.ConfigurationException;
@@ -35,6 +41,7 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
 import javax.servlet.ServletContextEvent;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,7 +52,7 @@ public class GuiceServletConfig extends GuiceServletContextListener {
 
     private static final String GUICE_CTX_PARAM = "guice.packages";
     static final String HTTP_AUTHENTICATION_ENABLED = "atlas.http.authentication.enabled";
-    private Injector injector;
+    protected Injector injector;
 
     @Override
     protected Injector getInjector() {
@@ -106,5 +113,11 @@ public class GuiceServletConfig extends GuiceServletContextListener {
     @Override
     public void contextDestroyed(ServletContextEvent servletContextEvent) {
         super.contextDestroyed(servletContextEvent);
+        if(injector != null) {
+            TypeLiteral<GraphProvider<TitanGraph>> graphProviderType = new TypeLiteral<GraphProvider<TitanGraph>>() {};
+            Provider<GraphProvider<TitanGraph>> graphProvider = injector.getProvider(Key.get(graphProviderType));
+            final Graph graph = graphProvider.get().get();
+            graph.shutdown();
+        }
     }
 }

@@ -20,9 +20,11 @@ package org.apache.atlas.repository.graph;
 
 import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
@@ -51,6 +53,7 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
@@ -105,12 +108,23 @@ public class GraphBackedMetadataRepositoryTest {
         createHiveTypes();
     }
 
-/*
-    @AfterMethod
+
+    @AfterClass
     public void tearDown() throws Exception {
-         TestUtils.dumpGraph(graphProvider.get());
+        TypeSystem.getInstance().reset();
+        try {
+            //TODO - Fix failure during shutdown while using BDB
+            graphProvider.get().shutdown();
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            TitanCleanup.clear(graphProvider.get());
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
     }
-*/
+
 
     @Test
     public void testSubmitEntity() throws Exception {
@@ -189,7 +203,8 @@ public class GraphBackedMetadataRepositoryTest {
         System.out.println("*** table = " + table);
     }
 
-    private String getGUID() {
+    @GraphTransaction
+    String getGUID() {
         Vertex tableVertex = getTableEntityVertex();
 
         String guid = tableVertex.getProperty(Constants.GUID_PROPERTY_KEY);
@@ -199,7 +214,8 @@ public class GraphBackedMetadataRepositoryTest {
         return guid;
     }
 
-    private Vertex getTableEntityVertex() {
+    @GraphTransaction
+    Vertex getTableEntityVertex() {
         TitanGraph graph = graphProvider.get();
         GraphQuery query = graph.query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, Compare.EQUAL, TABLE_TYPE);
         Iterator<Vertex> results = query.vertices().iterator();

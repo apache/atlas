@@ -16,7 +16,7 @@
  */
 package org.apache.atlas.web.listeners;
 
-import org.apache.atlas.security.BaseSecurityTest;
+import org.apache.atlas.web.security.BaseSecurityTest;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.conf.Configuration;

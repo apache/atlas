@@ -31,7 +31,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.alias.CredentialProvider;
 import org.apache.hadoop.security.alias.CredentialProviderFactory;
 import org.apache.hadoop.security.alias.JavaKeyStoreProvider;
-import org.mortbay.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.testng.Assert;
 import org.testng.TestListenerAdapter;
 import org.testng.TestNG;

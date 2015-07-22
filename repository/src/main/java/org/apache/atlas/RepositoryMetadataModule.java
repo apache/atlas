@@ -22,6 +22,7 @@ import com.google.inject.matcher.Matchers;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.throwingproviders.ThrowingProviderBinder;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.tinkerpop.blueprints.Graph;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.apache.atlas.discovery.DiscoveryService;
 import org.apache.atlas.discovery.HiveLineageService;

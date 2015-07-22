@@ -16,10 +16,10 @@
  */
 package org.apache.atlas.web.filters;
 
-import org.apache.atlas.security.BaseSecurityTest;
+import org.apache.atlas.web.security.BaseSecurityTest;
 import org.apache.atlas.web.service.EmbeddedServer;
 import org.apache.commons.configuration.ConfigurationException;
-import org.mortbay.jetty.Server;
+import org.eclipse.jetty.server.Server;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

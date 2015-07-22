@@ -19,6 +19,7 @@
 package org.apache.atlas.repository.typestore;
 
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -39,6 +40,7 @@ import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
@@ -61,6 +63,17 @@ public class GraphBackedTypeStoreTest {
         ts = TypeSystem.getInstance();
         ts.reset();
         TestUtils.defineDeptEmployeeTypes(ts);
+    }
+
+    @AfterClass
+    public void tearDown() throws Exception {
+        ts.reset();
+        graphProvider.get().shutdown();
+        try {
+            TitanCleanup.clear(graphProvider.get());
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Test

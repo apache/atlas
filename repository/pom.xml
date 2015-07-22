@@ -101,7 +101,22 @@
 
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-solr</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-berkeleyje</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-hbase</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-client</artifactId>
         </dependency>
 
         <dependency>
@@ -172,6 +187,7 @@
     </dependencies>
 
     <build>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

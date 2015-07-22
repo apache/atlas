@@ -81,7 +81,8 @@ public class DefaultMetadataService implements MetadataService {
 
     @Inject
     DefaultMetadataService(final MetadataRepository repository, final ITypeStore typeStore,
-            final Collection<Provider<TypesChangeListener>> typeChangeListeners) throws AtlasException {
+        final Collection<Provider<TypesChangeListener>> typeChangeListeners) throws AtlasException {
+
         this.typeStore = typeStore;
         this.typeSystem = TypeSystem.getInstance();
         this.repository = repository;

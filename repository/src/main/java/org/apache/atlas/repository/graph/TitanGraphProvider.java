@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
 import java.util.Iterator;
+import java.util.Properties;
 
 /**
  * Default implementation for Graph Provider that doles out Titan Graph.
@@ -43,10 +44,16 @@ public class TitanGraphProvider implements GraphProvider<TitanGraph> {
      */
     private static final String ATLAS_PREFIX = "atlas.graph.";
 
+    private static TitanGraph graphInstance;
+
     private static Configuration getConfiguration() throws AtlasException {
         PropertiesConfiguration configProperties = PropertiesUtil.getApplicationProperties();
 
         Configuration graphConfig = new PropertiesConfiguration();
+
+        Properties sysProperties = System.getProperties();
+        LOG.info("System properties: ");
+        LOG.info(sysProperties.toString());
 
         final Iterator<String> iterator = configProperties.getKeys();
         while (iterator.hasNext()) {
@@ -66,13 +73,20 @@ public class TitanGraphProvider implements GraphProvider<TitanGraph> {
     @Singleton
     @Provides
     public TitanGraph get() {
-        Configuration config;
-        try {
-            config = getConfiguration();
-        } catch (AtlasException e) {
-            throw new RuntimeException(e);
-        }
+        if(graphInstance == null) {
+            synchronized (TitanGraphProvider.class) {
+                if(graphInstance == null) {
+                    Configuration config;
+                    try {
+                        config = getConfiguration();
+                    } catch (AtlasException e) {
+                        throw new RuntimeException(e);
+                    }
 
-        return TitanFactory.open(config);
+                    graphInstance = TitanFactory.open(config);
+                }
+            }
+        }
+        return graphInstance;
     }
 }

@@ -22,7 +22,6 @@ import com.google.inject.throwingproviders.CheckedProvider;
 import com.tinkerpop.blueprints.Graph;
 
 public interface GraphProvider<T extends Graph> extends CheckedProvider<T> {
-
     @Override
     T get();
 }

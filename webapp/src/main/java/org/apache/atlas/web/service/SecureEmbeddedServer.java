@@ -23,8 +23,14 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.alias.CredentialProvider;
 import org.apache.hadoop.security.alias.CredentialProviderFactory;
-import org.mortbay.jetty.Connector;
-import org.mortbay.jetty.security.SslSocketConnector;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.http.HttpVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,18 +60,38 @@ public class SecureEmbeddedServer extends EmbeddedServer {
     protected Connector getConnector(int port) throws IOException {
         PropertiesConfiguration config = getConfiguration();
 
-        SslSocketConnector connector = new SslSocketConnector();
-        connector.setPort(port);
-        connector.setHost("0.0.0.0");
-        connector.setKeystore(config.getString(KEYSTORE_FILE_KEY,
-                System.getProperty(KEYSTORE_FILE_KEY, DEFAULT_KEYSTORE_FILE_LOCATION)));
-        connector.setKeyPassword(getPassword(config, SERVER_CERT_PASSWORD_KEY));
-        connector.setTruststore(config.getString(TRUSTSTORE_FILE_KEY,
-                System.getProperty(TRUSTSTORE_FILE_KEY, DEFATULT_TRUSTORE_FILE_LOCATION)));
-        connector.setTrustPassword(getPassword(config, TRUSTSTORE_PASSWORD_KEY));
-        connector.setPassword(getPassword(config, KEYSTORE_PASSWORD_KEY));
-        connector.setWantClientAuth(config.getBoolean(CLIENT_AUTH_KEY, Boolean.getBoolean(CLIENT_AUTH_KEY)));
-        return connector;
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setKeyStorePath(config.getString(KEYSTORE_FILE_KEY,
+            System.getProperty(KEYSTORE_FILE_KEY, DEFAULT_KEYSTORE_FILE_LOCATION)));
+        sslContextFactory.setKeyStorePassword(getPassword(config, KEYSTORE_PASSWORD_KEY));
+        sslContextFactory.setKeyManagerPassword(getPassword(config, SERVER_CERT_PASSWORD_KEY));
+        sslContextFactory.setTrustStorePath(config.getString(TRUSTSTORE_FILE_KEY,
+            System.getProperty(TRUSTSTORE_FILE_KEY, DEFATULT_TRUSTORE_FILE_LOCATION)));
+        sslContextFactory.setTrustStorePassword(getPassword(config, TRUSTSTORE_PASSWORD_KEY));
+        sslContextFactory.setWantClientAuth(config.getBoolean(CLIENT_AUTH_KEY, Boolean.getBoolean(CLIENT_AUTH_KEY)));
+
+        // SSL HTTP Configuration
+        // HTTP Configuration
+        HttpConfiguration http_config = new HttpConfiguration();
+        http_config.setSecureScheme("https");
+        final int bufferSize = getBufferSize();
+        http_config.setSecurePort(port);
+        http_config.setRequestHeaderSize(bufferSize);
+        http_config.setResponseHeaderSize(bufferSize);
+        http_config.setSendServerVersion(true);
+        http_config.setSendDateHeader(false);
+
+        HttpConfiguration https_config = new HttpConfiguration(http_config);
+        https_config.addCustomizer(new SecureRequestCustomizer());
+
+        // SSL Connector
+        ServerConnector sslConnector = new ServerConnector(server,
+            new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
+            new HttpConnectionFactory(https_config));
+        sslConnector.setPort(port);
+        server.addConnector(sslConnector);
+
+        return sslConnector;
     }
 
     /**

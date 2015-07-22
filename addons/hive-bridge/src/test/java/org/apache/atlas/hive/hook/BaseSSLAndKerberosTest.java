@@ -16,8 +16,7 @@
  */
 package org.apache.atlas.hive.hook;
 
-import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
-import org.apache.atlas.security.BaseSecurityTest;
+import org.apache.atlas.web.security.BaseSecurityTest;
 import org.apache.atlas.web.service.SecureEmbeddedServer;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.io.FileUtils;
@@ -26,7 +25,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.security.alias.CredentialProvider;
 import org.apache.hadoop.security.alias.CredentialProviderFactory;
-import org.mortbay.jetty.Server;
+import org.eclipse.jetty.server.Server;
 
 import java.io.File;
 import java.io.IOException;

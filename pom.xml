@@ -322,11 +322,13 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <slf4j.version>1.7.7</slf4j.version>
-        <jetty.version>6.1.26</jetty.version>
+        <jetty.version>9.2.12.v20150709</jetty.version>
         <jersey.version>1.9</jersey.version>
+        <jackson.version>1.8.3</jackson.version>
         <tinkerpop.version>2.6.0</tinkerpop.version>
         <titan.version>0.5.4</titan.version>
         <hadoop.version>2.6.0</hadoop.version>
+        <hbase.version>0.98.9-hadoop2</hbase.version>
 
         <!-- scala versions -->
         <scala.version>2.10.4</scala.version>
@@ -351,6 +353,8 @@
 
         <!-- skips checkstyle and find bugs -->
         <skipCheck>false</skipCheck>
+        <titan.storage.backend>berkeleyje</titan.storage.backend>
+        <titan.index.backend>elasticsearch</titan.index.backend>
     </properties>
 
     <profiles>
@@ -381,8 +385,22 @@
                 </python.path.l>
             </properties>
         </profile>
-    </profiles>
 
+        <!-- Turning on this profile affects only tests and does not affect packaging -->
+        <profile>
+            <id>distributed</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <titan.storage.backend>hbase</titan.storage.backend>
+                <titan.index.backend>solr</titan.index.backend>
+                <solr.zk.address>localhost:9983</solr.zk.address>
+                <titan.storage.hostname>localhost</titan.storage.hostname>
+            </properties>
+        </profile>
+
+    </profiles>
     <modules>
         <module>typesystem</module>
         <module>client</module>
@@ -455,9 +473,15 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.mortbay.jetty</groupId>
-                <artifactId>jsp-2.1</artifactId>
-                <version>6.0.0</version>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-jsp</artifactId>
+                <version>${jetty.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>javax.servlet</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <!-- Logging -->
@@ -507,18 +531,28 @@
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-common</artifactId>
                 <version>${hadoop.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-client</artifactId>
-                <version>${hadoop.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-annotations</artifactId>
-                <version>${hadoop.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>javax.servlet</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>tomcat</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.codehaus.jackson</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.htrace</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>
@@ -526,6 +560,39 @@
                 <artifactId>hadoop-hdfs</artifactId>
                 <version>${hadoop.version}</version>
                 <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>javax.servlet</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>tomcat</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-client</artifactId>
+                <version>${hadoop.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-annotations</artifactId>
+                <version>${hadoop.version}</version>
             </dependency>
 
             <dependency>
@@ -615,6 +682,12 @@
                 <groupId>com.sun.jersey</groupId>
                 <artifactId>jersey-json</artifactId>
                 <version>${jersey.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>javax.xml.stream</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>
@@ -639,19 +712,19 @@
             <dependency>
                 <groupId>org.codehaus.jackson</groupId>
                 <artifactId>jackson-core-asl</artifactId>
-                <version>1.5.2</version>
+                <version>${jackson.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.codehaus.jackson</groupId>
                 <artifactId>jackson-mapper-asl</artifactId>
-                <version>1.5.2</version>
+                <version>${jackson.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.codehaus.jettison</groupId>
                 <artifactId>jettison</artifactId>
-                <version>1.3</version>
+                <version>1.3.7</version>
             </dependency>
 
             <dependency>
@@ -668,15 +741,15 @@
 
             <!-- Jetty -->
             <dependency>
-                <groupId>org.mortbay.jetty</groupId>
-                <artifactId>jetty</artifactId>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-server</artifactId>
                 <version>${jetty.version}</version>
                 <scope>compile</scope>
             </dependency>
 
             <dependency>
-                <groupId>org.mortbay.jetty</groupId>
-                <artifactId>jetty-plus</artifactId>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-webapp</artifactId>
                 <version>${jetty.version}</version>
                 <scope>compile</scope>
             </dependency>
@@ -736,8 +809,76 @@
 
             <dependency>
                 <groupId>com.thinkaurelius.titan</groupId>
+                <artifactId>titan-hbase</artifactId>
+                <version>${titan.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.hbase</groupId>
+                <artifactId>hbase-client</artifactId>
+                <version>${hbase.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <artifactId>avro</artifactId>
+                        <groupId>org.apache.avro</groupId>
+                    </exclusion>
+                    <exclusion>
+                        <artifactId>jruby-complete</artifactId>
+                        <groupId>org.jruby</groupId>
+                    </exclusion>
+                    <exclusion>
+                        <artifactId>asm</artifactId>
+                        <groupId>asm</groupId>
+                    </exclusion>
+                    <exclusion>
+                        <artifactId>*</artifactId>
+                        <groupId>org.apache.hadoop</groupId>
+                    </exclusion>
+                    <exclusion>
+                        <artifactId>*</artifactId>
+                        <groupId>org.mortbay.jetty</groupId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>com.thinkaurelius.titan</groupId>
                 <artifactId>titan-es</artifactId>
                 <version>${titan.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.thinkaurelius.titan</groupId>
+                <artifactId>titan-solr</artifactId>
+                <version>${titan.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <artifactId>*</artifactId>
+                        <groupId>org.eclipse.jetty</groupId>
+                    </exclusion>
+                    <exclusion>
+                        <artifactId>*</artifactId>
+                        <groupId>javax.servlet</groupId>
+                    </exclusion>
+                    <exclusion>
+                        <artifactId>*</artifactId>
+                        <groupId>org.jruby.joni</groupId>
+                    </exclusion>
+                    <exclusion>
+                        <artifactId>*</artifactId>
+                        <groupId>org.eclipse.jetty.orbit</groupId>
+                    </exclusion>
+
+                    <exclusion>
+                        <artifactId>*</artifactId>
+                        <groupId>org.restlet.jee</groupId>
+                    </exclusion>
+                    <exclusion>
+                        <artifactId>*</artifactId>
+                        <groupId>org.ow2.asm</groupId>
+                    </exclusion>
+                </exclusions>
+
             </dependency>
 
             <dependency>
@@ -982,6 +1123,7 @@
         <testResources>
             <testResource>
                 <directory>src/test/resources</directory>
+                <filtering>true</filtering>
             </testResource>
         </testResources>
 
@@ -1069,6 +1211,15 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-dependency-plugin</artifactId>
                     <version>2.10</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>2.7</version>
+                    <configuration>
+                        <encoding>UTF-8</encoding>
+                    </configuration>
                 </plugin>
 
                 <plugin>
@@ -1222,12 +1373,12 @@
 
             <!-- Run the application using "mvn jetty:run" -->
             <plugin>
-                <groupId>org.mortbay.jetty</groupId>
-                <artifactId>maven-jetty-plugin</artifactId>
-                <version>6.1.16</version>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-maven-plugin</artifactId>
+                <version>${jetty.version}</version>
                 <configuration>
                     <!-- Log to the console. -->
-                    <requestLog implementation="org.mortbay.jetty.NCSARequestLog">
+                    <requestLog implementation="org.eclipse.jetty.server.NCSARequestLog">
                         <!-- This doesn't do anything for Jetty, but is a workaround for a Maven bug
                              that prevents the requestLog from being set. -->
                         <append>true</append>

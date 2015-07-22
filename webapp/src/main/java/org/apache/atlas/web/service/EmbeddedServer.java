@@ -20,10 +20,13 @@ package org.apache.atlas.web.service;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
-import org.mortbay.jetty.Connector;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.bio.SocketConnector;
-import org.mortbay.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.webapp.WebAppClassLoader;
+import org.eclipse.jetty.webapp.WebAppContext;
 
 import java.io.IOException;
 
@@ -40,6 +43,7 @@ public class EmbeddedServer {
         server.addConnector(connector);
 
         WebAppContext application = new WebAppContext(path, "/");
+        application.setClassLoader(Thread.currentThread().getContextClassLoader());
         server.setHandler(application);
     }
 
@@ -52,19 +56,21 @@ public class EmbeddedServer {
     }
 
     protected Connector getConnector(int port) throws IOException {
-        Connector connector = new SocketConnector();
+
+        HttpConfiguration http_config = new HttpConfiguration();
+        // this is to enable large header sizes when Kerberos is enabled with AD
+        final int bufferSize = getBufferSize();
+        http_config.setResponseHeaderSize(bufferSize);
+        http_config.setRequestHeaderSize(bufferSize);
+
+        ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(http_config));
         connector.setPort(port);
         connector.setHost("0.0.0.0");
-
-        // this is to enable large header sizes when Kerberos is enabled with AD
-        final Integer bufferSize = getBufferSize();
-        connector.setHeaderBufferSize(bufferSize);
-        connector.setRequestBufferSize(bufferSize);
-
+        server.addConnector(connector);
         return connector;
     }
 
-    private Integer getBufferSize() {
+    protected Integer getBufferSize() {
         try {
             PropertiesConfiguration configuration = new PropertiesConfiguration("application.properties");
             return configuration.getInt("atlas.jetty.request.buffer.size", DEFAULT_BUFFER_SIZE);

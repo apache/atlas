@@ -34,7 +34,7 @@ import org.apache.hadoop.security.alias.JavaKeyStoreProvider;
 import org.apache.hadoop.security.ssl.SSLFactory;
 import org.apache.hadoop.security.ssl.SSLHostnameVerifier;
 import org.codehaus.jettison.json.JSONArray;
-import org.mortbay.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;

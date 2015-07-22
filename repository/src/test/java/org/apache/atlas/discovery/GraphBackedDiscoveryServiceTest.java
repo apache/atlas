@@ -20,6 +20,7 @@ package org.apache.atlas.discovery;
 
 import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.atlas.RepositoryMetadataModule;
@@ -117,6 +118,12 @@ public class GraphBackedDiscoveryServiceTest {
     @AfterClass
     public void tearDown() throws Exception {
         TypeSystem.getInstance().reset();
+        graphProvider.get().shutdown();
+        try {
+            TitanCleanup.clear(graphProvider.get());
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Test
