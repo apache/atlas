@@ -21,16 +21,13 @@ package org.apache.atlas.repository.graph;
 import com.google.inject.Provides;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.PropertiesUtil;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.PropertiesConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
-import java.util.Iterator;
-import java.util.Properties;
 
 /**
  * Default implementation for Graph Provider that doles out Titan Graph.
@@ -42,31 +39,13 @@ public class TitanGraphProvider implements GraphProvider<TitanGraph> {
     /**
      * Constant for the configuration property that indicates the prefix.
      */
-    private static final String ATLAS_PREFIX = "atlas.graph.";
+    private static final String GRAPH_PREFIX = "atlas.graph";
 
     private static TitanGraph graphInstance;
 
     private static Configuration getConfiguration() throws AtlasException {
-        PropertiesConfiguration configProperties = PropertiesUtil.getApplicationProperties();
-
-        Configuration graphConfig = new PropertiesConfiguration();
-
-        Properties sysProperties = System.getProperties();
-        LOG.info("System properties: ");
-        LOG.info(sysProperties.toString());
-
-        final Iterator<String> iterator = configProperties.getKeys();
-        while (iterator.hasNext()) {
-            String key = iterator.next();
-            if (key.startsWith(ATLAS_PREFIX)) {
-                String value = (String) configProperties.getProperty(key);
-                key = key.substring(ATLAS_PREFIX.length());
-                graphConfig.setProperty(key, value);
-                LOG.info("Using graph property {}={}", key, value);
-            }
-        }
-
-        return graphConfig;
+        Configuration configProperties = ApplicationProperties.get();
+        return ApplicationProperties.getSubsetConfiguration(configProperties, GRAPH_PREFIX);
     }
 
     @Override

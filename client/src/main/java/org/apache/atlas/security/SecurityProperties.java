@@ -21,16 +21,16 @@ package org.apache.atlas.security;
  *
  */
 public interface SecurityProperties {
-    public static final String TLS_ENABLED = "atlas.enableTLS";
-    public static final String KEYSTORE_FILE_KEY = "keystore.file";
-    public static final String DEFAULT_KEYSTORE_FILE_LOCATION = "target/atlas.keystore";
-    public static final String KEYSTORE_PASSWORD_KEY = "keystore.password";
-    public static final String TRUSTSTORE_FILE_KEY = "truststore.file";
-    public static final String DEFATULT_TRUSTORE_FILE_LOCATION = "target/atlas.keystore";
-    public static final String TRUSTSTORE_PASSWORD_KEY = "truststore.password";
-    public static final String SERVER_CERT_PASSWORD_KEY = "password";
-    public static final String CLIENT_AUTH_KEY = "client.auth.enabled";
-    public static final String CERT_STORES_CREDENTIAL_PROVIDER_PATH = "cert.stores.credential.provider.path";
-    public static final String SSL_CLIENT_PROPERTIES = "ssl-client.xml";
-    public static final String BIND_ADDRESS = "atlas.server.bind.address";
+    String TLS_ENABLED = "atlas.enableTLS";
+    String KEYSTORE_FILE_KEY = "keystore.file";
+    String DEFAULT_KEYSTORE_FILE_LOCATION = "target/atlas.keystore";
+    String KEYSTORE_PASSWORD_KEY = "keystore.password";
+    String TRUSTSTORE_FILE_KEY = "truststore.file";
+    String DEFATULT_TRUSTORE_FILE_LOCATION = "target/atlas.keystore";
+    String TRUSTSTORE_PASSWORD_KEY = "truststore.password";
+    String SERVER_CERT_PASSWORD_KEY = "password";
+    String CLIENT_AUTH_KEY = "client.auth.enabled";
+    String CERT_STORES_CREDENTIAL_PROVIDER_PATH = "cert.stores.credential.provider.path";
+    String SSL_CLIENT_PROPERTIES = "ssl-client.xml";
+    String BIND_ADDRESS = "atlas.server.bind.address";
 }

@@ -51,13 +51,13 @@ class TestMetadata(unittest.TestCase):
         'org.apache.atlas.Main',
         ['-app', 'metadata_home/server/webapp/atlas'],
         'metadata_home/conf:metadata_home/server/webapp/atlas/WEB-INF/classes:metadata_home/server/webapp/atlas/WEB-INF/lib\\*:metadata_home/libext\\*',
-        ['-Datlas.log.dir=metadata_home/logs', '-Datlas.log.file=application.log', '-Datlas.home=metadata_home', '-Duser.dir=metadata_home', '-Datlas.conf=metadata_home/conf', '-Xmx1024m'], 'metadata_home/logs')
+        ['-Datlas.log.dir=metadata_home/logs', '-Datlas.log.file=application.log', '-Datlas.home=metadata_home', '-Datlas.conf=metadata_home/conf', '-Xmx1024m'], 'metadata_home/logs')
     else:
       java_mock.assert_called_with(
         'org.apache.atlas.Main',
         ['-app', 'metadata_home/server/webapp/atlas'],
         'metadata_home/conf:metadata_home/server/webapp/atlas/WEB-INF/classes:metadata_home/server/webapp/atlas/WEB-INF/lib/*:metadata_home/libext/*',
-        ['-Datlas.log.dir=metadata_home/logs', '-Datlas.log.file=application.log', '-Datlas.home=metadata_home', '-Duser.dir=metadata_home', '-Datlas.conf=metadata_home/conf', '-Xmx1024m'],  'metadata_home/logs')
+        ['-Datlas.log.dir=metadata_home/logs', '-Datlas.log.file=application.log', '-Datlas.home=metadata_home', '-Datlas.conf=metadata_home/conf', '-Xmx1024m'],  'metadata_home/logs')
     pass
 
   def test_jar_java_lookups_fail(self):

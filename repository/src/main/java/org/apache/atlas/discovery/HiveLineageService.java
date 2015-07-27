@@ -19,10 +19,10 @@
 package org.apache.atlas.discovery;
 
 import com.thinkaurelius.titan.core.TitanGraph;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.ParamChecker;
-import org.apache.atlas.PropertiesUtil;
 import org.apache.atlas.discovery.graph.DefaultGraphPersistenceStrategy;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.atlas.query.Expressions;
@@ -33,7 +33,7 @@ import org.apache.atlas.repository.EntityNotFoundException;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.graph.GraphProvider;
 import org.apache.atlas.typesystem.persistence.ReferenceableInstance;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Option;
@@ -63,12 +63,12 @@ public class HiveLineageService implements LineageService {
 
     private static final String HIVE_TABLE_EXISTS_QUERY;
 
-    private static final PropertiesConfiguration propertiesConf;
+    private static final Configuration propertiesConf;
 
     static {
         // todo - externalize this using type system - dog food
         try {
-            propertiesConf = PropertiesUtil.getApplicationProperties();
+            propertiesConf = ApplicationProperties.get();
             HIVE_TABLE_TYPE_NAME = propertiesConf.getString("atlas.lineage.hive.table.type.name", "DataSet");
             HIVE_PROCESS_TYPE_NAME = propertiesConf.getString("atlas.lineage.hive.process.type.name", "Process");
             HIVE_PROCESS_INPUT_ATTRIBUTE_NAME = propertiesConf.getString("atlas.lineage.hive.process.inputs.name", "inputs");

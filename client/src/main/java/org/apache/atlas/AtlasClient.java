@@ -26,6 +26,7 @@ import com.sun.jersey.client.urlconnection.URLConnectionClientHandler;
 import org.apache.atlas.security.SecureClientUtils;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.codehaus.jettison.json.JSONArray;
@@ -87,7 +88,7 @@ public class AtlasClient {
 
     public AtlasClient(String baseUrl, UserGroupInformation ugi, String doAsUser) {
         DefaultClientConfig config = new DefaultClientConfig();
-        PropertiesConfiguration clientConfig = null;
+        Configuration clientConfig = null;
         try {
             clientConfig = getClientProperties();
             if (clientConfig.getBoolean(TLS_ENABLED, false)) {
@@ -109,8 +110,8 @@ public class AtlasClient {
         service = client.resource(UriBuilder.fromUri(baseUrl).build());
     }
 
-    protected PropertiesConfiguration getClientProperties() throws AtlasException {
-        return PropertiesUtil.getClientProperties();
+    protected Configuration getClientProperties() throws AtlasException {
+        return ApplicationProperties.get(ApplicationProperties.CLIENT_PROPERTIES);
     }
 
     enum API {

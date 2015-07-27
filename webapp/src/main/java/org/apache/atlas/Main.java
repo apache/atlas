@@ -24,6 +24,7 @@ import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -76,7 +77,7 @@ public final class Main {
         }
 
         setApplicationHome();
-        PropertiesConfiguration configuration = PropertiesUtil.getApplicationProperties();
+        Configuration configuration = ApplicationProperties.get();
         final String enableTLSFlag = configuration.getString("atlas.enableTLS");
         final int appPort = getApplicationPort(cmd, enableTLSFlag, configuration);
         final boolean enableTLS = isTLSEnabled(enableTLSFlag, appPort);
@@ -100,9 +101,7 @@ public final class Main {
         return buildConfiguration.getString("project.version");
     }
 
-    static int getApplicationPort(CommandLine cmd,
-                                          String enableTLSFlag,
-                                          PropertiesConfiguration configuration) {
+    static int getApplicationPort(CommandLine cmd, String enableTLSFlag, Configuration configuration) {
         final int appPort;
         if (cmd.hasOption(APP_PORT)) {
             appPort = Integer.valueOf(cmd.getOptionValue(APP_PORT));
@@ -114,7 +113,7 @@ public final class Main {
         return appPort;
     }
 
-    private static int getPortValue(PropertiesConfiguration configuration, String enableTLSFlag) {
+    private static int getPortValue(Configuration configuration, String enableTLSFlag) {
         int appPort;
 
         assert configuration != null;

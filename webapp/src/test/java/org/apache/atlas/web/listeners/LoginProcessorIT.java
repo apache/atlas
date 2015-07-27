@@ -38,7 +38,7 @@ public class LoginProcessorIT extends BaseSecurityTest {
     public void testDefaultSimpleLogin() throws Exception {
         LoginProcessor processor = new LoginProcessor() {
             @Override
-            protected PropertiesConfiguration getPropertiesConfiguration() throws ConfigurationException {
+            protected org.apache.commons.configuration.Configuration getApplicationConfiguration() {
                 return new PropertiesConfiguration();
             }
         };
@@ -55,7 +55,7 @@ public class LoginProcessorIT extends BaseSecurityTest {
 
         LoginProcessor processor = new LoginProcessor() {
             @Override
-            protected PropertiesConfiguration getPropertiesConfiguration() throws ConfigurationException {
+            protected org.apache.commons.configuration.Configuration getApplicationConfiguration() {
                 PropertiesConfiguration config = new PropertiesConfiguration();
                 config.setProperty("atlas.authentication.method", "kerberos");
                 config.setProperty("atlas.authentication.principal", "dgi@EXAMPLE.COM");

@@ -29,19 +29,18 @@ import com.sun.jersey.guice.JerseyServletModule;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Graph;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.PropertiesUtil;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.repository.graph.GraphProvider;
 import org.apache.atlas.web.filters.AtlasAuthenticationFilter;
 import org.apache.atlas.web.filters.AuditFilter;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
 import javax.servlet.ServletContextEvent;
 import java.util.HashMap;
 import java.util.Map;
@@ -85,7 +84,7 @@ public class GuiceServletConfig extends GuiceServletContextListener {
 
                         private void configureAuthenticationFilter() throws ConfigurationException {
                             try {
-                                PropertiesConfiguration configuration = PropertiesUtil.getApplicationProperties();
+                                Configuration configuration = ApplicationProperties.get();
                                 if (Boolean.valueOf(configuration.getString(HTTP_AUTHENTICATION_ENABLED))) {
                                     filter("/*").through(AtlasAuthenticationFilter.class);
                                 }

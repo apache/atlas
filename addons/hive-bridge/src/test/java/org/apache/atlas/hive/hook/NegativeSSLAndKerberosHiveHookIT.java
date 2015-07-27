@@ -18,7 +18,6 @@
 
 package org.apache.atlas.hive.hook;
 
-import org.apache.atlas.PropertiesUtil;
 import org.apache.atlas.security.SecurityProperties;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang.RandomStringUtils;
@@ -100,11 +99,12 @@ public class NegativeSSLAndKerberosHiveHookIT extends BaseSSLAndKerberosTest {
         String confLocation = System.getProperty("atlas.conf");
         URL url;
         if (confLocation == null) {
-            url = PropertiesUtil.class.getResource("/application.properties");
+            url = NegativeSSLAndKerberosHiveHookIT.class.getResource("/application.properties");
         } else {
             url = new File(confLocation, "application.properties").toURI().toURL();
         }
         configuration.load(url);
+
         configuration.setProperty(TLS_ENABLED, true);
         configuration.setProperty("atlas.http.authentication.enabled", "true");
         configuration.setProperty("atlas.http.authentication.kerberos.principal", "HTTP/localhost@" + kdc.getRealm());

@@ -19,9 +19,10 @@
 package org.apache.atlas.web.filters;
 
 import com.google.inject.Singleton;
-import org.apache.atlas.PropertiesUtil;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.security.SecurityProperties;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.authentication.server.AuthenticationFilter;
 import org.apache.hadoop.security.authentication.server.KerberosAuthenticationHandler;
@@ -44,18 +45,20 @@ import java.util.Properties;
 @Singleton
 public class AtlasAuthenticationFilter extends AuthenticationFilter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthenticationFilter.class);
-    static final String PREFIX = "atlas.http.authentication.";
+    static final String PREFIX = "atlas.http.authentication";
 
     @Override
     protected Properties getConfiguration(String configPrefix, FilterConfig filterConfig) throws ServletException {
-        PropertiesConfiguration configuration;
+        Configuration configuration;
         try {
-            configuration = PropertiesUtil.getApplicationProperties();
+            configuration = ApplicationProperties.get();
         } catch (Exception e) {
             throw new ServletException(e);
         }
 
-        Properties config = new Properties();
+        // transfer application.properties config items starting with defined prefix
+        Configuration subConfiguration = ApplicationProperties.getSubsetConfiguration(configuration, PREFIX);
+        Properties config = ConfigurationConverter.getProperties(subConfiguration);
 
         config.put(AuthenticationFilter.COOKIE_PATH, "/");
 
@@ -64,16 +67,6 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
         while (enumeration.hasMoreElements()) {
             String name = enumeration.nextElement();
             config.put(name, filterConfig.getInitParameter(name));
-        }
-        // transfer application.properties config items starting with defined prefix
-        Iterator<String> itor = configuration.getKeys();
-        while (itor.hasNext()) {
-            String name = itor.next();
-            if (name.startsWith(PREFIX)) {
-                String value = configuration.getString(name);
-                name = name.substring(PREFIX.length());
-                config.put(name, value);
-            }
         }
 
         //Resolve _HOST into bind address

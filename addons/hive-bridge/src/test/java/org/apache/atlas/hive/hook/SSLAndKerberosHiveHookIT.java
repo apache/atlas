@@ -20,7 +20,6 @@ package org.apache.atlas.hive.hook;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.PropertiesUtil;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.security.SecurityProperties;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -116,7 +115,7 @@ public class SSLAndKerberosHiveHookIT extends BaseSSLAndKerberosTest {
         String confLocation = System.getProperty("atlas.conf");
         URL url;
         if (confLocation == null) {
-            url = PropertiesUtil.class.getResource("/application.properties");
+            url = SSLAndKerberosHiveHookIT.class.getResource("/application.properties");
         } else {
             url = new File(confLocation, "application.properties").toURI().toURL();
         }

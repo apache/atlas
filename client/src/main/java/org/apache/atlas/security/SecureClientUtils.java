@@ -20,8 +20,6 @@ import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.client.urlconnection.HttpURLConnectionFactory;
 import com.sun.jersey.client.urlconnection.URLConnectionClientHandler;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.PropertiesUtil;
-import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.alias.CredentialProviderFactory;
@@ -62,7 +60,8 @@ public class SecureClientUtils {
 
 
     public static URLConnectionClientHandler getClientConnectionHandler(DefaultClientConfig config,
-            PropertiesConfiguration clientConfig, final String doAsUser, final UserGroupInformation ugi) {
+            org.apache.commons.configuration.Configuration clientConfig, final String doAsUser,
+            final UserGroupInformation ugi) {
         config.getProperties().put(URLConnectionClientHandler.PROPERTY_HTTP_URL_CONNECTION_SET_METHOD_WORKAROUND, true);
         Configuration conf = new Configuration();
         conf.addResource(conf.get(SSLFactory.SSL_CLIENT_CONF_KEY, "ssl-client.xml"));
@@ -177,7 +176,7 @@ public class SecureClientUtils {
         try {
             if (confLocation == null) {
                 String persistDir = null;
-                URL resource = PropertiesUtil.class.getResource("/");
+                URL resource = SecureClientUtils.class.getResource("/");
                 if (resource != null) {
                     persistDir = resource.toURI().getPath();
                 }
@@ -193,7 +192,7 @@ public class SecureClientUtils {
         return new File(sslDir, SecurityProperties.SSL_CLIENT_PROPERTIES);
     }
 
-    public static void persistSSLClientConfiguration(PropertiesConfiguration clientConfig)
+    public static void persistSSLClientConfiguration(org.apache.commons.configuration.Configuration clientConfig)
     throws AtlasException, IOException {
         //trust settings
         Configuration configuration = new Configuration(false);
