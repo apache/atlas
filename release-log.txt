@@ -8,6 +8,7 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (suma.shivaprasad via shwethags)
 
 ALL CHANGES:
+ATLAS-86 Jenkins build failing as of build #41 (shwethags)
 ATLAS-80 Support for variables in application properties (shwethags)
 ATLAS-37 atlas repository, webapp, hive-bridge tests fails with Hbase and Solr as Titan storage backend (suma.shivaprasad via shwethags)
 ATLAS-56 atlas_config.py should give an informative error if jar or java binaries can't be found (dossett@gmail.com via shwethags)

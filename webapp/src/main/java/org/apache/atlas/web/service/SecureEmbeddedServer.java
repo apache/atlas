@@ -18,6 +18,8 @@
 
 package org.apache.atlas.web.service;
 
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasException;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.conf.Configuration;
@@ -58,7 +60,7 @@ public class SecureEmbeddedServer extends EmbeddedServer {
     }
 
     protected Connector getConnector(int port) throws IOException {
-        PropertiesConfiguration config = getConfiguration();
+        org.apache.commons.configuration.Configuration config = getConfiguration();
 
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(config.getString(KEYSTORE_FILE_KEY,
@@ -102,7 +104,7 @@ public class SecureEmbeddedServer extends EmbeddedServer {
      * @return the password.
      * @throws IOException
      */
-    private String getPassword(PropertiesConfiguration config, String key) throws IOException {
+    private String getPassword(org.apache.commons.configuration.Configuration config, String key) throws IOException {
 
         String password;
 
@@ -131,10 +133,10 @@ public class SecureEmbeddedServer extends EmbeddedServer {
      * Returns the application configuration.
      * @return
      */
-    protected PropertiesConfiguration getConfiguration() {
+    protected org.apache.commons.configuration.Configuration getConfiguration() {
         try {
-            return new PropertiesConfiguration("application.properties");
-        } catch (ConfigurationException e) {
+            return ApplicationProperties.get();
+        } catch (AtlasException e) {
             throw new RuntimeException("Unable to load configuration: application.properties");
         }
     }

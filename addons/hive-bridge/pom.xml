@@ -38,11 +38,6 @@
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-minikdc</artifactId>
-        </dependency>
-
         <!-- Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -95,21 +90,20 @@
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-client</artifactId>
-            <version>${version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.guava</groupId>
-                    <artifactId>guava</artifactId>
-                </exclusion>
-            </exclusions>
-            <scope>runtime</scope>
-            <type>test-jar</type>
+            <artifactId>atlas-typesystem</artifactId>
         </dependency>
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-typesystem</artifactId>
+            <artifactId>atlas-client</artifactId>
+        </dependency>
+
+        <!-- to bring up atlas server for integration tests -->
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-webapp</artifactId>
+            <type>war</type>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -125,20 +119,6 @@
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-webapp</artifactId>
-            <classifier>classes</classifier>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-webapp</artifactId>
-            <type>test-jar</type>
-            <version>${project.version}</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -328,13 +308,6 @@
                     <generateReports>false</generateReports>
                     <skip>false</skip>
                 </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <inherited>true</inherited>
-                <extensions>true</extensions>
             </plugin>
         </plugins>
     </build>

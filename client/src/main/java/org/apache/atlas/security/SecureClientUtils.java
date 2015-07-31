@@ -64,7 +64,7 @@ public class SecureClientUtils {
             final UserGroupInformation ugi) {
         config.getProperties().put(URLConnectionClientHandler.PROPERTY_HTTP_URL_CONNECTION_SET_METHOD_WORKAROUND, true);
         Configuration conf = new Configuration();
-        conf.addResource(conf.get(SSLFactory.SSL_CLIENT_CONF_KEY, "ssl-client.xml"));
+        conf.addResource(conf.get(SSLFactory.SSL_CLIENT_CONF_KEY, SecurityProperties.SSL_CLIENT_PROPERTIES));
         UserGroupInformation.setConfiguration(conf);
         final ConnectionConfigurator connConfigurator = newConnConfigurator(conf);
         String authType = "simple";

@@ -17,8 +17,10 @@
 
 package org.apache.atlas;
 
+import org.apache.commons.configuration.AbstractConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.ConfigurationUtils;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,66 +61,26 @@ public class ApplicationProperties extends PropertiesConfiguration {
                     : new File(confLocation, fileName).toURI().toURL();
             LOG.info("Loading {} from {}", fileName, url);
 
-            ApplicationProperties configuration = new ApplicationProperties(url);
-            Iterator<String> keys = configuration.getKeys();
-            LOG.debug("Configuration loaded:");
-            while(keys.hasNext()) {
-                String key = keys.next();
-                LOG.debug("{} = {}", key, configuration.getProperty(key));
-            }
+            Configuration configuration = new ApplicationProperties(url).interpolatedConfiguration();
+            logConfiguration(configuration);
             return configuration;
         } catch (Exception e) {
             throw new AtlasException("Failed to load application properties", e);
         }
     }
 
+    private static void logConfiguration(Configuration configuration) {
+        if (LOG.isDebugEnabled()) {
+            Iterator<String> keys = configuration.getKeys();
+            LOG.debug("Configuration loaded:");
+            while (keys.hasNext()) {
+                String key = keys.next();
+                LOG.debug("{} = {}", key, configuration.getProperty(key));
+            }
+        }
+    }
+
     public static final Configuration getSubsetConfiguration(Configuration inConf, String prefix) {
         return inConf.subset(prefix);
-    }
-
-    @Override
-    public Object getProperty(String key) {
-        Object value = super.getProperty(key);
-        if (value instanceof String) {
-            value = substituteVars((String) value);
-        }
-        return value;
-    }
-
-    private static final Pattern VAR_PATTERN = Pattern.compile("\\$\\{[^\\}\\$\u0020]+\\}");
-
-    private static final int MAX_SUBST = 20;
-
-    private String substituteVars(String expr) {
-        if (expr == null) {
-            return null;
-        }
-        Matcher match = VAR_PATTERN.matcher("");
-        String eval = expr;
-
-        for(int s = 0; s < MAX_SUBST; s++) {
-            match.reset(eval);
-            if (!match.find()) {
-                return eval;
-            }
-            String var = match.group();
-            var = var.substring(2, var.length() - 1); // remove ${ .. }
-            String val = null;
-            try {
-                val = System.getProperty(var);
-            } catch(SecurityException se) {
-                LOG.warn("Unexpected SecurityException in Configuration", se);
-            }
-            if (val == null) {
-                val = getString(var);
-            }
-            if (val == null) {
-                return eval; // return literal ${var}: var is unbound
-            }
-
-            // substitute
-            eval = eval.substring(0, match.start()) + val + eval.substring(match.end());
-        }
-        throw new IllegalStateException("Variable substitution depth too large: " + MAX_SUBST + " " + expr);
     }
 }

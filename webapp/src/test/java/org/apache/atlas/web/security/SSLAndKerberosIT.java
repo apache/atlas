@@ -16,25 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.hive.hook;
+package org.apache.atlas.web.security;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.hive.model.HiveDataTypes;
-import org.apache.atlas.security.SecurityProperties;
+import org.apache.atlas.web.TestUtils;
 import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.hive.ql.Driver;
-import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.alias.JavaKeyStoreProvider;
-import org.apache.hadoop.security.ssl.SSLFactory;
-import org.apache.hadoop.security.ssl.SSLHostnameVerifier;
-import org.codehaus.jettison.json.JSONArray;
-import org.eclipse.jetty.webapp.WebAppContext;
-import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -48,74 +38,43 @@ import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.security.PrivilegedExceptionAction;
 
-import static org.apache.atlas.security.SecurityProperties.CERT_STORES_CREDENTIAL_PROVIDER_PATH;
-import static org.apache.atlas.security.SecurityProperties.KEYSTORE_FILE_KEY;
 import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
-import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_FILE_KEY;
 
-public class SSLAndKerberosHiveHookIT extends BaseSSLAndKerberosTest {
+public class SSLAndKerberosIT extends BaseSSLAndKerberosTest {
     public static final String TEST_USER_JAAS_SECTION = "TestUser";
     public static final String TESTUSER = "testuser";
     public static final String TESTPASS = "testpass";
 
     private static final String DGI_URL = "https://localhost:21443/";
-    private Driver driver;
     private AtlasClient dgiCLient;
-    private SessionState ss;
     private TestSecureEmbeddedServer secureEmbeddedServer;
     private Subject subject;
     private String originalConf;
 
     @BeforeClass
     public void setUp() throws Exception {
-        //Set-up hive session
-        HiveConf conf = getHiveConf();
-        driver = new Driver(conf);
-        ss = new SessionState(conf, System.getProperty("user.name"));
-        ss = SessionState.start(ss);
-        SessionState.setCurrentSessionState(ss);
-
         jksPath = new Path(Files.createTempDirectory("tempproviders").toString(), "test.jks");
         providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file" + jksPath.toUri();
 
-        String persistDir = null;
-        URL resource = SSLAndKerberosHiveHookIT.class.getResource("/");
-        if (resource != null) {
-            persistDir = resource.toURI().getPath();
-        }
-        // delete prior ssl-client.xml file
-        resource = SSLAndKerberosHiveHookIT.class.getResource("/" + SecurityProperties.SSL_CLIENT_PROPERTIES);
-        if (resource != null) {
-            File sslClientFile = new File(persistDir, SecurityProperties.SSL_CLIENT_PROPERTIES);
-            if (sslClientFile != null && sslClientFile.exists()) {
-                sslClientFile.delete();
-            }
-        }
+        String persistDir = TestUtils.getTempDirectory();
+
         setupKDCAndPrincipals();
         setupCredentials();
 
         // client will actually only leverage subset of these properties
-        final PropertiesConfiguration configuration = new PropertiesConfiguration();
-        configuration.setProperty(TLS_ENABLED, true);
-        configuration.setProperty(TRUSTSTORE_FILE_KEY, "../../webapp/target/atlas.keystore");
-        configuration.setProperty(KEYSTORE_FILE_KEY, "../../webapp/target/atlas.keystore");
-        configuration.setProperty(CERT_STORES_CREDENTIAL_PROVIDER_PATH, providerUrl);
+        final PropertiesConfiguration configuration = getSSLConfiguration(providerUrl);
         configuration.setProperty("atlas.http.authentication.type", "kerberos");
-        configuration.setProperty(SSLFactory.SSL_HOSTNAME_VERIFIER_KEY,
-                SSLHostnameVerifier.DEFAULT_AND_LOCALHOST.toString());
-
-        configuration.save(new FileWriter(persistDir + File.separator + "client.properties"));
+        TestUtils.writeConfiguration(configuration, persistDir + File.separator + "client.properties");
 
         String confLocation = System.getProperty("atlas.conf");
         URL url;
         if (confLocation == null) {
-            url = SSLAndKerberosHiveHookIT.class.getResource("/application.properties");
+            url = SSLAndKerberosIT.class.getResource("/application.properties");
         } else {
             url = new File(confLocation, "application.properties").toURI().toURL();
         }
@@ -127,7 +86,7 @@ public class SSLAndKerberosHiveHookIT extends BaseSSLAndKerberosTest {
         configuration.setProperty("atlas.http.authentication.kerberos.name.rules",
                 "RULE:[1:$1@$0](.*@EXAMPLE.COM)s/@.*//\nDEFAULT");
 
-        configuration.save(new FileWriter(persistDir + File.separator + "application.properties"));
+        TestUtils.writeConfiguration(configuration, persistDir + File.separator + "application.properties");
 
         subject = loginTestUser();
         UserGroupInformation.loginUserFromSubject(subject);
@@ -147,22 +106,16 @@ public class SSLAndKerberosHiveHookIT extends BaseSSLAndKerberosTest {
             }
         });
 
-        secureEmbeddedServer = new TestSecureEmbeddedServer(21443, "webapp/target/apache-atlas") {
+        // save original setting
+        originalConf = System.getProperty("atlas.conf");
+        System.setProperty("atlas.conf", persistDir);
+        secureEmbeddedServer = new TestSecureEmbeddedServer(21443, getWarPath()) {
             @Override
             public PropertiesConfiguration getConfiguration() {
                 return configuration;
             }
         };
-        WebAppContext webapp = new WebAppContext();
-        webapp.setContextPath("/");
-        webapp.setWar(System.getProperty("user.dir") + getWarPath());
-        secureEmbeddedServer.getServer().setHandler(webapp);
-
-        // save original setting
-        originalConf = System.getProperty("atlas.conf");
-        System.setProperty("atlas.conf", persistDir);
         secureEmbeddedServer.getServer().start();
-
     }
 
     @AfterClass
@@ -202,48 +155,9 @@ public class SSLAndKerberosHiveHookIT extends BaseSSLAndKerberosTest {
         return lc.getSubject();
     }
 
-    private void runCommand(final String cmd) throws Exception {
-        ss.setCommandType(null);
-        UserGroupInformation.loginUserFromSubject(subject);
-        UserGroupInformation proxyUser = UserGroupInformation.createProxyUser(
-            "testUser",
-            UserGroupInformation.getLoginUser());
-        proxyUser.doAs(new PrivilegedExceptionAction<Object>() {
-            @Override
-            public Object run() throws Exception {
-                driver.run(cmd);
-
-                return null;
-            }
-        });
-    }
-
     @Test
-    public void testCreateDatabase() throws Exception {
-        String dbName = "db" + RandomStringUtils.randomAlphanumeric(5).toLowerCase();
-        runCommand("create database " + dbName);
-
-        assertDatabaseIsRegistered(dbName);
+    public void testService() throws Exception {
+        dgiCLient.listTypes();
     }
 
-    private void assertDatabaseIsRegistered(String dbName) throws Exception {
-        assertInstanceIsRegistered(HiveDataTypes.HIVE_DB.getName(), "name", dbName);
-    }
-
-    private void assertInstanceIsRegistered(final String typeName, final String colName, final String colValue)
-    throws Exception {
-        UserGroupInformation.loginUserFromSubject(subject);
-        UserGroupInformation proxyUser = UserGroupInformation.createProxyUser(
-            "testUser",
-            UserGroupInformation.getLoginUser());
-        proxyUser.doAs(new PrivilegedExceptionAction<Object>() {
-            @Override
-            public Object run() throws Exception {
-                JSONArray results = dgiCLient.rawSearch(typeName, colName, colValue);
-                Assert.assertEquals(results.length(), 1);
-
-                return null;
-            }
-        });
-    }
 }

@@ -18,7 +18,10 @@ package org.apache.atlas.web.security;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.minikdc.MiniKdc;
+import org.apache.hadoop.security.ssl.SSLFactory;
+import org.apache.hadoop.security.ssl.SSLHostnameVerifier;
 import org.apache.zookeeper.Environment;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -32,6 +35,11 @@ import java.nio.file.Files;
 import java.util.Locale;
 import java.util.Properties;
 
+import static org.apache.atlas.security.SecurityProperties.CERT_STORES_CREDENTIAL_PROVIDER_PATH;
+import static org.apache.atlas.security.SecurityProperties.KEYSTORE_FILE_KEY;
+import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
+import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_FILE_KEY;
+
 /**
  *
  */
@@ -41,11 +49,6 @@ public class BaseSecurityTest {
             + " keyTab=\"%s\"\n" + " debug=true\n" + " principal=\"%s\"\n" + " useKeyTab=true\n"
             + " useTicketCache=false\n" + " doNotPrompt=true\n" + " storeKey=true;\n" + "}; \n";
     protected MiniKdc kdc;
-
-    protected String getWarPath() {
-        return String.format("/target/atlas-webapp-%s.war",
-                System.getProperty("release.version"));
-    }
 
     protected void generateTestProperties(Properties props) throws ConfigurationException, IOException {
         PropertiesConfiguration config =
@@ -62,7 +65,7 @@ public class BaseSecurityTest {
     protected void startEmbeddedServer(Server server) throws Exception {
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        webapp.setWar(System.getProperty("user.dir") + getWarPath());
+        webapp.setWar(getWarPath());
         server.setHandler(webapp);
 
         server.start();
@@ -105,4 +108,22 @@ public class BaseSecurityTest {
         kdc.createPrincipal(keytab, principal, principal + "/localhost", principal + "/127.0.0.1");
         return keytab;
     }
+
+    protected String getWarPath() {
+        return System.getProperty("projectBaseDir") + String.format("/webapp/target/atlas-webapp-%s",
+                System.getProperty("project.version"));
+    }
+
+    protected PropertiesConfiguration getSSLConfiguration(String providerUrl) {
+        String projectBaseDirectory = System.getProperty("projectBaseDir");
+        final PropertiesConfiguration configuration = new PropertiesConfiguration();
+        configuration.setProperty(TLS_ENABLED, true);
+        configuration.setProperty(TRUSTSTORE_FILE_KEY, projectBaseDirectory + "/webapp/target/atlas.keystore");
+        configuration.setProperty(KEYSTORE_FILE_KEY, projectBaseDirectory + "/webapp/target/atlas.keystore");
+        configuration.setProperty(CERT_STORES_CREDENTIAL_PROVIDER_PATH, providerUrl);
+        configuration.setProperty(SSLFactory.SSL_HOSTNAME_VERIFIER_KEY,
+                SSLHostnameVerifier.DEFAULT_AND_LOCALHOST.toString());
+        return  configuration;
+    }
+
 }

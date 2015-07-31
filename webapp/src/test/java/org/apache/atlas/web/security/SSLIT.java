@@ -1,10 +1,11 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -14,37 +15,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.hive.hook;
 
-import org.apache.atlas.web.security.BaseSecurityTest;
+package org.apache.atlas.web.security;
+
+import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.web.TestUtils;
 import org.apache.atlas.web.service.SecureEmbeddedServer;
 import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.security.alias.CredentialProvider;
 import org.apache.hadoop.security.alias.CredentialProviderFactory;
+import org.apache.hadoop.security.alias.JavaKeyStoreProvider;
 import org.eclipse.jetty.server.Server;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 import static org.apache.atlas.security.SecurityProperties.KEYSTORE_PASSWORD_KEY;
 import static org.apache.atlas.security.SecurityProperties.SERVER_CERT_PASSWORD_KEY;
 import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_PASSWORD_KEY;
 
-/**
- *
- */
-public class BaseSSLAndKerberosTest extends BaseSecurityTest {
-    public static final String TESTUSER = "testuser";
-    public static final String TESTPASS = "testpass";
-    protected static final String DGI_URL = "https://localhost:21443/";
-    protected Path jksPath;
-    protected String providerUrl;
-    protected File httpKeytabFile;
-    private File userKeytabFile;
+public class SSLIT extends BaseSSLAndKerberosTest {
+    private AtlasClient dgiCLient;
+    private Path jksPath;
+    private String providerUrl;
+    private TestSecureEmbeddedServer secureEmbeddedServer;
 
     class TestSecureEmbeddedServer extends SecureEmbeddedServer {
 
@@ -57,8 +58,43 @@ public class BaseSSLAndKerberosTest extends BaseSecurityTest {
         }
 
         @Override
-        public PropertiesConfiguration getConfiguration() {
+        public org.apache.commons.configuration.Configuration getConfiguration() {
             return super.getConfiguration();
+        }
+    }
+
+    @BeforeClass
+    public void setUp() throws Exception {
+        jksPath = new Path(Files.createTempDirectory("tempproviders").toString(), "test.jks");
+        providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file" + jksPath.toUri();
+
+        String persistDir = TestUtils.getTempDirectory();
+
+        setupCredentials();
+
+        final PropertiesConfiguration configuration = getSSLConfiguration(providerUrl);
+        TestUtils.writeConfiguration(configuration, persistDir + File.separator + "client.properties");
+
+        dgiCLient = new AtlasClient(DGI_URL) {
+            @Override
+            protected PropertiesConfiguration getClientProperties() throws AtlasException {
+                return configuration;
+            }
+        };
+
+        secureEmbeddedServer = new TestSecureEmbeddedServer(21443, getWarPath()) {
+            @Override
+            public PropertiesConfiguration getConfiguration() {
+                return configuration;
+            }
+        };
+        secureEmbeddedServer.getServer().start();
+    }
+
+    @AfterClass
+    public void tearDown() throws Exception {
+        if (secureEmbeddedServer != null) {
+            secureEmbeddedServer.getServer().stop();
         }
     }
 
@@ -94,34 +130,8 @@ public class BaseSSLAndKerberosTest extends BaseSecurityTest {
         }
     }
 
-    public void setupKDCAndPrincipals() throws Exception {
-        // set up the KDC
-        File kdcWorkDir = startKDC();
-
-        userKeytabFile = createKeytab(kdc, kdcWorkDir, "dgi", "dgi.keytab");
-        httpKeytabFile = createKeytab(kdc, kdcWorkDir, "HTTP", "spnego.service.keytab");
-
-        // create a test user principal
-        kdc.createPrincipal(TESTUSER, TESTPASS);
-
-        StringBuilder jaas = new StringBuilder(1024);
-        jaas.append("TestUser {\n" +
-                "    com.sun.security.auth.module.Krb5LoginModule required\nuseTicketCache=true;\n" +
-                "};\n");
-        jaas.append(createJAASEntry("Client", "dgi", userKeytabFile));
-        jaas.append(createJAASEntry("Server", "HTTP", httpKeytabFile));
-
-        File jaasFile = new File(kdcWorkDir, "jaas.txt");
-        FileUtils.write(jaasFile, jaas.toString());
-        bindJVMtoJAASFile(jaasFile);
-    }
-
-    protected String getWarPath() {
-        return String.format("/../../webapp/target/atlas-webapp-%s",
-                System.getProperty("project.version"));
-    }
-
-    protected HiveConf getHiveConf() {
-        return HiveHookIT.createHiveConf(DGI_URL);
-    }
+    @Test
+    public void testService() throws Exception {
+        dgiCLient.listTypes();
+   }
 }
