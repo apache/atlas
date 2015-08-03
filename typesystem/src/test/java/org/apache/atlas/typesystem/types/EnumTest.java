@@ -162,7 +162,7 @@ public class EnumTest extends BaseTest {
                 "\tl : \t" + TEST_DATE + "\n" +
                 "\tm : \t[1, 1]\n" +
                 "\tn : \t[1.1, 1.1]\n" +
-                "\to : \t{b=2.0, a=1.0}\n" +
+                "\to : \t{a=1.0, b=2.0}\n" +
                 "\tenum4 : \tPARTITION\n" +
                 "}");
     }
@@ -194,7 +194,7 @@ public class EnumTest extends BaseTest {
                 "\tl : \t" + TEST_DATE + "\n" +
                 "\tm : \t[1, 1]\n" +
                 "\tn : \t[1.1, 1.1]\n" +
-                "\to : \t{b=2.0, a=1.0}\n" +
+                "\to : \t{a=1.0, b=2.0}\n" +
                 "\tenum4 : \tPARTITION\n" +
                 "}");
     }

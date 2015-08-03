@@ -18,7 +18,10 @@
 
 package org.apache.atlas.typesystem.types;
 
+import com.google.common.collect.ImmutableSortedMap;
 import org.apache.atlas.AtlasException;
+
+import java.util.Map;
 
 abstract class AbstractDataType<T> implements IDataType<T> {
 
@@ -31,7 +34,13 @@ abstract class AbstractDataType<T> implements IDataType<T> {
 
     @Override
     public void output(T val, Appendable buf, String prefix) throws AtlasException {
-        TypeUtils.outputVal(val == null ? "<null>" : val.toString(), buf, prefix);
+        if (val instanceof Map) {
+            ImmutableSortedMap immutableSortedMap = ImmutableSortedMap.copyOf((Map) val);
+            TypeUtils.outputVal(val == null ? "<null>" : immutableSortedMap.toString(), buf, prefix);
+        } else {
+            TypeUtils.outputVal(val == null ? "<null>" : val.toString(), buf, prefix);
+        }
+
     }
 }
 

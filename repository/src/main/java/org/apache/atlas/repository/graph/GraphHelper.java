@@ -96,7 +96,7 @@ public final class GraphHelper {
     public static String vertexString(final Vertex vertex) {
         StringBuilder properties = new StringBuilder();
         for (String propertyKey : vertex.getPropertyKeys()) {
-            properties.append(propertyKey).append("=").append(vertex.getProperty(propertyKey)).append(", ");
+            properties.append(propertyKey).append("=").append(vertex.getProperty(propertyKey).toString()).append(", ");
         }
 
         return "v[" + vertex.getId() + "], Properties[" + properties + "]";

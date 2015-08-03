@@ -327,7 +327,7 @@
         <jackson.version>1.8.3</jackson.version>
         <tinkerpop.version>2.6.0</tinkerpop.version>
         <titan.version>0.5.4</titan.version>
-        <hadoop.version>2.6.0</hadoop.version>
+        <hadoop.version>2.7.0</hadoop.version>
         <hbase.version>0.98.9-hadoop2</hbase.version>
 
         <!-- scala versions -->
@@ -402,6 +402,21 @@
             </properties>
         </profile>
 
+        <profile>
+            <id>jdk7</id>
+            <activation>
+                <jdk>[1.7,1.8)</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.enunciate</groupId>
+                        <artifactId>maven-enunciate-plugin</artifactId>
+                        <version>1.29</version>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
     <modules>
         <module>typesystem</module>
@@ -1192,8 +1207,9 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>findbugs-maven-plugin</artifactId>
-                    <version>2.5.2</version>
+                    <version>3.0.1</version>
                 </plugin>
+                
                 <!-- Source code metrics: mvn javancss:report or mvn site -->
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
@@ -1276,11 +1292,6 @@
                     </configuration>
                 </plugin>
 
-                <plugin>
-                    <groupId>org.codehaus.enunciate</groupId>
-                    <artifactId>maven-enunciate-plugin</artifactId>
-                    <version>1.29</version>
-                </plugin>
             </plugins>
         </pluginManagement>
 
