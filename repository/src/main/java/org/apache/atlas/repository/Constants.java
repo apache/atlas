@@ -26,19 +26,16 @@ public final class Constants {
 
     public static final String INTERNAL_PROPERTY_KEY_PREFIX = "__";
     public static final String GUID_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "guid";
-    public static final String GUID_INDEX = "guid_index";
 
     /**
      * Entity type name property key.
      */
     public static final String ENTITY_TYPE_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "typeName";
-    public static final String ENTITY_TYPE_INDEX = "type_index";
 
     /**
      * Entity type's super types property key.
      */
     public static final String SUPER_TYPES_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "superTypeNames";
-    public static final String SUPER_TYPES_INDEX = "super_types_index";
 
     /**
      * Full-text for the entity for enabling full-text search.
@@ -57,7 +54,6 @@ public final class Constants {
      * Trait names property key and index name.
      */
     public static final String TRAIT_NAMES_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "traitNames";
-    public static final String TRAIT_NAMES_INDEX = "trait_names_index";
 
     public static final String VERSION_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "version";
     public static final String TIMESTAMP_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "timestamp";

@@ -116,6 +116,49 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     }
 
     @Test
+    public void testUniqueAttribute() throws Exception {
+        //create type
+        String typeName = "type" + randomString();
+        HierarchicalTypeDefinition<ClassType> typeDefinition = TypesUtil
+                .createClassTypeDef(typeName, ImmutableList.<String>of(),
+                        TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE));
+        TypesDef typesDef = TypeUtils
+                .getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
+                        ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
+                        ImmutableList.of(typeDefinition));
+        createType(typesDef);
+
+        //create entity
+        String name = "name" + randomString();
+        Referenceable referenceable = new Referenceable(typeName);
+        referenceable.set("name", name);
+        createInstance(referenceable);
+
+        //create entity with same name again - should fail
+        try {
+            createInstance(referenceable);
+            Assert.fail("Expected exception");
+        } catch(Exception e) {
+            //expected exception
+        }
+
+        //create another type with same attribute - should allow
+        typeName = "type" + randomString();
+        typeDefinition = TypesUtil
+                .createClassTypeDef(typeName, ImmutableList.<String>of(),
+                        TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE));
+        typesDef = TypeUtils
+                .getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
+                        ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
+                        ImmutableList.of(typeDefinition));
+        createType(typesDef);
+
+        referenceable = new Referenceable(typeName);
+        referenceable.set("name", name);
+        createInstance(referenceable);
+    }
+
+    @Test
     public void testSubmitEntityWithBadDateFormat() throws Exception {
 
         try {
