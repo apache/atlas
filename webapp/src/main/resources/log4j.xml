@@ -51,26 +51,6 @@
     </logger>
 
 
-    <logger name="com.thinkaurelius.titan" additivity="false">
-        <level value="info"/>
-        <appender-ref ref="FILE"/>
-    </logger>
-
-    <logger name="org.elasticsearch" additivity="false">
-        <level value="info"/>
-        <appender-ref ref="FILE"/>
-    </logger>
-
-    <logger name="org.apache.lucene" additivity="false">
-        <level value="info"/>
-        <appender-ref ref="FILE"/>
-    </logger>
-
-    <logger name="com.google" additivity="false">
-        <level value="info"/>
-        <appender-ref ref="FILE"/>
-    </logger>
-
     <logger name="AUDIT">
         <level value="info"/>
         <appender-ref ref="AUDIT"/>

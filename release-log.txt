@@ -8,6 +8,7 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (suma.shivaprasad via shwethags)
 
 ALL CHANGES:
+ATLAS-16 jersey jaxb exception (shwethags)
 ATLAS-79 Unique constraint is not honoured (shwethags)
 ATLAS-25 Fix Atlas on Java 8 (sandeep.samudrala via shwethags)
 ATLAS-86 Jenkins build failing as of build #41 (shwethags)

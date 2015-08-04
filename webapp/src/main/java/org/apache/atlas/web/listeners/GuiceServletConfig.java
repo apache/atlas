@@ -40,6 +40,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import javax.servlet.ServletContextEvent;
 import java.util.HashMap;
@@ -104,9 +105,23 @@ public class GuiceServletConfig extends GuiceServletContextListener {
     public void contextInitialized(ServletContextEvent servletContextEvent) {
         super.contextInitialized(servletContextEvent);
 
+        installLogBridge();
+
         // perform login operations
         LoginProcessor loginProcessor = new LoginProcessor();
         loginProcessor.login();
+    }
+
+    /**
+     * Maps jersey's java.util.logging to slf4j
+     */
+    private void installLogBridge() {
+        // Optionally remove existing handlers attached to j.u.l root logger
+        SLF4JBridgeHandler.removeHandlersForRootLogger();  // (since SLF4J 1.6.5)
+
+        // add SLF4JBridgeHandler to j.u.l's root logger, should be done once during
+        // the initialization phase of your application
+        SLF4JBridgeHandler.install();
     }
 
     @Override

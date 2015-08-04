@@ -45,21 +45,7 @@
         </layout>
     </appender>
 
-    <appender name="METRIC" class="org.apache.log4j.DailyRollingFileAppender">
-        <param name="File" value="${user.dir}/target/logs/metric.log"/>
-        <param name="Append" value="true"/>
-        <param name="Threshold" value="debug"/>
-        <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="%d %m%n"/>
-        </layout>
-    </appender>
-
     <logger name="AUDIT" additivity="false">
-        <level value="debug"/>
-        <appender-ref ref="console"/>
-    </logger>
-
-    <logger name="METRIC" additivity="false">
         <level value="debug"/>
         <appender-ref ref="console"/>
     </logger>
