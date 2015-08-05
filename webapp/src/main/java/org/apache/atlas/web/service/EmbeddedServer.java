@@ -18,14 +18,16 @@
 
 package org.apache.atlas.web.service;
 
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.atlas.ApplicationProperties;
+import org.apache.commons.configuration.Configuration;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -33,6 +35,8 @@ import java.io.IOException;
  * This class embeds a Jetty server and a connector.
  */
 public class EmbeddedServer {
+    public static final Logger LOG = LoggerFactory.getLogger(EmbeddedServer.class);
+
     private static final int DEFAULT_BUFFER_SIZE = 16192;
 
     protected final Server server = new Server();
@@ -71,9 +75,9 @@ public class EmbeddedServer {
 
     protected Integer getBufferSize() {
         try {
-            PropertiesConfiguration configuration = new PropertiesConfiguration("application.properties");
+            Configuration configuration = ApplicationProperties.get();
             return configuration.getInt("atlas.jetty.request.buffer.size", DEFAULT_BUFFER_SIZE);
-        } catch (ConfigurationException e) {
+        } catch (Exception e) {
             // do nothing
         }
 
@@ -85,7 +89,11 @@ public class EmbeddedServer {
         server.join();
     }
 
-    public void stop() throws Exception {
-        server.stop();
+    public void stop() {
+        try {
+            server.stop();
+        } catch (Exception e) {
+            LOG.warn("Error during shutdown", e);
+        }
     }
 }

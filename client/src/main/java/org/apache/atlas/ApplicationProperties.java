@@ -17,19 +17,17 @@
 
 package org.apache.atlas;
 
-import org.apache.commons.configuration.AbstractConfiguration;
+import org.apache.commons.configuration.CompositeConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.ConfigurationUtils;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Iterator;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class ApplicationProperties extends PropertiesConfiguration {
     private static final Logger LOG = LoggerFactory.getLogger(ApplicationProperties.class);
@@ -47,7 +45,9 @@ public class ApplicationProperties extends PropertiesConfiguration {
         if (INSTANCE == null) {
             synchronized (ApplicationProperties.class) {
                 if (INSTANCE == null) {
-                   INSTANCE = get(APPLICATION_PROPERTIES);
+                    Configuration applicationProperties = get(APPLICATION_PROPERTIES);
+                    Configuration clientProperties = get(CLIENT_PROPERTIES);
+                    INSTANCE = new CompositeConfiguration(Arrays.asList(applicationProperties, clientProperties));
                 }
             }
         }

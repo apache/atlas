@@ -46,4 +46,9 @@ public class TestUtils {
     public static String getTempDirectory() {
         return System.getProperty("projectBaseDir") + "/webapp/target/" + random();
     }
+
+    public static String getWarPath() {
+        return System.getProperty("projectBaseDir") + String.format("/webapp/target/atlas-webapp-%s",
+                System.getProperty("project.version"));
+    }
 }

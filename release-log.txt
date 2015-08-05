@@ -8,6 +8,7 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (suma.shivaprasad via shwethags)
 
 ALL CHANGES:
+ATLAS-74 Create notification framework (shwethags)
 ATLAS-93 import-hive.sh reports FileNotFoundException (shwethags)
 ATLAS-92 import-hive.sh failed to find HiveMetaStoreBridge (airbots via shwethags)
 ATLAS-16 jersey jaxb exception (shwethags)

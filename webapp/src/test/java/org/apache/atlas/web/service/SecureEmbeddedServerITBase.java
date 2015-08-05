@@ -19,6 +19,7 @@ package org.apache.atlas.web.service;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
+import org.apache.atlas.web.TestUtils;
 import org.apache.atlas.web.resources.AdminJerseyResourceIT;
 import org.apache.atlas.web.resources.BaseResourceIT;
 import org.apache.atlas.web.resources.EntityJerseyResourceIT;
@@ -31,7 +32,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.alias.CredentialProvider;
 import org.apache.hadoop.security.alias.CredentialProviderFactory;
 import org.apache.hadoop.security.alias.JavaKeyStoreProvider;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.testng.Assert;
 import org.testng.TestListenerAdapter;
 import org.testng.TestNG;
@@ -45,11 +45,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import static org.apache.atlas.security.SecurityProperties.CERT_STORES_CREDENTIAL_PROVIDER_PATH;
-import static org.apache.atlas.security.SecurityProperties.DEFAULT_KEYSTORE_FILE_LOCATION;
-import static org.apache.atlas.security.SecurityProperties.KEYSTORE_PASSWORD_KEY;
-import static org.apache.atlas.security.SecurityProperties.SERVER_CERT_PASSWORD_KEY;
-import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_PASSWORD_KEY;
+import static org.apache.atlas.security.SecurityProperties.*;
 
 /**
  * Secure Test class for jersey resources.
@@ -106,18 +102,13 @@ public class SecureEmbeddedServerITBase {
     public void testNoConfiguredCredentialProvider() throws Exception {
 
         try {
-            secureEmbeddedServer = new SecureEmbeddedServer(21443, "webapp/target/apache-atlas");
-            WebAppContext webapp = new WebAppContext();
-            webapp.setContextPath("/");
-            webapp.setWar(System.getProperty("user.dir") + getWarPath());
-            secureEmbeddedServer.server.setHandler(webapp);
-
+            secureEmbeddedServer = new SecureEmbeddedServer(21443, TestUtils.getWarPath());
             secureEmbeddedServer.server.start();
 
             Assert.fail("Should have thrown an exception");
         } catch (IOException e) {
-            Assert.assertEquals("No credential provider path configured for storage of certificate store passwords",
-                    e.getMessage());
+            Assert.assertEquals(e.getMessage(),
+                    "No credential provider path configured for storage of certificate store passwords");
         } finally {
             secureEmbeddedServer.server.stop();
         }
@@ -130,7 +121,7 @@ public class SecureEmbeddedServerITBase {
         configuration.setProperty(CERT_STORES_CREDENTIAL_PROVIDER_PATH, providerUrl);
 
         try {
-            secureEmbeddedServer = new SecureEmbeddedServer(21443, "webapp/target/apache-atlas") {
+            secureEmbeddedServer = new SecureEmbeddedServer(21443, TestUtils.getWarPath()) {
                 @Override
                 protected PropertiesConfiguration getConfiguration() {
                     return configuration;
@@ -157,17 +148,12 @@ public class SecureEmbeddedServerITBase {
         setupCredentials();
 
         try {
-            secureEmbeddedServer = new SecureEmbeddedServer(21443, "webapp/target/apache-atlas") {
+            secureEmbeddedServer = new SecureEmbeddedServer(21443, TestUtils.getWarPath()) {
                 @Override
                 protected PropertiesConfiguration getConfiguration() {
                     return configuration;
                 }
             };
-            WebAppContext webapp = new WebAppContext();
-            webapp.setContextPath("/");
-            webapp.setWar(System.getProperty("user.dir") + getWarPath());
-            secureEmbeddedServer.server.setHandler(webapp);
-
             secureEmbeddedServer.server.start();
 
             TestListenerAdapter tla = new TestListenerAdapter();
@@ -182,11 +168,6 @@ public class SecureEmbeddedServerITBase {
             secureEmbeddedServer.server.stop();
         }
 
-    }
-
-    protected String getWarPath() {
-        return String
-                .format("/target/atlas-webapp-%s", System.getProperty("project.version"));
     }
 
     protected void setupCredentials() throws Exception {

@@ -329,7 +329,8 @@
         <titan.version>0.5.4</titan.version>
         <hadoop.version>2.7.0</hadoop.version>
         <hbase.version>0.98.9-hadoop2</hbase.version>
-
+        <kafka.version>0.8.2.0</kafka.version>
+        
         <!-- scala versions -->
         <scala.version>2.10.4</scala.version>
         <scala.binary.version>2.10</scala.binary.version>
@@ -420,6 +421,7 @@
     </profiles>
     <modules>
         <module>typesystem</module>
+        <module>notification</module>
         <module>client</module>
         <module>repository</module>
         <module>webapp</module>
@@ -933,6 +935,12 @@
 
             <dependency>
                 <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-notification</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
                 <artifactId>atlas-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -1113,6 +1121,25 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
                 <version>3.4</version>
+            </dependency>
+
+            <!-- kafka -->
+            <dependency>
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka-clients</artifactId>
+                <version>${kafka.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka_${scala.binary.version}</artifactId>
+                <version>${kafka.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
         </dependencies>
     </dependencyManagement>

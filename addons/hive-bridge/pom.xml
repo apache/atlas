@@ -256,10 +256,6 @@
                             <name>atlas.log.dir</name>
                             <value>${project.build.directory}/logs</value>
                         </systemProperty>
-                        <systemProperty>
-                            <name>atlas.conf</name>
-                            <value>${project.build.directory}/test-classes</value>
-                        </systemProperty>
                     </systemProperties>
                     <stopKey>atlas-stop</stopKey>
                     <stopPort>41001</stopPort>

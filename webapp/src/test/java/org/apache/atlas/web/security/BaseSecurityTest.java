@@ -16,9 +16,9 @@
  */
 package org.apache.atlas.web.security;
 
+import org.apache.atlas.web.TestUtils;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.minikdc.MiniKdc;
 import org.apache.hadoop.security.ssl.SSLFactory;
 import org.apache.hadoop.security.ssl.SSLHostnameVerifier;
@@ -35,10 +35,7 @@ import java.nio.file.Files;
 import java.util.Locale;
 import java.util.Properties;
 
-import static org.apache.atlas.security.SecurityProperties.CERT_STORES_CREDENTIAL_PROVIDER_PATH;
-import static org.apache.atlas.security.SecurityProperties.KEYSTORE_FILE_KEY;
-import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
-import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_FILE_KEY;
+import static org.apache.atlas.security.SecurityProperties.*;
 
 /**
  *
@@ -110,8 +107,7 @@ public class BaseSecurityTest {
     }
 
     protected String getWarPath() {
-        return System.getProperty("projectBaseDir") + String.format("/webapp/target/atlas-webapp-%s",
-                System.getProperty("project.version"));
+        return TestUtils.getWarPath();
     }
 
     protected PropertiesConfiguration getSSLConfiguration(String providerUrl) {

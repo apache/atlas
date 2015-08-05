@@ -17,6 +17,7 @@
 
 package org.apache.atlas.web.service;
 
+import org.apache.atlas.web.TestUtils;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -37,9 +38,7 @@ public class SecureEmbeddedServerIT extends SecureEmbeddedServerITBase {
 
         SecureEmbeddedServer secureEmbeddedServer = null;
         try {
-            String appPath = System.getProperty("user.dir") + getWarPath();
-
-            secureEmbeddedServer = new SecureEmbeddedServer(21443, appPath) {
+            secureEmbeddedServer = new SecureEmbeddedServer(21443, TestUtils.getWarPath()) {
                 @Override
                 protected PropertiesConfiguration getConfiguration() {
                     return configuration;

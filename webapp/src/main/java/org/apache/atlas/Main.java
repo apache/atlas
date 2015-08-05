@@ -41,10 +41,27 @@ public final class Main {
     private static final String APP_PORT = "port";
     private static final String ATLAS_HOME = "atlas.home";
     private static final String ATLAS_LOG_DIR = "atlas.log.dir";
-    public static final String ATLAS_SERVER_HTTPS_PORT =
-        "atlas.server.https.port";
-    public static final String ATLAS_SERVER_HTTP_PORT =
-        "atlas.server.http.port";
+    public static final String ATLAS_SERVER_HTTPS_PORT = "atlas.server.https.port";
+    public static final String ATLAS_SERVER_HTTP_PORT = "atlas.server.http.port";
+
+    private static EmbeddedServer server;
+
+    static {
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                try {
+                    shutdown();
+                } catch (Exception e) {
+                    LOG.debug("Failed to shutdown", e);
+                }
+            }
+        });
+    }
+
+    private static void shutdown() {
+        server.stop();
+    }
 
     /**
      * Prevent users from constructing this.
@@ -84,7 +101,7 @@ public final class Main {
         configuration.setProperty("atlas.enableTLS", String.valueOf(enableTLS));
 
         showStartupInfo(buildConfiguration, enableTLS, appPort);
-        EmbeddedServer server = EmbeddedServer.newServer(appPort, appPath, enableTLS);
+        server = EmbeddedServer.newServer(appPort, appPath, enableTLS);
         server.start();
     }
 
