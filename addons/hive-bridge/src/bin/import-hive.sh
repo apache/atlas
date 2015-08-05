@@ -59,6 +59,10 @@ for i in "${BASEDIR}/bridge/hive/"*.jar; do
   METADATACPPATH="${METADATACPPATH}:$i"
 done
 
+for i in "${BASEDIR}/hook/hive/"*.jar; do
+  METADATACPPATH="${METADATACPPATH}:$i"
+done
+
 # log dir for applications
 METADATA_LOG_DIR="${METADATA_LOG_DIR:-$BASEDIR/logs}"
 export METADATA_LOG_DIR
