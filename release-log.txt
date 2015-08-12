@@ -8,6 +8,7 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (suma.shivaprasad via shwethags)
 
 ALL CHANGES:
+ATLAS-91 Add solr configuration and documentation (suma.shivaprasad via shwethags)
 ATLAS-95 import-hive.sh reports illegal java parameters (shwethags)
 ATLAS-74 Create notification framework (shwethags)
 ATLAS-93 import-hive.sh reports FileNotFoundException (shwethags)

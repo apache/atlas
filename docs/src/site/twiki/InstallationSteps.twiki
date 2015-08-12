@@ -35,6 +35,15 @@ Tar is structured as follows
    |- client.properties
    |- atlas-env.sh
    |- log4j.xml
+   |- solr
+      |- currency.xml
+      |- lang
+         |- stopwords_en.txt
+      |- protowords.txt
+      |- schema.xml
+      |- solrconfig.xml
+      |- stopwords.txt
+      |- synonyms.txt
 |- docs
 |- server
    |- webapp
@@ -111,6 +120,37 @@ In  {package dir}/conf/atlas-env.sh uncomment the following line
 and change it to look as below
 export METADATA_SERVER_OPTS="-Djava.awt.headless=true -Djava.security.krb5.realm= -Djava.security.krb5.kdc="
 </verbatim>
+
+* Configuring SOLR as the Indexing Backend for the Graph Repository
+
+By default, Atlas uses Titan as the graph repository and is the only graph repository implementation available currently.
+For configuring Titan to work with Solr, please follow the instructions below
+<verbatim>
+* Install solr if not already running. Versions of SOLR supported are 4.8.1 or 5.2.1.
+
+* Start solr in cloud mode.
+  SolrCloud mode uses a ZooKeeper Service as a highly available, central location for cluster management.
+  For a small cluster, running with an existing ZooKeeper quorum should be fine. For larger clusters, you would want to run separate multiple ZooKeeper quorum with atleast 3 servers.
+  Note: Atlas currently supports solr in "cloud" mode only. "http" mode is not supported. For more information, refer solr documentation - https://cwiki.apache.org/confluence/display/solr/SolrCloud
+
+* Run the following commands from SOLR_HOME directory to create collections in Solr corresponding to the indexes that Atlas uses
+  bin/solr create -c vertex_index -d ATLAS_HOME/conf/solr -shards #numShards -replicationFactor #replicationFactor
+  bin/solr create -c edge_index -d ATLAS_HOME/conf/solr -shards #numShards -replicationFactor #replicationFactor
+  bin/solr create -c fulltext_index -d ATLAS_HOME/conf/solr -shards #numShards -replicationFactor #replicationFactor
+
+  Note: If numShards and replicationFactor are not specified, they default to 1 which suffices if you are trying out solr with ATLAS on a single node instance.
+  Otherwise specify numShards according to the number of hosts that are in the Solr cluster and the maxShardsPerNode configuration.
+  The number of shards cannot exceed the total number of Solr nodes in your SolrCloud cluster
+
+* Change ATLAS configuration to point to the Solr instance setup. Please make sure the following configurations are set to the below values in ATLAS_HOME//conf/application.properties
+ atlas.graph.index.search.backend=<'solr' for solr 4.8.1>/<'solr5' for solr 5.2.1>
+ atlas.graph.index.search.solr.mode=cloud
+ atlas.graph.index.search.solr.zookeeper-url=<the ZK quorum setup for solr as comma separated value> eg: 10.1.6.4:2181,10.1.6.5:2181
+
+* Restart Atlas
+</verbatim>
+
+For more information on Titan solr configuration , please refer http://s3.thinkaurelius.com/docs/titan/0.5.4/solr.htm
 
 *Starting Atlas Server*
 <verbatim>

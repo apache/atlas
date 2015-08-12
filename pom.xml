@@ -329,8 +329,8 @@
         <titan.version>0.5.4</titan.version>
         <hadoop.version>2.7.0</hadoop.version>
         <hbase.version>0.98.9-hadoop2</hbase.version>
+        <solr.version>5.1.0</solr.version>
         <kafka.version>0.8.2.0</kafka.version>
-        
         <!-- scala versions -->
         <scala.version>2.10.4</scala.version>
         <scala.binary.version>2.10</scala.binary.version>
@@ -397,8 +397,8 @@
             </activation>
             <properties>
                 <titan.storage.backend>hbase</titan.storage.backend>
-                <titan.index.backend>solr</titan.index.backend>
-                <solr.zk.address>localhost:9983</solr.zk.address>
+                <titan.index.backend>solr5</titan.index.backend>
+                <solr.zk.address>localhost:2181</solr.zk.address>
                 <titan.storage.hostname>localhost</titan.storage.hostname>
             </properties>
         </profile>
@@ -576,6 +576,10 @@
                     </exclusion>
                     <exclusion>
                         <groupId>org.htrace</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>commons-httpclient</groupId>
                         <artifactId>*</artifactId>
                     </exclusion>
                 </exclusions>
@@ -903,8 +907,46 @@
                         <artifactId>*</artifactId>
                         <groupId>org.ow2.asm</groupId>
                     </exclusion>
+                    <exclusion>
+                        <artifactId>*</artifactId>
+                        <groupId>org.apache.solr</groupId>
+                    </exclusion>
                 </exclusions>
 
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.solr</groupId>
+                <artifactId>solr-core</artifactId>
+                <version>${solr.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <artifactId>*</artifactId>
+                        <groupId>org.eclipse.jetty</groupId>
+                    </exclusion>
+                    <exclusion>
+                        <artifactId>*</artifactId>
+                        <groupId>org.eclipse.jetty.orbit</groupId>
+                    </exclusion>
+                    <exclusion>
+                        <artifactId>*</artifactId>
+                        <groupId>org.restlet.jee</groupId>
+                    </exclusion>
+                    <exclusion>
+                        <artifactId>*</artifactId>
+                        <groupId>org.ow2.asm</groupId>
+                    </exclusion>
+                    <exclusion>
+                        <artifactId>*</artifactId>
+                        <groupId>org.apache.lucene</groupId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.solr</groupId>
+                <artifactId>solr-solrj</artifactId>
+                <version>${solr.version}</version>
             </dependency>
 
             <dependency>
@@ -1084,7 +1126,19 @@
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
-                <version>4.2.5</version>
+                <version>4.4.1</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore</artifactId>
+                <version>4.4.1</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpmime</artifactId>
+                <version>4.4.1</version>
             </dependency>
 
             <!--Test dependencies-->
@@ -1376,6 +1430,14 @@
                     </descriptors>
                     <finalName>apache-atlas-${project.version}</finalName>
                 </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
@@ -1502,6 +1564,7 @@
                         <exclude>**/*.iml</exclude>
                         <exclude>**/*.json</exclude>
                         <exclude>**/target/**</exclude>
+                        <exclude>**/target*/**</exclude>
                         <exclude>**/build/**</exclude>
                         <exclude>**/*.patch</exclude>
                         <exclude>derby.log</exclude>
