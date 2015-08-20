@@ -22,7 +22,7 @@ import atlas_config as mc
 
 METADATA_LOG_OPTS="-Datlas.log.dir=%s -Datlas.log.file=quick_start.log"
 METADATA_COMMAND_OPTS="-Dmetadata.home=%s"
-DEFAULT_JVM_OPTS="-Xmx1024m"
+DEFAULT_JVM_OPTS="-Xmx1024m -Dlog4j.configuration=atlas-log4j.xml"
 
 def main():
 
