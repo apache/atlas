@@ -293,10 +293,6 @@
                             <directory>src/main/webapp/WEB-INF</directory>
                             <targetPath>WEB-INF</targetPath>
                         </resource>
-                        <resource>
-                            <directory>${project.build.directory}/test-classes</directory>
-                            <targetPath>WEB-INF/classes</targetPath>
-                        </resource>
                     </webResources>
                     <archive>
                         <manifest>
@@ -353,6 +349,7 @@
                         <contextPath>/</contextPath>
                         <descriptor>webapp/src/test/webapp/WEB-INF/web.xml</descriptor>
                         <!-- ${project.build.directory}/atlas-webapp-${project.version} -->
+                        <extraClasspath>${project.build.directory}/../../webapp/target/test-classes/</extraClasspath>
                     </webApp>
                     <useTestScope>true</useTestScope>
                     <systemProperties>
@@ -377,6 +374,8 @@
                     <stopKey>atlas-stop</stopKey>
                     <stopPort>41001</stopPort>
                     <daemon>${debug.jetty.daemon}</daemon>
+                    <testClassesDirectory>${project.build.directory}/../../webapp/target/test-classes/</testClassesDirectory>
+                    <useTestClasspath>true</useTestClasspath>
                 </configuration>
                 <executions>
                     <execution>
