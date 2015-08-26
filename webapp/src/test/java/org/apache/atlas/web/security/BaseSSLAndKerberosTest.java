@@ -93,6 +93,7 @@ public class BaseSSLAndKerberosTest extends BaseSecurityTest {
         File kdcWorkDir = startKDC();
 
         userKeytabFile = createKeytab(kdc, kdcWorkDir, "dgi", "dgi.keytab");
+        createKeytab(kdc, kdcWorkDir, "zookeeper", "dgi.keytab");
         httpKeytabFile = createKeytab(kdc, kdcWorkDir, "HTTP", "spnego.service.keytab");
 
         // create a test user principal

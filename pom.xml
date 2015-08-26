@@ -398,7 +398,7 @@
             <properties>
                 <titan.storage.backend>hbase</titan.storage.backend>
                 <titan.index.backend>solr5</titan.index.backend>
-                <solr.zk.address>localhost:2181</solr.zk.address>
+                <solr.zk.address>localhost:9983</solr.zk.address>
                 <titan.storage.hostname>localhost</titan.storage.hostname>
             </properties>
         </profile>
@@ -1454,6 +1454,7 @@
                     <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}
                         -Dhadoop.tmp.dir=${project.build.directory}/tmp-hadoop-${user.name}
                         -Xmx1024m -XX:MaxPermSize=512m -Dlog4j.configuration=atlas-log4j.xml
+                        -Djava.net.preferIPv4Stack=true
                     </argLine>
                 </configuration>
                 <dependencies>
