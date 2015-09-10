@@ -8,6 +8,11 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (suma.shivaprasad via shwethags)
 
 ALL CHANGES:
+ATLAS-117 Build fails on the latest commit (dossett@gmail.com via shwethags)
+ATLAS-115 Remove unnecessary log4j.xml in typesystem (jmaron)
+ATLAS-67 add zk service principal for secure tests (jmaron)
+ATLAS-116 Build fails when skipping Maven tests (tbeerbower via jmaron)
+ATLAS-118 rename log4j.xml to atlas-log4j.xml (jmaron)
 ATLAS-91 Add solr configuration and documentation (suma.shivaprasad via shwethags)
 ATLAS-95 import-hive.sh reports illegal java parameters (shwethags)
 ATLAS-74 Create notification framework (shwethags)

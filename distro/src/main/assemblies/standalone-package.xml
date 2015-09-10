@@ -33,12 +33,12 @@
         </fileSet>
 
         <fileSet>
-            <directory>docs/target/site</directory>
+            <directory>../docs/target/site</directory>
             <outputDirectory>docs</outputDirectory>
         </fileSet>
 
         <fileSet>
-            <directory>webapp/target/apidocs</directory>
+            <directory>../webapp/target/apidocs</directory>
             <outputDirectory>docs/api</outputDirectory>
         </fileSet>
 
@@ -50,14 +50,14 @@
         </fileSet>
 
         <fileSet>
-            <directory>addons/hive-bridge/src/bin</directory>
+            <directory>../addons/hive-bridge/src/bin</directory>
             <outputDirectory>bin</outputDirectory>
             <fileMode>0755</fileMode>
             <directoryMode>0755</directoryMode>
         </fileSet>
 
         <fileSet>
-            <directory>logs</directory>
+            <directory>../logs</directory>
             <outputDirectory>logs</outputDirectory>
             <directoryMode>0777</directoryMode>
             <excludes>
@@ -67,7 +67,7 @@
         </fileSet>
 
         <fileSet>
-            <directory>./</directory>
+            <directory>../</directory>
             <outputDirectory>/</outputDirectory>
             <includes>
                 <include>DISCLAIMER.txt</include>
@@ -79,23 +79,23 @@
         </fileSet>
 
         <fileSet>
-            <directory>src/main/examples</directory>
+            <directory>../src/main/examples</directory>
             <outputDirectory>examples</outputDirectory>
         </fileSet>
 
         <!-- addons/hive -->
         <fileSet>
-            <directory>addons/hive-bridge/target/dependency/bridge</directory>
+            <directory>../addons/hive-bridge/target/dependency/bridge</directory>
             <outputDirectory>bridge</outputDirectory>
         </fileSet>
 
         <fileSet>
-            <directory>addons/hive-bridge/target/dependency/hook</directory>
+            <directory>../addons/hive-bridge/target/dependency/hook</directory>
             <outputDirectory>hook</outputDirectory>
         </fileSet>
 
         <fileSet>
-            <directory>addons/hive-bridge/target/site</directory>
+            <directory>../addons/hive-bridge/target/site</directory>
             <outputDirectory>docs/hive</outputDirectory>
         </fileSet>
 
@@ -103,7 +103,7 @@
 
     <files>
         <file>
-            <source>webapp/target/atlas-webapp-${project.version}.war</source>
+            <source>../webapp/target/atlas-webapp-${project.version}.war</source>
             <outputDirectory>server/webapp</outputDirectory>
             <destName>atlas.war</destName>
         </file>

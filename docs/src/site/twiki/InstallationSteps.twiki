@@ -14,11 +14,11 @@ Once the build successfully completes, artifacts can be packaged for deployment.
 
 <verbatim>
 
-mvn clean verify assembly:assembly -DskipTests -DskipCheck=true
+mvn clean package -DskipTests -DskipCheck=true
 
 </verbatim>
 
-Tar can be found in atlas/target/apache-atlas-${project.version}-bin.tar.gz
+Tar can be found in atlas/distro/target/apache-atlas-${project.version}-bin.tar.gz
 
 Tar is structured as follows
 

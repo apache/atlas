@@ -361,34 +361,6 @@
     </properties>
 
     <profiles>
-        <profile>
-            <id>Windows</id>
-            <activation>
-                <os>
-                    <family>windows</family>
-                </os>
-            </activation>
-            <properties>
-                <python.path.l>
-                    ${project.basedir}\src\bin;${project.basedir}\src\test\python\scripts;${project.basedir}\src\test\mock
-                </python.path.l>
-            </properties>
-        </profile>
-
-        <profile>
-            <id>Linux</id>
-            <activation>
-                <os>
-                    <family>!windows</family>
-                </os>
-            </activation>
-            <properties>
-                <python.path.l>
-                    ${project.basedir}/src/bin:${project.basedir}/src/test/mock:${project.basedir}/src/test/python/scripts
-                </python.path.l>
-            </properties>
-        </profile>
-
         <!-- Turning on this profile affects only tests and does not affect packaging -->
         <profile>
             <id>distributed</id>
@@ -427,6 +399,7 @@
         <module>webapp</module>
         <module>docs</module>
         <module>addons/hive-bridge</module>
+        <module>distro</module>
     </modules>
 
     <repositories>
@@ -1421,26 +1394,6 @@
             </plugin>
 
             <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <inherited>false</inherited>
-                <configuration>
-                    <descriptors>
-                        <descriptor>src/main/assemblies/standalone-package.xml</descriptor>
-                        <descriptor>src/main/assemblies/src-package.xml</descriptor>
-                    </descriptors>
-                    <finalName>apache-atlas-${project.version}</finalName>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.18.1</version>
@@ -1644,32 +1597,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>javancss-maven-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>1.2.1</version>
-                <inherited>false</inherited>
-                <executions>
-                    <execution>
-                        <configuration>
-                            <executable>python</executable>
-                            <workingDirectory>src/test/python</workingDirectory>
-                            <arguments>
-                                <argument>unitTests.py</argument>
-                            </arguments>
-                            <environmentVariables>
-                                <PYTHONPATH>${python.path.l}</PYTHONPATH>
-                            </environmentVariables>
-                        </configuration>
-                        <id>python-test</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
 
             <plugin>
