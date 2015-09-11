@@ -23,7 +23,8 @@ var git = require('git-rev');
 module.exports = function(grunt) {
     var classPathSep = (process.platform === "win32") ? ';' : ':',
         gitHash = '',
-        pkg = grunt.file.readJSON('package.json');
+        pkg = grunt.file.readJSON('package.json'),
+        distPath = '../../webapp/target/dist';
 
     grunt.initConfig({
         watch: {
@@ -82,11 +83,12 @@ module.exports = function(grunt) {
         bower: {
             install: {
                 options: {
-                    verbose: true
+                    verbose: true,
+                    targetDir: '.bower-components'
                 }
             }
         },
-        dist: 'dist/js/app.min.js',
+        dist: distPath + '/js/app.min.js',
         modules: grunt.file.expand(
             'public/js/app.js',
             'public/js/routes.js',
@@ -97,8 +99,8 @@ module.exports = function(grunt) {
         shell: {
             min: {
                 command: 'java ' +
-                    '-cp dist/lib/closure-compiler/compiler.jar' + classPathSep +
-                    'dist/lib/ng-closure-runner/ngcompiler.jar ' +
+                    '-cp ' + distPath + '/lib/closure-compiler/compiler.jar' + classPathSep +
+                    '' + distPath + '/lib/ng-closure-runner/ngcompiler.jar ' +
                     'org.angularjs.closurerunner.NgClosureRunner ' +
                     '--compilation_level SIMPLE_OPTIMIZATIONS ' +
                     //'--formatting PRETTY_PRINT ' +
@@ -131,10 +133,15 @@ module.exports = function(grunt) {
                 expand: true,
                 cwd: 'public/',
                 src: ['**', '!js/**/*.js', '!modules/**/*.js'],
-                dest: 'dist'
+                dest: distPath
             }
         },
-        clean: ['public/lib', 'dist'],
+        clean: {
+            build :[distPath],
+            options: {
+            	force: true
+            }
+        },
         proxit: {
             dev: {
                 options: {
@@ -143,7 +150,7 @@ module.exports = function(grunt) {
                     'hosts': [{
                         'hostnames': ['*'],
                         'routes': {
-                            '/': 'dist',
+                            '/': distPath,
                             '/api': 'http://162.249.6.50:21000/api'
                         }
                     }]
@@ -155,8 +162,8 @@ module.exports = function(grunt) {
     require('load-grunt-tasks')(grunt);
     grunt.registerTask('default', ['devUpdate', 'bower', 'jshint', 'jsbeautifier:default']);
 
-    grunt.registerTask('server', ['jshint', 'build', 'concurrent']);
-    grunt.registerTask('build', ['clean', 'bower', 'copy:dist', 'minify']);
+    grunt.registerTask('server', ['jshint', 'clean', 'bower', 'copy:dist', 'minify', 'concurrent']);
+    grunt.registerTask('build', ['copy:dist', 'minify']);
 
     grunt.registerTask('minify', 'Minify the all js', function() {
         var done = this.async();
