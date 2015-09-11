@@ -18,21 +18,6 @@
 
 'use strict';
 
-angular.module('dgc.home').controller('HeaderController', ['$scope', '$modal', function($scope, $modal) {
-
-    $scope.menu = [];
-
-    $scope.isCollapsed = true;
-    $scope.isLoggedIn = function() {
-        return true;
-    };
-
-    $scope.ShowAbout = function() {
-        $modal.open({
-            animation: true,
-            templateUrl: '/modules/about/views/about.html',
-            controller: 'AboutController',
-            size: 'lg'
-        });
-    };
+angular.module('dgc.about').factory('AboutResource', ['$resource', function($resource) {
+    return $resource('/api/atlas/admin/version', {});
 }]);

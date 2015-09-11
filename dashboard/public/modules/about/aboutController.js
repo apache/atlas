@@ -18,21 +18,10 @@
 
 'use strict';
 
-angular.module('dgc.home').controller('HeaderController', ['$scope', '$modal', function($scope, $modal) {
+angular.module('dgc.about').controller('AboutController', ['$scope', 'AboutResource', function($scope, AboutResource) {
 
-    $scope.menu = [];
+    AboutResource.get(function(data) {
+        $scope.versionInfo = data;
+    });
 
-    $scope.isCollapsed = true;
-    $scope.isLoggedIn = function() {
-        return true;
-    };
-
-    $scope.ShowAbout = function() {
-        $modal.open({
-            animation: true,
-            templateUrl: '/modules/about/views/about.html',
-            controller: 'AboutController',
-            size: 'lg'
-        });
-    };
 }]);
