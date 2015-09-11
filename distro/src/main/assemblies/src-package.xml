@@ -36,11 +36,11 @@
                 <exclude>**/*.iml</exclude>
                 <exclude>**/*.log</exclude>
                 <exclude>**/*.pyc</exclude> <!-- python compiled executable -->
-                <exclude>dashboard/**/.bower-*/**</exclude> <!-- temp libs -->
-                <exclude>dashboard/v2/lib/**</exclude>  <!-- temp libs -->
-                <exclude>dashboard/v2/node*/**</exclude>  <!-- temp libs -->
-                <exclude>dashboard/v2/dist/**</exclude>  <!-- package -->
-                <exclude>dashboard/v2/**/*.min.js*</exclude> <!-- minified JS -->
+                <exclude>dashboard/.bower-*/**</exclude> <!-- temp libs -->
+                <exclude>dashboard/lib/**</exclude>  <!-- temp libs -->
+                <exclude>dashboard/node*/**</exclude>  <!-- temp libs -->
+                <exclude>dashboard/dist/**</exclude>  <!-- package -->
+                <exclude>dashboard/*.min.js*</exclude> <!-- minified JS -->
             </excludes>
         </fileSet>
     </fileSets>

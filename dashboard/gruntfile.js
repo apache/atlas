@@ -24,7 +24,7 @@ module.exports = function(grunt) {
     var classPathSep = (process.platform === "win32") ? ';' : ':',
         gitHash = '',
         pkg = grunt.file.readJSON('package.json'),
-        distPath = '../../webapp/target/dist';
+        distPath = '../webapp/target/dist';
 
     grunt.initConfig({
         watch: {
@@ -137,9 +137,9 @@ module.exports = function(grunt) {
             }
         },
         clean: {
-            build :[distPath],
+            build: [distPath],
             options: {
-            	force: true
+                force: true
             }
         },
         proxit: {

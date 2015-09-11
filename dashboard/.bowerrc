@@ -1,5 +1,5 @@
 {
-  "directory": "../../webapp/target/dist/lib/",
+  "directory": "../webapp/target/dist/lib/",
   "storage": {
           "packages": ".bower-cache",
           "registry": ".bower-registry"
