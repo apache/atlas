@@ -39,7 +39,8 @@
     "undef": true, // Require all non-global variables be declared before they are used.
     "unused": true, // Warn unused variables.
     "globals": { // Globals variables.
-        "angular": true
+        "angular": true,
+        "$": false
     },
     "predef": [ // Extra globals.
         "define",

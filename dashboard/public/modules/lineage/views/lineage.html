@@ -17,9 +17,14 @@
   -->
 
 <div class="lineage-viz" data-ng-controller="LineageController">
-    <h4 data-ng-if="!requested && !lineageData">No lineage data found</h4>
-    <i data-ng-if="requested" class="fa fa-spinner fa-spin fa-5x"></i>
-    <svg >
-        <g/>
-    </svg>
+    <button type="button" class="btn btn-primary pull-right" ng-click="onReset()">
+        Reset
+    </button>
+    <div class="graph">
+      <h4 data-ng-if="!requested && !lineageData">No lineage data found</h4>
+      <i data-ng-if="requested" class="fa fa-spinner fa-spin fa-5x"></i>
+      <svg >
+          <g/>
+      </svg>
+    </div>
 </div>
