@@ -8,6 +8,7 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (suma.shivaprasad via shwethags)
 
 ALL CHANGES:
+ATLAS-110 UI: Lineage should be clickable (Vishal Kadam via Venkatesh Seetharam)
 ATLAS-112 UI: Make lineage graph extensible for multiple nodes (Vishal Kadam
 via Venkatesh Seetharam)
 ATLAS-152 TimeStamp fields not showing the details tab (Vishal Kadam

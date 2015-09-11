@@ -35,6 +35,11 @@ angular.module('dgc.lineage').controller('LineageController', ['$element', '$sco
                         if (callRender) {
                             render();
                         }
+                    })
+                    .on("dblclick", function(d) {
+                        $state.go("details", {
+                            id: d.guid
+                        });
                     });
                 }else{ 
                     $scope.requested = false;
