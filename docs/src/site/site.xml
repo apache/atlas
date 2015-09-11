@@ -94,12 +94,14 @@
         </menu>
 
         <menu name="Releases">
-            <item name="Coming soon" href="https://cwiki.apache.org/confluence/display/ATLAS"/>
+            <item name="0.5-incubating"
+                  href="http://www.apache.org/dyn/closer.cgi/incubator/atlas/0.5.0-incubating/"/>
         </menu>
 
         <menu name="Documentation">
             <!-- current points to latest release -->
-            <item name="current" href="index.html"/>
+            <item name="current" href="./0.5.0-incubating/index.html"/>
+            <item name="0.5-incubating" href="./0.5.0-incubating/index.html"/>
         </menu>
 
         <menu name="Resources">
