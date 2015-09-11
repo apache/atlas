@@ -8,8 +8,9 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (suma.shivaprasad via shwethags)
 
 ALL CHANGES:
-ATLAS-111
-UI: Create Help Link  (Vishal Kadam via Venkatesh Seetharam)
+ATLAS-152 TimeStamp fields not showing the details tab (Vishal Kadam
+via Venkatesh Seetharam)
+ATLAS-111 UI: Create Help Link (Vishal Kadam via Venkatesh Seetharam)
 ATLAS-113 Add an About Dialog to Apache Atlas UI with version number (Vishal Kadam
 via Venkatesh Seetharam)
 ATLAS-109 Remove v2 Folder (Vishal Kadam via Venkatesh Seetharam)

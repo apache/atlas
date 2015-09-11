@@ -33,6 +33,8 @@ angular.module('dgc.details').controller('DetailsController', ['$window', '$scop
             $scope.isTable = data.typeName === 'Table';
         });
 
+        $scope.isNumber = angular.isNumber;
+        
         $scope.isString = angular.isString;
 
         $scope.onActivate = function tabActivate(tabname) {
