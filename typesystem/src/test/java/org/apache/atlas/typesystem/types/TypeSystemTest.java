@@ -139,4 +139,41 @@ public class TypeSystemTest extends BaseTest {
         Assert.assertTrue(bc.compareTo(cc) < 0);
         Assert.assertTrue(ac.compareTo(cc) < 0);
     }
+
+    @Test
+    public void testTypeCategory() throws AtlasException {
+        TypeSystem ts = getTypeSystem();
+        ts.reset();
+
+        StructTypeDefinition struct_A = createStructTypeDef("struct_A", createRequiredAttrDef("s_A", DataTypes.STRING_TYPE));
+        StructTypeDefinition struct_B = createStructTypeDef("struct_B", createRequiredAttrDef("s_B", DataTypes.STRING_TYPE));
+
+        HierarchicalTypeDefinition<TraitType> trait_A = createTraitTypeDef("trait_A", null,
+                createRequiredAttrDef("t_A", DataTypes.STRING_TYPE));
+        HierarchicalTypeDefinition<TraitType> trait_B = createTraitTypeDef("trait_B", ImmutableList.<String>of("trait_A"),
+                createRequiredAttrDef("t_B", DataTypes.STRING_TYPE));
+        HierarchicalTypeDefinition<TraitType> trait_C = createTraitTypeDef("trait_C", ImmutableList.<String>of("trait_A"),
+                createRequiredAttrDef("t_C", DataTypes.STRING_TYPE));
+        HierarchicalTypeDefinition<TraitType> trait_D = createTraitTypeDef("trait_D", ImmutableList.<String>of("trait_B", "trait_C"),
+                createRequiredAttrDef("t_D", DataTypes.STRING_TYPE));
+
+        HierarchicalTypeDefinition<ClassType> class_A = createClassTypeDef("class_A", null,
+                createRequiredAttrDef("c_A", DataTypes.STRING_TYPE));
+        HierarchicalTypeDefinition<ClassType> class_B = createClassTypeDef("class_B", ImmutableList.<String>of("class_A"),
+                createRequiredAttrDef("c_B", DataTypes.STRING_TYPE));
+        HierarchicalTypeDefinition<ClassType> class_C = createClassTypeDef("class_C", ImmutableList.<String>of("class_B"),
+                createRequiredAttrDef("c_C", DataTypes.STRING_TYPE));
+
+        ts.defineTypes(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.of(struct_A, struct_B),
+                ImmutableList.of(trait_A, trait_B, trait_C, trait_D),
+                ImmutableList.of(class_A, class_B, class_C));
+
+        final ImmutableList<String> structNames = ts.getTypeNamesByCategory(DataTypes.TypeCategory.STRUCT);
+        final ImmutableList<String> traitNames = ts.getTypeNamesByCategory(DataTypes.TypeCategory.TRAIT);
+        final ImmutableList<String> classNames = ts.getTypeNamesByCategory(DataTypes.TypeCategory.CLASS);
+
+        Assert.assertEquals(structNames.size(), 2);
+        Assert.assertEquals(traitNames.size(), 4);
+        Assert.assertEquals(classNames.size(), 3);
+    }
 }

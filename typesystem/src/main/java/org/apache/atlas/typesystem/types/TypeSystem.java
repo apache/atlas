@@ -516,7 +516,7 @@ public class TypeSystem {
 
             for (StructTypeDefinition structDef : structDefs) {
                 constructStructureType(structDef);
-                typeCategoriesToTypeNamesMap.put(DataTypes.TypeCategory.CLASS, structDef.typeName);
+                typeCategoriesToTypeNamesMap.put(DataTypes.TypeCategory.STRUCT, structDef.typeName);
             }
 
             for (TraitType traitType : traitTypes) {
