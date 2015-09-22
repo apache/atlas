@@ -33,7 +33,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <hive.version>1.2.0</hive.version>
+        <hive.version>1.2.1</hive.version>
         <calcite.version>0.9.2-incubating</calcite.version>
     </properties>
 
@@ -98,6 +98,11 @@
             <artifactId>atlas-client</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-notification</artifactId>
+        </dependency>
+
         <!-- to bring up atlas server for integration tests -->
         <dependency>
             <groupId>org.apache.atlas</groupId>
@@ -149,7 +154,7 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>copy</id>
+                        <id>copy-hook</id>
                         <phase>package</phase>
                         <goals>
                             <goal>copy</goal>
@@ -209,6 +214,16 @@
                                     <version>${project.version}</version>
                                 </artifactItem>
                                 <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>atlas-notification</artifactId>
+                                    <version>${project.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>atlas-common</artifactId>
+                                    <version>${project.version}</version>
+                                </artifactItem>
+                                <artifactItem>
                                     <groupId>org.scala-lang</groupId>
                                     <artifactId>scala-compiler</artifactId>
                                     <version>${scala.version}</version>
@@ -227,6 +242,21 @@
                                     <groupId>org.scala-lang</groupId>
                                     <artifactId>scalap</artifactId>
                                     <version>${scala.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>com.google.inject.extensions</groupId>
+                                    <artifactId>guice-multibindings</artifactId>
+                                    <version>${guice.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.apache.kafka</groupId>
+                                    <artifactId>kafka_${scala.binary.version}</artifactId>
+                                    <version>${kafka.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.apache.kafka</groupId>
+                                    <artifactId>kafka-clients</artifactId>
+                                    <version>${kafka.version}</version>
                                 </artifactItem>
                             </artifactItems>
                         </configuration>
@@ -253,12 +283,16 @@
                     <useTestScope>true</useTestScope>
                     <systemProperties>
                         <systemProperty>
+                            <name>log4j.configuration</name>
+                            <value>atlas-log4j.xml</value>
+                        </systemProperty>
+                        <systemProperty>
                             <name>atlas.log.dir</name>
                             <value>${project.build.directory}/logs</value>
                         </systemProperty>
                     </systemProperties>
                     <stopKey>atlas-stop</stopKey>
-                    <stopPort>41001</stopPort>
+                    <stopPort>21001</stopPort>
                 </configuration>
                 <executions>
                     <execution>
@@ -302,7 +336,6 @@
                 <configuration>
                     <generateProjectInfo>false</generateProjectInfo>
                     <generateReports>false</generateReports>
-                    <skip>false</skip>
                 </configuration>
             </plugin>
         </plugins>

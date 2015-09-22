@@ -8,12 +8,12 @@ instance graph below.
 
 ---+++ Example Type Definitions
 
-<img src="guide-class-diagram.png"/>
+<img src="images/twiki/guide-class-diagram.png"/>
 
 
 ---+++ Example Instance Graph
 
-<img src="guide-instance-graph.png"/>
+<img src="images/twiki/guide-instance-graph.png"/>
 
 
 ---++ Running the example

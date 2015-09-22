@@ -38,7 +38,6 @@ import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeUtils;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONObject;
 
 import java.util.List;
 
@@ -241,12 +240,11 @@ public class QuickStart {
 
         String entityJSON = InstanceSerialization.toJson(referenceable, true);
         System.out.println("Submitting new entity= " + entityJSON);
-        JSONObject jsonObject = metadataServiceClient.createEntity(entityJSON);
-        String guid = jsonObject.getString(AtlasClient.GUID);
-        System.out.println("created instance for type " + typeName + ", guid: " + guid);
+        JSONArray guids = metadataServiceClient.createEntity(entityJSON);
+        System.out.println("created instance for type " + typeName + ", guid: " + guids);
 
         // return the Id for created instance with guid
-        return new Id(guid, referenceable.getId().getVersion(), referenceable.getTypeName());
+        return new Id(guids.getString(0), referenceable.getId().getVersion(), referenceable.getTypeName());
     }
 
     Id database(String name, String description, String owner, String locationUri, String... traitNames)
@@ -387,11 +385,9 @@ public class QuickStart {
 
     private void search() throws Exception {
         for (String dslQuery : getDSLQueries()) {
-            JSONObject response = metadataServiceClient.searchEntity(dslQuery);
-            JSONObject results = response.getJSONObject(AtlasClient.RESULTS);
-            if (!results.isNull("rows")) {
-                JSONArray rows = results.getJSONArray("rows");
-                System.out.println("query [" + dslQuery + "] returned [" + rows.length() + "] rows");
+            JSONArray results = metadataServiceClient.search(dslQuery);
+            if (results != null) {
+                System.out.println("query [" + dslQuery + "] returned [" + results.length() + "] rows");
             } else {
                 System.out.println("query [" + dslQuery + "] failed, results:" + results.toString());
             }

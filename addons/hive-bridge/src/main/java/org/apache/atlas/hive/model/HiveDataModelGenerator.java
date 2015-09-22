@@ -35,6 +35,7 @@ import org.apache.atlas.typesystem.types.StructType;
 import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,7 +95,6 @@ public class HiveDataModelGenerator {
         createColumnClass();
         createPartitionClass();
         createTableClass();
-        createIndexClass();
         createRoleClass();
 
         // DDL/DML Process
@@ -177,7 +177,7 @@ public class HiveDataModelGenerator {
     private void createStorageDescClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition("cols", String.format("array<%s>", HiveDataTypes.HIVE_COLUMN.getName()),
-                        Multiplicity.COLLECTION, false, null),
+                        Multiplicity.COLLECTION, true, null),
                 new AttributeDefinition("location", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
                 new AttributeDefinition("inputFormat", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
@@ -188,7 +188,7 @@ public class HiveDataModelGenerator {
                         null),
                 new AttributeDefinition(STORAGE_NUM_BUCKETS, DataTypes.INT_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
-                new AttributeDefinition("serdeInfo", HiveDataTypes.HIVE_SERDE.getName(), Multiplicity.OPTIONAL, false,
+                new AttributeDefinition("serdeInfo", HiveDataTypes.HIVE_SERDE.getName(), Multiplicity.OPTIONAL, true,
                         null),
                 new AttributeDefinition("bucketCols", String.format("array<%s>", DataTypes.STRING_TYPE.getName()),
                         Multiplicity.OPTIONAL, false, null),
@@ -201,8 +201,8 @@ public class HiveDataModelGenerator {
                         Multiplicity.OPTIONAL, false, null),};
 
         HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_STORAGEDESC.getName(), null,
-                        attributeDefinitions);
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_STORAGEDESC.getName(),
+                        ImmutableList.of(AtlasClient.REFERENCEABLE_SUPER_TYPE), attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_STORAGEDESC.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_STORAGEDESC.getName());
     }
@@ -236,8 +236,8 @@ public class HiveDataModelGenerator {
                         false, null),};
 
         HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_DB.getName(), null,
-                        attributeDefinitions);
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_DB.getName(),
+                        ImmutableList.of(AtlasClient.REFERENCEABLE_SUPER_TYPE), attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_DB.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_DB.getName());
     }
@@ -263,8 +263,8 @@ public class HiveDataModelGenerator {
                 new AttributeDefinition("type", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition(COMMENT, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),};
         HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_COLUMN.getName(), null,
-                        attributeDefinitions);
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_COLUMN.getName(),
+                        ImmutableList.of(AtlasClient.REFERENCEABLE_SUPER_TYPE), attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_COLUMN.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_COLUMN.getName());
     }
@@ -278,14 +278,14 @@ public class HiveDataModelGenerator {
                         null),
                 new AttributeDefinition("lastAccessTime", DataTypes.LONG_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
-                new AttributeDefinition("sd", HiveDataTypes.HIVE_STORAGEDESC.getName(), Multiplicity.REQUIRED, false,
+                new AttributeDefinition("sd", HiveDataTypes.HIVE_STORAGEDESC.getName(), Multiplicity.REQUIRED, true,
                         null),
                 new AttributeDefinition("columns", DataTypes.arrayTypeName(HiveDataTypes.HIVE_COLUMN.getName()),
                         Multiplicity.OPTIONAL, true, null),
                 new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(), Multiplicity.OPTIONAL, false, null),};
         HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_PARTITION.getName(), null,
-                        attributeDefinitions);
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_PARTITION.getName(),
+                        ImmutableList.of(AtlasClient.REFERENCEABLE_SUPER_TYPE), attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_PARTITION.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_PARTITION.getName());
     }
@@ -302,10 +302,10 @@ public class HiveDataModelGenerator {
                         null),
                 new AttributeDefinition(COMMENT, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("retention", DataTypes.INT_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("sd", HiveDataTypes.HIVE_STORAGEDESC.getName(), Multiplicity.OPTIONAL, false,
+                new AttributeDefinition("sd", HiveDataTypes.HIVE_STORAGEDESC.getName(), Multiplicity.OPTIONAL, true,
                         null),
                 new AttributeDefinition("partitionKeys", DataTypes.arrayTypeName(HiveDataTypes.HIVE_COLUMN.getName()),
-                        Multiplicity.OPTIONAL, false, null),
+                        Multiplicity.OPTIONAL, true, null),
                 new AttributeDefinition("columns", DataTypes.arrayTypeName(HiveDataTypes.HIVE_COLUMN.getName()),
                         Multiplicity.OPTIONAL, true, null),
                 new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
@@ -322,33 +322,6 @@ public class HiveDataModelGenerator {
                         ImmutableList.of("DataSet"), attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_TABLE.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_TABLE.getName());
-    }
-
-    private void createIndexClass() throws AtlasException {
-        AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition(NAME, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("indexHandlerClass", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED,
-                        false, null),
-                new AttributeDefinition(DB, HiveDataTypes.HIVE_DB.getName(), Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("createTime", DataTypes.LONG_TYPE.getName(), Multiplicity.OPTIONAL, false,
-                        null),
-                new AttributeDefinition("lastAccessTime", DataTypes.LONG_TYPE.getName(), Multiplicity.OPTIONAL, false,
-                        null),
-                new AttributeDefinition("origTable", HiveDataTypes.HIVE_TABLE.getName(), Multiplicity.REQUIRED, false,
-                        null),
-                new AttributeDefinition("indexTable", HiveDataTypes.HIVE_TABLE.getName(), Multiplicity.OPTIONAL, false,
-                        null),
-                new AttributeDefinition("sd", HiveDataTypes.HIVE_STORAGEDESC.getName(), Multiplicity.REQUIRED, false,
-                        null),
-                new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("deferredRebuild", DataTypes.BOOLEAN_TYPE.getName(), Multiplicity.OPTIONAL,
-                        false, null),};
-
-        HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_INDEX.getName(),
-                        ImmutableList.of(AtlasClient.DATA_SET_SUPER_TYPE), attributeDefinitions);
-        classTypeDefinitions.put(HiveDataTypes.HIVE_INDEX.getName(), definition);
-        LOG.debug("Created definition for " + HiveDataTypes.HIVE_INDEX.getName());
     }
 
     private void createRoleClass() throws AtlasException {
@@ -372,6 +345,8 @@ public class HiveDataModelGenerator {
                 new AttributeDefinition("startTime", DataTypes.LONG_TYPE.getName(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("endTime", DataTypes.LONG_TYPE.getName(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("userName", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
+                        null),
+                new AttributeDefinition("operationType", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
                         null),
                 new AttributeDefinition("queryText", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
                         null),
@@ -399,16 +374,16 @@ public class HiveDataModelGenerator {
 
         TypesDef typesDef = hiveDataModelGenerator.getTypesDef();
         for (EnumTypeDefinition enumType : typesDef.enumTypesAsJavaList()) {
-            System.out.println(String.format("%s(%s) - %s", enumType.name, EnumType.class.getSimpleName(),
+            System.out.println(String.format("%s(%s) - values %s", enumType.name, EnumType.class.getSimpleName(),
                     Arrays.toString(enumType.enumValues)));
         }
         for (StructTypeDefinition structType : typesDef.structTypesAsJavaList()) {
-            System.out.println(String.format("%s(%s) - %s", structType.typeName, StructType.class.getSimpleName(),
+            System.out.println(String.format("%s(%s) - attributes %s", structType.typeName, StructType.class.getSimpleName(),
                     Arrays.toString(structType.attributeDefinitions)));
         }
         for (HierarchicalTypeDefinition<ClassType> classType : typesDef.classTypesAsJavaList()) {
-            System.out.println(String.format("%s(%s) - %s", classType.typeName, ClassType.class.getSimpleName(),
-                    Arrays.toString(classType.attributeDefinitions)));
+            System.out.println(String.format("%s(%s) - super types [%s] - attributes %s", classType.typeName, ClassType.class.getSimpleName(),
+                    StringUtils.join(classType.superTypes, ","), Arrays.toString(classType.attributeDefinitions)));
         }
         for (HierarchicalTypeDefinition<TraitType> traitType : typesDef.traitTypesAsJavaList()) {
             System.out.println(String.format("%s(%s) - %s", traitType.typeName, TraitType.class.getSimpleName(),

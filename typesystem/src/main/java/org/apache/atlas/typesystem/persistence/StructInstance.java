@@ -115,7 +115,11 @@ public class StructInstance implements ITypedStruct {
             clsType.validateId((Id) val);
             cVal = val;
         } else {
-            cVal = i.dataType().convert(val, i.multiplicity);
+            try {
+                cVal = i.dataType().convert(val, i.multiplicity);
+            } catch(ValueConversionException.NullConversionException e) {
+                throw new ValueConversionException.NullConversionException("For field '" + attrName + "'", e);
+            }
         }
         if (cVal == null) {
             nullFlags[nullPos] = true;

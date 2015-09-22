@@ -26,20 +26,25 @@ import com.tinkerpop.blueprints.util.io.graphson.GraphSONWriter;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.types.AttributeDefinition;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
-import org.apache.atlas.typesystem.types.EnumType;
 import org.apache.atlas.typesystem.types.EnumTypeDefinition;
 import org.apache.atlas.typesystem.types.EnumValue;
 import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
+import org.apache.atlas.typesystem.types.TypeUtils;
+import org.apache.atlas.typesystem.types.utils.TypesUtil;
+import org.apache.commons.lang.RandomStringUtils;
 import org.testng.Assert;
 
 import java.io.File;
+import java.util.Collection;
 
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
@@ -51,6 +56,8 @@ import static org.apache.atlas.typesystem.types.utils.TypesUtil.createTraitTypeD
  * Test utility class.
  */
 public final class TestUtils {
+
+    public static final long TEST_DATE_IN_LONG = 1418265358440L;
 
     private TestUtils() {
     }
@@ -92,7 +99,6 @@ public final class TestUtils {
 
         EnumTypeDefinition orgLevelEnum =
                 new EnumTypeDefinition("OrgLevel", new EnumValue("L1", 1), new EnumValue("L2", 2));
-        ts.defineEnumType(orgLevelEnum);
 
         StructTypeDefinition addressDetails =
                 createStructTypeDef("Address", createRequiredAttrDef("street", DataTypes.STRING_TYPE),
@@ -105,7 +111,7 @@ public final class TestUtils {
 
         HierarchicalTypeDefinition<ClassType> personTypeDef = createClassTypeDef("Person", ImmutableList.<String>of(),
                 createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                createOptionalAttrDef("orgLevel", ts.getDataType(EnumType.class, "OrgLevel")),
+                createOptionalAttrDef("orgLevel", "OrgLevel"),
                 createOptionalAttrDef("address", "Address"),
                 new AttributeDefinition("department", "Department", Multiplicity.REQUIRED, false, "employees"),
                 new AttributeDefinition("manager", "Manager", Multiplicity.OPTIONAL, false, "subordinates"));
@@ -118,12 +124,13 @@ public final class TestUtils {
                 createTraitTypeDef("SecurityClearance", ImmutableList.<String>of(),
                         createRequiredAttrDef("level", DataTypes.INT_TYPE));
 
-        ts.defineTypes(ImmutableList.of(addressDetails), ImmutableList.of(securityClearanceTypeDef),
+        ts.defineTypes(ImmutableList.of(orgLevelEnum), ImmutableList.of(addressDetails),
+                ImmutableList.of(securityClearanceTypeDef),
                 ImmutableList.of(deptTypeDef, personTypeDef, managerTypeDef));
     }
 
     public static Referenceable createDeptEg1(TypeSystem ts) throws AtlasException {
-        Referenceable hrDept = new Referenceable("Department");
+        Referenceable hrDept = new Referenceable(ENTITY_TYPE);
         Referenceable john = new Referenceable("Person");
         Referenceable jane = new Referenceable("Manager", "SecurityClearance");
         Referenceable johnAddr = new Referenceable("Address");
@@ -155,5 +162,111 @@ public final class TestUtils {
         Assert.assertNotNull(hrDept2);
 
         return hrDept;
+    }
+
+    public static final String ENTITY_TYPE = "Department";
+    public static final String DATABASE_TYPE = "hive_database";
+    public static final String DATABASE_NAME = "foo";
+    public static final String TABLE_TYPE = "hive_table";
+    public static final String TABLE_NAME = "bar";
+    public static final String CLASSIFICATION = "classification";
+    public static final String PII = "PII";
+    public static final String SUPER_TYPE_NAME = "Base";
+
+    public static TypesDef defineHiveTypes() {
+        HierarchicalTypeDefinition<ClassType> superTypeDefinition =
+                createClassTypeDef(SUPER_TYPE_NAME, ImmutableList.<String>of(),
+                        createOptionalAttrDef("namespace", DataTypes.STRING_TYPE),
+                        createOptionalAttrDef("cluster", DataTypes.STRING_TYPE),
+                        createOptionalAttrDef("colo", DataTypes.STRING_TYPE));
+
+        HierarchicalTypeDefinition<ClassType> databaseTypeDefinition =
+                createClassTypeDef(DATABASE_TYPE, ImmutableList.of(SUPER_TYPE_NAME),
+                        TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        createOptionalAttrDef("created", DataTypes.DATE_TYPE),
+                        createRequiredAttrDef("description", DataTypes.STRING_TYPE));
+
+
+        StructTypeDefinition structTypeDefinition = new StructTypeDefinition("serdeType",
+                new AttributeDefinition[]{createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        createRequiredAttrDef("serde", DataTypes.STRING_TYPE)});
+
+        EnumValue values[] = {new EnumValue("MANAGED", 1), new EnumValue("EXTERNAL", 2),};
+
+        EnumTypeDefinition enumTypeDefinition = new EnumTypeDefinition("tableType", values);
+
+        HierarchicalTypeDefinition<ClassType> columnsDefinition =
+                createClassTypeDef("column_type", ImmutableList.<String>of(),
+                        createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        createRequiredAttrDef("type", DataTypes.STRING_TYPE));
+
+        StructTypeDefinition partitionDefinition = new StructTypeDefinition("partition_type",
+                new AttributeDefinition[]{createRequiredAttrDef("name", DataTypes.STRING_TYPE),});
+
+        HierarchicalTypeDefinition<ClassType> tableTypeDefinition =
+                createClassTypeDef(TABLE_TYPE, ImmutableList.of(SUPER_TYPE_NAME),
+                        TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                        createRequiredAttrDef("description", DataTypes.STRING_TYPE),
+                        createRequiredAttrDef("type", DataTypes.STRING_TYPE),
+                        createOptionalAttrDef("created", DataTypes.DATE_TYPE),
+                        // enum
+                        new AttributeDefinition("tableType", "tableType", Multiplicity.REQUIRED, false, null),
+                        // array of strings
+                        new AttributeDefinition("columnNames",
+                                String.format("array<%s>", DataTypes.STRING_TYPE.getName()), Multiplicity.OPTIONAL,
+                                false, null),
+                        // array of classes
+                        new AttributeDefinition("columns", String.format("array<%s>", "column_type"),
+                                Multiplicity.OPTIONAL, true, null),
+                        // array of structs
+                        new AttributeDefinition("partitions", String.format("array<%s>", "partition_type"),
+                                Multiplicity.OPTIONAL, true, null),
+                        // map of primitives
+                        new AttributeDefinition("parametersMap",
+                                DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(), DataTypes.STRING_TYPE.getName()),
+                                Multiplicity.OPTIONAL, true, null),
+                        // map of classes - todo - enable this
+                        //                        new AttributeDefinition("columnsMap",
+                        //                                DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),
+                        //                                        "column_type"),
+                        //                                Multiplicity.COLLECTION, true, null),
+                        // map of structs   todo - enable this
+                        //                        new AttributeDefinition("partitionsMap",
+                        //                                DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),
+                        //                                        "partition_type"),
+                        //                                Multiplicity.COLLECTION, true, null),
+                        // struct reference
+                        new AttributeDefinition("serde1", "serdeType", Multiplicity.OPTIONAL, false, null),
+                        new AttributeDefinition("serde2", "serdeType", Multiplicity.OPTIONAL, false, null),
+                        // class reference
+                        new AttributeDefinition("database", DATABASE_TYPE, Multiplicity.REQUIRED, true, null));
+
+        HierarchicalTypeDefinition<TraitType> piiTypeDefinition =
+                createTraitTypeDef(PII, ImmutableList.<String>of());
+
+        HierarchicalTypeDefinition<TraitType> classificationTypeDefinition =
+                createTraitTypeDef(CLASSIFICATION, ImmutableList.<String>of(),
+                        createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
+
+        HierarchicalTypeDefinition<TraitType> fetlClassificationTypeDefinition =
+                createTraitTypeDef("fetl" + CLASSIFICATION, ImmutableList.of(CLASSIFICATION),
+                        createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
+
+        return TypeUtils.getTypesDef(ImmutableList.of(enumTypeDefinition),
+                ImmutableList.of(structTypeDefinition, partitionDefinition),
+                ImmutableList.of(classificationTypeDefinition, fetlClassificationTypeDefinition, piiTypeDefinition),
+                ImmutableList.of(superTypeDefinition, databaseTypeDefinition, columnsDefinition, tableTypeDefinition));
+    }
+
+    public static Collection<IDataType> createHiveTypes(TypeSystem typeSystem) throws Exception {
+        if (!typeSystem.isRegistered(TABLE_TYPE)) {
+            TypesDef typesDef = defineHiveTypes();
+            return typeSystem.defineTypes(typesDef).values();
+        }
+        return null;
+    }
+
+    public static final String randomString() {
+        return RandomStringUtils.randomAlphanumeric(10);
     }
 }

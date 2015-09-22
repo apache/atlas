@@ -46,34 +46,35 @@ public final class GraphHelper {
     }
 
     public static Vertex createVertexWithIdentity(Graph graph, ITypedReferenceableInstance typedInstance,
-            Set<String> superTypeNames) {
-        final Vertex vertexWithIdentity =
-                createVertexWithoutIdentity(graph, typedInstance.getTypeName(), typedInstance.getId(), superTypeNames);
+                                                  Set<String> superTypeNames) {
+        final Vertex vertexWithIdentity = createVertexWithoutIdentity(graph, typedInstance.getTypeName(),
+                typedInstance.getId(), superTypeNames);
 
         // add identity
         final String guid = UUID.randomUUID().toString();
-        vertexWithIdentity.setProperty(Constants.GUID_PROPERTY_KEY, guid);
+        setProperty(vertexWithIdentity, Constants.GUID_PROPERTY_KEY, guid);
 
         return vertexWithIdentity;
     }
 
     public static Vertex createVertexWithoutIdentity(Graph graph, String typeName, Id typedInstanceId,
-            Set<String> superTypeNames) {
+                                                     Set<String> superTypeNames) {
+        LOG.debug("Creating vertex for type {} id {}", typeName, typedInstanceId._getId());
         final Vertex vertexWithoutIdentity = graph.addVertex(null);
 
         // add type information
-        vertexWithoutIdentity.setProperty(Constants.ENTITY_TYPE_PROPERTY_KEY, typeName);
+        setProperty(vertexWithoutIdentity, Constants.ENTITY_TYPE_PROPERTY_KEY, typeName);
 
         // add super types
         for (String superTypeName : superTypeNames) {
-            ((TitanVertex) vertexWithoutIdentity).addProperty(Constants.SUPER_TYPES_PROPERTY_KEY, superTypeName);
+            addProperty(vertexWithoutIdentity, Constants.SUPER_TYPES_PROPERTY_KEY, superTypeName);
         }
 
         // add version information
-        vertexWithoutIdentity.setProperty(Constants.VERSION_PROPERTY_KEY, typedInstanceId.version);
+        setProperty(vertexWithoutIdentity, Constants.VERSION_PROPERTY_KEY, typedInstanceId.version);
 
         // add timestamp information
-        vertexWithoutIdentity.setProperty(Constants.TIMESTAMP_PROPERTY_KEY, System.currentTimeMillis());
+        setProperty(vertexWithoutIdentity, Constants.TIMESTAMP_PROPERTY_KEY, System.currentTimeMillis());
 
         return vertexWithoutIdentity;
     }
@@ -84,12 +85,12 @@ public final class GraphHelper {
         return titanGraph.addEdge(null, fromVertex, toVertex, edgeLabel);
     }
 
-    public static Vertex findVertexByGUID(TitanGraph titanGraph, String value) {
-        LOG.debug("Finding vertex for key={}, value={}", Constants.GUID_PROPERTY_KEY, value);
+    public static Vertex findVertex(TitanGraph titanGraph, String propertyKey, Object value) {
+        LOG.debug("Finding vertex for {}={}", propertyKey, value);
 
-        GraphQuery query = titanGraph.query().has(Constants.GUID_PROPERTY_KEY, value);
+        GraphQuery query = titanGraph.query().has(propertyKey, value);
         Iterator<Vertex> results = query.vertices().iterator();
-        // returning one since guid should be unique
+        // returning one since entityType, qualifiedName should be unique
         return results.hasNext() ? results.next() : null;
     }
 
@@ -105,6 +106,16 @@ public final class GraphHelper {
     public static String edgeString(final Edge edge) {
         return "e[" + edge.getLabel() + "], [" + edge.getVertex(Direction.OUT) + " -> " + edge.getLabel() + " -> "
                 + edge.getVertex(Direction.IN) + "]";
+    }
+
+    public static void setProperty(Vertex vertex, String propertyName, Object value) {
+        LOG.debug("Setting property {} = \"{}\" to vertex {}", propertyName, value, vertex);
+        vertex.setProperty(propertyName, value);
+    }
+
+    public static void addProperty(Vertex vertex, String propertyName, Object value) {
+        LOG.debug("Setting property {} = \"{}\" to vertex {}", propertyName, value, vertex);
+        ((TitanVertex)vertex).addProperty(propertyName, value);
     }
 
 /*

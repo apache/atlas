@@ -18,11 +18,21 @@
 package org.apache.atlas.notification;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Singleton;
+import com.google.inject.multibindings.Multibinder;
 import org.apache.atlas.kafka.KafkaNotification;
+import org.apache.atlas.kafka.KafkaNotificationProvider;
+import org.apache.atlas.service.Service;
 
 public class NotificationModule extends AbstractModule {
+
     @Override
     protected void configure() {
-        bind(NotificationInterface.class).to(KafkaNotification.class).asEagerSingleton();
+        bind(NotificationInterface.class).to(KafkaNotification.class).in(Singleton.class);
+        bind(KafkaNotification.class).toProvider(KafkaNotificationProvider.class).in(Singleton.class);
+
+        Multibinder<Service> serviceBinder = Multibinder.newSetBinder(binder(), Service.class);
+        serviceBinder.addBinding().to(KafkaNotification.class);
+        serviceBinder.addBinding().to(NotificationHookConsumer.class);
     }
 }

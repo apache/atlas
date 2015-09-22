@@ -66,7 +66,7 @@ public interface MetadataService {
      * @param entityDefinition definition
      * @return guid
      */
-    String createEntity(String entityDefinition) throws AtlasException;
+    String createEntities(String entityDefinition) throws AtlasException;
 
     /**
      * Return the definition for the given guid.
@@ -75,6 +75,16 @@ public interface MetadataService {
      * @return entity definition as JSON
      */
     String getEntityDefinition(String guid) throws AtlasException;
+
+    /**
+     * Return the definition given type and attribute. The attribute has to be unique attribute for the type
+     * @param entityType - type name
+     * @param attribute - attribute name
+     * @param value - attribute value
+     * @return
+     * @throws AtlasException
+     */
+    String getEntityDefinition(String entityType, String attribute, String value) throws AtlasException;
 
     /**
      * Return the list of entity names for the given type in the repository.

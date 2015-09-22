@@ -76,11 +76,9 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         Assert.assertEquals(response.getString("query"), dslQuery);
         Assert.assertEquals(response.getString("queryType"), "dsl");
 
-        JSONObject results = response.getJSONObject(AtlasClient.RESULTS);
+        JSONArray results = response.getJSONArray(AtlasClient.RESULTS);
         Assert.assertNotNull(results);
-
-        JSONArray rows = results.getJSONArray(AtlasClient.ROWS);
-        Assert.assertEquals(rows.length(), 1);
+        Assert.assertEquals(results.length(), 1);
 
         int numRows = response.getInt(AtlasClient.COUNT);
         Assert.assertEquals(numRows, 1);

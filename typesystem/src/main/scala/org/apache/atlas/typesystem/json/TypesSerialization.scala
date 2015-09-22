@@ -236,7 +236,7 @@ trait TypeHelpers {
 
     @throws(classOf[AtlasException])
     def defineClassType(ts: TypeSystem, classDef: HierarchicalTypeDefinition[ClassType]): ClassType = {
-        ts.defineTypes(ImmutableList.of[StructTypeDefinition],
+        ts.defineTypes(ImmutableList.of[EnumTypeDefinition], ImmutableList.of[StructTypeDefinition],
             ImmutableList.of[HierarchicalTypeDefinition[TraitType]],
             ImmutableList.of[HierarchicalTypeDefinition[ClassType]](classDef))
         return ts.getDataType(classOf[ClassType], classDef.typeName)

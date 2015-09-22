@@ -49,6 +49,26 @@ atlas.lineage.hive.process.outputs.name=outputs
 atlas.lineage.hive.table.schema.query=hive_table where name=?, columns
 </verbatim>
 
+---+++ Notification Configs
+Refer http://kafka.apache.org/documentation.html#configuration for kafka configuration. All kafka configs should be prefixed with 'atlas.kafka.'
+
+<verbatim>
+atlas.notification.embedded=true
+atlas.kafka.data=${sys:atlas.home}/data/kafka
+atlas.kafka.zookeeper.connect=localhost:9026
+atlas.kafka.bootstrap.servers=localhost:9027
+atlas.kafka.zookeeper.session.timeout.ms=400
+atlas.kafka.zookeeper.sync.time.ms=20
+atlas.kafka.auto.commit.interval.ms=1000
+</verbatim>
+
+---+++ Client Configs
+<verbatim>
+atlas.client.readTimeoutMSecs=60000
+atlas.client.connectTimeoutMSecs=60000
+</verbatim>
+
+
 ---+++ Security Properties
 
 ---++++ SSL config

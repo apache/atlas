@@ -57,6 +57,35 @@
                 </python.path.l>
             </properties>
         </profile>
+
+        <profile>
+            <id>dist</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>src/main/assemblies/standalone-package.xml</descriptor>
+                                        <descriptor>src/main/assemblies/src-package.xml</descriptor>
+                                    </descriptors>
+                                    <finalName>apache-atlas-${project.version}</finalName>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 
     <build>
@@ -69,6 +98,7 @@
                 <executions>
                     <execution>
                         <configuration>
+                            <skip>${skipTests}</skip>
                             <executable>python</executable>
                             <workingDirectory>src/test/python</workingDirectory>
                             <arguments>
@@ -82,26 +112,6 @@
                         <phase>test</phase>
                         <goals>
                             <goal>exec</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <inherited>false</inherited>
-                <configuration>
-                    <descriptors>
-                        <descriptor>src/main/assemblies/standalone-package.xml</descriptor>
-                        <descriptor>src/main/assemblies/src-package.xml</descriptor>
-                    </descriptors>
-                    <finalName>apache-atlas-${project.version}</finalName>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
                         </goals>
                     </execution>
                 </executions>

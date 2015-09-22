@@ -45,7 +45,7 @@ class TypesSerializationTest extends BaseTest with TypeHelpers {
             optionalAttr("o", DataTypes.mapTypeName(DataTypes.STRING_TYPE, DataTypes.DOUBLE_TYPE)))
 
 
-        ts.defineTypes(ImmutableList.of[StructTypeDefinition](sDef),
+        ts.defineTypes(ImmutableList.of[EnumTypeDefinition], ImmutableList.of[StructTypeDefinition](sDef),
             ImmutableList.of[HierarchicalTypeDefinition[TraitType]],
             ImmutableList.of[HierarchicalTypeDefinition[ClassType]]
         )
@@ -123,7 +123,7 @@ class TypesSerializationTest extends BaseTest with TypeHelpers {
         val securityClearanceTypeDef: HierarchicalTypeDefinition[TraitType] = createTraitTypeDef("SecurityClearance", List(),
             requiredAttr("level", DataTypes.INT_TYPE)
         )
-        ts.defineTypes(ImmutableList.of[StructTypeDefinition],
+        ts.defineTypes(ImmutableList.of[EnumTypeDefinition], ImmutableList.of[StructTypeDefinition],
             ImmutableList.of[HierarchicalTypeDefinition[TraitType]](securityClearanceTypeDef),
             ImmutableList.of[HierarchicalTypeDefinition[ClassType]](deptTypeDef, personTypeDef, managerTypeDef))
 
@@ -136,7 +136,7 @@ class TypesSerializationTest extends BaseTest with TypeHelpers {
 
         typesDef1.enumTypes.foreach(ts1.defineEnumType(_))
 
-        ts1.defineTypes(ImmutableList.copyOf(typesDef1.structTypes.toArray),
+        ts1.defineTypes(ImmutableList.of[EnumTypeDefinition], ImmutableList.copyOf(typesDef1.structTypes.toArray),
             ImmutableList.copyOf(typesDef1.traitTypes.toArray),
             ImmutableList.copyOf(typesDef1.classTypes.toArray)
         )

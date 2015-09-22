@@ -21,6 +21,8 @@ package org.apache.atlas.listener;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 
+import java.util.Collection;
+
 /**
  * Entity (a Typed instance) change notification listener.
  */
@@ -29,10 +31,10 @@ public interface EntityChangeListener {
     /**
      * This is upon adding a new typed instance to the repository.
      *
-     * @param typedInstance a typed instance
+     * @param typedInstances a typed instance
      * @throws AtlasException
      */
-    void onEntityAdded(ITypedReferenceableInstance typedInstance) throws AtlasException;
+    void onEntityAdded(Collection<ITypedReferenceableInstance> typedInstances) throws AtlasException;
 
     /**
      * This is upon adding a new trait to a typed instance.

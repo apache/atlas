@@ -67,7 +67,7 @@ done
 METADATA_LOG_DIR="${METADATA_LOG_DIR:-$BASEDIR/logs}"
 export METADATA_LOG_DIR
 
-JAVA_PROPERTIES="$METADATA_OPTS -Datlas.log.dir=$METADATA_LOG_DIR -Datlas.log.file=import-hive.log"
+JAVA_PROPERTIES="$METADATA_OPTS -Datlas.log.dir=$METADATA_LOG_DIR -Datlas.log.file=import-hive.log -Dlog4j.configuration=atlas-log4j.xml"
 shift
 
 while [[ ${1} =~ ^\-D ]]; do

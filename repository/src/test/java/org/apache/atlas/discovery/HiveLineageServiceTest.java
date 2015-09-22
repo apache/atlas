@@ -54,9 +54,6 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
-import java.io.File;
-import java.io.IOException;
-import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -534,7 +531,10 @@ public class HiveLineageServiceTest {
 
         String entityJSON = InstanceSerialization.toJson(referenceable, true);
         System.out.println("Submitting new entity= " + entityJSON);
-        String guid = metadataService.createEntity(entityJSON);
+        JSONArray jsonArray = new JSONArray();
+        jsonArray.put(entityJSON);
+        String response = metadataService.createEntities(jsonArray.toString());
+        String guid = new JSONArray(response).getString(0);
         System.out.println("created instance for type " + typeName + ", guid: " + guid);
 
         // return the reference to created instance with guid

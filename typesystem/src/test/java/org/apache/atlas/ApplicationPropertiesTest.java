@@ -25,7 +25,7 @@ public class ApplicationPropertiesTest {
 
     @Test
     public void testVariables() throws Exception {
-        Configuration properties = ApplicationProperties.get();
+        Configuration properties = ApplicationProperties.get(ApplicationProperties.APPLICATION_PROPERTIES);
 
         //plain property without variables
         Assert.assertEquals(properties.getString("atlas.service"), "atlas");
@@ -44,7 +44,7 @@ public class ApplicationPropertiesTest {
     @Test
     //variable substitutions should work with subset configuration as well
     public void testSubset() throws Exception {
-        Configuration configuration = ApplicationProperties.get();
+        Configuration configuration = ApplicationProperties.get(ApplicationProperties.APPLICATION_PROPERTIES);
         Configuration subConfiguration = configuration.subset("atlas");
 
         Assert.assertEquals(subConfiguration.getString("service"), "atlas");

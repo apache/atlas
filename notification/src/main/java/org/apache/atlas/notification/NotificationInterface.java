@@ -20,7 +20,6 @@ package org.apache.atlas.notification;
 import org.apache.atlas.AtlasException;
 import org.apache.commons.configuration.Configuration;
 
-import java.io.IOException;
 import java.util.List;
 
 public abstract class NotificationInterface {
@@ -33,23 +32,8 @@ public abstract class NotificationInterface {
         HOOK, ENTITIES, TYPES
     }
 
-    /**
-     * Initialise
-     * @param applicationProperties
-     * @throws AtlasException
-     */
-    public void initialize(Configuration applicationProperties) throws AtlasException {
+    public NotificationInterface(Configuration applicationProperties) throws AtlasException {
         this.embedded = applicationProperties.getBoolean(PROPERTY_EMBEDDED, false);
-    }
-
-    /**
-     * Start embedded notification service on atlast server
-     * @throws IOException
-     */
-    public final void startService() throws IOException {
-        if (embedded) {
-            _startService();
-        }
     }
 
     /**
@@ -60,18 +44,9 @@ public abstract class NotificationInterface {
         return embedded;
     }
 
-    protected abstract void _startService() throws IOException;
-
-    /**
-     * Shutdown - close all the connections
-     */
-    public final void shutdown() {
-        _shutdown();
-    }
-
-    protected abstract void _shutdown();
-
     public abstract List<NotificationConsumer> createConsumers(NotificationType type, int numConsumers);
 
     public abstract void send(NotificationType type, String... messages) throws NotificationException;
+
+    public abstract void close();
 }

@@ -14,7 +14,7 @@ Once the build successfully completes, artifacts can be packaged for deployment.
 
 <verbatim>
 
-mvn clean package -DskipTests -DskipCheck=true
+mvn clean package -Pdist
 
 </verbatim>
 

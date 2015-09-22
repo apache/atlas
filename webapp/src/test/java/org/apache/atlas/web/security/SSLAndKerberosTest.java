@@ -23,28 +23,38 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.web.TestUtils;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.alias.JavaKeyStoreProvider;
-import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import javax.security.auth.Subject;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.NameCallback;
+import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.callback.UnsupportedCallbackException;
+import javax.security.auth.login.LoginContext;
+import javax.security.auth.login.LoginException;
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
+import java.security.PrivilegedExceptionAction;
 
 import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
 
-/**
- * Perform all the necessary setup steps for client and server comm over SSL/Kerberos, but then don't estalish a
- * kerberos user for the invocation.  Need a separate use case since the Jersey layer cached the URL connection handler,
- * which indirectly caches the kerberos delegation token.
- */
-public class NegativeSSLAndKerberosIT extends BaseSSLAndKerberosTest {
+public class SSLAndKerberosTest extends BaseSSLAndKerberosTest {
+    public static final String TEST_USER_JAAS_SECTION = "TestUser";
+    public static final String TESTUSER = "testuser";
+    public static final String TESTPASS = "testpass";
 
+    private static final String DGI_URL = "https://localhost:21443/";
+    private AtlasClient dgiCLient;
     private TestSecureEmbeddedServer secureEmbeddedServer;
+    private Subject subject;
     private String originalConf;
-    private AtlasClient dgiClient;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -59,18 +69,16 @@ public class NegativeSSLAndKerberosIT extends BaseSSLAndKerberosTest {
         // client will actually only leverage subset of these properties
         final PropertiesConfiguration configuration = getSSLConfiguration(providerUrl);
         configuration.setProperty("atlas.http.authentication.type", "kerberos");
-
         TestUtils.writeConfiguration(configuration, persistDir + File.separator + "client.properties");
 
         String confLocation = System.getProperty("atlas.conf");
         URL url;
         if (confLocation == null) {
-            url = NegativeSSLAndKerberosIT.class.getResource("/application.properties");
+            url = SSLAndKerberosTest.class.getResource("/application.properties");
         } else {
             url = new File(confLocation, "application.properties").toURI().toURL();
         }
         configuration.load(url);
-
         configuration.setProperty(TLS_ENABLED, true);
         configuration.setProperty("atlas.http.authentication.enabled", "true");
         configuration.setProperty("atlas.http.authentication.kerberos.principal", "HTTP/localhost@" + kdc.getRealm());
@@ -80,12 +88,23 @@ public class NegativeSSLAndKerberosIT extends BaseSSLAndKerberosTest {
 
         TestUtils.writeConfiguration(configuration, persistDir + File.separator + "application.properties");
 
-        dgiClient = new AtlasClient(DGI_URL) {
+        subject = loginTestUser();
+        UserGroupInformation.loginUserFromSubject(subject);
+        UserGroupInformation proxyUser = UserGroupInformation.createProxyUser(
+            "testUser",
+            UserGroupInformation.getLoginUser());
+
+        dgiCLient = proxyUser.doAs(new PrivilegedExceptionAction<AtlasClient>() {
             @Override
-            protected PropertiesConfiguration getClientProperties() throws AtlasException {
-                return configuration;
+            public AtlasClient run() throws Exception {
+                return new AtlasClient(DGI_URL) {
+                    @Override
+                    protected PropertiesConfiguration getClientProperties() throws AtlasException {
+                        return configuration;
+                    }
+                };
             }
-        };
+        });
 
         // save original setting
         originalConf = System.getProperty("atlas.conf");
@@ -114,14 +133,31 @@ public class NegativeSSLAndKerberosIT extends BaseSSLAndKerberosTest {
         }
     }
 
-    @Test
-    public void testUnsecuredClient() throws Exception {
-        try {
-            dgiClient.listTypes();
-            Assert.fail("Should have failed with GSSException");
-        } catch(Exception e) {
-            e.printStackTrace();
-            Assert.assertTrue(e.getMessage().contains("Mechanism level: Failed to find any Kerberos tgt"));
-        }
+    protected Subject loginTestUser() throws LoginException, IOException {
+        LoginContext lc = new LoginContext(TEST_USER_JAAS_SECTION, new CallbackHandler() {
+
+            @Override
+            public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
+                for (int i = 0; i < callbacks.length; i++) {
+                    if (callbacks[i] instanceof PasswordCallback) {
+                        PasswordCallback passwordCallback = (PasswordCallback) callbacks[i];
+                        passwordCallback.setPassword(TESTPASS.toCharArray());
+                    }
+                    if (callbacks[i] instanceof NameCallback) {
+                        NameCallback nameCallback = (NameCallback) callbacks[i];
+                        nameCallback.setName(TESTUSER);
+                    }
+                }
+            }
+        });
+        // attempt authentication
+        lc.login();
+        return lc.getSubject();
     }
+
+    @Test
+    public void testService() throws Exception {
+        dgiCLient.listTypes();
+    }
+
 }

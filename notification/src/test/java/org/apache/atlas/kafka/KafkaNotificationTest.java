@@ -18,12 +18,10 @@
 package org.apache.atlas.kafka;
 
 import com.google.inject.Inject;
-import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.notification.NotificationModule;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.RandomStringUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -35,18 +33,15 @@ import org.testng.annotations.Test;
 public class KafkaNotificationTest {
 
     @Inject
-    private NotificationInterface kafka;
+    private KafkaNotification kafka;
 
     @BeforeClass
     public void setUp() throws Exception {
-        Configuration conf = ApplicationProperties.get();
-        conf.setProperty(KafkaNotification.PROPERTY_PREFIX + ".data", "target/data/kafka" + random());
-        kafka.initialize(conf);
-        kafka.startService();
+        kafka.start();
     }
 
     @Test
-    public void testSendMessage() throws AtlasException {
+    public void testSendReceiveMessage() throws AtlasException {
         String msg1 = "message" + random();
         String msg2 = "message" + random();
         kafka.send(NotificationInterface.NotificationType.HOOK, msg1, msg2);
@@ -63,6 +58,6 @@ public class KafkaNotificationTest {
 
     @AfterClass
     public void teardown() throws Exception {
-        kafka.shutdown();
+        kafka.stop();
     }
 }

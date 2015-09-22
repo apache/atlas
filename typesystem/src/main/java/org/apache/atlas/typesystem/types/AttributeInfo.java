@@ -27,6 +27,7 @@ import java.util.Map;
 public class AttributeInfo {
     public final String name;
     public final Multiplicity multiplicity;
+    //A composite is the one whose lifecycle is dependent on the enclosing type and is not just a reference
     public final boolean isComposite;
     public final boolean isUnique;
     public final boolean isIndexable;

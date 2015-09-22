@@ -101,6 +101,7 @@ public final class Main {
         configuration.setProperty("atlas.enableTLS", String.valueOf(enableTLS));
 
         showStartupInfo(buildConfiguration, enableTLS, appPort);
+
         server = EmbeddedServer.newServer(appPort, appPath, enableTLS);
         server.start();
     }

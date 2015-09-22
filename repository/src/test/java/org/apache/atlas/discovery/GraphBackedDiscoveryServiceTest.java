@@ -85,7 +85,7 @@ public class GraphBackedDiscoveryServiceTest {
         ClassType deptType = typeSystem.getDataType(ClassType.class, "Department");
         ITypedReferenceableInstance hrDept2 = deptType.convert(hrDept, Multiplicity.REQUIRED);
 
-        repositoryService.createEntity(hrDept2);
+        repositoryService.createEntities(hrDept2);
     }
 
     private void setupSampleData() throws ScriptException {
@@ -303,6 +303,6 @@ public class GraphBackedDiscoveryServiceTest {
         ClassType deptType = TypeSystem.getInstance().getDataType(ClassType.class, "D");
         ITypedReferenceableInstance typedInstance = deptType.convert(instance, Multiplicity.REQUIRED);
 
-        repositoryService.createEntity(typedInstance);
+        repositoryService.createEntities(typedInstance);
     }
 }

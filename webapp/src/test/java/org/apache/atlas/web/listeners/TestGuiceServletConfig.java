@@ -21,8 +21,10 @@ import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
-import com.tinkerpop.blueprints.Graph;
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.graph.GraphProvider;
+import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +33,7 @@ import javax.servlet.ServletContextEvent;
 public class TestGuiceServletConfig extends GuiceServletConfig {
 
     private static final Logger LOG = LoggerFactory.getLogger(TestGuiceServletConfig.class);
+    private boolean servicesEnabled;
 
     @Override
     public void contextInitialized(ServletContextEvent servletContextEvent) {
@@ -40,6 +43,8 @@ public class TestGuiceServletConfig extends GuiceServletConfig {
 
     @Override
     public void contextDestroyed(ServletContextEvent servletContextEvent) {
+        super.contextDestroyed(servletContextEvent);
+
         if(injector != null) {
             TypeLiteral<GraphProvider<TitanGraph>> graphProviderType = new TypeLiteral<GraphProvider<TitanGraph>>() {};
             Provider<GraphProvider<TitanGraph>> graphProvider = injector.getProvider(Key.get(graphProviderType));
@@ -47,11 +52,30 @@ public class TestGuiceServletConfig extends GuiceServletConfig {
 
             LOG.info("Clearing graph store");
             try {
-                graph.shutdown();
                 TitanCleanup.clear(graph);
             } catch (Exception e) {
                 LOG.warn("Clearing graph store failed ", e);
             }
+        }
+    }
+
+    @Override
+    protected void startServices() {
+        try {
+            Configuration conf = ApplicationProperties.get();
+            servicesEnabled = conf.getBoolean("atlas.services.enabled", true);
+            if (servicesEnabled) {
+                super.startServices();
+            }
+        } catch (AtlasException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    protected void stopServices() {
+        if (servicesEnabled) {
+            super.stopServices();
         }
     }
 }

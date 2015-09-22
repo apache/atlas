@@ -188,6 +188,11 @@
     <dependencies>
         <dependency>
             <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-common</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-typesystem</artifactId>
         </dependency>
 
@@ -199,6 +204,11 @@
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-notification</artifactId>
         </dependency>
 
         <dependency>
@@ -413,6 +423,45 @@
                 </configuration>
             </plugin>
 
+            <!-- Running unit tests in pre-integration-test phase after war is built -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemProperties>
+                        <user.dir>${project.basedir}</user.dir>
+                        <projectBaseDir>${project.basedir}/..</projectBaseDir>
+                    </systemProperties>
+                    <!--<skipTests>true</skipTests>-->
+                    <forkMode>always</forkMode>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                    <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}
+                        -Dhadoop.tmp.dir=${project.build.directory}/tmp-hadoop-${user.name}
+                        -Xmx1024m -XX:MaxPermSize=512m
+                    </argLine>
+                    <excludes>
+                        <exclude>**/*Base*</exclude>
+                    </excludes>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-testng</artifactId>
+                        <version>2.18.1</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <id>default-test</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+
             <plugin>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
@@ -435,6 +484,10 @@
                     <useTestScope>true</useTestScope>
                     <systemProperties>
                         <systemProperty>
+                            <name>log4j.configuration</name>
+                            <value>atlas-log4j.xml</value>
+                        </systemProperty>
+                        <systemProperty>
                             <name>atlas.log.dir</name>
                             <value>${project.build.directory}/logs</value>
                         </systemProperty>
@@ -453,7 +506,7 @@
                         </systemProperty>
                     </systemProperties>
                     <stopKey>atlas-stop</stopKey>
-                    <stopPort>41001</stopPort>
+                    <stopPort>21001</stopPort>
                     <daemon>${debug.jetty.daemon}</daemon>
                     <testClassesDirectory>${project.build.directory}/../../webapp/target/test-classes/</testClassesDirectory>
                     <useTestClasspath>true</useTestClasspath>

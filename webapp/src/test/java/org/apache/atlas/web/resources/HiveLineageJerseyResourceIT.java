@@ -18,25 +18,12 @@
 
 package org.apache.atlas.web.resources;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.persistence.Id;
-import org.apache.atlas.typesystem.types.AttributeDefinition;
-import org.apache.atlas.typesystem.types.ClassType;
-import org.apache.atlas.typesystem.types.DataTypes;
-import org.apache.atlas.typesystem.types.EnumTypeDefinition;
-import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
-import org.apache.atlas.typesystem.types.IDataType;
-import org.apache.atlas.typesystem.types.Multiplicity;
-import org.apache.atlas.typesystem.types.StructTypeDefinition;
-import org.apache.atlas.typesystem.types.TraitType;
-import org.apache.atlas.typesystem.types.TypeUtils;
-import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
@@ -54,18 +41,20 @@ import java.util.List;
 public class HiveLineageJerseyResourceIT extends BaseResourceIT {
 
     private static final String BASE_URI = "api/atlas/lineage/hive/table/";
+    private String salesFactTable;
+    private String salesMonthlyTable;
 
     @BeforeClass
     public void setUp() throws Exception {
         super.setUp();
 
-        setUpTypes();
+        createTypeDefinitions();
         setupInstances();
     }
 
     @Test
     public void testInputsGraph() throws Exception {
-        WebResource resource = service.path(BASE_URI).path("sales_fact_monthly_mv").path("inputs").path("graph");
+        WebResource resource = service.path(BASE_URI).path(salesMonthlyTable).path("inputs").path("graph");
 
         ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
@@ -93,7 +82,7 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testOutputsGraph() throws Exception {
-        WebResource resource = service.path(BASE_URI).path("sales_fact").path("outputs").path("graph");
+        WebResource resource = service.path(BASE_URI).path(salesFactTable).path("outputs").path("graph");
 
         ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
@@ -121,7 +110,7 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testSchema() throws Exception {
-        WebResource resource = service.path(BASE_URI).path("sales_fact").path("schema");
+        WebResource resource = service.path(BASE_URI).path(salesFactTable).path("schema");
 
         ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
@@ -167,105 +156,41 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
     }
 
-    private void setUpTypes() throws Exception {
-        TypesDef typesDef = createTypeDefinitions();
-        createType(typesDef);
-    }
-
-    private static final String DATABASE_TYPE = "hive_db";
-    private static final String HIVE_TABLE_TYPE = "hive_table";
-    private static final String COLUMN_TYPE = "hive_column";
-    private static final String HIVE_PROCESS_TYPE = "hive_process";
-
-    private TypesDef createTypeDefinitions() {
-        HierarchicalTypeDefinition<ClassType> dbClsDef = TypesUtil
-                .createClassTypeDef(DATABASE_TYPE, null, attrDef("name", DataTypes.STRING_TYPE),
-                        attrDef("description", DataTypes.STRING_TYPE), attrDef("locationUri", DataTypes.STRING_TYPE),
-                        attrDef("owner", DataTypes.STRING_TYPE), attrDef("createTime", DataTypes.INT_TYPE));
-
-        HierarchicalTypeDefinition<ClassType> columnClsDef = TypesUtil
-                .createClassTypeDef(COLUMN_TYPE, null, attrDef("name", DataTypes.STRING_TYPE),
-                        attrDef("dataType", DataTypes.STRING_TYPE), attrDef("comment", DataTypes.STRING_TYPE));
-
-        HierarchicalTypeDefinition<ClassType> tblClsDef = TypesUtil
-                .createClassTypeDef(HIVE_TABLE_TYPE, ImmutableList.of("DataSet"),
-                        attrDef("owner", DataTypes.STRING_TYPE), attrDef("createTime", DataTypes.INT_TYPE),
-                        attrDef("lastAccessTime", DataTypes.INT_TYPE), attrDef("tableType", DataTypes.STRING_TYPE),
-                        attrDef("temporary", DataTypes.BOOLEAN_TYPE),
-                        new AttributeDefinition("db", DATABASE_TYPE, Multiplicity.REQUIRED, false, null),
-                        new AttributeDefinition("columns", DataTypes.arrayTypeName(COLUMN_TYPE),
-                                Multiplicity.COLLECTION, true, null));
-
-        HierarchicalTypeDefinition<ClassType> loadProcessClsDef = TypesUtil
-                .createClassTypeDef(HIVE_PROCESS_TYPE, ImmutableList.of("Process"),
-                        attrDef("userName", DataTypes.STRING_TYPE), attrDef("startTime", DataTypes.INT_TYPE),
-                        attrDef("endTime", DataTypes.INT_TYPE),
-                        attrDef("queryText", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
-                        attrDef("queryPlan", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
-                        attrDef("queryId", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
-                        attrDef("queryGraph", DataTypes.STRING_TYPE, Multiplicity.REQUIRED));
-
-        HierarchicalTypeDefinition<TraitType> dimTraitDef = TypesUtil.createTraitTypeDef("Dimension", null);
-
-        HierarchicalTypeDefinition<TraitType> factTraitDef = TypesUtil.createTraitTypeDef("Fact", null);
-
-        HierarchicalTypeDefinition<TraitType> metricTraitDef = TypesUtil.createTraitTypeDef("Metric", null);
-
-        HierarchicalTypeDefinition<TraitType> etlTraitDef = TypesUtil.createTraitTypeDef("ETL", null);
-
-
-        HierarchicalTypeDefinition<TraitType> piiTraitDef = TypesUtil.createTraitTypeDef("PII", null);
-
-        return TypeUtils.getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.of(dimTraitDef, factTraitDef, metricTraitDef, etlTraitDef, piiTraitDef),
-                ImmutableList.of(dbClsDef, columnClsDef, tblClsDef, loadProcessClsDef));
-    }
-
-    AttributeDefinition attrDef(String name, IDataType dT) {
-        return attrDef(name, dT, Multiplicity.OPTIONAL, false, null);
-    }
-
-    AttributeDefinition attrDef(String name, IDataType dT, Multiplicity m) {
-        return attrDef(name, dT, m, false, null);
-    }
-
-    AttributeDefinition attrDef(String name, IDataType dT, Multiplicity m, boolean isComposite,
-            String reverseAttributeName) {
-        Preconditions.checkNotNull(name);
-        Preconditions.checkNotNull(dT);
-        return new AttributeDefinition(name, dT.getName(), m, isComposite, reverseAttributeName);
-    }
-
     private void setupInstances() throws Exception {
-        Id salesDB = database("Sales", "Sales Database", "John ETL", "hdfs://host:8000/apps/warehouse/sales");
+        Id salesDB = database("Sales" + randomString(), "Sales Database", "John ETL",
+                "hdfs://host:8000/apps/warehouse/sales");
 
         List<Referenceable> salesFactColumns = ImmutableList
                 .of(column("time_id", "int", "time id"), column("product_id", "int", "product id"),
-                        column("customer_id", "int", "customer id", "PII"),
+                        column("customer_id", "int", "customer id", "pii"),
                         column("sales", "double", "product id", "Metric"));
 
-        Id salesFact = table("sales_fact", "sales fact table", salesDB, "Joe", "Managed", salesFactColumns, "Fact");
+        salesFactTable = "sales_fact" + randomString();
+        Id salesFact = table(salesFactTable, "sales fact table", salesDB, "Joe", "MANAGED", salesFactColumns, "Fact");
 
         List<Referenceable> timeDimColumns = ImmutableList
                 .of(column("time_id", "int", "time id"), column("dayOfYear", "int", "day Of Year"),
                         column("weekDay", "int", "week Day"));
 
         Id timeDim =
-                table("time_dim", "time dimension table", salesDB, "John Doe", "External", timeDimColumns, "Dimension");
+                table("time_dim" + randomString(), "time dimension table", salesDB, "John Doe", "EXTERNAL",
+                        timeDimColumns, "Dimension");
 
         Id reportingDB =
-                database("Reporting", "reporting database", "Jane BI", "hdfs://host:8000/apps/warehouse/reporting");
+                database("Reporting" + randomString(), "reporting database", "Jane BI",
+                        "hdfs://host:8000/apps/warehouse/reporting");
 
         Id salesFactDaily =
-                table("sales_fact_daily_mv", "sales fact daily materialized view", reportingDB, "Joe BI", "Managed",
-                        salesFactColumns, "Metric");
+                table("sales_fact_daily_mv" + randomString(), "sales fact daily materialized view", reportingDB,
+                        "Joe BI", "MANAGED", salesFactColumns, "Metric");
 
         loadProcess("loadSalesDaily", "John ETL", ImmutableList.of(salesFact, timeDim),
                 ImmutableList.of(salesFactDaily), "create table as select ", "plan", "id", "graph", "ETL");
 
+        salesMonthlyTable = "sales_fact_monthly_mv" + randomString();
         Id salesFactMonthly =
-                table("sales_fact_monthly_mv", "sales fact monthly materialized view", reportingDB, "Jane BI",
-                        "Managed", salesFactColumns, "Metric");
+                table(salesMonthlyTable, "sales fact monthly materialized view", reportingDB, "Jane BI",
+                        "MANAGED", salesFactColumns, "Metric");
 
         loadProcess("loadSalesMonthly", "John ETL", ImmutableList.of(salesFactDaily),
                 ImmutableList.of(salesFactMonthly), "create table as select ", "plan", "id", "graph", "ETL");

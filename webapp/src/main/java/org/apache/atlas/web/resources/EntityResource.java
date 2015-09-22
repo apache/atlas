@@ -25,7 +25,6 @@ import org.apache.atlas.ParamChecker;
 import org.apache.atlas.TypeNotFoundException;
 import org.apache.atlas.repository.EntityNotFoundException;
 import org.apache.atlas.services.MetadataService;
-import org.apache.atlas.typesystem.types.ValueConversionException;
 import org.apache.atlas.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
@@ -59,7 +58,7 @@ import java.util.List;
  * An entity is an "instance" of a Type.  Entities conform to the definition
  * of the Type they correspond with.
  */
-@Path("entities")
+@Path("entity")
 @Singleton
 public class EntityResource {
 
@@ -82,40 +81,6 @@ public class EntityResource {
         this.metadataService = metadataService;
     }
 
-    /**
-     * Submits an entity definition (instance) corresponding to a given type.
-     */
-    @POST
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response submit(@Context HttpServletRequest request) {
-        try {
-            final String entity = Servlets.getRequestPayload(request);
-            LOG.debug("submitting entity {} ", entity);
-
-            final String guid = metadataService.createEntity(entity);
-
-            UriBuilder ub = uriInfo.getAbsolutePathBuilder();
-            URI locationURI = ub.path(guid).build();
-
-            JSONObject response = new JSONObject();
-            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(AtlasClient.GUID, guid);
-            response.put(AtlasClient.DEFINITION, metadataService.getEntityDefinition(guid));
-
-            return Response.created(locationURI).entity(response).build();
-
-        } catch (ValueConversionException ve) {
-            LOG.error("Unable to persist entity instance due to a desrialization error ", ve);
-            throw new WebApplicationException(Servlets.getErrorResponse(ve.getCause(), Response.Status.BAD_REQUEST));
-        } catch (AtlasException | IllegalArgumentException e) {
-            LOG.error("Unable to persist entity instance", e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (Throwable e) {
-            LOG.error("Unable to persist entity instance", e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
-        }
-    }
 
     /**
      * Fetch the complete definition of an entity given its GUID.
@@ -159,34 +124,47 @@ public class EntityResource {
     }
 
     /**
-     * Gets the list of entities for a given entity type.
+     * Fetch the complete definition of an entity given its qualified name.
      *
-     * @param entityType name of a type which is unique
+     * @param entityType
+     * @param attribute
+     * @param value
      */
     @GET
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response getEntityListByType(@QueryParam("type") String entityType) {
+    public Response getEntityDefinitionByAttribute(@QueryParam("type") String entityType,
+                                                   @QueryParam("property") String attribute,
+                                                   @QueryParam("value") String value) {
         try {
-            Preconditions.checkNotNull(entityType, "Entity type cannot be null");
+            LOG.debug("Fetching entity definition for type={}, qualified name={}", entityType, value);
+            ParamChecker.notEmpty(entityType, "type cannot be null");
+            ParamChecker.notEmpty(attribute, "attribute name cannot be null");
+            ParamChecker.notEmpty(value, "attribute value cannot be null");
 
-            LOG.debug("Fetching entity list for type={} ", entityType);
-            final List<String> entityList = metadataService.getEntityList(entityType);
+            final String entityDefinition = metadataService.getEntityDefinition(entityType, attribute, value);
 
             JSONObject response = new JSONObject();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(AtlasClient.TYPENAME, entityType);
-            response.put(AtlasClient.RESULTS, new JSONArray(entityList));
-            response.put(AtlasClient.COUNT, entityList.size());
 
-            return Response.ok(response).build();
-        } catch (NullPointerException e) {
-            LOG.error("Entity type cannot be null", e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+            Response.Status status = Response.Status.NOT_FOUND;
+            if (entityDefinition != null) {
+                response.put(AtlasClient.DEFINITION, entityDefinition);
+                status = Response.Status.OK;
+            } else {
+                response.put(AtlasClient.ERROR, Servlets.escapeJsonString(String.format("An entity with type={%s}, " +
+                        "qualifiedName={%s} does not exist", entityType, value)));
+            }
+
+            return Response.status(status).entity(response).build();
+
+        } catch (EntityNotFoundException e) {
+            LOG.error("An entity with type={} and qualifiedName={} does not exist", entityType, value, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (AtlasException | IllegalArgumentException e) {
-            LOG.error("Unable to get entity list for type {}", entityType, e);
+            LOG.error("Bad type={}, qualifiedName={}", entityType, value, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
-            LOG.error("Unable to get entity list for type {}", entityType, e);
+            LOG.error("Unable to get instance definition for type={}, qualifiedName={}", entityType, value, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }

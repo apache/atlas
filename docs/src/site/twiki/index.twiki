@@ -47,6 +47,8 @@ allows integration with the whole enterprise data ecosystem.
    * [[Search][Search]]
    * [[security][security]]
    * [[Configuration][Configuration]]
+   * Bridges
+      * [[Bridge-Hive][Hive Bridge]]
 
 
 ---++ API Documentation
@@ -56,4 +58,4 @@ allows integration with the whole enterprise data ecosystem.
 #LicenseInfo
 ---+ Licensing Information
 
-Metadata (Atlas) is distributed under [[http://www.apache.org/licenses/LICENSE-2.0][Apache License 2.0]].
+Atlas is distributed under [[http://www.apache.org/licenses/LICENSE-2.0][Apache License 2.0]].

@@ -45,12 +45,16 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import static org.apache.atlas.security.SecurityProperties.*;
+import static org.apache.atlas.security.SecurityProperties.CERT_STORES_CREDENTIAL_PROVIDER_PATH;
+import static org.apache.atlas.security.SecurityProperties.DEFAULT_KEYSTORE_FILE_LOCATION;
+import static org.apache.atlas.security.SecurityProperties.KEYSTORE_PASSWORD_KEY;
+import static org.apache.atlas.security.SecurityProperties.SERVER_CERT_PASSWORD_KEY;
+import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_PASSWORD_KEY;
 
 /**
  * Secure Test class for jersey resources.
  */
-public class SecureEmbeddedServerITBase {
+public class SecureEmbeddedServerTestBase {
 
 
     private SecureEmbeddedServer secureEmbeddedServer;

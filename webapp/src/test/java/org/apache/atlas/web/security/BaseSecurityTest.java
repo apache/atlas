@@ -113,6 +113,7 @@ public class BaseSecurityTest {
     protected PropertiesConfiguration getSSLConfiguration(String providerUrl) {
         String projectBaseDirectory = System.getProperty("projectBaseDir");
         final PropertiesConfiguration configuration = new PropertiesConfiguration();
+        configuration.setProperty("atlas.services.enabled", false);
         configuration.setProperty(TLS_ENABLED, true);
         configuration.setProperty(TRUSTSTORE_FILE_KEY, projectBaseDirectory + "/webapp/target/atlas.keystore");
         configuration.setProperty(KEYSTORE_FILE_KEY, projectBaseDirectory + "/webapp/target/atlas.keystore");

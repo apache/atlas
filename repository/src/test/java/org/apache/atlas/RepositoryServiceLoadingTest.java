@@ -19,11 +19,8 @@
 package org.apache.atlas;
 
 import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.util.TitanCleanup;
 import org.apache.atlas.repository.graph.GraphProvider;
-import org.apache.atlas.typesystem.types.TypeSystem;
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 

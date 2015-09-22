@@ -127,7 +127,8 @@ object QueryTestsUtils extends GraphUtils {
         def jdbcTraitDef = new HierarchicalTypeDefinition[TraitType](classOf[TraitType], "JdbcAccess", null,
             Array[AttributeDefinition]())
 
-        TypeSystem.getInstance().defineTypes(ImmutableList.of[StructTypeDefinition],
+        TypeSystem.getInstance().defineTypes(ImmutableList.of[EnumTypeDefinition],
+            ImmutableList.of[StructTypeDefinition],
             ImmutableList.of[HierarchicalTypeDefinition[TraitType]](dimTraitDef, piiTraitDef,
                 metricTraitDef, etlTraitDef, jdbcTraitDef),
             ImmutableList.of[HierarchicalTypeDefinition[ClassType]](dbClsDef, storageDescClsDef, columnClsDef, tblClsDef,

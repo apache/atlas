@@ -392,6 +392,7 @@
         </profile>
     </profiles>
     <modules>
+        <module>common</module>
         <module>typesystem</module>
         <module>notification</module>
         <module>client</module>
@@ -972,6 +973,12 @@
 
             <dependency>
                 <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
                 <artifactId>atlas-webapp</artifactId>
                 <version>${project.version}</version>
                 <type>war</type>
@@ -1298,7 +1305,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-site-plugin</artifactId>
-                    <version>3.2</version>
+                    <version>3.3</version>
                 </plugin>
 
                 <plugin>
@@ -1346,13 +1353,6 @@
                             <phase>process-test-resources</phase>
                             <goals>
                                 <goal>testCompile</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>attach-scaladocs</id>
-                            <phase>verify</phase>
-                            <goals>
-                                <goal>doc-jar</goal>
                             </goals>
                         </execution>
                     </executions>
@@ -1428,6 +1428,9 @@
                         -Xmx1024m -XX:MaxPermSize=512m -Dlog4j.configuration=atlas-log4j.xml
                         -Djava.net.preferIPv4Stack=true
                     </argLine>
+                    <excludes>
+                        <exclude>**/*Base*</exclude>
+                    </excludes>
                 </configuration>
                 <dependencies>
                     <dependency>

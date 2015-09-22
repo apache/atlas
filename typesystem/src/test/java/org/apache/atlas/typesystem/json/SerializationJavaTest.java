@@ -28,6 +28,7 @@ import org.apache.atlas.typesystem.types.AttributeDefinition;
 import org.apache.atlas.typesystem.types.BaseTest;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
+import org.apache.atlas.typesystem.types.EnumTypeDefinition;
 import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.StructTypeDefinition;
@@ -79,9 +80,9 @@ public class SerializationJavaTest extends BaseTest {
                 createTraitTypeDef("SecurityClearance", ImmutableList.<String>of(),
                         createRequiredAttrDef("level", DataTypes.INT_TYPE));
 
-        ts.defineTypes(ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(securityClearanceTypeDef),
-                ImmutableList.<HierarchicalTypeDefinition<ClassType>>of(deptTypeDef, personTypeDef, managerTypeDef));
+        ts.defineTypes(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
+                ImmutableList.of(securityClearanceTypeDef),
+                ImmutableList.of(deptTypeDef, personTypeDef, managerTypeDef));
 
         Referenceable hrDept = new Referenceable("Department");
         Referenceable john = new Referenceable("Person");
@@ -147,8 +148,8 @@ public class SerializationJavaTest extends BaseTest {
                 createTraitTypeDef("SecurityClearance2", ImmutableList.<String>of(),
                         createRequiredAttrDef("level", DataTypes.INT_TYPE));
 
-        ts.defineTypes(ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(securityClearanceTypeDef),
+        ts.defineTypes(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
+                ImmutableList.of(securityClearanceTypeDef),
                 ImmutableList.<HierarchicalTypeDefinition<ClassType>>of());
 
 

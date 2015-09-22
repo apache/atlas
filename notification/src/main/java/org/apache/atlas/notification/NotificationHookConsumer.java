@@ -18,37 +18,43 @@
 package org.apache.atlas.notification;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.AtlasServiceException;
+import org.apache.atlas.service.Service;
 import org.apache.commons.configuration.Configuration;
+import org.codehaus.jettison.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
-public class NotificationHookConsumer {
+/**
+ * Consumer of notifications from hooks e.g., hive hook etc
+ */
+@Singleton
+public class NotificationHookConsumer implements Service {
     private static final Logger LOG = LoggerFactory.getLogger(NotificationHookConsumer.class);
 
     public static final String CONSUMER_THREADS_PROPERTY = "atlas.notification.hook.numthreads";
     public static final String ATLAS_ENDPOINT_PROPERTY = "atlas.rest.address";
 
     @Inject
-    private static NotificationInterface notificationInterface;
+    private NotificationInterface notificationInterface;
+    private ExecutorService executors;
+    private AtlasClient atlasClient;
 
-    private static ExecutorService executors;
-    private static AtlasClient atlasClient;
-
-    public static void start() throws AtlasException {
+    @Override
+    public void start() throws AtlasException {
         Configuration applicationProperties = ApplicationProperties.get();
-        notificationInterface.initialize(applicationProperties);
 
         String atlasEndpoint = applicationProperties.getString(ATLAS_ENDPOINT_PROPERTY, "http://localhost:21000");
         atlasClient = new AtlasClient(atlasEndpoint);
-        int numThreads = applicationProperties.getInt(CONSUMER_THREADS_PROPERTY, 2);
+        int numThreads = applicationProperties.getInt(CONSUMER_THREADS_PROPERTY, 1);
         List<NotificationConsumer> consumers =
                 notificationInterface.createConsumers(NotificationInterface.NotificationType.HOOK, numThreads);
         executors = Executors.newFixedThreadPool(consumers.size());
@@ -58,12 +64,20 @@ public class NotificationHookConsumer {
         }
     }
 
-    public static void stop() {
-        notificationInterface.shutdown();
-        executors.shutdown();
+    @Override
+    public void stop() {
+        //Allow for completion of outstanding work
+        notificationInterface.close();
+        try {
+            if (executors != null && !executors.awaitTermination(5000, TimeUnit.MILLISECONDS)) {
+                LOG.error("Timed out waiting for consumer threads to shut down, exiting uncleanly");
+            }
+        } catch (InterruptedException e) {
+            LOG.error("Failure in shutting down consumers");
+        }
     }
 
-    static class HookConsumer implements Runnable {
+    class HookConsumer implements Runnable {
         private final NotificationConsumer consumer;
 
         public HookConsumer(NotificationConsumer consumerInterface) {
@@ -74,12 +88,13 @@ public class NotificationHookConsumer {
         public void run() {
             while(consumer.hasNext()) {
                 String entityJson = consumer.next();
-                LOG.debug("Processing message {}", entityJson);
+                LOG.info("Processing message {}", entityJson);
                 try {
-                    atlasClient.createEntity(entityJson);
-                } catch (AtlasServiceException e) {
+                    JSONArray guids = atlasClient.createEntity(new JSONArray(entityJson));
+                    LOG.info("Create entities with guid {}", guids);
+                } catch (Exception e) {
                     //todo handle failures
-                    LOG.warn("Error handling message {}", entityJson);
+                    LOG.warn("Error handling message {}", entityJson, e);
                 }
             }
         }

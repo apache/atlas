@@ -55,8 +55,8 @@ public class ObjectGraphWalker {
     throws AtlasException {
         this.typeSystem = typeSystem;
         this.nodeProcessor = nodeProcessor;
-        queue = new LinkedList<IReferenceableInstance>();
-        processedIds = new HashSet<Id>();
+        queue = new LinkedList<>();
+        processedIds = new HashSet<>();
         if (start != null) {
             visitReferenceableInstance(start);
         }
@@ -194,7 +194,7 @@ public class ObjectGraphWalker {
         }
     }
 
-    public static interface NodeProcessor {
+    public interface NodeProcessor {
 
         void processNode(Node nd) throws AtlasException;
     }

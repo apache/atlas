@@ -21,47 +21,30 @@ package org.apache.atlas.web.security;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.web.TestUtils;
-import org.apache.atlas.web.service.SecureEmbeddedServer;
 import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.security.alias.CredentialProvider;
-import org.apache.hadoop.security.alias.CredentialProviderFactory;
 import org.apache.hadoop.security.alias.JavaKeyStoreProvider;
-import org.eclipse.jetty.server.Server;
+import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.File;
-import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 
-import static org.apache.atlas.security.SecurityProperties.KEYSTORE_PASSWORD_KEY;
-import static org.apache.atlas.security.SecurityProperties.SERVER_CERT_PASSWORD_KEY;
-import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_PASSWORD_KEY;
+import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
 
-public class SSLIT extends BaseSSLAndKerberosTest {
-    private AtlasClient dgiCLient;
-    private Path jksPath;
-    private String providerUrl;
+/**
+ * Perform all the necessary setup steps for client and server comm over SSL/Kerberos, but then don't estalish a
+ * kerberos user for the invocation.  Need a separate use case since the Jersey layer cached the URL connection handler,
+ * which indirectly caches the kerberos delegation token.
+ */
+public class NegativeSSLAndKerberosTest extends BaseSSLAndKerberosTest {
+
     private TestSecureEmbeddedServer secureEmbeddedServer;
-
-    class TestSecureEmbeddedServer extends SecureEmbeddedServer {
-
-        public TestSecureEmbeddedServer(int port, String path) throws IOException {
-            super(port, path);
-        }
-
-        public Server getServer() {
-            return server;
-        }
-
-        @Override
-        public org.apache.commons.configuration.Configuration getConfiguration() {
-            return super.getConfiguration();
-        }
-    }
+    private String originalConf;
+    private AtlasClient dgiClient;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -70,18 +53,43 @@ public class SSLIT extends BaseSSLAndKerberosTest {
 
         String persistDir = TestUtils.getTempDirectory();
 
+        setupKDCAndPrincipals();
         setupCredentials();
 
+        // client will actually only leverage subset of these properties
         final PropertiesConfiguration configuration = getSSLConfiguration(providerUrl);
+        configuration.setProperty("atlas.http.authentication.type", "kerberos");
+
         TestUtils.writeConfiguration(configuration, persistDir + File.separator + "client.properties");
 
-        dgiCLient = new AtlasClient(DGI_URL) {
+        String confLocation = System.getProperty("atlas.conf");
+        URL url;
+        if (confLocation == null) {
+            url = NegativeSSLAndKerberosTest.class.getResource("/application.properties");
+        } else {
+            url = new File(confLocation, "application.properties").toURI().toURL();
+        }
+        configuration.load(url);
+
+        configuration.setProperty(TLS_ENABLED, true);
+        configuration.setProperty("atlas.http.authentication.enabled", "true");
+        configuration.setProperty("atlas.http.authentication.kerberos.principal", "HTTP/localhost@" + kdc.getRealm());
+        configuration.setProperty("atlas.http.authentication.kerberos.keytab", httpKeytabFile.getAbsolutePath());
+        configuration.setProperty("atlas.http.authentication.kerberos.name.rules",
+                "RULE:[1:$1@$0](.*@EXAMPLE.COM)s/@.*//\nDEFAULT");
+
+        TestUtils.writeConfiguration(configuration, persistDir + File.separator + "application.properties");
+
+        dgiClient = new AtlasClient(DGI_URL) {
             @Override
             protected PropertiesConfiguration getClientProperties() throws AtlasException {
                 return configuration;
             }
         };
 
+        // save original setting
+        originalConf = System.getProperty("atlas.conf");
+        System.setProperty("atlas.conf", persistDir);
         secureEmbeddedServer = new TestSecureEmbeddedServer(21443, getWarPath()) {
             @Override
             public PropertiesConfiguration getConfiguration() {
@@ -96,42 +104,24 @@ public class SSLIT extends BaseSSLAndKerberosTest {
         if (secureEmbeddedServer != null) {
             secureEmbeddedServer.getServer().stop();
         }
-    }
 
-    protected void setupCredentials() throws Exception {
-        Configuration conf = new Configuration(false);
+        if (kdc != null) {
+            kdc.stop();
+        }
 
-        File file = new File(jksPath.toUri().getPath());
-        file.delete();
-        conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, providerUrl);
-
-        CredentialProvider provider = CredentialProviderFactory.getProviders(conf).get(0);
-
-        // create new aliases
-        try {
-
-            char[] storepass = {'k', 'e', 'y', 'p', 'a', 's', 's'};
-            provider.createCredentialEntry(KEYSTORE_PASSWORD_KEY, storepass);
-
-            char[] trustpass = {'k', 'e', 'y', 'p', 'a', 's', 's'};
-            provider.createCredentialEntry(TRUSTSTORE_PASSWORD_KEY, trustpass);
-
-            char[] trustpass2 = {'k', 'e', 'y', 'p', 'a', 's', 's'};
-            provider.createCredentialEntry("ssl.client.truststore.password", trustpass2);
-
-            char[] certpass = {'k', 'e', 'y', 'p', 'a', 's', 's'};
-            provider.createCredentialEntry(SERVER_CERT_PASSWORD_KEY, certpass);
-
-            // write out so that it can be found in checks
-            provider.flush();
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
+        if (originalConf != null) {
+            System.setProperty("atlas.conf", originalConf);
         }
     }
 
     @Test
-    public void testService() throws Exception {
-        dgiCLient.listTypes();
-   }
+    public void testUnsecuredClient() throws Exception {
+        try {
+            dgiClient.listTypes();
+            Assert.fail("Should have failed with GSSException");
+        } catch(Exception e) {
+            e.printStackTrace();
+            Assert.assertTrue(e.getMessage().contains("Mechanism level: Failed to find any Kerberos tgt"));
+        }
+    }
 }

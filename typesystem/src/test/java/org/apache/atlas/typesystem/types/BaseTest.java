@@ -136,7 +136,8 @@ public abstract class BaseTest {
                 .createTraitTypeDef("SecurityClearance", ImmutableList.<String>of(),
                         TypesUtil.createRequiredAttrDef("level", DataTypes.INT_TYPE));
 
-        ts.defineTypes(ImmutableList.<StructTypeDefinition>of(), ImmutableList.of(securityClearanceTypeDef),
+        ts.defineTypes(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
+                ImmutableList.of(securityClearanceTypeDef),
                 ImmutableList.of(deptTypeDef, personTypeDef, managerTypeDef));
 
         ImmutableList.of(ts.getDataType(HierarchicalType.class, "SecurityClearance"),

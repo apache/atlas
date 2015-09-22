@@ -19,7 +19,6 @@
 package org.apache.atlas.repository;
 
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.types.AttributeInfo;
@@ -76,11 +75,12 @@ public interface MetadataRepository {
     /**
      * Creates an entity definition (instance) corresponding to a given type.
      *
-     * @param entity     entity (typed instance)
+     * @param entities     entity (typed instance)
      * @return a globally unique identifier
      * @throws RepositoryException
+     * @throws EntityExistsException
      */
-    String createEntity(IReferenceableInstance entity) throws RepositoryException;
+    String[] createEntities(ITypedReferenceableInstance... entities) throws RepositoryException, EntityExistsException;
 
     /**
      * Fetch the complete definition of an entity given its GUID.
@@ -158,4 +158,13 @@ public interface MetadataRepository {
      * @param value    property value
      */
     void updateEntity(String guid, String property, String value) throws RepositoryException;
+
+    /**
+     * Returns the entity for the given type and qualified name
+     * @param entityType
+     * @param attribute
+     * @param value
+     * @return entity instance
+     */
+    ITypedReferenceableInstance getEntityDefinition(String entityType, String attribute, String value) throws AtlasException;
 }

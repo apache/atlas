@@ -43,7 +43,7 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
             }, function searchSuccess(response) {
                 $scope.resultCount = response.count;
                 $scope.results = response.results;
-                $scope.resultRows = $scope.results.rows;
+                $scope.resultRows = $scope.results;
                 $scope.totalItems = $scope.resultCount;
                 $scope.transformedResults = {};
                 $scope.dataTransitioned = false;
@@ -59,7 +59,7 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
                 } else {
                     $scope.transformedResults = $scope.resultRows;
                 }
-                if ($scope.results.rows)
+                if ($scope.results)
                     $scope.searchMessage = $scope.resultCount + ' results matching your search query ' + $scope.query + ' were found';
                 else
                     $scope.searchMessage = '0 results matching your search query ' + $scope.query + ' were found';

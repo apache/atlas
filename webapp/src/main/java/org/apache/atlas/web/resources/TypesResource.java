@@ -21,6 +21,7 @@ package org.apache.atlas.web.resources;
 import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.TypeExistsException;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.web.util.Servlets;
@@ -96,6 +97,9 @@ public class TypesResource {
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
             response.put(AtlasClient.TYPES, typesResponse);
             return Response.status(ClientResponse.Status.CREATED).entity(response).build();
+        } catch (TypeExistsException e) {
+            LOG.error("Type already exists", e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.CONFLICT));
         } catch (AtlasException | IllegalArgumentException e) {
             LOG.error("Unable to persist types", e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));

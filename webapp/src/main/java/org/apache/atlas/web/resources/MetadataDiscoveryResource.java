@@ -88,28 +88,16 @@ public class MetadataDiscoveryResource {
 
             final String jsonResultStr = discoveryService.searchByDSL(query);
             response = new DSLJSONResponseBuilder().results(jsonResultStr).query(query).build();
+            return Response.ok(response).build();
 
         } catch (IllegalArgumentException e) {
             LOG.error("Unable to get entity list for empty query", e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+
         } catch (Throwable throwable) {
             LOG.error("Unable to get entity list for query {} using dsl", query, throwable);
-
-            try {   //fall back to full-text
-                final String jsonResultStr = discoveryService.searchByFullText(query);
-                response = new FullTextJSonResponseBuilder().results(jsonResultStr).query(query).build();
-
-            } catch (DiscoveryException | IllegalArgumentException e) {
-                LOG.error("Unable to get entity list for query {}", query, e);
-                throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-            } catch (Throwable e) {
-                LOG.error("Unable to get entity list for query {}", query, e);
-                throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
-            }
+            return searchUsingFullText(query);
         }
-
-        return Response.ok(response).build();
-
     }
 
     /**
@@ -267,7 +255,8 @@ public class MetadataDiscoveryResource {
             count(rowsJsonArr.length());
             queryType(QUERY_TYPE_DSL);
             JSONObject response = super.build();
-            response.put(AtlasClient.RESULTS, dslResults);
+            response.put(AtlasClient.RESULTS, rowsJsonArr);
+            response.put(AtlasClient.DATATYPE, dslResults.get(AtlasClient.DATATYPE));
             return response;
         }
 

@@ -146,7 +146,7 @@ class SerializationTest extends BaseTest {
       TypesUtil.createTraitTypeDef("SecurityClearance", ImmutableList.of[String],
         TypesUtil.createRequiredAttrDef("level", DataTypes.INT_TYPE))
 
-    ts.defineTypes(ImmutableList.of[StructTypeDefinition],
+    ts.defineTypes(ImmutableList.of[EnumTypeDefinition], ImmutableList.of[StructTypeDefinition],
       ImmutableList.of[HierarchicalTypeDefinition[TraitType]](securityClearanceTypeDef),
       ImmutableList.of[HierarchicalTypeDefinition[ClassType]](deptTypeDef, personTypeDef, managerTypeDef)
     )

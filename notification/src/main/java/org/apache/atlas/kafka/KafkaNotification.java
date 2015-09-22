@@ -30,6 +30,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
+import org.apache.atlas.service.Service;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -49,6 +50,9 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -57,13 +61,11 @@ import java.util.Properties;
 import java.util.concurrent.Future;
 
 @Singleton
-public class KafkaNotification extends NotificationInterface {
+public class KafkaNotification extends NotificationInterface implements Service {
     public static final Logger LOG = LoggerFactory.getLogger(KafkaNotification.class);
 
-    public static final String PROPERTY_PREFIX = NotificationInterface.PROPERTY_PREFIX + ".kafka";
+    public static final String PROPERTY_PREFIX = "atlas.kafka";
 
-    private static final int ATLAS_ZK_PORT = 9026;
-    private static final int ATLAS_KAFKA_PORT = 9027;
     private static final String ATLAS_KAFKA_DATA = "data";
 
     public static final String ATLAS_HOOK_TOPIC = "ATLAS_HOOK";
@@ -92,9 +94,8 @@ public class KafkaNotification extends NotificationInterface {
         }
     }
 
-    @Override
-    public void initialize(Configuration applicationProperties) throws AtlasException {
-        super.initialize(applicationProperties);
+    public KafkaNotification(Configuration applicationProperties) throws AtlasException {
+        super(applicationProperties);
         Configuration subsetConfiguration =
                 ApplicationProperties.getSubsetConfiguration(applicationProperties, PROPERTY_PREFIX);
         properties = ConfigurationConverter.getProperties(subsetConfiguration);
@@ -118,48 +119,71 @@ public class KafkaNotification extends NotificationInterface {
         properties.put(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY, "roundrobin");
         properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "smallest");
 
-        if (isEmbedded()) {
-            properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:" + ATLAS_KAFKA_PORT);
-            properties.setProperty("zookeeper.connect", "localhost:" + ATLAS_ZK_PORT);
-        }
-
         //todo new APIs not available yet
 //        consumer = new KafkaConsumer(properties);
 //        consumer.subscribe(ATLAS_HOOK_TOPIC);
     }
 
-    @Override
-    protected void _startService() throws IOException {
-        startZk();
-        startKafka();
+    private URL getURL(String url) throws MalformedURLException {
+        try {
+            return new URL(url);
+        } catch(MalformedURLException e) {
+            return new URL("http://" + url);
+        }
     }
 
-    private String startZk() throws IOException {
-        //todo read zk endpoint from config
-        this.factory = NIOServerCnxnFactory.createFactory(new InetSocketAddress("0.0.0.0", ATLAS_ZK_PORT), 1024);
+    private String startZk() throws IOException, InterruptedException, URISyntaxException {
+        String zkValue = properties.getProperty("zookeeper.connect");
+        LOG.debug("Starting zookeeper at {}", zkValue);
+
+        URL zkAddress = getURL(zkValue);
+        this.factory = NIOServerCnxnFactory.createFactory(
+                new InetSocketAddress(zkAddress.getHost(), zkAddress.getPort()), 1024);
         File snapshotDir = constructDir("zk/txn");
         File logDir = constructDir("zk/snap");
 
-        try {
-            factory.startup(new ZooKeeperServer(snapshotDir, logDir, 500));
-        } catch (InterruptedException e) {
-            throw new IOException(e);
-        }
+        factory.startup(new ZooKeeperServer(snapshotDir, logDir, 500));
         return factory.getLocalAddress().getAddress().toString();
     }
 
-    private void startKafka() {
+    private void startKafka() throws IOException, URISyntaxException {
+        String kafkaValue = properties.getProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG);
+        LOG.debug("Starting kafka at {}", kafkaValue);
+        URL kafkaAddress = getURL(kafkaValue);
+
         Properties brokerConfig = properties;
         brokerConfig.setProperty("broker.id", "1");
-        //todo read kafka endpoint from config
-        brokerConfig.setProperty("host.name", "0.0.0.0");
-        brokerConfig.setProperty("port", String.valueOf(ATLAS_KAFKA_PORT));
+        brokerConfig.setProperty("host.name", kafkaAddress.getHost());
+        brokerConfig.setProperty("port", String.valueOf(kafkaAddress.getPort()));
         brokerConfig.setProperty("log.dirs", constructDir("kafka").getAbsolutePath());
         brokerConfig.setProperty("log.flush.interval.messages", String.valueOf(1));
 
         kafkaServer = new KafkaServer(new KafkaConfig(brokerConfig), new SystemTime());
         kafkaServer.startup();
         LOG.debug("Embedded kafka server started with broker config {}", brokerConfig);
+    }
+
+    @Override
+    public void start() throws AtlasException {
+        if (isEmbedded()) {
+            try {
+                startZk();
+                startKafka();
+            } catch(Exception e) {
+                throw new AtlasException("Failed to start embedded kafka", e);
+            }
+        }
+    }
+
+    @Override
+    public void stop() {
+        if (kafkaServer != null) {
+            kafkaServer.shutdown();
+        }
+
+        if (factory != null) {
+            factory.shutdown();
+        }
     }
 
     private static class SystemTime implements Time {
@@ -189,29 +213,6 @@ public class KafkaNotification extends NotificationInterface {
             throw new RuntimeException("could not create temp directory: " + file.getAbsolutePath());
         }
         return file;
-    }
-
-    @Override
-    public void _shutdown() {
-        if (producer != null) {
-            producer.close();
-        }
-
-        if (consumer != null) {
-            consumer.close();
-        }
-
-        for (ConsumerConnector consumerConnector : consumerConnectors) {
-            consumerConnector.shutdown();
-        }
-
-        if (kafkaServer != null) {
-            kafkaServer.shutdown();
-        }
-
-        if (factory != null) {
-            factory.shutdown();
-        }
     }
 
     @Override
@@ -259,6 +260,24 @@ public class KafkaNotification extends NotificationInterface {
                 throw new NotificationException(e);
             }
         }
+    }
+
+    @Override
+    public void close() {
+        if (producer != null) {
+            producer.close();
+            producer = null;
+        }
+
+        if (consumer != null) {
+            consumer.close();
+            consumer = null;
+        }
+
+        for (ConsumerConnector consumerConnector : consumerConnectors) {
+            consumerConnector.shutdown();
+        }
+        consumerConnectors.clear();
     }
 
     //New API, not used now

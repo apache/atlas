@@ -32,6 +32,7 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
     @Inject
     GraphProvider<TitanGraph> graphProvider;
 
+    @Override
     public Object invoke(MethodInvocation invocation) throws Throwable {
         if (titanGraph == null) {
             titanGraph = graphProvider.get();
