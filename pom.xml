@@ -863,41 +863,9 @@
             </dependency>
 
             <dependency>
-                <groupId>com.thinkaurelius.titan</groupId>
-                <artifactId>titan-solr</artifactId>
-                <version>${titan.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>org.eclipse.jetty</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>javax.servlet</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>org.jruby.joni</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>org.eclipse.jetty.orbit</groupId>
-                    </exclusion>
-
-                    <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>org.restlet.jee</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>org.ow2.asm</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>org.apache.solr</groupId>
-                    </exclusion>
-                </exclusions>
-
+                <groupId>com.vividsolutions</groupId>
+                <artifactId>jts</artifactId>
+                <version>1.13</version>
             </dependency>
 
             <dependency>

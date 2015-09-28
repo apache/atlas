@@ -44,7 +44,6 @@ import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.diskstorage.indexing.KeyInformation;
 import com.thinkaurelius.titan.diskstorage.indexing.RawQuery;
-import com.thinkaurelius.titan.diskstorage.solr.transform.GeoToWktConverter;
 import com.thinkaurelius.titan.diskstorage.util.DefaultTransaction;
 import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
@@ -956,6 +955,21 @@ public class Solr5Index implements IndexProvider {
             }
         } finally {
             logger.info("Exiting solr wait");
+        }
+    }
+
+    private static class GeoToWktConverter {
+        /**
+         * {@link com.thinkaurelius.titan.core.attribute.Geoshape} stores Points in the String format: point[X.0,Y.0].
+         * Solr needs it to be in Well-Known Text format: POINT(X.0 Y.0)
+         */
+        static String convertToWktString(Geoshape fieldValue) throws BackendException {
+            if (fieldValue.getType() == Geoshape.Type.POINT) {
+                Geoshape.Point point = fieldValue.getPoint();
+                return "POINT(" + point.getLongitude() + " " + point.getLatitude() + ")";
+            } else {
+                throw new PermanentBackendException("Cannot index " + fieldValue.getType());
+            }
         }
     }
 
