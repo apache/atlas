@@ -22,6 +22,21 @@ atlas.graph.storage.backend=berkeleyje
 atlas.graph.storage.directory=data/berkley
 </verbatim>
 
+---+++++ Graph persistence engine - Hbase
+
+Basic configuration
+
+<verbatim>
+atlas.graph.storage.backend=hbase
+#For standalone mode , specify localhost
+#for distributed mode, specify zookeeper quorum here - For more information refer http://s3.thinkaurelius.com/docs/titan/current/hbase.html#_remote_server_mode_2
+atlas.graph.storage.hostname=<ZooKeeper Quorum>
+</verbatim>
+
+Advanced configuration
+
+Refer http://s3.thinkaurelius.com/docs/titan/0.5.4/titan-config-ref.html#_storage_hbase
+
 ---++++ Graph Search Index
 This section sets up the graph db - titan - to use an search indexing system. The example
 configuration below setsup to use an embedded Elastic search indexing system.
