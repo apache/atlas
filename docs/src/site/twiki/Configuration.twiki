@@ -49,6 +49,14 @@ atlas.graph.index.search.elasticsearch.local-mode=true
 atlas.graph.index.search.elasticsearch.create.sleep=2000
 </verbatim>
 
+---++++ Graph Search Index - Solr
+
+<verbatim>
+ atlas.graph.index.search.backend=solr5
+ atlas.graph.index.search.solr.mode=cloud
+ atlas.graph.index.search.solr.zookeeper-url=<the ZK quorum setup for solr as comma separated value> eg: 10.1.6.4:2181,10.1.6.5:2181
+</verbatim>
+
 ---+++ Hive Lineage Configs
 The higher layer services like hive lineage, schema, etc. are driven by the type system and this
 section encodes the specific types for the hive data model.
