@@ -24,7 +24,6 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.notification.NotificationInterface;
@@ -89,7 +88,7 @@ public class HiveHook implements ExecuteWithHookContext {
     private static final long keepAliveTimeDefault = 10;
 
     private static boolean typesRegistered = false;
-    private final Configuration atlasProperties;
+    private static Configuration atlasProperties;
 
     class HiveEvent {
         public HiveConf conf;
@@ -106,44 +105,43 @@ public class HiveHook implements ExecuteWithHookContext {
     }
 
     @Inject
-    private NotificationInterface notifInterface;
+    private static NotificationInterface notifInterface;
 
-    public HiveHook() throws AtlasException {
-        atlasProperties = ApplicationProperties.get(ApplicationProperties.CLIENT_PROPERTIES);
-
-        // initialize the async facility to process hook calls. We don't
-        // want to do this inline since it adds plenty of overhead for the query.
-        HiveConf hiveConf = new HiveConf();
-        int minThreads = hiveConf.getInt(MIN_THREADS, minThreadsDefault);
-        int maxThreads = hiveConf.getInt(MAX_THREADS, maxThreadsDefault);
-        long keepAliveTime = hiveConf.getLong(KEEP_ALIVE_TIME, keepAliveTimeDefault);
-
-        executor = new ThreadPoolExecutor(minThreads, maxThreads, keepAliveTime, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>(),
-                new ThreadFactoryBuilder().setNameFormat("Atlas Logger %d").build());
-
+    static {
         try {
-            Runtime.getRuntime().addShutdownHook(new Thread() {
-                @Override
-                public void run() {
-                    try {
-                        executor.shutdown();
-                        executor.awaitTermination(WAIT_TIME, TimeUnit.SECONDS);
-                        executor = null;
-                    } catch (InterruptedException ie) {
-                        LOG.info("Interrupt received in shutdown.");
-                    }
-                    // shutdown client
-                }
-            });
-        } catch (IllegalStateException is) {
-            LOG.info("Attempting to send msg while shutdown in progress.");
-        }
+            atlasProperties = ApplicationProperties.get(ApplicationProperties.CLIENT_PROPERTIES);
 
-        LOG.info("Created Atlas Hook");
+            // initialize the async facility to process hook calls. We don't
+            // want to do this inline since it adds plenty of overhead for the query.
+            int minThreads = atlasProperties.getInt(MIN_THREADS, minThreadsDefault);
+            int maxThreads = atlasProperties.getInt(MAX_THREADS, maxThreadsDefault);
+            long keepAliveTime = atlasProperties.getLong(KEEP_ALIVE_TIME, keepAliveTimeDefault);
+
+            executor = new ThreadPoolExecutor(minThreads, maxThreads, keepAliveTime, TimeUnit.MILLISECONDS,
+                    new LinkedBlockingQueue<Runnable>(),
+                    new ThreadFactoryBuilder().setNameFormat("Atlas Logger %d").build());
+
+                Runtime.getRuntime().addShutdownHook(new Thread() {
+                    @Override
+                    public void run() {
+                        try {
+                            executor.shutdown();
+                            executor.awaitTermination(WAIT_TIME, TimeUnit.SECONDS);
+                            executor = null;
+                        } catch (InterruptedException ie) {
+                            LOG.info("Interrupt received in shutdown.");
+                        }
+                        // shutdown client
+                    }
+                });
+        } catch (Exception e) {
+            LOG.info("Attempting to send msg while shutdown in progress.", e);
+        }
 
         Injector injector = Guice.createInjector(new NotificationModule());
         notifInterface = injector.getInstance(NotificationInterface.class);
+
+        LOG.info("Created Atlas Hook");
     }
 
     @Override
