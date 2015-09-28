@@ -22,6 +22,7 @@ hive_process(ClassType) - super types [Process] - attributes [startTime, endTime
 The entities are created and de-duped using unique qualified name. They provide namespace and can be used for querying as well:
 hive_db - attribute qualifiedName - clustername.dbname
 hive_table - attribute name - clustername.dbname.tablename
+hive_column - attribute qualifiedName - clustername.dbname.tablename.columnname
 hive_partition - attribute qualifiedName - clustername.dbname.tablename.partitionvalues
 hive_process - attribute qualifiedName - queryText
 

@@ -43,6 +43,11 @@
         </fileSet>
 
         <fileSet>
+            <directory>../target/site/apidocs</directory>
+            <outputDirectory>docs/apidocs</outputDirectory>
+        </fileSet>
+
+        <fileSet>
             <directory>src/bin</directory>
             <outputDirectory>bin</outputDirectory>
             <fileMode>0755</fileMode>

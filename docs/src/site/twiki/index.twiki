@@ -11,8 +11,7 @@ allows integration with the whole enterprise data ecosystem.
 
 ---+++ Data Classification
    * Import or define taxonomy business-oriented annotations for data
-   * Define, annotate, and automate capture of relationships between data sets and underlying
-   elements including source, target, and derivation processes
+   * Define, annotate, and automate capture of relationships between data sets and underlying elements including source, target, and derivation processes
    * Export metadata to third-party systems
 
 ---+++ Centralized Auditing
@@ -21,21 +20,18 @@ allows integration with the whole enterprise data ecosystem.
 
 ---+++ Search & Lineage (Browse)
    * Pre-defined navigation paths to explore the data classification and audit information
-   * Text-based search features locates relevant data and audit event across Data Lake quickly
-   and accurately
-   * Browse visualization of data set lineage allowing users to drill-down into operational,
-   security, and provenance related information
+   * Text-based search features locates relevant data and audit event across Data Lake quickly and accurately
+   * Browse visualization of data set lineage allowing users to drill-down into operational, security, and provenance related information
 
 ---+++ Security & Policy Engine
-   * Rationalize compliance policy at runtime based on data classification schemes, attributes
-   and roles.
-   * Advanced definition of policies for preventing data derivation based on classification
-   (i.e. re-identification) – Prohibitions
+   * Rationalize compliance policy at runtime based on data classification schemes, attributes and roles.
+   * Advanced definition of policies for preventing data derivation based on classification (i.e. re-identification) – Prohibitions
    * Column and Row level masking based on cell values and attibutes.
 
 
 ---++ Getting Started
 
+   * [[InstallationSteps][Install Steps]]
    * [[QuickStart][Quick Start Guide]]
 
 

@@ -77,7 +77,6 @@
             <item name="Wiki" href="https://cwiki.apache.org/confluence/display/ATLAS"/>
             <item name="News" href="https://cwiki.apache.org/confluence/display/ATLAS"/>
             <item name="Git" href="https://git-wip-us.apache.org/repos/asf/incubator-atlas.git" />
-            <item name="Svn" href="https://svn.apache.org/repos/asf/incubator/atlas" />
             <item name="Jira" href="https://issues.apache.org/jira/browse/ATLAS" />
             <item name="Powered by" href="https://cwiki.apache.org/confluence/display/ATLAS/PoweredBy" />
             <item name="Blog" href="http://blogs.apache.org/atlas/" />
@@ -99,8 +98,6 @@
         </menu>
 
         <menu name="Documentation">
-            <!-- current points to latest release -->
-            <item name="current" href="./index.html"/>
             <item name="0.5-incubating" href="./0.5.0-incubating/index.html"/>
         </menu>
 

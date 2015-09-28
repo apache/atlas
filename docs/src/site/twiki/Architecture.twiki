@@ -14,14 +14,14 @@ The hook can then build the entity and register the entity using Atlas REST APIs
 Atlas exposes notification interface and can be used for reliable entity registration by hook as well. The hook can send notification message containing the list of entities to be registered.  Atlas service contains hook consumer that listens to these messages and registers the entities.
 
 Available bridges are:
-* [[hive/Bridge-Hive][Hive Bridge]]
+   * [[Bridge-Hive][Hive Bridge]]
 
 
 ---++ Notification
 Notification is used for reliable entity registration from hooks and for entity/type change notifications. Atlas, by default, provides kafka integration, but its possible to provide other implementations as well. Atlas service starts embedded kafka server by default.
 
 Atlas also provides NotificationHookConsumer that runs in Atlas Service and listens to messages from hook and registers the entities in Atlas.
-<img src="images/twiki/notification.png" height="100" width="150" />
+<img src="images/twiki/notification.png" height="10" width="20" />
 
 
 

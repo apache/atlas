@@ -24,7 +24,7 @@
     <parent>
         <groupId>org.apache</groupId>
         <artifactId>apache</artifactId>
-        <version>13</version>
+        <version>17</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -355,6 +355,8 @@
         <!-- skips checkstyle and find bugs -->
         <skipCheck>false</skipCheck>
         <skipTests>false</skipTests>
+        <skipDocs>true</skipDocs>
+        <skipSite>true</skipSite>
         <projectBaseDir>${project.basedir}</projectBaseDir>
         <titan.storage.backend>berkeleyje</titan.storage.backend>
         <titan.index.backend>elasticsearch</titan.index.backend>
@@ -390,7 +392,18 @@
                 </plugins>
             </build>
         </profile>
+
+        <profile>
+            <id>dist</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <skipDocs>false</skipDocs>
+            </properties>
+        </profile>
     </profiles>
+
     <modules>
         <module>common</module>
         <module>typesystem</module>
@@ -451,18 +464,6 @@
             <url>http://repo.typesafe.com/typesafe/releases/</url>
         </repository>
     </repositories>
-    <distributionManagement>
-        <repository>
-            <id>${StagingId}</id>
-            <name>${StagingName}</name>
-            <url>${StagingUrl}</url>
-        </repository>
-        <snapshotRepository>
-            <id>${SnapshotsId}</id>
-            <name>${SnapshotsName}</name>
-            <url>${SnapshotsUrl}</url>
-        </snapshotRepository>
-    </distributionManagement>
 
     <dependencyManagement>
         <dependencies>
@@ -1305,7 +1306,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-site-plugin</artifactId>
-                    <version>3.3</version>
+                    <version>3.4</version>
                 </plugin>
 
                 <plugin>
@@ -1360,6 +1361,8 @@
                         <scalaVersion>${scala.version}</scalaVersion>
                         <recompileMode>incremental</recompileMode>
                         <useZincServer>true</useZincServer>
+                        <source>1.7</source>
+                        <target>1.7</target>
                         <args>
                             <arg>-unchecked</arg>
                             <arg>-deprecation</arg>
@@ -1642,6 +1645,40 @@
                         </fileset>
                     </filesets>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-site-plugin</artifactId>
+                <configuration>
+                    <skip>${skipSite}</skip>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <skip>${skipDocs}</skip>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>javadoc</id>
+                        <goals>
+                            <goal>javadoc</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                            <aggregate>true</aggregate>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>aggregate</id>
+                        <inherited>false</inherited>
+                        <goals>
+                            <goal>aggregate</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
