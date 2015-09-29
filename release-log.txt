@@ -9,6 +9,7 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (suma.shivaprasad via shwethags)
 
 ALL CHANGES:
+ATLAS-168 Atlas UI - Max column in hive 4 (darshankumar89 via shwethags)
 ATLAS-155 Images do not show up on the dashboard (darshankumar89 via shwethags)
 ATLAS-134 Some defects found when reviewing the source code (ltfxyz via shwethags)
 ATLAS-196 Fix solr documentation (suma.shivaprasad via shwethags)

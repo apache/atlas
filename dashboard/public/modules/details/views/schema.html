@@ -23,30 +23,13 @@
         <th>DataType</th>
     </tr>
     </thead>
-    <tbody>
+    <tbody ng-repeat="colm in details.values.columns">
     <tr>
-        <td> {{details.values.columns[0].values.name}}</td>
-        <td>{{details.values.columns[0].values.comment}}</td>
-        <td> {{details.values.columns[0].values.dataType}}</td>
+        <td> {{colm.values.name}}</td>
+        <td>{{colm.values.comment}}</td>
+        <td> {{colm.values.dataType}}</td>
 
     </tr>
-    <tr>
 
-        <td> {{details.values.columns[1].values.name}}</td>
-        <td>{{details.values.columns[1].values.comment}}</td>
-        <td> {{details.values.columns[1].values.dataType}}</td>
-    </tr>
-    <tr>
-
-        <td> {{details.values.columns[2].values.name}}</td>
-        <td>{{details.values.columns[2].values.comment}}</td>
-        <td> {{details.values.columns[2].values.dataType}}</td>
-    </tr>
-    <tr>
-
-        <td> {{details.values.columns[3].values.name}}</td>
-        <td>{{details.values.columns[3].values.comment}}</td>
-        <td> {{details.values.columns[3].values.dataType}}</td>
-    </tr>
     </tbody>
 </table>
