@@ -53,7 +53,7 @@ public class ObjectGraphTraversal implements Iterator<ObjectGraphTraversal.Insta
                 processCollection(elemType, val);
             } else if (dT.getTypeCategory() == DataTypes.TypeCategory.MAP) {
                 IDataType keyType = ((DataTypes.MapType) dT).getKeyType();
-                IDataType valueType = ((DataTypes.MapType) dT).getKeyType();
+                IDataType valueType = ((DataTypes.MapType) dT).getValueType();
                 processMap(keyType, valueType, val);
             } else if (dT.getTypeCategory() == DataTypes.TypeCategory.STRUCT
                     || dT.getTypeCategory() == DataTypes.TypeCategory.TRAIT) {

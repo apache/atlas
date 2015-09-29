@@ -91,7 +91,7 @@ public class ObjectGraphWalker {
                 visitCollection(elemType, val);
             } else if (dT.getTypeCategory() == DataTypes.TypeCategory.MAP) {
                 IDataType keyType = ((DataTypes.MapType) dT).getKeyType();
-                IDataType valueType = ((DataTypes.MapType) dT).getKeyType();
+                IDataType valueType = ((DataTypes.MapType) dT).getValueType();
                 visitMap(keyType, valueType, val);
             } else if (dT.getTypeCategory() == DataTypes.TypeCategory.STRUCT
                     || dT.getTypeCategory() == DataTypes.TypeCategory.TRAIT) {

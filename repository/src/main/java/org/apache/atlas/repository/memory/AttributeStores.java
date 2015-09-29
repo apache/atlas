@@ -55,7 +55,7 @@ public class AttributeStores {
             } else if (i.dataType() == DataTypes.BYTE_TYPE) {
                 return new ByteAttributeStore(i);
             } else if (i.dataType() == DataTypes.SHORT_TYPE) {
-                new ShortAttributeStore(i);
+                return new ShortAttributeStore(i);
             } else if (i.dataType() == DataTypes.INT_TYPE) {
                 return new IntAttributeStore(i);
             } else if (i.dataType() == DataTypes.LONG_TYPE) {

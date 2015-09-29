@@ -9,6 +9,7 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (suma.shivaprasad via shwethags)
 
 ALL CHANGES:
+ATLAS-134 Some defects found when reviewing the source code (ltfxyz via shwethags)
 ATLAS-196 Fix solr documentation (suma.shivaprasad via shwethags)
 ATLAS-195 Document Hbase configs (suma.shivaprasad via shwethags)
 ATLAS-102 Issue with SolrIndex (suma.shivaprasad via shwethags)
