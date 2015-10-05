@@ -27,9 +27,7 @@ class ParserTest extends BaseTest {
     @Before
     override def setup {
         super.setup
-
         QueryTestsUtils.setupTypes
-
     }
 
     @Test def testFrom: Unit = {
@@ -97,5 +95,14 @@ class ParserTest extends BaseTest {
           "select src.name as srcTable, dest.name as destTable withPath").right.get.toString
       )
     }
+
+  @Test def testList: Unit = {
+    val p = new QueryParser
+    println(p(
+      "Partition as p where values = ['2015-01-01']," +
+        " table where name = 'tableoq8ty'," +
+        " db where name = 'default' and clusterName = 'test'").right.get.toString
+    )
+  }
 
 }

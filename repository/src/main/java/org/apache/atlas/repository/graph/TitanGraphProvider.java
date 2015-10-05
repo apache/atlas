@@ -48,9 +48,9 @@ public class TitanGraphProvider implements GraphProvider<TitanGraph> {
      */
     private static final String GRAPH_PREFIX = "atlas.graph";
 
-    private static TitanGraph graphInstance;
+    private static volatile TitanGraph graphInstance;
 
-    private static Configuration getConfiguration() throws AtlasException {
+    public static Configuration getConfiguration() throws AtlasException {
         Configuration configProperties = ApplicationProperties.get();
         return ApplicationProperties.getSubsetConfiguration(configProperties, GRAPH_PREFIX);
     }
@@ -84,10 +84,7 @@ public class TitanGraphProvider implements GraphProvider<TitanGraph> {
         }
     }
 
-    @Override
-    @Singleton
-    @Provides
-    public TitanGraph get() {
+    public static TitanGraph getGraphInstance() {
         if(graphInstance == null) {
             synchronized (TitanGraphProvider.class) {
                 if(graphInstance == null) {
@@ -103,5 +100,12 @@ public class TitanGraphProvider implements GraphProvider<TitanGraph> {
             }
         }
         return graphInstance;
+    }
+
+    @Override
+    @Singleton
+    @Provides
+    public TitanGraph get() {
+        return getGraphInstance();
     }
 }

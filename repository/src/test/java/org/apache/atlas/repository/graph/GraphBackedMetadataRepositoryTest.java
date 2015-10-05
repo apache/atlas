@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -101,12 +101,12 @@ public class GraphBackedMetadataRepositoryTest {
         try {
             //TODO - Fix failure during shutdown while using BDB
             graphProvider.get().shutdown();
-        } catch(Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         try {
             TitanCleanup.clear(graphProvider.get());
-        } catch(Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -153,8 +153,8 @@ public class GraphBackedMetadataRepositoryTest {
     @Test(dependsOnMethods = "testSubmitEntity")
     public void testGetTraitLabel() throws Exception {
         Assert.assertEquals(
-                repositoryService.getTraitLabel(typeSystem.getDataType(ClassType.class, TestUtils.TABLE_TYPE),
-                        TestUtils.CLASSIFICATION), TestUtils.TABLE_TYPE + "." + TestUtils.CLASSIFICATION);
+            repositoryService.getTraitLabel(typeSystem.getDataType(ClassType.class, TestUtils.TABLE_TYPE),
+                TestUtils.CLASSIFICATION), TestUtils.TABLE_TYPE + "." + TestUtils.CLASSIFICATION);
     }
 
     @Test
@@ -264,8 +264,8 @@ public class GraphBackedMetadataRepositoryTest {
         final String traitName = "P_I_I";
 
         HierarchicalTypeDefinition<TraitType> piiTrait = TypesUtil
-                .createTraitTypeDef(traitName, ImmutableList.<String>of(),
-                        TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
+            .createTraitTypeDef(traitName, ImmutableList.<String>of(),
+                TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
         TraitType traitType = typeSystem.defineTraitType(piiTrait);
         ITypedStruct traitInstance = traitType.createInstance();
         traitInstance.set("type", "SSN");
@@ -414,7 +414,7 @@ public class GraphBackedMetadataRepositoryTest {
     @Test(dependsOnMethods = "testCreateEntity")
     public void testBug37860() throws Exception {
         String dslQuery = "hive_table as t where name = 'bar' "
-                + "database where name = 'foo' and description = 'foo database' select t";
+            + "database where name = 'foo' and description = 'foo database' select t";
         System.out.println("Executing dslQuery = " + dslQuery);
         String jsonResults = discoveryService.searchByDSL(dslQuery);
         Assert.assertNotNull(jsonResults);

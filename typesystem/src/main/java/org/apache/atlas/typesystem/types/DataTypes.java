@@ -48,9 +48,9 @@ public class DataTypes {
     public static BigDecimalType BIGDECIMAL_TYPE = new BigDecimalType();
     public static DateType DATE_TYPE = new DateType();
     public static StringType STRING_TYPE = new StringType();
-    static String ARRAY_TYPE_PREFIX = "array<";
+    public static String ARRAY_TYPE_PREFIX = "array<";
     static String ARRAY_TYPE_SUFFIX = ">";
-    static String MAP_TYPE_PREFIX = "map<";
+    public static String MAP_TYPE_PREFIX = "map<";
     static String MAP_TYPE_SUFFIX = ">";
 
     public static String arrayTypeName(String elemTypeName) {

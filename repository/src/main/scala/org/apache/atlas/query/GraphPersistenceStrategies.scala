@@ -18,18 +18,23 @@
 
 package org.apache.atlas.query
 
+import java.util
 import java.util.Date
 
 import com.thinkaurelius.titan.core.TitanVertex
-import com.tinkerpop.blueprints.Direction
+import com.tinkerpop.blueprints.{Vertex, Direction}
+import org.apache.atlas.AtlasException
 import org.apache.atlas.query.Expressions.{ComparisonExpression, ExpressionException}
 import org.apache.atlas.query.TypeUtils.FieldInfo
+import org.apache.atlas.repository.graph.GraphBackedMetadataRepository
 import org.apache.atlas.typesystem.persistence.Id
 import org.apache.atlas.typesystem.types.DataTypes._
 import org.apache.atlas.typesystem.types._
 import org.apache.atlas.typesystem.{ITypedInstance, ITypedReferenceableInstance}
 
 import scala.collection.JavaConversions._
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Represents the Bridge between the QueryProcessor and the Graph Persistence scheme used.
@@ -186,13 +191,15 @@ object GraphPersistenceStrategy1 extends GraphPersistenceStrategies {
     val superTypeAttributeName = "superTypeNames"
     val idAttributeName = "guid"
 
-    def edgeLabel(dataType: IDataType[_], aInfo: AttributeInfo) = s"${dataType.getName}.${aInfo.name}"
+    def edgeLabel(dataType: IDataType[_], aInfo: AttributeInfo) = s"__${dataType.getName}.${aInfo.name}"
+
+    def edgeLabel(propertyName: String) = s"__${propertyName}"
 
     val fieldPrefixInSelect = "it"
 
     def traitLabel(cls: IDataType[_], traitName: String) = s"${cls.getName}.$traitName"
 
-    def fieldNameInVertex(dataType: IDataType[_], aInfo: AttributeInfo) = aInfo.name
+    def fieldNameInVertex(dataType: IDataType[_], aInfo: AttributeInfo) = GraphBackedMetadataRepository.getQualifiedName(dataType, aInfo.name)
 
     def getIdFromVertex(dataTypeNm: String, v: TitanVertex): Id =
         new Id(v.getId.toString, 0, dataTypeNm)
@@ -209,6 +216,8 @@ object GraphPersistenceStrategy1 extends GraphPersistenceStrategies {
     def constructInstance[U](dataType: IDataType[U], v: AnyRef): U = {
         dataType.getTypeCategory match {
             case DataTypes.TypeCategory.PRIMITIVE => dataType.convert(v, Multiplicity.OPTIONAL)
+            case DataTypes.TypeCategory.ARRAY =>
+                dataType.convert(v, Multiplicity.OPTIONAL)
             case DataTypes.TypeCategory.STRUCT
               if dataType.getName == TypeSystem.getInstance().getIdType.getName => {
               val sType = dataType.asInstanceOf[StructType]
@@ -278,7 +287,7 @@ object GraphPersistenceStrategy1 extends GraphPersistenceStrategies {
             case DataTypes.TypeCategory.PRIMITIVE => loadPrimitiveAttribute(dataType, aInfo, i, v)
             case DataTypes.TypeCategory.ENUM => loadEnumAttribute(dataType, aInfo, i, v)
             case DataTypes.TypeCategory.ARRAY =>
-                throw new UnsupportedOperationException(s"load for ${aInfo.dataType()} not supported")
+                loadArrayAttribute(dataType, aInfo, i, v)
             case DataTypes.TypeCategory.MAP =>
                 throw new UnsupportedOperationException(s"load for ${aInfo.dataType()} not supported")
             case DataTypes.TypeCategory.STRUCT => loadStructAttribute(dataType, aInfo, i, v)
@@ -314,9 +323,26 @@ object GraphPersistenceStrategy1 extends GraphPersistenceStrategies {
         }
     }
 
-    private def loadStructAttribute(dataType: IDataType[_], aInfo: AttributeInfo,
+
+    private def loadArrayAttribute[T](dataType: IDataType[_], aInfo: AttributeInfo,
                                     i: ITypedInstance, v: TitanVertex): Unit = {
-        val eLabel = edgeLabel(FieldInfo(dataType, aInfo, null))
+        import scala.collection.JavaConversions._
+        val list: java.util.List[_] = v.getProperty(aInfo.name)
+        val arrayType: DataTypes.ArrayType = aInfo.dataType.asInstanceOf[ArrayType]
+
+        var values = new util.ArrayList[Any]
+        list.foreach( listElement =>
+            values += mapVertexToCollectionEntry(v, aInfo, arrayType.getElemType, i, listElement)
+        )
+        i.set(aInfo.name, values)
+    }
+
+    private def loadStructAttribute(dataType: IDataType[_], aInfo: AttributeInfo,
+                                    i: ITypedInstance, v: TitanVertex, edgeLbl: Option[String] = None): Unit = {
+        val eLabel = edgeLbl match {
+            case Some(x) => x
+            case None => edgeLabel(FieldInfo(dataType, aInfo, null))
+        }
         val edges = v.getEdges(Direction.OUT, eLabel)
         val sVertex = edges.iterator().next().getVertex(Direction.IN).asInstanceOf[TitanVertex]
         if (aInfo.dataType().getTypeCategory == DataTypes.TypeCategory.STRUCT) {
@@ -327,6 +353,23 @@ object GraphPersistenceStrategy1 extends GraphPersistenceStrategies {
         } else {
             val cInstance = constructClassInstance(aInfo.dataType().asInstanceOf[ClassType], sVertex)
             i.set(aInfo.name, cInstance)
+        }
+    }
+
+
+
+    private def mapVertexToCollectionEntry(instanceVertex: TitanVertex, attributeInfo: AttributeInfo, elementType: IDataType[_], i: ITypedInstance,  value: Any): Any = {
+        elementType.getTypeCategory match {
+            case DataTypes.TypeCategory.PRIMITIVE => value
+            case DataTypes.TypeCategory.ENUM => value
+            case DataTypes.TypeCategory.STRUCT =>
+                throw new UnsupportedOperationException(s"load for ${attributeInfo.dataType()} not supported")
+            case DataTypes.TypeCategory.TRAIT =>
+                throw new UnsupportedOperationException(s"load for ${attributeInfo.dataType()} not supported")
+            case DataTypes.TypeCategory.CLASS => //loadStructAttribute(elementType, attributeInfo, i, v)
+                throw new UnsupportedOperationException(s"load for ${attributeInfo.dataType()} not supported")
+            case _ =>
+                throw new UnsupportedOperationException(s"load for ${attributeInfo.dataType()} not supported")
         }
     }
 }

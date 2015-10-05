@@ -18,6 +18,8 @@
 
 package org.apache.atlas.discovery.graph;
 
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.TitanVertex;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.query.Expressions;
@@ -32,6 +34,7 @@ import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.AttributeInfo;
+import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.StructType;
@@ -40,6 +43,7 @@ import org.apache.atlas.typesystem.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -106,11 +110,18 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
             case PRIMITIVE:
             case ENUM:
                 return dataType.convert(value, Multiplicity.OPTIONAL);
-
             case ARRAY:
-                // todo
-                break;
-
+                DataTypes.ArrayType arrType = (DataTypes.ArrayType) dataType;
+                IDataType<?> elemType = arrType.getElemType();
+                ImmutableCollection.Builder result = ImmutableList.builder();
+                List list = (List) value;
+                for(Object listElement : list) {
+                    Object collectionEntry = constructCollectionEntry(elemType, listElement);
+                    if(collectionEntry != null) {
+                        result.add(collectionEntry);
+                    }
+                }
+                return (U)result.build();
             case MAP:
                 // todo
                 break;
@@ -128,7 +139,7 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
 
                 } else {
                     metadataRepository.getGraphToInstanceMapper()
-                            .mapVertexToInstance(structVertex, structInstance, structType.fieldMapping().fields);
+                        .mapVertexToInstance(structVertex, structInstance, structType.fieldMapping().fields);
                 }
                 return dataType.convert(structInstance, Multiplicity.OPTIONAL);
 
@@ -141,14 +152,14 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
                 // metadataRepository.getGraphToInstanceMapper().mapVertexToTraitInstance(
                 //        traitVertex, dataType.getName(), , traitType, traitInstance);
                 metadataRepository.getGraphToInstanceMapper()
-                        .mapVertexToInstance(traitVertex, traitInstance, traitType.fieldMapping().fields);
+                    .mapVertexToInstance(traitVertex, traitInstance, traitType.fieldMapping().fields);
                 break;
 
             case CLASS:
                 TitanVertex classVertex = (TitanVertex) value;
                 ITypedReferenceableInstance classInstance = metadataRepository.getGraphToInstanceMapper()
-                        .mapGraphToTypedInstance(classVertex.<String>getProperty(Constants.GUID_PROPERTY_KEY),
-                                classVertex);
+                    .mapGraphToTypedInstance(classVertex.<String>getProperty(Constants.GUID_PROPERTY_KEY),
+                        classVertex);
                 return dataType.convert(classInstance, Multiplicity.OPTIONAL);
 
             default:
@@ -159,6 +170,25 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
         }
 
         return null;
+    }
+
+    public <U> U constructCollectionEntry(IDataType<U> elementType, Object value) throws AtlasException {
+        switch (elementType.getTypeCategory()) {
+        case PRIMITIVE:
+        case ENUM:
+            return constructInstance(elementType, value);
+        //The array values in case of STRUCT, CLASS contain the edgeId if the outgoing edge which links to the STRUCT, CLASS vertex referenced
+        case STRUCT:
+        case CLASS:
+            String edgeId = (String) value;
+            return (U) metadataRepository.getGraphToInstanceMapper().getReferredEntity(edgeId, elementType);
+        case ARRAY:
+        case MAP:
+        case TRAIT:
+            return null;
+        default:
+            throw new UnsupportedOperationException("Load for type " + elementType + " in collections is not supported");
+        }
     }
 
     @Override

@@ -18,7 +18,11 @@
 
 package org.apache.atlas.query
 
+import java.util
+
+import com.google.common.collect.ImmutableCollection
 import org.apache.atlas.AtlasException
+import org.apache.atlas.typesystem.ITypedInstance
 import org.apache.atlas.typesystem.types.DataTypes.{ArrayType, PrimitiveType, TypeCategory}
 import org.apache.atlas.typesystem.types._
 
@@ -468,6 +472,22 @@ object Expressions {
         }
     }
 
+    import scala.collection.JavaConversions._
+    case class ListLiteral[_](dataType: ArrayType, rawValue: List[Expressions.Literal[_]]) extends Expression with LeafNode {
+
+        val lc : java.util.List[Expressions.Literal[_]] = rawValue
+        val value = if (rawValue != null) dataType.convert(lc, Multiplicity.REQUIRED)
+
+        override def toString = value match {
+            case l: Seq[_]
+               => l.mkString("[",",","]")
+            case c: ImmutableCollection[_] =>
+                c.asList.mkString("[",",","]")
+            case x =>
+                x.toString
+        }
+    }
+
     def literal[T](typ: PrimitiveType[T], rawValue: Any) = new Literal[T](typ, rawValue)
 
     def boolean(rawValue: Any) = literal(DataTypes.BOOLEAN_TYPE, rawValue)
@@ -491,6 +511,12 @@ object Expressions {
     def string(rawValue: Any) = literal(DataTypes.STRING_TYPE, rawValue)
 
     def date(rawValue: Any) = literal(DataTypes.DATE_TYPE, rawValue)
+
+    def list[_ <: PrimitiveType[_]](listElements: List[Expressions.Literal[_]]) =  {
+        listLiteral(TypeSystem.getInstance().defineArrayType(listElements.head.dataType), listElements)
+    }
+
+    def listLiteral[_ <: PrimitiveType[_]](typ: ArrayType, rawValue: List[Expressions.Literal[_]]) = new ListLiteral(typ, rawValue)
 
     case class ArithmeticExpression(symbol: String,
                                     left: Expression,
@@ -601,7 +627,9 @@ object Expressions {
                     s"datatype. Can not resolve due to unresolved children")
             }
 
-            if(left.dataType == DataTypes.DATE_TYPE) {
+            if(left.dataType.getName.startsWith(DataTypes.ARRAY_TYPE_PREFIX)) {
+                left.dataType;
+            } else if(left.dataType == DataTypes.DATE_TYPE) {
                 DataTypes.DATE_TYPE
             } else if (left.dataType != DataTypes.STRING_TYPE || right.dataType != DataTypes.STRING_TYPE) {
                 TypeUtils.combinedType(left.dataType, right.dataType)
@@ -651,7 +679,6 @@ object Expressions {
     val GEN_COL_ALIAS_PREFIX = "_col"
 
     case class SelectExpression(child: Expression, selectList: List[Expression]) extends Expression {
-
         val children = List(child) ::: selectList
         lazy val selectListWithAlias = selectList.zipWithIndex map {
             case (s: AliasExpression, _) => s

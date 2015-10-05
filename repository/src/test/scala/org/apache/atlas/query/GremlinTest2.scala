@@ -19,7 +19,10 @@
 package org.apache.atlas.query
 
 import com.thinkaurelius.titan.core.TitanGraph
+import com.thinkaurelius.titan.core.util.TitanCleanup
+import org.apache.atlas.discovery.graph.DefaultGraphPersistenceStrategy
 import org.apache.atlas.query.Expressions._
+import org.apache.atlas.repository.graph.{TitanGraphProvider, GraphBackedMetadataRepository}
 import org.apache.atlas.typesystem.types.TypeSystem
 import org.junit.runner.RunWith
 import org.scalatest._
@@ -29,15 +32,25 @@ import org.scalatest.junit.JUnitRunner
 class GremlinTest2 extends FunSuite with BeforeAndAfterAll with BaseGremlinTest {
 
   var g: TitanGraph = null
+  var gProvider:TitanGraphProvider = null;
+  var gp:GraphPersistenceStrategies = null;
 
   override def beforeAll() {
     TypeSystem.getInstance().reset()
     QueryTestsUtils.setupTypes
-    g = QueryTestsUtils.setupTestGraph
+    gProvider = new TitanGraphProvider();
+    gp = new DefaultGraphPersistenceStrategy(new GraphBackedMetadataRepository(gProvider))
+    g = QueryTestsUtils.setupTestGraph(gProvider)
   }
 
   override def afterAll() {
     g.shutdown()
+    try {
+      TitanCleanup.clear(g);
+    } catch {
+      case ex: Exception =>
+        print("Could not clear the graph ", ex);
+    }
   }
 
   test("testTraitSelect") {

@@ -40,6 +40,7 @@ import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.commons.io.FileUtils;
+import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -147,7 +148,7 @@ public class GraphRepoMapperScaleTest {
 
         searchWithOutIndex("hive_table.name", "bar-999");
         searchWithIndex("hive_table.name", "bar-999");
-        searchWithIndex("hive_table.created", Compare.GREATER_THAN_EQUAL, TestUtils.TEST_DATE_IN_LONG);
+        searchWithIndex("hive_table.created", Compare.GREATER_THAN_EQUAL, TestUtils.TEST_DATE_IN_LONG, 1000);
 
         for (int index = 500; index < 600; index++) {
             searchWithIndex("hive_table.name", "bar-" + index);
@@ -185,7 +186,7 @@ public class GraphRepoMapperScaleTest {
         }
     }
 
-    private void searchWithIndex(String key, Predicate searchPredicate, Object value) {
+    private void  searchWithIndex(String key, Predicate searchPredicate, Object value, int expectedResults) {
         TitanGraph graph = graphProvider.get();
         long start = System.currentTimeMillis();
         int count = 0;
@@ -197,6 +198,7 @@ public class GraphRepoMapperScaleTest {
         } finally {
             System.out.println("Search on [" + key + "=" + value + "] returned results: " + count + ", took " + (
                     System.currentTimeMillis() - start) + " ms");
+            Assert.assertEquals(count, expectedResults);
         }
     }
 

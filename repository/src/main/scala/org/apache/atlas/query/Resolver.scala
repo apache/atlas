@@ -112,7 +112,7 @@ object FieldValidator extends PartialFunction[Expression, Expression] {
         case fe@FieldExpression(fNm, fInfo, Some(child)) if isSrc(child) =>
             throw new ExpressionException(fe, s"srcType of field doesn't match input type")
         case hasFieldUnaryExpression(fNm, child) if child.dataType == srcDataType =>
-            hasFieldLeafExpression(fNm)
+            hasFieldLeafExpression(fNm, Some(child))
         case hF@hasFieldUnaryExpression(fNm, child) if isSrc(child) =>
             throw new ExpressionException(hF, s"srcType of field doesn't match input type")
         case isTraitUnaryExpression(fNm, child) if child.dataType == srcDataType =>

@@ -19,7 +19,10 @@
 package org.apache.atlas.query
 
 import com.thinkaurelius.titan.core.TitanGraph
+import com.thinkaurelius.titan.core.util.TitanCleanup
+import org.apache.atlas.discovery.graph.DefaultGraphPersistenceStrategy
 import org.apache.atlas.query.Expressions._
+import org.apache.atlas.repository.graph.{GraphBackedMetadataRepository, TitanGraphProvider}
 import org.apache.atlas.typesystem.types.TypeSystem
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
@@ -29,21 +32,31 @@ import org.scalatest.{Assertions, BeforeAndAfterAll, FunSuite}
 class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinTest {
 
     var g: TitanGraph = null
+    var gProvider:TitanGraphProvider = null;
+    var gp:GraphPersistenceStrategies = null;
 
     override def beforeAll() {
-        TypeSystem.getInstance().reset()
-        QueryTestsUtils.setupTypes
-        g = QueryTestsUtils.setupTestGraph
+      TypeSystem.getInstance().reset()
+      QueryTestsUtils.setupTypes
+      gProvider = new TitanGraphProvider();
+      gp = new DefaultGraphPersistenceStrategy(new GraphBackedMetadataRepository(gProvider))
+      g = QueryTestsUtils.setupTestGraph(gProvider)
     }
 
     override def afterAll() {
-        g.shutdown()
+      g.shutdown()
+      try {
+        TitanCleanup.clear(g);
+      } catch {
+        case ex: Exception =>
+          print("Could not clear the graph ", ex);
+      }
     }
 
     val PREFIX_SPACES_REGEX = ("\\n\\s*").r
 
     test("testInputTables") {
-        val r = QueryProcessor.evaluate(_class("LoadProcess").field("inputTables"), g)
+        val r = QueryProcessor.evaluate(_class("LoadProcess").field("inputTables"), g, gp)
         val x = r.toJson
         validateJson(r,"""{
                          |  "query":"LoadProcess inputTables",
@@ -82,7 +95,7 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinT
                          |      },
                          |      {
                          |        "name":"sd",
-                         |        "dataTypeName":"StorageDesc",
+                         |        "dataTypeName":"StorageDescriptor",
                          |        "multiplicity":{
                          |          "lower":1,
                          |          "upper":1,
@@ -117,7 +130,7 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinT
                          |      },
                          |      "created":"2014-12-11T02:35:58.440Z",
                          |      "sd":{
-                         |        "$typeName$":"StorageDesc",
+                         |        "$typeName$":"StorageDescriptor",
                          |        "version":0
                          |      },
                          |      "db":{
@@ -134,7 +147,7 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinT
                          |      },
                          |      "created":"2014-12-11T02:35:58.440Z",
                          |      "sd":{
-                         |        "$typeName$":"StorageDesc",
+                         |        "$typeName$":"StorageDescriptor",
                          |        "version":0
                          |      },
                          |      "db":{
@@ -156,7 +169,7 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinT
                          |      },
                          |      "created":"2014-12-11T02:35:58.440Z",
                          |      "sd":{
-                         |        "$typeName$":"StorageDesc",
+                         |        "$typeName$":"StorageDescriptor",
                          |        "version":0
                          |      },
                          |      "db":{
@@ -171,12 +184,12 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinT
     }
 
     test("testLoadProcessOut") {
-        val r = QueryProcessor.evaluate(_class("Table").field("LoadProcess").field("outputTable"), g)
+        val r = QueryProcessor.evaluate(_class("Table").field("LoadProcess").field("outputTable"), g, gp)
         validateJson(r, null)
     }
 
     test("testLineageAll") {
-        val r = QueryProcessor.evaluate(_class("Table").loop(id("LoadProcess").field("outputTable")), g)
+        val r = QueryProcessor.evaluate(_class("Table").loop(id("LoadProcess").field("outputTable")), g, gp)
         validateJson(r, """{
                           |  "query":"Table as _loop0 loop (LoadProcess outputTable)",
                           |  "dataType":{
@@ -214,7 +227,7 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinT
                           |      },
                           |      {
                           |        "name":"sd",
-                          |        "dataTypeName":"StorageDesc",
+                          |        "dataTypeName":"StorageDescriptor",
                           |        "multiplicity":{
                           |          "lower":1,
                           |          "upper":1,
@@ -244,13 +257,12 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinT
                           |    {
                           |      "$typeName$":"Table",
                           |      "$id$":{
-                          |        "id":"9216",
                           |        "$typeName$":"Table",
                           |        "version":0
                           |      },
                           |      "created":"2014-12-11T02:35:58.440Z",
                           |      "sd":{
-                          |        "$typeName$":"StorageDesc",
+                          |        "$typeName$":"StorageDescriptor",
                           |        "version":0
                           |      },
                           |      "db":{
@@ -267,7 +279,7 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinT
                           |      },
                           |      "created":"2014-12-11T02:35:58.440Z",
                           |      "sd":{
-                          |        "$typeName$":"StorageDesc",
+                          |        "$typeName$":"StorageDescriptor",
                           |        "version":0
                           |      },
                           |      "db":{
@@ -284,7 +296,7 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinT
                           |      },
                           |      "created":"2014-12-11T02:35:58.440Z",
                           |      "sd":{
-                          |        "$typeName$":"StorageDesc",
+                          |        "$typeName$":"StorageDescriptor",
                           |        "version":0
                           |      },
                           |      "db":{
@@ -301,7 +313,7 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinT
                           |      },
                           |      "created":"2014-12-11T02:35:58.440Z",
                           |      "sd":{
-                          |        "$typeName$":"StorageDesc",
+                          |        "$typeName$":"StorageDescriptor",
                           |        "version":0
                           |      },
                           |      "db":{
@@ -318,7 +330,7 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinT
                           |      },
                           |      "created":"2014-12-11T02:35:58.440Z",
                           |      "sd":{
-                          |        "$typeName$":"StorageDesc",
+                          |        "$typeName$":"StorageDescriptor",
                           |        "version":0
                           |      },
                           |      "db":{
@@ -333,7 +345,7 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinT
 
     test("testLineageAllSelect") {
         val r = QueryProcessor.evaluate(_class("Table").as("src").loop(id("LoadProcess").field("outputTable")).as("dest").
-            select(id("src").field("name").as("srcTable"), id("dest").field("name").as("destTable")), g)
+            select(id("src").field("name").as("srcTable"), id("dest").field("name").as("destTable")), g, gp)
         validateJson(r, """{
   "query":"Table as src loop (LoadProcess outputTable) as dest select src.name as srcTable, dest.name as destTable",
   "dataType":{
@@ -398,7 +410,7 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinT
     }
 
     test("testLineageFixedDepth") {
-        val r = QueryProcessor.evaluate(_class("Table").loop(id("LoadProcess").field("outputTable"), int(1)), g)
+        val r = QueryProcessor.evaluate(_class("Table").loop(id("LoadProcess").field("outputTable"), int(1)), g, gp)
         validateJson(r, """{
                           |  "query":"Table as _loop0 loop (LoadProcess outputTable) times 1",
                           |  "dataType":{
@@ -436,7 +448,7 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinT
                           |      },
                           |      {
                           |        "name":"sd",
-                          |        "dataTypeName":"StorageDesc",
+                          |        "dataTypeName":"StorageDescriptor",
                           |        "multiplicity":{
                           |          "lower":1,
                           |          "upper":1,
@@ -471,7 +483,7 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinT
                           |      },
                           |      "created":"2014-12-11T02:35:58.440Z",
                           |      "sd":{
-                          |        "$typeName$":"StorageDesc",
+                          |        "$typeName$":"StorageDescriptor",
                           |        "version":0
                           |      },
                           |      "db":{
@@ -488,7 +500,7 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinT
                           |      },
                           |      "created":"2014-12-11T02:35:58.440Z",
                           |      "sd":{
-                          |        "$typeName$":"StorageDesc",
+                          |        "$typeName$":"StorageDescriptor",
                           |        "version":0
                           |      },
                           |      "db":{
@@ -505,7 +517,7 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinT
                           |      },
                           |      "created":"2014-12-11T02:35:58.440Z",
                           |      "sd":{
-                          |        "$typeName$":"StorageDesc",
+                          |        "$typeName$":"StorageDescriptor",
                           |        "version":0
                           |      },
                           |      "db":{

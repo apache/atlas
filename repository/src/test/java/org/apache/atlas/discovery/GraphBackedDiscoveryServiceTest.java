@@ -20,16 +20,11 @@ package org.apache.atlas.discovery;
 
 import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.util.TitanCleanup;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Vertex;
+import org.apache.atlas.BaseHiveRepositoryTest;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
-import org.apache.atlas.query.HiveTitanSample;
-import org.apache.atlas.query.QueryTestsUtils;
 import org.apache.atlas.repository.graph.GraphBackedMetadataRepository;
-import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graph.GraphProvider;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
@@ -38,7 +33,6 @@ import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.TypeSystem;
-import org.apache.commons.io.FileUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
@@ -49,18 +43,13 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
-import javax.script.Bindings;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-import java.io.File;
 
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
 
 @Guice(modules = RepositoryMetadataModule.class)
-public class GraphBackedDiscoveryServiceTest {
+public class GraphBackedDiscoveryServiceTest extends BaseHiveRepositoryTest {
 
     @Inject
     private GraphProvider<TitanGraph> graphProvider;
@@ -73,12 +62,8 @@ public class GraphBackedDiscoveryServiceTest {
 
     @BeforeClass
     public void setUp() throws Exception {
+        super.setUp();
         TypeSystem typeSystem = TypeSystem.getInstance();
-        typeSystem.reset();
-
-        QueryTestsUtils.setupTypes();
-        setupSampleData();
-
         TestUtils.defineDeptEmployeeTypes(typeSystem);
 
         Referenceable hrDept = TestUtils.createDeptEg1(typeSystem);
@@ -88,42 +73,9 @@ public class GraphBackedDiscoveryServiceTest {
         repositoryService.createEntities(hrDept2);
     }
 
-    private void setupSampleData() throws ScriptException {
-        TitanGraph titanGraph = graphProvider.get();
-
-        ScriptEngineManager manager = new ScriptEngineManager();
-        ScriptEngine engine = manager.getEngineByName("gremlin-groovy");
-        Bindings bindings = engine.createBindings();
-        bindings.put("g", titanGraph);
-
-        String hiveGraphFile = FileUtils.getTempDirectory().getPath() + File.separator + System.nanoTime() + ".gson";
-        System.out.println("hiveGraphFile = " + hiveGraphFile);
-        HiveTitanSample.writeGson(hiveGraphFile);
-        bindings.put("hiveGraphFile", hiveGraphFile);
-
-        engine.eval("g.loadGraphSON(hiveGraphFile)", bindings);
-        titanGraph.commit();
-
-        System.out.println("*******************Graph Dump****************************");
-        for (Vertex vertex : titanGraph.getVertices()) {
-            System.out.println(GraphHelper.vertexString(vertex));
-        }
-
-        for (Edge edge : titanGraph.getEdges()) {
-            System.out.println(GraphHelper.edgeString(edge));
-        }
-        System.out.println("*******************Graph Dump****************************");
-    }
-
     @AfterClass
     public void tearDown() throws Exception {
-        TypeSystem.getInstance().reset();
-        graphProvider.get().shutdown();
-        try {
-            TitanCleanup.clear(graphProvider.get());
-        } catch(Exception e) {
-            e.printStackTrace();
-        }
+        super.tearDown();
     }
 
     @Test
@@ -176,54 +128,81 @@ public class GraphBackedDiscoveryServiceTest {
 
     @DataProvider(name = "dslQueriesProvider")
     private Object[][] createDSLQueries() {
-        return new String[][]{
-                {"from DB"}, {"DB"}, {"DB where DB.name=\"Reporting\""}, {"DB DB.name = \"Reporting\""},
-                {"DB where DB.name=\"Reporting\" select name, owner"}, {"DB has name"}, {"DB, Table"},
-                {"DB is JdbcAccess"},
+        return new Object[][]{
+                {"from hive_db", 2},
+                {"hive_db", 2},
+                {"hive_db where hive_db.name=\"Reporting\"", 1},
+                {"hive_db hive_db.name = \"Reporting\"", 1},
+                {"hive_db where hive_db.name=\"Reporting\" select name, owner", 1},
+                {"hive_db has name", 2},
+                {"hive_db, hive_table", 6},
+                {"View is JdbcAccess", 2},
+                {"hive_db as db1, hive_table where db1.name = \"Reporting\"", 0}, //Not working - ATLAS-145
+                // - Final working query -> discoveryService.searchByGremlin("L:{_var_0 = [] as Set;g.V().has(\"__typeName\", \"hive_db\").fill(_var_0);g.V().has(\"__superTypeNames\", \"hive_db\").fill(_var_0);_var_0._().as(\"db1\").in(\"__hive_table.db\").back(\"db1\").and(_().has(\"hive_db.name\", T.eq, \"Reporting\")).toList()}")
+                /*
+                {"hive_db, hive_process has name"}, //Invalid query
+                {"hive_db where hive_db.name=\"Reporting\" and hive_db.createTime < " + System.currentTimeMillis()}
+                */
+                {"from hive_table", 6},
+                {"hive_table", 6},
+                {"hive_table isa Dimension", 3},
+                {"hive_column where hive_column isa PII", 6},
+                {"View is Dimension" , 2},
+//                {"hive_column where hive_column isa PII select hive_column.name", 6}, //Not working - ATLAS-175
+                {"hive_column select hive_column.name", 27},
+                {"hive_column select name", 27},
+                {"hive_column where hive_column.name=\"customer_id\"", 4},
+                {"from hive_table select hive_table.name", 6},
+                {"hive_db where (name = \"Reporting\")", 1},
+                {"hive_db where (name = \"Reporting\") select name as _col_0, owner as _col_1", 1},
+                {"hive_db where hive_db is JdbcAccess", 0}, //Not supposed to work
+                {"hive_db hive_table", 6},
+                {"hive_db where hive_db has name", 2},
+                {"hive_db as db1 hive_table where (db1.name = \"Reporting\")", 0}, //Not working -> ATLAS-145
+                {"hive_db where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 ", 1},
+                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 ", 1},
+                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 ", 1},
+
             /*
-            {"DB, LoadProcess has name"},
-            {"DB as db1, Table where db1.name = \"Reporting\""},
-            {"DB where DB.name=\"Reporting\" and DB.createTime < " + System.currentTimeMillis()},
-            */
-                {"from Table"}, {"Table"}, {"Table is Dimension"}, {"Column where Column isa PII"},
-                {"View is Dimension"},
-            /*{"Column where Column isa PII select Column.name"},*/
-                {"Column select Column.name"}, {"Column select name"}, {"Column where Column.name=\"customer_id\""},
-                {"from Table select Table.name"}, {"DB where (name = \"Reporting\")"},
-                {"DB where (name = \"Reporting\") select name as _col_0, owner as _col_1"},
-                {"DB where DB is JdbcAccess"}, {"DB where DB has name"}, {"DB Table"}, {"DB where DB has name"},
-                {"DB as db1 Table where (db1.name = \"Reporting\")"},
-                {"DB where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 "},
-                {"Table where (name = \"sales_fact\" and created > \"2014-01-01\" ) select name as _col_0, created as _col_1 "},
-                {"Table where (name = \"sales_fact\" and created > \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, created as _col_1 "},
-            /*
-            todo: does not work
-            {"DB where (name = \"Reporting\") and ((createTime + 1) > 0)"},
-            {"DB as db1 Table as tab where ((db1.createTime + 1) > 0) and (db1.name = \"Reporting\") select db1.name
+            todo: does not work - ATLAS-146
+            {"hive_db where (name = \"Reporting\") and ((createTime + 1) > 0)"},
+            {"hive_db as db1 hive_table as tab where ((db1.createTime + 1) > 0) and (db1.name = \"Reporting\") select db1.name
             as dbName, tab.name as tabName"},
-            {"DB as db1 Table as tab where ((db1.createTime + 1) > 0) or (db1.name = \"Reporting\") select db1.name
+            {"hive_db as db1 hive_table as tab where ((db1.createTime + 1) > 0) or (db1.name = \"Reporting\") select db1.name
             as dbName, tab.name as tabName"},
-            {"DB as db1 Table as tab where ((db1.createTime + 1) > 0) and (db1.name = \"Reporting\") or db1 has owner
+            {"hive_db as db1 hive_table as tab where ((db1.createTime + 1) > 0) and (db1.name = \"Reporting\") or db1 has owner
              select db1.name as dbName, tab.name as tabName"},
-            {"DB as db1 Table as tab where ((db1.createTime + 1) > 0) and (db1.name = \"Reporting\") or db1 has owner
+            {"hive_db as db1 hive_table as tab where ((db1.createTime + 1) > 0) and (db1.name = \"Reporting\") or db1 has owner
              select db1.name as dbName, tab.name as tabName"},
             */
                 // trait searches
-                {"Dimension"},
-            /*{"Fact"}, - todo: does not work*/
-                {"JdbcAccess"}, {"ETL"}, {"Metric"}, {"PII"},
-                // Lineage
-                {"Table LoadProcess outputTable"}, {"Table loop (LoadProcess outputTable)"},
-                {"Table as _loop0 loop (LoadProcess outputTable) withPath"},
-                {"Table as src loop (LoadProcess outputTable) as dest select src.name as srcTable, dest.name as "
-                        + "destTable withPath"},
-                {"Table as t, sd, Column as c where t.name=\"sales_fact\" select c.name as colName, c.dataType as "
-                        + "colType"},
-                {"Table where name='sales_fact', db where name='Reporting'"}};
+                {"Dimension", 5},
+                {"JdbcAccess", 2},
+                {"ETL", 2},
+                {"Metric", 5},
+                {"PII", 6},
+
+                /* Lineage queries are fired through ClosureQuery and are tested through HiveLineageJerseyResourceIt in webapp module.
+                   Commenting out the below queries since DSL to Gremlin parsing/translation fails with lineage queries when there are array types
+                   used within loop expressions which is the case with DataSet.inputs and outputs.`
+                  // Lineage
+                  {"Table LoadProcess outputTable"}, {"Table loop (LoadProcess outputTable)"},
+                  {"Table as _loop0 loop (LoadProcess outputTable) withPath"},
+                  {"Table as src loop (LoadProcess outputTable) as dest select src.name as srcTable, dest.name as "
+                                        + "destTable withPath"},
+                 */
+//                {"hive_table as t, sd, hive_column as c where t.name=\"sales_fact\" select c.name as colName, c.dataType as "
+//                        + "colType", 0}, //Not working - ATLAS-145 and ATLAS-166
+
+                {"hive_table where name='sales_fact', db where name='Sales'", 1},
+                {"hive_table where name='sales_fact', db where name='Reporting'", 0},
+                {"hive_partition as p where values = ['2015-01-01']", 1},
+//              {"StorageDesc select cols", 6} //Not working since loading of lists needs to be fixed yet
+        };
     }
 
     @Test(dataProvider = "dslQueriesProvider")
-    public void testSearchByDSLQueries(String dslQuery) throws Exception {
+    public void  testSearchByDSLQueries(String dslQuery, Integer expectedNumRows) throws Exception {
         System.out.println("Executing dslQuery = " + dslQuery);
         String jsonResults = discoveryService.searchByDSL(dslQuery);
         Assert.assertNotNull(jsonResults);
@@ -242,7 +221,7 @@ public class GraphBackedDiscoveryServiceTest {
 
         JSONArray rows = results.getJSONArray("rows");
         Assert.assertNotNull(rows);
-        Assert.assertTrue(rows.length() >= 0); // some queries may not have any results
+        Assert.assertEquals(rows.length(), expectedNumRows.intValue()); // some queries may not have any results
         System.out.println("query [" + dslQuery + "] returned [" + rows.length() + "] rows");
     }
 

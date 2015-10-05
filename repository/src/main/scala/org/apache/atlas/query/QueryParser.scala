@@ -34,6 +34,8 @@ trait QueryKeywords {
 
     protected implicit def asParser(k: Keyword): Parser[String] = k.str
 
+    protected val LIST_LPAREN = Keyword("[")
+    protected val LIST_RPAREN = Keyword("]")
     protected val LPAREN = Keyword("(")
     protected val RPAREN = Keyword(")")
     protected val EQ = Keyword("=")
@@ -222,8 +224,11 @@ class QueryParser extends StandardTokenParsers with QueryKeywords with Expressio
 
     def multiERight = (STAR | DIV) ~ atomE ^^ { case op ~ r => (op, r)}
 
+    def atomE = literal | identifier | LPAREN ~> expr <~ RPAREN | listLiteral
 
-    def atomE = literal | identifier | LPAREN ~> expr <~ RPAREN
+    def listLiteral = LIST_LPAREN ~ rep1sep(literal, COMMA) ~ LIST_RPAREN ^^ {
+        case lp ~ le ~ rp => list(le)
+    }
 
     def identifier = rep1sep(ident, DOT) ^^ { l => l match {
         case h :: Nil => id(h)
@@ -237,7 +242,7 @@ class QueryParser extends StandardTokenParsers with QueryKeywords with Expressio
 
     def literal = booleanConstant ^^ {
         boolean(_)
-    } |
+        } |
         intConstant ^^ {
             int(_)
         } |
