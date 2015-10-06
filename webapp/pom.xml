@@ -70,7 +70,7 @@
             <id>install-node</id>
             <activation>
                 <file>
-                    <missing>../dashboard/v2/node</missing>
+                    <missing>../dashboard/node</missing>
                 </file>
             </activation>
             <build>
@@ -98,7 +98,7 @@
             <id>install-node_modules</id>
             <activation>
                 <file>
-                    <missing>../dashboard/v2/node_modules</missing>
+                    <missing>../dashboard/node_modules</missing>
                 </file>
             </activation>
             <build>
