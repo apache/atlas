@@ -17,7 +17,7 @@
  */
 'use strict';
 
-angular.module('dgc.lineage_io').controller('Lineage_ioController', ['$element', '$scope', '$state', '$stateParams', 'lodash', 'Lineage_ioResource', 'd3', 'DetailsResource', '$q',
+angular.module('dgc.lineage').controller('Lineage_ioController', ['$element', '$scope', '$state', '$stateParams', 'lodash', 'LineageResource', 'd3', 'DetailsResource', '$q',
     function($element, $scope, $state, $stateParams, _, LineageResource, d3, DetailsResource, $q) {
         var guidsList = [];
 
@@ -31,7 +31,7 @@ angular.module('dgc.lineage_io').controller('Lineage_ioController', ['$element',
                 }
             });
             return newEdgsObj;
-        }
+        } 
 
         function getCombinedLineageData(tableData, callRender) {
             LineageResource.get({
@@ -71,9 +71,10 @@ angular.module('dgc.lineage_io').controller('Lineage_ioController', ['$element',
                                 if (callRender) {
                                     render();
                                 }
-                            });
+                            }); 
+                    } else {
+                        $scope.requested = false;
                     }
-                    $scope.requested = false;
                 });
 
             });
@@ -101,7 +102,7 @@ angular.module('dgc.lineage_io').controller('Lineage_ioController', ['$element',
         }
 
         $scope.type = $element.parent().attr('data-table-type');
-        $scope.requested = false;
+        $scope.requested = true;
         $scope.height = $element[0].offsetHeight;
         $scope.width = $element[0].offsetWidth;
 
@@ -127,14 +128,13 @@ angular.module('dgc.lineage_io').controller('Lineage_ioController', ['$element',
         $scope.$on('render-lineage', function(event, lineageData) {
             if (lineageData.type === $scope.type) {
                 if (!$scope.lineageData) {
-                    if (!$scope.requested) {
+                    if ($scope.requested) {
                         if ($scope.type === 'io') {
                             console.log($scope.type);
                             getCombinedLineageData(lineageData, true);
                         } else {
                             getCombinedLineageData(lineageData, true);
-                        }
-                        $scope.requested = true;
+                        } 
                     }
                 } else {
                     render();
@@ -224,8 +224,7 @@ angular.module('dgc.lineage_io').controller('Lineage_ioController', ['$element',
             // ************** Generate the tree diagram  *****************
             var element = d3.select(container.element),
                 widthg = Math.max(container.width, 1100),
-                //heightg = Math.max(container.height, 500),
-                heightg = Math.max((window.innerHeight - 380), 500),
+                heightg = Math.max((window.innerHeight - 400), 500),
 
                 totalNodes = 0,
                 maxLabelLength = 0,
@@ -419,7 +418,7 @@ angular.module('dgc.lineage_io').controller('Lineage_ioController', ['$element',
                 var scale = (depthwidth === 10) ? zoomListener.scale() : 0.4;
                 var x = -source.y0;
                 var y = -source.x0;
-                x = x * scale + 150;
+                x = x * scale - 130;
                 y = y * scale + viewerHeight / 2;
                 d3.select('g').transition()
                     .duration(duration)
@@ -728,7 +727,7 @@ angular.module('dgc.lineage_io').controller('Lineage_ioController', ['$element',
             // Layout the tree initially and center on the root node.
             update(root);
             centerNode(root);
-
+            $scope.requested = false;
             var couplingParent1 = tree.nodes(root).filter(function(d) {
                 return d.name === 'cluster';
             })[0];

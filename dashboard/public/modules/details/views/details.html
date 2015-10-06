@@ -23,6 +23,7 @@
     <div role="tabpanel" class="col-lg-12">
         <h2>Name: {{details.values.name}}</h2>
         <h4>Description: {{details.values.description}}</h4>
+        <h4>Lineage: <ng-include data-table-type="io" src="'/modules/lineage/views/lineage_io.html'"/></h4> 
         <tabset>
             <tab heading="Details">
                 <table class="table table-bordered">
@@ -42,9 +43,9 @@
                 </table>
             </tab>
             <tab data-heading="Schema" data-ng-if="isTable"><ng-include src="'/modules/details/views/schema.html'"/></tab>
-            <tab data-heading="Output" data-ng-if="isTable" data-disable="!tableName" data-select="onActivate('outputs')"><ng-include data-table-type="outputs" src="'/modules/lineage/views/lineage.html'"/></tab>
+            <!-- <tab data-heading="Output" data-ng-if="isTable" data-disable="!tableName" data-select="onActivate('outputs')"><ng-include data-table-type="outputs" src="'/modules/lineage/views/lineage.html'"/></tab>
             <tab data-heading="Input"  data-ng-if="isTable" data-disable="!tableName" data-select="onActivate('inputs')"><ng-include data-table-type="inputs" src="'/modules/lineage/views/lineage.html'"/></tab>
-            <tab data-heading="Lineage"  data-ng-if="isTable" data-disable="!tableName" data-select="onActivate('io')"><ng-include data-table-type="io" src="'/modules/lineage_io/views/lineage_io.html'"/></tab>
+            <tab data-heading="Lineage"  data-ng-if="isTable" data-disable="!tableName" data-select="onActivate('io')"><ng-include data-table-type="io" src="'/modules/lineage_io/views/lineage_io.html'"/></tab> -->
         </tabset>
     </div>
 </div>
