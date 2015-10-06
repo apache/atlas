@@ -44,6 +44,7 @@
             <tab data-heading="Schema" data-ng-if="isTable"><ng-include src="'/modules/details/views/schema.html'"/></tab>
             <tab data-heading="Output" data-ng-if="isTable" data-disable="!tableName" data-select="onActivate('outputs')"><ng-include data-table-type="outputs" src="'/modules/lineage/views/lineage.html'"/></tab>
             <tab data-heading="Input"  data-ng-if="isTable" data-disable="!tableName" data-select="onActivate('inputs')"><ng-include data-table-type="inputs" src="'/modules/lineage/views/lineage.html'"/></tab>
+            <tab data-heading="Lineage"  data-ng-if="isTable" data-disable="!tableName" data-select="onActivate('io')"><ng-include data-table-type="io" src="'/modules/lineage_io/views/lineage_io.html'"/></tab>
         </tabset>
     </div>
 </div>

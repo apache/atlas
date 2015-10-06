@@ -18,4 +18,4 @@
 
 'use strict';
 
-angular.module('dgc.details', ['dgc.lineage', 'dgc.lineage_io']);
+angular.module('dgc.lineage_io', []);
