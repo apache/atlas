@@ -18,24 +18,24 @@
 
 'use strict';
 
-angular.module('dgc.home').controller('HeaderController', ['$scope', '$modal', function($scope, $modal) {
+angular.module('dgc.tags').factory('TagsResource', ['$resource', function($resource) {
+    return $resource('/api/atlas/types/:id', {}, {
+        query: {
+            method: 'GET',
+            transformResponse: function(data) {
+                var categories = [];
+                if (data) {
+                    angular.forEach(data.results, function(value) {
+                        categories.push({
+                            text: value
+                        });
+                    });
+                }
+                return categories;
+            },
+            responseType: 'json',
+            isArray: true
+        }
+    });
 
-    $scope.menu = [{
-        title: "Tags",
-        state: "tags"
-    }];
-
-    $scope.isCollapsed = true;
-    $scope.isLoggedIn = function() {
-        return true;
-    };
-
-    $scope.ShowAbout = function() {
-        $modal.open({
-            animation: true,
-            templateUrl: '/modules/about/views/about.html',
-            controller: 'AboutController',
-            size: 'lg'
-        });
-    };
 }]);

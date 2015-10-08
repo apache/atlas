@@ -1,0 +1,134 @@
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<div class="container">
+    <div class="appForm" data-ng-controller="TagsController">
+        <h4>Tag Definition</h4>
+
+        <form data-name="tagForm" class="form-horizontal" novalidate role="form">
+            <fieldset data-ng-disabled="saving">
+
+                <div class="form-group hide">
+                    <label for="category" class="col-sm-2 control-label">Category</label>
+
+                    <div class="col-sm-10">
+                        <select class="form-control" id="category" name="category" data-ng-model="category" data-ng-change="categoryChange()" required>
+                            <option value="{{key}}" data-ng-repeat="(key, value) in categoryList" ng-selected="{{key===category}}">{{key}}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group" data-ng-class="{'has-error': tagForm.typeName.$invalid && tagForm.typeName.$dirty}">
+                    <label for="typeName" class="col-sm-2 control-label">Tag Name</label>
+
+                    <div class="col-sm-10">
+                        <input type="text" class="form-control" name="typeName" id="typeName" placeholder="Tag Name" data-ng-model="tagModel.typeName" required/>
+                    </div>
+                </div>
+                <ng-form name="attributeForm">
+                    <div class="form-group" data-ng-class="{'has-error': attributeForm.name.$invalid && attributeForm.name.$dirty}"
+                         data-ng-repeat-start="attribute in tagModel.attributeDefinitions">
+                        <label for="attributeId_{{$index}}" class="col-sm-2 control-label">Attribute name</label>
+
+                        <div class="col-sm-10">
+                          <!--   <div class="input-group"> -->
+                                <input type="text" class="form-control" name="name" id="attributeId_{{$index}}" placeholder="Attribute name" data-ng-model="attribute.name"
+                                       required/>
+                             <!--    <i class="input-group-addon fa fa-2x" data-ng-class="{'fa-angle-double-down':!attribute.$$show, 'fa-angle-double-up':attribute.$$show}"
+                                   data-ng-click="attribute.$$show=!attribute.$$show"></i> -->
+                           <!--  </div> -->
+                        </div>
+                    </div>
+                    <div class="form-group" data-ng-class="{'has-error': attributeForm.name.$invalid && attributeForm.name.$dirty}" data-ng-show="attribute.$$show">
+                        <label for="attributeDatatype_{{$index}}" class="col-sm-2 control-label">Data Type Name</label>
+
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" name="name" id="attributeDatatype_{{$index}}" placeholder="dataTypeName"
+                                   data-ng-model="attribute.dataTypeName"/>
+                        </div>
+                    </div>
+                    <div class="form-group" data-ng-class="{'has-error': attributeForm.name.$invalid && attributeForm.name.$dirty}" data-ng-show="attribute.$$show">
+                        <label for="attributeMultiplicity_{{$index}}" class="col-sm-2 control-label">Multiplicity</label>
+
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" name="name" id="attributeMultiplicity_{{$index}}" placeholder="multiplicity"
+                                   data-ng-model="attribute.multiplicity"/>
+                        </div>
+                    </div>
+
+                    <div class="form-group" data-ng-class="{'has-error': attributeForm.name.$invalid && attributeForm.name.$dirty}" data-ng-show="attribute.$$show">
+                        <label for="attributeIscomposite_{{$index}}" class="col-sm-2 control-label">isComposite</label>
+
+                        <div class="col-sm-10">
+                            <span class ="btnToggle">
+                            <a class="btn-sm " ng-class="{true: 'btn-primary'}[attribute.isComposite]" ng-click="attribute.isComposite = true">true </a>
+                            <a class="btn-sm " ng-class="{false: 'btn-danger'}[attribute.isComposite]" ng-click="attribute.isComposite = false"> false </a>
+
+                                </span>
+                        </div>
+                    </div>
+                    <div class="form-group" data-ng-class="{'has-error': attributeForm.name.$invalid && attributeForm.name.$dirty}" data-ng-show="attribute.$$show">
+                        <label for="attributeIsunique_{{$index}}" class="col-sm-2 control-label">isUnique</label>
+
+                        <div class="col-sm-10">
+                            <span class ="btnToggle">
+                            <a class="btn-sm " ng-class="{true: 'btn-primary'}[attribute.isUnique]" ng-click="attribute.isUnique = true">true </a>
+                            <a class="btn-sm " ng-class="{false: 'btn-danger'}[attribute.isUnique]" ng-click="attribute.isUnique = false"> false </a>
+
+                                </span>
+                        </div>
+                    </div>
+                    <div class="form-group" data-ng-class="{'has-error': attributeForm.name.$invalid && attributeForm.name.$dirty}" data-ng-show="attribute.$$show">
+                        <label for="attributeIndexable_{{$index}}" class="col-sm-2 control-label">isIndexable</label>
+
+                        <div class="col-sm-10">
+                            <span class ="btnToggle">
+                            <a class="btn-sm " ng-class="{true: 'btn-primary'}[attribute.isIndexable]" ng-click="attribute.isIndexable = true">true </a>
+                            <a class="btn-sm " ng-class="{false: 'btn-danger'}[attribute.isIndexable]" ng-click="attribute.isIndexable = false"> false </a>
+
+                                </span>
+                        </div>
+                    </div>
+
+
+                    <div class="form-group" data-ng-class="{'has-error': attributeForm.name.$invalid && attributeForm.name.$dirty}" data-ng-show="attribute.$$show"
+                         data-ng-repeat-end>
+                        <label for="attributeReverseName_{{$index}}" class="col-sm-2 control-label">reverseAttributeName</label>
+
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" name="reverseName" id="attributeReverseName_{{$index}}" placeholder="reverseAttributeName"
+                                   data-ng-model="attribute.reverseAttributeName"/>
+                        </div>
+                    </div>
+                </ng-form>
+                <div class="form-group text-right">
+                    <div class="col-sm-offset-2 col-sm-10">
+
+                        <button data-ng-click="addAttribute()" class="btn btn-default">Add Attribute</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-offset-2 col-sm-10">
+                        <button type="submit" data-ng-click="save(tagForm)" data-ng-disabled="tagForm.$invalid" class="btn btn-default">Save</button>
+                    </div>
+                </div>
+            </fieldset>
+        </form>
+        <div class="row" data-ng-show="savedTag">
+            <pre>{{savedTag | json}}</pre>
+        </div>
+    </div>
+</div>

@@ -127,3 +127,9 @@ footer.navbar-bottom img {
     padding-left: 10px;
     padding-right: 10px;
 }
+
+.btnToggle
+{
+    border: 1px solid #CCCCCC;
+    padding: 5px;
+}

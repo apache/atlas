@@ -18,24 +18,11 @@
 
 'use strict';
 
-angular.module('dgc.home').controller('HeaderController', ['$scope', '$modal', function($scope, $modal) {
-
-    $scope.menu = [{
-        title: "Tags",
-        state: "tags"
-    }];
-
-    $scope.isCollapsed = true;
-    $scope.isLoggedIn = function() {
-        return true;
-    };
-
-    $scope.ShowAbout = function() {
-        $modal.open({
-            animation: true,
-            templateUrl: '/modules/about/views/about.html',
-            controller: 'AboutController',
-            size: 'lg'
+angular.module('dgc.tags').config(['$stateProvider',
+    function($stateProvider) {
+        $stateProvider.state('tags', {
+            url: '/tags',
+            templateUrl: '/modules/tags/views/add.html'
         });
-    };
-}]);
+    }
+]);
