@@ -21,13 +21,13 @@ package org.apache.atlas.typesystem.types;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.testng.Assert;
+import org.testng.annotations.Test;
+import org.testng.annotations.BeforeMethod;
 
 public class ClassTest extends BaseTest {
 
-    @Before
+    @BeforeMethod
     public void setup() throws Exception {
         super.setup();
     }

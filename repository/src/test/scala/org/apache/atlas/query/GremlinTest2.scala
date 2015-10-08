@@ -24,18 +24,16 @@ import org.apache.atlas.discovery.graph.DefaultGraphPersistenceStrategy
 import org.apache.atlas.query.Expressions._
 import org.apache.atlas.repository.graph.{TitanGraphProvider, GraphBackedMetadataRepository}
 import org.apache.atlas.typesystem.types.TypeSystem
-import org.junit.runner.RunWith
-import org.scalatest._
-import org.scalatest.junit.JUnitRunner
+import org.testng.annotations.{Test,BeforeClass,AfterClass}
 
-@RunWith(classOf[JUnitRunner])
-class GremlinTest2 extends FunSuite with BeforeAndAfterAll with BaseGremlinTest {
+class GremlinTest2 extends BaseGremlinTest {
 
   var g: TitanGraph = null
   var gProvider:TitanGraphProvider = null;
   var gp:GraphPersistenceStrategies = null;
 
-  override def beforeAll() {
+  @BeforeClass
+  def beforeAll() {
     TypeSystem.getInstance().reset()
     QueryTestsUtils.setupTypes
     gProvider = new TitanGraphProvider();
@@ -43,7 +41,8 @@ class GremlinTest2 extends FunSuite with BeforeAndAfterAll with BaseGremlinTest 
     g = QueryTestsUtils.setupTestGraph(gProvider)
   }
 
-  override def afterAll() {
+  @AfterClass
+  def afterAll() {
     g.shutdown()
     try {
       TitanCleanup.clear(g);
@@ -53,43 +52,43 @@ class GremlinTest2 extends FunSuite with BeforeAndAfterAll with BaseGremlinTest 
     }
   }
 
-  test("testTraitSelect") {
+  @Test def testTraitSelect {
     val r = QueryProcessor.evaluate(_class("Table").as("t").join("Dimension").as("dim").select(id("t"), id("dim")), g)
     validateJson(r, "{\n  \"query\":\"Table as t.Dimension as dim select t as _col_0, dim as _col_1\",\n  \"dataType\":{\n    \"typeName\":\"\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"_col_0\",\n        \"dataTypeName\":\"Table\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"_col_1\",\n        \"dataTypeName\":\"Dimension\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"\",\n      \"_col_1\":{\n        \"$typeName$\":\"Dimension\"\n      },\n      \"_col_0\":{\n        \"id\":\"3328\",\n        \"$typeName$\":\"Table\",\n        \"version\":0\n      }\n    },\n    {\n      \"$typeName$\":\"\",\n      \"_col_1\":{\n        \"$typeName$\":\"Dimension\"\n      },\n      \"_col_0\":{\n        \"id\":\"4864\",\n        \"$typeName$\":\"Table\",\n        \"version\":0\n      }\n    },\n    {\n      \"$typeName$\":\"\",\n      \"_col_1\":{\n        \"$typeName$\":\"Dimension\"\n      },\n      \"_col_0\":{\n        \"id\":\"6656\",\n        \"$typeName$\":\"Table\",\n        \"version\":0\n      }\n    }\n  ]\n}")
   }
 
-  test("testTrait") {
+  @Test def testTrait {
     val r = QueryProcessor.evaluate(_trait("Dimension"), g)
     validateJson(r)
   }
 
-  test("testTraitInstance") {
+  @Test def testTraitInstance {
     val r = QueryProcessor.evaluate(_trait("Dimension").traitInstance(), g)
     validateJson(r)
   }
 
-  test("testInstanceAddedToFilter") {
+  @Test def testInstanceAddedToFilter {
     val r = QueryProcessor.evaluate(_trait("Dimension").hasField("typeName"), g)
     validateJson(r)
   }
 
-  test("testInstanceFilter") {
+  @Test def testInstanceFilter {
     val r = QueryProcessor.evaluate(_trait("Dimension").traitInstance().hasField("name"), g)
     validateJson(r)
   }
 
-  test("testLineageWithPath") {
+  @Test def testLineageWithPath {
     val r = QueryProcessor.evaluate(_class("Table").loop(id("LoadProcess").field("outputTable")).path(), g)
     validateJson(r)
   }
 
-  test("testLineageAllSelectWithPath") {
+  @Test def testLineageAllSelectWithPath {
     val r = QueryProcessor.evaluate(_class("Table").as("src").loop(id("LoadProcess").field("outputTable")).as("dest").
       select(id("src").field("name").as("srcTable"), id("dest").field("name").as("destTable")).path(), g)
     validateJson(r)
   }
 
-  test("testLineageAllSelectWithPathFromParser") {
+  @Test def testLineageAllSelectWithPathFromParser {
     val p = new QueryParser
     val e = p("Table as src loop (LoadProcess outputTable) as dest " +
       "select src.name as srcTable, dest.name as destTable withPath").right.get
@@ -98,7 +97,7 @@ class GremlinTest2 extends FunSuite with BeforeAndAfterAll with BaseGremlinTest 
     validateJson(r)
   }
 
-  test("testLineageAllSelectWithPathFromParser2") {
+  @Test def testLineageAllSelectWithPathFromParser2 {
     val p = new QueryParser
 
     val e = p("Table as src loop (`LoadProcess->outputTable` inputTables) as dest " +
@@ -107,7 +106,7 @@ class GremlinTest2 extends FunSuite with BeforeAndAfterAll with BaseGremlinTest 
     validateJson(r)
   }
 
-  test("testHighLevelLineage") {
+  @Test def testHighLevelLineage {
         val r = HiveLineageQuery("Table", "sales_fact_monthly_mv",
           "LoadProcess",
           "inputTables",
@@ -116,7 +115,7 @@ class GremlinTest2 extends FunSuite with BeforeAndAfterAll with BaseGremlinTest 
     validateJson(r)
   }
 
-  test("testHighLevelLineageReturnGraph") {
+  @Test def testHighLevelLineageReturnGraph {
     val r = HiveLineageQuery("Table", "sales_fact_monthly_mv",
       "LoadProcess",
       "inputTables",
@@ -127,7 +126,7 @@ class GremlinTest2 extends FunSuite with BeforeAndAfterAll with BaseGremlinTest 
     //validateJson(r)
   }
 
-  test("testHighLevelWhereUsed") {
+  @Test def testHighLevelWhereUsed {
     val r = HiveWhereUsedQuery("Table", "sales_fact",
       "LoadProcess",
       "inputTables",
@@ -136,7 +135,7 @@ class GremlinTest2 extends FunSuite with BeforeAndAfterAll with BaseGremlinTest 
     validateJson(r)
   }
 
-  test("testHighLevelWhereUsedReturnGraph") {
+  @Test def testHighLevelWhereUsedReturnGraph {
     val r = HiveWhereUsedQuery("Table", "sales_fact",
       "LoadProcess",
       "inputTables",

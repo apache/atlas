@@ -9,6 +9,7 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (sumasai via shwethags)
 
 ALL CHANGES:
+ATLAS-209 Use testng and delete junit and scalatest (ltfxyz via shwethags)
 ATLAS-163 New Trait UI (Tag) ( darshankumar89 via sumasai)
 ATLAS-199 webapp build fails (grunt + tests) ( darshankumar89 via sumasai)
 ATLAS-204 Lineage I/O Lineage Enhancement ( Anilsg via sumasai )

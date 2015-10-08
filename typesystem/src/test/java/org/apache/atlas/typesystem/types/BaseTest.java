@@ -25,7 +25,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
-import org.junit.Before;
+import org.testng.annotations.BeforeMethod;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -67,7 +67,7 @@ public abstract class BaseTest {
         return TypeSystem.getInstance();
     }
 
-    @Before
+    @BeforeMethod
     public void setup() throws Exception {
         TypeSystem ts = TypeSystem.getInstance();
         ts.reset();
@@ -86,9 +86,8 @@ public abstract class BaseTest {
                         TypesUtil.createOptionalAttrDef("k", DataTypes.BIGDECIMAL_TYPE),
                         TypesUtil.createOptionalAttrDef("l", DataTypes.DATE_TYPE),
                         TypesUtil.createOptionalAttrDef("m", ts.defineArrayType(DataTypes.INT_TYPE)),
-                        TypesUtil.createOptionalAttrDef("n", ts.defineArrayType(DataTypes.BIGDECIMAL_TYPE)), TypesUtil
-                                .createOptionalAttrDef("o",
-                                        ts.defineMapType(DataTypes.STRING_TYPE, DataTypes.DOUBLE_TYPE)));
+                        TypesUtil.createOptionalAttrDef("n", ts.defineArrayType(DataTypes.BIGDECIMAL_TYPE)),
+                        TypesUtil.createOptionalAttrDef("o", ts.defineMapType(DataTypes.STRING_TYPE, DataTypes.DOUBLE_TYPE)));
         System.out.println("defined structType = " + structType);
 
         StructType recursiveStructType =

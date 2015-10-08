@@ -34,9 +34,9 @@ import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+import org.testng.Assert;
 
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
@@ -45,7 +45,7 @@ import static org.apache.atlas.typesystem.types.utils.TypesUtil.createTraitTypeD
 public class SerializationJavaTest extends BaseTest {
 
 
-    @Before
+    @BeforeMethod
     public void setup() throws Exception {
         super.setup();
     }

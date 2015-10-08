@@ -991,13 +991,6 @@
             </dependency>
 
             <dependency>
-                <groupId>org.scalatest</groupId>
-                <artifactId>scalatest_${scala.binary.version}</artifactId>
-                <version>2.2.0</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
                 <groupId>org.scalamacros</groupId>
                 <artifactId>quasiquotes_${scala.binary.version}</artifactId>
                 <version>${scala.macros.version}</version>
@@ -1105,14 +1098,6 @@
                 <groupId>org.testng</groupId>
                 <artifactId>testng</artifactId>
                 <version>6.1.1</version>
-                <scope>test</scope>
-            </dependency>
-
-            <!-- todo - use testng and delete junit -->
-            <dependency>
-                <groupId>junit</groupId>
-                <artifactId>junit</artifactId>
-                <version>4.10</version>
                 <scope>test</scope>
             </dependency>
 
@@ -1407,11 +1392,6 @@
                     <dependency>
                         <groupId>org.apache.maven.surefire</groupId>
                         <artifactId>surefire-testng</artifactId>
-                        <version>2.18.1</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.apache.maven.surefire</groupId>
-                        <artifactId>surefire-junit4</artifactId>
                         <version>2.18.1</version>
                     </dependency>
                 </dependencies>

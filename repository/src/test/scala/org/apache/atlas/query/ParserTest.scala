@@ -19,12 +19,12 @@
 package org.apache.atlas.query
 
 import org.apache.atlas.repository.BaseTest
-import org.junit.{Before, Test}
+import org.testng.annotations.{BeforeMethod,Test}
 
 
 class ParserTest extends BaseTest {
 
-    @Before
+    @BeforeMethod
     override def setup {
         super.setup
         QueryTestsUtils.setupTypes

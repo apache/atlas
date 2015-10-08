@@ -20,13 +20,14 @@ package org.apache.atlas.typesystem.builders
 
 import org.apache.atlas.typesystem.TypesDef
 import org.apache.atlas.typesystem.types.TypeSystem
-import org.scalatest.{BeforeAndAfter, FunSuite}
+import org.testng.annotations.BeforeMethod
 
-abstract class BuilderTest extends FunSuite with BeforeAndAfter {
+abstract class BuilderTest {
 
   var tDef : TypesDef = null
 
-  before {
+  @BeforeMethod
+  def before {
     TypeSystem.getInstance().reset()
 
     val b = new TypesBuilder

@@ -26,14 +26,15 @@ import org.apache.atlas.typesystem.{ITypedReferenceableInstance, ITypedStruct, R
 import org.json4s.native.JsonMethods._
 import org.json4s.native.Serialization.{write => swrite, _}
 import org.json4s.{NoTypeHints, _}
-import org.junit.{Assert, Before, Test}
+import org.testng.Assert
+import org.testng.annotations.{BeforeMethod,Test}
 
 class SerializationTest extends BaseTest {
 
     private[atlas] var structType: StructType = null
     private[atlas] var recursiveStructType: StructType = null
 
-    @Before
+    @BeforeMethod
     override def setup {
         super.setup
         structType = getTypeSystem.getDataType(classOf[StructType], BaseTest.STRUCT_TYPE_1).asInstanceOf[StructType]

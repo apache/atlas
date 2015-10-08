@@ -24,18 +24,16 @@ import org.apache.atlas.discovery.graph.DefaultGraphPersistenceStrategy
 import org.apache.atlas.query.Expressions._
 import org.apache.atlas.repository.graph.{GraphBackedMetadataRepository, TitanGraphProvider}
 import org.apache.atlas.typesystem.types.TypeSystem
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-import org.scalatest.{Assertions, BeforeAndAfterAll, FunSuite}
+import org.testng.annotations.{Test,BeforeClass,AfterClass}
 
-@RunWith(classOf[JUnitRunner])
-class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinTest {
+class LineageQueryTest extends BaseGremlinTest {
 
     var g: TitanGraph = null
     var gProvider:TitanGraphProvider = null;
     var gp:GraphPersistenceStrategies = null;
 
-    override def beforeAll() {
+    @BeforeClass
+    def beforeAll() {
       TypeSystem.getInstance().reset()
       QueryTestsUtils.setupTypes
       gProvider = new TitanGraphProvider();
@@ -43,7 +41,8 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinT
       g = QueryTestsUtils.setupTestGraph(gProvider)
     }
 
-    override def afterAll() {
+    @AfterClass
+    def afterAll() {
       g.shutdown()
       try {
         TitanCleanup.clear(g);
@@ -55,7 +54,7 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinT
 
     val PREFIX_SPACES_REGEX = ("\\n\\s*").r
 
-    test("testInputTables") {
+  @Test def testInputTables {
         val r = QueryProcessor.evaluate(_class("LoadProcess").field("inputTables"), g, gp)
         val x = r.toJson
         validateJson(r,"""{
@@ -183,12 +182,12 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinT
           """.stripMargin)
     }
 
-    test("testLoadProcessOut") {
+  @Test def testLoadProcessOut {
         val r = QueryProcessor.evaluate(_class("Table").field("LoadProcess").field("outputTable"), g, gp)
         validateJson(r, null)
     }
 
-    test("testLineageAll") {
+  @Test def testLineageAll {
         val r = QueryProcessor.evaluate(_class("Table").loop(id("LoadProcess").field("outputTable")), g, gp)
         validateJson(r, """{
                           |  "query":"Table as _loop0 loop (LoadProcess outputTable)",
@@ -343,7 +342,7 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinT
                           |}""".stripMargin)
     }
 
-    test("testLineageAllSelect") {
+  @Test def testLineageAllSelect {
         val r = QueryProcessor.evaluate(_class("Table").as("src").loop(id("LoadProcess").field("outputTable")).as("dest").
             select(id("src").field("name").as("srcTable"), id("dest").field("name").as("destTable")), g, gp)
         validateJson(r, """{
@@ -409,7 +408,7 @@ class LineageQueryTest extends FunSuite with BeforeAndAfterAll with BaseGremlinT
 }""".stripMargin)
     }
 
-    test("testLineageFixedDepth") {
+    @Test def testLineageFixedDepth {
         val r = QueryProcessor.evaluate(_class("Table").loop(id("LoadProcess").field("outputTable"), int(1)), g, gp)
         validateJson(r, """{
                           |  "query":"Table as _loop0 loop (LoadProcess outputTable) times 1",

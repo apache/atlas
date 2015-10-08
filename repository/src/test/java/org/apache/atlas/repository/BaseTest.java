@@ -19,10 +19,10 @@
 package org.apache.atlas.repository;
 
 import org.apache.atlas.typesystem.types.TypeSystem;
-import org.junit.Before;
+import org.testng.annotations.BeforeMethod;
 
 public abstract class BaseTest {
-    @Before
+    @BeforeMethod
     public void setup() throws Exception {
         TypeSystem ts = TypeSystem.getInstance();
         ts.reset();

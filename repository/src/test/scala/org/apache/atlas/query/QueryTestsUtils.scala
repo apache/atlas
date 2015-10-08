@@ -30,7 +30,6 @@ import org.apache.atlas.typesystem.types._
 import org.apache.commons.configuration.{Configuration, ConfigurationException, MapConfiguration}
 import org.apache.commons.io.FileUtils
 import org.json.JSONObject
-import org.scalatest.{Assertions, BeforeAndAfterAll, FunSuite}
 import org.skyscreamer.jsonassert.JSONAssert
 
 
@@ -170,8 +169,6 @@ object QueryTestsUtils extends GraphUtils {
 }
 
 trait BaseGremlinTest {
-  self : FunSuite with BeforeAndAfterAll =>
-
   val STRUCT_NAME_REGEX = (TypeUtils.TEMP_STRUCT_NAME_PREFIX + "\\d+").r
   def validateJson(r: GremlinQueryResult, expected: String = null): Unit = {
     val rJ = r.toJson

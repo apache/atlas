@@ -23,7 +23,6 @@ import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
-import junit.framework.Assert;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RepositoryMetadataModule;
@@ -44,6 +43,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
+import org.testng.Assert;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -121,7 +121,7 @@ public class GraphBackedTypeStoreTest {
                 clsTypeFound = true;
             }
         }
-        Assert.assertTrue("Manager type not restored", clsTypeFound);
+        Assert.assertTrue(clsTypeFound, "Manager type not restored");
 
         //validate trait
         List<HierarchicalTypeDefinition<TraitType>> traitTypes = types.traitTypesAsJavaList();

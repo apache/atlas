@@ -20,12 +20,12 @@ package org.apache.atlas.typesystem.builders
 
 import org.apache.atlas.AtlasException
 import org.apache.atlas.typesystem.types.{ClassType, Multiplicity, TypeSystem}
-import org.scalatest.{BeforeAndAfterAll, FunSuite}
+import org.testng.annotations.{BeforeMethod,Test}
 
+class MultiplicityTest {
 
-class MultiplicityTest extends FunSuite with BeforeAndAfterAll {
-
-  override  def beforeAll() = {
+  @BeforeMethod
+  def beforeAll {
     TypeSystem.getInstance().reset()
 
     val b = new TypesBuilder
@@ -83,7 +83,8 @@ class MultiplicityTest extends FunSuite with BeforeAndAfterAll {
     TypeSystem.getInstance().defineTypes(tDef)
   }
 
-  test("test1") {
+  @Test
+  def test1 {
 
     val b = new InstanceBuilder
     import b._
@@ -108,7 +109,8 @@ class MultiplicityTest extends FunSuite with BeforeAndAfterAll {
     }
   }
 
-  test("WrongMultiplicity") {
+  @Test(expectedExceptions =  Array(classOf[AtlasException]) , expectedExceptionsMessageRegExp = "A multiplicty of more than one requires a collection type for attribute 'stringSet'")
+  def WrongMultiplicity {
     val b = new TypesBuilder
     import b._
     val tDef = types {
@@ -117,9 +119,6 @@ class MultiplicityTest extends FunSuite with BeforeAndAfterAll {
         "stringSet" ~ (string, multiplicty(0, Int.MaxValue, true))
       }
     }
-    val me = intercept[AtlasException] {
-      TypeSystem.getInstance().defineTypes(tDef)
-    }
-    assert("A multiplicty of more than one requires a collection type for attribute 'stringSet'" == me.getMessage)
+    TypeSystem.getInstance().defineTypes(tDef)
   }
 }

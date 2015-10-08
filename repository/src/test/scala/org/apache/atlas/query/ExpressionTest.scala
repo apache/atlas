@@ -20,11 +20,11 @@ package org.apache.atlas.query
 
 import org.apache.atlas.query.Expressions._
 import org.apache.atlas.repository.BaseTest
-import org.junit.{Before, Test}
+import org.testng.annotations.{BeforeMethod,Test}
 
 class ExpressionTest extends BaseTest {
 
-    @Before
+    @BeforeMethod
     override def setup {
         super.setup
 

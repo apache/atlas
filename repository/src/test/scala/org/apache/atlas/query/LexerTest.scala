@@ -18,7 +18,8 @@
 
 package org.apache.atlas.query
 
-import org.junit.{Assert, Test}
+import org.testng.Assert
+import org.testng.annotations.Test
 
 import scala.util.parsing.input.CharArrayReader
 

@@ -23,10 +23,9 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.Struct;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
+import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,7 +36,7 @@ import static org.apache.atlas.typesystem.types.utils.TypesUtil.createTraitTypeD
 public class TraitTest extends BaseTest {
 
 
-    @Before
+    @BeforeMethod
     public void setup() throws Exception {
         super.setup();
     }
@@ -54,7 +53,7 @@ public class TraitTest extends BaseTest {
      * complete Path.
      *   For e.g. the 'b' attribute in A (that is a superType for B) is hidden the 'b' attribute
      *   in B.
-     *   So it is availabel by the name 'A.B.D.b'
+     *   So it is available by the name 'A.B.D.b'
      *
      * - Another way to set attributes is to cast. Casting a 'D' instance of 'B' makes the 'A.B.D
      * .b' attribute
@@ -176,8 +175,8 @@ public class TraitTest extends BaseTest {
                 createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
         HierarchicalTypeDefinition B = createTraitTypeDef("B", ImmutableList.<String>of("A"),
                 createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE));
-        HierarchicalTypeDefinition C =
-                createTraitTypeDef("C", ImmutableList.<String>of("A"), createOptionalAttrDef("c", DataTypes.BYTE_TYPE));
+        HierarchicalTypeDefinition C = createTraitTypeDef("C", ImmutableList.<String>of("A"),
+                createOptionalAttrDef("c", DataTypes.BYTE_TYPE));
         HierarchicalTypeDefinition D = createTraitTypeDef("D", ImmutableList.<String>of("B", "C"),
                 createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
 

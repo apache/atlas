@@ -20,7 +20,8 @@ package org.apache.atlas.typesystem.json
 
 import com.google.common.collect.ImmutableList
 import org.apache.atlas.typesystem.types._
-import org.junit.{Assert, Test}
+import org.testng.Assert
+import org.testng.annotations.Test
 
 class TypesSerializationTest extends BaseTest with TypeHelpers {
 

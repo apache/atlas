@@ -20,14 +20,12 @@ package org.apache.atlas.typesystem.builders
 
 import org.apache.atlas.typesystem.json.TypesSerialization
 import org.apache.atlas.typesystem.types.TypeSystem
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import org.testng.annotations.Test
 
-@RunWith(classOf[JUnitRunner])
 class TypesBuilderTest extends BuilderTest {
 
 
-  test("test1") {
+  @Test def test1 {
     TypeSystem.getInstance().defineTypes(tDef)
 
     println(TypesSerialization.toJson(TypeSystem.getInstance(), x => true))

@@ -21,16 +21,16 @@ package org.apache.atlas.typesystem.types;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.Struct;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.testng.Assert;
+import org.testng.annotations.Test;
+import org.testng.annotations.BeforeMethod;
 
 public class StructTest extends BaseTest {
 
     StructType structType;
     StructType recursiveStructType;
 
-    @Before
+    @BeforeMethod
     public void setup() throws Exception {
         super.setup();
         structType = getTypeSystem().getDataType(StructType.class, STRUCT_TYPE_1);

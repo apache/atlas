@@ -19,11 +19,11 @@
 package org.apache.atlas.typesystem.builders
 
 import org.apache.atlas.typesystem.types.{ClassType, Multiplicity, TypeSystem}
-
+import org.testng.annotations.Test
 
 class InstanceBuilderTest extends BuilderTest {
 
-  test("test1") {
+  @Test def test1 {
     TypeSystem.getInstance().defineTypes(tDef)
 
     val b = new InstanceBuilder

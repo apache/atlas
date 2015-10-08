@@ -27,9 +27,9 @@ import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.testng.Assert;
+import org.testng.annotations.Test;
+import org.testng.annotations.BeforeMethod;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -42,7 +42,7 @@ import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAt
 
 public class EnumTest extends BaseTest {
 
-    @Before
+    @BeforeMethod
     public void setup() throws Exception {
         super.setup();
     }
