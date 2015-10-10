@@ -9,6 +9,8 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (sumasai via shwethags)
 
 ALL CHANGES:
+ATLAS-159 UI generated files should be target (sanjayp via sumasai)
+ATLAS-188 Provide Ability to Add Tag to Entity (sanjayp via sumasai)
 ATLAS-209 Use testng and delete junit and scalatest (ltfxyz via shwethags)
 ATLAS-163 New Trait UI (Tag) ( darshankumar89 via sumasai)
 ATLAS-199 webapp build fails (grunt + tests) ( darshankumar89 via sumasai)

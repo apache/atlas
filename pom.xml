@@ -410,6 +410,7 @@
         <module>notification</module>
         <module>client</module>
         <module>repository</module>
+        <module>dashboard</module>
         <module>webapp</module>
         <module>docs</module>
         <module>addons/hive-bridge</module>
@@ -1215,9 +1216,6 @@
                     <groupId>com.github.eirslett</groupId>
                     <artifactId>frontend-maven-plugin</artifactId>
                     <version>0.0.23</version>
-                    <configuration>
-                        <workingDirectory>../dashboard/</workingDirectory>
-                    </configuration>
                 </plugin>
 
                 <plugin>
@@ -1505,20 +1503,8 @@
                         <exclude>**/maven-eclipse.xml</exclude>
                         <exclude>**/.externalToolBuilders/**</exclude>
                         <exclude>**/build.log</exclude>
-                        <!-- temp libs -->
-                        <exclude>dashboard/.bower-*/**</exclude>
-                        <!-- json file -->
-                        <exclude>dashboard/.bowerrc</exclude>
-                        <!-- temp libs -->
-                        <exclude>dashboard/lib/**</exclude>
-                        <!-- temp libs -->
-                        <exclude>dashboard/node*/**</exclude>
-                        <!-- package -->
-                        <exclude>dashboard/dist/**</exclude>
-                        <!-- lib files -->
-                        <exclude>dashboard/public/lib/**</exclude>
-                        <!-- minified JS -->
-                        <exclude>dashboard/**/*.min.js*</exclude>
+                        <exclude>.bowerrc</exclude>
+                        <exclude>*.json</exclude>
                     </excludes>
                 </configuration>
                 <executions>
