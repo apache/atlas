@@ -16,6 +16,25 @@
  * limitations under the License.
  */
 
-.tab-content .table-bordered {
-    border-top: none;
-}
+'use strict';
+
+angular.module('dgc.tags.instance').controller('InstanceTagController', ['$scope', 'DetailsResource', '$stateParams', '$state',
+    function($scope, DetailsResource, $stateParams, $state) {
+        $scope.id = $stateParams.id;
+
+        function getResourceData() {
+            DetailsResource.get({
+                id: $stateParams.id
+            }, function(data) {
+                $scope.traitsList = data.traitNames;
+            });
+        }
+        $scope.openAddTag = function() {
+            $state.go('addTag', {
+                id: $scope.id
+            });
+        };
+        getResourceData();
+        $scope.$on('refreshResourceData', getResourceData);
+    }
+]);

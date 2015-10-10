@@ -35,6 +35,13 @@ angular.module('dgc.tags').factory('TagClasses', ['lodash', function ClassFactor
         CLASS: 'org.apache.atlas.typesystem.types.ClassType'
     };
 
+    var instanceRespons = {
+        ENUM: 'enumTypes',
+        STRUCT: 'structTypes',
+        TRAIT: 'traitTypes',
+        SUPER: 'superTypes'
+    };
+
     function Class(classId, className) {
         this.tags = [];
         this.id = classId;
@@ -64,6 +71,10 @@ angular.module('dgc.tags').factory('TagClasses', ['lodash', function ClassFactor
 
             output[classTypeKey] = this.tags;
             return output;
+        };
+
+        this.instanceInfo = function() {
+            return instanceRespons[classId];
         };
     }
 

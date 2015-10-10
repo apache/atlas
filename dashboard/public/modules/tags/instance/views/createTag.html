@@ -1,0 +1,42 @@
+<div class="modal-header">
+	<h4 class="modal-title">Add tag</h4>
+</div>
+<div class="modal-body">
+	<div class="form-group">
+		<div align="center" class="error col-sm-12" ng-if="isError">
+			{{error}}
+		</div>
+	</div>
+	<form name="tagDefinitionform"  class="css-form" novalidate>
+		<div class="form-group hide">
+			<label for="category" class="col-sm-4 control-label">Category</label>
+			<div class="col-sm-8 input-spacing">
+				<select class="form-control" id="category" name="category"
+					ng-model="category" ng-change="categoryChange()" required>
+					<option value="{{key}}"
+						ng-repeat="(key, value) in categoryList"
+						ng-selected="{{key===category}}">{{key}}</option>
+				</select>
+			</div>
+		</div>
+		<div class="form-group" ng-class="{'has-error': (tagDefinitionform.tagDefinition.$invalid && tagDefinitionform.tagDefinition.$dirty)}">
+			<label class="control-label col-sm-4" for="tagDefinition">Tag definition</label>
+			<div class="col-sm-8 input-spacing">
+				<select ng-model="selectedType" class="form-control" id="tagDefinition" name="tagDefinition"
+					ng-change="getAttributeDefinations(); isError =false" required>
+					<option ng-repeat="data in typesList">{{data}}</option>
+				</select>
+			</div>
+		</div>
+		<div class="form-group" ng-repeat="(key, value) in propertiesList" ng-class="{'has-error': (tagDefinitionform.propertyId_{{$index}}.$invalid && tagDefinitionform.propertyId_{{$index}}.$dirty)}">
+			<label class="control-label col-sm-4" for="propertyId_{{$index}}">{{key}}</label>
+			<div class="col-sm-8 input-spacing">
+				<input type="text" class="form-control" id="propertyId_{{$index}}" name="propertyId_{{$index}}" ng-model="propertiesList[key]" ng-required="isRequired[key]"/>
+			</div>
+		</div>
+		<div class="modal-footer">
+			<button class="btn btn-success" type="submit" ng-click="ok(tagDefinitionform)" ng-disabled="tagDefinitionform.$invalid">Save</button>
+			<button class="btn btn-warning" type="button" ng-click="cancel()">Cancel</button>
+		</div>
+	</form>
+</div>

@@ -22,7 +22,24 @@ angular.module('dgc.tags').config(['$stateProvider',
     function($stateProvider) {
         $stateProvider.state('tags', {
             url: '/tags',
-            templateUrl: '/modules/tags/views/add.html'
+            templateUrl: '/modules/tags/definition/views/add.html'
+        });
+        $stateProvider.state('addTag', {
+            parent: 'details',
+            onEnter: ['$stateParams', '$state', '$modal', 'NavigationResource', function($stateParams, $state, $modal, NavigationResource) {
+                $modal.open({
+                    templateUrl: '/modules/tags/instance/views/createTag.html',
+                    controller: 'CreateTagController',
+                    windowClass: 'create-tag-entity',
+                    resolve: {
+                        typesList: function() {
+                            return NavigationResource.get().$promise;
+                        }
+                    }
+                }).result.finally(function() {
+                    $state.go('^');
+                });
+            }]
         });
     }
 ]);

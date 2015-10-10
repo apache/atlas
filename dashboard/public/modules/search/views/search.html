@@ -55,7 +55,7 @@
                 <a href ng-show="isCollapsed && (keyLength > 4)" ng-click="doToggle($event,isCollapsed)">..show more</a>
                 <a href ng-show="!isCollapsed" ng-click="doToggle($event,isCollapsed)">..show less</a>
 
-                <h5 ng-show="!dataTransitioned">Tags : <a ng-repeat="(key, value) in result['$traits$']" data-ui-sref="search({query: key})">{{key}}</a></h5>
+                <h5 ng-show="!dataTransitioned">Tags : <a ng-repeat="(key, value) in result['$traits$']" data-ui-sref="search({query: key})">{{key}}<span ng-show="!{{$last}}">,</span> </a></h5>
 
             </li>
         </ul>

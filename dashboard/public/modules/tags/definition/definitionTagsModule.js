@@ -16,6 +16,6 @@
  * limitations under the License.
  */
 
-.tab-content .table-bordered {
-    border-top: none;
-}
+'use strict';
+
+angular.module('dgc.tags.definition', []);

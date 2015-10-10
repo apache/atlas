@@ -18,7 +18,7 @@
 
 'use strict';
 
-angular.module('dgc.tags').controller('TagsController', ['$scope', '$resource', '$state', '$stateParams', 'lodash', 'AttributeDefinition', 'TagClasses', 'TagsResource', 'NotificationService',
+angular.module('dgc.tags.definition').controller('DefinitionTagsController', ['$scope', '$resource', '$state', '$stateParams', 'lodash', 'AttributeDefinition', 'TagClasses', 'TagsResource', 'NotificationService',
     function($scope, $resource, $state, $stateParams, _, AttributeDefinition, Categories, TagsResource, NotificationService) {
         $scope.categoryList = Categories;
         $scope.category = 'TRAIT';

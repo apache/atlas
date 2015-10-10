@@ -27,7 +27,9 @@ angular.module('dgc', ['ngCookies',
     'dgc.about',
     'dgc.search',
     'dgc.navigation',
-    'dgc.tags'
+    'dgc.tags',
+    'dgc.tags.instance',
+    'dgc.tags.definition'
 ]);
 
 angular.module('dgc.system', ['dgc.system.notification']);

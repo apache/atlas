@@ -36,7 +36,6 @@ angular.module('dgc.details').controller('DetailsController', ['$window', '$scop
         $scope.isNumber = angular.isNumber;
 
         $scope.isString = angular.isString;
-
         $scope.onActivate = function tabActivate(tabname) {
             $scope.$broadcast('render-lineage', {
                 type: tabname,
@@ -47,6 +46,5 @@ angular.module('dgc.details').controller('DetailsController', ['$window', '$scop
         $scope.goBack = function() {
             $window.history.back();
         };
-
     }
 ]);
