@@ -250,6 +250,9 @@
                             <groupId>org.apache.atlas</groupId>
                             <artifactId>dashboard</artifactId>
                         </overlay>
+		        <overlay>
+		             <!-- empty groupId/artifactId represents the current build -->
+            		</overlay>
                     </overlays>
                     <archive>
                         <manifest>
