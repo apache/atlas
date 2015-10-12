@@ -75,6 +75,7 @@ public class HiveHook implements ExecuteWithHookContext {
     private static final String MAX_THREADS = CONF_PREFIX + "maxThreads";
     private static final String KEEP_ALIVE_TIME = CONF_PREFIX + "keepAliveTime";
     public static final String CONF_SYNC = CONF_PREFIX + "synchronous";
+    public static final String QUEUE_SIZE = CONF_PREFIX + "queueSize";
 
     public static final String HOOK_NUM_RETRIES = CONF_PREFIX + "numRetries";
 
@@ -86,26 +87,29 @@ public class HiveHook implements ExecuteWithHookContext {
     private static final int minThreadsDefault = 5;
     private static final int maxThreadsDefault = 5;
     private static final long keepAliveTimeDefault = 10;
+    private static final int queueSizeDefault = 10000;
 
     private static boolean typesRegistered = false;
     private static Configuration atlasProperties;
 
     class HiveEvent {
-        public HiveConf conf;
-
         public Set<ReadEntity> inputs;
         public Set<WriteEntity> outputs;
 
         public String user;
         public UserGroupInformation ugi;
         public HiveOperation operation;
-        public QueryPlan queryPlan;
         public HookContext.HookType hookType;
         public JSONObject jsonPlan;
+        public String queryId;
+        public String queryStr;
+        public Long queryStartTime;
     }
 
     @Inject
     private static NotificationInterface notifInterface;
+
+    private static final HiveConf hiveConf;
 
     static {
         try {
@@ -116,9 +120,10 @@ public class HiveHook implements ExecuteWithHookContext {
             int minThreads = atlasProperties.getInt(MIN_THREADS, minThreadsDefault);
             int maxThreads = atlasProperties.getInt(MAX_THREADS, maxThreadsDefault);
             long keepAliveTime = atlasProperties.getLong(KEEP_ALIVE_TIME, keepAliveTimeDefault);
+            int queueSize = atlasProperties.getInt(QUEUE_SIZE, queueSizeDefault);
 
             executor = new ThreadPoolExecutor(minThreads, maxThreads, keepAliveTime, TimeUnit.MILLISECONDS,
-                    new LinkedBlockingQueue<Runnable>(),
+                    new LinkedBlockingQueue<Runnable>(queueSize),
                     new ThreadFactoryBuilder().setNameFormat("Atlas Logger %d").build());
 
                 Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -141,6 +146,8 @@ public class HiveHook implements ExecuteWithHookContext {
         Injector injector = Guice.createInjector(new NotificationModule());
         notifInterface = injector.getInstance(NotificationInterface.class);
 
+        hiveConf = new HiveConf();
+
         LOG.info("Created Atlas Hook");
     }
 
@@ -150,17 +157,18 @@ public class HiveHook implements ExecuteWithHookContext {
         final HiveEvent event = new HiveEvent();
         final HiveConf conf = new HiveConf(hookContext.getConf());
 
-        event.conf = conf;
         event.inputs = hookContext.getInputs();
         event.outputs = hookContext.getOutputs();
 
         event.user = hookContext.getUserName() == null ? hookContext.getUgi().getUserName() : hookContext.getUserName();
         event.ugi = hookContext.getUgi();
         event.operation = HiveOperation.valueOf(hookContext.getOperationName());
-        event.queryPlan = hookContext.getQueryPlan();
         event.hookType = hookContext.getHookType();
+        event.queryId = hookContext.getQueryPlan().getQueryId();
+        event.queryStr = hookContext.getQueryPlan().getQueryStr();
+        event.queryStartTime = hookContext.getQueryPlan().getQueryStartTime();
 
-        event.jsonPlan = getQueryPlan(event);
+        event.jsonPlan = getQueryPlan(hookContext.getConf(), hookContext.getQueryPlan());
 
         boolean sync = conf.get(CONF_SYNC, "false").equals("true");
         if (sync) {
@@ -183,7 +191,8 @@ public class HiveHook implements ExecuteWithHookContext {
         assert event.hookType == HookContext.HookType.POST_EXEC_HOOK : "Non-POST_EXEC_HOOK not supported!";
 
         LOG.info("Entered Atlas hook for hook type {} operation {}", event.hookType, event.operation);
-        HiveMetaStoreBridge dgiBridge = new HiveMetaStoreBridge(event.conf, atlasProperties, event.user, event.ugi);
+
+        HiveMetaStoreBridge dgiBridge = new HiveMetaStoreBridge(hiveConf, atlasProperties, event.user, event.ugi);
 
         if (!typesRegistered) {
             dgiBridge.registerHiveDataModel();
@@ -245,7 +254,7 @@ public class HiveHook implements ExecuteWithHookContext {
             }
         }
         if (newTable == null) {
-            LOG.warn("Failed to deduct new name for " + event.queryPlan.getQueryStr());
+            LOG.warn("Failed to deduct new name for " + event.queryStr);
             return;
         }
     }
@@ -353,20 +362,18 @@ public class HiveHook implements ExecuteWithHookContext {
             LOG.info("Explain statement. Skipping...");
         }
 
-        if (event.queryPlan == null) {
+        if (event.queryId == null) {
             LOG.info("Query plan is missing. Skipping...");
         }
 
-        String queryId = event.queryPlan.getQueryId();
-        String queryStr = normalize(event.queryPlan.getQueryStr());
-        long queryStartTime = event.queryPlan.getQueryStartTime();
+        String queryStr = normalize(event.queryStr);
 
         LOG.debug("Registering query: {}", queryStr);
         List<Referenceable> entities = new ArrayList<>();
         Referenceable processReferenceable = new Referenceable(HiveDataTypes.HIVE_PROCESS.getName());
         processReferenceable.set("name", queryStr);
         processReferenceable.set("operationType", event.operation.getOperationName());
-        processReferenceable.set("startTime", queryStartTime);
+        processReferenceable.set("startTime", event.queryStartTime);
         processReferenceable.set("userName", event.user);
 
         List<Referenceable> source = new ArrayList<>();
@@ -389,7 +396,7 @@ public class HiveHook implements ExecuteWithHookContext {
         }
         processReferenceable.set("outputs", target);
         processReferenceable.set("queryText", queryStr);
-        processReferenceable.set("queryId", queryId);
+        processReferenceable.set("queryId", event.queryId);
         processReferenceable.set("queryPlan", event.jsonPlan.toString());
         processReferenceable.set("endTime", System.currentTimeMillis());
 
@@ -400,12 +407,12 @@ public class HiveHook implements ExecuteWithHookContext {
     }
 
 
-    private JSONObject getQueryPlan(HiveEvent event) throws Exception {
+    private JSONObject getQueryPlan(HiveConf hiveConf, QueryPlan queryPlan) throws Exception {
         try {
             ExplainTask explain = new ExplainTask();
-            explain.initialize(event.conf, event.queryPlan, null);
-            List<Task<?>> rootTasks = event.queryPlan.getRootTasks();
-            return explain.getJSONPlan(null, null, rootTasks, event.queryPlan.getFetchTask(), true, false, false);
+            explain.initialize(hiveConf, queryPlan, null);
+            List<Task<?>> rootTasks = queryPlan.getRootTasks();
+            return explain.getJSONPlan(null, null, rootTasks, queryPlan.getFetchTask(), true, false, false);
         } catch (Exception e) {
             LOG.info("Failed to get queryplan", e);
             return new JSONObject();

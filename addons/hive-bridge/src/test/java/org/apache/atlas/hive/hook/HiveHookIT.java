@@ -54,31 +54,13 @@ public class HiveHookIT {
     @BeforeClass
     public void setUp() throws Exception {
         //Set-up hive session
-        HiveConf conf = createHiveConf();
+        HiveConf conf = new HiveConf();
         driver = new Driver(conf);
         ss = new SessionState(conf, System.getProperty("user.name"));
         ss = SessionState.start(ss);
         SessionState.setCurrentSessionState(ss);
 
         dgiCLient = new AtlasClient(DGI_URL);
-    }
-
-    public static HiveConf createHiveConf() {
-        return createHiveConf(DGI_URL);
-    }
-
-    public static HiveConf createHiveConf(String atlasEndpoint) {
-        HiveConf hiveConf = new HiveConf(HiveHookIT.class);
-        hiveConf.setVar(HiveConf.ConfVars.PREEXECHOOKS, "");
-        hiveConf.setVar(HiveConf.ConfVars.POSTEXECHOOKS, HiveHook.class.getName());
-        hiveConf.setBoolVar(HiveConf.ConfVars.HIVE_SUPPORT_CONCURRENCY, false);
-        hiveConf.setVar(HiveConf.ConfVars.METASTOREWAREHOUSE, System.getProperty("user.dir") + "/target/metastore");
-        hiveConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, "jdbc:derby:./target/metastore_db;create=true");
-        hiveConf.set(HiveMetaStoreBridge.HIVE_CLUSTER_NAME, CLUSTER_NAME);
-        hiveConf.setBoolVar(HiveConf.ConfVars.HIVETESTMODE, true);  //to not use hdfs
-        hiveConf.setVar(HiveConf.ConfVars.HIVETESTMODEPREFIX, "");
-        hiveConf.set("fs.pfile.impl", "org.apache.hadoop.fs.ProxyLocalFileSystem");
-        return hiveConf;
     }
 
     private void runCommand(String cmd) throws Exception {

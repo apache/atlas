@@ -28,7 +28,7 @@
         <version>0.6-incubating-SNAPSHOT</version>
     </parent>
 
-    <artifactId>dashboard</artifactId>
+    <artifactId>atlas-dashboard</artifactId>
     <description>Apache Atlas UI Application</description>
     <name>Apache Atlas UI</name>
     <packaging>war</packaging>

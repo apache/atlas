@@ -29,52 +29,53 @@ hive_process - attribute qualifiedName - queryText
 
 ---++ Importing Hive Metadata
 org.apache.atlas.hive.bridge.HiveMetaStoreBridge imports the hive metadata into Atlas using the model defined in org.apache.atlas.hive.model.HiveDataModelGenerator. import-hive.sh command can be used to facilitate this.
-Set-up the following configs in hive-site.xml of your hive set-up and set environment variable HIVE_CONF_DIR to the hive conf directory:
-   * Atlas endpoint - Add the following property with the Atlas endpoint for your set-up
-<verbatim>
-<property>
-  <name>atlas.rest.address</name>
-  <value>http://localhost:21000/</value>
-</property>
-<property>
-  <name>atlas.cluster.name</name>
-  <value>primary</value>
-</property>
-</verbatim>
+Set-up the following configs in <atlas-conf>/client.properties and set environment variable HIVE_CONFIG to the hive conf directory:
+  <verbatim>
+    <property>
+      <name>atlas.rest.address</name>
+      <value>http://localhost:21000/</value>
+    </property>
+    <property>
+      <name>atlas.cluster.name</name>
+      <value>primary</value>
+    </property>
+  </verbatim>
 
-Usage: <atlas package>/bin/hive/import-hive.sh. The logs are in <atlas package>/logs/import-hive.log
+Usage: <atlas package>/bin/import-hive.sh. The logs are in <atlas package>/logs/import-hive.log
 
 
 ---++ Hive Hook
 Hive supports listeners on hive command execution using hive hooks. This is used to add/update/remove entities in Atlas using the model defined in org.apache.atlas.hive.model.HiveDataModelGenerator.
 The hook submits the request to a thread pool executor to avoid blocking the command execution. The thread submits the entities as message to the notification server and atlas server reads these messages and registers the entities.
 Follow these instructions in your hive set-up to add hive hook for Atlas:
-   * Set-up atlas hook and atlas endpoint in hive-site.xml:
-<verbatim>
-<property>
-  <name>hive.exec.post.hooks</name>
-  <value>org.apache.atlas.hive.hook.HiveHook</value>
-</property>
-</verbatim>
-<verbatim>
-<property>
-  <name>atlas.rest.address</name>
-  <value>http://localhost:21000/</value>
-</property>
-<property>
-  <name>atlas.cluster.name</name>
-  <value>primary</value>
-</property>
-</verbatim>
-   * Add 'export HIVE_AUX_JARS_PATH=<atlas package>/hook/hive' in hive-env.sh
-   * Copy <atlas package>/conf/application.properties to hive conf directory <hive package>/conf
+   * Set-up atlas hook in hive-site.xml of your hive configuration:
+  <verbatim>
+    <property>
+      <name>hive.exec.post.hooks</name>
+      <value>org.apache.atlas.hive.hook.HiveHook</value>
+    </property>
+  </verbatim>
+   * Add 'export HIVE_AUX_JARS_PATH=<atlas package>/hook/hive' in hive-env.sh of your hive configuration
+   * Set-up the following configs in <atlas-conf>/client.properties
+   <verbatim>
+     <property>
+       <name>atlas.rest.address</name>
+       <value>http://localhost:21000/</value>
+     </property>
+     <property>
+       <name>atlas.cluster.name</name>
+       <value>primary</value>
+     </property>
+     </verbatim>
+   * Copy <atlas-conf>/client.properties and <atlas-conf>/application.properties to the hive conf directory.
 
-The following properties in hive-site.xml control the thread pool and notification details:
+The following properties in <atlas-conf>/client.properties control the thread pool and notification details:
    * atlas.hook.hive.synchronous - boolean, true to run the hook synchronously. default false
    * atlas.hook.hive.numRetries - number of retries for notification failure. default 3
    * atlas.hook.hive.minThreads - core number of threads. default 5
    * atlas.hook.hive.maxThreads - maximum number of threads. default 5
    * atlas.hook.hive.keepAliveTime - keep alive time in msecs. default 10
+   * atlas.hook.hive.queueSize - queue size for the threadpool. default 10000
 
 Refer [[Configuration][Configuration]] for notification related configurations
 
