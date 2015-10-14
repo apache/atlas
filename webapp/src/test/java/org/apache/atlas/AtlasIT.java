@@ -24,32 +24,32 @@ import org.testng.annotations.Test;
 /**
  *
  */
-public class MainIT {
+public class AtlasIT {
 
   @Test
   public void testPortSelection () throws Exception {
     PropertiesConfiguration config = new PropertiesConfiguration();
     // test ports via config
-    config.setProperty(Main.ATLAS_SERVER_HTTP_PORT, 21001);
-    config.setProperty(Main.ATLAS_SERVER_HTTPS_PORT, 22443);
-    int port = Main.getApplicationPort(Main.parseArgs(new String[] {}), "false",
+    config.setProperty(Atlas.ATLAS_SERVER_HTTP_PORT, 21001);
+    config.setProperty(Atlas.ATLAS_SERVER_HTTPS_PORT, 22443);
+    int port = Atlas.getApplicationPort(Atlas.parseArgs(new String[] {}), "false",
                                        config );
     Assert.assertEquals(21001, port, "wrong http port");
-    port = Main.getApplicationPort(Main.parseArgs(new String[] {}), "true",
+    port = Atlas.getApplicationPort(Atlas.parseArgs(new String[] {}), "true",
                                    config );
     Assert.assertEquals(22443, port, "wrong https port");
     // test defaults
-    port = Main.getApplicationPort(Main.parseArgs(new String[] {}), "false",
+    port = Atlas.getApplicationPort(Atlas.parseArgs(new String[] {}), "false",
                                    new PropertiesConfiguration() );
     Assert.assertEquals(21000, port, "wrong http port");
-    port = Main.getApplicationPort(Main.parseArgs(new String[] {}), "true",
+    port = Atlas.getApplicationPort(Atlas.parseArgs(new String[] {}), "true",
                                    new PropertiesConfiguration() );
     Assert.assertEquals(21443, port, "wrong https port");
     // test command line override
-    CommandLine commandLine = Main.parseArgs(new String[] {"--port", "22000"});
-    port = Main.getApplicationPort(commandLine, "true", config);
+    CommandLine commandLine = Atlas.parseArgs(new String[] {"--port", "22000"});
+    port = Atlas.getApplicationPort(commandLine, "true", config);
     Assert.assertEquals(22000, port, "wrong https port");
-    port = Main.getApplicationPort(commandLine, "false", config);
+    port = Atlas.getApplicationPort(commandLine, "false", config);
     Assert.assertEquals(22000, port, "wrong https port");
   }
 }

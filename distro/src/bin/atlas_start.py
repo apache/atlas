@@ -65,7 +65,7 @@ def main():
     args = ["-app", os.path.join(web_app_dir, "atlas")]
     args.extend(sys.argv[1:])
 
-    process = mc.java("org.apache.atlas.Main", args, metadata_classpath, jvm_opts_list, logdir)
+    process = mc.java("org.apache.atlas.Atlas", args, metadata_classpath, jvm_opts_list, logdir)
     mc.writePid(metadata_pid_file, process)
 
     print "Apache Atlas Server started!!!\n"

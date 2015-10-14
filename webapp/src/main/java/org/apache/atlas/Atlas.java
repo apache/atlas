@@ -35,8 +35,8 @@ import java.util.Iterator;
 /**
  * Driver for running Metadata as a standalone server with embedded jetty server.
  */
-public final class Main {
-    private static final Logger LOG = LoggerFactory.getLogger(Main.class);
+public final class Atlas {
+    private static final Logger LOG = LoggerFactory.getLogger(Atlas.class);
     private static final String APP_PATH = "app";
     private static final String APP_PORT = "port";
     private static final String ATLAS_HOME = "atlas.home";
@@ -66,7 +66,7 @@ public final class Main {
     /**
      * Prevent users from constructing this.
      */
-    private Main() {
+    private Atlas() {
     }
 
     protected static CommandLine parseArgs(String[] args) throws ParseException {
