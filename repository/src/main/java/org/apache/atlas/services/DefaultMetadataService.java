@@ -163,8 +163,6 @@ public class DefaultMetadataService implements MetadataService {
     @Override
     public JSONObject createType(String typeDefinition) throws AtlasException {
         ParamChecker.notEmpty(typeDefinition, "type definition cannot be empty");
-        validateTypeDefinition(typeDefinition);
-
         TypesDef typesDef = validateTypeDefinition(typeDefinition);
 
         try {
