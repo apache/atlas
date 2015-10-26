@@ -91,6 +91,26 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }
     }
 
+    @Test
+    public void testSubmitSingleEntity() throws Exception {
+        Referenceable databaseInstance = new Referenceable(DATABASE_TYPE);
+        databaseInstance.set("name", randomString());
+        databaseInstance.set("description", randomString());
+
+        ClientResponse clientResponse =
+                service.path("api/atlas/entity").accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
+                        .method(HttpMethod.POST, ClientResponse.class,
+                                InstanceSerialization.toJson(databaseInstance, true));
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.CREATED.getStatusCode());
+
+        String responseAsString = clientResponse.getEntity(String.class);
+        Assert.assertNotNull(responseAsString);
+
+        JSONObject response = new JSONObject(responseAsString);
+        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
+        Assert.assertNotNull(response.get(AtlasClient.GUID));
+    }
+
     @DataProvider
     public Object[][] invalidAttrValues() {
         return new Object[][]{{null}, {""}};
@@ -264,7 +284,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testGetEntityListForBadEntityType() throws Exception {
         ClientResponse clientResponse =
-                service.path("api/atlas/entities").queryParam("type", "blah").accept(Servlets.JSON_MEDIA_TYPE)
+                service.path("api/atlas/entity").queryParam("type", "blah").accept(Servlets.JSON_MEDIA_TYPE)
                         .type(Servlets.JSON_MEDIA_TYPE).method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.BAD_REQUEST.getStatusCode());
 
@@ -282,7 +302,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         String typeName = addNewType();
 
         ClientResponse clientResponse =
-                service.path("api/atlas/entities").queryParam("type", typeName).accept(Servlets.JSON_MEDIA_TYPE)
+                service.path("api/atlas/entity").queryParam("type", typeName).accept(Servlets.JSON_MEDIA_TYPE)
                         .type(Servlets.JSON_MEDIA_TYPE).method(HttpMethod.GET, ClientResponse.class);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 

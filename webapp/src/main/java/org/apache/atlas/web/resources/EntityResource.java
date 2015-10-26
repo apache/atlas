@@ -23,10 +23,14 @@ import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.ParamChecker;
 import org.apache.atlas.TypeNotFoundException;
+import org.apache.atlas.repository.EntityExistsException;
 import org.apache.atlas.repository.EntityNotFoundException;
 import org.apache.atlas.services.MetadataService;
+import org.apache.atlas.typesystem.types.ValueConversionException;
 import org.apache.atlas.web.util.Servlets;
+import org.apache.commons.lang.StringUtils;
 import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,6 +87,57 @@ public class EntityResource {
 
 
     /**
+     * Submits the entity definitions (instances).
+     * The body contains the JSONArray of entity json. The service takes care of de-duping the entities based on any
+     * unique attribute for the give type.
+     */
+    @POST
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response submit(@Context HttpServletRequest request) {
+        try {
+            String entities = Servlets.getRequestPayload(request);
+
+            //Handle backward compatibility - if entities is not JSONArray, convert to JSONArray
+            try {
+                new JSONArray(entities);
+            } catch (JSONException e) {
+                final String finalEntities = entities;
+                entities = new JSONArray() {{
+                    put(finalEntities);
+                }}.toString();
+            }
+
+            LOG.debug("submitting entities {} ", AtlasClient.toString(new JSONArray(entities)));
+
+            final String guids = metadataService.createEntities(entities);
+
+            UriBuilder ub = uriInfo.getAbsolutePathBuilder();
+            URI locationURI = ub.path(guids).build();
+
+            JSONObject response = new JSONObject();
+            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
+            response.put(AtlasClient.GUID, new JSONArray(guids));
+            response.put(AtlasClient.DEFINITION, metadataService.getEntityDefinition(new JSONArray(guids).getString(0)));
+
+            return Response.created(locationURI).entity(response).build();
+
+        } catch(EntityExistsException e) {
+            LOG.error("Unique constraint violation", e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.CONFLICT));
+        } catch (ValueConversionException ve) {
+            LOG.error("Unable to persist entity instance due to a desrialization error ", ve);
+            throw new WebApplicationException(Servlets.getErrorResponse(ve.getCause(), Response.Status.BAD_REQUEST));
+        } catch (AtlasException | IllegalArgumentException e) {
+            LOG.error("Unable to persist entity instance", e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (Throwable e) {
+            LOG.error("Unable to persist entity instance", e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    /**
      * Fetch the complete definition of an entity given its GUID.
      *
      * @param guid GUID for the entity
@@ -124,20 +179,61 @@ public class EntityResource {
     }
 
     /**
+     * Gets the list of entities for a given entity type.
+     *
+     * @param entityType name of a type which is unique
+     */
+    public Response getEntityListByType(String entityType) {
+        try {
+            Preconditions.checkNotNull(entityType, "Entity type cannot be null");
+
+            LOG.debug("Fetching entity list for type={} ", entityType);
+            final List<String> entityList = metadataService.getEntityList(entityType);
+
+            JSONObject response = new JSONObject();
+            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
+            response.put(AtlasClient.TYPENAME, entityType);
+            response.put(AtlasClient.RESULTS, new JSONArray(entityList));
+            response.put(AtlasClient.COUNT, entityList.size());
+
+            return Response.ok(response).build();
+        } catch (NullPointerException e) {
+            LOG.error("Entity type cannot be null", e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (AtlasException | IllegalArgumentException e) {
+            LOG.error("Unable to get entity list for type {}", entityType, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (Throwable e) {
+            LOG.error("Unable to get entity list for type {}", entityType, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    @GET
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response getEntity(@QueryParam("type") String entityType,
+                              @QueryParam("property") String attribute,
+                              @QueryParam("value") String value) {
+        if (StringUtils.isEmpty(attribute)) {
+            //List API
+            return getEntityListByType(entityType);
+        } else {
+            //Get entity by unique attribute
+            return getEntityDefinitionByAttribute(entityType, attribute, value);
+        }
+    }
+
+    /**
      * Fetch the complete definition of an entity given its qualified name.
      *
      * @param entityType
      * @param attribute
      * @param value
      */
-    @GET
-    @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response getEntityDefinitionByAttribute(@QueryParam("type") String entityType,
-                                                   @QueryParam("property") String attribute,
-                                                   @QueryParam("value") String value) {
+    public Response getEntityDefinitionByAttribute(String entityType, String attribute, String value) {
         try {
             LOG.debug("Fetching entity definition for type={}, qualified name={}", entityType, value);
-            ParamChecker.notEmpty(entityType, "type cannot be null");
+            ParamChecker.notEmpty(entityType, "Entity type cannot be null");
             ParamChecker.notEmpty(attribute, "attribute name cannot be null");
             ParamChecker.notEmpty(value, "attribute value cannot be null");
 

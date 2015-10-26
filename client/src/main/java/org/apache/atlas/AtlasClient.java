@@ -67,7 +67,6 @@ public class AtlasClient {
     public static final String BASE_URI = "api/atlas/";
     public static final String TYPES = "types";
     public static final String URI_ENTITY = "entity";
-    public static final String URI_ENTITIES = "entities";
     public static final String URI_SEARCH = "discovery/search";
     public static final String URI_LINEAGE = "lineage/hive/table";
 
@@ -138,10 +137,10 @@ public class AtlasClient {
         LIST_TRAIT_TYPES(BASE_URI + TYPES + "?type=trait", HttpMethod.GET),
 
         //Entity operations
-        CREATE_ENTITY(BASE_URI + URI_ENTITIES, HttpMethod.POST),
+        CREATE_ENTITY(BASE_URI + URI_ENTITY, HttpMethod.POST),
         GET_ENTITY(BASE_URI + URI_ENTITY, HttpMethod.GET),
         UPDATE_ENTITY(BASE_URI + URI_ENTITY, HttpMethod.PUT),
-        LIST_ENTITIES(BASE_URI + URI_ENTITIES, HttpMethod.GET),
+        LIST_ENTITIES(BASE_URI + URI_ENTITY, HttpMethod.GET),
 
         //Trait operations
         ADD_TRAITS(BASE_URI + URI_ENTITY, HttpMethod.POST),

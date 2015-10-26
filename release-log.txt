@@ -9,7 +9,8 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (sumasai via shwethags)
 
 ALL CHANGES:
-ATLAS1-98 Atlas UI Requires Internet Access(sanjayp via sumasai)
+ATLAS-232 Fix the API incompatibility introduced in ATLAS-58(shwethags via sumasai)
+ATLAS-198 Atlas UI Requires Internet Access(sanjayp via sumasai)
 ATLAS-201 Rename org.apache.atlas.Main to org.apache.atlas.Atlas (rishabhbhardwaj via shwethags)
 ATLAS-179 Atlas hook causes mem leak and hive server 2 crashes (shwethags)
 ATLAS-212 Remove test class usage of hive configuration property "atlas.rest.address" (jspeidel via shwethags)
