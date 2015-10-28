@@ -103,7 +103,7 @@ public class QuickStart {
         HierarchicalTypeDefinition<ClassType> dbClsDef = TypesUtil
                 .createClassTypeDef(DATABASE_TYPE, null, attrDef("name", DataTypes.STRING_TYPE),
                         attrDef("description", DataTypes.STRING_TYPE), attrDef("locationUri", DataTypes.STRING_TYPE),
-                        attrDef("owner", DataTypes.STRING_TYPE), attrDef("createTime", DataTypes.INT_TYPE));
+                        attrDef("owner", DataTypes.STRING_TYPE), attrDef("createTime", DataTypes.LONG_TYPE));
 
         HierarchicalTypeDefinition<ClassType> storageDescClsDef = TypesUtil
                 .createClassTypeDef(STORAGE_DESC_TYPE, null, attrDef("location", DataTypes.STRING_TYPE),
@@ -118,8 +118,8 @@ public class QuickStart {
                 .createClassTypeDef(TABLE_TYPE, ImmutableList.of("DataSet"),
                         new AttributeDefinition("db", DATABASE_TYPE, Multiplicity.REQUIRED, false, null),
                         new AttributeDefinition("sd", STORAGE_DESC_TYPE, Multiplicity.REQUIRED, true, null),
-                        attrDef("owner", DataTypes.STRING_TYPE), attrDef("createTime", DataTypes.INT_TYPE),
-                        attrDef("lastAccessTime", DataTypes.INT_TYPE), attrDef("retention", DataTypes.INT_TYPE),
+                        attrDef("owner", DataTypes.STRING_TYPE), attrDef("createTime", DataTypes.LONG_TYPE),
+                        attrDef("lastAccessTime", DataTypes.LONG_TYPE), attrDef("retention", DataTypes.LONG_TYPE),
                         attrDef("viewOriginalText", DataTypes.STRING_TYPE),
                         attrDef("viewExpandedText", DataTypes.STRING_TYPE), attrDef("tableType", DataTypes.STRING_TYPE),
                         attrDef("temporary", DataTypes.BOOLEAN_TYPE),
@@ -128,8 +128,8 @@ public class QuickStart {
 
         HierarchicalTypeDefinition<ClassType> loadProcessClsDef = TypesUtil
                 .createClassTypeDef(LOAD_PROCESS_TYPE, ImmutableList.of("Process"),
-                        attrDef("userName", DataTypes.STRING_TYPE), attrDef("startTime", DataTypes.INT_TYPE),
-                        attrDef("endTime", DataTypes.INT_TYPE),
+                        attrDef("userName", DataTypes.STRING_TYPE), attrDef("startTime", DataTypes.LONG_TYPE),
+                        attrDef("endTime", DataTypes.LONG_TYPE),
                         attrDef("queryText", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
                         attrDef("queryPlan", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
                         attrDef("queryId", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
