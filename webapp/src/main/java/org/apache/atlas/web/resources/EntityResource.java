@@ -62,7 +62,7 @@ import java.util.List;
  * An entity is an "instance" of a Type.  Entities conform to the definition
  * of the Type they correspond with.
  */
-@Path("entity")
+@Path("entities")
 @Singleton
 public class EntityResource {
 

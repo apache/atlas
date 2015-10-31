@@ -66,7 +66,7 @@ public class AtlasClient {
 
     public static final String BASE_URI = "api/atlas/";
     public static final String TYPES = "types";
-    public static final String URI_ENTITY = "entity";
+    public static final String URI_ENTITY = "entities";
     public static final String URI_SEARCH = "discovery/search";
     public static final String URI_LINEAGE = "lineage/hive/table";
 
