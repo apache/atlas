@@ -4,6 +4,7 @@ Apache Atlas Release Notes
 --trunk - unreleased
 
 INCOMPATIBLE CHANGES:
+ATLAS-208 Remove "\n" characters in the REST API json response (patel_satya via shwethags)
 ATLAS-58 Make hive hook reliable (shwethags)
 ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (sumasai via shwethags)

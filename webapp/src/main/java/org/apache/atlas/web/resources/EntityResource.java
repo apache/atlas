@@ -118,7 +118,7 @@ public class EntityResource {
             JSONObject response = new JSONObject();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
             response.put(AtlasClient.GUID, new JSONArray(guids));
-            response.put(AtlasClient.DEFINITION, metadataService.getEntityDefinition(new JSONArray(guids).getString(0)));
+            response.put(AtlasClient.DEFINITION, new JSONObject(metadataService.getEntityDefinition(new JSONArray(guids).getString(0))));
 
             return Response.created(locationURI).entity(response).build();
 
@@ -157,7 +157,7 @@ public class EntityResource {
 
             Response.Status status = Response.Status.NOT_FOUND;
             if (entityDefinition != null) {
-                response.put(AtlasClient.DEFINITION, entityDefinition);
+                response.put(AtlasClient.DEFINITION, new JSONObject(entityDefinition));
                 status = Response.Status.OK;
             } else {
                 response.put(AtlasClient.ERROR,
@@ -244,7 +244,7 @@ public class EntityResource {
 
             Response.Status status = Response.Status.NOT_FOUND;
             if (entityDefinition != null) {
-                response.put(AtlasClient.DEFINITION, entityDefinition);
+                response.put(AtlasClient.DEFINITION, new JSONObject(entityDefinition));
                 status = Response.Status.OK;
             } else {
                 response.put(AtlasClient.ERROR, Servlets.escapeJsonString(String.format("An entity with type={%s}, " +

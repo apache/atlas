@@ -123,7 +123,7 @@ public class TypesResource {
 
             JSONObject response = new JSONObject();
             response.put(AtlasClient.TYPENAME, typeName);
-            response.put(AtlasClient.DEFINITION, typeDefinition);
+            response.put(AtlasClient.DEFINITION, new JSONObject(typeDefinition));
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
 
             return Response.ok(response).build();
