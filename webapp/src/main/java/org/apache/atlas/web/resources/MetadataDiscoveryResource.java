@@ -49,7 +49,7 @@ import java.util.Map;
 @Singleton
 public class MetadataDiscoveryResource {
 
-    private static final Logger LOG = LoggerFactory.getLogger(EntityResource.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MetadataDiscoveryResource.class);
     private static final String QUERY_TYPE_DSL = "dsl";
     private static final String QUERY_TYPE_GREMLIN = "gremlin";
     private static final String QUERY_TYPE_FULLTEXT = "full-text";

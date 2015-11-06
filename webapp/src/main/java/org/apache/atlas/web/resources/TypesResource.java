@@ -59,7 +59,7 @@ import java.util.List;
 @Singleton
 public class TypesResource {
 
-    private static final Logger LOG = LoggerFactory.getLogger(EntityResource.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TypesResource.class);
 
     private final MetadataService metadataService;
 
