@@ -19,7 +19,7 @@
 'use strict';
 
 angular.module('dgc.details').factory('DetailsResource', ['$resource', function($resource) {
-    return $resource('/api/atlas/entity/:id', {}, {
+    return $resource('/api/atlas/entities/:id', {}, {
         get: {
             method: 'GET',
             transformResponse: function(data) {
@@ -31,11 +31,11 @@ angular.module('dgc.details').factory('DetailsResource', ['$resource', function(
         },
         saveTag: {
             method: 'POST',
-            url: '/api/atlas/entity/:id/traits'
+            url: '/api/atlas/entities/:id/traits'
         },
         detachTag : {
             method: 'DELETE',
-            url: '/api/atlas/entity/:id/traits/:tagName'
+            url: '/api/atlas/entities/:id/traits/:tagName'
         }
     });
 
