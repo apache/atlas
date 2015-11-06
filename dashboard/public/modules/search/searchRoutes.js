@@ -26,5 +26,23 @@ angular.module('dgc.search').config(['$stateProvider',
             templateUrl: '/modules/search/views/search.html',
             controller: 'SearchController'
         });
+        $stateProvider.state('addTagHome', {
+            parent: 'search',
+            params: { id:null},
+            onEnter: ['$stateParams', '$state', '$modal', 'NavigationResource', function($stateParams, $state, $modal, NavigationResource) {
+                $modal.open({
+                    templateUrl: '/modules/tags/instance/views/createTag.html',
+                    controller: 'CreateTagController',
+                    windowClass: 'create-tag-entity',
+                    resolve: {
+                        typesList: function() {
+                            return NavigationResource.get().$promise;
+                        }
+                    }
+                }).result.finally(function() {
+                    $state.go('^');
+                });
+            }]
+        });
     }
 ]);

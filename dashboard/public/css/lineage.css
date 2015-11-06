@@ -74,6 +74,16 @@ div.lineage {
     border-top: none;*/
 
 }
+.lineage-viz button{
+    margin: 5px;
+    border-radius: 2px
+}
 /*.images {*/
     /*background-image: url("../img/process.png");*/
 /*}​*/
+
+
+.alignLineage{
+    text-align: center;
+    margin-top: 100px;
+}

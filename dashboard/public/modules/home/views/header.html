@@ -24,15 +24,25 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
         </button>
- <a data-ui-sref="search({ query: '' })" data-ui-sref-active="active"><img src="../img/ApacheAtlasLogo.png" /></a>
+ <a data-ui-sref="search({ query: '' })" data-ui-sref-active="active" class="mainLogo">
+   <!--  <img src="../img/ApacheAtlasLogo.png" /> -->
+   Apache <b>Atlas</b>
+ </a>
     </div>
     <nav class="collapse navbar-collapse" data-collapse="isCollapsed" data-role="navigation">
-        <ul class="navbar-nav nav" data-ng-if="isLoggedIn()">
+        <ul class="navbar-nav nav pull-right menuBar" data-ng-if="isLoggedIn()">
+            <li data-ui-sref-active="active">
+                 <a data-ui-sref="search({ query: '' })" class="menulink">Search</a>
+            </li>
             <li data-ng-repeat="item in menu" data-ui-sref-active="active">
                 <a data-ui-sref="{{item.state}}">{{item.title}}</a>
             </li>
+            <li data-ui-sref-active="active">
+              <a  ng-if="!username" class="menulink" href="https://cwiki.apache.org/confluence/display/ATLAS/Atlas+Home" target="_blank">Help</a>
+            </li>
+            <li data-ui-sref-active="active">
+                <a  ng-if="!username" class="menulink" href="javascript:void(0)" ng-click="ShowAbout()">About</a>
+            </li>
         </ul>
-        <a  ng-if="!username" class="pull-right menulink" href="https://cwiki.apache.org/confluence/display/ATLAS/Atlas+Home" target="_blank">Help</a>
-        <a  ng-if="!username" class="pull-right menulink" href="javascript:void(0)" ng-click="ShowAbout()">About</a>
     </nav>
 </div>

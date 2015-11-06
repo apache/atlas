@@ -19,3 +19,48 @@
 .tab-content .table-bordered {
     border-top: none;
 }
+
+.detailsPage .nav-tabs>li.active>a, 
+.detailsPage .nav-tabs>li.active>a:focus, 
+.detailsPage .nav-tabs>li.active>a:hover,
+.detailsPage .nav-tabs>li>a:hover {
+    border-radius: 0;
+}
+.detailsPage .nav-tabs>li.active>a,
+.detailsPage .nav-tabs>li.active>a:focus{
+    border-radius: 0;
+    background: #F8F8F8;
+}
+
+.detailsPage .nav-tabs>li>a {
+    margin-right: 0px; 
+    
+}
+
+.detailsPage .table>thead:first-child>tr:first-child>th {
+    border-bottom-width: 1px;
+}
+.detailsPage .table td{
+  padding-left: 15px;
+}
+.detailsPage .table tr:nth-child(even) td{
+  padding-left: 15px;
+  background: #f9f9f9;
+}
+.detailsPage .table tr td:first-child{
+  font-weight: bold;
+}
+.detailsPage .table th{
+  padding-left: 15px;
+  background: #f8f8f8;
+}
+.detailsPage .lineage{
+  position: absolute;
+  width: 100%;
+  margin-top: 10px;
+  text-align: center;
+  z-index: -1;
+}
+.detailsPage .black{
+  color: #555;
+}

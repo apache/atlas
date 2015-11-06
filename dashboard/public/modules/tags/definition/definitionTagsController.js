@@ -31,6 +31,10 @@ angular.module('dgc.tags.definition').controller('DefinitionTagsController', ['$
             $scope.tagModel.attributeDefinitions.push(AttributeDefinition.getModel());
         };
 
+        $scope.removeAttribute = function(index){
+            $scope.tagModel.attributeDefinitions.splice(index,1);
+        };
+
         $scope.categoryChange = function CategorySwitched() {
             $scope.categoryInst = Categories[$scope.category].clearTags();
         };
@@ -47,11 +51,6 @@ angular.module('dgc.tags.definition').controller('DefinitionTagsController', ['$
                 TagsResource.save($scope.categoryInst.toJson()).$promise
                     .then(function TagCreateSuccess() {
                         NotificationService.info('"' + $scope.tagModel.typeName + '" has been created', false);
-                        return TagsResource.get({
-                            id: $scope.tagModel.typeName
-                        }).$promise;
-                    }).then(function TagFound(res) {
-                        $scope.savedTag = JSON.parse(res.definition);
                     }).catch(function TagCreateFailed(error) {
                         NotificationService.error(error.data.error, false);
                     }).finally(function() {

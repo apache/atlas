@@ -23,8 +23,8 @@
         <th>DataType</th>
     </tr>
     </thead>
-    <tbody ng-repeat="colm in details.values.columns">
-    <tr>
+    <tbody>
+    <tr ng-repeat="colm in details.values.columns">
         <td> {{colm.values.name}}</td>
         <td>{{colm.values.comment}}</td>
         <td> {{colm.values.dataType}}</td>

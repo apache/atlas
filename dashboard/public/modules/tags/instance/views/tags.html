@@ -16,13 +16,12 @@
   ~ limitations under the License.
   -->
 <div data-ng-controller="InstanceTagController">
-	<div class="container tag-list">
-		<h4>Tags</h4>
-		<ul>
-			<li ng-repeat="trait in traitsList" class="list-group-item">
-				{{trait}},</li>
-			<li class="list-group-item"><a ng-click="openAddTag()" href=""
-				class="add-tag">Add tag</a></li>
-		</ul>
-	</div>
+  <div class="container tag-list wordBreak">
+    <h4 class="tagsAdded">Tags</h4>
+    <a ng-click="openAddTag()" href="" class="add-tag btn btn-primary pull-right">Add tag</a>
+    <ul class="tagalign">
+      <li ng-repeat="trait in traitsList" class="list-group-item pointer tabsearchanchor maxwidth125px" popover="{{trait.values}}" popover-title="{{trait.typeName}} Values" popover-trigger="mouseenter" >
+        {{trait.typeName}} <a href="" class="anchorAbsolute" ng-click="detachTag($event, trait.typeName)"> <i class="fa fa-times"></i> </a> </li>
+    </ul>
+  </div>
 </div>

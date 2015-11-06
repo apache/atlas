@@ -16,14 +16,18 @@
   ~ limitations under the License.
   -->
 
-<div class="row" data-ng-controller="DetailsController">
-    <ul class="breadcrumb">
-        <li><button class="btn btn-link" data-ng-click="goBack()">Back To Result</button> </li>
-    </ul>
-    <div role="tabpanel" class="col-lg-12">
-        <h2>Name: {{details.values.name}}</h2>
-        <h4>Description: {{details.values.description}}</h4>
-        <h4>Lineage: <ng-include data-table-type="io" src="'/modules/lineage/views/lineage_io.html'"/></h4> 
+<div class="row detailsPage" data-ng-controller="DetailsController">
+    <div class="col-lg-12 padding0">
+      <ul class="breadcrumb">
+          <li><button class="btn btn-link" data-ng-click="goBack()"><i class="fa fa-arrow-left"></i> Back To Result</button> </li>
+      </ul>
+    </div>
+    <div role="tabpanel" class="col-lg-12 padding0">
+        <div class="mB20">
+          <h4><b>Name:</b> <span class="black">{{details.values.name}}</span></h2>
+          <h4><b>Description:</b> <span class="black">{{details.values.description}}</span></h4>
+          <h4 data-ng-show="isTable" data-disable="!tableName" data-select="onActivate('io')"><span class="lineage">Lineage</span> <ng-include data-table-type="io" src="'/modules/lineage/views/lineage_io.html'"/></h4> 
+        </div>
         <tabset>
             <tab heading="Details">
                 <table class="table table-bordered">
@@ -35,9 +39,37 @@
                     </thead>
                     <tbody>
                    <tr data-ng-repeat="(key,value) in details.values" ng-if="value && !(key==='columns') && !(key==='name') && !(key==='description')">
+
                         <td>{{key}}</td>   
-                        <td data-ng-if="!isString(value) && !isNumber(value)" data-ng-include="'/modules/details/views/attribute.html'"></td>
-                        <td data-ng-if="isString(value) || isNumber(value)">{{value | date:'medium'}}</td> 
+
+                        <td data-ng-if="isObject(value) && isString(value.id)" class="pointer"> 
+                            <a data-ui-sref="details({id:value.id})">{{ value.id }}</a>
+                         </td>
+
+                        <td data-ng-if="isObject(value) && isObject(value.id) && isString(value.id.id)" class="pointer"><a data-ui-sref="details({id:value.id.id})">{{ value.id.id }}</a></td>
+
+                        <td data-ng-if="isArray(value)">
+                          <div class="row" data-ng-repeat="(key1, value1) in value" ng-if="value1">
+                              <div data-ng-if="isObject(value1)" data-ng-repeat="(key2, value2) in value1" > 
+                                <a data-ng-if="isString(value2) && key2 == 'id'" class="pointer pdLft15px" data-ui-sref="details({id:value2})">{{ value2 }}</a> 
+                              </div>
+                          </div>      
+                        </td> 
+
+                        <td data-ng-if="!isArray(value) && isObject(value[0]) && isString(value[0].id) && key=='inputTables'" data-ng-click="goDetails(value[0].id)" class="pointer">
+                         
+                          <div class="row" data-ng-repeat="(key1, value1) in value[0]" ng-if="value1">
+                              <div class="col-md-6" data-ng-if="!isString(value1)" data-ng-repeat="(key2, value2) in value1 track by $index"></div>
+                              <div data-ng-if="isString(value2)" data-ng-repeat="(key3, value3) in value2"> {{key3}}: {{value3}}</div>
+                              <div class="col-md-6" data-ng-if="isString(value1)"> {{key1}} : {{value1 | date:'medium'}} UTC</div>
+                          </div>
+                          
+                        </td>
+
+                        <td data-ng-if="isNumber(value)">{{value * 1000 | date:'yyyy-MM-dd HH:mm:ss'}} UTC</td> 
+
+                        <td data-ng-if="isString(value)">{{value}}</td> 
+
                     </tr>
                     </tbody>
                 </table>

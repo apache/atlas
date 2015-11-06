@@ -10,6 +10,7 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (sumasai via shwethags)
 
 ALL CHANGES:
+ATLAS-211 UI: UI Facelift(anilsg via sumasai)
 ATLAS-257 import_hive.sh fails when run under cygwin(dkantor via sumasai)
 ATLAS-255 Add log level setting for titan in atlas-log4j.xml(ayubkhan via sumasai)
 ATLAS-246 QuickStart uses integer data type for dates, which causes data loss (dkantor via sumasai)

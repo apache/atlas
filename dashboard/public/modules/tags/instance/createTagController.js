@@ -55,7 +55,7 @@ angular.module('dgc.tags.instance').controller('CreateTagController', ['$scope',
                 DetailsResource.saveTag({
                     id: $stateParams.id
                 }, requestObject).$promise.then(function() {
-                    $rootScope.$broadcast('refreshResourceData');
+                    $rootScope.$broadcast('refreshResourceData', $stateParams.id);
                     NotificationService.info('Tag "' + $scope.selectedType + '" has been added to entity', true);
                     $modalInstance.close(true);
                 }).catch(function(err) {
