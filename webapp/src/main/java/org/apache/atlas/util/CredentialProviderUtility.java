@@ -148,7 +148,7 @@ public class CredentialProviderUtility {
                             + "overwritten "
                             + "(default is 'yes')\n", providerPath);
         }
-        String providerURI = JavaKeyStoreProvider.SCHEME_NAME + "://file" + providerPath;
+        String providerURI = JavaKeyStoreProvider.SCHEME_NAME + "://file/" + providerPath;
         Configuration conf = new Configuration(false);
         conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, providerURI);
         return CredentialProviderFactory.getProviders(conf).get(0);

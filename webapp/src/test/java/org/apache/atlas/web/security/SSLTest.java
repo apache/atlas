@@ -66,7 +66,7 @@ public class SSLTest extends BaseSSLAndKerberosTest {
     @BeforeClass
     public void setUp() throws Exception {
         jksPath = new Path(Files.createTempDirectory("tempproviders").toString(), "test.jks");
-        providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file" + jksPath.toUri();
+        providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file/" + jksPath.toUri();
 
         String persistDir = TestUtils.getTempDirectory();
 

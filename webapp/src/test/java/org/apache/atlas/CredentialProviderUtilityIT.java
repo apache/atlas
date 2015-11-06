@@ -68,7 +68,7 @@ public class CredentialProviderUtilityIT {
 
         CredentialProviderUtility.main(new String[]{});
 
-        String providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file" + testPath.toUri();
+        String providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file/" + testPath.toUri();
         Configuration conf = new Configuration(false);
 
         conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, providerUrl);
@@ -130,7 +130,7 @@ public class CredentialProviderUtilityIT {
 
         CredentialProviderUtility.main(new String[]{});
 
-        String providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file" + testPath.toUri();
+        String providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file/" + testPath.toUri();
         Configuration conf = new Configuration(false);
 
         conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, providerUrl);
@@ -184,7 +184,7 @@ public class CredentialProviderUtilityIT {
 
         CredentialProviderUtility.main(new String[]{});
 
-        String providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file" + testPath.toUri();
+        String providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file/" + testPath.toUri();
         Configuration conf = new Configuration(false);
 
         conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, providerUrl);
@@ -250,7 +250,7 @@ public class CredentialProviderUtilityIT {
 
         CredentialProviderUtility.main(new String[]{});
 
-        String providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file" + testPath.toUri();
+        String providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file/" + testPath.toUri();
         Configuration conf = new Configuration(false);
 
         conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, providerUrl);

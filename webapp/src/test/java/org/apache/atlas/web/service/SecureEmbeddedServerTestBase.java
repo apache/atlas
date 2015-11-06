@@ -91,7 +91,7 @@ public class SecureEmbeddedServerTestBase {
     @BeforeMethod
     public void setup() throws Exception {
         jksPath = new Path(Files.createTempDirectory("tempproviders").toString(), "test.jks");
-        providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file" + jksPath.toUri();
+        providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file/" + jksPath.toUri();
 
         String baseUrl = "https://localhost:21443/";
 
