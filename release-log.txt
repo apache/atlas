@@ -4,12 +4,13 @@ Apache Atlas Release Notes
 --trunk - unreleased
 
 INCOMPATIBLE CHANGES:
-ATLAS-208 Remove "\n" characters in the REST API json response (patel_satya via shwethags)
 ATLAS-58 Make hive hook reliable (shwethags)
 ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (sumasai via shwethags)
 
 ALL CHANGES:
+ATLAS-292 The artifactId 'dashboard' should be 'atlas-dashboard' in the webapp/pom.xml (ltfxyz via shwethags)
+ATLAS-208 Remove "\n" characters in the REST API json response (patel_satya via shwethags)
 ATLAS-211 UI: UI Facelift(anilsg via sumasai)
 ATLAS-257 import_hive.sh fails when run under cygwin(dkantor via sumasai)
 ATLAS-255 Add log level setting for titan in atlas-log4j.xml(ayubkhan via sumasai)
