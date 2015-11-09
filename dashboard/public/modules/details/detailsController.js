@@ -30,7 +30,7 @@ angular.module('dgc.details').controller('DetailsController', ['$window', '$scop
             console.log(data);
             $scope.schemas = data;
             $scope.tableName = data.values.name;
-            $scope.isTable = (typeof data.typeName != 'undefined' && data.typeName.toLowerCase().indexOf('table') != -1) ? true : false;
+            $scope.isTable = (typeof data.typeName !== 'undefined' && data.typeName.toLowerCase().indexOf('table') !== -1) ? true : false;
             $scope.onActivate('io');
         });
 

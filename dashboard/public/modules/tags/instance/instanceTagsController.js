@@ -51,7 +51,7 @@ angular.module('dgc.tags.instance').controller('InstanceTagController', ['$scope
 
         $scope.detachTag = function($event, name) {
             var r = confirm("Please confirm delete.");
-            if (r == true) {
+            if (r === true) {
                 DetailsResource.detachTag({
                     id: $stateParams.id,
                     tagName: name
@@ -59,7 +59,7 @@ angular.module('dgc.tags.instance').controller('InstanceTagController', ['$scope
                     console.log("Detached Tag");
                     console.log(data);
 
-                    if (data.requestId != undefined && data.GUID == $stateParams.id && data.traitName == name) {
+                    if (data.requestId !== undefined && data.GUID === $stateParams.id && data.traitName === name) {
                         var curent = $event.currentTarget;
                         curent.parentElement.remove();
                         $(".popover").remove();
