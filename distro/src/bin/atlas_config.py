@@ -16,14 +16,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import getpass
-
 import os
 import platform
 import subprocess
 from threading import Thread
+from signal import SIGTERM
 import sys
 import time
 import errno
+from re import split
 
 LIB = "lib"
 CONF = "conf"
@@ -288,4 +289,39 @@ def writePid(metadata_pid_file, process):
     f.write(str(process.pid))
     f.close()
 
+def unix_exist_pid(pid):    
+    #check if process id exist in the current process table  
+    #See man 2 kill - Linux man page for info about the kill(pid,0) system function    
+    
+    try:
+        os.kill(pid, 0)
+    except OSError as e :
+        
+           return e.errno == errno.EPERM
+       
+    else:
+        return True
 
+
+def win_exist_pid(pid):
+    #The os.kill approach does not work on Windows with python 2.7
+    #the output from tasklist command is searched for the process id
+    
+    command='tasklist /fi  "pid eq '+ pid + '"'
+    sub_process=subprocess.Popen(command, stdout = subprocess.PIPE, shell=False)
+    sub_process.communicate()
+    output = subprocess.check_output(command)
+    output=split(" *",output)
+    for line in output:
+   
+        if pid in line:
+           return True
+
+    return False
+
+def server_already_running(pid):
+      print "Atlas server is already running under process %s" % pid
+      sys.exit()  
+    
+def server_pid_not_running(pid):
+      print "The Server is no longer running with pid %s" %pid

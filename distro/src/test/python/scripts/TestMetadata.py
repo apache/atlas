@@ -18,7 +18,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import sys
-
 from os import environ
 from mock import patch
 import unittest
@@ -28,36 +27,49 @@ import atlas_start as metadata
 import platform
 
 IS_WINDOWS = platform.system() == "Windows"
-
 logger = logging.getLogger()
 
 class TestMetadata(unittest.TestCase):
-
+  @patch.object(mc,"win_exist_pid") 
+  @patch.object(mc,"unix_exist_pid") 
   @patch.object(mc,"writePid")
   @patch.object(mc, "executeEnvSh")
   @patch.object(mc,"metadataDir")
   @patch.object(mc, "expandWebApp")
   @patch("os.path.exists")
   @patch.object(mc, "java")
-  def test_main(self, java_mock, exists_mock, expandWebApp_mock, metadataDir_mock, executeEnvSh_mock, writePid_mock):
+
+  def test_main(self, java_mock, exists_mock, expandWebApp_mock, metadataDir_mock, executeEnvSh_mock, writePid_mock, unix_exist_pid_mock, win_exist_pid_mock):
     sys.argv = []
     exists_mock.return_value = True
     expandWebApp_mock.return_value = "webapp"
     metadataDir_mock.return_value = "metadata_home"
+
+    win_exist_pid_mock("789")
+    win_exist_pid_mock.assert_called_with((str)(789))
+    unix_exist_pid_mock(789)
+    unix_exist_pid_mock.assert_called_with(789)
     metadata.main()
     self.assertTrue(java_mock.called)
     if IS_WINDOWS:
+      
       java_mock.assert_called_with(
         'org.apache.atlas.Atlas',
         ['-app', 'metadata_home\\server\\webapp\\atlas'],
         'metadata_home\\conf;metadata_home\\server\\webapp\\atlas\\WEB-INF\\classes;metadata_home\\server\\webapp\\atlas\\WEB-INF\\lib\\*;metadata_home\\libext\\*',
         ['-Datlas.log.dir=metadata_home\\logs', '-Datlas.log.file=application.log', '-Datlas.home=metadata_home', '-Datlas.conf=metadata_home\\conf', '-Xmx1024m', '-XX:MaxPermSize=512m', '-Dlog4j.configuration=atlas-log4j.xml'], 'metadata_home\\logs')
+      
+      
+      
+        
     else:
       java_mock.assert_called_with(
         'org.apache.atlas.Atlas',
         ['-app', 'metadata_home/server/webapp/atlas'],
         'metadata_home/conf:metadata_home/server/webapp/atlas/WEB-INF/classes:metadata_home/server/webapp/atlas/WEB-INF/lib/*:metadata_home/libext/*',
         ['-Datlas.log.dir=metadata_home/logs', '-Datlas.log.file=application.log', '-Datlas.home=metadata_home', '-Datlas.conf=metadata_home/conf', '-Xmx1024m', '-XX:MaxPermSize=512m', '-Dlog4j.configuration=atlas-log4j.xml'],  'metadata_home/logs')
+      
+      
     pass
 
   def test_jar_java_lookups_fail(self):
