@@ -43,6 +43,8 @@ allows integration with the whole enterprise data ecosystem.
    * [[Search][Search]]
    * [[security][security]]
    * [[Configuration][Configuration]]
+   * Notification
+      * [[Notification-Entity][Entity Notification]]
    * Bridges
       * [[Bridge-Hive][Hive Bridge]]
 

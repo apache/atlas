@@ -73,7 +73,7 @@ atlas.lineage.hive.table.schema.query=hive_table where name=?, columns
 </verbatim>
 
 ---+++ Notification Configs
-Refer http://kafka.apache.org/documentation.html#configuration for kafka configuration. All kafka configs should be prefixed with 'atlas.kafka.'
+Refer http://kafka.apache.org/documentation.html#configuration for Kafka configuration. All Kafka configs should be prefixed with 'atlas.kafka.'
 
 <verbatim>
 atlas.notification.embedded=true
@@ -83,7 +83,15 @@ atlas.kafka.bootstrap.servers=localhost:9027
 atlas.kafka.zookeeper.session.timeout.ms=400
 atlas.kafka.zookeeper.sync.time.ms=20
 atlas.kafka.auto.commit.interval.ms=1000
+atlas.kafka.hook.group.id=atlas
 </verbatim>
+
+Note that Kafka group ids are specified for a specific topic.  The Kafka group id configuration for entity notifications is 'atlas.kafka.entities.group.id'
+
+<verbatim>
+atlas.kafka.entities.group.id=<consumer id>
+</verbatim>
+
 
 ---+++ Client Configs
 <verbatim>

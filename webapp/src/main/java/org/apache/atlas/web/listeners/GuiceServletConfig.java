@@ -33,9 +33,13 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RepositoryMetadataModule;
+import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.notification.NotificationModule;
+import org.apache.atlas.notification.entity.NotificationEntityChangeListener;
 import org.apache.atlas.repository.graph.GraphProvider;
 import org.apache.atlas.service.Services;
+import org.apache.atlas.services.MetadataService;
+import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.web.filters.AtlasAuthenticationFilter;
 import org.apache.atlas.web.filters.AuditFilter;
 import org.apache.commons.configuration.Configuration;
@@ -114,6 +118,7 @@ public class GuiceServletConfig extends GuiceServletContextListener {
         LoginProcessor loginProcessor = new LoginProcessor();
         loginProcessor.login();
 
+        initMetadataService();
         startServices();
     }
 
@@ -153,5 +158,18 @@ public class GuiceServletConfig extends GuiceServletContextListener {
         LOG.debug("Stopping services");
         Services services = injector.getInstance(Services.class);
         services.stop();
+    }
+
+    // initialize the metadata service
+    private void initMetadataService() {
+        MetadataService metadataService = injector.getInstance(MetadataService.class);
+
+        // add a listener for entity changes
+        NotificationInterface notificationInterface = injector.getInstance(NotificationInterface.class);
+
+        NotificationEntityChangeListener listener =
+            new NotificationEntityChangeListener(notificationInterface, TypeSystem.getInstance());
+
+        metadataService.registerListener(listener);
     }
 }

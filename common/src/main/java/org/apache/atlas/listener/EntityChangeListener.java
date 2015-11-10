@@ -19,6 +19,7 @@
 package org.apache.atlas.listener;
 
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 
 import java.util.Collection;
@@ -29,28 +30,40 @@ import java.util.Collection;
 public interface EntityChangeListener {
 
     /**
-     * This is upon adding a new typed instance to the repository.
+     * This is upon adding new entities to the repository.
      *
-     * @param typedInstances a typed instance
-     * @throws AtlasException
+     * @param entities  the created entities
+     *
+     * @throws AtlasException if the listener notification fails
      */
-    void onEntityAdded(Collection<ITypedReferenceableInstance> typedInstances) throws AtlasException;
+    void onEntitiesAdded(Collection<ITypedReferenceableInstance> entities) throws AtlasException;
+
+    /**
+     * This is upon updating an entity.
+     *
+     * @param entity        the updated entity
+     *
+     * @throws AtlasException if the listener notification fails
+     */
+    void onEntityUpdated(ITypedReferenceableInstance entity) throws AtlasException;
 
     /**
      * This is upon adding a new trait to a typed instance.
      *
-     * @param guid          globally unique identifier for the entity
-     * @param traitName     trait name for the instance that needs to be added to entity
-     * @throws AtlasException
+     * @param entity        the entity
+     * @param trait     trait that needs to be added to entity
+     *
+     * @throws AtlasException if the listener notification fails
      */
-    void onTraitAdded(String guid, String traitName) throws AtlasException;
+    void onTraitAdded(ITypedReferenceableInstance entity, IStruct trait) throws AtlasException;
 
     /**
      * This is upon deleting a trait from a typed instance.
      *
-     * @param guid          globally unique identifier for the entity
+     * @param entity        the entity
      * @param traitName     trait name for the instance that needs to be deleted from entity
-     * @throws AtlasException
+     *
+     * @throws AtlasException if the listener notification fails
      */
-    void onTraitDeleted(String guid, String traitName) throws AtlasException;
+    void onTraitDeleted(ITypedReferenceableInstance entity, String traitName) throws AtlasException;
 }

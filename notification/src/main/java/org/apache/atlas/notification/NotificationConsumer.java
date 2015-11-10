@@ -17,16 +17,8 @@
 
 package org.apache.atlas.notification;
 
-public interface NotificationConsumer {
-    /**
-     * If there are more messages
-     * @return
-     */
-    boolean hasNext();
+import java.util.Iterator;
 
-    /**
-     * Next message - blocking call
-     * @return
-     */
-    String next();
+// TODO : docs!
+public interface NotificationConsumer<T> extends Iterator<T>{
 }

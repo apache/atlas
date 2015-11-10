@@ -55,11 +55,11 @@ public class NotificationHookConsumer implements Service {
         String atlasEndpoint = applicationProperties.getString(ATLAS_ENDPOINT_PROPERTY, "http://localhost:21000");
         atlasClient = new AtlasClient(atlasEndpoint);
         int numThreads = applicationProperties.getInt(CONSUMER_THREADS_PROPERTY, 1);
-        List<NotificationConsumer> consumers =
+        List<NotificationConsumer<JSONArray>> consumers =
                 notificationInterface.createConsumers(NotificationInterface.NotificationType.HOOK, numThreads);
         executors = Executors.newFixedThreadPool(consumers.size());
 
-        for (final NotificationConsumer consumer : consumers) {
+        for (final NotificationConsumer<JSONArray> consumer : consumers) {
             executors.submit(new HookConsumer(consumer));
         }
     }
@@ -78,19 +78,19 @@ public class NotificationHookConsumer implements Service {
     }
 
     class HookConsumer implements Runnable {
-        private final NotificationConsumer consumer;
+        private final NotificationConsumer<JSONArray> consumer;
 
-        public HookConsumer(NotificationConsumer consumerInterface) {
-            this.consumer = consumerInterface;
+        public HookConsumer(NotificationConsumer<JSONArray> consumer) {
+            this.consumer = consumer;
         }
 
         @Override
         public void run() {
             while(consumer.hasNext()) {
-                String entityJson = consumer.next();
+                JSONArray entityJson = consumer.next();
                 LOG.info("Processing message {}", entityJson);
                 try {
-                    JSONArray guids = atlasClient.createEntity(new JSONArray(entityJson));
+                    JSONArray guids = atlasClient.createEntity(entityJson);
                     LOG.info("Create entities with guid {}", guids);
                 } catch (Exception e) {
                     //todo handle failures

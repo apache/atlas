@@ -19,6 +19,7 @@
 package org.apache.atlas.services;
 
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.codehaus.jettison.json.JSONObject;
 
@@ -131,4 +132,18 @@ public interface MetadataService {
      * @throws AtlasException
      */
     void deleteTrait(String guid, String traitNameToBeDeleted) throws AtlasException;
+
+    /**
+     * Register a listener for entity change.
+     *
+     * @param listener  the listener to register
+     */
+    void registerListener(EntityChangeListener listener);
+
+    /**
+     * Unregister an entity change listener.
+     *
+     * @param listener  the listener to unregister
+     */
+    void unregisterListener(EntityChangeListener listener);
 }

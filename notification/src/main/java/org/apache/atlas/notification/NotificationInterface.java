@@ -17,36 +17,42 @@
 
 package org.apache.atlas.notification;
 
-import org.apache.atlas.AtlasException;
-import org.apache.commons.configuration.Configuration;
+import org.apache.atlas.notification.entity.EntityNotification;
+import org.codehaus.jettison.json.JSONArray;
 
 import java.util.List;
 
-public abstract class NotificationInterface {
-    public static final String PROPERTY_PREFIX = "atlas.notification";
-    private static final String PROPERTY_EMBEDDED = PROPERTY_PREFIX + ".embedded";
-    private boolean embedded;
+// TODO : docs!
+public interface NotificationInterface {
 
+    String PROPERTY_PREFIX = "atlas.notification";
 
-    public enum NotificationType {
-        HOOK, ENTITIES, TYPES
-    }
+    enum NotificationType {
+        HOOK(JSONArray.class), ENTITIES(EntityNotification.class);
 
-    public NotificationInterface(Configuration applicationProperties) throws AtlasException {
-        this.embedded = applicationProperties.getBoolean(PROPERTY_EMBEDDED, false);
+        private final Class classType;
+
+        NotificationType(Class classType) {
+            this.classType = classType;
+        }
+
+        public Class getClassType() {
+            return classType;
+        }
     }
 
     /**
-     * Is the notification service embedded in atlas server
-     * @return
+     * Create notification consumers for the given notification type.
+     *
+     * @param notificationType  the notification type (i.e. HOOK, ENTITIES)
+     * @param numConsumers      the number of consumers to create
+     * @param <T>               the type of the notifications
+     *
+     * @return the list of created consumers
      */
-    protected final boolean isEmbedded() {
-        return embedded;
-    }
+    <T> List<NotificationConsumer<T>> createConsumers(NotificationType notificationType, int numConsumers);
 
-    public abstract List<NotificationConsumer> createConsumers(NotificationType type, int numConsumers);
+    void send(NotificationType type, String... messages) throws NotificationException;
 
-    public abstract void send(NotificationType type, String... messages) throws NotificationException;
-
-    public abstract void close();
+    void close();
 }

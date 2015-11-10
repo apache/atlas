@@ -20,9 +20,12 @@ package org.apache.atlas.typesystem;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.classification.InterfaceAudience;
 import org.apache.atlas.typesystem.persistence.Id;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -75,6 +78,27 @@ public class Referenceable extends Struct implements IReferenceableInstance {
         traits = ImmutableMap.copyOf(_traits);
     }
 
+    /**
+     * Construct a Referenceable from the given ITypedReferenceableInstance.
+     *
+     * @param instance  the typed referenceable instance to copy
+     *
+     * @throws AtlasException if the referenceable can not be created
+     */
+    public Referenceable(ITypedReferenceableInstance instance) throws AtlasException {
+        this(instance.getId()._getId(), instance.getTypeName(), instance.getValuesMap(), instance.getTraits(),
+            getTraits(instance));
+    }
+
+    /**
+     * No-arg constructor for serialization.
+     */
+    @SuppressWarnings("unused")
+    private Referenceable() {
+        this("", "", Collections.<String, Object>emptyMap(), Collections.<String>emptyList(),
+            Collections.<String, IStruct>emptyMap());
+    }
+
     @Override
     public ImmutableList<String> getTraits() {
         return traitNames;
@@ -88,5 +112,14 @@ public class Referenceable extends Struct implements IReferenceableInstance {
     @Override
     public IStruct getTrait(String typeName) {
         return traits.get(typeName);
+    }
+
+    private static Map<String, IStruct> getTraits(ITypedReferenceableInstance instance) {
+        Map<String, IStruct> traits = new HashMap<>();
+
+        for (String traitName : instance.getTraits() ) {
+            traits.put(traitName, instance.getTrait(traitName));
+        }
+        return traits;
     }
 }
