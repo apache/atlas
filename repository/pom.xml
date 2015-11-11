@@ -114,10 +114,11 @@
             <artifactId>titan-berkeleyje</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>com.thinkaurelius.titan</groupId>
-            <artifactId>titan-hbase</artifactId>
-        </dependency>
+        <!-- Commenting out since titan-hbase classes are shaded for 1.x support -->
+        <!--<dependency>-->
+            <!--<groupId>com.thinkaurelius.titan</groupId>-->
+            <!--<artifactId>titan-hbase</artifactId>-->
+        <!--</dependency>-->
 
         <dependency>
             <groupId>org.apache.hbase</groupId>

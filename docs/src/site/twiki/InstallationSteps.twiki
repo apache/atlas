@@ -121,6 +121,16 @@ and change it to look as below
 export METADATA_SERVER_OPTS="-Djava.awt.headless=true -Djava.security.krb5.realm= -Djava.security.krb5.kdc="
 </verbatim>
 
+* Hbase as the Storage Backend for the Graph Repository
+
+By default, Atlas uses Titan as the graph repository and is the only graph repository implementation available currently.
+The HBase versions currently supported are 0.98.x, 1.0.x, 1.1.x. For configuring ATLAS graph persistence on HBase, please go through the "Configuration - Graph persistence engine - HBase" section
+for more details.
+
+Pre-requisites for running HBase as a distributed cluster
+ * 3 or 5 ZooKeeper nodes
+ * Atleast 3 RegionServer nodes. It would be ideal to run the DataNodes on the same hosts as the Region servers for data locality.
+
 * Configuring SOLR as the Indexing Backend for the Graph Repository
 
 By default, Atlas uses Titan as the graph repository and is the only graph repository implementation available currently.
@@ -151,6 +161,13 @@ For configuring Titan to work with Solr, please follow the instructions below
 </verbatim>
 
 For more information on Titan solr configuration , please refer http://s3.thinkaurelius.com/docs/titan/0.5.4/solr.htm
+
+Pre-requisites for running Solr in cloud mode
+  * Memory - Solr is both memory and CPU intensive. Make sure the server running Solr has adequate memory, CPU and disk.
+    Solr works well with 32GB RAM. Plan to provide as much memory as possible to Solr process
+  * Disk - If the number of entities that need to be stored are large, plan to have at least 500 GB free space in the volume where Solr is going to store the index data
+  * SolrCloud has support for replication and sharding. It is highly recommended to use SolrCloud with at least two Solr nodes running on different servers with replication enabled.
+    If using SolrCloud, then you also need ZooKeeper installed and configured with 3 or 5 ZooKeeper nodes
 
 *Starting Atlas Server*
 <verbatim>

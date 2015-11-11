@@ -17,6 +17,7 @@
 # limitations under the License.
 import getpass
 import os
+import re
 import platform
 import subprocess
 from threading import Thread
@@ -31,7 +32,7 @@ CONF = "conf"
 LOG="logs"
 WEBAPP="server" + os.sep + "webapp"
 DATA="data"
-ENV_KEYS = ["JAVA_HOME", "METADATA_OPTS", "METADATA_LOG_DIR", "METADATA_PID_DIR", "METADATA_CONF", "METADATACPPATH", "METADATA_DATA_DIR", "METADATA_HOME_DIR", "METADATA_EXPANDED_WEBAPP_DIR"]
+ENV_KEYS = ["JAVA_HOME", "METADATA_OPTS", "METADATA_LOG_DIR", "METADATA_PID_DIR", "METADATA_CONF", "METADATACPPATH", "METADATA_DATA_DIR", "METADATA_HOME_DIR", "METADATA_EXPANDED_WEBAPP_DIR", "HBASE_CONF_DIR"]
 METADATA_CONF = "METADATA_CONF"
 METADATA_LOG = "METADATA_LOG_DIR"
 METADATA_PID = "METADATA_PID_DIR"
@@ -39,6 +40,7 @@ METADATA_WEBAPP = "METADATA_EXPANDED_WEBAPP_DIR"
 METADATA_OPTS = "METADATA_OPTS"
 METADATA_DATA = "METADATA_DATA_DIR"
 METADATA_HOME = "METADATA_HOME_DIR"
+HBASE_CONF_DIR = "HBASE_CONF_DIR"
 IS_WINDOWS = platform.system() == "Windows"
 ON_POSIX = 'posix' in sys.builtin_module_names
 DEBUG = False
@@ -59,6 +61,10 @@ def libDir(dir) :
 def confDir(dir):
     localconf = os.path.join(dir, CONF)
     return os.environ.get(METADATA_CONF, localconf)
+
+def hbaseConfDir(atlasConfDir):
+    parentDir = os.path.dirname(atlasConfDir)
+    return os.environ.get(HBASE_CONF_DIR, os.path.join(parentDir, "hbase", CONF))
 
 def logDir(dir):
     localLog = os.path.join(dir, LOG)
@@ -320,8 +326,14 @@ def win_exist_pid(pid):
     return False
 
 def server_already_running(pid):
-      print "Atlas server is already running under process %s" % pid
-      sys.exit()  
+    print "Atlas server is already running under process %s" % pid
+    sys.exit()  
     
 def server_pid_not_running(pid):
-      print "The Server is no longer running with pid %s" %pid
+    print "The Server is no longer running with pid %s" %pid
+
+def grep(file, value):
+    for line in open(file).readlines():
+        if re.match(value, line):	
+           return line
+    return None

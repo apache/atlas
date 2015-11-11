@@ -25,6 +25,8 @@ METADATA_LOG_OPTS="-Datlas.log.dir=%s -Datlas.log.file=application.log"
 METADATA_COMMAND_OPTS="-Datlas.home=%s"
 METADATA_CONFIG_OPTS="-Datlas.conf=%s"
 DEFAULT_JVM_OPTS="-Xmx1024m -XX:MaxPermSize=512m -Dlog4j.configuration=atlas-log4j.xml"
+CONF_FILE="application.properties"
+HBASE_STORAGE_CONF_ENTRY="atlas.graph.storage.backend\s*=\s*hbase"
 
 def main():
 
@@ -50,12 +52,21 @@ def main():
     web_app_dir = mc.webAppDir(metadata_home)
     mc.expandWebApp(metadata_home)
 
+    #add hbase-site.xml to classpath
+    hbase_conf_dir = mc.hbaseConfDir(confdir)
+
     p = os.pathsep
     metadata_classpath = confdir + p \
                        + os.path.join(web_app_dir, "atlas", "WEB-INF", "classes" ) + p \
                        + os.path.join(web_app_dir, "atlas", "WEB-INF", "lib", "*" )  + p \
                        + os.path.join(metadata_home, "libext", "*")
-
+    if os.path.exists(hbase_conf_dir):
+        metadata_classpath = metadata_classpath + p \
+                            + hbase_conf_dir
+    else: 
+       storage_backend = mc.grep(os.path.join(confdir, CONF_FILE), HBASE_STORAGE_CONF_ENTRY)
+       if storage_backend != None:
+	   raise Exception("Could not find hbase-site.xml in %s. Please set env var HBASE_CONF_DIR to the hbase client conf dir", hbase_conf_dir)
     
     metadata_pid_file = mc.pidFile(metadata_home)
     

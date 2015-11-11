@@ -328,7 +328,7 @@
         <tinkerpop.version>2.6.0</tinkerpop.version>
         <titan.version>0.5.4</titan.version>
         <hadoop.version>2.7.0</hadoop.version>
-        <hbase.version>0.98.9-hadoop2</hbase.version>
+        <hbase.version>1.1.2</hbase.version>
         <solr.version>5.1.0</solr.version>
         <kafka.version>0.8.2.0</kafka.version>
         <!-- scala versions -->
@@ -1512,6 +1512,7 @@
                         <exclude>**/build.log</exclude>
                         <exclude>.bowerrc</exclude>
                         <exclude>*.json</exclude>
+                        <exclude>**/overlays/**</exclude>
                     </excludes>
                 </configuration>
                 <executions>
