@@ -42,7 +42,7 @@ public class Referenceable extends Struct implements IReferenceableInstance {
         super(typeName);
         id = new Id(typeName);
         this.traitNames = ImmutableList.copyOf(traitNames);
-        ImmutableMap.Builder<String, IStruct> b = new ImmutableMap.Builder<String, IStruct>();
+        ImmutableMap.Builder<String, IStruct> b = new ImmutableMap.Builder<>();
         for (String t : traitNames) {
             b.put(t, new Struct(t));
         }
@@ -65,9 +65,9 @@ public class Referenceable extends Struct implements IReferenceableInstance {
 
     /**
      * Not public - only use during deserialization
-     * @param guid
-     * @param typeName
-     * @param values
+     * @param guid      the unique id
+     * @param typeName  the type name
+     * @param values    the entity attribute values
      */
     @InterfaceAudience.Private
     public Referenceable(String guid, String typeName, Map<String, Object> values, List<String> _traitNames,
@@ -79,13 +79,13 @@ public class Referenceable extends Struct implements IReferenceableInstance {
     }
 
     /**
-     * Construct a Referenceable from the given ITypedReferenceableInstance.
+     * Construct a Referenceable from the given IReferenceableInstance.
      *
-     * @param instance  the typed referenceable instance to copy
+     * @param instance  the referenceable instance to copy
      *
      * @throws AtlasException if the referenceable can not be created
      */
-    public Referenceable(ITypedReferenceableInstance instance) throws AtlasException {
+    public Referenceable(IReferenceableInstance instance) throws AtlasException {
         this(instance.getId()._getId(), instance.getTypeName(), instance.getValuesMap(), instance.getTraits(),
             getTraits(instance));
     }
@@ -114,11 +114,10 @@ public class Referenceable extends Struct implements IReferenceableInstance {
         return traits.get(typeName);
     }
 
-    private static Map<String, IStruct> getTraits(ITypedReferenceableInstance instance) {
+    private static Map<String, IStruct> getTraits(IReferenceableInstance instance) throws AtlasException {
         Map<String, IStruct> traits = new HashMap<>();
-
         for (String traitName : instance.getTraits() ) {
-            traits.put(traitName, instance.getTrait(traitName));
+            traits.put(traitName, new Struct(traitName, instance.getTrait(traitName).getValuesMap()));
         }
         return traits;
     }

@@ -9,6 +9,7 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (sumasai via shwethags)
 
 ALL CHANGES:
+ATLAS-296 IllegalArgumentException during hive HiveHookIT integration tests (tbeerbower via shwethags)
 ATLAS-158 Provide Atlas Entity Change Notification (tbeerbower via shwethags)
 ATALS-238 atlas_start.py- the Atlas server won’t restart after improper shutdown(ndjouri via sumasai)
 ATLAS-293 UI Requires Internet Access For UI Facelift (darshankumar89 via shwethags)
