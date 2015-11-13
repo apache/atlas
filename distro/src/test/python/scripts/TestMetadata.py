@@ -56,7 +56,7 @@ class TestMetadata(unittest.TestCase):
       java_mock.assert_called_with(
         'org.apache.atlas.Atlas',
         ['-app', 'metadata_home\\server\\webapp\\atlas'],
-        'metadata_home\\conf;metadata_home\\server\\webapp\\atlas\\WEB-INF\\classes;metadata_home\\server\\webapp\\atlas\\WEB-INF\\lib\\*;metadata_home\\libext\\*',
+        'metadata_home\\conf;metadata_home\\server\\webapp\\atlas\\WEB-INF\\classes;metadata_home\\server\\webapp\\atlas\\WEB-INF\\lib\\*;metadata_home\\libext\\*;metadata_home\\hbase\\conf',
         ['-Datlas.log.dir=metadata_home\\logs', '-Datlas.log.file=application.log', '-Datlas.home=metadata_home', '-Datlas.conf=metadata_home\\conf', '-Xmx1024m', '-XX:MaxPermSize=512m', '-Dlog4j.configuration=atlas-log4j.xml'], 'metadata_home\\logs')
       
       
@@ -66,7 +66,7 @@ class TestMetadata(unittest.TestCase):
       java_mock.assert_called_with(
         'org.apache.atlas.Atlas',
         ['-app', 'metadata_home/server/webapp/atlas'],
-        'metadata_home/conf:metadata_home/server/webapp/atlas/WEB-INF/classes:metadata_home/server/webapp/atlas/WEB-INF/lib/*:metadata_home/libext/*',
+        'metadata_home/conf:metadata_home/server/webapp/atlas/WEB-INF/classes:metadata_home/server/webapp/atlas/WEB-INF/lib/*:metadata_home/libext/*:metadata_home/hbase/conf',
         ['-Datlas.log.dir=metadata_home/logs', '-Datlas.log.file=application.log', '-Datlas.home=metadata_home', '-Datlas.conf=metadata_home/conf', '-Xmx1024m', '-XX:MaxPermSize=512m', '-Dlog4j.configuration=atlas-log4j.xml'],  'metadata_home/logs')
       
       

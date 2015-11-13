@@ -9,6 +9,7 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (sumasai via shwethags)
 
 ALL CHANGES:
+ATLAS-301 Atlas Distribution module test is failing (yhemanth via shwethags)
 ATLAS-114 Upgrade hbase client to 1.1.2 (sumasai)
 ATLAS-296 IllegalArgumentException during hive HiveHookIT integration tests (tbeerbower via shwethags)
 ATLAS-158 Provide Atlas Entity Change Notification (tbeerbower via shwethags)
