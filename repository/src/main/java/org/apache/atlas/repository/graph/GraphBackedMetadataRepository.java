@@ -357,6 +357,10 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             if (attrTypeCategory == DataTypes.TypeCategory.PRIMITIVE) {
                 instance.set(property, value);
             } else if (attrTypeCategory == DataTypes.TypeCategory.CLASS) {
+
+                // Disconnect any existing reference to the previous reference target.
+                disconnectClassReference(instanceVertex, attributeInfo, instance);
+
                 Id id = new Id(value, 0, attributeInfo.dataType().getName());
                 instance.set(property, id);
             } else {
@@ -370,6 +374,19 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             throw e;
         } catch (Exception e) {
             throw new RepositoryException(e);
+        }
+    }
+
+    private void disconnectClassReference(Vertex instanceVertex, AttributeInfo attributeInfo,
+        ITypedReferenceableInstance instance) throws AtlasException {
+
+        String edgeLabel = getEdgeLabel(instance, attributeInfo);
+        Iterable<Edge> edges = instanceVertex.getEdges(Direction.OUT, edgeLabel);
+        if (edges != null) {
+            Iterator<Edge> it = edges.iterator();
+            if (it.hasNext()) {
+                titanGraph.removeEdge(it.next());
+            }
         }
     }
 
@@ -849,7 +866,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 }
 
                 if (referenceVertex != null) {
-                    // add an edge to the class vertex from the instance
+                    // Add an edge to the class vertex from the instance.
                     Edge edge = GraphHelper.addEdge(titanGraph, instanceVertex, referenceVertex, propertyKey);
                     return String.valueOf(edge.getId());
                 }

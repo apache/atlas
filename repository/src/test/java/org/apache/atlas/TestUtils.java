@@ -114,7 +114,8 @@ public final class TestUtils {
                 createOptionalAttrDef("orgLevel", "OrgLevel"),
                 createOptionalAttrDef("address", "Address"),
                 new AttributeDefinition("department", "Department", Multiplicity.REQUIRED, false, "employees"),
-                new AttributeDefinition("manager", "Manager", Multiplicity.OPTIONAL, false, "subordinates"));
+                new AttributeDefinition("manager", "Manager", Multiplicity.OPTIONAL, false, "subordinates"),
+                new AttributeDefinition("mentor", "Person", Multiplicity.OPTIONAL, false, null));
 
         HierarchicalTypeDefinition<ClassType> managerTypeDef = createClassTypeDef("Manager", ImmutableList.of("Person"),
                 new AttributeDefinition("subordinates", String.format("array<%s>", "Person"), Multiplicity.COLLECTION,
@@ -135,7 +136,11 @@ public final class TestUtils {
         Referenceable jane = new Referenceable("Manager", "SecurityClearance");
         Referenceable johnAddr = new Referenceable("Address");
         Referenceable janeAddr = new Referenceable("Address");
-
+        Referenceable julius = new Referenceable("Manager");
+        Referenceable juliusAddr = new Referenceable("Address");
+        Referenceable max = new Referenceable("Person");
+        Referenceable maxAddr = new Referenceable("Address");
+        
         hrDept.set("name", "hr");
         john.set("name", "John");
         john.set("department", hrDept);
@@ -149,11 +154,26 @@ public final class TestUtils {
         janeAddr.set("city", "Santa Clara");
         jane.set("address", janeAddr);
 
+        julius.set("name", "Julius");
+        julius.set("department", hrDept);
+        juliusAddr.set("street", "Madison Ave");
+        juliusAddr.set("city", "Newtonville");
+        julius.set("address", juliusAddr);
+        julius.set("subordinates", ImmutableList.<Referenceable>of());
+        
+        max.set("name", "Max");
+        max.set("department", hrDept);
+        maxAddr.set("street", "Ripley St");
+        maxAddr.set("city", "Newton");
+        max.set("address", maxAddr);
+        max.set("manager", jane);
+        max.set("mentor", julius);
+        
         john.set("manager", jane);
 
-        hrDept.set("employees", ImmutableList.of(john, jane));
+        hrDept.set("employees", ImmutableList.of(john, jane, julius, max));
 
-        jane.set("subordinates", ImmutableList.of(john));
+        jane.set("subordinates", ImmutableList.of(john, max));
 
         jane.getTrait("SecurityClearance").set("level", 1);
 
