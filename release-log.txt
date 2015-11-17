@@ -9,6 +9,7 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (sumasai via shwethags)
 
 ALL CHANGES:
+ATLAS-300 Need additional integration test coverage for entity notifications (tbeerbower via shwethags)
 ATLAS-304 surefire fails to run tests if maven project directory path has embedded space(dkantor via sumasai)
 ATLAS-301 Atlas Distribution module test is failing (yhemanth via shwethags)
 ATLAS-114 Upgrade hbase client to 1.1.2 (sumasai)

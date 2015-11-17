@@ -42,108 +42,108 @@ import static org.testng.Assert.assertTrue;
  */
 public class EntityNotificationImplTest {
 
-  @Test
-  public void testGetEntity() throws Exception {
-    Referenceable entity = getEntity("id");
+    @Test
+    public void testGetEntity() throws Exception {
+        Referenceable entity = getEntity("id");
 
-    EntityNotificationImpl entityNotification =
-        new EntityNotificationImpl(entity, EntityNotification.OperationType.ENTITY_CREATE,
-            Collections.<IStruct>emptyList());
+        EntityNotificationImpl entityNotification =
+            new EntityNotificationImpl(entity, EntityNotification.OperationType.ENTITY_CREATE,
+                Collections.<IStruct>emptyList());
 
-    assertEquals(entity, entityNotification.getEntity());
-  }
-
-  @Test
-  public void testGetOperationType() throws Exception {
-    Referenceable entity = getEntity("id");
-
-    EntityNotificationImpl entityNotification =
-        new EntityNotificationImpl(entity, EntityNotification.OperationType.ENTITY_CREATE,
-            Collections.<IStruct>emptyList());
-
-    assertEquals(EntityNotification.OperationType.ENTITY_CREATE, entityNotification.getOperationType());
-  }
-
-  @Test
-  public void testGetAllTraits() throws Exception {
-    Referenceable entity = getEntity("id");
-    String traitName = "MyTrait";
-    List<IStruct> traitInfo = new LinkedList<>();
-    IStruct trait = new Struct(traitName, Collections.<String, Object>emptyMap());
-    traitInfo.add(trait);
-
-    EntityNotificationImpl entityNotification =
-        new EntityNotificationImpl(entity, EntityNotification.OperationType.TRAIT_ADD, traitInfo);
-
-    assertEquals(traitInfo, entityNotification.getAllTraits());
-  }
-
-  @Test
-  public void testGetAllTraits_superTraits() throws Exception {
-
-    TypeSystem typeSystem = mock(TypeSystem.class);
-
-    String traitName = "MyTrait";
-    IStruct myTrait = new Struct(traitName);
-
-    String superTraitName = "MySuperTrait";
-
-    TraitType traitDef = mock(TraitType.class);
-    Set<String> superTypeNames = Collections.singleton(superTraitName);
-
-    TraitType superTraitDef = mock(TraitType.class);
-    Set<String> superSuperTypeNames = Collections.emptySet();
-
-    Referenceable entity = getEntity("id", myTrait);
-
-    when(typeSystem.getDataType(TraitType.class, traitName)).thenReturn(traitDef);
-    when(typeSystem.getDataType(TraitType.class, superTraitName)).thenReturn(superTraitDef);
-
-    when(traitDef.getAllSuperTypeNames()).thenReturn(superTypeNames);
-    when(superTraitDef.getAllSuperTypeNames()).thenReturn(superSuperTypeNames);
-
-    EntityNotificationImpl entityNotification =
-        new EntityNotificationImpl(entity, EntityNotification.OperationType.TRAIT_ADD, typeSystem);
-
-    List<IStruct> allTraits = entityNotification.getAllTraits();
-
-    assertEquals(2, allTraits.size());
-
-    for (IStruct trait : allTraits) {
-      String typeName = trait.getTypeName();
-      assertTrue(typeName.equals(traitName) || typeName.equals(superTraitName));
+        assertEquals(entity, entityNotification.getEntity());
     }
-  }
 
-  @Test
-  public void testEquals() throws Exception {
-    Referenceable entity = getEntity("id");
+    @Test
+    public void testGetOperationType() throws Exception {
+        Referenceable entity = getEntity("id");
 
-    EntityNotificationImpl entityNotification2 =
-        new EntityNotificationImpl(entity, EntityNotification.OperationType.ENTITY_CREATE,
-            Collections.<IStruct>emptyList());
+        EntityNotificationImpl entityNotification =
+            new EntityNotificationImpl(entity, EntityNotification.OperationType.ENTITY_CREATE,
+                Collections.<IStruct>emptyList());
 
-    EntityNotificationImpl entityNotification =
-        new EntityNotificationImpl(entity, EntityNotification.OperationType.ENTITY_CREATE,
-            Collections.<IStruct>emptyList());
-
-    assertTrue(entityNotification.equals(entityNotification2));
-    assertTrue(entityNotification2.equals(entityNotification));
-  }
-
-  private Referenceable getEntity(String id, IStruct ... traits) {
-    String typeName = "typeName";
-    Map<String, Object> values = new HashMap<>();
-
-    List<String> traitNames = new LinkedList<>();
-    Map<String, IStruct> traitMap = new HashMap<>();
-
-    for (IStruct trait : traits) {
-      String traitName = trait.getTypeName();
-
-      traitNames.add(traitName);
-      traitMap.put(traitName, trait);
+        assertEquals(EntityNotification.OperationType.ENTITY_CREATE, entityNotification.getOperationType());
     }
-    return new Referenceable(id, typeName, values, traitNames, traitMap);
-  }
+
+    @Test
+    public void testGetAllTraits() throws Exception {
+        Referenceable entity = getEntity("id");
+        String traitName = "MyTrait";
+        List<IStruct> traitInfo = new LinkedList<>();
+        IStruct trait = new Struct(traitName, Collections.<String, Object>emptyMap());
+        traitInfo.add(trait);
+
+        EntityNotificationImpl entityNotification =
+            new EntityNotificationImpl(entity, EntityNotification.OperationType.TRAIT_ADD, traitInfo);
+
+        assertEquals(traitInfo, entityNotification.getAllTraits());
+    }
+
+    @Test
+    public void testGetAllTraits_superTraits() throws Exception {
+
+        TypeSystem typeSystem = mock(TypeSystem.class);
+
+        String traitName = "MyTrait";
+        IStruct myTrait = new Struct(traitName);
+
+        String superTraitName = "MySuperTrait";
+
+        TraitType traitDef = mock(TraitType.class);
+        Set<String> superTypeNames = Collections.singleton(superTraitName);
+
+        TraitType superTraitDef = mock(TraitType.class);
+        Set<String> superSuperTypeNames = Collections.emptySet();
+
+        Referenceable entity = getEntity("id", myTrait);
+
+        when(typeSystem.getDataType(TraitType.class, traitName)).thenReturn(traitDef);
+        when(typeSystem.getDataType(TraitType.class, superTraitName)).thenReturn(superTraitDef);
+
+        when(traitDef.getAllSuperTypeNames()).thenReturn(superTypeNames);
+        when(superTraitDef.getAllSuperTypeNames()).thenReturn(superSuperTypeNames);
+
+        EntityNotificationImpl entityNotification =
+            new EntityNotificationImpl(entity, EntityNotification.OperationType.TRAIT_ADD, typeSystem);
+
+        List<IStruct> allTraits = entityNotification.getAllTraits();
+
+        assertEquals(2, allTraits.size());
+
+        for (IStruct trait : allTraits) {
+            String typeName = trait.getTypeName();
+            assertTrue(typeName.equals(traitName) || typeName.equals(superTraitName));
+        }
+    }
+
+    @Test
+    public void testEquals() throws Exception {
+        Referenceable entity = getEntity("id");
+
+        EntityNotificationImpl entityNotification2 =
+            new EntityNotificationImpl(entity, EntityNotification.OperationType.ENTITY_CREATE,
+                Collections.<IStruct>emptyList());
+
+        EntityNotificationImpl entityNotification =
+            new EntityNotificationImpl(entity, EntityNotification.OperationType.ENTITY_CREATE,
+                Collections.<IStruct>emptyList());
+
+        assertTrue(entityNotification.equals(entityNotification2));
+        assertTrue(entityNotification2.equals(entityNotification));
+    }
+
+    private Referenceable getEntity(String id, IStruct... traits) {
+        String typeName = "typeName";
+        Map<String, Object> values = new HashMap<>();
+
+        List<String> traitNames = new LinkedList<>();
+        Map<String, IStruct> traitMap = new HashMap<>();
+
+        for (IStruct trait : traits) {
+            String traitName = trait.getTypeName();
+
+            traitNames.add(traitName);
+            traitMap.put(traitName, trait);
+        }
+        return new Referenceable(id, typeName, values, traitNames, traitMap);
+    }
 }
