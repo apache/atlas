@@ -9,6 +9,7 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (sumasai via shwethags)
 
 ALL CHANGES:
+ATLAS-306 change javadoc generation from 'package' to 'site' phase(jspeidel via sumasai)
 ATLAS-289 updateEntity does not remove existing edge for multiplicity-one reference (dkantor via shwethags)
 ATLAS-300 Need additional integration test coverage for entity notifications (tbeerbower via shwethags)
 ATLAS-304 surefire fails to run tests if maven project directory path has embedded space(dkantor via sumasai)
