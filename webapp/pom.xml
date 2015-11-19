@@ -337,7 +337,7 @@
                     <skip>${skipTests}</skip>
                     <!--only skip int tests -->
                     <httpConnector>
-                        <port>21000</port>
+                        <port>31000</port>
                         <idleTimeout>60000</idleTimeout>
                     </httpConnector>
                     <war>${project.build.directory}/atlas-webapp-${project.version}.war</war>
@@ -374,7 +374,7 @@
                         </systemProperty>
                     </systemProperties>
                     <stopKey>atlas-stop</stopKey>
-                    <stopPort>21001</stopPort>
+                    <stopPort>31001</stopPort>
                     <daemon>${debug.jetty.daemon}</daemon>
                     <testClassesDirectory>${project.build.directory}/../../webapp/target/test-classes/</testClassesDirectory>
                     <useTestClasspath>true</useTestClasspath>

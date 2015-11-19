@@ -18,12 +18,14 @@
 
 package org.apache.atlas.hive.hook;
 
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.ParamChecker;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.typesystem.Referenceable;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
@@ -60,7 +62,8 @@ public class HiveHookIT {
         ss = SessionState.start(ss);
         SessionState.setCurrentSessionState(ss);
 
-        dgiCLient = new AtlasClient(DGI_URL);
+        Configuration configuration = ApplicationProperties.get();
+        dgiCLient = new AtlasClient(configuration.getString(HiveMetaStoreBridge.ATLAS_ENDPOINT, DGI_URL));
     }
 
     private void runCommand(String cmd) throws Exception {

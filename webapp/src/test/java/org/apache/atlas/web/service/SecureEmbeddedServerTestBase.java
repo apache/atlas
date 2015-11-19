@@ -19,9 +19,11 @@ package org.apache.atlas.web.service;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.Atlas;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.web.TestUtils;
 import org.apache.atlas.web.resources.AdminJerseyResourceIT;
-import org.apache.atlas.web.resources.BaseResourceIT;
 import org.apache.atlas.web.resources.EntityJerseyResourceIT;
 import org.apache.atlas.web.resources.MetadataDiscoveryJerseyResourceIT;
 import org.apache.atlas.web.resources.RexsterGraphJerseyResourceIT;
@@ -35,7 +37,6 @@ import org.apache.hadoop.security.alias.JavaKeyStoreProvider;
 import org.testng.Assert;
 import org.testng.TestListenerAdapter;
 import org.testng.TestNG;
-import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -57,10 +58,12 @@ import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_PASSWORD_K
 public class SecureEmbeddedServerTestBase {
 
 
+    public static final int ATLAS_DEFAULT_HTTPS_PORT = 21443;
     private SecureEmbeddedServer secureEmbeddedServer;
     protected String providerUrl;
     private Path jksPath;
     protected WebResource service;
+    private int securePort;
 
     static {
         //for localhost testing only
@@ -79,13 +82,9 @@ public class SecureEmbeddedServerTestBase {
     }
 
     @BeforeClass
-    public void setupServerURI() throws Exception {
-        BaseResourceIT.baseUrl = "https://localhost:21443";
-    }
-
-    @AfterClass
-    public void resetServerURI() throws Exception {
-        BaseResourceIT.baseUrl = "http://localhost:21000";
+    public void setupSecurePort() throws AtlasException {
+        org.apache.commons.configuration.Configuration configuration = ApplicationProperties.get();
+        securePort = configuration.getInt(Atlas.ATLAS_SERVER_HTTPS_PORT, ATLAS_DEFAULT_HTTPS_PORT);
     }
 
     @BeforeMethod
@@ -93,7 +92,7 @@ public class SecureEmbeddedServerTestBase {
         jksPath = new Path(Files.createTempDirectory("tempproviders").toString(), "test.jks");
         providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file/" + jksPath.toUri();
 
-        String baseUrl = "https://localhost:21443/";
+        String baseUrl = String.format("https://localhost:%d/", securePort);
 
         DefaultClientConfig config = new DefaultClientConfig();
         Client client = Client.create(config);
@@ -106,7 +105,7 @@ public class SecureEmbeddedServerTestBase {
     public void testNoConfiguredCredentialProvider() throws Exception {
 
         try {
-            secureEmbeddedServer = new SecureEmbeddedServer(21443, TestUtils.getWarPath());
+            secureEmbeddedServer = new SecureEmbeddedServer(securePort, TestUtils.getWarPath());
             secureEmbeddedServer.server.start();
 
             Assert.fail("Should have thrown an exception");
@@ -125,7 +124,7 @@ public class SecureEmbeddedServerTestBase {
         configuration.setProperty(CERT_STORES_CREDENTIAL_PROVIDER_PATH, providerUrl);
 
         try {
-            secureEmbeddedServer = new SecureEmbeddedServer(21443, TestUtils.getWarPath()) {
+            secureEmbeddedServer = new SecureEmbeddedServer(securePort, TestUtils.getWarPath()) {
                 @Override
                 protected PropertiesConfiguration getConfiguration() {
                     return configuration;
@@ -152,7 +151,7 @@ public class SecureEmbeddedServerTestBase {
         setupCredentials();
 
         try {
-            secureEmbeddedServer = new SecureEmbeddedServer(21443, TestUtils.getWarPath()) {
+            secureEmbeddedServer = new SecureEmbeddedServer(securePort, TestUtils.getWarPath()) {
                 @Override
                 protected PropertiesConfiguration getConfiguration() {
                     return configuration;

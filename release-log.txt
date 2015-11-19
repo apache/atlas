@@ -9,6 +9,7 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (sumasai via shwethags)
 
 ALL CHANGES:
+ATLAS-297 KafkaNotificationTest.testSendReceiveMessage fails when atlas-server is running on the same machine (yhemanth via shwethags)
 ATLAS-306 change javadoc generation from 'package' to 'site' phase(jspeidel via sumasai)
 ATLAS-289 updateEntity does not remove existing edge for multiplicity-one reference (dkantor via shwethags)
 ATLAS-300 Need additional integration test coverage for entity notifications (tbeerbower via shwethags)
