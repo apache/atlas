@@ -297,7 +297,7 @@ public class HiveHookIT {
         String query = String.format(
                 "%s as t where tableName = '%s', db where name = '%s' and clusterName = '%s'" + " select t",
                 HiveDataTypes.HIVE_TABLE.getName(), tableName.toLowerCase(), dbName.toLowerCase(), CLUSTER_NAME);
-        return assertEntityIsRegistered(query);
+        return assertEntityIsRegistered(query, "t");
     }
 
     private String assertDatabaseIsRegistered(String dbName) throws Exception {
@@ -322,10 +322,10 @@ public class HiveHookIT {
                                + "db where name = '%s' and clusterName = '%s' select p", typeName, value,
                             tableName.toLowerCase(), dbName.toLowerCase(), CLUSTER_NAME);
 
-        assertEntityIsRegistered(dslQuery);
+        assertEntityIsRegistered(dslQuery, "p");
     }
 
-    private String assertEntityIsRegistered(final String query) throws Exception {
+    private String assertEntityIsRegistered(final String query, String... arg) throws Exception {
         waitFor(2000, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
@@ -334,6 +334,8 @@ public class HiveHookIT {
             }
         });
 
+        String column = (arg.length > 0) ? arg[0] : "_col_0";
+
         JSONArray results = dgiCLient.search(query);
         JSONObject row = results.getJSONObject(0);
         if (row.has("__guid")) {
@@ -341,7 +343,7 @@ public class HiveHookIT {
         } else if (row.has("$id$")) {
             return row.getJSONObject("$id$").getString("id");
         } else {
-            return row.getJSONObject("_col_0").getString("id");
+            return row.getJSONObject(column).getString("id");
         }
     }
 

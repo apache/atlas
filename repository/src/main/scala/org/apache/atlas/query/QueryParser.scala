@@ -78,7 +78,7 @@ trait ExpressionUtils {
     def select(input: Expression, s: List[(Expression, Option[String])]) = {
         val selList = s.map { t =>
             t._2 match {
-                case None => t._1
+                case None => t._1.as(s"${t._1}")
                 case _ => t._1.as(t._2.get)
             }
         }

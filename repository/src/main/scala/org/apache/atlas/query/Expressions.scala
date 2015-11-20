@@ -676,13 +676,11 @@ object Expressions {
         override def toString = s"$child where $condExpr"
     }
 
-    val GEN_COL_ALIAS_PREFIX = "_col"
-
     case class SelectExpression(child: Expression, selectList: List[Expression]) extends Expression {
         val children = List(child) ::: selectList
         lazy val selectListWithAlias = selectList.zipWithIndex map {
             case (s: AliasExpression, _) => s
-            case (x, i) => new AliasExpression(x, s"${GEN_COL_ALIAS_PREFIX}_$i")
+            case (x, i) => new AliasExpression(x, s"${x}")
         }
 
         lazy val dataType = {
