@@ -136,17 +136,20 @@ Pre-requisites for running HBase as a distributed cluster
 By default, Atlas uses Titan as the graph repository and is the only graph repository implementation available currently.
 For configuring Titan to work with Solr, please follow the instructions below
 <verbatim>
-* Install solr if not already running. Version of SOLR supported is 5.2.1.
+* Install solr if not already running. The version of SOLR supported is 5.2.1. Could be installed from http://archive.apache.org/dist/lucene/solr/5.2.1/solr-5.2.1.tgz
 
 * Start solr in cloud mode.
   SolrCloud mode uses a ZooKeeper Service as a highly available, central location for cluster management.
   For a small cluster, running with an existing ZooKeeper quorum should be fine. For larger clusters, you would want to run separate multiple ZooKeeper quorum with atleast 3 servers.
   Note: Atlas currently supports solr in "cloud" mode only. "http" mode is not supported. For more information, refer solr documentation - https://cwiki.apache.org/confluence/display/solr/SolrCloud
 
-* Run the following commands from SOLR_HOME directory to create collections in Solr corresponding to the indexes that Atlas uses
-  bin/solr create -c vertex_index -d ATLAS_HOME/conf/solr -shards #numShards -replicationFactor #replicationFactor
-  bin/solr create -c edge_index -d ATLAS_HOME/conf/solr -shards #numShards -replicationFactor #replicationFactor
-  bin/solr create -c fulltext_index -d ATLAS_HOME/conf/solr -shards #numShards -replicationFactor #replicationFactor
+* Run the following commands from SOLR_HOME directory to create collections in Solr corresponding to the indexes that Atlas uses. In the case that the ATLAS and SOLR instance are on 2 different hosts,
+  first copy the required configuration files from ATLAS_HOME/conf/solr on the ATLAS instance host to the Solr instance host. SOLR_CONF in the below mentioned commands refer to the directory where the solr configuration files
+  have been copied to on Solr host:
+
+  bin/solr create -c vertex_index -d SOLR_CONF -shards #numShards -replicationFactor #replicationFactor
+  bin/solr create -c edge_index -d SOLR_CONF -shards #numShards -replicationFactor #replicationFactor
+  bin/solr create -c fulltext_index -d SOLR_CONF -shards #numShards -replicationFactor #replicationFactor
 
   Note: If numShards and replicationFactor are not specified, they default to 1 which suffices if you are trying out solr with ATLAS on a single node instance.
   Otherwise specify numShards according to the number of hosts that are in the Solr cluster and the maxShardsPerNode configuration.
