@@ -37,10 +37,21 @@ def main():
         pf.close()
     except:
         pid = None
-
     if not pid:
         sys.stderr.write("No process ID file found. Server not running?\n")
         return
+    if  mc.ON_POSIX:
+
+            if not mc.unix_exist_pid(pid):
+               sys.stderr.write("Server no longer running with pid %s\nImproper shutdown?\npid file deleted.\n" %pid)
+               os.remove(metadata_pid_file)
+               return
+    else:
+        if mc.IS_WINDOWS:
+            if not mc.win_exist_pid((str)(pid)):
+                sys.stderr.write("Server no longer running with pid %s\nImproper shutdown?\npid file deleted.\n" %pid)
+                os.remove(metadata_pid_file)
+                return
 
     os.kill(pid, SIGTERM)
 
