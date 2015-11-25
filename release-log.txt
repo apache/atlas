@@ -9,6 +9,7 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (sumasai via shwethags)
 
 ALL CHANGES:
+ATLAS-220 Gets on Enum attribute should return EnumValue(yhemanth via sumasai)
 ATLAS-334 Update documentation to reflect copying required atlas file on solr installation (sumasai via shwethags)
 ATLAS-294 Select queries(ex: from DB select DB.name) response contains column names as "_col_x" instead of the actual names requested in the query.(thiyag via sumasai)
 ATLAS-297 KafkaNotificationTest.testSendReceiveMessage fails when atlas-server is running on the same machine (yhemanth via shwethags)

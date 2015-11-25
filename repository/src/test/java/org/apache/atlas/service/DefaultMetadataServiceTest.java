@@ -31,6 +31,8 @@ import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.json.TypesSerialization;
+import org.apache.atlas.typesystem.types.EnumType;
+import org.apache.atlas.typesystem.types.EnumValue;
 import org.apache.commons.lang.RandomStringUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.testng.Assert;
@@ -123,6 +125,27 @@ public class DefaultMetadataServiceTest {
         Referenceable tableDefinition = InstanceSerialization.fromJsonReferenceable(tableDefinitionJson, true);
         Referenceable actualDb = (Referenceable) tableDefinition.get("database");
         Assert.assertEquals(actualDb.getId().id, dbId);
+    }
+
+    @Test
+    public void testCreateEntityWithEnum() throws Exception {
+        Referenceable dbEntity = createDBEntity();
+        String db = createInstance(dbEntity);
+
+        Referenceable table = new Referenceable(TestUtils.TABLE_TYPE);
+        table.set("name", TestUtils.randomString());
+        table.set("description", "random table");
+        table.set("type", "type");
+        table.set("tableType", "MANAGED");
+        table.set("database", dbEntity);
+        createInstance(table);
+
+        String tableDefinitionJson =
+                metadataService.getEntityDefinition(TestUtils.TABLE_TYPE, "name", (String) table.get("name"));
+        Referenceable tableDefinition = InstanceSerialization.fromJsonReferenceable(tableDefinitionJson, true);
+        EnumValue tableType = (EnumValue) tableDefinition.get("tableType");
+
+        Assert.assertEquals(tableType, new EnumValue("MANAGED", 1));
     }
 
     @Test

@@ -259,8 +259,14 @@ object InstanceSerialization {
         asJava(r.traits).asInstanceOf[java.util.Map[String, IStruct]])
     }
     case l : List[_] => l.map(e => asJava(e)).toList.asJava
-    case m : Map[_, _] if Try{m.asInstanceOf[Map[String,_]]}.isDefined =>
-      new InstanceJavaConversion(m.asInstanceOf[Map[String,_]], format).convert
+    case m : Map[_, _] if Try{m.asInstanceOf[Map[String,_]]}.isDefined => {
+      if (m.keys.size == 2 && m.keys.contains("value") && m.keys.contains("ordinal")) {
+        new EnumValue(m.get("value").toString, m.get("ordinal").asInstanceOf[BigInt].intValue())
+      } else {
+        new InstanceJavaConversion(m.asInstanceOf[Map[String,_]], format).convert
+      }
+    }
+
     case _ => v
   }
 
