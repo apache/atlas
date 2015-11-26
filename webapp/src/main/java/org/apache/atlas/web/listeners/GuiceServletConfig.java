@@ -58,7 +58,7 @@ public class GuiceServletConfig extends GuiceServletContextListener {
 
     private static final String GUICE_CTX_PARAM = "guice.packages";
     static final String HTTP_AUTHENTICATION_ENABLED = "atlas.http.authentication.enabled";
-    protected Injector injector;
+    protected volatile Injector injector;
 
     @Override
     protected Injector getInjector() {
@@ -70,6 +70,11 @@ public class GuiceServletConfig extends GuiceServletContextListener {
 		 * .html
 		 */
         if (injector == null) {
+
+            // perform login operations
+            LoginProcessor loginProcessor = new LoginProcessor();
+            loginProcessor.login();
+
             injector = Guice.createInjector(new RepositoryMetadataModule(), new NotificationModule(),
                     new JerseyServletModule() {
                         @Override
@@ -113,10 +118,6 @@ public class GuiceServletConfig extends GuiceServletContextListener {
         super.contextInitialized(servletContextEvent);
 
         installLogBridge();
-
-        // perform login operations
-        LoginProcessor loginProcessor = new LoginProcessor();
-        loginProcessor.login();
 
         initMetadataService();
         startServices();
