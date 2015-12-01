@@ -45,6 +45,19 @@ Advanced configuration
 # If you are planning to use any of the configs mentioned below, they need to be prefixed with "atlas.graph." to take effect in ATLAS
 Refer http://s3.thinkaurelius.com/docs/titan/0.5.4/titan-config-ref.html#_storage_hbase
 
+Permissions
+
+When Atlas is configured with HBase as the storage backend the graph db (titan) needs sufficient user permissions to be able to create and access an HBase table.  In a secure cluster it may be necessary to grant permissions to the 'atlas' user for the 'titan' table.
+
+With Ranger, a policy can be configured for 'titan'.
+
+Without Ranger, HBase shell can be used to set the permissions.
+
+<verbatim>
+   su hbase
+   kinit -k -t <hbase keytab> <hbase principal>
+   echo "grant 'atlas', 'RWXCA', 'titan'" | hbase shell
+</verbatim>
 
 ---++++ Graph Search Index
 This section sets up the graph db - titan - to use an search indexing system. The example
