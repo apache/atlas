@@ -44,6 +44,27 @@ The properties for configuring service authentication are:
 
 Note that when Atlas is configured with HBase as the storage backend in a secure cluster, the graph db (titan) needs sufficient user permissions to be able to create and access an HBase table.  To grant the appropriate permissions see [[Configuration][Graph persistence engine - Hbase]].
 
+---+++ JAAS configuration
+
+When Atlas is configured with HBase as the storage backend in a secure cluster, a JAAS configuration file should be created and specified so that the HBase client can attempt to SASL-authenticate.
+
+   * Create Atlas JAAS configuration file (e.g. /etc/atlas/conf/atlas-jaas.conf).
+
+<verbatim>
+	Client {
+	   com.sun.security.auth.module.Krb5LoginModule required
+	   useKeyTab=true
+	   useTicketCache=false
+	   storeKey=true
+	   doNotPrompt=false
+	   keyTab="<atlas keytab>"
+	   principal="<atlas principal>";
+	};
+</verbatim>
+
+   * Update Atlas METADATA_OPTS to include ‘java.security.auth.login.config’ set to the above Atlas JAAS configuration file.
+      * For example, <code>-Djava.security.auth.login.config=/etc/atlas/conf/atlas-jaas.conf</code>
+
 ---+++ SPNEGO-based HTTP Authentication
 
 HTTP access to the Atlas platform can be secured by enabling the platform's SPNEGO support.  There are currently two supported authentication mechanisms:

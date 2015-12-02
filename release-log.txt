@@ -9,6 +9,7 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (sumasai via shwethags)
 
 ALL CHANGES:
+ATLAS-350 Document jaas config details for atlas (tbeerbower via shwethags)
 ATLAS-344 Document HBase permissions for secure cluster (tbeerbower via shwethags)
 ATLAS-335 Kerberized cluster: Atlas fails to come up with hbase as backend (sumasai via shwethags)
 ATLAS-333 atlas_stop.py – script must delete “atlas.pid” file (ndjouhr via sumasai)
