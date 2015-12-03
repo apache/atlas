@@ -89,6 +89,16 @@
     </profiles>
 
     <build>
+        <outputDirectory>target/bin</outputDirectory>
+        <resources>
+            <resource>
+                <directory>src/bin</directory>
+                <filtering>true</filtering>
+		        <includes>
+	                <include>**/*.py</include>
+	            </includes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

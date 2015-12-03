@@ -18,12 +18,19 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
+import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
+import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
+import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
+import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
 
 import org.apache.hadoop.hbase.client.*;
@@ -31,6 +38,7 @@ import org.apache.hadoop.hbase.filter.ColumnPaginationFilter;
 import org.apache.hadoop.hbase.filter.ColumnRangeFilter;
 import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.FilterList;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +47,10 @@ import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import static com.thinkaurelius.titan.diskstorage.EntryMetaData.*;
 
 /**
  * Here are some areas that might need work:
@@ -71,7 +83,11 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
     private final ConnectionMask cnx;
 
-    HBaseKeyColumnValueStore(HBaseStoreManager storeManager, ConnectionMask cnx, String tableName, String columnFamily, String storeName) {
+    private LocalLockMediator<StoreTransaction> localLockMediator;
+
+    private Duration lockExpiryTime;
+
+    HBaseKeyColumnValueStore(HBaseStoreManager storeManager, ConnectionMask cnx, String tableName, String columnFamily, String storeName, LocalLockMediator<StoreTransaction> llm) {
         this.storeManager = storeManager;
         this.cnx = cnx;
         this.tableName = tableName;
@@ -79,6 +95,8 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         this.storeName = storeName;
         this.columnFamilyBytes = columnFamily.getBytes();
         this.entryGetter = new HBaseGetter(storeManager.getMetaDataSchema(storeName));
+        this.localLockMediator = llm;
+        this.lockExpiryTime = storeManager.getStorageConfig().get(GraphDatabaseConfiguration.LOCK_EXPIRE);
     }
 
     @Override
@@ -107,7 +125,15 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
                             StaticBuffer column,
                             StaticBuffer expectedValue,
                             StoreTransaction txh) throws BackendException {
-        throw new UnsupportedOperationException();
+
+        KeyColumn lockID = new KeyColumn(key, column);
+        logger.debug("Attempting to acquireLock on {} ", lockID);
+        final Timepoint lockStartTime = Timestamps.NANO.getTime(System.nanoTime(), TimeUnit.NANOSECONDS);
+        boolean locked = localLockMediator.lock(lockID, txh, lockStartTime.add(lockExpiryTime));
+        if (!locked) {
+            throw new PermanentLockingException("Could not lock the keyColumn " + lockID +  " on CF {} " + Bytes.toString(columnFamilyBytes));
+        }
+        ((HBaseTransaction) txh).updateLocks(lockID, expectedValue);
     }
 
     @Override
@@ -167,7 +193,9 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
             try {
                 table = cnx.getTable(tableName);
+                logger.debug("Get requests {} {} ", Bytes.toString(columnFamilyBytes), requests.size());
                 results = table.get(requests);
+                logger.debug("Get requests finished {} {} ", Bytes.toString(columnFamilyBytes), requests.size());
             } finally {
                 IOUtils.closeQuietly(table);
             }
@@ -231,6 +259,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
         TableMask table = null;
 
+        logger.debug("Scan for row keys {} {} ", Bytes.toString(startKey), Bytes.toString(endKey));
         try {
             table = cnx.getTable(tableName);
             return new RowIterator(table, table.getScanner(scan.setFilter(filters)), columnFamilyBytes);

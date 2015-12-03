@@ -18,9 +18,11 @@
 
 package org.apache.atlas.repository.graph;
 
+import com.google.inject.Inject;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanIndexQuery;
+import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
@@ -30,6 +32,7 @@ import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Predicate;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.atlas.GraphTransaction;
+import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
@@ -43,6 +46,7 @@ import org.apache.commons.io.FileUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -53,6 +57,7 @@ import java.util.Date;
 import java.util.Random;
 
 @Test
+@Guice(modules = RepositoryMetadataModule.class)
 public class GraphRepoMapperScaleTest {
 
     private static final String DATABASE_NAME = "foo";
@@ -61,50 +66,21 @@ public class GraphRepoMapperScaleTest {
     private static final String INDEX_DIR =
             System.getProperty("java.io.tmpdir", "/tmp") + "/atlas-test" + new Random().nextLong();
 
-    private GraphProvider<TitanGraph> graphProvider = new GraphProvider<TitanGraph>() {
+    @Inject
+    GraphProvider<TitanGraph> graphProvider;
 
-        private TitanGraph graph = null;
-
-        //Ensure separate directory for graph provider to avoid issues with index merging
-        @Override
-        public TitanGraph get() {
-            try {
-                if (graph == null) {
-                    synchronized (GraphRepoMapperScaleTest.class) {
-                        if (graph == null) {
-                            ReadConfiguration config = new CommonsConfiguration() {{
-                                set("storage.backend", "inmemory");
-                                set("index.search.directory", INDEX_DIR);
-                                set("index.search.backend", "elasticsearch");
-                                set("index.search.elasticsearch.local-mode", "true");
-                                set("index.search.elasticsearch.client-only", "false");
-                            }};
-                            GraphDatabaseConfiguration graphconfig = new GraphDatabaseConfiguration(config);
-                            graphconfig.getBackend().clearStorage();
-                            graph = TitanFactory.open(config);
-                        }
-                    }
-                }
-            } catch (BackendException e) {
-                e.printStackTrace();
-            }
-            return graph;
-        }
-    };
-
+    @Inject
     private GraphBackedMetadataRepository repositoryService;
 
     private GraphBackedSearchIndexer searchIndexer;
 
     private TypeSystem typeSystem = TypeSystem.getInstance();
+
     private String dbGUID;
 
     @BeforeClass
     @GraphTransaction
     public void setUp() throws Exception {
-        //Make sure we can cleanup the index directory
-        repositoryService = new GraphBackedMetadataRepository(graphProvider);
-
         searchIndexer = new GraphBackedSearchIndexer(graphProvider);
         Collection<IDataType> typesAdded = TestUtils.createHiveTypes(typeSystem);
         searchIndexer.onAdd(typesAdded);
@@ -112,11 +88,17 @@ public class GraphRepoMapperScaleTest {
 
     @AfterClass
     public void tearDown() throws Exception {
-        graphProvider.get().shutdown();
+        TypeSystem.getInstance().reset();
         try {
-            FileUtils.deleteDirectory(new File(INDEX_DIR));
-        } catch (IOException ioe) {
-            System.err.println("Failed to cleanup index directory");
+            //TODO - Fix failure during shutdown while using BDB
+            graphProvider.get().shutdown();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            TitanCleanup.clear(graphProvider.get());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -142,6 +124,10 @@ public class GraphRepoMapperScaleTest {
 
     @Test(dependsOnMethods = "testSubmitEntity")
     public void testSearchIndex() throws Exception {
+
+        //Elasticsearch requires some time before index is updated
+        Thread.sleep(5000);
+
         searchWithOutIndex(Constants.GUID_PROPERTY_KEY, dbGUID);
         searchWithOutIndex(Constants.ENTITY_TYPE_PROPERTY_KEY, "column_type");
         searchWithOutIndex(Constants.ENTITY_TYPE_PROPERTY_KEY, TestUtils.TABLE_TYPE);

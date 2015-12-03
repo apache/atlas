@@ -409,6 +409,7 @@
         <module>typesystem</module>
         <module>notification</module>
         <module>client</module>
+        <module>titan</module>
         <module>repository</module>
         <module>dashboard</module>
         <module>webapp</module>
@@ -920,6 +921,12 @@
             <dependency>
                 <groupId>org.apache.atlas</groupId>
                 <artifactId>atlas-typesystem</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-titan</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

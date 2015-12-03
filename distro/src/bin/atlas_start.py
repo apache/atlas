@@ -58,6 +58,7 @@ def main():
     p = os.pathsep
     metadata_classpath = confdir + p \
                        + os.path.join(web_app_dir, "atlas", "WEB-INF", "classes" ) + p \
+                       + os.path.join(web_app_dir, "atlas", "WEB-INF", "lib", "atlas-titan-${project.version}.jar" ) + p \
                        + os.path.join(web_app_dir, "atlas", "WEB-INF", "lib", "*" )  + p \
                        + os.path.join(metadata_home, "libext", "*")
     if os.path.exists(hbase_conf_dir):

@@ -48,7 +48,7 @@
         </fileSet>
 
         <fileSet>
-            <directory>src/bin</directory>
+            <directory>target/bin</directory>
             <outputDirectory>bin</outputDirectory>
             <fileMode>0755</fileMode>
             <directoryMode>0755</directoryMode>

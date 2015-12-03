@@ -27,6 +27,7 @@ import org.aopalliance.intercept.MethodInterceptor;
 import org.apache.atlas.discovery.DiscoveryService;
 import org.apache.atlas.discovery.HiveLineageService;
 import org.apache.atlas.discovery.LineageService;
+import org.apache.atlas.discovery.SearchIndexer;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.atlas.listener.TypesChangeListener;
 import org.apache.atlas.repository.MetadataRepository;

@@ -41,6 +41,7 @@ import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.diskstorage.indexing.KeyInformation;
 import com.thinkaurelius.titan.diskstorage.indexing.RawQuery;
 import com.thinkaurelius.titan.diskstorage.util.DefaultTransaction;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.AbstractDecimal;
@@ -89,8 +90,8 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NS;
+import static com.thinkaurelius.titan.core.attribute.Cmp.*;
+import static com.thinkaurelius.titan.core.schema.Mapping.*;
 
 /**
  * NOTE: Copied from titan for supporting sol5. Do not change
@@ -115,7 +116,7 @@ public class Solr5Index implements IndexProvider {
     }
 
     public static final ConfigNamespace SOLR_NS =
-            new ConfigNamespace(INDEX_NS, "solr", "Solr index configuration");
+            new ConfigNamespace(GraphDatabaseConfiguration.INDEX_NS, "solr", "Solr index configuration");
 
     public static final ConfigOption<String> SOLR_MODE = new ConfigOption<String>(SOLR_NS,"mode",
             "The operation mode for Solr which is either via HTTP (`http`) or using SolrCloud (`cloud`)",
@@ -182,7 +183,7 @@ public class Solr5Index implements IndexProvider {
 
 
     private static final IndexFeatures SOLR_FEATURES = new IndexFeatures.Builder().supportsDocumentTTL()
-            .setDefaultStringMapping(Mapping.TEXT).supportedStringMappings(Mapping.TEXT, Mapping.STRING).build();
+            .setDefaultStringMapping(TEXT).supportedStringMappings(TEXT, STRING).build();
 
     private final SolrClient solrClient;
     private final Configuration configuration;
@@ -200,7 +201,7 @@ public class Solr5Index implements IndexProvider {
         mode = Mode.parse(config.get(SOLR_MODE));
         dynFields = config.get(DYNAMIC_FIELDS);
         keyFieldIds = parseKeyFieldsForCollections(config);
-        maxResults = config.get(INDEX_MAX_RESULT_SET_SIZE);
+        maxResults = config.get(GraphDatabaseConfiguration.INDEX_MAX_RESULT_SET_SIZE);
         ttlField = config.get(TTL_FIELD);
         waitSearcher = config.get(WAIT_SEARCHER);
 
@@ -556,10 +557,10 @@ public class Solr5Index implements IndexProvider {
                 }
             } else if (value instanceof String) {
                 Mapping map = getStringMapping(informations.get(key));
-                assert map==Mapping.TEXT || map==Mapping.STRING;
-                if (map==Mapping.TEXT && !titanPredicate.toString().startsWith("CONTAINS"))
+                assert map== TEXT || map== STRING;
+                if (map== TEXT && !titanPredicate.toString().startsWith("CONTAINS"))
                     throw new IllegalArgumentException("Text mapped string values only support CONTAINS queries and not: " + titanPredicate);
-                if (map==Mapping.STRING && titanPredicate.toString().startsWith("CONTAINS"))
+                if (map== STRING && titanPredicate.toString().startsWith("CONTAINS"))
                     throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + titanPredicate);
 
                 //Special case
@@ -587,9 +588,9 @@ public class Solr5Index implements IndexProvider {
                     return (key + ":" + escapeValue(value) + "*");
                 } else if (titanPredicate == Text.REGEX || titanPredicate == Text.CONTAINS_REGEX) {
                     return (key + ":/" + value + "/");
-                } else if (titanPredicate == Cmp.EQUAL) {
+                } else if (titanPredicate == EQUAL) {
                     return (key + ":\"" + escapeValue(value) + "\"");
-                } else if (titanPredicate == Cmp.NOT_EQUAL) {
+                } else if (titanPredicate == NOT_EQUAL) {
                     return ("-" + key + ":\"" + escapeValue(value) + "\"");
                 } else {
                     throw new IllegalArgumentException("Relation is not supported for string value: " + titanPredicate);
@@ -651,9 +652,9 @@ public class Solr5Index implements IndexProvider {
                         throw new IllegalArgumentException("Boolean types only support EQUAL or NOT_EQUAL");
                 }
             } else if (value instanceof UUID) {
-                if (titanPredicate == Cmp.EQUAL) {
+                if (titanPredicate == EQUAL) {
                     return (key + ":\"" + escapeValue(value) + "\"");
-                } else if (titanPredicate == Cmp.NOT_EQUAL) {
+                } else if (titanPredicate == NOT_EQUAL) {
                     return ("-" + key + ":\"" + escapeValue(value) + "\"");
                 } else {
                     throw new IllegalArgumentException("Relation is not supported for uuid value: " + titanPredicate);
@@ -779,8 +780,8 @@ public class Solr5Index implements IndexProvider {
     @Override
     public boolean supports(KeyInformation information, TitanPredicate titanPredicate) {
         Class<?> dataType = information.getDataType();
-        Mapping mapping = Mapping.getMapping(information);
-        if (mapping!=Mapping.DEFAULT && !AttributeUtil.isString(dataType)) return false;
+        Mapping mapping = getMapping(information);
+        if (mapping!= DEFAULT && !AttributeUtil.isString(dataType)) return false;
 
         if (Number.class.isAssignableFrom(dataType)) {
             return titanPredicate instanceof Cmp;
@@ -792,16 +793,16 @@ public class Solr5Index implements IndexProvider {
                 case TEXT:
                     return titanPredicate == Text.CONTAINS || titanPredicate == Text.CONTAINS_PREFIX || titanPredicate == Text.CONTAINS_REGEX;
                 case STRING:
-                    return titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL || titanPredicate==Text.REGEX || titanPredicate==Text.PREFIX;
+                    return titanPredicate == EQUAL || titanPredicate== NOT_EQUAL || titanPredicate==Text.REGEX || titanPredicate==Text.PREFIX;
                 //                case TEXTSTRING:
                 //                    return (titanPredicate instanceof Text) || titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL;
             }
         } else if (dataType == Date.class) {
             if (titanPredicate instanceof Cmp) return true;
         } else if (dataType == Boolean.class) {
-            return titanPredicate == Cmp.EQUAL || titanPredicate == Cmp.NOT_EQUAL;
+            return titanPredicate == EQUAL || titanPredicate == NOT_EQUAL;
         } else if (dataType == UUID.class) {
-            return titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL;
+            return titanPredicate == EQUAL || titanPredicate== NOT_EQUAL;
         }
         return false;
     }
@@ -809,11 +810,11 @@ public class Solr5Index implements IndexProvider {
     @Override
     public boolean supports(KeyInformation information) {
         Class<?> dataType = information.getDataType();
-        Mapping mapping = Mapping.getMapping(information);
+        Mapping mapping = getMapping(information);
         if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || dataType == Date.class || dataType == Boolean.class || dataType == UUID.class) {
-            if (mapping==Mapping.DEFAULT) return true;
+            if (mapping== DEFAULT) return true;
         } else if (AttributeUtil.isString(dataType)) {
-            if (mapping==Mapping.DEFAULT || mapping==Mapping.TEXT || mapping==Mapping.STRING) return true;
+            if (mapping== DEFAULT || mapping== TEXT || mapping== STRING) return true;
         }
         return false;
     }
@@ -861,8 +862,8 @@ public class Solr5Index implements IndexProvider {
 
     private static Mapping getStringMapping(KeyInformation information) {
         assert AttributeUtil.isString(information.getDataType());
-        Mapping map = Mapping.getMapping(information);
-        if (map==Mapping.DEFAULT) map = Mapping.TEXT;
+        Mapping map = getMapping(information);
+        if (map== DEFAULT) map = TEXT;
         return map;
     }
 
