@@ -41,7 +41,6 @@ import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
-import org.apache.atlas.typesystem.types.TypeUtils;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.configuration.Configuration;
@@ -188,7 +187,7 @@ public abstract class BaseResourceIT {
 
         HierarchicalTypeDefinition<TraitType> etlTraitDef = TypesUtil.createTraitTypeDef("ETL", null);
 
-        TypesDef typesDef = TypeUtils.getTypesDef(ImmutableList.of(enumTypeDefinition),
+        TypesDef typesDef = TypesUtil.getTypesDef(ImmutableList.of(enumTypeDefinition),
                 ImmutableList.of(structTypeDefinition),
                 ImmutableList.of(classificationTrait, piiTrait, phiTrait, pciTrait, soxTrait, secTrait, financeTrait,
                         dimTraitDef, factTraitDef, metricTraitDef, etlTraitDef),

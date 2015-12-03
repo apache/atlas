@@ -45,6 +45,7 @@ import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.TypeUtils;
+import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.codehaus.jettison.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -253,7 +254,7 @@ public class GraphBackedTypeStore implements ITypeStore {
                 throw new IllegalArgumentException("Unhandled type category " + typeCategory);
             }
         }
-        return TypeUtils.getTypesDef(enums.build(), structs.build(), traits.build(), classTypes.build());
+        return TypesUtil.getTypesDef(enums.build(), structs.build(), traits.build(), classTypes.build());
     }
 
     private EnumTypeDefinition getEnumType(Vertex vertex) {

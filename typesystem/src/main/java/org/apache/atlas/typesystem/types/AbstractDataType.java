@@ -40,7 +40,17 @@ abstract class AbstractDataType<T> implements IDataType<T> {
         } else {
             TypeUtils.outputVal(val == null ? "<null>" : val.toString(), buf, prefix);
         }
+    }
 
+    /**
+     * Validate that current definition can be updated with the new definition
+     * @param newType
+     */
+    @Override
+    public void validateUpdate(IDataType newType) throws TypeUpdateException {
+        if (!getName().equals(newType.getName()) || !getClass().getName().equals(newType.getClass().getName())) {
+            throw new TypeUpdateException(newType);
+        }
     }
 }
 

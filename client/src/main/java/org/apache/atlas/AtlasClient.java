@@ -25,7 +25,9 @@ import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.client.urlconnection.URLConnectionClientHandler;
 import org.apache.atlas.security.SecureClientUtils;
 import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
+import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -132,6 +134,7 @@ public class AtlasClient {
 
         //Type operations
         CREATE_TYPE(BASE_URI + TYPES, HttpMethod.POST),
+        UPDATE_TYPE(BASE_URI + TYPES, HttpMethod.PUT),
         GET_TYPE(BASE_URI + TYPES, HttpMethod.GET),
         LIST_TYPES(BASE_URI + TYPES, HttpMethod.GET),
         LIST_TRAIT_TYPES(BASE_URI + TYPES + "?type=trait", HttpMethod.GET),
@@ -181,13 +184,45 @@ public class AtlasClient {
      * @return result json object
      * @throws AtlasServiceException
      */
-    public JSONObject createType(String typeAsJson) throws AtlasServiceException {
-        return callAPI(API.CREATE_TYPE, typeAsJson);
+    public List<String> createType(String typeAsJson) throws AtlasServiceException {
+        JSONObject response = callAPI(API.CREATE_TYPE, typeAsJson);
+        return extractResults(response, AtlasClient.TYPES);
+    }
+
+    /**
+     * Register the given type(meta model)
+     * @param typeDef type definition
+     * @return result json object
+     * @throws AtlasServiceException
+     */
+    public List<String> createType(TypesDef typeDef) throws AtlasServiceException {
+        return createType(TypesSerialization.toJson(typeDef));
+    }
+
+    /**
+     * Register the given type(meta model)
+     * @param typeAsJson type definition a jaon
+     * @return result json object
+     * @throws AtlasServiceException
+     */
+    public List<String> updateType(String typeAsJson) throws AtlasServiceException {
+        JSONObject response = callAPI(API.UPDATE_TYPE, typeAsJson);
+        return extractResults(response, AtlasClient.TYPES);
+    }
+
+    /**
+     * Register the given type(meta model)
+     * @param typeDef type definition
+     * @return result json object
+     * @throws AtlasServiceException
+     */
+    public List<String> updateType(TypesDef typeDef) throws AtlasServiceException {
+        return updateType(TypesSerialization.toJson(typeDef));
     }
 
     public List<String> listTypes() throws AtlasServiceException {
         final JSONObject jsonObject = callAPI(API.LIST_TYPES, null);
-        return extractResults(jsonObject);
+        return extractResults(jsonObject, AtlasClient.RESULTS);
     }
 
     public String getType(String typeName) throws AtlasServiceException {
@@ -228,6 +263,14 @@ public class AtlasClient {
      */
     public JSONArray createEntity(String... entitiesAsJson) throws AtlasServiceException {
         return createEntity(new JSONArray(Arrays.asList(entitiesAsJson)));
+    }
+
+    public JSONArray createEntity(Referenceable... entities) throws AtlasServiceException {
+        JSONArray entityArray = new JSONArray(entities.length);
+        for (Referenceable entity : entities) {
+            entityArray.put(InstanceSerialization.toJson(entity, true));
+        }
+        return createEntity(entityArray);
     }
 
     /**
@@ -286,15 +329,20 @@ public class AtlasClient {
         WebResource resource = getResource(API.LIST_ENTITIES);
         resource = resource.queryParam(TYPE, entityType);
         JSONObject jsonResponse = callAPIWithResource(API.LIST_ENTITIES, resource);
-        return extractResults(jsonResponse);
+        return extractResults(jsonResponse, AtlasClient.RESULTS);
     }
 
-    private List<String> extractResults(JSONObject jsonResponse) throws AtlasServiceException {
+    private List<String> extractResults(JSONObject jsonResponse, String key) throws AtlasServiceException {
         try {
-            JSONArray results = jsonResponse.getJSONArray(AtlasClient.RESULTS);
+            JSONArray results = jsonResponse.getJSONArray(key);
             ArrayList<String> resultsList = new ArrayList<>();
             for (int index = 0; index < results.length(); index++) {
-                resultsList.add(results.getString(index));
+                Object element = results.get(index);
+                if (element instanceof String) {
+                    resultsList.add((String) element);
+                } else if (element instanceof JSONObject) {
+                    resultsList.add(((JSONObject) element).getString(AtlasClient.NAME));
+                }
             }
             return resultsList;
         } catch (JSONException e) {

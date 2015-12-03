@@ -50,7 +50,6 @@ import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
-import org.apache.atlas.typesystem.types.TypeUtils;
 import org.apache.atlas.typesystem.types.ValueConversionException;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.codehaus.jettison.json.JSONArray;
@@ -148,8 +147,7 @@ public class DefaultMetadataService implements MetadataService {
 
     private void createType(HierarchicalTypeDefinition<ClassType> type) throws AtlasException {
         if (!typeSystem.isRegistered(type.typeName)) {
-            TypesDef typesDef = TypeUtils
-                    .getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
+            TypesDef typesDef = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
                             ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
                             ImmutableList.of(type));
             createType(TypesSerialization.toJson(typesDef));
@@ -176,6 +174,34 @@ public class DefaultMetadataService implements MetadataService {
                    the typesystem and also do not persist the graph
                  */
                 onTypesAdded(typesAdded);
+                typeStore.store(typeSystem, ImmutableList.copyOf(typesAdded.keySet()));
+            } catch (Throwable t) {
+                typeSystem.removeTypes(typesAdded.keySet());
+                throw new AtlasException("Unable to persist types ", t);
+            }
+
+            return new JSONObject() {{
+                put(AtlasClient.TYPES, typesAdded.keySet());
+            }};
+        } catch (JSONException e) {
+            LOG.error("Unable to create response for types={}", typeDefinition, e);
+            throw new AtlasException("Unable to create response ", e);
+        }
+    }
+
+    @Override
+    public JSONObject updateType(String typeDefinition) throws AtlasException {
+        ParamChecker.notEmpty(typeDefinition, "type definition cannot be empty");
+        TypesDef typesDef = validateTypeDefinition(typeDefinition);
+
+        try {
+            final Map<String, IDataType> typesAdded = typeSystem.updateTypes(typesDef);
+
+            try {
+                /* Create indexes first so that if index creation fails then we rollback
+                   the typesystem and also do not persist the graph
+                 */
+                onTypesUpdated(typesAdded);
                 typeStore.store(typeSystem, ImmutableList.copyOf(typesAdded.keySet()));
             } catch (Throwable t) {
                 typeSystem.removeTypes(typesAdded.keySet());
@@ -343,7 +369,7 @@ public class DefaultMetadataService implements MetadataService {
 
         repository.updateEntity(guid, property, value);
 
-        onEntityUpdated(repository.getEntityDefinition(guid), property, value);
+        onEntityUpdated(repository.getEntityDefinition(guid));
     }
 
     private void validateTypeExists(String entityType) throws AtlasException {
@@ -466,7 +492,24 @@ public class DefaultMetadataService implements MetadataService {
         }
     }
 
-    private void onEntityUpdated(ITypedReferenceableInstance entity, String property, String value)
+    private void onTypesUpdated(Map<String, IDataType> typesUpdated) throws AtlasException {
+        Map<TypesChangeListener, Throwable> caughtExceptions = new HashMap<>();
+        for (Provider<TypesChangeListener> indexerProvider : typeChangeListeners) {
+            final TypesChangeListener listener = indexerProvider.get();
+            try {
+                listener.onChange(typesUpdated.values());
+            } catch (IndexCreationException ice) {
+                LOG.error("Index creation for listener {} failed ", indexerProvider, ice);
+                caughtExceptions.put(listener, ice);
+            }
+        }
+
+        if (caughtExceptions.size() > 0) {
+            throw new IndexCreationException("Index creation failed for types " + typesUpdated.keySet() + ". Aborting");
+        }
+    }
+
+    private void onEntityUpdated(ITypedReferenceableInstance entity)
         throws AtlasException {
         for (EntityChangeListener listener : entityChangeListeners) {
             listener.onEntityUpdated(entity);

@@ -44,6 +44,6 @@ public interface TypesChangeListener {
      */
     // void onRemove(String typeName) throws MetadataException;
 
-    // This is upon updating an existing type to the store
-    // void onChange() throws MetadataException;
+     //This is upon updating an existing type to the store
+     void onChange(Collection<? extends IDataType> dataTypes) throws AtlasException;
 }

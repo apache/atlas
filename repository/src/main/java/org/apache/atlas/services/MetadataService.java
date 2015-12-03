@@ -40,6 +40,14 @@ public interface MetadataService {
     JSONObject createType(String typeDefinition) throws AtlasException;
 
     /**
+     * Updates the given types in the type definition
+     * @param typeDefinition
+     * @return
+     * @throws AtlasException
+     */
+    JSONObject updateType(String typeDefinition) throws AtlasException;
+
+    /**
      * Return the definition for the given type.
      *
      * @param typeName name for this type, must be unique

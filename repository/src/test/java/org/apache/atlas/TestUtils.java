@@ -38,7 +38,6 @@ import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
-import org.apache.atlas.typesystem.types.TypeUtils;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.commons.lang.RandomStringUtils;
 import org.testng.Assert;
@@ -272,7 +271,7 @@ public final class TestUtils {
                 createTraitTypeDef("fetl" + CLASSIFICATION, ImmutableList.of(CLASSIFICATION),
                         createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
 
-        return TypeUtils.getTypesDef(ImmutableList.of(enumTypeDefinition),
+        return TypesUtil.getTypesDef(ImmutableList.of(enumTypeDefinition),
                 ImmutableList.of(structTypeDefinition, partitionDefinition),
                 ImmutableList.of(classificationTypeDefinition, fetlClassificationTypeDefinition, piiTypeDefinition),
                 ImmutableList.of(superTypeDefinition, databaseTypeDefinition, columnsDefinition, tableTypeDefinition));

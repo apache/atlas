@@ -18,13 +18,13 @@
 
 package org.apache.atlas.repository.typestore;
 
+import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.graph.GraphHelper;
@@ -33,20 +33,29 @@ import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.types.AttributeDefinition;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
+import org.apache.atlas.typesystem.types.EnumType;
 import org.apache.atlas.typesystem.types.EnumTypeDefinition;
 import org.apache.atlas.typesystem.types.EnumValue;
 import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.atlas.typesystem.types.Multiplicity;
+import org.apache.atlas.typesystem.types.StructType;
 import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
+import org.apache.atlas.typesystem.types.utils.TypesUtil;
+import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
-import org.testng.Assert;
 
 import javax.inject.Inject;
 import java.util.List;
+
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createStructTypeDef;
 
 @Guice(modules = RepositoryMetadataModule.class)
 public class GraphBackedTypeStoreTest {
@@ -77,7 +86,6 @@ public class GraphBackedTypeStoreTest {
     }
 
     @Test
-    @GraphTransaction
     public void testStore() throws AtlasException {
         typeStore.store(ts);
         dumpGraph();
@@ -136,5 +144,55 @@ public class GraphBackedTypeStoreTest {
         //validate the new types
         ts.reset();
         ts.defineTypes(types);
+    }
+
+    @Test(dependsOnMethods = "testStore")
+    public void testTypeUpdate() throws Exception {
+        //Add enum value
+        EnumTypeDefinition orgLevelEnum = new EnumTypeDefinition("OrgLevel", new EnumValue("L1", 1),
+                new EnumValue("L2", 2), new EnumValue("L3", 3));
+
+        //Add attribute
+        StructTypeDefinition addressDetails =
+                createStructTypeDef("Address", createRequiredAttrDef("street", DataTypes.STRING_TYPE),
+                        createRequiredAttrDef("city", DataTypes.STRING_TYPE),
+                        createOptionalAttrDef("state", DataTypes.STRING_TYPE));
+
+        //Add supertype
+        HierarchicalTypeDefinition<ClassType> superTypeDef = createClassTypeDef("Division", ImmutableList.<String>of(),
+                createOptionalAttrDef("dname", DataTypes.STRING_TYPE));
+
+        HierarchicalTypeDefinition<ClassType> deptTypeDef = createClassTypeDef("Department",
+                ImmutableList.of(superTypeDef.typeName), createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                new AttributeDefinition("employees", String.format("array<%s>", "Person"), Multiplicity.COLLECTION,
+                        true, "department"));
+        TypesDef typesDef = TypesUtil.getTypesDef(ImmutableList.of(orgLevelEnum), ImmutableList.of(addressDetails),
+                ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
+                ImmutableList.of(deptTypeDef, superTypeDef));
+
+        ts.updateTypes(typesDef);
+        typeStore.store(ts, ImmutableList.of(orgLevelEnum.name, addressDetails.typeName, superTypeDef.typeName,
+                deptTypeDef.typeName));
+
+        //Validate the updated types
+        TypesDef types = typeStore.restore();
+        ts.reset();
+        ts.defineTypes(types);
+
+        //Assert new enum value
+        EnumType orgLevel = ts.getDataType(EnumType.class, orgLevelEnum.name);
+        Assert.assertEquals(orgLevel.name, orgLevelEnum.name);
+        Assert.assertEquals(orgLevel.values().size(), orgLevelEnum.enumValues.length);
+        Assert.assertEquals(orgLevel.fromValue("L3").ordinal, 3);
+
+        //Assert new attribute
+        StructType addressType = ts.getDataType(StructType.class, addressDetails.typeName);
+        Assert.assertEquals(addressType.numFields, 3);
+        Assert.assertEquals(addressType.fieldMapping.fields.get("state").dataType(), DataTypes.STRING_TYPE);
+
+        //Assert new super type
+        ClassType deptType = ts.getDataType(ClassType.class, deptTypeDef.typeName);
+        Assert.assertTrue(deptType.superTypes.contains(superTypeDef.typeName));
+        Assert.assertNotNull(ts.getDataType(ClassType.class, superTypeDef.typeName));
     }
 }

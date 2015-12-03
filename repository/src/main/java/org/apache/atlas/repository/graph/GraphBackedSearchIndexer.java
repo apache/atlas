@@ -161,6 +161,11 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
         commit();
     }
 
+    @Override
+    public void onChange(Collection<? extends IDataType> dataTypes) throws AtlasException {
+        onAdd(dataTypes);
+    }
+
     private void addIndexForType(IDataType dataType) {
         switch (dataType.getTypeCategory()) {
         case PRIMITIVE:

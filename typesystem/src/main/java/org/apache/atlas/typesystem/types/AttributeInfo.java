@@ -71,6 +71,43 @@ public class AttributeInfo {
                 '}';
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        AttributeInfo that = (AttributeInfo) o;
+
+        if (isComposite != that.isComposite) {
+            return false;
+        }
+        if (isUnique != that.isUnique) {
+            return false;
+        }
+        if (isIndexable != that.isIndexable) {
+            return false;
+        }
+        if (!dataType.getName().equals(that.dataType.getName())) {
+            return false;
+        }
+        if (!multiplicity.equals(that.multiplicity)) {
+            return false;
+        }
+        if (!name.equals(that.name)) {
+            return false;
+        }
+        if (reverseAttributeName != null ? !reverseAttributeName.equals(that.reverseAttributeName) :
+                that.reverseAttributeName != null) {
+            return false;
+        }
+
+        return true;
+    }
+
     public String toJson() throws JSONException {
         JSONObject json = new JSONObject();
         json.put("name", name);

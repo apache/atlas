@@ -19,6 +19,7 @@
 package org.apache.atlas.typesystem.types.utils;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.types.AttributeDefinition;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.EnumTypeDefinition;
@@ -28,6 +29,7 @@ import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
+import scala.collection.JavaConversions;
 
 /**
  * Types utilities class.
@@ -73,5 +75,12 @@ public class TypesUtil {
     public static HierarchicalTypeDefinition<ClassType> createClassTypeDef(String name,
             ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
         return new HierarchicalTypeDefinition<>(ClassType.class, name, superTypes, attrDefs);
+    }
+
+    public static TypesDef getTypesDef(ImmutableList<EnumTypeDefinition> enums,
+                                       ImmutableList<StructTypeDefinition> structs, ImmutableList<HierarchicalTypeDefinition<TraitType>> traits,
+                                       ImmutableList<HierarchicalTypeDefinition<ClassType>> classes) {
+        return new TypesDef(JavaConversions.asScalaBuffer(enums), JavaConversions.asScalaBuffer(structs),
+                JavaConversions.asScalaBuffer(traits), JavaConversions.asScalaBuffer(classes));
     }
 }

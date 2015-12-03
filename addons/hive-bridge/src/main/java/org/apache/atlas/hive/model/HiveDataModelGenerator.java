@@ -34,7 +34,7 @@ import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.StructType;
 import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
-import org.apache.atlas.typesystem.types.TypeUtils;
+import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,7 +102,7 @@ public class HiveDataModelGenerator {
     }
 
     public TypesDef getTypesDef() {
-        return TypeUtils.getTypesDef(getEnumTypeDefinitions(), getStructTypeDefinitions(), getTraitTypeDefinitions(),
+        return TypesUtil.getTypesDef(getEnumTypeDefinitions(), getStructTypeDefinitions(), getTraitTypeDefinitions(),
                 getClassTypeDefinitions());
     }
 

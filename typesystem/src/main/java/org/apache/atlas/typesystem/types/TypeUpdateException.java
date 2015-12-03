@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,15 +20,20 @@ package org.apache.atlas.typesystem.types;
 
 import org.apache.atlas.AtlasException;
 
-public interface IDataType<T> {
-    String getName();
+public class TypeUpdateException extends AtlasException {
+    public TypeUpdateException(IDataType newType) {
+        super(newType.getName() + " can't be updated");
+    }
 
-    T convert(Object val, Multiplicity m) throws AtlasException;
+    public TypeUpdateException(IDataType newType, Exception e) {
+        super(newType.getName() + " can't be updated - " + e.getMessage(), e);
+    }
 
-    DataTypes.TypeCategory getTypeCategory();
+    public TypeUpdateException(String message) {
+        super(message);
+    }
 
-    void output(T val, Appendable buf, String prefix) throws AtlasException;
-
-    void validateUpdate(IDataType newType) throws TypeUpdateException;
+    public TypeUpdateException(IDataType newType, String message) {
+        super(newType.getName() + " can't be updated - " + message);
+    }
 }
-

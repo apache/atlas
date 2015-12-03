@@ -28,8 +28,10 @@ import org.apache.atlas.typesystem.json.TypesSerialization$;
 import org.apache.atlas.typesystem.types.AttributeDefinition;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
+import org.apache.atlas.typesystem.types.EnumTypeDefinition;
 import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.atlas.typesystem.types.Multiplicity;
+import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.web.util.Servlets;
@@ -85,6 +87,33 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
             Assert.assertEquals(typesAdded.getJSONObject(0).getString("name"), typeDefinition.typeName);
             Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
         }
+    }
+
+    @Test
+    public void testUpdate() throws Exception {
+        HierarchicalTypeDefinition<ClassType> typeDefinition = TypesUtil
+                .createClassTypeDef(randomString(), ImmutableList.<String>of(),
+                        TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE));
+        List<String> typesCreated = serviceClient.createType(TypesSerialization.toJson(typeDefinition, false));
+        Assert.assertEquals(typesCreated.size(), 1);
+        Assert.assertEquals(typesCreated.get(0), typeDefinition.typeName);
+
+        //Add super type
+        HierarchicalTypeDefinition<ClassType> superTypeDefinition = TypesUtil
+                .createClassTypeDef(randomString(), ImmutableList.<String>of(),
+                        TypesUtil.createOptionalAttrDef("sname", DataTypes.STRING_TYPE));
+
+        typeDefinition = TypesUtil.createClassTypeDef(typeDefinition.typeName,
+                ImmutableList.of(superTypeDefinition.typeName),
+                TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                TypesUtil.createOptionalAttrDef("description", DataTypes.STRING_TYPE));
+        TypesDef typeDef = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(),
+                ImmutableList.<StructTypeDefinition>of(), ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
+                ImmutableList.of(superTypeDefinition, typeDefinition));
+        List<String> typesUpdated = serviceClient.updateType(typeDef);
+        Assert.assertEquals(typesUpdated.size(), 2);
+        Assert.assertTrue(typesUpdated.contains(superTypeDefinition.typeName));
+        Assert.assertTrue(typesUpdated.contains(typeDefinition.typeName));
     }
 
     @Test(dependsOnMethods = "testSubmit")

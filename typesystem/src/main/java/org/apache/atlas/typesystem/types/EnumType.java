@@ -76,6 +76,26 @@ public class EnumType extends AbstractDataType<EnumValue> {
         return DataTypes.TypeCategory.ENUM;
     }
 
+    @Override
+    public void validateUpdate(IDataType newType) throws TypeUpdateException {
+        super.validateUpdate(newType);
+
+        EnumType enumType = (EnumType)newType;
+        for (EnumValue enumValue : values()) {
+            //The old enum value should be part of new enum definition as well
+            if (!enumType.valueMap.containsKey(enumValue.value)) {
+                throw new TypeUpdateException("Value " + enumValue.value + " is missing in new type");
+            }
+
+            //The ordinal for old enum value can't change
+            EnumValue newEnumValue = enumType.valueMap.get(enumValue.value);
+            if (enumValue.ordinal != newEnumValue.ordinal) {
+                throw new TypeUpdateException(String.format("Ordinal mismatch %s(%s) != %s(%s)", enumValue.value,
+                        enumValue.ordinal, newEnumValue.value, newEnumValue.ordinal));
+            }
+        }
+    }
+
     public EnumValue fromOrdinal(int o) {
         return ordinalMap.get(o);
     }

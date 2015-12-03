@@ -1426,6 +1426,7 @@
                     <reuseForks>false</reuseForks>
                     <forkCount>1</forkCount>
                     <threadCount>5</threadCount>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
                 </configuration>
                 <executions>
                     <execution>

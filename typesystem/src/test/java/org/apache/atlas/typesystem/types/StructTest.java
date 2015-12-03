@@ -18,14 +18,17 @@
 
 package org.apache.atlas.typesystem.types;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.Struct;
+import org.apache.atlas.typesystem.TypesDef;
+import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.testng.Assert;
-import org.testng.annotations.Test;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
-public class StructTest extends BaseTest {
+public class StructTest extends TypeUpdateBaseTest {
 
     StructType structType;
     StructType recursiveStructType;
@@ -78,4 +81,25 @@ public class StructTest extends BaseTest {
                 "}");
     }
 
+    @Test
+    public void testTypeUpdate() throws Exception {
+        testTypeUpdateForAttributes();
+    }
+
+    @Override
+    protected int getNumberOfFields(TypeSystem ts, String typeName) throws Exception {
+        return ts.getDataType(StructType.class, typeName).numFields;
+    }
+
+    @Override
+    protected StructTypeDefinition getTypeDefinition(String name, AttributeDefinition... attributes) {
+        return new StructTypeDefinition(name, attributes);
+    }
+
+    @Override
+    protected TypesDef getTypesDef(StructTypeDefinition typeDefinition) {
+        return TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.of(typeDefinition),
+                ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
+                ImmutableList.<HierarchicalTypeDefinition<ClassType>>of());
+    }
 }

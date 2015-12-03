@@ -25,6 +25,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
+import org.apache.commons.lang.RandomStringUtils;
 import org.testng.annotations.BeforeMethod;
 
 import java.math.BigDecimal;
@@ -96,8 +97,8 @@ public abstract class BaseTest {
         System.out.println("defined recursiveStructType = " + recursiveStructType);
     }
 
-    protected Map<String, IDataType> defineTraits(HierarchicalTypeDefinition... tDefs) throws AtlasException {
-
+    protected Map<String, IDataType> defineTraits(HierarchicalTypeDefinition<TraitType>... tDefs)
+            throws AtlasException {
         return getTypeSystem().defineTraitTypes(tDefs);
     }
 
@@ -167,5 +168,9 @@ public abstract class BaseTest {
         deptType.convert(hrDept, Multiplicity.REQUIRED);
 
         return hrDept;
+    }
+
+    protected String newName() {
+        return RandomStringUtils.randomAlphanumeric(10);
     }
 }

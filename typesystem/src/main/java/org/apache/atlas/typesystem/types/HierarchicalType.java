@@ -105,6 +105,30 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
         return (cType == this || cType.superTypePaths.containsKey(getName()));
     }
 
+    /**
+     * Validate that current definition can be updated with the new definition
+     * @param newType
+     * @return true if the current definition can be updated with the new definition, else false
+     */
+    @Override
+    public void validateUpdate(IDataType newType) throws TypeUpdateException {
+        super.validateUpdate(newType);
+
+        HierarchicalType newHierarchicalType = (HierarchicalType) newType;
+
+        //validate on supertypes
+        if (!newHierarchicalType.superTypes.containsAll(superTypes)) {
+            throw new TypeUpdateException(newType, "New type doesn't contain all super types of old type");
+        }
+
+        //validate on fields
+        try {
+            TypeUtils.validateUpdate(fieldMapping, newHierarchicalType.fieldMapping);
+        } catch (TypeUpdateException e) {
+            throw new TypeUpdateException(newType, e);
+        }
+    }
+
     protected void setupSuperTypesGraph() throws AtlasException {
         setupSuperTypesGraph(superTypes);
     }
@@ -147,9 +171,9 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
     protected Pair<FieldMapping, ImmutableMap<String, String>> constructFieldMapping(ImmutableList<String> superTypes,
             AttributeInfo... fields) throws AtlasException {
 
-        Map<String, AttributeInfo> fieldsMap = new LinkedHashMap<String, AttributeInfo>();
-        Map<String, Integer> fieldPos = new HashMap<String, Integer>();
-        Map<String, Integer> fieldNullPos = new HashMap<String, Integer>();
+        Map<String, AttributeInfo> fieldsMap = new LinkedHashMap();
+        Map<String, Integer> fieldPos = new HashMap();
+        Map<String, Integer> fieldNullPos = new HashMap();
         Map<String, String> attributeNameToType = new HashMap<>();
 
         int numBools = 0;

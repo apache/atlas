@@ -38,7 +38,6 @@ import org.apache.atlas.typesystem.types.EnumTypeDefinition;
 import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
-import org.apache.atlas.typesystem.types.TypeUtils;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.lang.RandomStringUtils;
@@ -110,6 +109,34 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         JSONObject response = new JSONObject(responseAsString);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
         Assert.assertNotNull(response.get(AtlasClient.GUID));
+    }
+
+    @Test
+    public void testEntityDefinitionAcrossTypeUpdate() throws Exception {
+        //create type
+        HierarchicalTypeDefinition<ClassType> typeDefinition = TypesUtil
+                .createClassTypeDef(randomString(), ImmutableList.<String>of(),
+                        TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE));
+        serviceClient.createType(TypesSerialization.toJson(typeDefinition, false));
+
+        //create entity for the type
+        Referenceable instance = new Referenceable(typeDefinition.typeName);
+        instance.set("name", randomString());
+        String guid = serviceClient.createEntity(instance).getString(0);
+
+        //update type - add attribute
+        typeDefinition = TypesUtil.createClassTypeDef(typeDefinition.typeName, ImmutableList.<String>of(),
+                TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                TypesUtil.createOptionalAttrDef("description", DataTypes.STRING_TYPE));
+        TypesDef typeDef = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(),
+                ImmutableList.<StructTypeDefinition>of(), ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
+                ImmutableList.of(typeDefinition));
+        serviceClient.updateType(typeDef);
+
+        //Get definition after type update - new attributes should be null
+        Referenceable entity = serviceClient.getEntity(guid);
+        Assert.assertNull(entity.get("description"));
+        Assert.assertEquals(entity.get("name"), instance.get("name"));
     }
 
     @DataProvider
@@ -506,10 +533,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         HierarchicalTypeDefinition<ClassType> classTypeDefinition = TypesUtil
                 .createClassTypeDef(classType, ImmutableList.<String>of(),
                         TypesUtil.createUniqueRequiredAttrDef(attrName, DataTypes.STRING_TYPE));
-        TypesDef typesDef = TypeUtils
-                .getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
-                        ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
-                        ImmutableList.of(classTypeDefinition));
+        TypesDef typesDef = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
+                ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
+                ImmutableList.of(classTypeDefinition));
         createType(typesDef);
 
         Referenceable instance = new Referenceable(classType);
