@@ -194,7 +194,7 @@ public class HiveMetaStoreBridge {
     }
 
     public static String getDBQualifiedName(String clusterName, String dbName) {
-        return String.format("%s.%s", clusterName, dbName.toLowerCase());
+        return String.format("%s@%s", dbName.toLowerCase(), clusterName);
     }
 
     /**
@@ -234,7 +234,7 @@ public class HiveMetaStoreBridge {
     }
 
     public static String getTableQualifiedName(String clusterName, String dbName, String tableName) {
-        return String.format("%s.%s.%s", clusterName, dbName.toLowerCase(), tableName.toLowerCase());
+        return String.format("%s.%s@%s", dbName.toLowerCase(), tableName.toLowerCase(), clusterName);
     }
 
     public Referenceable createTableInstance(Referenceable dbReference, Table hiveTable)
@@ -392,8 +392,8 @@ public class HiveMetaStoreBridge {
     }
 
     private String getPartitionQualifiedName(Partition partition) {
-        return String.format("%s.%s.%s.%s", clusterName, partition.getTable().getDbName(),
-                partition.getTable().getTableName(), StringUtils.join(partition.getValues(), "/"));
+        return String.format("%s.%s.%s@%s", partition.getTable().getDbName(),
+                partition.getTable().getTableName(), StringUtils.join(partition.getValues(), "-"), clusterName);
     }
 
     private Referenceable fillStorageDescStruct(StorageDescriptor storageDesc, String tableQualifiedName,
@@ -454,7 +454,9 @@ public class HiveMetaStoreBridge {
     }
 
     private String getColumnQualifiedName(String tableQualifiedName, String colName) {
-        return String.format("%s.%s", tableQualifiedName, colName);
+        String[] parts = tableQualifiedName.split("@");
+        String tableName = parts[0];
+        return String.format("%s.%s@%s", tableName, colName, clusterName);
     }
 
     private List<Referenceable> getColumns(List<FieldSchema> schemaList, String tableQualifiedName) throws Exception {
