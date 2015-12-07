@@ -79,7 +79,39 @@ atlas.graph.index.search.elasticsearch.create.sleep=2000
  atlas.graph.index.search.solr.zookeeper-url=<the ZK quorum setup for solr as comma separated value> eg: 10.1.6.4:2181,10.1.6.5:2181
 </verbatim>
 
+---+++ Choosing between Persistence and Indexing Backends
+
+Refer http://s3.thinkaurelius.com/docs/titan/0.5.4/bdb.html and http://s3.thinkaurelius.com/docs/titan/0.5.4/hbase.html for choosing between the persistence backends.
+BerkeleyDB is suitable for smaller data sets in the range of upto 10 million vertices with ACID gurantees.
+HBase on the other hand doesnt provide ACID guarantees but is able to scale for larger graphs. HBase also provides HA inherently.
+
+---+++ Choosing between Persistence Backends
+
+Refer http://s3.thinkaurelius.com/docs/titan/0.5.4/bdb.html and http://s3.thinkaurelius.com/docs/titan/0.5.4/hbase.html for choosing between the persistence backends.
+BerkeleyDB is suitable for smaller data sets in the range of upto 10 million vertices with ACID gurantees.
+HBase on the other hand doesnt provide ACID guarantees but is able to scale for larger graphs. HBase also provides HA inherently.
+
+---+++ Choosing between Indexing Backends
+
+Refer http://s3.thinkaurelius.com/docs/titan/0.5.4/elasticsearch.html and http://s3.thinkaurelius.com/docs/titan/0.5.4/solr.html for chossing between ElasticSarch and Solr.
+Solr in cloud mode is the recommended setup.
+
+---+++ Switching Persistence Backend
+
+ For switching the storage backend from BerkeleyDB to HBase and vice versa, refer the documentation for "Graph Persistence Engine" described above and restart ATLAS.
+ The data in the indexing backend needs to be cleared else there will be discrepancies between the storage and indexing backend which could result in errors during the search.
+ ElasticSearch runs by default in embedded mode and the data could easily be cleared by deleting the ATLAS_HOME/data/es directory.
+ For Solr, the collections which were created during ATLAS Installation - vertex_index, edge_index, fulltext_index could be deleted which will cleanup the indexes
+
+---+++ Switching Index Backend
+
+  Switching the Index backend requires clearing the persistence backend data. Otherwise there will be discrepancies between the persistence and index backends since switching the indexing backend means index data will be lost.
+  This leads to "Fulltext" queries not working on the existing data
+  For clearing the data for BerkeleyDB, delete the ATLAS_HOME/data/berkeley directory
+  For clearing the data for HBase, in Hbase shell, run 'disable titan' and 'drop titan'
+
 ---+++ Hive Lineage Configs
+
 The higher layer services like hive lineage, schema, etc. are driven by the type system and this
 section encodes the specific types for the hive data model.
 

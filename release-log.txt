@@ -9,6 +9,7 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (sumasai via shwethags)
 
 ALL CHANGES:
+ATLAS-361 Add validation when index backends are switched in ATLAS configuration (sumasai via shwethags)
 ATLAS-171 Ability to update type definition(shwethags via sumasai)
 ATLAS-352 Improve write performance on type and entity creation with Hbase (sumasai)
 ATLAS-350 Document jaas config details for atlas (tbeerbower via shwethags)
