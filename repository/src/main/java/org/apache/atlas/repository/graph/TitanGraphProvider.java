@@ -22,8 +22,14 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Provides;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.TitanTransaction;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.StandardIndexProvider;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
 import com.thinkaurelius.titan.diskstorage.solr.Solr5Index;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.commons.configuration.Configuration;
@@ -35,6 +41,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Default implementation for Graph Provider that doles out Titan Graph.
@@ -46,7 +53,13 @@ public class TitanGraphProvider implements GraphProvider<TitanGraph> {
     /**
      * Constant for the configuration property that indicates the prefix.
      */
-    private static final String GRAPH_PREFIX = "atlas.graph";
+    public static final String GRAPH_PREFIX = "atlas.graph";
+
+    public static final String INDEX_BACKEND_CONF = "index.search.backend";
+
+    public static final String INDEX_BACKEND_LUCENE = "lucene";
+
+    public static final String INDEX_BACKEND_ES = "elasticsearch";
 
     private static volatile TitanGraph graphInstance;
 
@@ -85,9 +98,9 @@ public class TitanGraphProvider implements GraphProvider<TitanGraph> {
     }
 
     public static TitanGraph getGraphInstance() {
-        if(graphInstance == null) {
+        if (graphInstance == null) {
             synchronized (TitanGraphProvider.class) {
-                if(graphInstance == null) {
+                if (graphInstance == null) {
                     Configuration config;
                     try {
                         config = getConfiguration();
@@ -96,10 +109,31 @@ public class TitanGraphProvider implements GraphProvider<TitanGraph> {
                     }
 
                     graphInstance = TitanFactory.open(config);
+                    validateIndexBackend(config);
                 }
             }
         }
         return graphInstance;
+    }
+
+    public static void clear() {
+        synchronized (TitanGraphProvider.class) {
+            graphInstance.shutdown();
+            graphInstance = null;
+        }
+    }
+
+    static void validateIndexBackend(Configuration config) {
+        String configuredIndexBackend = config.getString(INDEX_BACKEND_CONF);
+
+        TitanManagement managementSystem = graphInstance.getManagementSystem();
+        String currentIndexBackend = managementSystem.get(INDEX_BACKEND_CONF);
+        managementSystem.commit();
+        
+        if(!configuredIndexBackend.equals(currentIndexBackend)) {
+            throw new RuntimeException("Configured Index Backend " + configuredIndexBackend + " differs from earlier configured Index Backend " + currentIndexBackend + ". Aborting!");
+        }
+
     }
 
     @Override

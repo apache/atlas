@@ -349,10 +349,10 @@ public class DefaultMetadataService implements MetadataService {
     }
 
     /**
-     * Return the list of entity names for the given type in the repository.
+     * Return the list of entity guids for the given type in the repository.
      *
      * @param entityType type
-     * @return list of entity names for the given type in the repository
+     * @return list of entity guids for the given type in the repository
      */
     @Override
     public List<String> getEntityList(String entityType) throws AtlasException {
