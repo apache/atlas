@@ -19,12 +19,12 @@ hive_partition(ClassType) - super types [Referenceable] - attributes [values, ta
 hive_process(ClassType) - super types [Process] - attributes [startTime, endTime, userName, operationType, queryText, queryPlan, queryId, queryGraph]
 </verbatim>
 
-The entities are created and de-duped using unique qualified name. They provide namespace and can be used for querying as well:
-hive_db - attribute qualifiedName - clustername.dbname
-hive_table - attribute name - clustername.dbname.tablename
-hive_column - attribute qualifiedName - clustername.dbname.tablename.columnname
-hive_partition - attribute qualifiedName - clustername.dbname.tablename.partitionvalues
-hive_process - attribute qualifiedName - queryText
+The entities are created and de-duped using unique qualified name. They provide namespace and can be used for querying/lineage as well. Note that dbName and tableName should be in lower case. clusterName is explained below:
+hive_db - attribute qualifiedName - <dbName>@<clusterName>
+hive_table - attribute name - <dbName>.<tableName>@<clusterName>
+hive_column - attribute qualifiedName - <dbName>.<tableName>.<columnName>@<clusterName>
+hive_partition - attribute qualifiedName - <dbName>.<tableName>.<partitionValues('-' separated)>@<clusterName>
+hive_process - attribute name - <queryString> - trimmed query string in lower case
 
 
 ---++ Importing Hive Metadata
