@@ -20,6 +20,7 @@ package org.apache.atlas.services;
 
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.listener.EntityChangeListener;
+import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.codehaus.jettison.json.JSONObject;
 
@@ -105,14 +106,43 @@ public interface MetadataService {
 
     /**
      * Adds the property to the given entity id(guid).
+     * Currently supports updates only on PRIMITIVE, CLASS attribute types
      *
      * @param guid entity id
-     * @param property property name
+     * @param attribute property name
      * @param value    property value
      */
-    void updateEntity(String guid, String property, String value) throws AtlasException;
+    void updateEntityAttributeByGuid(String guid, String attribute, String value) throws AtlasException;
+
+    /**
+     * Supports Partial updates of an entity. Users can update a subset of attributes for an entity identified by its guid
+     * Note however that it cannot be used to set attribute values to null or delete attrbute values
+     *
+     */
+    void updateEntityPartialByGuid(String guid, Referenceable entity) throws AtlasException;
+
+    /**
+     * Batch API - Adds/Updates the given entity id(guid).
+     *
+     * @param entityJson entity json
+     * @return List of guids which were updated and ones which were newly created as part of the updated entity
+     */
+    String updateEntities(String entityJson) throws AtlasException;
 
     // Trait management functions
+
+    /**
+     * Updates entity identified by a qualified name
+     *
+     * @param typeName
+     * @param uniqueAttributeName
+     * @param attrValue
+     * @param updatedEntity
+     * @return Guid of updated entity
+     * @throws AtlasException
+     */
+    String updateEntityByUniqueAttribute(String typeName, String uniqueAttributeName, String attrValue,
+                                         Referenceable updatedEntity) throws AtlasException;
 
     /**
      * Gets the list of trait names for a given entity represented by a guid.

@@ -49,11 +49,13 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
     @Override
     protected void configure() {
         // special wiring for Titan Graph
+
+
+
         ThrowingProviderBinder.create(binder()).bind(GraphProvider.class, TitanGraph.class).to(TitanGraphProvider.class)
                 .asEagerSingleton();
 
         // allow for dynamic binding of the metadata repo & graph service
-
         // bind the MetadataRepositoryService interface to an implementation
         bind(MetadataRepository.class).to(GraphBackedMetadataRepository.class).asEagerSingleton();
 

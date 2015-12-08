@@ -24,10 +24,14 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
+import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.FieldMapping;
+import org.apache.atlas.typesystem.types.TypeSystem;
+import org.apache.atlas.utils.MD5Utils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.security.MessageDigest;
 import java.util.Date;
 
 /*
@@ -75,7 +79,7 @@ public class ReferenceableInstance extends StructInstance implements ITypedRefer
      * @nopub
      * @param id
      */
-    void replaceWithNewId(Id id) {
+    public void replaceWithNewId(Id id) {
         this.id = id;
     }
 
@@ -91,5 +95,13 @@ public class ReferenceableInstance extends StructInstance implements ITypedRefer
         } catch (AtlasException me) {
             throw new RuntimeException(me);
         }
+    }
+
+    @Override
+    public String getSignatureHash(MessageDigest digester) throws AtlasException {
+        ClassType classType = TypeSystem.getInstance().getDataType(ClassType.class, getTypeName());
+        classType.updateSignatureHash(digester, this);
+        byte[] digest = digester.digest();
+        return MD5Utils.toString(digest);
     }
 }

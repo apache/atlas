@@ -133,40 +133,43 @@ public class AtlasClient {
     enum API {
 
         //Type operations
-        CREATE_TYPE(BASE_URI + TYPES, HttpMethod.POST),
-        UPDATE_TYPE(BASE_URI + TYPES, HttpMethod.PUT),
-        GET_TYPE(BASE_URI + TYPES, HttpMethod.GET),
-        LIST_TYPES(BASE_URI + TYPES, HttpMethod.GET),
-        LIST_TRAIT_TYPES(BASE_URI + TYPES + "?type=trait", HttpMethod.GET),
+        CREATE_TYPE(BASE_URI + TYPES, HttpMethod.POST, Response.Status.CREATED),
+        UPDATE_TYPE(BASE_URI + TYPES, HttpMethod.PUT, Response.Status.OK),
+        GET_TYPE(BASE_URI + TYPES, HttpMethod.GET, Response.Status.OK),
+        LIST_TYPES(BASE_URI + TYPES, HttpMethod.GET, Response.Status.OK),
+        LIST_TRAIT_TYPES(BASE_URI + TYPES + "?type=trait", HttpMethod.GET, Response.Status.OK),
 
         //Entity operations
-        CREATE_ENTITY(BASE_URI + URI_ENTITY, HttpMethod.POST),
-        GET_ENTITY(BASE_URI + URI_ENTITY, HttpMethod.GET),
-        UPDATE_ENTITY(BASE_URI + URI_ENTITY, HttpMethod.PUT),
-        LIST_ENTITIES(BASE_URI + URI_ENTITY, HttpMethod.GET),
+        CREATE_ENTITY(BASE_URI + URI_ENTITY, HttpMethod.POST, Response.Status.CREATED),
+        GET_ENTITY(BASE_URI + URI_ENTITY, HttpMethod.GET, Response.Status.OK),
+        UPDATE_ENTITY(BASE_URI + URI_ENTITY, HttpMethod.PUT, Response.Status.OK),
+        UPDATE_ENTITY_PARTIAL(BASE_URI + URI_ENTITY, HttpMethod.POST, Response.Status.OK),
+        LIST_ENTITIES(BASE_URI + URI_ENTITY, HttpMethod.GET, Response.Status.OK),
 
         //Trait operations
-        ADD_TRAITS(BASE_URI + URI_ENTITY, HttpMethod.POST),
-        DELETE_TRAITS(BASE_URI + URI_ENTITY, HttpMethod.DELETE),
-        LIST_TRAITS(BASE_URI + URI_ENTITY, HttpMethod.GET),
+        ADD_TRAITS(BASE_URI + URI_ENTITY, HttpMethod.POST, Response.Status.CREATED),
+        DELETE_TRAITS(BASE_URI + URI_ENTITY, HttpMethod.DELETE, Response.Status.OK),
+        LIST_TRAITS(BASE_URI + URI_ENTITY, HttpMethod.GET, Response.Status.OK),
 
         //Search operations
-        SEARCH(BASE_URI + URI_SEARCH, HttpMethod.GET),
-        SEARCH_DSL(BASE_URI + URI_SEARCH + "/dsl", HttpMethod.GET),
-        SEARCH_GREMLIN(BASE_URI + URI_SEARCH + "/gremlin", HttpMethod.GET),
-        SEARCH_FULL_TEXT(BASE_URI + URI_SEARCH + "/fulltext", HttpMethod.GET),
+        SEARCH(BASE_URI + URI_SEARCH, HttpMethod.GET, Response.Status.OK),
+        SEARCH_DSL(BASE_URI + URI_SEARCH + "/dsl", HttpMethod.GET, Response.Status.OK),
+        SEARCH_GREMLIN(BASE_URI + URI_SEARCH + "/gremlin", HttpMethod.GET, Response.Status.OK),
+        SEARCH_FULL_TEXT(BASE_URI + URI_SEARCH + "/fulltext", HttpMethod.GET, Response.Status.OK),
 
         //Lineage operations
-        LINEAGE_INPUTS_GRAPH(BASE_URI + URI_LINEAGE, HttpMethod.GET),
-        LINEAGE_OUTPUTS_GRAPH(BASE_URI + URI_LINEAGE, HttpMethod.GET),
-        LINEAGE_SCHEMA(BASE_URI + URI_LINEAGE, HttpMethod.GET);
+        LINEAGE_INPUTS_GRAPH(BASE_URI + URI_LINEAGE, HttpMethod.GET, Response.Status.OK),
+        LINEAGE_OUTPUTS_GRAPH(BASE_URI + URI_LINEAGE, HttpMethod.GET, Response.Status.OK),
+        LINEAGE_SCHEMA(BASE_URI + URI_LINEAGE, HttpMethod.GET, Response.Status.OK);
 
         private final String method;
         private final String path;
+        private final Response.Status status;
 
-        API(String path, String method) {
+        API(String path, String method, Response.Status status) {
             this.path = path;
             this.method = method;
+            this.status = status;
         }
 
         public String getMethod() {
@@ -176,6 +179,8 @@ public class AtlasClient {
         public String getPath() {
             return path;
         }
+        
+        public Response.Status getExpectedStatus() { return status; }
     }
 
     /**
@@ -231,7 +236,7 @@ public class AtlasClient {
             JSONObject response = callAPIWithResource(API.GET_TYPE, resource);
             return response.getString(DEFINITION);
         } catch (AtlasServiceException e) {
-            if (e.getStatus() == ClientResponse.Status.NOT_FOUND) {
+            if (Response.Status.NOT_FOUND.equals(e.getStatus())) {
                 return null;
             }
             throw e;
@@ -266,11 +271,82 @@ public class AtlasClient {
     }
 
     public JSONArray createEntity(Referenceable... entities) throws AtlasServiceException {
+        JSONArray entityArray = getEntitiesArray(entities);
+        return createEntity(entityArray);
+    }
+
+    private JSONArray getEntitiesArray(Referenceable[] entities) {
         JSONArray entityArray = new JSONArray(entities.length);
         for (Referenceable entity : entities) {
             entityArray.put(InstanceSerialization.toJson(entity, true));
         }
-        return createEntity(entityArray);
+        return entityArray;
+    }
+
+    /**
+     * Replaces entity definitions identified by their guid or unique attribute
+     * Updates properties set in the definition for the entity corresponding to guid
+     * @param entities entities to be updated
+     * @return json array of guids which were updated/created
+     * @throws AtlasServiceException
+     */
+    public JSONArray updateEntities(Referenceable... entities) throws AtlasServiceException {
+        JSONArray entitiesArray = getEntitiesArray(entities);
+        JSONObject response = callAPI(API.UPDATE_ENTITY, entitiesArray.toString());
+        try {
+            return response.getJSONArray(GUID);
+        } catch (JSONException e) {
+            throw new AtlasServiceException(API.UPDATE_ENTITY, e);
+        }
+    }
+
+    /**
+     * Supports Partial updates
+     * Updates property for the entity corresponding to guid
+     * @param guid      guid
+     * @param attribute  property key
+     * @param value     property value
+     */
+    public void updateEntityAttribute(String guid, String attribute, String value) throws AtlasServiceException {
+        API api = API.UPDATE_ENTITY_PARTIAL;
+        WebResource resource = getResource(api, guid);
+        resource = resource.queryParam(ATTRIBUTE_NAME, attribute);
+        callAPIWithResource(api, resource, value);
+    }
+
+    /**
+     * Supports Partial updates
+     * Updates properties set in the definition for the entity corresponding to guid
+     * @param guid      guid
+     * @param entity entity definition
+     */
+    public void updateEntity(String guid, Referenceable entity) throws AtlasServiceException {
+        String entityJson = InstanceSerialization.toJson(entity, true);
+        callAPI(API.UPDATE_ENTITY_PARTIAL, entityJson, guid);
+    }
+
+    /**
+     * Supports Partial updates
+     * Updates properties set in the definition for the entity corresponding to guid
+     * @param entityType Type of the entity being updated
+     * @param uniqueAttributeName Attribute Name that uniquely identifies the entity
+     * @param uniqueAttributeValue Attribute Value that uniquely identifies the entity
+     * @param entity entity definition
+     */
+    public String updateEntity(String entityType, String uniqueAttributeName, String uniqueAttributeValue,
+                               Referenceable entity) throws AtlasServiceException {
+        API api = API.UPDATE_ENTITY_PARTIAL;
+        WebResource resource = getResource(api, "qualifiedName");
+        resource = resource.queryParam(TYPE, entityType);
+        resource = resource.queryParam(ATTRIBUTE_NAME, uniqueAttributeName);
+        resource = resource.queryParam(ATTRIBUTE_VALUE, uniqueAttributeValue);
+        String entityJson = InstanceSerialization.toJson(entity, true);
+        JSONObject response = callAPIWithResource(api, resource, entityJson);
+        try {
+            return response.getString(GUID);
+        } catch (JSONException e) {
+            throw new AtlasServiceException(api, e);
+        }
     }
 
     /**
@@ -348,19 +424,6 @@ public class AtlasClient {
         } catch (JSONException e) {
             throw new AtlasServiceException(e);
         }
-    }
-
-    /**
-     * Updates property for the entity corresponding to guid
-     * @param guid      guid
-     * @param property  property key
-     * @param value     property value
-     */
-    public JSONObject updateEntity(String guid, String property, String value) throws AtlasServiceException {
-        WebResource resource = getResource(API.UPDATE_ENTITY, guid);
-        resource = resource.queryParam(ATTRIBUTE_NAME, property);
-        resource = resource.queryParam(ATTRIBUTE_VALUE, value);
-        return callAPIWithResource(API.UPDATE_ENTITY, resource);
     }
 
     /**
@@ -488,13 +551,11 @@ public class AtlasClient {
     }
 
     private JSONObject callAPIWithResource(API api, WebResource resource, Object requestObject)
-    throws AtlasServiceException {
+        throws AtlasServiceException {
         ClientResponse clientResponse = resource.accept(JSON_MEDIA_TYPE).type(JSON_MEDIA_TYPE)
-                .method(api.getMethod(), ClientResponse.class, requestObject);
+            .method(api.getMethod(), ClientResponse.class, requestObject);
 
-        Response.Status expectedStatus =
-                HttpMethod.POST.equals(api.getMethod()) ? Response.Status.CREATED : Response.Status.OK;
-        if (clientResponse.getStatus() == expectedStatus.getStatusCode()) {
+        if (clientResponse.getStatus() == api.getExpectedStatus().getStatusCode()) {
             String responseAsString = clientResponse.getEntity(String.class);
             try {
                 return new JSONObject(responseAsString);

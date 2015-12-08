@@ -73,8 +73,8 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
     }
 
     @Override
-    public void onEntityUpdated(ITypedReferenceableInstance entity) throws AtlasException {
-        notifyOfEntityEvent(Collections.singleton(entity), EntityNotification.OperationType.ENTITY_UPDATE);
+    public void onEntitiesUpdated(Collection<ITypedReferenceableInstance> entities) throws AtlasException {
+        notifyOfEntityEvent(entities, EntityNotification.OperationType.ENTITY_UPDATE);
     }
 
     @Override

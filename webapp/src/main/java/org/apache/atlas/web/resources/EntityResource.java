@@ -21,11 +21,13 @@ package org.apache.atlas.web.resources;
 import com.google.common.base.Preconditions;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.ParamChecker;
-import org.apache.atlas.TypeNotFoundException;
-import org.apache.atlas.repository.EntityExistsException;
-import org.apache.atlas.repository.EntityNotFoundException;
+import org.apache.atlas.typesystem.exception.EntityExistsException;
+import org.apache.atlas.typesystem.exception.EntityNotFoundException;
+import org.apache.atlas.typesystem.exception.TypeNotFoundException;
+import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.services.MetadataService;
+import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.types.ValueConversionException;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.lang.StringUtils;
@@ -85,7 +87,6 @@ public class EntityResource {
         this.metadataService = metadataService;
     }
 
-
     /**
      * Submits the entity definitions (instances).
      * The body contains the JSONArray of entity json. The service takes care of de-duping the entities based on any
@@ -133,6 +134,175 @@ public class EntityResource {
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
             LOG.error("Unable to persist entity instance", e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    /**
+     * Complete update of a set of entities - the values not specified will be replaced with null/removed
+     * Adds/Updates given entities identified by its GUID or unique attribute
+     * @return response payload as json
+     */
+    @PUT
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response updateEntities(@Context HttpServletRequest request) {
+        try {
+            final String entities = Servlets.getRequestPayload(request);
+            LOG.debug("updating entities {} ", AtlasClient.toString(new JSONArray(entities)));
+
+            final String guids = metadataService.updateEntities(entities);
+
+            JSONObject response = new JSONObject();
+            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
+            response.put(AtlasClient.GUID, new JSONArray(guids));
+            response.put(AtlasClient.DEFINITION, metadataService.getEntityDefinition(new JSONArray(guids).getString(0)));
+
+            return Response.ok(response).build();
+        } catch(EntityExistsException e) {
+            LOG.error("Unique constraint violation", e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.CONFLICT));
+        } catch (ValueConversionException ve) {
+            LOG.error("Unable to persist entity instance due to a desrialization error ", ve);
+            throw new WebApplicationException(Servlets.getErrorResponse(ve.getCause(), Response.Status.BAD_REQUEST));
+        } catch (AtlasException | IllegalArgumentException e) {
+            LOG.error("Unable to persist entity instance", e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (Throwable e) {
+            LOG.error("Unable to persist entity instance", e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    /**
+     * Adds/Updates given entity identified by its unique attribute( entityType, attributeName and value)
+     * Updates support only partial update of an entity - Adds/updates any new values specified
+     * Updates do not support removal of attribute values
+     *
+     * @param entityType the entity type
+     * @param attribute the unique attribute used to identify the entity
+     * @param value the unique attributes value
+     * @param request The updated entity json
+     * @return response payload as json
+     * The body contains the JSONArray of entity json. The service takes care of de-duping the entities based on any
+     * unique attribute for the give type.
+     */
+    @POST
+    @Path("qualifiedName")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response updateByUniqueAttribute(@QueryParam("type") String entityType,
+                                            @QueryParam("property") String attribute,
+                                            @QueryParam("value") String value, @Context HttpServletRequest request) {
+        try {
+            String entities = Servlets.getRequestPayload(request);
+
+            LOG.debug("Partially updating entity by unique attribute {} {} {} {} ", entityType, attribute, value, entities);
+
+            Referenceable updatedEntity =
+                InstanceSerialization.fromJsonReferenceable(entities, true);
+            final String guid = metadataService.updateEntityByUniqueAttribute(entityType, attribute, value, updatedEntity);
+
+            JSONObject response = new JSONObject();
+            response.put(AtlasClient.REQUEST_ID, Thread.currentThread().getName());
+            response.put(AtlasClient.GUID, guid);
+            return Response.ok(response).build();
+        } catch (ValueConversionException ve) {
+            LOG.error("Unable to persist entity instance due to a desrialization error ", ve);
+            throw new WebApplicationException(Servlets.getErrorResponse(ve.getCause(), Response.Status.BAD_REQUEST));
+        } catch(EntityExistsException e) {
+            LOG.error("Unique constraint violation", e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.CONFLICT));
+        } catch (EntityNotFoundException e) {
+            LOG.error("An entity with type={} and qualifiedName={} does not exist", entityType, value, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
+        } catch (AtlasException | IllegalArgumentException e) {
+            LOG.error("Unable to create/update entity {}" + entityType + ":" + attribute + "." + value, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (Throwable e) {
+            LOG.error("Unable to update entity {}" + entityType + ":" + attribute + "." + value, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    /**
+     * Updates entity identified by its GUID
+     * Support Partial update of an entity - Adds/updates any new values specified
+     * Does not support removal of attribute values
+     *
+     * @param guid
+     * @param request The updated entity json
+     * @return
+     */
+    @POST
+    @Path("{guid}")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response updateEntityByGuid(@PathParam("guid") String guid, @QueryParam("property") String attribute,
+                                       @Context HttpServletRequest request) {
+        if (StringUtils.isEmpty(attribute)) {
+            return updateEntityPartialByGuid(guid, request);
+        } else {
+            return updateEntityAttributeByGuid(guid, attribute, request);
+        }
+    }
+
+    private Response updateEntityPartialByGuid(String guid, HttpServletRequest request) {
+        try {
+            ParamChecker.notEmpty(guid, "Guid property cannot be null");
+            final String entityJson = Servlets.getRequestPayload(request);
+            LOG.debug("partially updating entity for guid {} : {} ", guid, entityJson);
+
+            Referenceable updatedEntity =
+                    InstanceSerialization.fromJsonReferenceable(entityJson, true);
+            metadataService.updateEntityPartialByGuid(guid, updatedEntity);
+
+            JSONObject response = new JSONObject();
+            response.put(AtlasClient.REQUEST_ID, Thread.currentThread().getName());
+            return Response.ok(response).build();
+        } catch (EntityNotFoundException e) {
+            LOG.error("An entity with GUID={} does not exist", guid, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
+        } catch (AtlasException | IllegalArgumentException e) {
+            LOG.error("Unable to update entity {}", guid, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (Throwable e) {
+            LOG.error("Unable to update entity {}", guid, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    /**
+     * Supports Partial updates
+     * Adds/Updates given entity specified by its GUID
+     * Supports updation of only simple primitive attributes like strings, ints, floats, enums, class references and
+     * does not support updation of complex types like arrays, maps
+     * @param guid entity id
+     * @param property property to add
+     * @postbody property's value
+     * @return response payload as json
+     */
+    private Response updateEntityAttributeByGuid(String guid, String property, HttpServletRequest request) {
+        try {
+            Preconditions.checkNotNull(property, "Entity property cannot be null");
+            String value = Servlets.getRequestPayload(request);
+            Preconditions.checkNotNull(value, "Entity value cannot be null");
+
+            metadataService.updateEntityAttributeByGuid(guid, property, value);
+
+            JSONObject response = new JSONObject();
+            response.put(AtlasClient.REQUEST_ID, Thread.currentThread().getName());
+            response.put(AtlasClient.GUID, guid);
+
+            return Response.ok(response).build();
+        } catch (EntityNotFoundException e) {
+            LOG.error("An entity with GUID={} does not exist", guid, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
+        } catch (AtlasException | IllegalArgumentException e) {
+            LOG.error("Unable to add property {} to entity id {}", property, guid, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (Throwable e) {
+            LOG.error("Unable to add property {} to entity id {}", property, guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
@@ -265,39 +435,6 @@ public class EntityResource {
         }
     }
 
-    /**
-     * Adds property to the given entity id
-     * @param guid entity id
-     * @param property property to add
-     * @param value property's value
-     * @return response payload as json
-     */
-    @PUT
-    @Path("{guid}")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response update(@PathParam("guid") String guid, @QueryParam("property") String property,
-            @QueryParam("value") String value) {
-        try {
-            Preconditions.checkNotNull(property, "Entity property cannot be null");
-            Preconditions.checkNotNull(value, "Entity value cannot be null");
-
-            metadataService.updateEntity(guid, property, value);
-
-            JSONObject response = new JSONObject();
-            response.put(AtlasClient.REQUEST_ID, Thread.currentThread().getName());
-            return Response.ok(response).build();
-        } catch (EntityNotFoundException e) {
-            LOG.error("An entity with GUID={} does not exist", guid, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
-        } catch (AtlasException | IllegalArgumentException e) {
-            LOG.error("Unable to add property {} to entity id {}", property, guid, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
-        } catch (Throwable e) {
-            LOG.error("Unable to add property {} to entity id {}", property, guid, e);
-            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
-        }
-    }
 
     // Trait management functions
 

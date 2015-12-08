@@ -124,7 +124,7 @@ export METADATA_SERVER_OPTS="-Djava.awt.headless=true -Djava.security.krb5.realm
 * Hbase as the Storage Backend for the Graph Repository
 
 By default, Atlas uses Titan as the graph repository and is the only graph repository implementation available currently.
-The HBase versions currently supported are 0.98.x, 1.0.x, 1.1.x. For configuring ATLAS graph persistence on HBase, please go through the "Configuration - Graph persistence engine - HBase" section
+The HBase versions currently supported are 1.1.x. For configuring ATLAS graph persistence on HBase, please go through the "Configuration - Graph persistence engine - HBase" section
 for more details.
 
 Pre-requisites for running HBase as a distributed cluster

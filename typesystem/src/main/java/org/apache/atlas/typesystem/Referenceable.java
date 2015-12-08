@@ -24,7 +24,6 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.classification.InterfaceAudience;
 import org.apache.atlas.typesystem.persistence.Id;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,8 +94,10 @@ public class Referenceable extends Struct implements IReferenceableInstance {
      */
     @SuppressWarnings("unused")
     private Referenceable() {
-        this("", "", Collections.<String, Object>emptyMap(), Collections.<String>emptyList(),
-            Collections.<String, IStruct>emptyMap());
+        super(null, null);
+        id = null;
+        traitNames = ImmutableList.of();
+        traits = ImmutableMap.of();
     }
 
     @Override
@@ -112,6 +113,42 @@ public class Referenceable extends Struct implements IReferenceableInstance {
     @Override
     public IStruct getTrait(String typeName) {
         return traits.get(typeName);
+    }
+
+    /**
+     * Matches traits, values associated with this Referenceable and skips the id match
+     * @param o The Referenceable which needs to be matched with
+     * @return
+     */
+    public boolean equalsContents(Object o) {
+        if(this == o) {
+            return true;
+        }
+        if(o == null) {
+            return false;
+        }
+        if (o.getClass() != getClass()) {
+            return false;
+        }
+
+        if(!super.equalsContents(o)) {
+            return false;
+        }
+
+        Referenceable obj = (Referenceable)o;
+        if (!traitNames.equals(obj.getTraits())) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public String toString() {
+        return "{" +
+            "Id='" + id + '\'' +
+            ", traits=" + traitNames +
+            ", values=" + getValuesMap() +
+            '}';
     }
 
     private static Map<String, IStruct> getTraits(IReferenceableInstance instance) throws AtlasException {

@@ -187,6 +187,8 @@ public final class TestUtils {
     public static final String DATABASE_TYPE = "hive_database";
     public static final String DATABASE_NAME = "foo";
     public static final String TABLE_TYPE = "hive_table";
+    public static final String PARTITION_TYPE = "partition_type";
+    public static final String SERDE_TYPE = "serdeType";
     public static final String TABLE_NAME = "bar";
     public static final String CLASSIFICATION = "classification";
     public static final String PII = "PII";
@@ -208,7 +210,8 @@ public final class TestUtils {
 
         StructTypeDefinition structTypeDefinition = new StructTypeDefinition("serdeType",
                 new AttributeDefinition[]{createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        createRequiredAttrDef("serde", DataTypes.STRING_TYPE)});
+                        createRequiredAttrDef("serde", DataTypes.STRING_TYPE),
+                        createOptionalAttrDef("description", DataTypes.STRING_TYPE)});
 
         EnumValue values[] = {new EnumValue("MANAGED", 1), new EnumValue("EXTERNAL", 2),};
 
@@ -244,21 +247,23 @@ public final class TestUtils {
                         new AttributeDefinition("parametersMap",
                                 DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(), DataTypes.STRING_TYPE.getName()),
                                 Multiplicity.OPTIONAL, true, null),
-                        // map of classes - todo - enable this
-                        //                        new AttributeDefinition("columnsMap",
-                        //                                DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),
-                        //                                        "column_type"),
-                        //                                Multiplicity.COLLECTION, true, null),
-                        // map of structs   todo - enable this
-                        //                        new AttributeDefinition("partitionsMap",
-                        //                                DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),
-                        //                                        "partition_type"),
-                        //                                Multiplicity.COLLECTION, true, null),
+                         //map of classes -
+                        new AttributeDefinition("columnsMap",
+                                                        DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),
+                                                                "column_type"),
+                                                        Multiplicity.COLLECTION, true, null),
+                         //map of structs
+                        new AttributeDefinition("partitionsMap",
+                                                        DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),
+                                                                "partition_type"),
+                                                        Multiplicity.COLLECTION, true, null),
                         // struct reference
                         new AttributeDefinition("serde1", "serdeType", Multiplicity.OPTIONAL, false, null),
                         new AttributeDefinition("serde2", "serdeType", Multiplicity.OPTIONAL, false, null),
                         // class reference
-                        new AttributeDefinition("database", DATABASE_TYPE, Multiplicity.REQUIRED, true, null));
+                        new AttributeDefinition("database", DATABASE_TYPE, Multiplicity.REQUIRED, false, null),
+                        //class reference as composite
+                        new AttributeDefinition("databaseComposite", DATABASE_TYPE, Multiplicity.OPTIONAL, true, null));
 
         HierarchicalTypeDefinition<TraitType> piiTypeDefinition =
                 createTraitTypeDef(PII, ImmutableList.<String>of());

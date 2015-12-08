@@ -30,7 +30,7 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 @Guice(modules = NotificationModule.class)
-public class NotificationHookConsumerIT extends BaseResourceIT{
+public class NotificationHookConsumerIT extends BaseResourceIT {
 
     @Inject
     private NotificationInterface kafka;

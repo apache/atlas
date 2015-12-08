@@ -22,10 +22,10 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.TypeExistsException;
-import org.apache.atlas.TypeNotFoundException;
 import org.apache.atlas.classification.InterfaceAudience;
 import org.apache.atlas.typesystem.TypesDef;
+import org.apache.atlas.typesystem.exception.TypeExistsException;
+import org.apache.atlas.typesystem.exception.TypeNotFoundException;
 
 import javax.inject.Singleton;
 import java.lang.reflect.Constructor;

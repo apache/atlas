@@ -21,10 +21,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
-import org.apache.atlas.repository.graph.GraphBackedMetadataRepository;
+import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.GraphProvider;
-import org.apache.atlas.services.DefaultMetadataService;
+import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.TypesDef;
@@ -55,10 +55,10 @@ import java.util.List;
 public class BaseHiveRepositoryTest {
 
     @Inject
-    protected DefaultMetadataService metadataService;
+    protected MetadataService metadataService;
 
     @Inject
-    protected GraphBackedMetadataRepository repository;
+    protected MetadataRepository repository;
 
     @Inject
     protected GraphProvider<TitanGraph> graphProvider;
@@ -67,7 +67,7 @@ public class BaseHiveRepositoryTest {
         setUpTypes();
         new GraphBackedSearchIndexer(graphProvider);
         setupInstances();
-        // TestUtils.dumpGraph(graphProvider.get());
+        TestUtils.dumpGraph(graphProvider.get());
     }
 
     protected void tearDown() throws Exception {
@@ -190,17 +190,20 @@ public class BaseHiveRepositoryTest {
         Id salesDB = database("Sales", "Sales Database", "John ETL", "hdfs://host:8000/apps/warehouse/sales");
 
         Referenceable sd =
-            storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(column("time_id", "int", "time id")));
+            storageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true, ImmutableList.of(
+                column("time_id", "int", "time id")));
 
         List<Referenceable> salesFactColumns = ImmutableList
-            .of(column("time_id", "int", "time id"), column("product_id", "int", "product id"),
+            .of(column("time_id", "int", "time id"),
+                column("product_id", "int", "product id"),
                 column("customer_id", "int", "customer id", "PII"),
                 column("sales", "double", "product id", "Metric"));
 
         Id salesFact = table("sales_fact", "sales fact table", salesDB, sd, "Joe", "Managed", salesFactColumns, "Fact");
 
         List<Referenceable> timeDimColumns = ImmutableList
-            .of(column("time_id", "int", "time id"), column("dayOfYear", "int", "day Of Year"),
+            .of(column("time_id", "int", "time id"),
+                column("dayOfYear", "int", "day Of Year"),
                 column("weekDay", "int", "week Day"));
 
         Id timeDim = table("time_dim", "time dimension table", salesDB, sd, "John Doe", "External", timeDimColumns,
@@ -217,7 +220,8 @@ public class BaseHiveRepositoryTest {
             ImmutableList.of(salesFactDaily), "create table as select ", "plan", "id", "graph", "ETL");
 
         List<Referenceable> productDimColumns = ImmutableList
-            .of(column("product_id", "int", "product id"), column("product_name", "string", "product name"),
+            .of(column("product_id", "int", "product id"),
+                column("product_name", "string", "product name"),
                 column("brand_name", "int", "brand name"));
 
         Id productDim =
@@ -226,7 +230,8 @@ public class BaseHiveRepositoryTest {
 
         view("product_dim_view", reportingDB, ImmutableList.of(productDim), "Dimension", "JdbcAccess");
 
-        List<Referenceable> customerDimColumns = ImmutableList.of(column("customer_id", "int", "customer id", "PII"),
+        List<Referenceable> customerDimColumns = ImmutableList.of(
+            column("customer_id", "int", "customer id", "PII"),
             column("name", "string", "customer name", "PII"),
             column("address", "string", "customer address", "PII"));
 

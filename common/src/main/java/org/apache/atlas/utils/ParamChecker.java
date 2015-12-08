@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.atlas;
+package org.apache.atlas.utils;
 
 import java.util.Arrays;
 import java.util.Collection;

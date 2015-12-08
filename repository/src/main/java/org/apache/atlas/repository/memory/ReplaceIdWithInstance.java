@@ -55,7 +55,6 @@ public class ReplaceIdWithInstance implements ObjectGraphWalker.NodeProcessor {
         } else if (!nd.aInfo.isComposite || nd.value == null) {
             // do nothing
         } else if (nd.aInfo.dataType().getTypeCategory() == DataTypes.TypeCategory.CLASS) {
-
             if (nd.value != null && nd.value instanceof Id) {
                 Id id = (Id) nd.value;
                 ITypedReferenceableInstance r = getInstance(id);

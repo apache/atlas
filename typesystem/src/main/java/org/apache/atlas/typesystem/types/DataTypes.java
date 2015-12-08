@@ -29,10 +29,13 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.charset.Charset;
+import java.security.MessageDigest;
 import java.text.ParseException;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 public class DataTypes {
@@ -95,6 +98,14 @@ public class DataTypes {
 
             return nullValue();
         }
+
+        @Override
+        public void updateSignatureHash(MessageDigest digester, Object val) throws AtlasException {
+            if ( val != null ) {
+                digester.update(val.toString().getBytes(Charset.forName("UTF-8")));
+            }
+        }
+
     }
 
     public static class BooleanType extends PrimitiveType<Boolean> {
@@ -160,6 +171,13 @@ public class DataTypes {
 
         public Byte nullValue() {
             return 0;
+        }
+
+        @Override
+        public void updateSignatureHash(MessageDigest digester, Object val) throws AtlasException {
+            if ( val != null ) {
+                digester.update(((Byte) val).byteValue());
+            }
         }
     }
 
@@ -508,6 +526,7 @@ public class DataTypes {
                 } else if (val instanceof Iterator) {
                     it = (Iterator) val;
                 }
+
                 if (it != null) {
                     ImmutableCollection.Builder b = m.isUnique ? ImmutableSet.builder() : ImmutableList.builder();
                     while (it.hasNext()) {
@@ -557,6 +576,15 @@ public class DataTypes {
         public TypeCategory getTypeCategory() {
             return TypeCategory.ARRAY;
         }
+
+        @Override
+        public void updateSignatureHash(MessageDigest digester, Object val) throws AtlasException {
+            IDataType elemType = getElemType();
+            List vals = (List) val;
+            for (Object listElem : vals) {
+                elemType.updateSignatureHash(digester, listElem);
+            }
+        }
     }
 
     public static class MapType extends AbstractDataType<ImmutableMap<?, ?>> {
@@ -586,7 +614,7 @@ public class DataTypes {
         }
 
         protected void setValueType(IDataType valueType) {
-            this.keyType = valueType;
+            this.valueType = valueType;
         }
 
         @Override
@@ -605,7 +633,8 @@ public class DataTypes {
                         Map.Entry e = it.next();
                         b.put(keyType.convert(e.getKey(),
                                         TypeSystem.getInstance().allowNullsInCollections() ? Multiplicity.OPTIONAL :
-                                                Multiplicity.REQUIRED), valueType.convert(e.getValue(),
+                                                Multiplicity.REQUIRED),
+                                        valueType.convert(e.getValue(),
                                         TypeSystem.getInstance().allowNullsInCollections() ? Multiplicity.OPTIONAL :
                                                 Multiplicity.REQUIRED));
                     }
@@ -656,6 +685,17 @@ public class DataTypes {
         @Override
         public TypeCategory getTypeCategory() {
             return TypeCategory.MAP;
+        }
+
+        @Override
+        public void updateSignatureHash(MessageDigest digester, Object val) throws AtlasException {
+            IDataType keyType = getKeyType();
+            IDataType valueType = getValueType();
+            Map vals = (Map) val;
+            for (Object key : vals.keySet()) {
+                keyType.updateSignatureHash(digester, key);
+                valueType.updateSignatureHash(digester, vals.get(key));
+            }
         }
     }
 

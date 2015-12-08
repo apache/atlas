@@ -18,7 +18,7 @@
 
 package org.apache.atlas.typesystem.types;
 
-import org.apache.atlas.ParamChecker;
+import org.apache.atlas.utils.ParamChecker;
 
 public class EnumValue {
 

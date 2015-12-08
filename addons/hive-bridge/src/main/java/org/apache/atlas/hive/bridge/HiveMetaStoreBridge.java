@@ -479,12 +479,13 @@ public class HiveMetaStoreBridge {
         HiveDataModelGenerator dataModelGenerator = new HiveDataModelGenerator();
         AtlasClient dgiClient = getAtlasClient();
 
-        //Register hive data model if its not already registered
-        if (dgiClient.getType(HiveDataTypes.HIVE_PROCESS.getName()) == null) {
+        try {
+            dgiClient.getType(HiveDataTypes.HIVE_PROCESS.getName());
+            LOG.info("Hive data model is already registered!");
+        } catch(AtlasServiceException ase) {
+            //Expected in case types do not exist
             LOG.info("Registering Hive data model");
             dgiClient.createType(dataModelGenerator.getModelAsJson());
-        } else {
-            LOG.info("Hive data model is already registered!");
         }
     }
 

@@ -214,5 +214,11 @@ public class ObjectGraphWalker {
             this.aInfo = aInfo;
             this.value = value;
         }
+
+        @Override
+        public String toString(){
+            StringBuilder string = new StringBuilder().append(instance).append(aInfo).append(value);
+            return string.toString();
+        }
     }
 }

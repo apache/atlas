@@ -41,11 +41,11 @@ public interface EntityChangeListener {
     /**
      * This is upon updating an entity.
      *
-     * @param entity        the updated entity
+     * @param entities        the updated entities
      *
      * @throws AtlasException if the listener notification fails
      */
-    void onEntityUpdated(ITypedReferenceableInstance entity) throws AtlasException;
+    void onEntitiesUpdated(Collection<ITypedReferenceableInstance> entities) throws AtlasException;
 
     /**
      * This is upon adding a new trait to a typed instance.

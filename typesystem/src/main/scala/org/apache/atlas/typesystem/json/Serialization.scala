@@ -29,18 +29,22 @@ import org.json4s.native.Serialization._
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 
-class BigDecimalSerializer extends CustomSerializer[java.math.BigDecimal](format => ( {
-    case JDecimal(e) => e.bigDecimal
-}, {
-    case e: java.math.BigDecimal => JDecimal(new BigDecimal(e))
-}
+class BigDecimalSerializer extends CustomSerializer[java.math.BigDecimal](format => (
+    {
+        case JDecimal(e) => e.bigDecimal
+    },
+    {
+        case e: java.math.BigDecimal => JDecimal(new BigDecimal(e))
+    }
     ))
 
-class BigIntegerSerializer extends CustomSerializer[java.math.BigInteger](format => ( {
-    case JInt(e) => e.bigInteger
-}, {
-    case e: java.math.BigInteger => JInt(new BigInt(e))
-}
+class BigIntegerSerializer extends CustomSerializer[java.math.BigInteger](format => (
+    {
+        case JInt(e) => e.bigInteger
+    },
+    {
+        case e: java.math.BigInteger => JInt(new BigInt(e))
+    }
     ))
 
 class IdSerializer extends CustomSerializer[Id](format => ( {
@@ -292,12 +296,19 @@ object Serialization {
         read[ReferenceableInstance](jsonStr)
     }
 
-  def traitFromJson(jsonStr: String): ITypedInstance = {
-    implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new TypedStructSerializer +
-      new TypedReferenceableInstanceSerializer + new BigDecimalSerializer + new BigIntegerSerializer
+    def traitFromJson(jsonStr: String): ITypedInstance = {
+      implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new TypedStructSerializer +
+        new TypedReferenceableInstanceSerializer + new BigDecimalSerializer + new BigIntegerSerializer
 
-    read[StructInstance](jsonStr)
-  }
+        read[StructInstance](jsonStr)
+    }
+
+    def arrayFromJson(jsonStr: String): ITypedInstance = {
+        implicit val formats = org.json4s.native.Serialization.formats(NoTypeHints) + new TypedStructSerializer +
+          new TypedReferenceableInstanceSerializer + new BigDecimalSerializer + new BigIntegerSerializer
+
+        read[StructInstance](jsonStr)
+    }
 }
 
 
