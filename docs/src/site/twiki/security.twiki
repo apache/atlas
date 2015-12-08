@@ -80,7 +80,8 @@ The properties for configuring the SPNEGO support are:
    * <code>atlas.http.authentication.type</code> (simple|kerberos) [default: simple] - the authentication type
    * <code>atlas.http.authentication.kerberos.principal</code> - the web-application Kerberos principal name. The Kerberos principal name must start with "HTTP/...". For example: "HTTP/localhost@LOCALHOST". There is no default value.
    * <code>atlas.http.authentication.kerberos.keytab</code> - the path to the keytab file containing the credentials for the kerberos principal.
-	
+   * <code>atlas.rest.address</code> - <http/https>://<atlas-fqdn>:<atlas port>
+
 For a more detailed discussion of the HTTP authentication mechanism refer to [[http://hadoop.apache.org/docs/stable/hadoop-auth/Configuration.html][Hadoop Auth, Java HTTP SPNEGO 2.6.0 - Server Side Configuration]].  The prefix that document references is "atlas.http.authentication" in the case of the Atlas authentication implementation.
 
 ---+++ Client security configuration

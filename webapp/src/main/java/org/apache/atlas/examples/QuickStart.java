@@ -20,7 +20,9 @@ package org.apache.atlas.examples;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
@@ -36,6 +38,7 @@ import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
+import org.apache.commons.configuration.Configuration;
 import org.codehaus.jettison.json.JSONArray;
 
 import java.util.List;
@@ -46,6 +49,7 @@ import java.util.List;
  * todo - move this to examples module.
  */
 public class QuickStart {
+    public static final String ATLAS_REST_ADDRESS = "atlas.rest.address";
 
     public static void main(String[] args) throws Exception {
         String baseUrl = getServerUrl(args);
@@ -61,10 +65,16 @@ public class QuickStart {
         quickStart.search();
     }
 
-    static String getServerUrl(String[] args) {
-        String baseUrl = "http://localhost:21000";
+    static String getServerUrl(String[] args) throws AtlasException {
         if (args.length > 0) {
-            baseUrl = args[0];
+            return args[0];
+        }
+
+        Configuration configuration = ApplicationProperties.get();
+        String baseUrl = configuration.getString(ATLAS_REST_ADDRESS);
+        if (baseUrl == null) {
+            System.out.println("Usage: quick_start.py <atlas endpoint of format <http/https>://<atlas-fqdn>:<atlas port> like http://localhost:21000>");
+            System.exit(-1);
         }
 
         return baseUrl;

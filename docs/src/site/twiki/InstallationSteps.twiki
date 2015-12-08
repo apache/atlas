@@ -184,6 +184,9 @@ with multiple atlas upgrades), set environment variable METADATA_CONF to the pat
 
 *Using Atlas*
 <verbatim>
+* Quick start model - sample model and data
+  bin/quick_start.py [<atlas endpoint>]
+
 * Verify if the server is up and running
   curl -v http://localhost:21000/api/atlas/admin/version
   {"Version":"v0.1"}
