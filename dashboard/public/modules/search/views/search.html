@@ -68,7 +68,7 @@
                         </span>
                      </td>
                      <td>
-                        <div id="{{result['$id$'].id}}" ng-show="!dataTransitioned" class="wordBreak"><a class="tabsearchanchor" ng-repeat="(key, value) in result['$traits$']" data-ui-sref="search({query: key})" title="{{key}}">{{key}}<span> </span></a></div>
+                        <div id="{{result['$id$'].id || result.guid}}" ng-show="!dataTransitioned" class="wordBreak"><a class="tabsearchanchor" ng-repeat="(key, value) in result['$traits$']" data-ui-sref="search({query: key})" title="{{key}}">{{key}}<span> </span></a></div>
                      </td>
                      <td class="addTag"><img ng-src="img/addTag.png" tooltip="Add Tag" ng-click="openAddTagHome(result['$id$'].id || result.guid)"></td>
                   </tr>

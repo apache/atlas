@@ -133,7 +133,8 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
                 angular.forEach($scope.resultRows, function(value) {
                     var objVal = {},
                         curVal = value,
-                        onlyId = false;
+                        onlyId = false,
+                        traits = false;
 
                     if (curVal.name) {
                         objVal.name = curVal.name;
@@ -144,16 +145,18 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
                             if (ky === '$id$') {
                                 objVal.id = curVal[ky].id;
                                 onlyId = true;
-                            } else if (ky === '$traits$') {
-                                objVal[ky] = vl;
-                                objVal.Tools = objVal.id;
-                                onlyId = false;
+                                traits = true;
                             } else if (ky.indexOf('$') === -1) {
                                 objVal[ky] = vl;
                                 onlyId = false;
                             }
                         }
                     });
+
+                    if (traits) {
+                        objVal.$traits$ = curVal.$traits$ || {};
+                        objVal.Tools = objVal.id;
+                    }
 
                     if (onlyId) {
                         objVal.guid = objVal.id;
