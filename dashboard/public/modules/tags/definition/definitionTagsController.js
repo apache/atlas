@@ -15,24 +15,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 'use strict';
 
-angular.module('dgc.tags.definition').controller('DefinitionTagsController', ['$scope', '$resource', '$state', '$stateParams', 'lodash', 'AttributeDefinition', 'TagClasses', 'TagsResource', 'NotificationService',
-    function($scope, $resource, $state, $stateParams, _, AttributeDefinition, Categories, TagsResource, NotificationService) {
+angular.module('dgc.tags.definition').controller('DefinitionTagsController', ['$scope', '$resource', '$state', '$stateParams', 'lodash', 'AttributeDefinition', 'TagClasses', 'TagsResource', 'NotificationService', 'NavigationResource',
+    function($scope, $resource, $state, $stateParams, _, AttributeDefinition, Categories, TagsResource, NotificationService, NavigationResource) {
         $scope.categoryList = Categories;
         $scope.category = 'TRAIT';
         $scope.tagModel = {
             typeName: null,
+            superTypes: [],
             attributeDefinitions: []
         };
+        $scope.typesList = NavigationResource.get();
 
         $scope.addAttribute = function AddAttribute() {
             $scope.tagModel.attributeDefinitions.push(AttributeDefinition.getModel());
         };
 
-        $scope.removeAttribute = function(index){
-            $scope.tagModel.attributeDefinitions.splice(index,1);
+        $scope.removeAttribute = function(index) {
+            $scope.tagModel.attributeDefinitions.splice(index, 1);
         };
 
         $scope.categoryChange = function CategorySwitched() {
@@ -42,6 +43,7 @@ angular.module('dgc.tags.definition').controller('DefinitionTagsController', ['$
         $scope.save = function saveTag(form) {
             $scope.savedTag = null;
             if (form.$valid) {
+                $scope.tagModel.superTypes = $scope.selectedParent;
                 $scope.categoryInst = Categories[$scope.category];
                 $scope.categoryInst.clearTags().addTag($scope.tagModel);
 

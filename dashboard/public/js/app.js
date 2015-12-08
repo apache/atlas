@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 'use strict';
 
 angular.module('dgc', ['ngCookies',
@@ -81,4 +80,31 @@ angular.module('dgc').factory('lodash', ['$window',
     $rootScope.$on('$stateChangeStart', function() {
         d3.selectAll('.d3-tip').remove();
     });
+
+    $rootScope.updateTags = function(added, obj) {
+        if (added) {
+            $rootScope.$broadcast('add_Tag', obj);
+        }
+    };
+
+    $rootScope.loadTraits = function() {
+        $rootScope.$broadcast('load_Traits');
+    };
+
+    $rootScope.$on('$stateChangeSuccess', function(evt, to, toParams, from) {
+        if (from.name !== '' && to.name === 'search' && to.name !== from.name && typeof to.parent === 'undefined' && typeof from.parent === 'undefined') {
+            $rootScope.loadTraits();
+        } else if (from.name === '' && to.name === 'search') {
+            $rootScope.loadTraits();
+        }
+
+        if (typeof to.parent === 'undefined') {
+            if (to.name !== 'search') { 
+                $rootScope.leftNav = true;
+            } else { 
+                $rootScope.leftNav = false;
+            }
+        }
+    });
+
 }]);

@@ -17,7 +17,7 @@
  */
 
 .add-tag {
-  margin-top: -7px;
+  margin-top: -50px;
 }
 .inputs input{
 	height: 50px;
@@ -113,4 +113,11 @@
 }
 .tagsAdded{
   display: inline;
+}
+
+.noTags {
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+}
 }

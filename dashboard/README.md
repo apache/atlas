@@ -28,7 +28,7 @@
 
 ```
 git clone $git-repo-url
-git checkout dal
+git checkout master
 cd dashboard/v2
 npm install
 grunt server

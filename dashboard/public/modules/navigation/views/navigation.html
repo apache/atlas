@@ -16,7 +16,7 @@
   ~ limitations under the License.
   -->
 
-<div data-ng-controller="NavigationController" class="mainTags">
+<div data-ng-controller="NavigationController" class="mainTags leftNavigation">
     <h4>Tags</h4>
     <div class="list-group">
         <a ng-repeat="nav in leftnav" ui-sref="search({ query: nav })" class="list-group-item limitSize" title="{{nav}}"><i class="fa fa-tag"></i> {{nav}} </a>
