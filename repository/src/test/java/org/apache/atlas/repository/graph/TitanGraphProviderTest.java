@@ -24,7 +24,6 @@ import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.commons.configuration.Configuration;
-import org.junit.Before;
 import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
