@@ -32,11 +32,6 @@
     </property>
 
     <property>
-        <name>atlas.rest.address</name>
-        <value>http://localhost:21000/</value>
-    </property>
-
-    <property>
         <name>javax.jdo.option.ConnectionURL</name>
         <value>jdbc:derby:${user.dir}/target/metastore_db;create=true</value>
     </property>

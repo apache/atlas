@@ -127,7 +127,7 @@ public class AtlasClient {
     }
 
     protected Configuration getClientProperties() throws AtlasException {
-        return ApplicationProperties.get(ApplicationProperties.CLIENT_PROPERTIES);
+        return ApplicationProperties.get();
     }
 
     enum API {

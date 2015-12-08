@@ -1,17 +1,11 @@
----+ Configuring Apache Atlas
+---+ Configuring Apache Atlas - Application Properties
 
----++ Introduction
+All configuration in Atlas uses java properties style configuration. The main configuration file is application.properties which is in the *conf* dir at the deployed location. It consists of the following sections:
 
-All configuration in Atlas uses java properties style configuration.
 
----++ Application Properties
+---++ Graph Configs
 
-The main configuration file is application.properties which is in the *conf* dir at the deployed
-location. It consists of the following sections:
-
----+++ Graph Database Configs
-
----++++ Graph persistence engine
+---+++ Graph persistence engine
 
 This section sets up the graph db - titan - to use a persistence engine. Please refer to
 <a href="http://s3.thinkaurelius.com/docs/titan/0.5.4/titan-config-ref.html">link</a> for more
@@ -22,7 +16,7 @@ atlas.graph.storage.backend=berkeleyje
 atlas.graph.storage.directory=data/berkley
 </verbatim>
 
----+++++ Graph persistence engine - Hbase
+---++++ Graph persistence engine - Hbase
 
 Basic configuration
 
@@ -59,8 +53,7 @@ Without Ranger, HBase shell can be used to set the permissions.
    echo "grant 'atlas', 'RWXCA', 'titan'" | hbase shell
 </verbatim>
 
----++++ Graph Search Index
-
+---+++ Graph Search Index
 This section sets up the graph db - titan - to use an search indexing system. The example
 configuration below sets up to use an embedded Elastic search indexing system.
 
@@ -100,22 +93,22 @@ Solr in cloud mode is the recommended setup.
 
 ---+++ Switching Persistence Backend
 
- For switching the storage backend from BerkeleyDB to HBase and vice versa, refer the documentation for "Graph Persistence Engine" described above and restart ATLAS.
- The data in the indexing backend needs to be cleared else there will be discrepancies between the storage and indexing backend which could result in errors during the search.
- ElasticSearch runs by default in embedded mode and the data could easily be cleared by deleting the ATLAS_HOME/data/es directory.
- For Solr, the collections which were created during ATLAS Installation - vertex_index, edge_index, fulltext_index could be deleted which will cleanup the indexes
+For switching the storage backend from BerkeleyDB to HBase and vice versa, refer the documentation for "Graph Persistence Engine" described above and restart ATLAS.
+The data in the indexing backend needs to be cleared else there will be discrepancies between the storage and indexing backend which could result in errors during the search.
+ElasticSearch runs by default in embedded mode and the data could easily be cleared by deleting the ATLAS_HOME/data/es directory.
+For Solr, the collections which were created during ATLAS Installation - vertex_index, edge_index, fulltext_index could be deleted which will cleanup the indexes
 
 ---+++ Switching Index Backend
 
-  Switching the Index backend requires clearing the persistence backend data. Otherwise there will be discrepancies between the persistence and index backends since switching the indexing backend means index data will be lost.
-  This leads to "Fulltext" queries not working on the existing data
-  For clearing the data for BerkeleyDB, delete the ATLAS_HOME/data/berkeley directory
-  For clearing the data for HBase, in Hbase shell, run 'disable titan' and 'drop titan'
+Switching the Index backend requires clearing the persistence backend data. Otherwise there will be discrepancies between the persistence and index backends since switching the indexing backend means index data will be lost.
+This leads to "Fulltext" queries not working on the existing data
+For clearing the data for BerkeleyDB, delete the ATLAS_HOME/data/berkeley directory
+For clearing the data for HBase, in Hbase shell, run 'disable titan' and 'drop titan'
 
----+++ Hive Lineage Configs
 
-The higher layer services like hive lineage, schema, etc. are driven by the type system and this
-section encodes the specific types for the hive data model.
+---++ Lineage Configs
+
+The higher layer services like lineage, schema, etc. are driven by the type system and this section encodes the specific types for the hive data model.
 
 # This models reflects the base super types for Data and Process
 <verbatim>
@@ -128,7 +121,8 @@ atlas.lineage.hive.process.outputs.name=outputs
 atlas.lineage.hive.table.schema.query=hive_table where name=?, columns
 </verbatim>
 
----+++ Notification Configs
+
+---++ Notification Configs
 Refer http://kafka.apache.org/documentation.html#configuration for Kafka configuration. All Kafka configs should be prefixed with 'atlas.kafka.'
 
 <verbatim>
@@ -149,16 +143,17 @@ atlas.kafka.entities.group.id=<consumer id>
 </verbatim>
 
 
----+++ Client Configs
+---++ Client Configs
 <verbatim>
 atlas.client.readTimeoutMSecs=60000
 atlas.client.connectTimeoutMSecs=60000
+atlas.rest.address=<http/https>://<atlas-fqdn>:<atlas port> - default http://localhost:21000
 </verbatim>
 
 
----+++ Security Properties
+---++ Security Properties
 
----++++ SSL config
+---+++ SSL config
 The following property is used to toggle the SSL feature.
 
 <verbatim>
