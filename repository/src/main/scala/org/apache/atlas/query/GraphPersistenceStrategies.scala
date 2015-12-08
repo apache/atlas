@@ -26,7 +26,7 @@ import com.tinkerpop.blueprints.{Vertex, Direction}
 import org.apache.atlas.AtlasException
 import org.apache.atlas.query.Expressions.{ComparisonExpression, ExpressionException}
 import org.apache.atlas.query.TypeUtils.FieldInfo
-import org.apache.atlas.repository.graph.GraphBackedMetadataRepository
+import org.apache.atlas.repository.graph.{GraphHelper, GraphBackedMetadataRepository}
 import org.apache.atlas.typesystem.persistence.Id
 import org.apache.atlas.typesystem.types.DataTypes._
 import org.apache.atlas.typesystem.types._
@@ -199,7 +199,7 @@ object GraphPersistenceStrategy1 extends GraphPersistenceStrategies {
 
     def traitLabel(cls: IDataType[_], traitName: String) = s"${cls.getName}.$traitName"
 
-    def fieldNameInVertex(dataType: IDataType[_], aInfo: AttributeInfo) = GraphBackedMetadataRepository.getQualifiedName(dataType, aInfo.name)
+    def fieldNameInVertex(dataType: IDataType[_], aInfo: AttributeInfo) = GraphHelper.getQualifiedFieldName(dataType, aInfo.name)
 
     def getIdFromVertex(dataTypeNm: String, v: TitanVertex): Id =
         new Id(v.getId.toString, 0, dataTypeNm)

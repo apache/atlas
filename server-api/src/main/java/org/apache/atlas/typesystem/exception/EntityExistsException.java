@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,29 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.repository;
+package org.apache.atlas.typesystem.exception;
 
-/**
- * A simple wrapper for 404.
- */
-public class EntityNotFoundException extends RepositoryException {
-    public EntityNotFoundException() {
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.typesystem.IReferenceableInstance;
+
+public class EntityExistsException extends AtlasException {
+    public EntityExistsException(IReferenceableInstance typedInstance, Exception e) {
+        super("Model violation for type "+ typedInstance.getTypeName(), e);
     }
 
-    public EntityNotFoundException(String message) {
-        super(message);
-    }
-
-    public EntityNotFoundException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public EntityNotFoundException(Throwable cause) {
-        super(cause);
-    }
-
-    public EntityNotFoundException(String message, Throwable cause, boolean enableSuppression,
-            boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace);
+    public EntityExistsException(IReferenceableInstance typedInstance) {
+        super("Model violation for type "+ typedInstance.getTypeName());
     }
 }

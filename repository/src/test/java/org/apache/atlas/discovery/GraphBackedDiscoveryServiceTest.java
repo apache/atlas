@@ -24,7 +24,7 @@ import org.apache.atlas.BaseHiveRepositoryTest;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
-import org.apache.atlas.repository.graph.GraphBackedMetadataRepository;
+import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.graph.GraphProvider;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
@@ -55,7 +55,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseHiveRepositoryTest {
     private GraphProvider<TitanGraph> graphProvider;
 
     @Inject
-    private GraphBackedMetadataRepository repositoryService;
+    private MetadataRepository repositoryService;
 
     @Inject
     private GraphBackedDiscoveryService discoveryService;

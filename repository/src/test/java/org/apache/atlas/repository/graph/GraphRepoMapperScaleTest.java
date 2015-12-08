@@ -18,15 +18,9 @@
 
 package org.apache.atlas.repository.graph;
 
-import com.google.inject.Inject;
-import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanIndexQuery;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Predicate;
@@ -42,19 +36,16 @@ import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.TypeSystem;
-import org.apache.commons.io.FileUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import java.io.File;
-import java.io.IOException;
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.Random;
 
 @Test
 @Guice(modules = RepositoryMetadataModule.class)
@@ -63,15 +54,13 @@ public class GraphRepoMapperScaleTest {
     private static final String DATABASE_NAME = "foo";
     private static final String TABLE_NAME = "bar";
 
-    private static final String INDEX_DIR =
-            System.getProperty("java.io.tmpdir", "/tmp") + "/atlas-test" + new Random().nextLong();
-
     @Inject
     GraphProvider<TitanGraph> graphProvider;
 
     @Inject
     private GraphBackedMetadataRepository repositoryService;
 
+    @Inject
     private GraphBackedSearchIndexer searchIndexer;
 
     private TypeSystem typeSystem = TypeSystem.getInstance();
@@ -81,7 +70,7 @@ public class GraphRepoMapperScaleTest {
     @BeforeClass
     @GraphTransaction
     public void setUp() throws Exception {
-        searchIndexer = new GraphBackedSearchIndexer(graphProvider);
+        //Make sure we can cleanup the index directory
         Collection<IDataType> typesAdded = TestUtils.createHiveTypes(typeSystem);
         searchIndexer.onAdd(typesAdded);
     }
@@ -127,7 +116,6 @@ public class GraphRepoMapperScaleTest {
 
         //Elasticsearch requires some time before index is updated
         Thread.sleep(5000);
-
         searchWithOutIndex(Constants.GUID_PROPERTY_KEY, dbGUID);
         searchWithOutIndex(Constants.ENTITY_TYPE_PROPERTY_KEY, "column_type");
         searchWithOutIndex(Constants.ENTITY_TYPE_PROPERTY_KEY, TestUtils.TABLE_TYPE);

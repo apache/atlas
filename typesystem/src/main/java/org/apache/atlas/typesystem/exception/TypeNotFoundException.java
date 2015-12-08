@@ -16,7 +16,9 @@
  * limitations under the License.
  */
 
-package org.apache.atlas;
+package org.apache.atlas.typesystem.exception;
+
+import org.apache.atlas.AtlasException;
 
 /**
  * A simple wrapper for 404.

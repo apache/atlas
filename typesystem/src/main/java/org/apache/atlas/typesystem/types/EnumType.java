@@ -23,6 +23,9 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.atlas.AtlasException;
 import scala.math.BigInt;
 
+import java.nio.charset.Charset;
+import java.security.MessageDigest;
+
 public class EnumType extends AbstractDataType<EnumValue> {
 
     public final TypeSystem typeSystem;
@@ -80,7 +83,7 @@ public class EnumType extends AbstractDataType<EnumValue> {
     public void validateUpdate(IDataType newType) throws TypeUpdateException {
         super.validateUpdate(newType);
 
-        EnumType enumType = (EnumType)newType;
+        EnumType enumType = (EnumType) newType;
         for (EnumValue enumValue : values()) {
             //The old enum value should be part of new enum definition as well
             if (!enumType.valueMap.containsKey(enumValue.value)) {
@@ -93,6 +96,12 @@ public class EnumType extends AbstractDataType<EnumValue> {
                 throw new TypeUpdateException(String.format("Ordinal mismatch %s(%s) != %s(%s)", enumValue.value,
                         enumValue.ordinal, newEnumValue.value, newEnumValue.ordinal));
             }
+        }
+    }
+
+    public void updateSignatureHash(MessageDigest digester, Object val) throws AtlasException {
+        if (val != null) {
+            digester.update(fromValue((String) val).toString().getBytes(Charset.forName("UTF-8")));
         }
     }
 

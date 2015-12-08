@@ -118,7 +118,7 @@ public class EntityNotificationIT extends BaseResourceIT {
 
         final String guid = tableId._getId();
 
-        serviceClient.updateEntity(guid, property, newValue);
+        serviceClient.updateEntityAttribute(guid, property, newValue);
 
         waitForNotification(MAX_WAIT_TIME);
 

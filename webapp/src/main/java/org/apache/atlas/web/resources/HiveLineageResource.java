@@ -19,10 +19,10 @@
 package org.apache.atlas.web.resources;
 
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.ParamChecker;
+import org.apache.atlas.typesystem.exception.EntityNotFoundException;
+import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.discovery.DiscoveryException;
 import org.apache.atlas.discovery.LineageService;
-import org.apache.atlas.repository.EntityNotFoundException;
 import org.apache.atlas.web.util.Servlets;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;

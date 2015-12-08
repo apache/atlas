@@ -86,7 +86,7 @@ public class AuditFilter implements Filter {
 
         LOG.debug("Audit: {}/{} performed request {} {} ({}) at time {}", who, fromAddress, whatRequest, whatURL,
                 whatAddrs, whenISO9601);
-        audit(who, fromAddress, fromHost, whatURL, whatAddrs, whenISO9601);
+        audit(who, fromAddress, whatRequest, fromHost, whatURL, whatAddrs, whenISO9601);
     }
 
     private String getUserFromRequest(HttpServletRequest httpRequest) {
@@ -95,9 +95,9 @@ public class AuditFilter implements Filter {
         return userFromRequest == null ? "UNKNOWN" : userFromRequest;
     }
 
-    private void audit(String who, String fromAddress, String fromHost, String whatURL, String whatAddrs,
+    private void audit(String who, String fromAddress, String whatRequest, String fromHost, String whatURL, String whatAddrs,
             String whenISO9601) {
-        AUDIT_LOG.info("Audit: {}/{}-{} performed request {} ({}) at time {}", who, fromAddress, fromHost, whatURL,
+        AUDIT_LOG.info("Audit: {}/{}-{} performed request {} {} ({}) at time {}", who, fromAddress, fromHost, whatRequest, whatURL,
                 whatAddrs, whenISO9601);
     }
 

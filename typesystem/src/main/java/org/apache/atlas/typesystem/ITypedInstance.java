@@ -23,6 +23,7 @@ import org.apache.atlas.typesystem.types.FieldMapping;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.security.MessageDigest;
 import java.util.Date;
 
 /**
@@ -36,8 +37,6 @@ import java.util.Date;
 public interface ITypedInstance extends IInstance {
 
     FieldMapping fieldMapping();
-
-    void setNull(String attrName) throws AtlasException;
 
     boolean getBoolean(String attrName) throws AtlasException;
 
@@ -82,4 +81,6 @@ public interface ITypedInstance extends IInstance {
     void setDate(String attrName, Date val) throws AtlasException;
 
     void setString(String attrName, String val) throws AtlasException;
+
+    String getSignatureHash(MessageDigest digester) throws AtlasException;
 }

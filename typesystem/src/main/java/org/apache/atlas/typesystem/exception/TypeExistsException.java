@@ -16,17 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.repository;
+package org.apache.atlas.typesystem.exception;
 
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.typesystem.IReferenceableInstance;
 
-public class EntityExistsException extends AtlasException {
-    public EntityExistsException(IReferenceableInstance typedInstance, Exception e) {
-        super("Model violation for type "+ typedInstance.getTypeName(), e);
-    }
-
-    public EntityExistsException(IReferenceableInstance typedInstance) {
-        super("Model violation for type "+ typedInstance.getTypeName());
+public class TypeExistsException extends AtlasException {
+    public TypeExistsException(String message) {
+        super(message);
     }
 }

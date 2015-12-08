@@ -29,12 +29,15 @@ import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.EnumType;
 import org.apache.atlas.typesystem.types.EnumValue;
 import org.apache.atlas.typesystem.types.FieldMapping;
+import org.apache.atlas.typesystem.types.StructType;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.TypeUtils;
 import org.apache.atlas.typesystem.types.ValueConversionException;
+import org.apache.atlas.utils.MD5Utils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.security.MessageDigest;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -229,6 +232,30 @@ public class StructInstance implements ITypedStruct {
         }
         int nullPos = fieldMapping.fieldNullPos.get(attrName);
         nullFlags[nullPos] = true;
+
+        int pos = fieldMapping.fieldPos.get(attrName);
+
+        if (i.dataType() == DataTypes.BIGINTEGER_TYPE) {
+            bigIntegers[pos] = null;
+        } else if (i.dataType() == DataTypes.BIGDECIMAL_TYPE) {
+            bigDecimals[pos] = null;
+        } else if (i.dataType() == DataTypes.DATE_TYPE) {
+            dates[pos] = null;
+        } else if (i.dataType() == DataTypes.STRING_TYPE) {
+            strings[pos] = null;
+        } else if (i.dataType().getTypeCategory() == DataTypes.TypeCategory.ARRAY) {
+            arrays[pos] = null;
+        } else if (i.dataType().getTypeCategory() == DataTypes.TypeCategory.MAP) {
+            maps[pos] = null;
+        } else if (i.dataType().getTypeCategory() == DataTypes.TypeCategory.STRUCT
+            || i.dataType().getTypeCategory() == DataTypes.TypeCategory.TRAIT) {
+            structs[pos] = null;
+        } else if (i.dataType().getTypeCategory() == DataTypes.TypeCategory.CLASS) {
+                ids[pos] = null;
+                referenceables[pos] = null;
+        } else {
+            throw new AtlasException(String.format("Unknown datatype %s", i.dataType()));
+        }
     }
 
     /*
@@ -728,5 +755,13 @@ public class StructInstance implements ITypedStruct {
         } catch (AtlasException me) {
             throw new RuntimeException(me);
         }
+    }
+
+    @Override
+    public String getSignatureHash(MessageDigest digester) throws AtlasException {
+        StructType structType = TypeSystem.getInstance().getDataType(StructType.class, getTypeName());
+        structType.updateSignatureHash(digester, this);
+        byte[] digest = digester.digest();
+        return MD5Utils.toString(digest);
     }
 }

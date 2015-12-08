@@ -20,7 +20,7 @@ package org.apache.atlas.web.resources;
 
 import com.google.common.base.Preconditions;
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.ParamChecker;
+import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.discovery.DiscoveryException;
 import org.apache.atlas.discovery.DiscoveryService;
 import org.apache.atlas.web.util.Servlets;

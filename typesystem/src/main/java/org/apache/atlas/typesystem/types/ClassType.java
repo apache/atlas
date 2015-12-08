@@ -34,6 +34,8 @@ import org.apache.atlas.typesystem.persistence.StructInstance;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.charset.Charset;
+import java.security.MessageDigest;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -123,9 +125,9 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
                         r != null ? createInstanceWithTraits(id, r, r.getTraits().toArray(new String[0])) :
                                 createInstance(id);
 
-                if (id != null && id.isAssigned()) {
-                    return tr;
-                }
+//                if (id != null && id.isAssigned()) {
+//                    return tr;
+//                }
 
                 for (Map.Entry<String, AttributeInfo> e : fieldMapping.fields.entrySet()) {
                     String attrKey = e.getKey();
@@ -213,5 +215,25 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
     @Override
     public List<String> getNames(AttributeInfo info) {
         return infoToNameMap.get(info);
+    }
+
+    @Override
+    public void updateSignatureHash(MessageDigest digester, Object val) throws AtlasException {
+        if( !(val instanceof  ITypedReferenceableInstance)) {
+            throw new IllegalArgumentException("Unexpected value type " + val.getClass().getSimpleName() + ". Expected instance of ITypedStruct");
+        }
+        digester.update(getName().getBytes(Charset.forName("UTF-8")));
+
+        if(fieldMapping.fields != null && val != null) {
+            IReferenceableInstance typedValue = (IReferenceableInstance) val;
+            if(fieldMapping.fields.values() != null) {
+                for (AttributeInfo aInfo : fieldMapping.fields.values()) {
+                    Object attrVal = typedValue.get(aInfo.name);
+                    if (attrVal != null) {
+                        aInfo.dataType().updateSignatureHash(digester, attrVal);
+                    }
+                }
+            }
+        }
     }
 }

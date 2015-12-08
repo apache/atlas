@@ -60,8 +60,9 @@ Without Ranger, HBase shell can be used to set the permissions.
 </verbatim>
 
 ---++++ Graph Search Index
+
 This section sets up the graph db - titan - to use an search indexing system. The example
-configuration below setsup to use an embedded Elastic search indexing system.
+configuration below sets up to use an embedded Elastic search indexing system.
 
 <verbatim>
 atlas.graph.index.search.backend=elasticsearch
@@ -72,6 +73,7 @@ atlas.graph.index.search.elasticsearch.create.sleep=2000
 </verbatim>
 
 ---++++ Graph Search Index - Solr
+Please note that Solr installation in Cloud mode is a prerequisite before configuring Solr as the search indexing backend. Refer InstallationSteps section for Solr installation/configuration.
 
 <verbatim>
  atlas.graph.index.search.backend=solr5
