@@ -27,11 +27,11 @@ angular.module('dgc.details').controller('DetailsController', ['$window', '$scop
             id: $stateParams.id
         }, function(data) {
             $scope.details = data;
-            console.log(data);
             $scope.schemas = data;
             $scope.tableName = data.values.name;
             $scope.isTable = (typeof data.typeName !== 'undefined' && data.typeName.toLowerCase().indexOf('table') !== -1) ? true : false;
             $scope.onActivate('io');
+            $scope.isTags = (typeof data.traits !== 'undefined' && typeof data.traits === 'object') ? true : false;
         });
 
         $scope.isNumber = angular.isNumber;
@@ -45,7 +45,7 @@ angular.module('dgc.details').controller('DetailsController', ['$window', '$scop
             });
         };
 
-        $scope.goDetails = function(id){
+        $scope.goDetails = function(id) {
             $state.go("details", {
                 id: id
             });

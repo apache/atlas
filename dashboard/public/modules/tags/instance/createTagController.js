@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 'use strict';
 
 angular.module('dgc.tags.instance').controller('CreateTagController', ['$scope', 'DetailsResource', '$modalInstance', 'typesList', 'lodash', 'TagsResource', '$stateParams', '$rootScope', 'TagClasses', 'NotificationService',
@@ -23,29 +22,44 @@ angular.module('dgc.tags.instance').controller('CreateTagController', ['$scope',
         if (typesList) {
             $scope.typesList = typesList;
         }
+        var $$ = angular.element;
         $scope.categoryList = Categories;
         $scope.category = 'TRAIT';
 
         $scope.getAttributeDefinations = function() {
+            $scope.propertiesList = {};
+            $scope.isRequired = {};
+            $scope.getAttributeApi($scope.selectedType);
+        };
+
+        $scope.getAttributeApi = function(tagName) {
             TagsResource.get({
-                id: $scope.selectedType
+                id: tagName
             }, function(data) {
                 var instanceType = Categories[$scope.category].instanceInfo();
                 if (instanceType) {
-                    var traitTypes = angular.fromJson(data.definition)[instanceType][0];
-                    if (traitTypes) {
-                        $scope.propertiesList = {};
-                        $scope.isRequired = {};
-                        _.each(traitTypes.attributeDefinitions, function(value) {
-                            $scope.propertiesList[value.name] = '';
-                            $scope.isRequired[value.name] = value.isRequired;
-                        });
+                    var traitTypes = angular.fromJson(data.definition)[instanceType];
+
+                    for (var t = 0; t < traitTypes.length; t++) {
+                        if (traitTypes[t]) {
+                           for(var indx = 0; indx < traitTypes[t].attributeDefinitions.length; indx++)
+                            { 
+                                var attrDefn = traitTypes[t].attributeDefinitions[indx];
+                                $scope.propertiesList[attrDefn.name] = '';
+                                $scope.isRequired[attrDefn.name] = attrDefn.isRequired;
+                            }
+                        }
+
+                        if (traitTypes[t].superTypes && traitTypes[t].superTypes.length > 0) {
+                            for (var s = 0; s < traitTypes[t].superTypes.length; s++) {
+                                $scope.getAttributeApi(traitTypes[t].superTypes[s]);
+                            }
+                        }
                     }
                 }
-
             });
         };
-        $scope.ok = function(tagDefinitionform) {
+        $scope.ok = function($event, tagDefinitionform) {
             if (tagDefinitionform.$valid) {
                 var requestObject = {
                     "jsonClass": "org.apache.atlas.typesystem.json.InstanceSerialization$_Struct",
@@ -54,8 +68,14 @@ angular.module('dgc.tags.instance').controller('CreateTagController', ['$scope',
                 };
                 DetailsResource.saveTag({
                     id: $stateParams.id
-                }, requestObject).$promise.then(function() {
-                    $rootScope.$broadcast('refreshResourceData', $stateParams.id);
+                }, requestObject).$promise.then(function(data) {
+                    if (data.requestId !== undefined && data.GUID === $stateParams.id) {
+                        var tagName = $$("#tagDefinition").val();
+                        $rootScope.updateTags(true, {
+                            added: $scope.selectedType
+                        });
+                        $$("#" + $stateParams.id).append("<a class='tabsearchanchor ng-binding ng-scope' data-ui-sref='search({query: " + tagName + "})' title='" + tagName + "' href='#!/search?query=" + tagName + "'>" + tagName + "<span> </span></a>");
+                    }
                     NotificationService.info('Tag "' + $scope.selectedType + '" has been added to entity', true);
                     $modalInstance.close(true);
                 }).catch(function(err) {

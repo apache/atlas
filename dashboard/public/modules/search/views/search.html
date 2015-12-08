@@ -1,123 +1,107 @@
+
+
 <!--
-  ~ Licensed to the Apache Software Foundation (ASF) under one
-  ~ or more contributor license agreements.  See the NOTICE file
-  ~ distributed with this work for additional information
-  ~ regarding copyright ownership.  The ASF licenses this file
-  ~ to you under the Apache License, Version 2.0 (the
-  ~ "License"); you may not use this file except in compliance
-  ~ with the License.  You may obtain a copy of the License at
-  ~
-  ~     http://www.apache.org/licenses/LICENSE-2.0
-  ~
-  ~ Unless required by applicable law or agreed to in writing, software
-  ~ distributed under the License is distributed on an "AS IS" BASIS,
-  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ~ See the License for the specific language governing permissions and
-  ~ limitations under the License.
-  -->
-<div class="row">
-    <div class="col-lg-2 padding0" data-ng-include="'/modules/navigation/views/navigation.html'"></div>
-
-    <div class="col-lg-10 paddingR0">
-        <div class="row mainSearch">
-            <form class="col-lg-12" name="form" novalidate>
-                <div class="input-group">
-                    <input type="text" class="form-control" placeholder="Search: Table, DB, Column" data-ng-model="query" required/>
-                    <span class="input-group-btn">
-                        <button class="btn btn-success" type="submit" data-ng-disabled="form.$invalid"   ng-click="goSearch(query)">
-                            <i class="glyphicon glyphicon-search white "></i>
-                        </button>
-                    </span>
-                </div>
-            </form>
-        </div>
-        <div class="col-lg-12 padding0 searchresults">
-            <div ng-switch on="searchMessage">
-                <div ng-switch-when="load-gif" class="search-spinner"><img src="../img/spinner.gif" align="middle" /></div>
-                <div ng-switch-default><h4 ng-show="searchMessage" title="{{searchMessage}}" class="searchResultCount">{{searchMessage}}</h4></div>
+   ~ Licensed to the Apache Software Foundation (ASF) under one
+   ~ or more contributor license agreements.  See the NOTICE file
+   ~ distributed with this work for additional information
+   ~ regarding copyright ownership.  The ASF licenses this file
+   ~ to you under the Apache License, Version 2.0 (the
+   ~ "License"); you may not use this file except in compliance
+   ~ with the License.  You may obtain a copy of the License at
+   ~
+   ~     http://www.apache.org/licenses/LICENSE-2.0
+   ~
+   ~ Unless required by applicable law or agreed to in writing, software
+   ~ distributed under the License is distributed on an "AS IS" BASIS,
+   ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   ~ See the License for the specific language governing permissions and
+   ~ limitations under the License.
+   -->
+<div class="col-lg-10 paddingR0">
+   <div class="">
+      <div class="row mainSearch">
+         <form class="col-lg-12" name="form" novalidate>
+            <div class="input-group">
+               <input type="text" class="form-control" placeholder="Search: Table, DB, Column" data-ng-model="query" required/>
+               <span class="input-group-btn">
+               <button class="btn btn-success" type="submit" data-ng-disabled="form.$invalid" ui-sref="search({ query: query })">
+               <i class="glyphicon glyphicon-search white "></i>
+               </button>
+               </span>
             </div>
-            <div class="panel panel-default" ng-show='resultCount > 0'>
-              <table class="table table-bordered datatable" >
-                <thead>
+         </form>
+      </div>
+      <div class="col-lg-12 padding0 searchresults">
+         <div ng-switch on="searchMessage">
+            <div ng-switch-when="load-gif" class="search-spinner"><img src="../img/spinner.gif" align="middle" /></div>
+            <div ng-switch-default>
+               <h4 ng-show="searchMessage" title="{{searchMessage}}" class="tabsearchResult">{{searchMessage}}</h4>
+            </div>
+         </div>
+         <div class="panel panel-default" ng-show='resultCount > 0'>
+            <table class="table table-bordered datatable" >
+               <thead>
                   <tr ng-if="!isTag(resultType)">
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>Owner</th>
-                    <th>Tags</th>
-                    <th>Tools</th>
+                     <th>Name</th>
+                     <th>Description</th>
+                     <th>Owner</th>
+                     <th>Tags</th>
+                     <th>Tools</th>
                   </tr>
-                  <tr ng-if="isTag(resultType)">
-                    <th>Name</th>
-                    <th>Type</th>
-                  </tr>                  
-                </thead>
-
-                <tbody>
-                  <tr ng-if="!isTag(resultType)" ng-repeat="result in filteredResults">
-                    <td>
-                      <a data-ui-sref="details({id:result['$id$'].id || result.guid})">{{result.name || result.guid}}</a>
-                    </td>
-
-                    <td>
-                      {{result.description}}
-                    </td>
-
-                    <td>                    
-                      <span ng-repeat="(key, value) in filterSearchResults(result)">
-                          <span ng-if="key =='owner'">{{value}}</span>
-                      </span>
-                    </td>
-
-                    <td>
-                      <div ng-show="!dataTransitioned" class="wordBreak"><a class="tabsearchanchor" ng-repeat="(key, value) in result['$traits$']" data-ui-sref="search({query: key})" title="{{key}}">{{key}}<span> </span></a></div>
-                    </td>
-                    <td class="addTag"><img ng-src="img/addTag.png" tooltip="Add Tag" ng-click="openAddTagHome(result['$id$'].id || result.guid)"></td>
+                  <tr ng-if="isTag(resultType) && transformedProperties != undefined" >
+                     <th ng-repeat="prop in transformedProperties" ng-if="prop !== 'id'">
+                        {{(prop != '$traits$') ? prop : 'Tags'}}
+                     </th>
                   </tr>
-                  <tr ng-if="isTag(resultType)" ng-repeat="result in filteredResults">
-                    <td>
-                      <a data-ui-sref="details({id:result.guid})">{{result.guid}}</a>
-                    </td>
-
-                    <td>
-                      {{result.typeName}}
-                    </td>
+               </thead>
+               <tbody>
+                  <tr ng-if="!isTag(resultType) && isObject(result)" ng-repeat="result in filteredResults track by $index">
+                     <td>
+                        <a data-ui-sref="details({id:result['$id$'].id || result.guid})">{{result.name || result.guid}}</a>
+                     </td>
+                     <td>
+                        {{result.description}}
+                     </td>
+                     <td>                    
+                        <span ng-repeat="(key, value) in filterSearchResults(result)">
+                        <span ng-if="key =='owner'">{{value}}</span>
+                        </span>
+                     </td>
+                     <td>
+                        <div id="{{result['$id$'].id}}" ng-show="!dataTransitioned" class="wordBreak"><a class="tabsearchanchor" ng-repeat="(key, value) in result['$traits$']" data-ui-sref="search({query: key})" title="{{key}}">{{key}}<span> </span></a></div>
+                     </td>
+                     <td class="addTag"><img ng-src="img/addTag.png" tooltip="Add Tag" ng-click="openAddTagHome(result['$id$'].id || result.guid)"></td>
                   </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <!-- <ul class="list-unstyled"  ng-show='resultCount > 0'>
+                  <tr ng-if="isTag(resultType)" ng-repeat="result in filteredResults track by $index">
+                     <td data-ng-if="isObject(result) && !isString(result) && res != 'id'" data-ng-repeat="res in transformedProperties track by $index">
+                        
+                        <a data-ng-if="res == 'guid'" data-ui-sref="details({id:result[res]})">{{result[res]}}</a>
+                        
+                        <span data-ng-if="res != '$traits$' && res != 'Tools' && res != 'guid' && res.toLowerCase().indexOf('name') == -1 && res.toLowerCase().indexOf('time') == -1">{{result[res]}}</span> 
+                        
+                        <span data-ng-if="res.toLowerCase().indexOf('time') != -1 && isNumber(result[res])">{{result[res] * 1000 | date:'yyyy-MM-dd HH:mm:ss'}} UTC</span> 
+                        
+                        <a data-ng-if="res.toLowerCase().indexOf('name') != -1" data-ui-sref="details({id:result['id']|| result['guid']})">{{result[res]}}</a>
+                        
+                        <div data-ng-if="res == '$traits$'" class="wordBreak tags" id="{{result['id']|| result['guid']}}">
+                           <a class="tabsearchanchor" ng-repeat="(key, value) in result[res]" data-ui-sref="search({query: key})" title="{{key}}">{{key}}<span> </span></a>
+                        </div>
+                        
+                        <span data-ng-if="res == 'Tools'" class="addTag"> <img ng-src="img/addTag.png" tooltip="Add Tag" ng-click="openAddTagHome(result['id']|| result['guid'])"> </span>
+                     </td>
+                     <td data-ng-if="isString(result) || result == false || result == true">
+                        <a data-ng-if="result.toLowerCase() == 'guid'" data-ui-sref="details({id:result})">{{result}}</a>
+                        <span data-ng-if="result.toLowerCase() != 'guid'">{{result}}</span>
+                     </td>
                   </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <!-- <ul class="list-unstyled"  ng-show='resultCount > 0'>
-                <li ng-repeat="result in filteredResults" class="searchresults">
-                    <h4><a data-ui-sref="details({id:result['$id$'].id || result.guid})">{{result.name || result.guid}}</a></h4>
-
-                    <p>{{result.description}}</p>
-                    <span ng-repeat="(key, value) in filterSearchResults(result)">
-                        <span ng-show="$index <= 3  "><b>{{key}}: </b>{{value}} {{(($index+1 === limit) || $last ) ? '' : ', '}}</span>
-                    </span>
-
-                    <div collapse="isCollapsed">
-                      <span ng-repeat="(key, value) in filterSearchResults(result)">
-                        <span ng-show="$index > 3"><b>{{key}}: </b>{{value}}{{$last ? '' : ', '}}</span>
-                      </span>
-                    </div>
-                    <a href ng-show="isCollapsed && (keyLength > 4)" ng-click="doToggle($event,isCollapsed)">..show more</a>
-                    <a href ng-show="!isCollapsed" ng-click="doToggle($event,isCollapsed)">..show less</a>
-
-                    <h5 ng-show="!dataTransitioned">Tags : <a ng-repeat="(key, value) in result['$traits$']" data-ui-sref="search({query: key})">{{key}}<span ng-show="!{{$last}}">,</span> </a></h5>
-
-                </li>
-            </ul> -->
-
-            <div class="pull-right" ng-show='resultCount > 0'>
-                <pagination total-items="totalItems" items-per-page="itemsPerPage" ng-model="currentPage" ng-change="pageChanged()"></pagination>
-                <p>
-            </div>
-        </div>
-    </div>
+               </tbody>
+            </table>
+         </div>
+         <div class="pull-right" ng-show='resultCount > 0'>
+            <pagination total-items="totalItems" items-per-page="itemsPerPage" ng-model="currentPage" ng-change="pageChanged()"></pagination>
+            <p>
+         </div>
+      </div>
+   </div>
 </div>
+

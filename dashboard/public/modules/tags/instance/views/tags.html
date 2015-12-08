@@ -1,27 +1,63 @@
+
+
 <!--
-  ~ Licensed to the Apache Software Foundation (ASF) under one
-  ~ or more contributor license agreements.  See the NOTICE file
-  ~ distributed with this work for additional information
-  ~ regarding copyright ownership.  The ASF licenses this file
-  ~ to you under the Apache License, Version 2.0 (the
-  ~ "License"); you may not use this file except in compliance
-  ~ with the License.  You may obtain a copy of the License at
-  ~
-  ~     http://www.apache.org/licenses/LICENSE-2.0
-  ~
-  ~ Unless required by applicable law or agreed to in writing, software
-  ~ distributed under the License is distributed on an "AS IS" BASIS,
-  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ~ See the License for the specific language governing permissions and
-  ~ limitations under the License.
-  -->
-<div data-ng-controller="InstanceTagController">
-  <div class="container tag-list wordBreak">
-    <h4 class="tagsAdded">Tags</h4>
-    <a ng-click="openAddTag()" href="" class="add-tag btn btn-primary pull-right">Add tag</a>
-    <ul class="tagalign">
-      <li ng-repeat="trait in traitsList" class="list-group-item pointer tabsearchanchor maxwidth125px" popover="{{trait.values}}" popover-title="{{trait.typeName}} Values" popover-trigger="mouseenter" >
-        {{trait.typeName}} <a href="" class="anchorAbsolute" ng-click="detachTag($event, trait.typeName)"> <i class="fa fa-times"></i> </a> </li>
-    </ul>
+   ~ Licensed to the Apache Software Foundation (ASF) under one
+   ~ or more contributor license agreements.  See the NOTICE file
+   ~ distributed with this work for additional information
+   ~ regarding copyright ownership.  The ASF licenses this file
+   ~ to you under the Apache License, Version 2.0 (the
+   ~ "License"); you may not use this file except in compliance
+   ~ with the License.  You may obtain a copy of the License at
+   ~
+   ~     http://www.apache.org/licenses/LICENSE-2.0
+   ~
+   ~ Unless required by applicable law or agreed to in writing, software
+   ~ distributed under the License is distributed on an "AS IS" BASIS,
+   ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   ~ See the License for the specific language governing permissions and
+   ~ limitations under the License.
+   -->
+<div data-ng-controller="InstanceTagController" >
+   <div>
+      <a ng-click="openAddTag()" class="add-tag btn btn-primary pull-right">Add Tag</a>
+   </div>
+   <table class="table table-bordered">
+      <thead>
+         <tr>
+            <th>Tag</th>
+            <th>Tools</th>
+         </tr>
+      </thead>
+      <tbody>
+           <tr ng-repeat="trait in traitsList" class="pointer" ng-if="!noTags">
+            <td class="col-lg-11" >
+               {{trait.typeName}}
+            </td>
+            <td class="col-lg-1 tagAlign">
+               <a href="" class="deleteTag confirm-delete" data-toggle="modal" data-target="#myModal" ><i class="fa fa-trash-o " ng-click="detachTag($event, trait.typeName)"></i></a>
+            </td>
+         </tr>
+      </tbody>
+   </table>
+  <!-- Modal -->
+  <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="myModalLabel">Are you sure you want to delete ? </h4>
+        </div>
+        <div class="modal-body">
+            <b> Tag : {{displayName}} </b>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="cancel()">Close</button>
+          <button type="button" id="btnDelete" class="btn btn-primary" data-dismiss="modal">Delete</button>
+        </div>
+      </div>
+    </div>
   </div>
+  <div ng-if="noTags" class="noTags"> 
+      No tags to display 
+  </div>  
 </div>

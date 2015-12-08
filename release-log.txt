@@ -1,7 +1,7 @@
 Apache Atlas Release Notes
 ==========================
 
---trunk - unreleased
+--Release 0.6-incubating
 
 INCOMPATIBLE CHANGES:
 ATLAS-58 Make hive hook reliable (shwethags)
@@ -9,7 +9,8 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (sumasai via shwethags)
 
 ALL CHANGES:
-ATLAS-361 dd validation when index backends are switched in ATLAS configuration(sumasai via shwethags)
+ATLAS-279 UI not displaying results for certain successful "select" search queries (anilsg via shwethags)
+ATLAS-361 Add validation when index backends are switched in ATLAS configuration(sumasai via shwethags)
 ATLAS-242 The qualified name for hive entities should be backward compatible (shwethags)
 ATLAS-171 Ability to update type definition(shwethags via sumasai)
 ATLAS-352 Improve write performance on type and entity creation with Hbase (sumasai)
