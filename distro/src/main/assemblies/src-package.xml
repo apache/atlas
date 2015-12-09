@@ -26,7 +26,7 @@
     <baseDirectory>apache-atlas-sources-${project.version}</baseDirectory>
     <fileSets>
         <fileSet>
-            <directory>.</directory>
+            <directory>..</directory>
             <excludes>
                 <exclude>**/target/**</exclude>
                 <exclude>**/logs/**</exclude>
@@ -36,6 +36,7 @@
                 <exclude>**/*.iml</exclude>
                 <exclude>**/*.log</exclude>
                 <exclude>**/*.pyc</exclude> <!-- python compiled executable -->
+                <exclude>**/test-output/**</exclude>
                 <exclude>dashboard/.bower-*/**</exclude> <!-- temp libs -->
                 <exclude>dashboard/lib/**</exclude>  <!-- temp libs -->
                 <exclude>dashboard/node*/**</exclude>  <!-- temp libs -->

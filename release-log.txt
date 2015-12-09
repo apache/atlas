@@ -14,6 +14,7 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (sumasai via shwethags)
 
 ALL CHANGES:
+ATLAS-380 Fix ATLAS source artifact generation (sumasai)
 ATLAS-354 Kerberized cluster: quick_start.py fails to add sample data (shwethags)
 ATLAS-47 Entity mutations for complex types (sumasai via shwethags)
 ATLAS-345 UI: Should allow tag addition on any search result that returns a reference-able entity (darshankumar89 via shwethags)
