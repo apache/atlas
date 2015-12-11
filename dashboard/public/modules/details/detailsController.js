@@ -17,22 +17,45 @@
  */
 'use strict';
 
-angular.module('dgc.details').controller('DetailsController', ['$window', '$scope', '$state', '$stateParams', 'DetailsResource',
-    function($window, $scope, $state, $stateParams, DetailsResource) {
+angular.module('dgc.details').controller('DetailsController', ['$window', '$scope', '$state', '$stateParams', 'DetailsResource', 'SchemaResource',
+    function($window, $scope, $state, $stateParams, DetailsResource, SchemaResource) {
 
         $scope.tableName = false;
         $scope.isTable = false;
 
         DetailsResource.get({
             id: $stateParams.id
+
         }, function(data) {
             $scope.details = data;
-            $scope.schemas = data;
             $scope.tableName = data.values.name;
             $scope.isTable = (typeof data.typeName !== 'undefined' && data.typeName.toLowerCase().indexOf('table') !== -1) ? true : false;
             $scope.onActivate('io');
             $scope.isTags = (typeof data.traits !== 'undefined' && typeof data.traits === 'object') ? true : false;
+
+            if (data && data.values && data.values.name && data.values.name !== "") {
+                SchemaResource.get({
+                    tableName: data.values.name
+                }, function(data1) {
+                    if (data1.results) {
+                        $scope.schema = data1.results.rows;
+                        $scope.isSchema = (data1.results.rows && data1.results.rows.length > 0) ? true : false;
+                        for (var t = 0; t < data1.results.rows.length; t++) {
+                            if (data1.results.rows[t].$id$) {
+                                $scope.isTraitId = true; 
+                            }
+                            if (data1.results.rows[t].type) {
+                                $scope.isHiveSchema = true; 
+                            }  
+                            if($scope.isTraitId && $scope.isHiveSchema){
+                                break;
+                            }
+                        } 
+                    }
+                });
+            }
         });
+
 
         $scope.isNumber = angular.isNumber;
         $scope.isObject = angular.isObject;
@@ -44,6 +67,13 @@ angular.module('dgc.details').controller('DetailsController', ['$window', '$scop
                 tableName: $scope.tableName
             });
         };
+
+        $scope.openAddTagHome = function(traitId) {
+            $state.go('addTagDetails', {
+                tId: traitId
+            });
+        };
+
 
         $scope.goDetails = function(id) {
             $state.go("details", {

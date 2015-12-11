@@ -191,7 +191,7 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
         };
         $scope.openAddTagHome = function(traitId) {
             $state.go('addTagHome', {
-                id: traitId
+                tId: traitId
             });
         };
         $scope.isTag = function(typename) {

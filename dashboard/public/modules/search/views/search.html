@@ -81,7 +81,9 @@
                         
                         <span data-ng-if="res.toLowerCase().indexOf('time') != -1 && isNumber(result[res])">{{result[res] * 1000 | date:'yyyy-MM-dd HH:mm:ss'}} UTC</span> 
                         
-                        <a data-ng-if="res.toLowerCase().indexOf('name') != -1" data-ui-sref="details({id:result['id']|| result['guid']})">{{result[res]}}</a>
+                        <a data-ng-if="res.toLowerCase().indexOf('name') != -1 && result['id']" data-ui-sref="details({id:result['id']|| result['guid']})">{{result[res]}}</a>
+
+                        <span data-ng-if="res.toLowerCase().indexOf('name') != -1 && !result['id']">{{result[res]}}</span> 
                         
                         <div data-ng-if="res == '$traits$'" class="wordBreak tags" id="{{result['id']|| result['guid']}}">
                            <a class="tabsearchanchor" ng-repeat="(key, value) in result[res]" data-ui-sref="search({query: key})" title="{{key}}">{{key}}<span> </span></a>

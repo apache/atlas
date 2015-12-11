@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 'use strict';
 
 angular.module('dgc.details').config(['$stateProvider',
@@ -25,6 +24,28 @@ angular.module('dgc.details').config(['$stateProvider',
         $stateProvider.state('details', {
             url: '/details/:id',
             templateUrl: '/modules/details/views/details.html'
+        });
+
+        $stateProvider.state('addTagDetails', {
+            parent: 'details',
+            params: {
+                tId: null,
+                frm : 'details'
+            },
+            onEnter: ['$stateParams', '$state', '$modal', 'NavigationResource', function($stateParams, $state, $modal, NavigationResource) {
+                $modal.open({
+                    templateUrl: '/modules/tags/instance/views/createTag.html',
+                    controller: 'CreateTagController',
+                    windowClass: 'create-tag-entity',
+                    resolve: {
+                        typesList: function() {
+                            return NavigationResource.get().$promise;
+                        }
+                    }
+                }).result.finally(function() {
+                    $state.go('^');
+                });
+            }]
         });
     }
 ]);
