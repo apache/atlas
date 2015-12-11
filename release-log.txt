@@ -14,6 +14,7 @@ ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (sumasai via shwethags)
 
 ALL CHANGES:
+ATLAS-244 UI: Add Tag Tab (darshankumar89 via sumasai)
 ATLAS-376 UI: Use the Schema API of the backend to populate details for Schema tab (darshankumar89 via sumasai)
 ATLAS-380 Fix ATLAS source artifact generation (sumasai)
 ATLAS-354 Kerberized cluster: quick_start.py fails to add sample data (shwethags)

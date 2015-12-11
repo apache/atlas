@@ -366,3 +366,6 @@ Tags on Home Page design
 .h160 {
     height: 160px !important;
 }
+.tag-attr{
+    font-weight:bold;
+}
