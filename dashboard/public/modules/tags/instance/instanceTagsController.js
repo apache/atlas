@@ -61,7 +61,7 @@ angular.module('dgc.tags.instance').controller('InstanceTagController', ['$scope
 
         $scope.openAddTag = function() {
             $state.go('addTag', {
-                id: $scope.id
+                tId: $scope.id
             });
         };
 

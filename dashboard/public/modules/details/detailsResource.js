@@ -37,6 +37,18 @@ angular.module('dgc.details').factory('DetailsResource', ['$resource', function(
             method: 'DELETE',
             url: '/api/atlas/entities/:id/traits/:tagName'
         }
-    });
+     });
 
+}]).factory('SchemaResource', ['$resource', function($resource) {
+    return $resource('/api/atlas/lineage/hive/table/:tableName/schema', {}, {
+        get: {
+            method: 'GET',
+            transformResponse: function(data) {
+                if (data) {
+                    return angular.fromJson(data);
+                }
+            },
+            responseType: 'json'
+        }
+});
 }]);
