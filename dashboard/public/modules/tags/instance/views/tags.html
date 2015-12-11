@@ -25,13 +25,17 @@
       <thead>
          <tr>
             <th>Tag</th>
+             <th>Attributes</th>
             <th>Tools</th>
          </tr>
       </thead>
       <tbody>
            <tr ng-repeat="trait in traitsList" class="pointer" ng-if="!noTags">
-            <td class="col-lg-11" >
+            <td class="col-lg-5" >
                {{trait.typeName}}
+            </td>
+             <td class="col-lg-5 tag-attr" >
+              {{trait.values}}
             </td>
             <td class="col-lg-1 tagAlign">
                <a href="" class="deleteTag confirm-delete" data-toggle="modal" data-target="#myModal" ><i class="fa fa-trash-o " ng-click="detachTag($event, trait.typeName)"></i></a>
