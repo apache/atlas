@@ -51,14 +51,13 @@ Follow these instructions in your hive set-up to add hive hook for Atlas:
       <value>org.apache.atlas.hive.hook.HiveHook</value>
     </property>
   </verbatim>
+  <verbatim>
+    <property>
+      <name>atlas.cluster.name</name>
+      <value>primary</value>
+    </property>
+  </verbatim>
    * Add 'export HIVE_AUX_JARS_PATH=<atlas package>/hook/hive' in hive-env.sh of your hive configuration
-   * Set the following configuration in <atlas-conf>/client.properties
-   <verbatim>
-     <property>
-       <name>atlas.cluster.name</name>
-       <value>primary</value>
-     </property>
-     </verbatim>
    * Copy <atlas-conf>/client.properties and <atlas-conf>/application.properties to the hive conf directory.
 
 The following properties in <atlas-conf>/client.properties control the thread pool and notification details:
