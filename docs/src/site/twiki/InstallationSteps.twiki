@@ -143,6 +143,11 @@ For configuring Titan to work with Solr, please follow the instructions below
   For a small cluster, running with an existing ZooKeeper quorum should be fine. For larger clusters, you would want to run separate multiple ZooKeeper quorum with atleast 3 servers.
   Note: Atlas currently supports solr in "cloud" mode only. "http" mode is not supported. For more information, refer solr documentation - https://cwiki.apache.org/confluence/display/solr/SolrCloud
 
+* For e.g., to bring up a Solr node listening on port 8983 on a machine, you can use the command:
+      <verbatim>
+      $SOLR_HOME/bin/solr start -c -z <zookeeper_host:port> -p 8983
+      </verbatim>
+
 * Run the following commands from SOLR_HOME directory to create collections in Solr corresponding to the indexes that Atlas uses. In the case that the ATLAS and SOLR instance are on 2 different hosts,
   first copy the required configuration files from ATLAS_HOME/conf/solr on the ATLAS instance host to the Solr instance host. SOLR_CONF in the below mentioned commands refer to the directory where the solr configuration files
   have been copied to on Solr host:
@@ -153,7 +158,9 @@ For configuring Titan to work with Solr, please follow the instructions below
 
   Note: If numShards and replicationFactor are not specified, they default to 1 which suffices if you are trying out solr with ATLAS on a single node instance.
   Otherwise specify numShards according to the number of hosts that are in the Solr cluster and the maxShardsPerNode configuration.
-  The number of shards cannot exceed the total number of Solr nodes in your SolrCloud cluster
+  The number of shards cannot exceed the total number of Solr nodes in your SolrCloud cluster.
+
+  The number of replicas (replicationFactor) can be set according to the redundancy required.
 
 * Change ATLAS configuration to point to the Solr instance setup. Please make sure the following configurations are set to the below values in ATLAS_HOME//conf/application.properties
  atlas.graph.index.search.backend=solr5
