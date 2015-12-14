@@ -47,6 +47,7 @@ allows integration with the whole enterprise data ecosystem.
       * [[Notification-Entity][Entity Notification]]
    * Bridges
       * [[Bridge-Hive][Hive Bridge]]
+   * [[HighAvailability][Fault Tolerance And High Availability Options]]
 
 
 ---++ API Documentation

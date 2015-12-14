@@ -1,0 +1,89 @@
+---+ Fault Tolerance and High Availability Options
+
+---++ Introduction
+
+Apache Atlas uses and interacts with a variety of systems to provide metadata management and data lineage to data
+administrators. By choosing and configuring these dependencies appropriately, it is possible to achieve a good degree
+of service availability with Atlas. This document describes the state of high availability support in Atlas,
+including its capabilities and current limitations, and also the configuration required for achieving a this level of
+high availability.
+
+[[Architecture][The architecture page]] in the wiki gives an overview of the various components that make up Atlas.
+The options mentioned below for various components derive context from the above page, and would be worthwhile to
+review before proceeding to read this page.
+
+---++ Atlas Web Service
+
+Currently, the Atlas Web service has a limitation that it can only have one active instance at a time. Therefore, in
+case of errors to the host running the service, a new Atlas web service instance should be brought up and pointed to
+from the clients. In future versions of the system, we plan to provide full High Availability of the service, thereby
+enabling hot failover. To minimize service loss, we recommend the following:
+
+   * An extra physical host with the Atlas system software and configuration is available to be brought up on demand.
+   * It would be convenient to have the web service fronted by a proxy solution like [[https://cbonte.github.io/haproxy-dconv/configuration-1.5.html#5.2][HAProxy]] which can be used to provide both the monitoring and transparent switching of the backend instance clients talk to.
+      * An example HAProxy configuration of this form will allow a transparent failover to a backup server:
+      <verbatim>
+      listen atlas
+        bind <proxy hostname>:<proxy port>
+        balance roundrobin
+        server inst1 <atlas server hostname>:<port> check
+        server inst2 <atlas backup server hostname>:<port> check backup
+      </verbatim>
+   * The stores that hold Atlas data can be configured to be highly available as described below.
+
+---++ Metadata Store
+
+As described above, Atlas uses Titan to store the metadata it manages. By default, Titan uses BerkeleyDB as an embedded
+backing store. However, this option would result in loss of data if the node running the Atlas server fails. In order
+to provide HA for the metadata store, we recommend that Atlas be configured to use HBase as the backing store for Titan.
+Doing this implies that you could benefit from the HA guarantees HBase provides. In order to configure Atlas to use
+HBase in HA mode, do the following:
+
+   * Choose an existing HBase cluster that is set up in HA mode to configure in Atlas (OR) Set up a new HBase cluster in [[http://hbase.apache.org/book.html#quickstart_fully_distributed][HA mode]].
+      * If setting up HBase for Atlas, please following instructions listed for setting up HBase in the [[InstallationSteps][Installation Steps]].
+   * We recommend using more than one HBase masters (at least 2) in the cluster on different physical hosts that use Zookeeper for coordination to provide redundancy and high availability of HBase.
+      * Refer to the [[Configuration][Configuration page]] for the options to configure in atlas.properties to setup Atlas with HBase.
+
+---++ Index Store
+
+As described above, Atlas indexes metadata through Titan to support full text search queries. In order to provide HA
+for the index store, we recommend that Atlas be configured to use Solr as the backing index store for Titan. In order
+to configure Atlas to use Solr in HA mode, do the following:
+
+   * Choose an existing !SolrCloud cluster setup in HA mode to configure in Atlas (OR) Set up a new [[https://cwiki.apache.org/confluence/display/solr/SolrCloud][SolrCloud cluster]].
+      * Ensure Solr is brought up on at least 2 physical hosts for redundancy, and each host runs a Solr node.
+      * We recommend the number of replicas to be set to at least 2 for redundancy.
+   * Create the !SolrCloud collections required by Atlas, as described in [[InstallationSteps][Installation Steps]]
+   * Refer to the [[Configuration][Configuration page]] for the options to configure in atlas.properties to setup Atlas with Solr.
+
+---++ Notification Server
+
+Metadata notification events from Hooks are sent to Atlas by writing them to a Kafka topic called *ATLAS_HOOK*. Similarly, events from
+Atlas to other integrating components like Ranger, are written to a Kafka topic called *ATLAS_ENTITIES*. Since Kafka
+persists these messages, the events will not be lost even if the consumers are down as the events are being sent. In
+addition, we recommend Kafka is also setup for fault tolerance so that it has higher availability guarantees. In order
+to configure Atlas to use Kafka in HA mode, do the following:
+
+   * Choose an existing Kafka cluster set up in HA mode to configure in Atlas (OR) Set up a new Kafka cluster.
+   * We recommend that there are more than one Kafka brokers in the cluster on different physical hosts that use Zookeeper for coordination to provide redundancy and high availability of Kafka.
+      * Setup at least 2 physical hosts for redundancy, each hosting a Kafka broker.
+   * Set up Kafka topics for Atlas usage:
+      * The number of partitions for the ATLAS topics should be set to 1 (numPartitions)
+      * Decide number of replicas for Kafka topic: Set this to at least 2 for redundancy.
+      * Run the following commands:
+      <verbatim>
+      $KAFKA_HOME/bin/kafka-topics.sh --create --zookeeper <list of zookeeper host:port entries> --topic ATLAS_HOOK --replication-factor <numReplicas> --partitions 1
+      $KAFKA_HOME/bin/kafka-topics.sh --create --zookeeper <list of zookeeper host:port entries> --topic ATLAS_ENTITIES --replication-factor <numReplicas> --partitions 1
+      Here KAFKA_HOME points to the Kafka installation directory.
+      </verbatim>
+   * In application.properties, set the following configuration:
+     <verbatim>
+     atlas.notification.embedded=false
+     atlas.kafka.zookeeper.connect=<comma separated list of servers forming Zookeeper quorum used by Kafka>
+     atlas.kafka.bootstrap.servers=<comma separated list of Kafka broker endpoints in host:port form> - Give at least 2 for redundancy.
+     </verbatim>
+
+---++ Known Issues
+
+   * [[https://issues.apache.org/jira/browse/ATLAS-338][ATLAS-338]]: ATLAS-338: Metadata events generated from a Hive CLI (as opposed to Beeline or any client going HiveServer2) would be lost if Atlas server is down.
+   * If the HBase region servers hosting the Atlas ‘titan’ HTable are down, Atlas would not be able to store or retrieve metadata from HBase until they are brought back online.

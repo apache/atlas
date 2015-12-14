@@ -5,6 +5,14 @@
 ---++ Atlas High Level Architecture - Overview
 <img src="images/twiki/architecture.png" height="400" width="600" />
 
+Architecturally, Atlas has the following components:
+
+   * *A Web service*: This exposes RESTful APIs and a Web user interface to create, update and query metadata.
+   * *Metadata store*: Metadata is modeled using a graph model, implemented using the Graph database Titan. Titan has options for a variety of backing stores for persisting the graph, including an embedded Berkeley DB, Apache HBase and Apache Cassandra. The choice of the backing store determines the level of service availability.
+   * *Index store*: For powering full text searches on metadata, Atlas also indexes the metadata, again via Titan. The backing store for the full text search is a search backend like !ElasticSearch or Apache Solr.
+   * *Bridges / Hooks*: To add metadata to Atlas, libraries called ‘hooks’ are enabled in various systems like Apache Hive, Apache Falcon and Apache Sqoop which capture metadata events in the respective systems and propagate those events to Atlas. The Atlas server consumes these events and updates its stores.
+   * *Metadata notification events*: Any updates to metadata in Atlas, either via the Hooks or the API are propagated from Atlas to downstream systems via events. Systems like Apache Ranger consume these events and allow administrators to act on them, for e.g. to configure policies for Access control.
+   * *Notification Server*: Atlas uses Apache Kafka as a notification server for communication between hooks and downstream consumers of metadata notification events. Events are written by the hooks and Atlas to different Kafka topics. Kafka enables a loosely coupled integration between these disparate systems.
 
 ---++ Bridges
 External components like hive/sqoop/storm/falcon should model their taxonomy using typesystem and register the types with Atlas. For every entity created in this external component, the corresponding entity should be registered in Atlas as well.
