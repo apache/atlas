@@ -44,6 +44,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
@@ -291,12 +292,16 @@ public class AtlasClient {
     }
 
     public JSONArray createEntity(Referenceable... entities) throws AtlasServiceException {
+        return createEntity(Arrays.asList(entities));
+    }
+
+    public JSONArray createEntity(Collection<Referenceable> entities) throws AtlasServiceException {
         JSONArray entityArray = getEntitiesArray(entities);
         return createEntity(entityArray);
     }
 
-    private JSONArray getEntitiesArray(Referenceable[] entities) {
-        JSONArray entityArray = new JSONArray(entities.length);
+    private JSONArray getEntitiesArray(Collection<Referenceable> entities) {
+        JSONArray entityArray = new JSONArray(entities.size());
         for (Referenceable entity : entities) {
             entityArray.put(InstanceSerialization.toJson(entity, true));
         }
@@ -311,6 +316,10 @@ public class AtlasClient {
      * @throws AtlasServiceException
      */
     public JSONArray updateEntities(Referenceable... entities) throws AtlasServiceException {
+        return updateEntities(Arrays.asList(entities));
+    }
+
+    public JSONArray updateEntities(Collection<Referenceable> entities) throws AtlasServiceException {
         JSONArray entitiesArray = getEntitiesArray(entities);
         JSONObject response = callAPI(API.UPDATE_ENTITY, entitiesArray.toString());
         try {

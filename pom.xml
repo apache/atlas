@@ -354,7 +354,8 @@
 
         <!-- skips checkstyle and find bugs -->
         <skipCheck>false</skipCheck>
-        <skipTests>false</skipTests>
+        <skipUTs>false</skipUTs>
+        <skipITs>false</skipITs>
         <skipDocs>true</skipDocs>
         <skipSite>true</skipSite>
         <projectBaseDir>${project.basedir}</projectBaseDir>
@@ -1087,7 +1088,7 @@
             <dependency>
                 <groupId>com.google.code.gson</groupId>
                 <artifactId>gson</artifactId>
-                <version>2.3.1</version>
+                <version>2.5</version>
             </dependency>
 
             <dependency>
@@ -1394,6 +1395,7 @@
                 <configuration>
                     <systemProperties>
                         <user.dir>${project.basedir}</user.dir>
+                        <atlas.data>${project.build.directory}/data</atlas.data>
                     </systemProperties>
                     <!--<skipTests>true</skipTests>-->
                     <forkMode>always</forkMode>
@@ -1403,6 +1405,7 @@
                         -Xmx1024m -XX:MaxPermSize=512m -Dlog4j.configuration=atlas-log4j.xml
                         -Djava.net.preferIPv4Stack=true
                     </argLine>
+                    <skip>${skipUTs}</skip>
                     <excludes>
                         <exclude>**/*Base*</exclude>
                     </excludes>
@@ -1423,12 +1426,14 @@
                 <configuration>
                     <systemPropertyVariables>
                         <projectBaseDir>${projectBaseDir}</projectBaseDir>
+                        <atlas.data>${project.build.directory}/data</atlas.data>
                     </systemPropertyVariables>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}
                         -Dhadoop.tmp.dir="${project.build.directory}/tmp-hadoop-${user.name}"
                         -Xmx1024m -XX:MaxPermSize=512m -Dlog4j.configuration=atlas-log4j.xml
                     </argLine>
+                    <skip>${skipITs}</skip>
                     <parallel>none</parallel>
                     <reuseForks>false</reuseForks>
                     <forkCount>1</forkCount>

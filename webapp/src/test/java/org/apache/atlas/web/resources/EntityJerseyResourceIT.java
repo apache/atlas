@@ -58,6 +58,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.testng.Assert.assertEquals;
+
 /**
  * Integration tests for Entity Jersey Resource.
  */
@@ -95,6 +97,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     }
 
     @Test
+    //API should accept single entity (or jsonarray of entities)
     public void testSubmitSingleEntity() throws Exception {
         Referenceable databaseInstance = new Referenceable(DATABASE_TYPE);
         databaseInstance.set("name", randomString());
@@ -112,6 +115,34 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         JSONObject response = new JSONObject(responseAsString);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
         Assert.assertNotNull(response.get(AtlasClient.GUID));
+    }
+
+    @Test
+    public void testEntityDeduping() throws Exception {
+        Referenceable db = new Referenceable(DATABASE_TYPE);
+        String dbName = "db" + randomString();
+        db.set("name", dbName);
+        db.set("description", randomString());
+
+        serviceClient.createEntity(db);
+        JSONArray results =
+                serviceClient.searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, dbName));
+        assertEquals(results.length(), 1);
+
+        //create entity again shouldn't create another instance with same unique attribute value
+        serviceClient.createEntity(db);
+        results = serviceClient.searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, dbName));
+        assertEquals(results.length(), 1);
+
+        //Test the same across references
+        Referenceable table = new Referenceable(HIVE_TABLE_TYPE);
+        final String tableName = randomString();
+        table.set("name", tableName);
+        table.set("db", db);
+
+        serviceClient.createEntity(table);
+        results = serviceClient.searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, dbName));
+        assertEquals(results.length(), 1);
     }
 
     @Test

@@ -17,12 +17,6 @@
 
 package org.apache.atlas.notification.entity;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.notification.NotificationInterface;
@@ -30,10 +24,8 @@ import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.types.TypeSystem;
 
-import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -43,9 +35,6 @@ import java.util.List;
  * Listen to the repository for entity changes and produce entity change notifications.
  */
 public class NotificationEntityChangeListener implements EntityChangeListener {
-
-    private static final Gson GSON = new GsonBuilder().
-        registerTypeAdapter(Referenceable.class, new ReferencableSerializer()).create();
 
     private final NotificationInterface notificationInterface;
     private final TypeSystem typeSystem;
@@ -93,7 +82,7 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
     // send notification of entity change
     private void notifyOfEntityEvent(Collection<ITypedReferenceableInstance> entityDefinitions,
                                      EntityNotification.OperationType operationType) throws AtlasException {
-        List<String> messages = new LinkedList<>();
+        List<EntityNotification> messages = new LinkedList<>();
 
         for (IReferenceableInstance entityDefinition : entityDefinitions) {
             Referenceable entity = new Referenceable(entityDefinition);
@@ -101,24 +90,9 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
             EntityNotificationImpl notification =
                     new EntityNotificationImpl(entity, operationType, typeSystem);
 
-            messages.add(GSON.toJson(notification));
+            messages.add(notification);
         }
 
-        notificationInterface.send(NotificationInterface.NotificationType.ENTITIES,
-                messages.toArray(new String[messages.size()]));
-    }
-
-
-    // ----- inner class : ReferencableSerializer ---------------------------
-
-    private static class ReferencableSerializer implements JsonSerializer<Referenceable>  {
-
-        public static final JsonParser JSON_PARSER = new JsonParser();
-
-        @Override
-        public JsonElement serialize(Referenceable referenceable, Type type,
-                                     JsonSerializationContext jsonSerializationContext) {
-            return JSON_PARSER.parse(InstanceSerialization.toJson(referenceable, true)).getAsJsonObject();
-        }
+        notificationInterface.send(NotificationInterface.NotificationType.ENTITIES, messages);
     }
 }

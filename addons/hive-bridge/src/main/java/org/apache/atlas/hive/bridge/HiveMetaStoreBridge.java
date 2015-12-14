@@ -70,6 +70,10 @@ public class HiveMetaStoreBridge {
         this(hiveConf, atlasConf, null, null);
     }
 
+    public String getClusterName() {
+        return clusterName;
+    }
+
     /**
      * Construct a HiveMetaStoreBridge.
      * @param hiveConf hive conf

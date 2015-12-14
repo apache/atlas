@@ -33,7 +33,7 @@ import java.util.Map;
  */
 public class Referenceable extends Struct implements IReferenceableInstance {
 
-    private final Id id;
+    private Id id;
     private final ImmutableMap<String, IStruct> traits;
     private final ImmutableList<String> traitNames;
 
@@ -149,6 +149,10 @@ public class Referenceable extends Struct implements IReferenceableInstance {
             ", traits=" + traitNames +
             ", values=" + getValuesMap() +
             '}';
+    }
+
+    public void replaceWithNewId(Id id) {
+        this.id = id;
     }
 
     private static Map<String, IStruct> getTraits(IReferenceableInstance instance) throws AtlasException {

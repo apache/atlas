@@ -251,12 +251,12 @@ public final class TestUtils {
                         new AttributeDefinition("columnsMap",
                                                         DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),
                                                                 "column_type"),
-                                                        Multiplicity.COLLECTION, true, null),
+                                                        Multiplicity.OPTIONAL, true, null),
                          //map of structs
                         new AttributeDefinition("partitionsMap",
                                                         DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),
                                                                 "partition_type"),
-                                                        Multiplicity.COLLECTION, true, null),
+                                                        Multiplicity.OPTIONAL, true, null),
                         // struct reference
                         new AttributeDefinition("serde1", "serdeType", Multiplicity.OPTIONAL, false, null),
                         new AttributeDefinition("serde2", "serdeType", Multiplicity.OPTIONAL, false, null),
