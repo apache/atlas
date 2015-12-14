@@ -323,7 +323,7 @@
         <node.version>v0.10.30</node.version>
         <slf4j.version>1.7.7</slf4j.version>
         <jetty.version>9.2.12.v20150709</jetty.version>
-        <jersey.version>1.10</jersey.version>
+        <jersey.version>1.19</jersey.version>
         <jackson.version>1.8.3</jackson.version>
         <tinkerpop.version>2.6.0</tinkerpop.version>
         <titan.version>0.5.4</titan.version>
