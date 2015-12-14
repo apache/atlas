@@ -124,7 +124,7 @@ public class GuiceServletConfig extends GuiceServletContextListener {
     }
 
     protected void startServices() {
-        LOG.debug("Starting services");
+        LOG.info("Starting services");
         Services services = injector.getInstance(Services.class);
         services.start();
     }

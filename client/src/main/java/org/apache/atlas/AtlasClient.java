@@ -19,6 +19,7 @@
 package org.apache.atlas;
 
 import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
@@ -67,6 +68,7 @@ public class AtlasClient {
     public static final String DATATYPE = "dataType";
 
     public static final String BASE_URI = "api/atlas/";
+    public static final String ADMIN_VERSION = "admin/version";
     public static final String TYPES = "types";
     public static final String URI_ENTITY = "entities";
     public static final String URI_SEARCH = "discovery/search";
@@ -126,11 +128,29 @@ public class AtlasClient {
         service = client.resource(UriBuilder.fromUri(baseUrl).build());
     }
 
+    // for testing
+    AtlasClient(WebResource service) {
+        this.service = service;
+    }
+
     protected Configuration getClientProperties() throws AtlasException {
         return ApplicationProperties.get();
     }
 
-    enum API {
+    public boolean isServerReady() throws AtlasServiceException {
+        WebResource resource = getResource(API.VERSION);
+        try {
+            callAPIWithResource(API.VERSION, resource);
+            return true;
+        } catch (ClientHandlerException che) {
+            return false;
+        }
+    }
+
+    public enum API {
+
+        //Admin operations
+        VERSION(BASE_URI + ADMIN_VERSION, HttpMethod.GET, Response.Status.OK),
 
         //Type operations
         CREATE_TYPE(BASE_URI + TYPES, HttpMethod.POST, Response.Status.CREATED),
