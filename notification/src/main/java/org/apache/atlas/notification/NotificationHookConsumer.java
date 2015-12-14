@@ -22,6 +22,7 @@ import com.google.inject.Singleton;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.service.Service;
 import org.apache.commons.configuration.Configuration;
 import org.codehaus.jettison.json.JSONArray;
@@ -42,6 +43,7 @@ public class NotificationHookConsumer implements Service {
 
     public static final String CONSUMER_THREADS_PROPERTY = "atlas.notification.hook.numthreads";
     public static final String ATLAS_ENDPOINT_PROPERTY = "atlas.rest.address";
+    public static final int SERVER_READY_WAIT_TIME_MS = 1000;
 
     @Inject
     private NotificationInterface notificationInterface;
@@ -77,15 +79,32 @@ public class NotificationHookConsumer implements Service {
         }
     }
 
+    static class Timer {
+        public void sleep(int interval) throws InterruptedException {
+            Thread.sleep(interval);
+        }
+    }
+
     class HookConsumer implements Runnable {
         private final NotificationConsumer<JSONArray> consumer;
+        private final AtlasClient client;
 
         public HookConsumer(NotificationConsumer<JSONArray> consumer) {
+            this(atlasClient, consumer);
+        }
+
+        public HookConsumer(AtlasClient client, NotificationConsumer<JSONArray> consumer) {
+            this.client = client;
             this.consumer = consumer;
         }
 
         @Override
         public void run() {
+
+            if (!serverAvailable(new NotificationHookConsumer.Timer())) {
+                return;
+            }
+
             while(consumer.hasNext()) {
                 JSONArray entityJson = consumer.next();
                 LOG.info("Processing message {}", entityJson);
@@ -97,6 +116,29 @@ public class NotificationHookConsumer implements Service {
                     LOG.warn("Error handling message {}", entityJson, e);
                 }
             }
+        }
+
+        boolean serverAvailable(Timer timer) {
+            try {
+                while (!client.isServerReady()) {
+                    try {
+                        LOG.info("Atlas Server is not ready. Waiting for {} milliseconds to retry...",
+                                SERVER_READY_WAIT_TIME_MS);
+                        timer.sleep(SERVER_READY_WAIT_TIME_MS);
+                    } catch (InterruptedException e) {
+                        LOG.info("Interrupted while waiting for Atlas Server to become ready, " +
+                                "exiting consumer thread.", e);
+                        return false;
+                    }
+                }
+            } catch (AtlasServiceException e) {
+                LOG.info(
+                        "Handled AtlasServiceException while waiting for Atlas Server to become ready, " +
+                                "exiting consumer thread.", e);
+                return false;
+            }
+            LOG.info("Atlas Server is ready, can start reading Kafka events.");
+            return true;
         }
     }
 }
