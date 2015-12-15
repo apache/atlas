@@ -304,7 +304,14 @@ public class DefaultMetadataService implements MetadataService {
                 ParamChecker.notEmpty(entityTypeName, "Entity type cannot be null");
 
                 ClassType entityType = typeSystem.getDataType(ClassType.class, entityTypeName);
+
+                //Both assigned id and values are required for full update
+                //classtype.convert() will remove values if id is assigned. So, set temp id, convert and
+                // then replace with original id
+                Id origId = entityInstance.getId();
+                entityInstance.replaceWithNewId(new Id(entityInstance.getTypeName()));
                 ITypedReferenceableInstance typedInstrance = entityType.convert(entityInstance, Multiplicity.REQUIRED);
+                ((ReferenceableInstance)typedInstrance).replaceWithNewId(origId);
                 instances[index] = typedInstrance;
             }
             return instances;

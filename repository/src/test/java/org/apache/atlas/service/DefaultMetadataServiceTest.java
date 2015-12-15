@@ -22,9 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
-import org.apache.atlas.typesystem.exception.TypeNotFoundException;
-import org.apache.atlas.typesystem.exception.EntityNotFoundException;
-import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.graph.GraphProvider;
@@ -32,12 +29,15 @@ import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.TypesDef;
+import org.apache.atlas.typesystem.exception.EntityNotFoundException;
+import org.apache.atlas.typesystem.exception.TypeNotFoundException;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.EnumValue;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.ValueConversionException;
+import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.lang.RandomStringUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.testng.Assert;
@@ -47,10 +47,14 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 @Guice(modules = RepositoryMetadataModule.class)
 public class DefaultMetadataServiceTest {
@@ -296,8 +300,8 @@ public class DefaultMetadataServiceTest {
         Map<String, Object> values = new HashMap<>();
         values.put("name", "col1");
         values.put("type", "type");
-        Referenceable ref = new Referenceable("column_type", values);
-        columns.add(ref);
+        Referenceable col1 = new Referenceable("column_type", values);
+        columns.add(col1);
         Referenceable tableUpdated = new Referenceable(TestUtils.TABLE_TYPE, new HashMap<String, Object>() {{
             put("columns", columns);
         }});
@@ -307,19 +311,18 @@ public class DefaultMetadataServiceTest {
             metadataService.getEntityDefinition(TestUtils.TABLE_TYPE, "name", (String) table.get("name"));
         Referenceable tableDefinition = InstanceSerialization.fromJsonReferenceable(tableDefinitionJson, true);
         final List<Referenceable> arrClsColumns = (List) tableDefinition.get("columns");
-        Assert.assertTrue(arrClsColumns.get(0).equalsContents(columns.get(0)));
+        assertReferenceables(arrClsColumns.get(0), columns.get(0));
 
         //Partial update. Add col5 But also update col1
         Map<String, Object> valuesCol5 = new HashMap<>();
         valuesCol5.put("name", "col5");
         valuesCol5.put("type", "type");
-        ref = new Referenceable("column_type", valuesCol5);
+        Referenceable col2 = new Referenceable("column_type", valuesCol5);
         //update col1
-        arrClsColumns.get(0).set("type", "type1");
+        col1.set("type", "type1");
 
         //add col5
-        final List<Referenceable> updateColumns = new ArrayList<>(arrClsColumns);
-        updateColumns.add(ref);
+        final List<Referenceable> updateColumns = Arrays.asList(col1, col2);
 
         tableUpdated = new Referenceable(TestUtils.TABLE_TYPE, new HashMap<String, Object>() {{
             put("columns", updateColumns);
@@ -331,8 +334,8 @@ public class DefaultMetadataServiceTest {
         tableDefinition = InstanceSerialization.fromJsonReferenceable(tableDefinitionJson, true);
         List<Referenceable> arrColumnsList = (List) tableDefinition.get("columns");
         Assert.assertEquals(arrColumnsList.size(), 2);
-        Assert.assertTrue(arrColumnsList.get(0).equalsContents(updateColumns.get(0)));
-        Assert.assertTrue(arrColumnsList.get(1).equalsContents(updateColumns.get(1)));
+        assertReferenceables(arrColumnsList.get(0), updateColumns.get(0));
+        assertReferenceables(arrColumnsList.get(1), updateColumns.get(1));
 
         //Complete update. Add  array elements - col3,4
         Map<String, Object> values1 = new HashMap<>();
@@ -355,9 +358,8 @@ public class DefaultMetadataServiceTest {
         tableDefinition = InstanceSerialization.fromJsonReferenceable(tableDefinitionJson, true);
         arrColumnsList = (List) tableDefinition.get("columns");
         Assert.assertEquals(arrColumnsList.size(), columns.size());
-        Assert.assertTrue(arrColumnsList.get(1).equalsContents(columns.get(1)));
-        Assert.assertTrue(arrColumnsList.get(2).equalsContents(columns.get(2)));
-
+        assertReferenceables(arrColumnsList.get(1), columns.get(1));
+        assertReferenceables(arrColumnsList.get(2), columns.get(2));
 
         //Remove a class reference/Id and insert another reference
         //Also covers isComposite case since columns is a composite
@@ -366,8 +368,8 @@ public class DefaultMetadataServiceTest {
 
         values.put("name", "col2");
         values.put("type", "type");
-        ref = new Referenceable("column_type", values);
-        columns.add(ref);
+        col1 = new Referenceable("column_type", values);
+        columns.add(col1);
         table.set("columns", columns);
         updateInstance(table);
 
@@ -376,7 +378,7 @@ public class DefaultMetadataServiceTest {
         tableDefinition = InstanceSerialization.fromJsonReferenceable(tableDefinitionJson, true);
         arrColumnsList = (List) tableDefinition.get("columns");
         Assert.assertEquals(arrColumnsList.size(), columns.size());
-        Assert.assertTrue(arrColumnsList.get(0).equalsContents(columns.get(0)));
+        assertReferenceables(arrColumnsList.get(0), columns.get(0));
 
         //Update array column to null
         table.setNull("columns");
@@ -389,6 +391,14 @@ public class DefaultMetadataServiceTest {
         Assert.assertNull(tableDefinition.get("columns"));
     }
 
+    private void assertReferenceables(Referenceable r1, Referenceable r2) {
+        assertEquals(r1.getTypeName(), r2.getTypeName());
+        assertTrue(r1.getTraits().equals(r2.getTraits()));
+        for (String attr : r1.getValuesMap().keySet()) {
+            assertTrue(r1.getValuesMap().get(attr).equals(r2.getValuesMap().get(attr)));
+        }
+        //TODO assert trait instances and complex attributes
+    }
 
     @Test
     public void testStructs() throws Exception {

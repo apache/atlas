@@ -40,6 +40,7 @@ public final class Atlas {
     private static final String APP_PATH = "app";
     private static final String APP_PORT = "port";
     private static final String ATLAS_HOME = "atlas.home";
+    private static final String ATLAS_DATA = "atlas.data";
     private static final String ATLAS_LOG_DIR = "atlas.log.dir";
     public static final String ATLAS_SERVER_HTTPS_PORT = "atlas.server.https.port";
     public static final String ATLAS_SERVER_HTTP_PORT = "atlas.server.http.port";
@@ -109,6 +110,9 @@ public final class Atlas {
     private static void setApplicationHome() {
         if (System.getProperty(ATLAS_HOME) == null) {
             System.setProperty(ATLAS_HOME, "target");
+        }
+        if (System.getProperty(ATLAS_DATA) == null) {
+            System.setProperty(ATLAS_DATA, "target/data");
         }
         if (System.getProperty(ATLAS_LOG_DIR) == null) {
             System.setProperty(ATLAS_LOG_DIR, "target/logs");

@@ -149,6 +149,17 @@ public class HiveHookIT {
         assertDatabaseIsRegistered(DEFAULT_DB);
     }
 
+    @Test
+    public void testRenameTable() throws Exception {
+        String tableName = createTable();
+        String newTableName = tableName();
+        runCommand(String.format("alter table %s rename to %s", tableName, newTableName));
+
+        assertTableIsRegistered(DEFAULT_DB, newTableName);
+        assertTableIsNotRegistered(DEFAULT_DB, tableName);
+    }
+
+
     private String assertColumnIsRegistered(String colName) throws Exception {
         LOG.debug("Searching for column {}", colName);
         String query =
@@ -327,8 +338,8 @@ public class HiveHookIT {
 
         LOG.debug("Searching for partition of {}.{} with values {}", dbName, tableName, value);
         String dslQuery = String.format("%s as p where values = ['%s'], table where tableName = '%s', "
-                               + "db where name = '%s' and clusterName = '%s' select p", typeName, value,
-                            tableName.toLowerCase(), dbName.toLowerCase(), CLUSTER_NAME);
+                        + "db where name = '%s' and clusterName = '%s' select p", typeName, value,
+                tableName.toLowerCase(), dbName.toLowerCase(), CLUSTER_NAME);
 
         return assertEntityIsRegistered(dslQuery, "p");
     }

@@ -174,7 +174,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
     }
 
     @Override
-    public void send(NotificationType type, String... messages) throws NotificationException {
+    public void _send(NotificationType type, String... messages) throws NotificationException {
         if (producer == null) {
             createProducer();
         }

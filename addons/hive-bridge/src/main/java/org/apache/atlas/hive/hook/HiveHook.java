@@ -25,11 +25,12 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
+import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.notification.NotificationModule;
+import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.typesystem.Referenceable;
-import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -47,16 +48,12 @@ import org.apache.hadoop.hive.ql.metadata.Partition;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.codehaus.jettison.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -108,6 +105,8 @@ public class HiveHook implements ExecuteWithHookContext {
 
     @Inject
     private static NotificationInterface notifInterface;
+
+    private List<HookNotification.HookNotificationMessage> messages = new ArrayList<>();
 
     private static final HiveConf hiveConf;
 
@@ -233,37 +232,51 @@ public class HiveHook implements ExecuteWithHookContext {
 
         default:
         }
+
+        notifyAtlas();
     }
 
-    //todo re-write with notification
     private void renameTable(HiveMetaStoreBridge dgiBridge, HiveEvent event) throws Exception {
         //crappy, no easy of getting new name
         assert event.inputs != null && event.inputs.size() == 1;
         assert event.outputs != null && event.outputs.size() > 0;
 
-        Table oldTable = event.inputs.iterator().next().getTable();
-        Table newTable = null;
+        //Update entity if not exists
+        ReadEntity oldEntity = event.inputs.iterator().next();
+        Table oldTable = oldEntity.getTable();
+
         for (WriteEntity writeEntity : event.outputs) {
             if (writeEntity.getType() == Entity.Type.TABLE) {
-                Table table = writeEntity.getTable();
-                if (table.getDbName().equals(oldTable.getDbName()) && !table.getTableName()
+                Table newTable = writeEntity.getTable();
+                if (newTable.getDbName().equals(oldTable.getDbName()) && !newTable.getTableName()
                         .equals(oldTable.getTableName())) {
-                    newTable = table;
-                    break;
+
+                    //Create/update old table entity - create new entity and replace id
+                    Referenceable tableEntity = createEntities(dgiBridge, writeEntity);
+                    String oldQualifiedName = dgiBridge.getTableQualifiedName(dgiBridge.getClusterName(),
+                            oldTable.getDbName(), oldTable.getTableName());
+                    tableEntity.set(HiveDataModelGenerator.NAME, oldQualifiedName);
+                    tableEntity.set(HiveDataModelGenerator.TABLE_NAME, oldTable.getTableName().toLowerCase());
+
+
+                    String newQualifiedName = dgiBridge.getTableQualifiedName(dgiBridge.getClusterName(),
+                            newTable.getDbName(), newTable.getTableName());
+
+                    Referenceable newEntity = new Referenceable(HiveDataTypes.HIVE_TABLE.getName());
+                    newEntity.set(HiveDataModelGenerator.NAME, newQualifiedName);
+                    newEntity.set(HiveDataModelGenerator.TABLE_NAME, newTable.getTableName().toLowerCase());
+                    messages.add(new HookNotification.EntityPartialUpdateRequest(HiveDataTypes.HIVE_TABLE.getName(),
+                            HiveDataModelGenerator.NAME, oldQualifiedName, newEntity));
                 }
             }
         }
-        if (newTable == null) {
-            LOG.warn("Failed to deduct new name for " + event.queryStr);
-            return;
-        }
     }
 
-    private Map<Type, Referenceable> createEntities(HiveMetaStoreBridge dgiBridge, Entity entity) throws Exception {
-        Map<Type, Referenceable> entities = new LinkedHashMap<>();
+    private Referenceable createEntities(HiveMetaStoreBridge dgiBridge, Entity entity) throws Exception {
         Database db = null;
         Table table = null;
         Partition partition = null;
+        List<Referenceable> entities = new ArrayList<>();
 
         switch (entity.getType()) {
             case DATABASE:
@@ -283,64 +296,54 @@ public class HiveHook implements ExecuteWithHookContext {
         }
 
         db = dgiBridge.hiveClient.getDatabase(db.getName());
-        Referenceable dbReferenceable = dgiBridge.createDBInstance(db);
-        entities.put(Type.DATABASE, dbReferenceable);
+        Referenceable dbEntity = dgiBridge.createDBInstance(db);
+        entities.add(dbEntity);
 
-        Referenceable tableReferenceable = null;
+        Referenceable tableEntity = null;
         if (table != null) {
             table = dgiBridge.hiveClient.getTable(table.getDbName(), table.getTableName());
-            tableReferenceable = dgiBridge.createTableInstance(dbReferenceable, table);
-            entities.put(Type.TABLE, tableReferenceable);
+            tableEntity = dgiBridge.createTableInstance(dbEntity, table);
+            entities.add(tableEntity);
         }
 
         if (partition != null) {
-            Referenceable partitionReferenceable = dgiBridge.createPartitionReferenceable(tableReferenceable,
-                    (Referenceable) tableReferenceable.get("sd"), partition);
-            entities.put(Type.PARTITION, partitionReferenceable);
+            Referenceable partitionEntity = dgiBridge.createPartitionReferenceable(tableEntity,
+                    (Referenceable) tableEntity.get("sd"), partition);
+            entities.add(partitionEntity);
         }
-        return entities;
+
+        messages.add(new HookNotification.EntityUpdateRequest(entities));
+        return tableEntity;
     }
 
     private void handleEventOutputs(HiveMetaStoreBridge dgiBridge, HiveEvent event, Type entityType) throws Exception {
-        List<Referenceable> entities = new ArrayList<>();
         for (WriteEntity entity : event.outputs) {
             if (entity.getType() == entityType) {
-                entities.addAll(createEntities(dgiBridge, entity).values());
+                createEntities(dgiBridge, entity);
             }
         }
-        notifyEntity(entities);
-    }
-
-    private void notifyEntity(Collection<Referenceable> entities) {
-        JSONArray entitiesArray = new JSONArray();
-        for (Referenceable entity : entities) {
-            String entityJson = InstanceSerialization.toJson(entity, true);
-            entitiesArray.put(entityJson);
-        }
-        notifyEntity(entitiesArray);
     }
 
     /**
      * Notify atlas of the entity through message. The entity can be a complex entity with reference to other entities.
      * De-duping of entities is done on server side depending on the unique attribute on the
-     * @param entities
      */
-    private void notifyEntity(JSONArray entities) {
+    private void notifyAtlas() {
         int maxRetries = atlasProperties.getInt(HOOK_NUM_RETRIES, 3);
-        String message = entities.toString();
 
+        LOG.debug("Notifying atlas with messages {}", messages);
         int numRetries = 0;
         while (true) {
             try {
-                notifInterface.send(NotificationInterface.NotificationType.HOOK, message);
-                return;
+                notifInterface.send(NotificationInterface.NotificationType.HOOK, messages);
+                break;
             } catch(Exception e) {
                 numRetries++;
                 if(numRetries < maxRetries) {
-                    LOG.debug("Failed to notify atlas for entity {}. Retrying", message, e);
+                    LOG.debug("Failed to notify atlas. Retrying", e);
                 } else {
-                    LOG.error("Failed to notify atlas for entity {} after {} retries. Quitting", message,
-                            maxRetries, e);
+                    LOG.error("Failed to notify atlas after {} retries. Quitting", maxRetries, e);
+                    break;
                 }
             }
         }
@@ -369,7 +372,7 @@ public class HiveHook implements ExecuteWithHookContext {
         String queryStr = normalize(event.queryStr);
 
         LOG.debug("Registering query: {}", queryStr);
-        List<Referenceable> entities = new ArrayList<>();
+
         Referenceable processReferenceable = new Referenceable(HiveDataTypes.HIVE_PROCESS.getName());
         processReferenceable.set("name", queryStr);
         processReferenceable.set("operationType", event.operation.getOperationName());
@@ -379,9 +382,8 @@ public class HiveHook implements ExecuteWithHookContext {
         List<Referenceable> source = new ArrayList<>();
         for (ReadEntity readEntity : inputs) {
             if (readEntity.getType() == Type.TABLE || readEntity.getType() == Type.PARTITION) {
-                Map<Type, Referenceable> localEntities = createEntities(dgiBridge, readEntity);
-                source.add(localEntities.get(Type.TABLE));
-                entities.addAll(localEntities.values());
+                Referenceable inTable = createEntities(dgiBridge, readEntity);
+                source.add(inTable);
             }
         }
         processReferenceable.set("inputs", source);
@@ -389,9 +391,8 @@ public class HiveHook implements ExecuteWithHookContext {
         List<Referenceable> target = new ArrayList<>();
         for (WriteEntity writeEntity : outputs) {
             if (writeEntity.getType() == Type.TABLE || writeEntity.getType() == Type.PARTITION) {
-                Map<Type, Referenceable> localEntities = createEntities(dgiBridge, writeEntity);
-                target.add(localEntities.get(Type.TABLE));
-                entities.addAll(localEntities.values());
+                Referenceable outTable = createEntities(dgiBridge, writeEntity);
+                target.add(outTable);
             }
         }
         processReferenceable.set("outputs", target);
@@ -402,8 +403,7 @@ public class HiveHook implements ExecuteWithHookContext {
 
         //TODO set
         processReferenceable.set("queryGraph", "queryGraph");
-        entities.add(processReferenceable);
-        notifyEntity(entities);
+        messages.add(new HookNotification.EntityCreateRequest(processReferenceable));
     }
 
 

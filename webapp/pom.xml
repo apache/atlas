@@ -372,6 +372,10 @@
                             <name>atlas.home</name>
                             <value>${project.build.directory}</value>
                         </systemProperty>
+                        <systemProperty>
+                            <name>atlas.data</name>
+                            <value>${project.build.directory}/data</value>
+                        </systemProperty>
                     </systemProperties>
                     <stopKey>atlas-stop</stopKey>
                     <stopPort>31001</stopPort>

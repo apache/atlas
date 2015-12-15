@@ -23,9 +23,9 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasServiceException;
+import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.service.Service;
 import org.apache.commons.configuration.Configuration;
-import org.codehaus.jettison.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,11 +57,11 @@ public class NotificationHookConsumer implements Service {
         String atlasEndpoint = applicationProperties.getString(ATLAS_ENDPOINT_PROPERTY, "http://localhost:21000");
         atlasClient = new AtlasClient(atlasEndpoint);
         int numThreads = applicationProperties.getInt(CONSUMER_THREADS_PROPERTY, 1);
-        List<NotificationConsumer<JSONArray>> consumers =
+        List<NotificationConsumer<HookNotification.HookNotificationMessage>> consumers =
                 notificationInterface.createConsumers(NotificationInterface.NotificationType.HOOK, numThreads);
         executors = Executors.newFixedThreadPool(consumers.size());
 
-        for (final NotificationConsumer<JSONArray> consumer : consumers) {
+        for (final NotificationConsumer<HookNotification.HookNotificationMessage> consumer : consumers) {
             executors.submit(new HookConsumer(consumer));
         }
     }
@@ -86,14 +86,14 @@ public class NotificationHookConsumer implements Service {
     }
 
     class HookConsumer implements Runnable {
-        private final NotificationConsumer<JSONArray> consumer;
+        private final NotificationConsumer<HookNotification.HookNotificationMessage> consumer;
         private final AtlasClient client;
 
-        public HookConsumer(NotificationConsumer<JSONArray> consumer) {
+        public HookConsumer(NotificationConsumer<HookNotification.HookNotificationMessage> consumer) {
             this(atlasClient, consumer);
         }
 
-        public HookConsumer(AtlasClient client, NotificationConsumer<JSONArray> consumer) {
+        public HookConsumer(AtlasClient client, NotificationConsumer<HookNotification.HookNotificationMessage> consumer) {
             this.client = client;
             this.consumer = consumer;
         }
@@ -106,14 +106,33 @@ public class NotificationHookConsumer implements Service {
             }
 
             while(consumer.hasNext()) {
-                JSONArray entityJson = consumer.next();
-                LOG.info("Processing message {}", entityJson);
+                HookNotification.HookNotificationMessage message = consumer.next();
+
                 try {
-                    JSONArray guids = atlasClient.createEntity(entityJson);
-                    LOG.info("Create entities with guid {}", guids);
+                    switch (message.getType()) {
+                        case ENTITY_CREATE:
+                            HookNotification.EntityCreateRequest createRequest =
+                                    (HookNotification.EntityCreateRequest) message;
+                            atlasClient.createEntity(createRequest.getEntities());
+                            break;
+
+                        case ENTITY_PARTIAL_UPDATE:
+                            HookNotification.EntityPartialUpdateRequest partialUpdateRequest =
+                                    (HookNotification.EntityPartialUpdateRequest) message;
+                            atlasClient.updateEntity(partialUpdateRequest.getTypeName(),
+                                    partialUpdateRequest.getAttribute(), partialUpdateRequest.getAttributeValue(),
+                                    partialUpdateRequest.getEntity());
+                            break;
+
+                        case ENTITY_FULL_UPDATE:
+                            HookNotification.EntityUpdateRequest updateRequest =
+                                    (HookNotification.EntityUpdateRequest) message;
+                            atlasClient.updateEntities(updateRequest.getEntities());
+                            break;
+                    }
                 } catch (Exception e) {
                     //todo handle failures
-                    LOG.warn("Error handling message {}", entityJson, e);
+                    LOG.debug("Error handling message {}", message, e);
                 }
             }
         }

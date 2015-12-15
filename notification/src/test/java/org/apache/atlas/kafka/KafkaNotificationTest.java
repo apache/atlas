@@ -26,9 +26,7 @@ import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.notification.NotificationModule;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.RandomStringUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.codehaus.jettison.json.JSONArray;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
@@ -58,20 +56,6 @@ public class KafkaNotificationTest {
     @BeforeClass
     public void setUp() throws Exception {
         kafka.start();
-    }
-
-    @Test
-    public void testSendReceiveMessage() throws Exception {
-        String msg1 = "[{\"message\": " + 123 + "}]";
-        String msg2 = "[{\"message\": " + 456 + "}]";
-        kafka.send(NotificationInterface.NotificationType.HOOK, msg1, msg2);
-        List<NotificationConsumer<JSONArray>> consumers =
-                kafka.createConsumers(NotificationInterface.NotificationType.HOOK, 1);
-        NotificationConsumer<JSONArray> consumer = consumers.get(0);
-        assertTrue(consumer.hasNext());
-        assertEquals(new JSONArray(msg1), consumer.next());
-        assertTrue(consumer.hasNext());
-        assertEquals(new JSONArray(msg2), consumer.next());
     }
 
     @Test
@@ -117,10 +101,6 @@ public class KafkaNotificationTest {
         // assert that the given consumer group id was added to the properties used to create the consumer connector
         Properties properties = kafkaNotification.consumerProperties;
         assertEquals(groupId, properties.getProperty(ConsumerConfig.GROUP_ID_CONFIG));
-    }
-
-    private String random() {
-        return RandomStringUtils.randomAlphanumeric(5);
     }
 
     @AfterClass

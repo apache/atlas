@@ -20,6 +20,9 @@ package org.apache.atlas.notification;
 import org.apache.atlas.AtlasException;
 import org.apache.commons.configuration.Configuration;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * Abstract notification interface implementation.
  */
@@ -46,4 +49,20 @@ public abstract class AbstractNotification implements NotificationInterface {
     protected final boolean isEmbedded() {
         return embedded;
     }
+
+    @Override
+    public <T> void send(NotificationType type, List<T> messages) throws NotificationException {
+        String[] strMessages = new String[messages.size()];
+        for (int index = 0; index < messages.size(); index++) {
+            strMessages[index] = AbstractNotificationConsumer.GSON.toJson(messages.get(index));
+        }
+        _send(type, strMessages);
+    }
+
+    @Override
+    public <T> void send(NotificationType type, T... messages) throws NotificationException {
+        send(type, Arrays.asList(messages));
+    }
+
+    protected abstract void _send(NotificationType type, String[] messages) throws NotificationException;
 }

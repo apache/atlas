@@ -29,7 +29,7 @@ The entities are created and de-duped using unique qualified name. They provide 
 
 ---++ Importing Hive Metadata
 org.apache.atlas.hive.bridge.HiveMetaStoreBridge imports the hive metadata into Atlas using the model defined in org.apache.atlas.hive.model.HiveDataModelGenerator. import-hive.sh command can be used to facilitate this.
-Set the following configuration in <atlas-conf>/client.properties and set environment variable HIVE_CONFIG to the hive conf directory:
+Set the following configuration in <atlas-conf>/client.properties and set environment variable $HIVE_CONF_DIR to the hive conf directory:
   <verbatim>
     <property>
       <name>atlas.cluster.name</name>

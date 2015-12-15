@@ -18,7 +18,7 @@
 package org.apache.atlas.notification;
 
 import org.apache.atlas.notification.entity.EntityNotification;
-import org.codehaus.jettison.json.JSONArray;
+import org.apache.atlas.notification.hook.HookNotification;
 
 import java.util.List;
 
@@ -28,7 +28,7 @@ public interface NotificationInterface {
     String PROPERTY_PREFIX = "atlas.notification";
 
     enum NotificationType {
-        HOOK(JSONArray.class), ENTITIES(EntityNotification.class);
+        HOOK(HookNotification.HookNotificationMessage.class), ENTITIES(EntityNotification.class);
 
         private final Class classType;
 
@@ -52,7 +52,9 @@ public interface NotificationInterface {
      */
     <T> List<NotificationConsumer<T>> createConsumers(NotificationType notificationType, int numConsumers);
 
-    void send(NotificationType type, String... messages) throws NotificationException;
+    <T> void send(NotificationType type, T... messages) throws NotificationException;
+
+    <T> void send(NotificationType type, List<T> messages) throws NotificationException;
 
     void close();
 }

@@ -290,6 +290,10 @@
                             <name>atlas.log.dir</name>
                             <value>${project.build.directory}/logs</value>
                         </systemProperty>
+                        <systemProperty>
+                            <name>atlas.data</name>
+                            <value>${project.build.directory}/data</value>
+                        </systemProperty>
                     </systemProperties>
                     <stopKey>atlas-stop</stopKey>
                     <stopPort>31001</stopPort>

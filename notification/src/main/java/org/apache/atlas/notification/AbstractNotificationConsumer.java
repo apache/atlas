@@ -26,11 +26,16 @@ import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import com.google.gson.reflect.TypeToken;
 import org.apache.atlas.notification.entity.EntityNotification;
 import org.apache.atlas.notification.entity.EntityNotificationImpl;
+import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
+import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.codehaus.jettison.json.JSONArray;
@@ -45,13 +50,15 @@ import java.util.Map;
  */
 public abstract class AbstractNotificationConsumer<T> implements NotificationConsumer<T> {
 
-    private static final Gson GSON = new GsonBuilder().
+    public static final Gson GSON = new GsonBuilder().
             registerTypeAdapter(ImmutableList.class, new ImmutableListDeserializer()).
             registerTypeAdapter(ImmutableMap.class, new ImmutableMapDeserializer()).
             registerTypeAdapter(EntityNotification.class, new EntityNotificationDeserializer()).
             registerTypeAdapter(IStruct.class, new StructDeserializer()).
-            registerTypeAdapter(IReferenceableInstance.class, new ReferenceableDeserializer()).
-            registerTypeAdapter(JSONArray.class, new JSONArrayDeserializer()).
+            registerTypeAdapter(IReferenceableInstance.class, new ReferenceableSerializerDeserializer()).
+            registerTypeAdapter(Referenceable.class, new ReferenceableSerializerDeserializer()).
+            registerTypeAdapter(JSONArray.class, new JSONArraySerializerDeserializer()).
+            registerTypeAdapter(HookNotification.HookNotificationMessage.class, new HookNotification()).
             create();
 
     private final Class<T> type;
@@ -136,30 +143,44 @@ public abstract class AbstractNotificationConsumer<T> implements NotificationCon
 
     // ----- inner class : StructDeserializer -------------------------------
 
-    public final static class StructDeserializer implements JsonDeserializer<IStruct> {
+    public final static class StructDeserializer implements JsonDeserializer<IStruct>, JsonSerializer<IStruct> {
         @Override
         public IStruct deserialize(final JsonElement json, final Type type,
                                               final JsonDeserializationContext context) throws JsonParseException {
             return context.deserialize(json, Struct.class);
         }
+
+        @Override
+        public JsonElement serialize(IStruct src, Type typeOfSrc, JsonSerializationContext context) {
+            String instanceJson = InstanceSerialization.toJson(src, true);
+            return new JsonParser().parse(instanceJson).getAsJsonObject();
+        }
     }
 
 
-    // ----- inner class : ReferenceableDeserializer ------------------------
+    // ----- inner class : ReferenceableSerializerDeserializer ------------------------
 
-    public final static class ReferenceableDeserializer implements JsonDeserializer<IStruct> {
+    public final static class ReferenceableSerializerDeserializer implements JsonDeserializer<IStruct>,
+            JsonSerializer<IReferenceableInstance> {
         @Override
         public IReferenceableInstance deserialize(final JsonElement json, final Type type,
                                    final JsonDeserializationContext context) throws JsonParseException {
 
             return InstanceSerialization.fromJsonReferenceable(json.toString(), true);
         }
+
+        @Override
+        public JsonElement serialize(IReferenceableInstance src, Type typeOfSrc, JsonSerializationContext context) {
+            String instanceJson = InstanceSerialization.toJson(src, true);
+            return new JsonParser().parse(instanceJson).getAsJsonObject();
+        }
     }
 
 
-    // ----- inner class : JSONArrayDeserializer ----------------------------
+    // ----- inner class : JSONArraySerializerDeserializer ----------------------------
 
-    public final static class JSONArrayDeserializer implements JsonDeserializer<JSONArray> {
+    public final static class JSONArraySerializerDeserializer implements JsonDeserializer<JSONArray>,
+            JsonSerializer<JSONArray> {
         @Override
         public JSONArray deserialize(final JsonElement json, final Type type,
                                                   final JsonDeserializationContext context) throws JsonParseException {
@@ -169,6 +190,11 @@ public abstract class AbstractNotificationConsumer<T> implements NotificationCon
             } catch (JSONException e) {
                 throw new JsonParseException(e.getMessage(), e);
             }
+        }
+
+        @Override
+        public JsonElement serialize(JSONArray src, Type typeOfSrc, JsonSerializationContext context) {
+            return new JsonParser().parse(src.toString()).getAsJsonArray();
         }
     }
 }
