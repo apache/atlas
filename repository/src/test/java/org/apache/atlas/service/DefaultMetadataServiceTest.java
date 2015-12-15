@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 @Guice(modules = RepositoryMetadataModule.class)
@@ -113,7 +114,11 @@ public class DefaultMetadataServiceTest {
         JSONArray entitiesJson = new JSONArray();
         entitiesJson.put(entityjson);
         String response = metadataService.createEntities(entitiesJson.toString());
-        return new JSONArray(response).getString(0);
+        JSONArray guids = new JSONArray(response);
+        if (guids != null && guids.length() > 0) {
+            return guids.getString(0);
+        }
+        return null;
     }
 
     private String updateInstance(Referenceable entity) throws Exception {
@@ -154,7 +159,7 @@ public class DefaultMetadataServiceTest {
 
         //using the same name should succeed, but not create another entity
         String newId = createInstance(entity);
-        Assert.assertEquals(newId, id);
+        assertNull(newId);
 
         //Same entity, but different qualified name should succeed
         entity.set("name", TestUtils.randomString());

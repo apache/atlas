@@ -346,13 +346,10 @@ public class BaseHiveRepositoryTest {
         return createInstance(referenceable, clsType);
     }
     private Id createInstance(Referenceable referenceable, ClassType clsType) throws Exception {
-//        String entityJSON = InstanceSerialization.toJson(referenceable, true);
-
-
         ITypedReferenceableInstance typedInstance = clsType.convert(referenceable, Multiplicity.REQUIRED);
-        String guid = repository.createEntities(typedInstance)[0];
+        List<String> guids = repository.createEntities(typedInstance);
 
         // return the reference to created instance with guid
-        return new Id(guid, 0, referenceable.getTypeName());
+        return new Id(guids.get(guids.size() - 1), 0, referenceable.getTypeName());
     }
 }

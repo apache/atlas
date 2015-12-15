@@ -58,7 +58,6 @@ public class EntityNotificationIT extends BaseResourceIT {
 
     private static final String ENTITIES = "api/atlas/entities";
     private static final String TRAITS = "traits";
-    private static final int MAX_WAIT_TIME = 10000;
     private final String DATABASE_NAME = "db" + randomString();
     private final String TABLE_NAME = "table" + randomString();
     @Inject
@@ -98,7 +97,7 @@ public class EntityNotificationIT extends BaseResourceIT {
 
         final String guid = tableId._getId();
 
-        waitForNotification(MAX_WAIT_TIME);
+        waitForNotification(notificationConsumer, MAX_WAIT_TIME);
 
         EntityNotification entityNotification = notificationConsumer.getLastEntityNotification();
 
@@ -120,7 +119,7 @@ public class EntityNotificationIT extends BaseResourceIT {
 
         serviceClient.updateEntityAttribute(guid, property, newValue);
 
-        waitForNotification(MAX_WAIT_TIME);
+        waitForNotification(notificationConsumer, MAX_WAIT_TIME);
 
         EntityNotification entityNotification = notificationConsumer.getLastEntityNotification();
 
@@ -155,7 +154,7 @@ public class EntityNotificationIT extends BaseResourceIT {
         ClientResponse clientResponse = addTrait(guid, traitInstanceJSON);
         assertEquals(clientResponse.getStatus(), Response.Status.CREATED.getStatusCode());
 
-        waitForNotification(MAX_WAIT_TIME);
+        waitForNotification(notificationConsumer, MAX_WAIT_TIME);
 
         EntityNotification entityNotification = notificationConsumer.getLastEntityNotification();
 
@@ -192,7 +191,7 @@ public class EntityNotificationIT extends BaseResourceIT {
         clientResponse = addTrait(guid, traitInstanceJSON);
         assertEquals(clientResponse.getStatus(), Response.Status.CREATED.getStatusCode());
 
-        waitForNotification(MAX_WAIT_TIME);
+        waitForNotification(notificationConsumer, MAX_WAIT_TIME);
 
         entityNotification = notificationConsumer.getLastEntityNotification();
 
@@ -218,7 +217,7 @@ public class EntityNotificationIT extends BaseResourceIT {
         ClientResponse clientResponse = deleteTrait(guid, traitName);
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
-        waitForNotification(MAX_WAIT_TIME);
+        waitForNotification(notificationConsumer, MAX_WAIT_TIME);
 
         EntityNotification entityNotification = notificationConsumer.getLastEntityNotification();
 
@@ -259,52 +258,5 @@ public class EntityNotificationIT extends BaseResourceIT {
 
         return resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
             .method(HttpMethod.DELETE, ClientResponse.class);
-    }
-
-    private void waitForNotification(int maxWait) throws Exception {
-        waitFor(maxWait, new Predicate() {
-            @Override
-            public boolean evaluate() throws Exception {
-                return notificationConsumer.getLastEntityNotification() != null;
-            }
-        });
-    }
-
-
-    // ----- inner class : EntityNotificationConsumer --------------------------
-
-    private static class EntityNotificationConsumer implements Runnable {
-        private final NotificationConsumer<EntityNotification> consumerIterator;
-        private EntityNotification entityNotification = null;
-        private boolean run;
-
-        public EntityNotificationConsumer(NotificationConsumer<EntityNotification> consumerIterator) {
-            this.consumerIterator = consumerIterator;
-        }
-
-        @Override
-        public void run() {
-            while (run && consumerIterator.hasNext()) {
-                entityNotification = consumerIterator.next();
-            }
-        }
-
-        public void reset() {
-            entityNotification = null;
-        }
-
-        public void start() {
-            Thread thread = new Thread(this);
-            run = true;
-            thread.start();
-        }
-
-        public void stop() {
-            run = false;
-        }
-
-        public EntityNotification getLastEntityNotification() {
-            return entityNotification;
-        }
     }
 }
