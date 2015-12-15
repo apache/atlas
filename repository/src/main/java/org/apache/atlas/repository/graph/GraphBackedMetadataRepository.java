@@ -37,6 +37,7 @@ import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.TypeSystem;
+import org.apache.atlas.typesystem.types.TypeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,12 +115,14 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
     @Override
     @GraphTransaction
-    public String[] createEntities(ITypedReferenceableInstance... entities) throws RepositoryException,
+    public List<String> createEntities(ITypedReferenceableInstance... entities) throws RepositoryException,
         EntityExistsException {
         LOG.info("adding entities={}", entities);
         try {
             TypedInstanceToGraphMapper instanceToGraphMapper = new TypedInstanceToGraphMapper(graphToInstanceMapper);
-            return instanceToGraphMapper.mapTypedInstanceToGraph(TypedInstanceToGraphMapper.Operation.CREATE, entities);
+            TypeUtils.Pair<List<String>, List<String>> idPair =
+                    instanceToGraphMapper.mapTypedInstanceToGraph(TypedInstanceToGraphMapper.Operation.CREATE, entities);
+            return idPair.left;
         } catch (EntityExistsException e) {
             throw e;
         } catch (AtlasException e) {
@@ -279,7 +282,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
     @Override
     @GraphTransaction
-    public String[] updateEntities(ITypedReferenceableInstance... entitiesUpdated) throws RepositoryException {
+    public TypeUtils.Pair<List<String>, List<String>> updateEntities(ITypedReferenceableInstance... entitiesUpdated) throws RepositoryException {
         LOG.info("updating entity {}", entitiesUpdated);
         try {
             TypedInstanceToGraphMapper instanceToGraphMapper = new TypedInstanceToGraphMapper(graphToInstanceMapper);
@@ -292,11 +295,11 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
     @Override
     @GraphTransaction
-    public void updatePartial(ITypedReferenceableInstance entity) throws RepositoryException {
+    public TypeUtils.Pair<List<String>, List<String>> updatePartial(ITypedReferenceableInstance entity) throws RepositoryException {
         LOG.info("updating entity {}", entity);
         try {
             TypedInstanceToGraphMapper instanceToGraphMapper = new TypedInstanceToGraphMapper(graphToInstanceMapper);
-            instanceToGraphMapper.mapTypedInstanceToGraph(TypedInstanceToGraphMapper.Operation.UPDATE_PARTIAL, entity);
+            return instanceToGraphMapper.mapTypedInstanceToGraph(TypedInstanceToGraphMapper.Operation.UPDATE_PARTIAL, entity);
         } catch (AtlasException e) {
             throw new RepositoryException(e);
         }

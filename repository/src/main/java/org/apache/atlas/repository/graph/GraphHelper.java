@@ -71,13 +71,13 @@ public final class GraphHelper {
         return INSTANCE;
     }
 
-    public Vertex createVertexWithIdentity(ITypedReferenceableInstance typedInstance,
-                                                  Set<String> superTypeNames) {
+    public Vertex createVertexWithIdentity(ITypedReferenceableInstance typedInstance, Set<String> superTypeNames) {
+        final String guid = UUID.randomUUID().toString();
+
         final Vertex vertexWithIdentity = createVertexWithoutIdentity(typedInstance.getTypeName(),
-                typedInstance.getId(), superTypeNames);
+                new Id(guid, 0 , typedInstance.getTypeName()), superTypeNames);
 
         // add identity
-        final String guid = UUID.randomUUID().toString();
         setProperty(vertexWithIdentity, Constants.GUID_PROPERTY_KEY, guid);
 
         // add version information

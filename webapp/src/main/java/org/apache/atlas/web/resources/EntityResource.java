@@ -118,8 +118,12 @@ public class EntityResource {
 
             JSONObject response = new JSONObject();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(AtlasClient.GUID, new JSONArray(guids));
-            response.put(AtlasClient.DEFINITION, new JSONObject(metadataService.getEntityDefinition(new JSONArray(guids).getString(0))));
+            JSONArray guidArray = new JSONArray(guids);
+            response.put(AtlasClient.GUID, guidArray);
+            if (guidArray.length() > 0) {
+                response.put(AtlasClient.DEFINITION,
+                        new JSONObject(metadataService.getEntityDefinition(new JSONArray(guids).getString(0))));
+            }
 
             return Response.created(locationURI).entity(response).build();
 

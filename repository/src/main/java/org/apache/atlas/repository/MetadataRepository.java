@@ -19,12 +19,13 @@
 package org.apache.atlas.repository;
 
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.typesystem.exception.EntityExistsException;
-import org.apache.atlas.typesystem.exception.EntityNotFoundException;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
+import org.apache.atlas.typesystem.exception.EntityExistsException;
+import org.apache.atlas.typesystem.exception.EntityNotFoundException;
 import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.IDataType;
+import org.apache.atlas.typesystem.types.TypeUtils;
 
 import java.util.List;
 
@@ -82,7 +83,7 @@ public interface MetadataRepository {
      * @throws RepositoryException
      * @throws EntityExistsException
      */
-    String[] createEntities(ITypedReferenceableInstance... entities) throws RepositoryException, EntityExistsException;
+    List<String> createEntities(ITypedReferenceableInstance... entities) throws RepositoryException, EntityExistsException;
 
     /**
      * Fetch the complete definition of an entity given its GUID.
@@ -143,13 +144,13 @@ public interface MetadataRepository {
      * Adds/Updates the property to the entity that corresponds to the GUID
      * Supports only primitive attribute/Class Id updations.
      */
-    void updatePartial(ITypedReferenceableInstance entity) throws RepositoryException;
+    TypeUtils.Pair<List<String>, List<String>> updatePartial(ITypedReferenceableInstance entity) throws RepositoryException;
 
     /**
      * Adds the property to the entity that corresponds to the GUID
      * @param entitiesToBeUpdated The entities to be updated
      */
-    String[] updateEntities(ITypedReferenceableInstance... entitiesToBeUpdated) throws RepositoryException;
+    TypeUtils.Pair<List<String>, List<String>> updateEntities(ITypedReferenceableInstance... entitiesToBeUpdated) throws RepositoryException;
 
     /**
      * Returns the entity for the given type and qualified name

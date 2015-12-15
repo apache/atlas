@@ -25,6 +25,8 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import org.apache.atlas.*;
+import org.apache.atlas.notification.NotificationConsumer;
+import org.apache.atlas.notification.entity.EntityNotification;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.TypesDef;
@@ -68,6 +70,7 @@ public abstract class BaseResourceIT {
     protected WebResource service;
     protected AtlasClient serviceClient;
     public static final Logger LOG = LoggerFactory.getLogger(BaseResourceIT.class);
+    protected static final int MAX_WAIT_TIME = 1000;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -119,7 +122,10 @@ public abstract class BaseResourceIT {
         System.out.println("created instance for type " + typeName + ", guid: " + guids);
 
         // return the reference to created instance with guid
-        return new Id(guids.getString(0), 0, referenceable.getTypeName());
+        if (guids.length() > 0) {
+            return new Id(guids.getString(guids.length() - 1), 0, referenceable.getTypeName());
+        }
+        return null;
     }
 
     protected static final String DATABASE_TYPE = "hive_db";
@@ -284,5 +290,51 @@ public abstract class BaseResourceIT {
         if (!eval) {
             throw new Exception("Waiting timed out after " + timeout + " msec");
         }
+    }
+
+    // ----- inner class : EntityNotificationConsumer --------------------------
+
+    protected static class EntityNotificationConsumer implements Runnable {
+        private final NotificationConsumer<EntityNotification> consumerIterator;
+        private EntityNotification entityNotification = null;
+        private boolean run;
+
+        public EntityNotificationConsumer(NotificationConsumer<EntityNotification> consumerIterator) {
+            this.consumerIterator = consumerIterator;
+        }
+
+        @Override
+        public void run() {
+            while (run && consumerIterator.hasNext()) {
+                entityNotification = consumerIterator.next();
+            }
+        }
+
+        public void reset() {
+            entityNotification = null;
+        }
+
+        public void start() {
+            Thread thread = new Thread(this);
+            run = true;
+            thread.start();
+        }
+
+        public void stop() {
+            run = false;
+        }
+
+        public EntityNotification getLastEntityNotification() {
+            return entityNotification;
+        }
+    }
+
+    protected void waitForNotification(final EntityNotificationConsumer notificationConsumer, int maxWait) throws Exception {
+        waitFor(maxWait, new Predicate() {
+            @Override
+            public boolean evaluate() throws Exception {
+                return notificationConsumer.getLastEntityNotification() != null;
+            }
+        });
     }
 }

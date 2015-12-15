@@ -23,16 +23,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Provider;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.repository.RepositoryException;
-import org.apache.atlas.typesystem.exception.EntityNotFoundException;
-import org.apache.atlas.typesystem.exception.TypeNotFoundException;
-import org.apache.atlas.typesystem.persistence.ReferenceableInstance;
-import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.classification.InterfaceAudience;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.listener.TypesChangeListener;
 import org.apache.atlas.repository.IndexCreationException;
 import org.apache.atlas.repository.MetadataRepository;
+import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.typestore.ITypeStore;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
@@ -40,9 +36,12 @@ import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.TypesDef;
+import org.apache.atlas.typesystem.exception.EntityNotFoundException;
+import org.apache.atlas.typesystem.exception.TypeNotFoundException;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.typesystem.persistence.Id;
+import org.apache.atlas.typesystem.persistence.ReferenceableInstance;
 import org.apache.atlas.typesystem.types.AttributeDefinition;
 import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.ClassType;
@@ -54,25 +53,24 @@ import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
+import org.apache.atlas.typesystem.types.TypeUtils;
 import org.apache.atlas.typesystem.types.ValueConversionException;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
+import org.apache.atlas.utils.ParamChecker;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.actors.threadpool.Arrays;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Simple wrapper over TypeSystem and MetadataRepository services with hooks
@@ -279,17 +277,10 @@ public class DefaultMetadataService implements MetadataService {
 
         ITypedReferenceableInstance[] typedInstances = deserializeClassInstances(entityInstanceDefinition);
 
-        final String[] guids = repository.createEntities(typedInstances);
+        final List<String> guids = repository.createEntities(typedInstances);
 
-        Set<ITypedReferenceableInstance> entitites = new HashSet<>();
-
-        for (String guid : guids) {
-            entitites.add(repository.getEntityDefinition(guid));
-        }
-
-        onEntitiesAdded(entitites);
-
-        return new JSONArray(Arrays.asList(guids)).toString();
+        onEntitiesAdded(guids);
+        return new JSONArray(guids).toString();
     }
 
     private ITypedReferenceableInstance[] deserializeClassInstances(String entityInstanceDefinition)
@@ -390,14 +381,20 @@ public class DefaultMetadataService implements MetadataService {
         ParamChecker.notEmpty(entityInstanceDefinition, "Entity instance definition cannot be empty");
         ITypedReferenceableInstance[] typedInstances = deserializeClassInstances(entityInstanceDefinition);
 
-        String[] guids = repository.updateEntities(typedInstances);
-        onEntitiesAdded(Arrays.asList(typedInstances));
+        TypeUtils.Pair<List<String>, List<String>> guids = repository.updateEntities(typedInstances);
+        return onEntitiesAddedUpdated(guids);
+    }
 
-        return new JSONArray(Arrays.asList(guids)).toString();
+    private String onEntitiesAddedUpdated(TypeUtils.Pair<List<String>, List<String>> guids) throws AtlasException {
+        onEntitiesAdded(guids.left);
+        onEntitiesUpdated(guids.right);
+
+        guids.left.addAll(guids.right);
+        return new JSONArray(guids.left).toString();
     }
 
     @Override
-    public void updateEntityAttributeByGuid(final String guid, String attributeName, String value) throws AtlasException {
+    public String updateEntityAttributeByGuid(final String guid, String attributeName, String value) throws AtlasException {
         ParamChecker.notEmpty(guid, "guid cannot be null");
         ParamChecker.notEmpty(attributeName, "property cannot be null");
         ParamChecker.notEmpty(value, "property value cannot be null");
@@ -426,10 +423,8 @@ public class DefaultMetadataService implements MetadataService {
         }
 
         ((ReferenceableInstance)newInstance).replaceWithNewId(new Id(guid, 0, newInstance.getTypeName()));
-        repository.updatePartial(newInstance);
-        onEntitiesUpdated(new ArrayList<ITypedReferenceableInstance>() {{
-            add(repository.getEntityDefinition(guid));
-        }});
+        TypeUtils.Pair<List<String>, List<String>> guids = repository.updatePartial(newInstance);
+        return onEntitiesAddedUpdated(guids);
     }
 
     private ITypedReferenceableInstance validateEntityExists(String guid)
@@ -442,7 +437,7 @@ public class DefaultMetadataService implements MetadataService {
     }
 
     @Override
-    public void updateEntityPartialByGuid(final String guid, Referenceable newEntity) throws AtlasException {
+    public String updateEntityPartialByGuid(final String guid, Referenceable newEntity) throws AtlasException {
         ParamChecker.notEmpty(guid, "guid cannot be null");
         ParamChecker.notNull(newEntity, "updatedEntity cannot be null");
         ITypedReferenceableInstance existInstance = validateEntityExists(guid);
@@ -450,10 +445,8 @@ public class DefaultMetadataService implements MetadataService {
         ITypedReferenceableInstance newInstance = convertToTypedInstance(newEntity, existInstance.getTypeName());
         ((ReferenceableInstance)newInstance).replaceWithNewId(new Id(guid, 0, newInstance.getTypeName()));
 
-        repository.updatePartial(newInstance);
-        onEntitiesUpdated(new ArrayList<ITypedReferenceableInstance>() {{
-            add(repository.getEntityDefinition(guid));
-        }});
+        TypeUtils.Pair<List<String>, List<String>> guids = repository.updatePartial(newInstance);
+        return onEntitiesAddedUpdated(guids);
     }
 
     private ITypedReferenceableInstance convertToTypedInstance(Referenceable updatedEntity, String typeName) throws AtlasException {
@@ -511,13 +504,8 @@ public class DefaultMetadataService implements MetadataService {
         final ITypedReferenceableInstance newInstance = convertToTypedInstance(updatedEntity, typeName);
         ((ReferenceableInstance)newInstance).replaceWithNewId(oldInstance.getId());
 
-        repository.updatePartial(newInstance);
-
-        onEntitiesUpdated(new ArrayList<ITypedReferenceableInstance>() {{
-            add(newInstance);
-        }});
-
-        return newInstance.getId()._getId();
+        TypeUtils.Pair<List<String>, List<String>> guids = repository.updatePartial(newInstance);
+        return onEntitiesAddedUpdated(guids);
     }
 
     private void validateTypeExists(String entityType) throws AtlasException {
@@ -633,10 +621,20 @@ public class DefaultMetadataService implements MetadataService {
         }
     }
 
-    private void onEntitiesAdded(Collection<ITypedReferenceableInstance> entities) throws AtlasException {
+    private void onEntitiesAdded(List<String> guids) throws AtlasException {
+        List<ITypedReferenceableInstance> entities = loadEntities(guids);
         for (EntityChangeListener listener : entityChangeListeners) {
             listener.onEntitiesAdded(entities);
         }
+    }
+
+    private List<ITypedReferenceableInstance> loadEntities(List<String> guids) throws EntityNotFoundException,
+            RepositoryException {
+        List<ITypedReferenceableInstance> entities = new ArrayList<>();
+        for (String guid : guids) {
+            entities.add(repository.getEntityDefinition(guid));
+        }
+        return entities;
     }
 
     private void onTypesUpdated(Map<String, IDataType> typesUpdated) throws AtlasException {
@@ -656,8 +654,8 @@ public class DefaultMetadataService implements MetadataService {
         }
     }
 
-    private void onEntitiesUpdated(Collection<ITypedReferenceableInstance> entities)
-        throws AtlasException {
+    private void onEntitiesUpdated(List<String> guids) throws AtlasException {
+        List<ITypedReferenceableInstance> entities = loadEntities(guids);
         for (EntityChangeListener listener : entityChangeListeners) {
             listener.onEntitiesUpdated(entities);
         }

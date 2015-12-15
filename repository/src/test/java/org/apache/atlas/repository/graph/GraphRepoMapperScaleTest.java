@@ -101,7 +101,7 @@ public class GraphRepoMapperScaleTest {
         ClassType dbType = typeSystem.getDataType(ClassType.class, TestUtils.DATABASE_TYPE);
         ITypedReferenceableInstance db = dbType.convert(databaseInstance, Multiplicity.REQUIRED);
 
-        dbGUID = repositoryService.createEntities(db)[0];
+        dbGUID = repositoryService.createEntities(db).get(0);
 
         Referenceable dbInstance = new Referenceable(dbGUID, TestUtils.DATABASE_TYPE, databaseInstance.getValuesMap());
 

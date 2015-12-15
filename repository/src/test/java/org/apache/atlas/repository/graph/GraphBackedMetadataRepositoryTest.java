@@ -118,10 +118,10 @@ public class GraphBackedMetadataRepositoryTest {
         ClassType deptType = typeSystem.getDataType(ClassType.class, "Department");
         ITypedReferenceableInstance hrDept2 = deptType.convert(hrDept, Multiplicity.REQUIRED);
 
-        String[] guids = repositoryService.createEntities(hrDept2);
+        List<String> guids = repositoryService.createEntities(hrDept2);
         Assert.assertNotNull(guids);
-        Assert.assertEquals(guids.length, 1);
-        guid = guids[0];
+        Assert.assertEquals(guids.size(), 5);
+        guid = guids.get(4);
         Assert.assertNotNull(guid);
     }
 
@@ -173,14 +173,12 @@ public class GraphBackedMetadataRepositoryTest {
         ITypedReferenceableInstance db = dbType.convert(databaseInstance, Multiplicity.REQUIRED);
         System.out.println("db = " + db);
 
-        String dbGUID = repositoryService.createEntities(db)[0];
-        System.out.println("added db = " + dbGUID);
-
-        Referenceable dbInstance = new Referenceable(dbGUID, TestUtils.DATABASE_TYPE, databaseInstance.getValuesMap());
-
-        ITypedReferenceableInstance table = createHiveTableInstance(dbInstance);
-        String tableGUID = repositoryService.createEntities(table)[0];
-        System.out.println("added table = " + tableGUID);
+        //Reuse the same database instance without id, with the same unique attribute
+        ITypedReferenceableInstance table = createHiveTableInstance(databaseInstance);
+        List<String> guids = repositoryService.createEntities(db, table);
+        Assert.assertEquals(guids.size(), 7);   //1 db + 5 columns + 1 table. Shouldn't create db again
+        System.out.println("added db = " + guids.get(0));
+        System.out.println("added table = " + guids.get(6));
     }
 
     @Test(dependsOnMethods = "testCreateEntity")
@@ -600,9 +598,10 @@ public class GraphBackedMetadataRepositoryTest {
         ClassType deptType = typeSystem.getDataType(ClassType.class, "Department");
         ITypedReferenceableInstance hrDept2 = deptType.convert(hrDept, Multiplicity.REQUIRED);
 
-        String[] guids = repositoryService.createEntities(hrDept2);
+        List<String> guids = repositoryService.createEntities(hrDept2);
         Assert.assertNotNull(guids);
-        Assert.assertEquals(guids.length, 1);
-        Assert.assertNotNull(guids[0]);
+        Assert.assertEquals(guids.size(), 2);
+        Assert.assertNotNull(guids.get(0));
+        Assert.assertNotNull(guids.get(1));
     }
 }
