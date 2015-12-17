@@ -28,7 +28,7 @@
             <h4 ng-if="details.values && details.values.name && details.values.name != ''">
             <b>Name:</b> <span class="black">{{details.values.name}}</span></h2>
             <h4 ng-if="details.values && details.values.description && details.values.description != ''"><b>Description:</b> <span class="black">{{details.values.description}}</span></h4>
-            <h4 data-ng-show="isTable" data-disable="!tableName" data-select="onActivate('io')">
+            <h4 data-disable="!tableName" data-select="onActivate('io')" id="lineageGraph" class="hide">
                 <span class="lineage">Lineage</span> 
                 <ng-include data-table-type="io" src="'/modules/lineage/views/lineage_io.html'"/>
             </h4>

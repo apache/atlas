@@ -22,14 +22,14 @@ angular.module('dgc.details').controller('DetailsController', ['$window', '$scop
 
         $scope.tableName = false;
         $scope.isTable = false;
-
+        $scope.isLineage = false;
+        
         DetailsResource.get({
             id: $stateParams.id
 
         }, function(data) {
             $scope.details = data;
             $scope.tableName = data.values.name;
-            $scope.isTable = (typeof data.typeName !== 'undefined' && data.typeName.toLowerCase().indexOf('table') !== -1) ? true : false;
             $scope.onActivate('io');
             $scope.isTags = (typeof data.traits !== 'undefined' && typeof data.traits === 'object') ? true : false;
 
@@ -56,6 +56,9 @@ angular.module('dgc.details').controller('DetailsController', ['$window', '$scop
             }
         });
 
+        $scope.$on('show_lineage', function() {
+            $scope.isLineage = true;
+        });
 
         $scope.isNumber = angular.isNumber;
         $scope.isObject = angular.isObject;
@@ -64,7 +67,8 @@ angular.module('dgc.details').controller('DetailsController', ['$window', '$scop
         $scope.onActivate = function tabActivate(tabname) {
             $scope.$broadcast('render-lineage', {
                 type: tabname,
-                tableName: $scope.tableName
+                tableName: $scope.tableName,
+                guid : $stateParams.id
             });
         };
 

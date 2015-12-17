@@ -39,50 +39,63 @@ angular.module('dgc.lineage').controller('Lineage_ioController', ['$element', '$
             LineageResource.get({
                 tableName: tableData.tableName,
                 type: 'outputs'
-            }, function lineageSuccess(response1) {
+            }).$promise.then(
+                function lineageSuccess(response1) {
+                  //  $scope.$emit('show_lineage');
+                  $('#lineageGraph').removeClass('hide');
+                    LineageResource.get({
+                        tableName: tableData.tableName,
+                        type: 'inputs'
+                    }).$promise.then(
+                        //success
+                        function lineageSuccess(response) {
+                            if (response && response.results) {
+                                response.results.values.edges = inVertObj(response.results.values.edges);
 
-                LineageResource.get({
-                    tableName: tableData.tableName,
-                    type: 'inputs'
-                }, function lineageSuccess(response) {
-                    response.results.values.edges = inVertObj(response.results.values.edges);
-
-                    angular.forEach(response.results.values.edges, function(value, key) {
-                        angular.forEach(response1.results.values.edges, function(value1, key1) {
-                            if (key === key1) {
-                                var array1 = value;
-                                angular.forEach(value1, function(value2) {
-                                    array1.push(value2);
+                                angular.forEach(response.results.values.edges, function(value, key) {
+                                    angular.forEach(response1.results.values.edges, function(value1, key1) {
+                                        if (key === key1) {
+                                            var array1 = value;
+                                            angular.forEach(value1, function(value2) {
+                                                array1.push(value2);
+                                            });
+                                            response.results.values.edges[key] = array1;
+                                            response1.results.values.edges[key] = array1;
+                                        }
+                                    });
                                 });
-                                response.results.values.edges[key] = array1;
-                                response1.results.values.edges[key] = array1;
-                            }
-                        });
-                    });
 
-                    angular.extend(response.results.values.edges, response1.results.values.edges);
-                    angular.extend(response.results.values.vertices, response1.results.values.vertices);
+                                angular.extend(response.results.values.edges, response1.results.values.edges);
+                                angular.extend(response.results.values.vertices, response1.results.values.vertices);
 
-                    if (!_.isEmpty(response.results.values.vertices)) {
-                        loadProcess(response.results.values.edges, response.results.values.vertices)
-                            .then(function(res) {
-                                guidsList = res;
+                                if (!_.isEmpty(response.results.values.vertices)) {
+                                    loadProcess(response.results.values.edges, response.results.values.vertices)
+                                        .then(function(res) {
+                                            guidsList = res;
 
-                                $scope.lineageData = transformData(response.results);
+                                            $scope.lineageData = transformData(response.results);
 
-                                if (callRender) {
-                                    render();
+                                            if (callRender) {
+                                                render();
+                                            }
+                                        });
+                                } else {
+                                    $scope.requested = false;
                                 }
-                            });
-                    } else {
-                        $scope.requested = false;
-                    }
-                });
-
-            });
-
+                            } else {
+                                $scope.requested = false;
+                            }
+                        },
+                        function() {
+                            $scope.requested = false;
+                        }
+                    );
+                },
+                function() {
+                    $scope.requested = false;
+                }
+            );
         }
-
 
         function loadProcess(edges, vertices) {
 
@@ -141,6 +154,7 @@ angular.module('dgc.lineage').controller('Lineage_ioController', ['$element', '$
                     render();
                 }
             }
+            $scope.guid = lineageData.guid;
         });
 
         function transformData(metaData) {
@@ -157,11 +171,11 @@ angular.module('dgc.lineage').controller('Lineage_ioController', ['$element', '$
                     var loadProcess = getLoadProcessTypes(guid);
                     if (typeof loadProcess !== "undefined") {
                         name = loadProcess.name;
-                        type = loadProcess.typeName;
+                        type = 'edges';
                         tip = loadProcess.tip;
                     } else {
                         name = 'Load Process';
-                        type = 'Load Process';
+                        type = 'edges';
                     }
                 }
                 var vertex = {
@@ -433,29 +447,6 @@ angular.module('dgc.lineage').controller('Lineage_ioController', ['$element', '$
                 zoomListener.scale(scale);
                 zoomListener.translate([x, y]);
             }
-
-            // Toggle children function
-
-            // function toggleChildren(d) {
-            //     if (d.children) {
-            //         d._children = d.children;
-            //         d.children = null;
-            //     } else if (d._children) {
-            //         d.children = d._children;
-            //         d._children = null;
-            //     }
-            //     return d;
-            // }
-
-            // Toggle children on click.
-
-            // function click(d) {
-            //     if (d3.event.defaultPrevented) return; // click suppressed
-            //     d = toggleChildren(d);
-            //     update(d);
-            //     //centerNode(d);
-            // }
-
             //arrow
             baseSvg.append("svg:defs")
                 .append("svg:marker")
@@ -568,10 +559,10 @@ angular.module('dgc.lineage').controller('Lineage_ioController', ['$element', '$
                 nodeEnter.append("image")
                     .attr("class", "nodeImage")
                     .attr("xlink:href", function(d) {
-                        return d.type === 'Table' ? '../img/tableicon.png' : '../img/process.png';
+                        return (d.type && d.type !== '' && d.type.toLowerCase().indexOf('edges') !== -1) ? '../img/process.png' : '../img/tableicon.png';
                     })
                     .on('mouseover', function(d) {
-                        if (d.type === 'LoadProcess' || 'Table') {
+                        if (d.type === 'edges' || 'Table') {
                             tooltip.show(d);
                         }
                     })
@@ -622,18 +613,6 @@ angular.module('dgc.lineage').controller('Lineage_ioController', ['$element', '$
                         $(this).attr('title', d.name);
                         return nameDis;
                     });
-
-                // Change the circle fill depending on whether it has children and is collapsed
-                // Change the circle fill depending on whether it has children and is collapsed
-                node.select("image.nodeImage")
-                    .attr("r", 4.5)
-                    .attr("xlink:href", function(d) {
-                        if (d._children) {
-                            return d.type === 'Table' ? '../img/tableicon1.png' : '../img/process1.png';
-                        }
-                        return d.type === 'Table' ? '../img/tableicon.png' : '../img/process.png';
-                    });
-
 
                 // Transition nodes to their new position.
                 var nodeUpdate = node.transition()
