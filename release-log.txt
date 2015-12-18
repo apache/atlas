@@ -1,12 +1,6 @@
 Apache Atlas Release Notes
 ==========================
 
---trunk - unreleased
-INCOMPATIBLE CHANGES:
-
-ALL CHANGES:
-
-
 --Release 0.6-incubating
 INCOMPATIBLE CHANGES:
 ATLAS-58 Make hive hook reliable (shwethags)
