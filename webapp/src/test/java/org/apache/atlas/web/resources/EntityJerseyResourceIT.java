@@ -48,12 +48,10 @@ import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.lang.RandomStringUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
-import org.junit.AfterClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
@@ -67,7 +65,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
 
 /**
@@ -89,7 +86,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Inject
     private NotificationInterface notificationInterface;
-    private EntityNotificationConsumer notificationConsumer;
+    private NotificationConsumer<EntityNotification> notificationConsumer;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -100,19 +97,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         List<NotificationConsumer<EntityNotification>> consumers =
                 notificationInterface.createConsumers(NotificationInterface.NotificationType.ENTITIES, 1);
 
-        NotificationConsumer<EntityNotification> consumer = consumers.iterator().next();
-        notificationConsumer = new EntityNotificationConsumer(consumer);
-        notificationConsumer.start();
-    }
-
-    @AfterClass
-    public void tearDown() {
-        notificationConsumer.stop();
-    }
-
-    @BeforeMethod
-    public void setupTest() {
-        notificationConsumer.reset();
+        notificationConsumer = consumers.iterator().next();
     }
 
     @Test
@@ -158,20 +143,26 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         serviceClient.createEntity(db).getString(0);
 
-        waitForNotification(notificationConsumer, MAX_WAIT_TIME);
-        EntityNotification notification = notificationConsumer.getLastEntityNotification();
-        assertNotNull(notification);
-        assertEquals(notification.getEntity().get("name"), dbName);
+        waitForNotification(notificationConsumer, MAX_WAIT_TIME, new NotificationPredicate() {
+            @Override
+            public boolean evaluate(EntityNotification notification) throws Exception {
+                return notification != null && notification.getEntity().get("name").equals(dbName);
+            }
+        });
 
         JSONArray results =
                 serviceClient.searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, dbName));
         assertEquals(results.length(), 1);
 
         //create entity again shouldn't create another instance with same unique attribute value
-        notificationConsumer.reset();
         serviceClient.createEntity(db);
         try {
-            waitForNotification(notificationConsumer, MAX_WAIT_TIME);
+            waitForNotification(notificationConsumer, MAX_WAIT_TIME, new NotificationPredicate() {
+                @Override
+                public boolean evaluate(EntityNotification notification) throws Exception {
+                    return notification != null && notification.getEntity().get("name").equals(dbName);
+                }
+            });
             fail("Expected time out exception");
         } catch (Exception e) {
             //expected timeout
