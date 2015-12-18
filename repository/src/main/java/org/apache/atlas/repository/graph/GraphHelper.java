@@ -252,7 +252,7 @@ public final class GraphHelper {
      */
     public Vertex getVertexForInstanceByUniqueAttribute(ClassType classType, IReferenceableInstance instance)
         throws AtlasException {
-
+        LOG.debug("Checking if there is an instance with the same unique attributes for instance {}", instance);
         Vertex result = null;
         for (AttributeInfo attributeInfo : classType.fieldMapping().fields.values()) {
             if (attributeInfo.isUnique) {

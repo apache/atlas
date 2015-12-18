@@ -231,12 +231,14 @@ public final class TypedInstanceToGraphMapper {
         List<ITypedReferenceableInstance> instancesToUpdate = new ArrayList<>();
 
         for (IReferenceableInstance instance : instances) {
+            LOG.debug("Discovering instance to create/update for {}", instance);
             ITypedReferenceableInstance newInstance;
             Id id = instance.getId();
 
             if (!idToVertexMap.containsKey(id)) {
                 Vertex instanceVertex;
                 if (id.isAssigned()) {  // has a GUID
+                    LOG.debug("Instance {} has an assigned id", instance.getId()._getId());
                     instanceVertex = graphHelper.getVertexForGUID(id.id);
                     if (!(instance instanceof ReferenceableInstance)) {
                         throw new IllegalStateException(
@@ -252,6 +254,7 @@ public final class TypedInstanceToGraphMapper {
 
                     //no entity with the given unique attribute, create new
                     if (instanceVertex == null) {
+                        LOG.debug("Creating new vertex for instance {}", instance);
                         newInstance = classType.convert(instance, Multiplicity.REQUIRED);
                         instanceVertex = graphHelper.createVertexWithIdentity(newInstance, classType.getAllSuperTypeNames());
                         instancesToCreate.add(newInstance);
@@ -260,6 +263,7 @@ public final class TypedInstanceToGraphMapper {
                         mapInstanceToVertex(newInstance, instanceVertex, classType.fieldMapping().fields, true, Operation.CREATE);
 
                     } else {
+                        LOG.debug("Re-using existing vertex {} for instance {}", instanceVertex.getId(), instance);
                         if (!(instance instanceof ReferenceableInstance)) {
                             throw new IllegalStateException(
                                     String.format("%s is not of type ITypedReferenceableInstance", instance));

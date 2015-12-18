@@ -94,10 +94,11 @@ public abstract class AbstractNotificationConsumer<T> implements NotificationCon
     }
 
     @Override
-    public void remove() {
-        throw new UnsupportedOperationException("The remove method is not supported.");
+    public T peek() {
+        return GSON.fromJson(peekMessage(), type);
     }
 
+    protected abstract String peekMessage();
 
     // ----- inner class : ImmutableListDeserializer ---------------------------
 

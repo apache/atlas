@@ -59,7 +59,7 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
 
         sendHookMessage(new HookNotification.EntityCreateRequest(entity));
 
-        waitFor(1000, new Predicate() {
+        waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
                 JSONArray results = serviceClient.searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE,
@@ -80,7 +80,7 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         final Referenceable newEntity = new Referenceable(DATABASE_TYPE);
         newEntity.set("owner", randomString());
         sendHookMessage(new HookNotification.EntityPartialUpdateRequest(DATABASE_TYPE, "name", dbName, newEntity));
-        waitFor(1000, new Predicate() {
+        waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
                 Referenceable localEntity = serviceClient.getEntity(DATABASE_TYPE, "name", dbName);
@@ -106,7 +106,7 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         newEntity.set("name", newName);
 
         sendHookMessage(new HookNotification.EntityPartialUpdateRequest(DATABASE_TYPE, "name", dbName, newEntity));
-        waitFor(1000, new Predicate() {
+        waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
                 JSONArray results = serviceClient.searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE,
@@ -136,7 +136,7 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
 
         //updating unique attribute
         sendHookMessage(new HookNotification.EntityUpdateRequest(newEntity));
-        waitFor(1000, new Predicate() {
+        waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
                 JSONArray results = serviceClient.searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE,

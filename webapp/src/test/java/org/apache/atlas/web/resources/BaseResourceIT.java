@@ -24,7 +24,10 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
-import org.apache.atlas.*;
+import kafka.consumer.ConsumerTimeoutException;
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.entity.EntityNotification;
 import org.apache.atlas.typesystem.Referenceable;
@@ -43,6 +46,7 @@ import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
+import org.apache.atlas.typesystem.types.TypeUtils;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.web.util.Servlets;
@@ -272,6 +276,17 @@ public abstract class BaseResourceIT {
         boolean evaluate() throws Exception;
     }
 
+    public interface NotificationPredicate {
+
+        /**
+         * Perform a predicate evaluation.
+         *
+         * @return the boolean result of the evaluation.
+         * @throws Exception thrown if the predicate evaluation could not evaluate.
+         */
+        boolean evaluate(EntityNotification notification) throws Exception;
+    }
+
     /**
      * Wait for a condition, expressed via a {@link Predicate} to become true.
      *
@@ -292,49 +307,40 @@ public abstract class BaseResourceIT {
         }
     }
 
-    // ----- inner class : EntityNotificationConsumer --------------------------
-
-    protected static class EntityNotificationConsumer implements Runnable {
-        private final NotificationConsumer<EntityNotification> consumerIterator;
-        private EntityNotification entityNotification = null;
-        private boolean run;
-
-        public EntityNotificationConsumer(NotificationConsumer<EntityNotification> consumerIterator) {
-            this.consumerIterator = consumerIterator;
-        }
-
-        @Override
-        public void run() {
-            while (run && consumerIterator.hasNext()) {
-                entityNotification = consumerIterator.next();
-            }
-        }
-
-        public void reset() {
-            entityNotification = null;
-        }
-
-        public void start() {
-            Thread thread = new Thread(this);
-            run = true;
-            thread.start();
-        }
-
-        public void stop() {
-            run = false;
-        }
-
-        public EntityNotification getLastEntityNotification() {
-            return entityNotification;
-        }
-    }
-
-    protected void waitForNotification(final EntityNotificationConsumer notificationConsumer, int maxWait) throws Exception {
+    protected EntityNotification waitForNotification(final NotificationConsumer<EntityNotification> consumer, int maxWait,
+                                                     final NotificationPredicate predicate) throws Exception {
+        final TypeUtils.Pair<EntityNotification, String> pair = TypeUtils.Pair.of(null, null);
+        final long maxCurrentTime = System.currentTimeMillis() + maxWait;
         waitFor(maxWait, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
-                return notificationConsumer.getLastEntityNotification() != null;
+                try {
+                    while (consumer.hasNext() && System.currentTimeMillis() < maxCurrentTime) {
+                        EntityNotification notification = consumer.next();
+                        if (predicate.evaluate(notification)) {
+                            pair.left = notification;
+                            return true;
+                        }
+                    }
+                } catch(ConsumerTimeoutException e) {
+                    //ignore
+                }
+                return false;
             }
         });
+        return pair.left;
+    }
+
+    protected NotificationPredicate newNotificationPredicate(final EntityNotification.OperationType operationType,
+                                                             final String typeName, final String guid) {
+        return new NotificationPredicate() {
+            @Override
+            public boolean evaluate(EntityNotification notification) throws Exception {
+                return notification != null &&
+                        notification.getOperationType() == operationType &&
+                        notification.getEntity().getTypeName().equals(typeName) &&
+                        notification.getEntity().getId()._getId().equals(guid);
+            }
+        };
     }
 }

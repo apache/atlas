@@ -17,8 +17,11 @@
 
 package org.apache.atlas.notification;
 
-import java.util.Iterator;
-
 // TODO : docs!
-public interface NotificationConsumer<T> extends Iterator<T>{
+public interface NotificationConsumer<T>{
+    boolean hasNext();
+
+    T next();
+
+    T peek();
 }

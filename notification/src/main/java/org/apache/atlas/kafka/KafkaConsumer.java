@@ -69,4 +69,10 @@ public class KafkaConsumer<T> extends AbstractNotificationConsumer<T> {
                 consumerId, message.topic(), message.partition(), message.offset(), message.message());
         return (String) message.message();
     }
+
+    @Override
+    protected String peekMessage() {
+        MessageAndMetadata message = (MessageAndMetadata) iterator.peek();
+        return (String) message.message();
+    }
 }
