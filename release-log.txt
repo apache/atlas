@@ -6,8 +6,10 @@ INCOMPATIBLE CHANGES:
 ATLAS-58 Make hive hook reliable (shwethags)
 ATLAS-54 Rename configs in hive hook (shwethags)
 ATLAS-3 Mixed Index creation fails with Date types (sumasai via shwethags)
+ATLAS-47 Entity mutations for complex types (sumasai via shwethags)
 
 ALL CHANGES:
+ATLAS-395 UI : In details page maps not displayed for different data models (darshankumar89 via sumasai)
 ATLAS-394 Fix BaseResourceIT.waitForNotification (shwethags via sumasai)
 ATLAS-385 Support for Lineage for entities with SuperType as DataSet (anilsg via sumasai)
 ATLAS-342 Atlas is sending an ENTITY_CREATE event to the ATLAS_ENTITIES topic even if the entity exists already (shwethags)
@@ -19,7 +21,6 @@ ATLAS-244 UI: Add Tag Tab (darshankumar89 via sumasai)
 ATLAS-376 UI: Use the Schema API of the backend to populate details for Schema tab (darshankumar89 via sumasai)
 ATLAS-380 Fix ATLAS source artifact generation (sumasai)
 ATLAS-354 Kerberized cluster: quick_start.py fails to add sample data (shwethags)
-ATLAS-47 Entity mutations for complex types (sumasai via shwethags)
 ATLAS-345 UI: Should allow tag addition on any search result that returns a reference-able entity (darshankumar89 via shwethags)
 ATLAS-279 UI not displaying results for certain successful "select" search queries (anilsg via shwethags)
 ATLAS-242 The qualified name for hive entities should be backward compatible (shwethags)

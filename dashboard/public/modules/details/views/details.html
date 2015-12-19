@@ -50,7 +50,27 @@
                             </td>
                             <td data-ng-if="isObject(value) && isObject(value.id) && isString(value.id.id)" class="pointer">  <a data-ui-sref="details({id:value.id.id})">{{ value.id.id }}</a>
                             </td>
-                            <td data-ng-if="isArray(value)">
+                           <td data-ng-if="isObject(value) && !isArray(value) && !isString(value.id) && !isObject(value.id)">
+                                <span data-ng-repeat="(key2, value2) in value"> {{ key2 }} : {{ value2 }}<span ng-if="!$last">,</span></span>
+                            </td>
+                             <td data-ng-if="isArray(value) && !isString(value.id) && !isObject(value.id)">
+                                <div  data-ng-repeat="(key2, value2) in value">
+                                <a class=" pointer" data-ng-if="isObject(value2) && isString(value2.id)"   data-ui-sref="details({id:value2.id})">{{ value2.id }}</a>
+                              
+                                    <div class="row pdLft15px" data-ng-repeat="(key1, value1) in value2">
+                                  
+                                    <span ng-if="isObject(value1)">
+                                        <a class=" pointer" data-ng-if="isString(value1.id)"   data-ui-sref="details({id:value1.id})">{{ value1.id }}</a>
+                                       
+                                        
+                                    </span> 
+                                   
+                                       
+                                        
+                                    </div>
+                                </div>
+                            </td>
+                            <td data-ng-if="isArray(value) && !isObject(value)" >
                                 <div class="row" data-ng-repeat="(key1, value1) in value" ng-if="value1">
                                     <div data-ng-if="isObject(value1)" data-ng-repeat="(key2, value2) in value1" > 
                                         <a data-ng-if="isString(value2) && key2 == 'id'" class="pointer pdLft15px" data-ui-sref="details({id:value2})">{{ value2 }}</a> 
