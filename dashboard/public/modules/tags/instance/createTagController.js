@@ -18,14 +18,14 @@
 'use strict';
 
 angular.module('dgc.tags.instance').controller('CreateTagController', ['$scope', 'DetailsResource', '$modalInstance', 'typesList', 'lodash', 'TagsResource', '$stateParams', '$rootScope', 'TagClasses', 'NotificationService',
-    function($scope, DetailsResource, $modalInstance, typesList, _, TagsResource, $stateParams, $rootScope, Categories, NotificationService) {
+    function($scope, DetailsResource, $modalInstance, typesList, _, TagsResource, $stateParams, $rootScope, Categories) {
         if (typesList) {
             $scope.typesList = typesList;
         }
         var $$ = angular.element;
         $scope.categoryList = Categories;
         $scope.category = 'TRAIT';
-
+        $scope.isSuccess = false;
         $scope.getAttributeDefinations = function() {
             $scope.propertiesList = {};
             $scope.isRequired = {};
@@ -59,6 +59,7 @@ angular.module('dgc.tags.instance').controller('CreateTagController', ['$scope',
             });
         };
         $scope.ok = function($event, tagDefinitionform) {
+             $scope.isSuccess = false;
             if (tagDefinitionform.$valid) {
                 var requestObject = {
                     "jsonClass": "org.apache.atlas.typesystem.json.InstanceSerialization$_Struct",
@@ -79,8 +80,8 @@ angular.module('dgc.tags.instance').controller('CreateTagController', ['$scope',
                             $$("#" + $stateParams.tId+"_schema").append("<a class='tabsearchanchor ng-binding ng-scope' data-ui-sref='search({query: " + tagName + "})' title='" + tagName + "' href='#!/search?query=" + tagName + "'>" + tagName + "<span> </span></a>");
                         }  
                     }
-                    NotificationService.info('Tag "' + $scope.selectedType + '" has been added to entity', true);
-                    $modalInstance.close(true);
+                    $scope.successmessage = 'Tag "' + $scope.selectedType + '" has been added to entity';
+                    $scope.isSuccess = true;
                 }).catch(function(err) {
                     $scope.isError = true;
                     $scope.error = err.data.error;

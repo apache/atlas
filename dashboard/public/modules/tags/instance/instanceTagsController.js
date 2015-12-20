@@ -67,26 +67,25 @@ angular.module('dgc.tags.instance').controller('InstanceTagController', ['$scope
 
         $scope.detachTag = function($event, name) {
             $scope.displayName = name;
-            $$('#btnDelete').modal().on('click', function(e) {
-                e.preventDefault();
-                $$("#myModal").modal();
+        };
 
-                DetailsResource.detachTag({
-                    id: $stateParams.id,
-                    tagName: name
-                }, function(data) {
+        $scope.removeTag = function() {
+            $$("#myModal").modal();
+            var name = $scope.displayName;
+            DetailsResource.detachTag({
+                id: $stateParams.id,
+                tagName: name
+            }, function(data) {
 
-                    if (data.requestId !== undefined && data.GUID === $stateParams.id && data.traitName === name) {
-                        $$($event.currentTarget).closest('tr').remove();
-                        delete $scope.traitsList[name];
-                        if ($.isEmptyObject($scope.traitsList)) {
-                            $scope.noTags = true;
-                        } else {
-                            $scope.noTags = false;
-                        }
+                if (data.requestId !== undefined && data.GUID === $stateParams.id && data.traitName === name) {
+                    $$("#" + name).remove();
+                    delete $scope.traitsList[name];
+                    if ($.isEmptyObject($scope.traitsList)) {
+                        $scope.noTags = true;
+                    } else {
+                        $scope.noTags = false;
                     }
-
-                });
+                }
             });
         };
 
