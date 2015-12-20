@@ -29,7 +29,7 @@ angular.module('dgc.lineage').controller('Lineage_ioController', ['$element', '$
             $.each(edgs, function(key, value) {
                 for (var k = 0; k < value.length; k++) {
                     newEdgsObj[value[k]] = newEdgsObj[value[k]] || [];
-                    newEdgsObj[value[k]] = [key];
+                    newEdgsObj[value[k]].push(key);
                 }
             });
             return newEdgsObj;
@@ -41,8 +41,8 @@ angular.module('dgc.lineage').controller('Lineage_ioController', ['$element', '$
                 type: 'outputs'
             }).$promise.then(
                 function lineageSuccess(response1) {
-                  //  $scope.$emit('show_lineage');
-                  $('#lineageGraph').removeClass('hide');
+                    //  $scope.$emit('show_lineage');
+                    $('#lineageGraph').removeClass('hide');
                     LineageResource.get({
                         tableName: tableData.tableName,
                         type: 'inputs'
@@ -98,7 +98,6 @@ angular.module('dgc.lineage').controller('Lineage_ioController', ['$element', '$
         }
 
         function loadProcess(edges, vertices) {
-
             var urlCalls = [];
             var deferred = $q.defer();
             for (var guid in edges) {
@@ -436,7 +435,7 @@ angular.module('dgc.lineage').controller('Lineage_ioController', ['$element', '$
             // Function to center node when clicked/dropped so node doesn't get lost when collapsing/moving with large amount of children.
 
             function centerNode(source) {
-                var scale = (depthwidth === 10) ? zoomListener.scale() : 0.4;
+                var scale =  zoomListener.scale();
                 var x = -source.y0;
                 var y = -source.x0;
                 x = x * scale - 130;
@@ -492,7 +491,9 @@ angular.module('dgc.lineage').controller('Lineage_ioController', ['$element', '$
                     }
                 };
                 childCount(0, root);
-                tree = tree.nodeSize([50, 100]);
+                //tree = tree.nodeSize([50, 100]);
+                tree = tree.separation(function(a, b) { return ((a.parent === root) && (b.parent === root)) ? 3 : 1; })
+                .size([viewerHeight, viewerWidth - 160]);
 
                 // Compute the new tree layout.
                 var nodes = tree.nodes(root).reverse();
@@ -522,7 +523,7 @@ angular.module('dgc.lineage').controller('Lineage_ioController', ['$element', '$
                     if (levelWidth.length > 1 && depthwidth === 10) {
                         for (var o = 0; o < levelWidth.length; o++) {
                             if (levelWidth[o] > 4) {
-                                depthwidth = 70;
+                                depthwidth = 10;
                                 break;
                             }
                         }
@@ -559,7 +560,9 @@ angular.module('dgc.lineage').controller('Lineage_ioController', ['$element', '$
                 nodeEnter.append("image")
                     .attr("class", "nodeImage")
                     .attr("xlink:href", function(d) {
-                        return (d.type && d.type !== '' && d.type.toLowerCase().indexOf('edges') !== -1) ? '../img/process.png' : '../img/tableicon.png';
+                        return (d.type && d.type !== '' && d.type.toLowerCase().indexOf('edges') !== -1) ?
+                            ((d.guid === $scope.guid) ? '../img/process1.png' : '../img/process.png') :
+                            ((d.guid === $scope.guid) ? '../img/tableicon1.png' : '../img/tableicon.png');
                     })
                     .on('mouseover', function(d) {
                         if (d.type === 'edges' || 'Table') {

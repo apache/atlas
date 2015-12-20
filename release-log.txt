@@ -15,6 +15,7 @@ ATLAS-3 Mixed Index creation fails with Date types (sumasai via shwethags)
 ATLAS-47 Entity mutations for complex types (sumasai via shwethags)
 
 ALL CHANGES:
+ATLAS-405 UI: Lineage is broken seemingly if there are more than one input Processes creating a Dataset (darshankumar89 via sumasai)
 ATLAS-402 UI : Validation of Associating a Tag (darshankumar89 via sumasai)
 ATLAS-395 UI : In details page maps not displayed for different data models (darshankumar89 via sumasai)
 ATLAS-394 Fix BaseResourceIT.waitForNotification (shwethags via sumasai)
