@@ -73,7 +73,7 @@
                      <td class="addTag"><img ng-src="img/addTag.png" tooltip="Add Tag" ng-click="openAddTagHome(result['$id$'].id || result.guid)"></td>
                   </tr>
                   <tr ng-if="isTag(resultType)" ng-repeat="result in filteredResults track by $index">
-                     <td data-ng-if="isObject(result) && !isString(result) && res != 'id'" data-ng-repeat="res in transformedProperties track by $index">
+                     <td data-ng-if="isObject(result) && !isString(result) && res != 'id'" data-ng-repeat="res in transformedProperties track by $index" class="wordBreak">
                         
                         <a data-ng-if="res == 'guid'" data-ui-sref="details({id:result[res]})">{{result[res]}}</a>
                         

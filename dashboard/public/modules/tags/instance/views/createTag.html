@@ -20,9 +20,12 @@
 </div>
 <div class="modal-body">
 	<div class="form-group">
-		<div align="center" class="error col-sm-12 tabsearchResult pointer" title="{{error}}" ng-if="isError">
+		<div align="center" class="error col-sm-12 tabsearchResult pointer" title="{{error}}" ng-show="isError">
 			{{error}}
 		</div>
+		 <div class="alert alert-success" ng-if="isSuccess" >
+       		{{successmessage}}
+   		 </div>
 	</div>
 	<form name="tagDefinitionform"  class="css-form" novalidate>
 		<div class="form-group hide">
@@ -40,7 +43,7 @@
 			<label class="control-label col-sm-4" for="tagDefinition">Tag definition</label>
 			<div class="col-sm-8 input-spacing">
 				<select ng-model="selectedType"  class="form-control" id="tagDefinition" name="tagDefinition"
-					ng-change="getAttributeDefinations(); isError =false" required>
+					ng-change="getAttributeDefinations(); isError =false; isSuccess=false;" required>
 				<option ng-repeat="data in typesList " title="{{data}}">{{data}}</option>
 				</select>
 			</div>
