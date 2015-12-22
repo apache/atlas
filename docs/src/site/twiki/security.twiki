@@ -10,7 +10,7 @@ The following features are available for enhancing the security of the platform:
 
 ---+++ SSL
 
-Both SSL one-way (server authentication) and two-way (server and client authentication) are supported.  The following application properties (properties configured in the application.properties file) are available for configuring SSL:
+Both SSL one-way (server authentication) and two-way (server and client authentication) are supported.  The following application properties (properties configured in the atlas-application.properties file) are available for configuring SSL:
 
    * <code>atlas.enableTLS</code> (false|true) [default: false] - enable/disable the SSL listener
    * <code>keystore.file</code> - the path to the keystore file leveraged by the server.  This file contains the server certificate.

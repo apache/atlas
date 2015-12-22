@@ -16,6 +16,7 @@
  */
 package org.apache.atlas.web.security;
 
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.web.TestUtils;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -49,11 +50,12 @@ public class BaseSecurityTest {
 
     protected void generateTestProperties(Properties props) throws ConfigurationException, IOException {
         PropertiesConfiguration config =
-                new PropertiesConfiguration(System.getProperty("user.dir") + "/../src/conf/application.properties");
+                new PropertiesConfiguration(System.getProperty("user.dir") +
+                  "/../src/conf/" + ApplicationProperties.APPLICATION_PROPERTIES);
         for (String propName : props.stringPropertyNames()) {
             config.setProperty(propName, props.getProperty(propName));
         }
-        File file = new File(System.getProperty("user.dir"), "application.properties");
+        File file = new File(System.getProperty("user.dir"), ApplicationProperties.APPLICATION_PROPERTIES);
         file.deleteOnExit();
         Writer fileWriter = new FileWriter(file);
         config.save(fileWriter);

@@ -25,7 +25,7 @@ ATLAS_LOG_OPTS="-Datlas.log.dir=%s -Datlas.log.file=application.log"
 ATLAS_COMMAND_OPTS="-Datlas.home=%s"
 ATLAS_CONFIG_OPTS="-Datlas.conf=%s"
 DEFAULT_JVM_OPTS="-Xmx1024m -XX:MaxPermSize=512m -Dlog4j.configuration=atlas-log4j.xml"
-CONF_FILE="application.properties"
+CONF_FILE="atlas-application.properties"
 HBASE_STORAGE_CONF_ENTRY="atlas.graph.storage.backend\s*=\s*hbase"
 
 def main():

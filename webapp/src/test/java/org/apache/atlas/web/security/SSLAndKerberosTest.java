@@ -18,6 +18,7 @@
 
 package org.apache.atlas.web.security;
 
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.web.TestUtils;
@@ -74,9 +75,9 @@ public class SSLAndKerberosTest extends BaseSSLAndKerberosTest {
         String confLocation = System.getProperty("atlas.conf");
         URL url;
         if (confLocation == null) {
-            url = SSLAndKerberosTest.class.getResource("/application.properties");
+            url = SSLAndKerberosTest.class.getResource("/" + ApplicationProperties.APPLICATION_PROPERTIES);
         } else {
-            url = new File(confLocation, "application.properties").toURI().toURL();
+            url = new File(confLocation, ApplicationProperties.APPLICATION_PROPERTIES).toURI().toURL();
         }
         configuration.load(url);
         configuration.setProperty(TLS_ENABLED, true);
@@ -86,7 +87,8 @@ public class SSLAndKerberosTest extends BaseSSLAndKerberosTest {
         configuration.setProperty("atlas.http.authentication.kerberos.name.rules",
                 "RULE:[1:$1@$0](.*@EXAMPLE.COM)s/@.*//\nDEFAULT");
 
-        TestUtils.writeConfiguration(configuration, persistDir + File.separator + "application.properties");
+        TestUtils.writeConfiguration(configuration, persistDir + File.separator +
+          "atlas-application.properties");
 
         subject = loginTestUser();
         UserGroupInformation.loginUserFromSubject(subject);

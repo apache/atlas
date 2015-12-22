@@ -70,7 +70,7 @@ public class MetadataAuthenticationKerberosFilterIT extends BaseSecurityTest {
         TestEmbeddedServer server = null;
 
         try {
-            // setup the application.properties file
+            // setup the atlas-application.properties file
             generateKerberosTestProperties();
 
             // need to create the web application programmatically in order to control the injection of the test

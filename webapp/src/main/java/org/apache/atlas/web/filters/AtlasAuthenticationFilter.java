@@ -56,7 +56,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
             throw new ServletException(e);
         }
 
-        // transfer application.properties config items starting with defined prefix
+        // transfer atlas-application.properties config items starting with defined prefix
         Configuration subConfiguration = ApplicationProperties.getSubsetConfiguration(configuration, PREFIX);
         Properties config = ConfigurationConverter.getProperties(subConfiguration);
 

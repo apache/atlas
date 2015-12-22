@@ -44,7 +44,7 @@ public class LoginProcessor {
 
     /**
      * Perform a SIMPLE login based on established OS identity or a kerberos based login using the configured
-     * principal and keytab (via application.properties).
+     * principal and keytab (via atlas-application.properties).
      */
     public void login() {
         // first, let's see if we're running in a hadoop cluster and have the env configured

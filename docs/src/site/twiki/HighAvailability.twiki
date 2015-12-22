@@ -76,7 +76,7 @@ to configure Atlas to use Kafka in HA mode, do the following:
       $KAFKA_HOME/bin/kafka-topics.sh --create --zookeeper <list of zookeeper host:port entries> --topic ATLAS_ENTITIES --replication-factor <numReplicas> --partitions 1
       Here KAFKA_HOME points to the Kafka installation directory.
       </verbatim>
-   * In application.properties, set the following configuration:
+   * In atlas-application.properties, set the following configuration:
      <verbatim>
      atlas.notification.embedded=false
      atlas.kafka.zookeeper.connect=<comma separated list of servers forming Zookeeper quorum used by Kafka>

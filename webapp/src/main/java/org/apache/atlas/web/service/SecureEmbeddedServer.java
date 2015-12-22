@@ -135,7 +135,7 @@ public class SecureEmbeddedServer extends EmbeddedServer {
         try {
             return ApplicationProperties.get();
         } catch (AtlasException e) {
-            throw new RuntimeException("Unable to load configuration: application.properties");
+            throw new RuntimeException("Unable to load configuration: " + ApplicationProperties.APPLICATION_PROPERTIES);
         }
     }
 }

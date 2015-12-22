@@ -31,7 +31,7 @@ Tar is structured as follows
    |- quick_start.py
    |- cputil.py
 |- conf
-   |- application.properties
+   |- atlas-application.properties
    |- client.properties
    |- atlas-env.sh
    |- log4j.xml
@@ -167,7 +167,7 @@ For configuring Titan to work with Solr, please follow the instructions below
 
   The number of replicas (replicationFactor) can be set according to the redundancy required.
 
-   * Change ATLAS configuration to point to the Solr instance setup. Please make sure the following configurations are set to the below values in ATLAS_HOME//conf/application.properties
+   * Change ATLAS configuration to point to the Solr instance setup. Please make sure the following configurations are set to the below values in ATLAS_HOME/conf/atlas-application.properties
 <verbatim>
  atlas.graph.index.search.backend=solr5
  atlas.graph.index.search.solr.mode=cloud

@@ -32,7 +32,7 @@ import java.util.Iterator;
 public class ApplicationProperties extends PropertiesConfiguration {
     private static final Logger LOG = LoggerFactory.getLogger(ApplicationProperties.class);
 
-    public static final String APPLICATION_PROPERTIES = "application.properties";
+    public static final String APPLICATION_PROPERTIES = "atlas-application.properties";
     public static final String CLIENT_PROPERTIES = "client.properties";
 
     private static Configuration INSTANCE = null;
