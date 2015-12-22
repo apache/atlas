@@ -215,7 +215,7 @@ public class GraphRepoMapperScaleTest {
 
         ArrayList<Struct> partitions = new ArrayList<>();
         for (int index = 0; index < 5; index++) {
-            Struct partitionInstance = new Struct("partition_type");
+            Struct partitionInstance = new Struct(TestUtils.PARTITION_STRUCT_TYPE);
             partitionInstance.set("name", "partition_" + "-" + uberIndex + "-" + index);
             partitions.add(partitionInstance);
         }

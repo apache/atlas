@@ -187,12 +187,14 @@ public final class TestUtils {
     public static final String DATABASE_TYPE = "hive_database";
     public static final String DATABASE_NAME = "foo";
     public static final String TABLE_TYPE = "hive_table";
-    public static final String PARTITION_TYPE = "partition_type";
-    public static final String SERDE_TYPE = "serdeType";
     public static final String TABLE_NAME = "bar";
     public static final String CLASSIFICATION = "classification";
     public static final String PII = "PII";
     public static final String SUPER_TYPE_NAME = "Base";
+    public static final String STORAGE_DESC_TYPE = "hive_storagedesc";
+    public static final String PARTITION_STRUCT_TYPE = "partition_struct_type";
+    public static final String PARTITION_CLASS_TYPE = "partition_class_type";
+    public static final String SERDE_TYPE = "serdeType";
 
     public static TypesDef defineHiveTypes() {
         HierarchicalTypeDefinition<ClassType> superTypeDefinition =
@@ -210,8 +212,8 @@ public final class TestUtils {
 
         StructTypeDefinition structTypeDefinition = new StructTypeDefinition("serdeType",
                 new AttributeDefinition[]{createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        createRequiredAttrDef("serde", DataTypes.STRING_TYPE),
-                        createOptionalAttrDef("description", DataTypes.STRING_TYPE)});
+                    createRequiredAttrDef("serde", DataTypes.STRING_TYPE),
+                    createOptionalAttrDef("description", DataTypes.STRING_TYPE)});
 
         EnumValue values[] = {new EnumValue("MANAGED", 1), new EnumValue("EXTERNAL", 2),};
 
@@ -222,8 +224,45 @@ public final class TestUtils {
                         createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         createRequiredAttrDef("type", DataTypes.STRING_TYPE));
 
-        StructTypeDefinition partitionDefinition = new StructTypeDefinition("partition_type",
+        StructTypeDefinition partitionDefinition = new StructTypeDefinition("partition_struct_type",
                 new AttributeDefinition[]{createRequiredAttrDef("name", DataTypes.STRING_TYPE),});
+
+        AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
+            new AttributeDefinition("cols", String.format("array<%s>", "column_type"),
+                Multiplicity.OPTIONAL, true, null),
+            new AttributeDefinition("location", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                null),
+            new AttributeDefinition("inputFormat", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                null),
+            new AttributeDefinition("outputFormat", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                null),
+            new AttributeDefinition("compressed", DataTypes.BOOLEAN_TYPE.getName(), Multiplicity.REQUIRED, false,
+                null),
+            new AttributeDefinition("numBuckets", DataTypes.INT_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                null),
+            };
+
+        HierarchicalTypeDefinition<ClassType> storageDescClsDef =
+            new HierarchicalTypeDefinition<>(ClassType.class, STORAGE_DESC_TYPE,
+                ImmutableList.of(SUPER_TYPE_NAME), attributeDefinitions);
+
+        AttributeDefinition[] partClsAttributes = new AttributeDefinition[]{
+            new AttributeDefinition("values", DataTypes.arrayTypeName(DataTypes.STRING_TYPE.getName()),
+                Multiplicity.OPTIONAL, false, null),
+            new AttributeDefinition("table", TABLE_TYPE, Multiplicity.REQUIRED, false, null),
+            new AttributeDefinition("createTime", DataTypes.LONG_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                null),
+            new AttributeDefinition("lastAccessTime", DataTypes.LONG_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                null),
+            new AttributeDefinition("sd", STORAGE_DESC_TYPE, Multiplicity.REQUIRED, true,
+                null),
+            new AttributeDefinition("columns", DataTypes.arrayTypeName("column_type"),
+                Multiplicity.OPTIONAL, true, null),
+            new AttributeDefinition("parameters", new DataTypes.MapType(DataTypes.STRING_TYPE, DataTypes.STRING_TYPE).getName(), Multiplicity.OPTIONAL, false, null),};
+
+        HierarchicalTypeDefinition<ClassType> partClsDef =
+            new HierarchicalTypeDefinition<>(ClassType.class, "partition_class_type",
+                ImmutableList.of(SUPER_TYPE_NAME), partClsAttributes);
 
         HierarchicalTypeDefinition<ClassType> tableTypeDefinition =
                 createClassTypeDef(TABLE_TYPE, ImmutableList.of(SUPER_TYPE_NAME),
@@ -241,13 +280,13 @@ public final class TestUtils {
                         new AttributeDefinition("columns", String.format("array<%s>", "column_type"),
                                 Multiplicity.OPTIONAL, true, null),
                         // array of structs
-                        new AttributeDefinition("partitions", String.format("array<%s>", "partition_type"),
+                        new AttributeDefinition("partitions", String.format("array<%s>", "partition_struct_type"),
                                 Multiplicity.OPTIONAL, true, null),
                         // map of primitives
                         new AttributeDefinition("parametersMap",
                                 DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(), DataTypes.STRING_TYPE.getName()),
                                 Multiplicity.OPTIONAL, true, null),
-                         //map of classes -
+                        //map of classes -
                         new AttributeDefinition("columnsMap",
                                                         DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),
                                                                 "column_type"),
@@ -255,7 +294,7 @@ public final class TestUtils {
                          //map of structs
                         new AttributeDefinition("partitionsMap",
                                                         DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),
-                                                                "partition_type"),
+                                                                "partition_struct_type"),
                                                         Multiplicity.OPTIONAL, true, null),
                         // struct reference
                         new AttributeDefinition("serde1", "serdeType", Multiplicity.OPTIONAL, false, null),
@@ -279,7 +318,7 @@ public final class TestUtils {
         return TypesUtil.getTypesDef(ImmutableList.of(enumTypeDefinition),
                 ImmutableList.of(structTypeDefinition, partitionDefinition),
                 ImmutableList.of(classificationTypeDefinition, fetlClassificationTypeDefinition, piiTypeDefinition),
-                ImmutableList.of(superTypeDefinition, databaseTypeDefinition, columnsDefinition, tableTypeDefinition));
+                ImmutableList.of(superTypeDefinition, databaseTypeDefinition, columnsDefinition, tableTypeDefinition, storageDescClsDef, partClsDef));
     }
 
     public static Collection<IDataType> createHiveTypes(TypeSystem typeSystem) throws Exception {

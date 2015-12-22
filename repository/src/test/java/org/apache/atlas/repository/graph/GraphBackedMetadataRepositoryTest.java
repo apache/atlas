@@ -561,7 +561,7 @@ public class GraphBackedMetadataRepositoryTest {
         //        HashMap<String, Struct> partitionsMap = new HashMap<>();
         ArrayList<Struct> partitions = new ArrayList<>();
         for (int index = 0; index < 5; index++) {
-            Struct partitionInstance = new Struct("partition_type");
+            Struct partitionInstance = new Struct(TestUtils.PARTITION_STRUCT_TYPE);
             final String name = "partition_" + index;
             partitionInstance.set("name", name);
 

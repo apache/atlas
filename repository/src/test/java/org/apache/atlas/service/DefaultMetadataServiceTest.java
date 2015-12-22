@@ -22,6 +22,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
+import org.apache.atlas.AtlasClient;
+import org.apache.atlas.typesystem.exception.TypeNotFoundException;
+import org.apache.atlas.typesystem.exception.EntityNotFoundException;
+import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.graph.GraphProvider;
@@ -29,15 +33,12 @@ import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.TypesDef;
-import org.apache.atlas.typesystem.exception.EntityNotFoundException;
-import org.apache.atlas.typesystem.exception.TypeNotFoundException;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.EnumValue;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.ValueConversionException;
-import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.lang.RandomStringUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.testng.Assert;
@@ -208,7 +209,7 @@ public class DefaultMetadataServiceTest {
     public void testUpdateEntityWithMap() throws Exception {
 
         final Map<String, Struct> partsMap = new HashMap<>();
-        partsMap.put("part0", new Struct("partition_type",
+        partsMap.put("part0", new Struct(TestUtils.PARTITION_STRUCT_TYPE,
             new HashMap<String, Object>() {{
                 put("name", "test");
             }}));
@@ -223,7 +224,7 @@ public class DefaultMetadataServiceTest {
         Assert.assertTrue(partsMap.get("part0").equalsContents(((Map<String, Struct>)tableDefinition.get("partitionsMap")).get("part0")));
 
         //update map - add a map key
-        partsMap.put("part1", new Struct("partition_type",
+        partsMap.put("part1", new Struct(TestUtils.PARTITION_STRUCT_TYPE,
             new HashMap<String, Object>() {{
                 put("name", "test1");
             }}));
@@ -239,7 +240,7 @@ public class DefaultMetadataServiceTest {
 
         //update map - remove a key and add another key
         partsMap.remove("part0");
-        partsMap.put("part2", new Struct("partition_type",
+        partsMap.put("part2", new Struct(TestUtils.PARTITION_STRUCT_TYPE,
             new HashMap<String, Object>() {{
                 put("name", "test2");
             }}));
@@ -440,6 +441,29 @@ public class DefaultMetadataServiceTest {
         Assert.assertNull(((Struct)tableDefinition.get("serde1")).get("description"));
     }
 
+
+    @Test
+    public void testCreateEntityWithReferenceableHavingIdNoValue() throws Exception {
+
+        //ATLAS-383 Test
+        Referenceable sdReferenceable = new Referenceable(TestUtils.STORAGE_DESC_TYPE);
+        sdReferenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, TestUtils.randomString());
+        sdReferenceable.set("compressed", "false");
+        sdReferenceable.set("location", "hdfs://tmp/hive-user");
+        String sdGuid = createInstance(sdReferenceable);
+
+        Referenceable sdRef2 = new Referenceable(sdGuid, TestUtils.STORAGE_DESC_TYPE, null);
+
+        Referenceable partRef = new Referenceable(TestUtils.PARTITION_CLASS_TYPE);
+        partRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, "part-unique");
+        partRef.set("values", ImmutableList.of("2014-10-01"));
+        partRef.set("table", table);
+        partRef.set("sd", sdRef2);
+
+        String partGuid = createInstance(partRef);
+        Assert.assertNotNull(partGuid);
+    }
+
     @Test
     public void testClassUpdate() throws Exception {
         //Create new db instance
@@ -486,10 +510,10 @@ public class DefaultMetadataServiceTest {
         //Add array of structs
         TestUtils.dumpGraph(graphProvider.get());
 
-        final Struct partition1 = new Struct(TestUtils.PARTITION_TYPE);
+        final Struct partition1 = new Struct(TestUtils.PARTITION_STRUCT_TYPE);
         partition1.set("name", "part1");
 
-        final Struct partition2 = new Struct(TestUtils.PARTITION_TYPE);
+        final Struct partition2 = new Struct(TestUtils.PARTITION_STRUCT_TYPE);
         partition2.set("name", "part2");
 
         List<Struct> partitions = new ArrayList<Struct>(){{ add(partition1); add(partition2); }};
@@ -508,7 +532,7 @@ public class DefaultMetadataServiceTest {
         Assert.assertTrue(partitions.get(0).equalsContents(partitionsActual.get(0)));
 
         //add a new element to array of struct
-        final Struct partition3 = new Struct(TestUtils.PARTITION_TYPE);
+        final Struct partition3 = new Struct(TestUtils.PARTITION_STRUCT_TYPE);
         partition3.set("name", "part3");
         partitions.add(partition3);
         table.set("partitions", partitions);
@@ -555,7 +579,7 @@ public class DefaultMetadataServiceTest {
         Assert.assertTrue(partitions.get(0).equalsContents(partitionsActual.get(0)));
 
         //add a repeated element to array of struct
-        final Struct partition4 = new Struct(TestUtils.PARTITION_TYPE);
+        final Struct partition4 = new Struct(TestUtils.PARTITION_STRUCT_TYPE);
         partition4.set("name", "part4");
         partitions.add(partition4);
         table.set("partitions", partitions);
