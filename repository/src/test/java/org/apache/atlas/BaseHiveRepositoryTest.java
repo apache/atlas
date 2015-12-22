@@ -166,8 +166,10 @@ public class BaseHiveRepositoryTest {
 
         HierarchicalTypeDefinition<TraitType> jdbcTraitDef = TypesUtil.createTraitTypeDef("JdbcAccess", null);
 
+        HierarchicalTypeDefinition<TraitType> logTraitDef = TypesUtil.createTraitTypeDef("Log Data", null);
+
         return TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
-            ImmutableList.of(dimTraitDef, factTraitDef, piiTraitDef, metricTraitDef, etlTraitDef, jdbcTraitDef),
+            ImmutableList.of(dimTraitDef, factTraitDef, piiTraitDef, metricTraitDef, etlTraitDef, jdbcTraitDef, logTraitDef),
             ImmutableList.of(dbClsDef, storageDescClsDef, columnClsDef, tblClsDef, loadProcessClsDef, viewClsDef, partClsDef));
     }
 
@@ -201,6 +203,10 @@ public class BaseHiveRepositoryTest {
 
         Id salesFact = table("sales_fact", "sales fact table", salesDB, sd, "Joe", "Managed", salesFactColumns, "Fact");
 
+        List<Referenceable> logFactColumns = ImmutableList
+            .of(column("time_id", "int", "time id"), column("app_id", "int", "app id"),
+                column("machine_id", "int", "machine id"), column("log", "string", "log data", "Log Data"));
+
         List<Referenceable> timeDimColumns = ImmutableList
             .of(column("time_id", "int", "time id"),
                 column("dayOfYear", "int", "day Of Year"),
@@ -218,6 +224,12 @@ public class BaseHiveRepositoryTest {
 
         loadProcess("loadSalesDaily", "hive query for daily summary", "John ETL", ImmutableList.of(salesFact, timeDim),
             ImmutableList.of(salesFactDaily), "create table as select ", "plan", "id", "graph", "ETL");
+
+        Id logDB = database("Logging", "logging database", "Tim ETL", "hdfs://host:8000/apps/warehouse/logging");
+
+        Id loggingFactDaily =
+            table("log_fact_daily_mv", "log fact daily materialized view", logDB, sd, "Tim ETL", "Managed",
+                logFactColumns, "Log Data");
 
         List<Referenceable> productDimColumns = ImmutableList
             .of(column("product_id", "int", "product id"),
@@ -247,6 +259,13 @@ public class BaseHiveRepositoryTest {
 
         loadProcess("loadSalesMonthly", "hive query for monthly summary", "John ETL", ImmutableList.of(salesFactDaily),
             ImmutableList.of(salesFactMonthly), "create table as select ", "plan", "id", "graph", "ETL");
+
+        Id loggingFactMonthly =
+            table("logging_fact_monthly_mv", "logging fact monthly materialized view", logDB, sd, "Tim ETL",
+                "Managed", logFactColumns, "Log Data");
+
+        loadProcess("loadLogsMonthly", "hive query for monthly summary", "Tim ETL", ImmutableList.of(loggingFactDaily),
+            ImmutableList.of(loggingFactMonthly), "create table as select ", "plan", "id", "graph", "ETL");
 
         partition(new ArrayList() {{ add("2015-01-01"); }}, salesFactDaily);
     }

@@ -81,6 +81,8 @@ Language Notes:
    * There are couple of Predicate functions different from SQL:
       * _is_ or _isa_can be used to filter Entities that have a particular Trait.
       * _has_ can be used to filter Entities that have a value for a particular Attribute.
+   * When querying for a space delimited multiple-word identifier, it need to be enclosed within
+   backquote (`)
 
 ---+++ DSL Examples
 
@@ -91,6 +93,7 @@ Language Notes:
    * Column where Column isa PII
    * Table where name="sales_fact", columns
    * Table where name="sales_fact", columns as column select column.name, column.dataType, column.comment
+   * `Log Data`
 
 
 ---++ Full-text Search

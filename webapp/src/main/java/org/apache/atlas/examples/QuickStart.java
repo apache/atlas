@@ -89,7 +89,7 @@ public class QuickStart {
 
     private static final String[] TYPES =
             {DATABASE_TYPE, TABLE_TYPE, STORAGE_DESC_TYPE, COLUMN_TYPE, LOAD_PROCESS_TYPE, VIEW_TYPE, "JdbcAccess",
-                    "ETL", "Metric", "PII", "Fact", "Dimension"};
+                    "ETL", "Metric", "PII", "Fact", "Dimension", "Log Data"};
 
     private final AtlasClient metadataServiceClient;
 
@@ -162,8 +162,10 @@ public class QuickStart {
 
         HierarchicalTypeDefinition<TraitType> jdbcTraitDef = TypesUtil.createTraitTypeDef("JdbcAccess", null);
 
+        HierarchicalTypeDefinition<TraitType> logTraitDef = TypesUtil.createTraitTypeDef("Log Data", null);
+
         return TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.of(dimTraitDef, factTraitDef, piiTraitDef, metricTraitDef, etlTraitDef, jdbcTraitDef),
+                ImmutableList.of(dimTraitDef, factTraitDef, piiTraitDef, metricTraitDef, etlTraitDef, jdbcTraitDef, logTraitDef),
                 ImmutableList.of(dbClsDef, storageDescClsDef, columnClsDef, tblClsDef, loadProcessClsDef, viewClsDef));
     }
 
@@ -195,6 +197,10 @@ public class QuickStart {
                         rawColumn("customer_id", "int", "customer id", "PII"),
                         rawColumn("sales", "double", "product id", "Metric"));
 
+        List<Referenceable> logFactColumns = ImmutableList
+                .of(rawColumn("time_id", "int", "time id"), rawColumn("app_id", "int", "app id"),
+                        rawColumn("machine_id", "int", "machine id"), rawColumn("log", "string", "log data", "Log Data"));
+
         Id salesFact = table("sales_fact", "sales fact table", salesDB, sd, "Joe", "Managed", salesFactColumns, "Fact");
 
         List<Referenceable> productDimColumns = ImmutableList
@@ -225,9 +231,15 @@ public class QuickStart {
         Id reportingDB =
                 database("Reporting", "reporting database", "Jane BI", "hdfs://host:8000/apps/warehouse/reporting");
 
+        Id logDB = database("Logging", "logging database", "Tim ETL", "hdfs://host:8000/apps/warehouse/logging");
+
         Id salesFactDaily =
                 table("sales_fact_daily_mv", "sales fact daily materialized view", reportingDB, sd, "Joe BI", "Managed",
                         salesFactColumns, "Metric");
+
+        Id loggingFactDaily =
+                table("log_fact_daily_mv", "log fact daily materialized view", logDB, sd, "Tim ETL", "Managed",
+                        logFactColumns, "Log Data");
 
         loadProcess("loadSalesDaily", "hive query for daily summary", "John ETL", ImmutableList.of(salesFact, timeDim),
                 ImmutableList.of(salesFactDaily), "create table as select ", "plan", "id", "graph", "ETL");
@@ -242,6 +254,13 @@ public class QuickStart {
 
         loadProcess("loadSalesMonthly", "hive query for monthly summary", "John ETL", ImmutableList.of(salesFactDaily),
                 ImmutableList.of(salesFactMonthly), "create table as select ", "plan", "id", "graph", "ETL");
+
+        Id loggingFactMonthly =
+                table("logging_fact_monthly_mv", "logging fact monthly materialized view", logDB, sd, "Tim ETL",
+                        "Managed", logFactColumns, "Log Data");
+
+        loadProcess("loadLogsMonthly", "hive query for monthly summary", "Tim ETL", ImmutableList.of(loggingFactDaily),
+                ImmutableList.of(loggingFactMonthly), "create table as select ", "plan", "id", "graph", "ETL");
     }
 
     private Id createInstance(Referenceable referenceable) throws Exception {
@@ -377,7 +396,7 @@ public class QuickStart {
                 // trait searches
                 "Dimension",
             /*"Fact", - todo: does not work*/
-                "JdbcAccess", "ETL", "Metric", "PII",
+                "JdbcAccess", "ETL", "Metric", "PII", "`Log Data`",
             /*
             // Lineage - todo - fix this, its not working
             "Table hive_process outputTables",

@@ -129,13 +129,13 @@ public class GraphBackedDiscoveryServiceTest extends BaseHiveRepositoryTest {
     @DataProvider(name = "dslQueriesProvider")
     private Object[][] createDSLQueries() {
         return new Object[][]{
-                {"from hive_db", 2},
-                {"hive_db", 2},
+                {"from hive_db", 3},
+                {"hive_db", 3},
                 {"hive_db where hive_db.name=\"Reporting\"", 1},
                 {"hive_db hive_db.name = \"Reporting\"", 1},
                 {"hive_db where hive_db.name=\"Reporting\" select name, owner", 1},
-                {"hive_db has name", 2},
-                {"hive_db, hive_table", 6},
+                {"hive_db has name", 3},
+                {"hive_db, hive_table", 8},
                 {"View is JdbcAccess", 2},
                 {"hive_db as db1, hive_table where db1.name = \"Reporting\"", 0}, //Not working - ATLAS-145
                 // - Final working query -> discoveryService.searchByGremlin("L:{_var_0 = [] as Set;g.V().has(\"__typeName\", \"hive_db\").fill(_var_0);g.V().has(\"__superTypeNames\", \"hive_db\").fill(_var_0);_var_0._().as(\"db1\").in(\"__hive_table.db\").back(\"db1\").and(_().has(\"hive_db.name\", T.eq, \"Reporting\")).toList()}")
@@ -143,21 +143,21 @@ public class GraphBackedDiscoveryServiceTest extends BaseHiveRepositoryTest {
                 {"hive_db, hive_process has name"}, //Invalid query
                 {"hive_db where hive_db.name=\"Reporting\" and hive_db.createTime < " + System.currentTimeMillis()}
                 */
-                {"from hive_table", 6},
-                {"hive_table", 6},
+                {"from hive_table", 8},
+                {"hive_table", 8},
                 {"hive_table isa Dimension", 3},
                 {"hive_column where hive_column isa PII", 6},
                 {"View is Dimension" , 2},
 //                {"hive_column where hive_column isa PII select hive_column.name", 6}, //Not working - ATLAS-175
-                {"hive_column select hive_column.name", 27},
-                {"hive_column select name", 27},
+                {"hive_column select hive_column.name", 37},
+                {"hive_column select name", 37},
                 {"hive_column where hive_column.name=\"customer_id\"", 4},
-                {"from hive_table select hive_table.name", 6},
+                {"from hive_table select hive_table.name", 8},
                 {"hive_db where (name = \"Reporting\")", 1},
                 {"hive_db where (name = \"Reporting\") select name as _col_0, owner as _col_1", 1},
                 {"hive_db where hive_db is JdbcAccess", 0}, //Not supposed to work
-                {"hive_db hive_table", 6},
-                {"hive_db where hive_db has name", 2},
+                {"hive_db hive_table", 8},
+                {"hive_db where hive_db has name", 3},
                 {"hive_db as db1 hive_table where (db1.name = \"Reporting\")", 0}, //Not working -> ATLAS-145
                 {"hive_db where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 ", 1},
                 {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 ", 1},
@@ -178,9 +178,10 @@ public class GraphBackedDiscoveryServiceTest extends BaseHiveRepositoryTest {
                 // trait searches
                 {"Dimension", 5},
                 {"JdbcAccess", 2},
-                {"ETL", 2},
+                {"ETL", 3},
                 {"Metric", 5},
                 {"PII", 6},
+                {"`Log Data`", 4},
 
                 /* Lineage queries are fired through ClosureQuery and are tested through HiveLineageJerseyResourceIt in webapp module.
                    Commenting out the below queries since DSL to Gremlin parsing/translation fails with lineage queries when there are array types
