@@ -61,7 +61,8 @@ Tar is structured as follows
 *Installing Atlas*
 <verbatim>
 tar -xzvf apache-atlas-${project.version}-bin.tar.gz
-* cd atlas-${project.version}
+
+cd atlas-${project.version}
 </verbatim>
 
 *Configuring Atlas*
@@ -111,50 +112,54 @@ executed. The following environment variables are available to set.
 
 
 *NOTE for Mac OS users*
-<verbatim>
 If you are using a Mac OS, you will need to configure the METADATA_SERVER_OPTS (explained above).
 
 In  {package dir}/conf/atlas-env.sh uncomment the following line
+<verbatim>
 #export METADATA_SERVER_OPTS=
+</verbatim>
 
 and change it to look as below
+<verbatim>
 export METADATA_SERVER_OPTS="-Djava.awt.headless=true -Djava.security.krb5.realm= -Djava.security.krb5.kdc="
 </verbatim>
 
-* Hbase as the Storage Backend for the Graph Repository
+*Hbase as the Storage Backend for the Graph Repository*
 
 By default, Atlas uses Titan as the graph repository and is the only graph repository implementation available currently.
-The HBase versions currently supported are 1.1.x. For configuring ATLAS graph persistence on HBase, please go through the "Configuration - Graph persistence engine - HBase" section
+The HBase versions currently supported are 1.1.x. For configuring ATLAS graph persistence on HBase, please see "Graph persistence engine - HBase" in the [[Configuration][Configuration]] section
 for more details.
 
 Pre-requisites for running HBase as a distributed cluster
- * 3 or 5 ZooKeeper nodes
- * Atleast 3 RegionServer nodes. It would be ideal to run the DataNodes on the same hosts as the Region servers for data locality.
+   * 3 or 5 ZooKeeper nodes
+   * Atleast 3 RegionServer nodes. It would be ideal to run the DataNodes on the same hosts as the Region servers for data locality.
 
-* Configuring SOLR as the Indexing Backend for the Graph Repository
+*Configuring SOLR as the Indexing Backend for the Graph Repository*
 
 By default, Atlas uses Titan as the graph repository and is the only graph repository implementation available currently.
 For configuring Titan to work with Solr, please follow the instructions below
-<verbatim>
-* Install solr if not already running. The version of SOLR supported is 5.2.1. Could be installed from http://archive.apache.org/dist/lucene/solr/5.2.1/solr-5.2.1.tgz
 
-* Start solr in cloud mode.
+   * Install solr if not already running. The version of SOLR supported is 5.2.1. Could be installed from http://archive.apache.org/dist/lucene/solr/5.2.1/solr-5.2.1.tgz
+
+   * Start solr in cloud mode.
   SolrCloud mode uses a ZooKeeper Service as a highly available, central location for cluster management.
   For a small cluster, running with an existing ZooKeeper quorum should be fine. For larger clusters, you would want to run separate multiple ZooKeeper quorum with atleast 3 servers.
   Note: Atlas currently supports solr in "cloud" mode only. "http" mode is not supported. For more information, refer solr documentation - https://cwiki.apache.org/confluence/display/solr/SolrCloud
 
-* For e.g., to bring up a Solr node listening on port 8983 on a machine, you can use the command:
+   * For e.g., to bring up a Solr node listening on port 8983 on a machine, you can use the command:
       <verbatim>
       $SOLR_HOME/bin/solr start -c -z <zookeeper_host:port> -p 8983
       </verbatim>
 
-* Run the following commands from SOLR_HOME directory to create collections in Solr corresponding to the indexes that Atlas uses. In the case that the ATLAS and SOLR instance are on 2 different hosts,
+   * Run the following commands from SOLR_HOME directory to create collections in Solr corresponding to the indexes that Atlas uses. In the case that the ATLAS and SOLR instance are on 2 different hosts,
   first copy the required configuration files from ATLAS_HOME/conf/solr on the ATLAS instance host to the Solr instance host. SOLR_CONF in the below mentioned commands refer to the directory where the solr configuration files
   have been copied to on Solr host:
 
+<verbatim>
   bin/solr create -c vertex_index -d SOLR_CONF -shards #numShards -replicationFactor #replicationFactor
   bin/solr create -c edge_index -d SOLR_CONF -shards #numShards -replicationFactor #replicationFactor
   bin/solr create -c fulltext_index -d SOLR_CONF -shards #numShards -replicationFactor #replicationFactor
+</verbatim>
 
   Note: If numShards and replicationFactor are not specified, they default to 1 which suffices if you are trying out solr with ATLAS on a single node instance.
   Otherwise specify numShards according to the number of hosts that are in the Solr cluster and the maxShardsPerNode configuration.
@@ -162,13 +167,14 @@ For configuring Titan to work with Solr, please follow the instructions below
 
   The number of replicas (replicationFactor) can be set according to the redundancy required.
 
-* Change ATLAS configuration to point to the Solr instance setup. Please make sure the following configurations are set to the below values in ATLAS_HOME//conf/application.properties
+   * Change ATLAS configuration to point to the Solr instance setup. Please make sure the following configurations are set to the below values in ATLAS_HOME//conf/application.properties
+<verbatim>
  atlas.graph.index.search.backend=solr5
  atlas.graph.index.search.solr.mode=cloud
  atlas.graph.index.search.solr.zookeeper-url=<the ZK quorum setup for solr as comma separated value> eg: 10.1.6.4:2181,10.1.6.5:2181
-
-* Restart Atlas
 </verbatim>
+
+   * Restart Atlas
 
 For more information on Titan solr configuration , please refer http://s3.thinkaurelius.com/docs/titan/0.5.4/solr.htm
 
@@ -185,38 +191,44 @@ bin/atlas_start.py [-port <port>]
 </verbatim>
 
 By default,
-* To change the port, use -port option.
-* atlas server starts with conf from {package dir}/conf. To override this (to use the same conf
-with multiple atlas upgrades), set environment variable METADATA_CONF to the path of conf dir
+   * To change the port, use -port option.
+   * atlas server starts with conf from {package dir}/conf. To override this (to use the same conf with multiple atlas upgrades), set environment variable METADATA_CONF to the path of conf dir
 
 *Using Atlas*
+   * Quick start model - sample model and data
 <verbatim>
-* Quick start model - sample model and data
   bin/quick_start.py [<atlas endpoint>]
+</verbatim>
 
-* Verify if the server is up and running
+   * Verify if the server is up and running
+<verbatim>
   curl -v http://localhost:21000/api/atlas/admin/version
   {"Version":"v0.1"}
+</verbatim>
 
-* List the types in the repository
+   * List the types in the repository
+<verbatim>
   curl -v http://localhost:21000/api/atlas/types
   {"results":["Process","Infrastructure","DataSet"],"count":3,"requestId":"1867493731@qtp-262860041-0 - 82d43a27-7c34-4573-85d1-a01525705091"}
+</verbatim>
 
-* List the instances for a given type
+   * List the instances for a given type
+<verbatim>
   curl -v http://localhost:21000/api/atlas/entities?type=hive_table
   {"requestId":"788558007@qtp-44808654-5","list":["cb9b5513-c672-42cb-8477-b8f3e537a162","ec985719-a794-4c98-b98f-0509bd23aac0","48998f81-f1d3-45a2-989a-223af5c1ed6e","a54b386e-c759-4651-8779-a099294244c4"]}
 
   curl -v http://localhost:21000/api/atlas/entities/list/hive_db
+</verbatim>
 
-* Search for entities (instances) in the repository
+   * Search for entities (instances) in the repository
+<verbatim>
   curl -v http://localhost:21000/api/atlas/discovery/search/dsl?query="from hive_table"
 </verbatim>
 
 
 *Dashboard*
 
-Once atlas is started, you can view the status of atlas entities using the Web-based
-dashboard. \You can open your browser at the corresponding port to use the web UI.
+Once atlas is started, you can view the status of atlas entities using the Web-based dashboard. You can open your browser at the corresponding port to use the web UI.
 
 
 *Stopping Atlas Server*

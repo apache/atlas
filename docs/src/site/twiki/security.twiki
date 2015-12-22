@@ -100,8 +100,111 @@ The property required for authenticating to the server (if authentication is ena
 
    * <code>atlas.http.authentication.type</code> (simple|kerberos) [default: simple] - the authentication type
 
+---+++ SOLR Kerberos configuration
 If the authentication type specified is 'kerberos', then the kerberos ticket cache will be accessed for authenticating to the server (Therefore the client is required to authenticate to the KDC prior to communication with the server using 'kinit' or a similar mechanism).
 
+See [[https://cwiki.apache.org/confluence/display/RANGER/How+to+configure+Solr+Cloud+with+Kerberos+for+Ranger+0.5][the Apache SOLR Kerberos configuration]].
+
+   * Add principal and generate the keytab file for solr.  Create a keytab per host for each host where Solr is going to run and use the principal name with the host (e.g. addprinc -randkey solr/${HOST1}@EXAMPLE.COM. Replace ${HOST1} with the actual host names).
+
+<verbatim>
+   kadmin.local
+   kadmin.local:  addprinc -randkey solr/<hostname>@EXAMPLE.COM
+   kadmin.local:  xst -k solr.keytab solr/<hostname>@EXAMPLE.COM
+   kadmin.local:  quit
+</verbatim>
 
 
+   * Add principal and generate the keytab file for authenticating HTTP request. (Note that if Ambari is used to Kerberize the cluster, the keytab /etc/security/keytabs/spnego.service.keytab can be used)
+
+<verbatim>
+   kadmin.local
+   kadmin.local:  addprinc -randkey HTTP/<hostname>@EXAMPLE.COM
+   kadmin.local:  xst -k HTTP.keytab HTTP/<hostname>@EXAMPLE.COM
+   kadmin.local:  quit
+</verbatim>
+
+   * Copy the keytab file to all the hosts running Solr.
+
+<verbatim>
+   cp solr.keytab /etc/security/keytabs/
+   chmod 400 /etc/security/keytabs/solr.keytab
+
+   cp HTTP.keytab /etc/security/keytabs/
+   chmod 400 /etc/security/keytabs/HTTP.keytab
+</verbatim>
+
+
+   * Create path in Zookeeper for storing the Solr configs and other parameters.
+
+<verbatim>
+   $SOLR_INSTALL_HOME/server/scripts/cloud-scripts/zkcli.sh -zkhost $ZK_HOST:2181 -cmd makepath solr
+</verbatim>
+
+
+   * Upload the configuration to Zookeeper.
+
+<verbatim>
+   $SOLR_INSTALL_HOME/server/scripts/cloud-scripts/zkcli.sh -cmd upconfig  -zkhost $ZK_HOST:2181/solr -confname basic_configs -confdir $SOLR_INSTALL_HOME/server/solr/configsets/basic_configs/conf
+</verbatim>
+
+
+   * Create the JAAS configuration.
+
+<verbatim>
+   vi /etc/solr/conf/solr_jaas.conf
+
+   Client {
+     com.sun.security.auth.module.Krb5LoginModule required
+     useKeyTab=true
+     keyTab="/etc/security/keytabs/solr.keytab"
+     storeKey=true
+     useTicketCache=true
+     debug=true
+     principal="solr/<hostname>@EXAMPLE.COM";
+   };
+</verbatim>
+
+
+   * Copy /etc/solr/conf/solr_jaas.conf to all hosts running Solr.
+
+   * Edit solr.in.sh in $SOLR_INSTALL_HOME/bin/
+
+<verbatim>
+   vi $SOLR_INSTALL_HOME/bin/solr.in.sh
+
+   SOLR_JAAS_FILE=/etc/solr/conf/solr_jaas.conf
+   SOLR_HOST=`hostname -f`
+   ZK_HOST="$ZK_HOST1:2181,$ZK_HOST2:2181,$ZK_HOST3:2181/solr"
+   KERBEROS_REALM="EXAMPLE.COM"
+   SOLR_KEYTAB=/etc/solr/conf/solr.keytab
+   SOLR_KERB_PRINCIPAL=HTTP@${KERBEROS_REALM}
+   SOLR_KERB_KEYTAB=/etc/solr/conf/HTTP.keytab
+   SOLR_AUTHENTICATION_CLIENT_CONFIGURER="org.apache.solr.client.solrj.impl.Krb5HttpClientConfigurer"
+   SOLR_AUTHENTICATION_OPTS=" -DauthenticationPlugin=org.apache.solr.security.KerberosPlugin -Djava.security.auth.login.config=${SOLR_JAAS_FILE} -Dsolr.kerberos.principal=${SOLR_KERB_PRINCIPAL} -Dsolr.kerberos.keytab=${SOLR_KERB_KEYTAB} -Dsolr.kerberos.cookie.domain=${SOLR_HOST} -Dhost=${SOLR_HOST} -Dsolr.kerberos.name.rules=DEFAULT"
+</verbatim>
+
+   * Copy solr.in.sh to all hosts running Solr.
+
+   * Set up Solr to use the Kerberos plugin by uploading the security.json.
+
+<verbatim>
+   $SOLR_INSTALL_HOME/server/scripts/cloud-scripts/zkcli.sh -zkhost <zk host>:2181 -cmd put /security.json '{"authentication":{"class": "org.apache.solr.security.KerberosPlugin"}}'
+</verbatim>
+
+   * Start Solr.
+
+<verbatim>
+   $SOLR_INSTALL_HOME/bin/solr start -cloud -z $ZK_HOST1:2181,$ZK_HOST2:2181,$ZK_HOST3:2181 -noprompt
+</verbatim>
+
+   * Test Solr
+
+<verbatim>
+   kinit -k -t /etc/security/keytabs/HTTP.keytab HTTP/<host>@EXAMPLE.COM
+   curl --negotiate -u : "http://<host>:8983/solr/"
+</verbatim>
+
+
+   * Create collections in Solr corresponding to the indexes that Atlas uses and change the Atlas configuration to point to the Solr instance setup as described in the [[InstallationSteps][Install Steps]].
 
