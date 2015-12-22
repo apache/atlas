@@ -5,6 +5,7 @@ Apache Atlas Release Notes
 INCOMPATIBLE CHANGES:
 
 ALL CHANGES:
+ATLAS-381 HiveMetaStoreBridge will not connect to a kerberized hive metastore (dossett@gmail.com via shwethags)
 ATLAS-20 Rename env variables from METADATA to ATLAS (rishabhbhardwaj via shwethags)
 ATLAS-360 Secure cluster Atlas-solr integration instructions (tbeerbower via shwethags)
 ATLAS-368 Change trunk version to 0.7-incubating-SNAPSHOT (sumasai via shwethags)

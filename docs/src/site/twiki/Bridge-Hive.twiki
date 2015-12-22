@@ -39,6 +39,12 @@ Set the following configuration in <atlas-conf>/client.properties and set enviro
 
 Usage: <atlas package>/bin/import-hive.sh. The logs are in <atlas package>/logs/import-hive.log
 
+If you you are importing metadata in a kerberized cluster you need to run the command like this:
+
+<atlas package>/bin/import-hive.sh -Dsun.security.jgss.debug=true -Djavax.security.auth.useSubjectCredsOnly=false -Djava.security.krb5.conf=[krb5.conf location] -Djava.security.auth.login.config=[jaas.conf location]
+   * krb5.conf is typically found at /etc/krb5.conf
+   * for details about jaas.conf and a suggested location see the [[security][atlas security documentation]]
+
 
 ---++ Hive Hook
 Hive supports listeners on hive command execution using hive hooks. This is used to add/update/remove entities in Atlas using the model defined in org.apache.atlas.hive.model.HiveDataModelGenerator.
