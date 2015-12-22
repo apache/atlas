@@ -314,6 +314,18 @@
             <organization>Hortonworks Inc.</organization>
             <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
         </developer>
+        <developer>
+            <id>sumasai</id>
+            <name>Suma Shivaprasad</name>
+            <email>sumasai@apache.org</email>
+            <timezone>-8</timezone>
+            <roles>
+                <role>committer</role>
+                <role>PPMC</role>
+            </roles>
+            <organization>Hortonworks Inc.</organization>
+            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+        </developer>
     </developers>
 
     <properties>
