@@ -62,7 +62,7 @@ When Atlas is configured with HBase as the storage backend in a secure cluster, 
 	};
 </verbatim>
 
-   * Update Atlas METADATA_OPTS to include ‘java.security.auth.login.config’ set to the above Atlas JAAS configuration file.
+   * Update Atlas ATLAS_OPTS to include ‘java.security.auth.login.config’ set to the above Atlas JAAS configuration file.
       * For example, <code>-Djava.security.auth.login.config=/etc/atlas/conf/atlas-jaas.conf</code>
 
 ---+++ SPNEGO-based HTTP Authentication

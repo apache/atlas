@@ -19,7 +19,7 @@
 package org.apache.atlas;
 
 /**
- * Base Exception class for metadata API.
+ * Base Exception class for Atlas API.
  */
 public class AtlasException extends Exception {
 

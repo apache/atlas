@@ -37,10 +37,10 @@ import java.net.UnknownHostException;
 public class LoginProcessor {
 
     private static final Logger LOG = LoggerFactory.getLogger(LoginProcessor.class);
-    public static final String METADATA_AUTHENTICATION_PREFIX = "atlas.authentication.";
-    public static final String AUTHENTICATION_METHOD = METADATA_AUTHENTICATION_PREFIX + "method";
-    public static final String AUTHENTICATION_PRINCIPAL = METADATA_AUTHENTICATION_PREFIX + "principal";
-    public static final String AUTHENTICATION_KEYTAB = METADATA_AUTHENTICATION_PREFIX + "keytab";
+    public static final String ATLAS_AUTHENTICATION_PREFIX = "atlas.authentication.";
+    public static final String AUTHENTICATION_METHOD = ATLAS_AUTHENTICATION_PREFIX + "method";
+    public static final String AUTHENTICATION_PRINCIPAL = ATLAS_AUTHENTICATION_PREFIX + "principal";
+    public static final String AUTHENTICATION_KEYTAB = ATLAS_AUTHENTICATION_PREFIX + "keytab";
 
     /**
      * Perform a SIMPLE login based on established OS identity or a kerberos based login using the configured

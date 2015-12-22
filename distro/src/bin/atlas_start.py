@@ -21,60 +21,60 @@ import traceback
 
 import atlas_config as mc
 
-METADATA_LOG_OPTS="-Datlas.log.dir=%s -Datlas.log.file=application.log"
-METADATA_COMMAND_OPTS="-Datlas.home=%s"
-METADATA_CONFIG_OPTS="-Datlas.conf=%s"
+ATLAS_LOG_OPTS="-Datlas.log.dir=%s -Datlas.log.file=application.log"
+ATLAS_COMMAND_OPTS="-Datlas.home=%s"
+ATLAS_CONFIG_OPTS="-Datlas.conf=%s"
 DEFAULT_JVM_OPTS="-Xmx1024m -XX:MaxPermSize=512m -Dlog4j.configuration=atlas-log4j.xml"
 CONF_FILE="application.properties"
 HBASE_STORAGE_CONF_ENTRY="atlas.graph.storage.backend\s*=\s*hbase"
 
 def main():
 
-    metadata_home = mc.metadataDir()
-    confdir = mc.dirMustExist(mc.confDir(metadata_home))
+    atlas_home = mc.atlasDir()
+    confdir = mc.dirMustExist(mc.confDir(atlas_home))
     mc.executeEnvSh(confdir)
-    logdir = mc.dirMustExist(mc.logDir(metadata_home))
+    logdir = mc.dirMustExist(mc.logDir(atlas_home))
 
     #create sys property for conf dirs
-    jvm_opts_list = (METADATA_LOG_OPTS % logdir).split()
+    jvm_opts_list = (ATLAS_LOG_OPTS % logdir).split()
 
-    cmd_opts = (METADATA_COMMAND_OPTS % metadata_home)
+    cmd_opts = (ATLAS_COMMAND_OPTS % atlas_home)
     jvm_opts_list.extend(cmd_opts.split())
 
-    config_opts = (METADATA_CONFIG_OPTS % confdir)
+    config_opts = (ATLAS_CONFIG_OPTS % confdir)
     jvm_opts_list.extend(config_opts.split())
 
     default_jvm_opts = DEFAULT_JVM_OPTS
-    metadata_jvm_opts = os.environ.get(mc.METADATA_OPTS, default_jvm_opts)
-    jvm_opts_list.extend(metadata_jvm_opts.split())
+    atlas_jvm_opts = os.environ.get(mc.ATLAS_OPTS, default_jvm_opts)
+    jvm_opts_list.extend(atlas_jvm_opts.split())
 
     #expand web app dir
-    web_app_dir = mc.webAppDir(metadata_home)
-    mc.expandWebApp(metadata_home)
+    web_app_dir = mc.webAppDir(atlas_home)
+    mc.expandWebApp(atlas_home)
 
     #add hbase-site.xml to classpath
     hbase_conf_dir = mc.hbaseConfDir(confdir)
 
     p = os.pathsep
-    metadata_classpath = confdir + p \
+    atlas_classpath = confdir + p \
                        + os.path.join(web_app_dir, "atlas", "WEB-INF", "classes" ) + p \
                        + os.path.join(web_app_dir, "atlas", "WEB-INF", "lib", "atlas-titan-${project.version}.jar" ) + p \
                        + os.path.join(web_app_dir, "atlas", "WEB-INF", "lib", "*" )  + p \
-                       + os.path.join(metadata_home, "libext", "*")
+                       + os.path.join(atlas_home, "libext", "*")
     if os.path.exists(hbase_conf_dir):
-        metadata_classpath = metadata_classpath + p \
+        atlas_classpath = atlas_classpath + p \
                             + hbase_conf_dir
     else: 
        storage_backend = mc.grep(os.path.join(confdir, CONF_FILE), HBASE_STORAGE_CONF_ENTRY)
        if storage_backend != None:
 	   raise Exception("Could not find hbase-site.xml in %s. Please set env var HBASE_CONF_DIR to the hbase client conf dir", hbase_conf_dir)
     
-    metadata_pid_file = mc.pidFile(metadata_home)
+    atlas_pid_file = mc.pidFile(atlas_home)
     
             
-    if os.path.isfile(metadata_pid_file):
+    if os.path.isfile(atlas_pid_file):
        #Check if process listed in atlas.pid file is still running
-       pf = file(metadata_pid_file, 'r')
+       pf = file(atlas_pid_file, 'r')
        pid = pf.read().strip()
        pf.close() 
        
@@ -103,8 +103,8 @@ def main():
     args = ["-app", os.path.join(web_app_dir, "atlas")]
     args.extend(sys.argv[1:])
 
-    process = mc.java("org.apache.atlas.Atlas", args, metadata_classpath, jvm_opts_list, logdir)
-    mc.writePid(metadata_pid_file, process)
+    process = mc.java("org.apache.atlas.Atlas", args, atlas_classpath, jvm_opts_list, logdir)
+    mc.writePid(atlas_pid_file, process)
 
     print "Apache Atlas Server started!!!\n"
 

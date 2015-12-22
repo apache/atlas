@@ -45,8 +45,8 @@ public class MetadataAuthenticationSimpleFilterIT extends BaseSecurityTest {
 
     @Test(enabled = false)
     public void testSimpleLogin() throws Exception {
-        String originalConf = System.getProperty("metadata.conf");
-        System.setProperty("metadata.conf", System.getProperty("user.dir"));
+        String originalConf = System.getProperty("atlas.conf");
+        System.setProperty("atlas.conf", System.getProperty("user.dir"));
         generateSimpleLoginConfiguration();
 
         TestEmbeddedServer server = new TestEmbeddedServer(23001, "webapp/target/apache-atlas");
@@ -74,9 +74,9 @@ public class MetadataAuthenticationSimpleFilterIT extends BaseSecurityTest {
         } finally {
             server.getServer().stop();
             if (originalConf != null) {
-                System.setProperty("metadata.conf", originalConf);
+                System.setProperty("atlas.conf", originalConf);
             } else {
-                System.clearProperty("metadata.conf");
+                System.clearProperty("atlas.conf");
             }
         }
 

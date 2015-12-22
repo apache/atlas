@@ -68,7 +68,7 @@ cd atlas-${project.version}
 *Configuring Atlas*
 
 By default config directory used by Atlas is {package dir}/conf. To override this set environment
-variable METADATA_CONF to the path of the conf dir.
+variable ATLAS_CONF to the path of the conf dir.
 
 atlas-env.sh has been added to the Atlas conf. This file can be used to set various environment
 variables that you need for you services. In addition you can set any other environment
@@ -80,48 +80,48 @@ executed. The following environment variables are available to set.
 #export JAVA_HOME=
 
 # any additional java opts you want to set. This will apply to both client and server operations
-#export METADATA_OPTS=
+#export ATLAS_OPTS=
 
 # any additional java opts that you want to set for client only
-#export METADATA_CLIENT_OPTS=
+#export ATLAS_CLIENT_OPTS=
 
 # java heap size we want to set for the client. Default is 1024MB
-#export METADATA_CLIENT_HEAP=
+#export ATLAS_CLIENT_HEAP=
 
 # any additional opts you want to set for atlas service.
-#export METADATA_SERVER_OPTS=
+#export ATLAS_SERVER_OPTS=
 
 # java heap size we want to set for the atlas server. Default is 1024MB
-#export METADATA_SERVER_HEAP=
+#export ATLAS_SERVER_HEAP=
 
 # What is is considered as atlas home dir. Default is the base locaion of the installed software
-#export METADATA_HOME_DIR=
+#export ATLAS_HOME_DIR=
 
 # Where log files are stored. Defatult is logs directory under the base install location
-#export METADATA_LOG_DIR=
+#export ATLAS_LOG_DIR=
 
 # Where pid files are stored. Defatult is logs directory under the base install location
-#export METADATA_PID_DIR=
+#export ATLAS_PID_DIR=
 
 # where the atlas titan db data is stored. Defatult is logs/data directory under the base install location
-#export METADATA_DATA_DIR=
+#export ATLAS_DATA_DIR=
 
 # Where do you want to expand the war file. By Default it is in /server/webapp dir under the base install dir.
-#export METADATA_EXPANDED_WEBAPP_DIR=
+#export ATLAS_EXPANDED_WEBAPP_DIR=
 </verbatim>
 
 
 *NOTE for Mac OS users*
-If you are using a Mac OS, you will need to configure the METADATA_SERVER_OPTS (explained above).
+If you are using a Mac OS, you will need to configure the ATLAS_SERVER_OPTS (explained above).
 
 In  {package dir}/conf/atlas-env.sh uncomment the following line
 <verbatim>
-#export METADATA_SERVER_OPTS=
+#export ATLAS_SERVER_OPTS=
 </verbatim>
 
 and change it to look as below
 <verbatim>
-export METADATA_SERVER_OPTS="-Djava.awt.headless=true -Djava.security.krb5.realm= -Djava.security.krb5.kdc="
+export ATLAS_SERVER_OPTS="-Djava.awt.headless=true -Djava.security.krb5.realm= -Djava.security.krb5.kdc="
 </verbatim>
 
 *Hbase as the Storage Backend for the Graph Repository*
@@ -192,7 +192,7 @@ bin/atlas_start.py [-port <port>]
 
 By default,
    * To change the port, use -port option.
-   * atlas server starts with conf from {package dir}/conf. To override this (to use the same conf with multiple atlas upgrades), set environment variable METADATA_CONF to the path of conf dir
+   * atlas server starts with conf from {package dir}/conf. To override this (to use the same conf with multiple atlas upgrades), set environment variable ATLAS_CONF to the path of conf dir
 
 *Using Atlas*
    * Quick start model - sample model and data

@@ -77,7 +77,8 @@ Language Notes:
    * The transitive closure of an Entity relationship can be expressed via the _Loop_ expression. A
   _Loop_ expression can be any traversal (recursively a query) that represents a _Path_ that ends in an Entity of the same _Type_ as the starting Entity.
    * The _WithPath_ clause can be used with transitive closure queries to retrieve the Path that
- connects the two related Entities. (We also provide a higher level interface for Closure Queries see scaladoc for 'org.apache.metadata.query.ClosureQuery')
+ connects the two related Entities. (We also provide a higher level interface for Closure Queries
+  see scaladoc for 'org.apache.atlas.query.ClosureQuery')
    * There are couple of Predicate functions different from SQL:
       * _is_ or _isa_can be used to filter Entities that have a particular Trait.
       * _has_ can be used to filter Entities that have a value for a particular Attribute.

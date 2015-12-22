@@ -19,31 +19,31 @@
 #export JAVA_HOME=
 
 # any additional java opts you want to set. This will apply to both client and server operations
-#export METADATA_OPTS=
+#export ATLAS_OPTS=
 
 # any additional java opts that you want to set for client only
-#export METADATA_CLIENT_OPTS=
+#export ATLAS_CLIENT_OPTS=
 
 # java heap size we want to set for the client. Default is 1024MB
-#export METADATA_CLIENT_HEAP=
+#export ATLAS_CLIENT_HEAP=
 
 # any additional opts you want to set for atlas service.
-#export METADATA_SERVER_OPTS=
+#export ATLAS_SERVER_OPTS=
 
 # java heap size we want to set for the atlas server. Default is 1024MB
-#export METADATA_SERVER_HEAP=
+#export ATLAS_SERVER_HEAP=
 
 # What is is considered as atlas home dir. Default is the base locaion of the installed software
-#export METADATA_HOME_DIR=
+#export ATLAS_HOME_DIR=
 
 # Where log files are stored. Defatult is logs directory under the base install location
-#export METADATA_LOG_DIR=
+#export ATLAS_LOG_DIR=
 
 # Where pid files are stored. Defatult is logs directory under the base install location
-#export METADATA_PID_DIR=
+#export ATLAS_PID_DIR=
 
 # where the atlas titan db data is stored. Defatult is logs/data directory under the base install location
-#export METADATA_DATA_DIR=
+#export ATLAS_DATA_DIR=
 
 # Where do you want to expand the war file. By Default it is in /server/webapp dir under the base install dir.
-#export METADATA_EXPANDED_WEBAPP_DIR=
+#export ATLAS_EXPANDED_WEBAPP_DIR=

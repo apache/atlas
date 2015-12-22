@@ -23,7 +23,7 @@ from mock import patch
 import unittest
 import logging
 import atlas_config as mc
-import atlas_start as metadata
+import atlas_start as atlas
 import platform
 
 IS_WINDOWS = platform.system() == "Windows"
@@ -34,37 +34,37 @@ class TestMetadata(unittest.TestCase):
   @patch.object(mc,"unix_exist_pid") 
   @patch.object(mc,"writePid")
   @patch.object(mc, "executeEnvSh")
-  @patch.object(mc,"metadataDir")
+  @patch.object(mc,"atlasDir")
   @patch.object(mc, "expandWebApp")
   @patch("os.path.exists")
   @patch.object(mc, "java")
 
-  def test_main(self, java_mock, exists_mock, expandWebApp_mock, metadataDir_mock, executeEnvSh_mock, writePid_mock, unix_exist_pid_mock, win_exist_pid_mock):
+  def test_main(self, java_mock, exists_mock, expandWebApp_mock, atlasDir_mock, executeEnvSh_mock, writePid_mock, unix_exist_pid_mock, win_exist_pid_mock):
     sys.argv = []
     exists_mock.return_value = True
     expandWebApp_mock.return_value = "webapp"
-    metadataDir_mock.return_value = "metadata_home"
+    atlasDir_mock.return_value = "atlas_home"
 
     win_exist_pid_mock("789")
     win_exist_pid_mock.assert_called_with((str)(789))
     unix_exist_pid_mock(789)
     unix_exist_pid_mock.assert_called_with(789)
-    metadata.main()
+    atlas.main()
     self.assertTrue(java_mock.called)
     if IS_WINDOWS:
       
       java_mock.assert_called_with(
         'org.apache.atlas.Atlas',
-        ['-app', 'metadata_home\\server\\webapp\\atlas'],
-        'metadata_home\\conf;metadata_home\\server\\webapp\\atlas\\WEB-INF\\classes;metadata_home\\server\\webapp\\atlas\\WEB-INF\\lib\\atlas-titan-${project.version}.jar;metadata_home\\server\\webapp\\atlas\\WEB-INF\\lib\\*;metadata_home\\libext\\*;metadata_home\\hbase\\conf',
-        ['-Datlas.log.dir=metadata_home\\logs', '-Datlas.log.file=application.log', '-Datlas.home=metadata_home', '-Datlas.conf=metadata_home\\conf', '-Xmx1024m', '-XX:MaxPermSize=512m', '-Dlog4j.configuration=atlas-log4j.xml'], 'metadata_home\\logs')
+        ['-app', 'atlas_home\\server\\webapp\\atlas'],
+        'atlas_home\\conf;atlas_home\\server\\webapp\\atlas\\WEB-INF\\classes;atlas_home\\server\\webapp\\atlas\\WEB-INF\\lib\\atlas-titan-${project.version}.jar;atlas_home\\server\\webapp\\atlas\\WEB-INF\\lib\\*;atlas_home\\libext\\*;atlas_home\\hbase\\conf',
+        ['-Datlas.log.dir=atlas_home\\logs', '-Datlas.log.file=application.log', '-Datlas.home=atlas_home', '-Datlas.conf=atlas_home\\conf', '-Xmx1024m', '-XX:MaxPermSize=512m', '-Dlog4j.configuration=atlas-log4j.xml'], 'atlas_home\\logs')
       
     else:
       java_mock.assert_called_with(
         'org.apache.atlas.Atlas',
-        ['-app', 'metadata_home/server/webapp/atlas'],
-        'metadata_home/conf:metadata_home/server/webapp/atlas/WEB-INF/classes:metadata_home/server/webapp/atlas/WEB-INF/lib/atlas-titan-${project.version}.jar:metadata_home/server/webapp/atlas/WEB-INF/lib/*:metadata_home/libext/*:metadata_home/hbase/conf',
-        ['-Datlas.log.dir=metadata_home/logs', '-Datlas.log.file=application.log', '-Datlas.home=metadata_home', '-Datlas.conf=metadata_home/conf', '-Xmx1024m', '-XX:MaxPermSize=512m', '-Dlog4j.configuration=atlas-log4j.xml'],  'metadata_home/logs')
+        ['-app', 'atlas_home/server/webapp/atlas'],
+        'atlas_home/conf:atlas_home/server/webapp/atlas/WEB-INF/classes:atlas_home/server/webapp/atlas/WEB-INF/lib/atlas-titan-${project.version}.jar:atlas_home/server/webapp/atlas/WEB-INF/lib/*:atlas_home/libext/*:atlas_home/hbase/conf',
+        ['-Datlas.log.dir=atlas_home/logs', '-Datlas.log.file=application.log', '-Datlas.home=atlas_home', '-Datlas.conf=atlas_home/conf', '-Xmx1024m', '-XX:MaxPermSize=512m', '-Dlog4j.configuration=atlas-log4j.xml'],  'atlas_home/logs')
 
     pass
 

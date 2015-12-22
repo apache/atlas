@@ -63,8 +63,8 @@ public class MetadataAuthenticationKerberosFilterIT extends BaseSecurityTest {
 
     @Test(enabled = false)
     public void testKerberosBasedLogin() throws Exception {
-        String originalConf = System.getProperty("metadata.conf");
-        System.setProperty("metadata.conf", System.getProperty("user.dir"));
+        String originalConf = System.getProperty("atlas.conf");
+        System.setProperty("atlas.conf", System.getProperty("user.dir"));
 
         setupKDCAndPrincipals();
         TestEmbeddedServer server = null;
@@ -110,9 +110,9 @@ public class MetadataAuthenticationKerberosFilterIT extends BaseSecurityTest {
             kdc.stop();
 
             if (originalConf != null) {
-                System.setProperty("metadata.conf", originalConf);
+                System.setProperty("atlas.conf", originalConf);
             } else {
-                System.clearProperty("metadata.conf");
+                System.clearProperty("atlas.conf");
             }
 
         }

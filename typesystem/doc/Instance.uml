@@ -18,99 +18,99 @@
   -->
 <Diagram>
   <ID>JAVA</ID>
-  <OriginalElement>org.apache.metadata.storage.ReferenceableInstance</OriginalElement>
+  <OriginalElement>org.apache.atlas.storage.ReferenceableInstance</OriginalElement>
   <nodes>
-    <node x="698.875" y="259.0">org.apache.metadata.storage.DownCastStructInstance</node>
-    <node x="30.536458333333258" y="628.0">org.apache.metadata.storage.ReferenceableInstance</node>
-    <node x="369.875" y="259.0">org.apache.metadata.IReferenceableInstance</node>
-    <node x="0.0" y="146.0">org.apache.metadata.ITypedInstance</node>
-    <node x="4.7864583333332575" y="482.0">org.apache.metadata.ITypedReferenceableInstance</node>
-    <node x="269.40624999999994" y="0.0">org.apache.metadata.IInstance</node>
-    <node x="947.875" y="248.0">org.apache.metadata.Struct</node>
-    <node x="651.96875" y="449.0">org.apache.metadata.Referenceable</node>
-    <node x="240.7864583333333" y="416.0">org.apache.metadata.storage.StructInstance</node>
-    <node x="236.87499999999997" y="292.0">org.apache.metadata.ITypedStruct</node>
-    <node x="593.1770833333333" y="157.0">org.apache.metadata.IStruct</node>
+    <node x="698.875" y="259.0">org.apache.atlas.storage.DownCastStructInstance</node>
+    <node x="30.536458333333258" y="628.0">org.apache.atlas.storage.ReferenceableInstance</node>
+    <node x="369.875" y="259.0">org.apache.atlas.IReferenceableInstance</node>
+    <node x="0.0" y="146.0">org.apache.atlas.ITypedInstance</node>
+    <node x="4.7864583333332575" y="482.0">org.apache.atlas.ITypedReferenceableInstance</node>
+    <node x="269.40624999999994" y="0.0">org.apache.atlas.IInstance</node>
+    <node x="947.875" y="248.0">org.apache.atlas.Struct</node>
+    <node x="651.96875" y="449.0">org.apache.atlas.Referenceable</node>
+    <node x="240.7864583333333" y="416.0">org.apache.atlas.storage.StructInstance</node>
+    <node x="236.87499999999997" y="292.0">org.apache.atlas.ITypedStruct</node>
+    <node x="593.1770833333333" y="157.0">org.apache.atlas.IStruct</node>
   </nodes>
   <notes />
   <edges>
-    <edge source="org.apache.metadata.storage.ReferenceableInstance" target="org.apache.metadata.storage.StructInstance">
+    <edge source="org.apache.atlas.storage.ReferenceableInstance" target="org.apache.atlas.storage.StructInstance">
       <point x="82.25" y="-59.0" />
       <point x="277.28645833333326" y="603.0" />
       <point x="385.28645833333326" y="603.0" />
       <point x="0.0" y="81.0" />
     </edge>
-    <edge source="org.apache.metadata.Referenceable" target="org.apache.metadata.IReferenceableInstance">
+    <edge source="org.apache.atlas.Referenceable" target="org.apache.atlas.IReferenceableInstance">
       <point x="-77.25" y="-48.0" />
       <point x="729.21875" y="396.0" />
       <point x="601.625" y="396.0" />
       <point x="77.25" y="48.0" />
     </edge>
-    <edge source="org.apache.metadata.storage.DownCastStructInstance" target="org.apache.metadata.IStruct">
+    <edge source="org.apache.atlas.storage.DownCastStructInstance" target="org.apache.atlas.IStruct">
       <point x="0.0" y="-48.0" />
       <point x="813.375" y="228.0" />
       <point x="640.0520833333333" y="228.0" />
       <point x="9.375" y="15.0" />
     </edge>
-    <edge source="org.apache.metadata.Struct" target="org.apache.metadata.IStruct">
+    <edge source="org.apache.atlas.Struct" target="org.apache.atlas.IStruct">
       <point x="0.0" y="-59.0" />
       <point x="1072.375" y="218.0" />
       <point x="658.8020833333333" y="218.0" />
       <point x="28.125" y="15.0" />
     </edge>
-    <edge source="org.apache.metadata.ITypedInstance" target="org.apache.metadata.IInstance">
+    <edge source="org.apache.atlas.ITypedInstance" target="org.apache.atlas.IInstance">
       <point x="0.0" y="-26.0" />
       <point x="116.0" y="121.0" />
       <point x="326.65624999999994" y="121.0" />
       <point x="-57.25" y="48.0" />
     </edge>
-    <edge source="org.apache.metadata.IStruct" target="org.apache.metadata.IInstance">
+    <edge source="org.apache.atlas.IStruct" target="org.apache.atlas.IInstance">
       <point x="0.0" y="-15.0" />
       <point x="630.6770833333333" y="121.0" />
       <point x="441.15624999999994" y="121.0" />
       <point x="57.25" y="48.0" />
     </edge>
-    <edge source="org.apache.metadata.IReferenceableInstance" target="org.apache.metadata.IStruct">
+    <edge source="org.apache.atlas.IReferenceableInstance" target="org.apache.atlas.IStruct">
       <point x="0.0" y="-48.0" />
       <point x="524.375" y="228.0" />
       <point x="621.3020833333333" y="228.0" />
       <point x="-9.375" y="15.0" />
     </edge>
-    <edge source="org.apache.metadata.Referenceable" target="org.apache.metadata.Struct">
+    <edge source="org.apache.atlas.Referenceable" target="org.apache.atlas.Struct">
       <point x="77.25" y="-48.0" />
       <point x="883.71875" y="396.0" />
       <point x="1072.375" y="396.0" />
       <point x="0.0" y="59.0" />
     </edge>
-    <edge source="org.apache.metadata.ITypedStruct" target="org.apache.metadata.IStruct">
+    <edge source="org.apache.atlas.ITypedStruct" target="org.apache.atlas.IStruct">
       <point x="28.25" y="-15.0" />
       <point x="321.625" y="218.0" />
       <point x="602.5520833333333" y="218.0" />
       <point x="-28.125" y="15.0" />
     </edge>
-    <edge source="org.apache.metadata.ITypedStruct" target="org.apache.metadata.ITypedInstance">
+    <edge source="org.apache.atlas.ITypedStruct" target="org.apache.atlas.ITypedInstance">
       <point x="-28.25" y="-15.0" />
       <point x="265.125" y="228.0" />
       <point x="174.0" y="228.0" />
       <point x="58.0" y="26.0" />
     </edge>
-    <edge source="org.apache.metadata.storage.StructInstance" target="org.apache.metadata.ITypedStruct">
+    <edge source="org.apache.atlas.storage.StructInstance" target="org.apache.atlas.ITypedStruct">
       <point x="0.0" y="-81.0" />
       <point x="385.28645833333326" y="386.0" />
       <point x="293.375" y="386.0" />
       <point x="0.0" y="15.0" />
     </edge>
-    <edge source="org.apache.metadata.ITypedReferenceableInstance" target="org.apache.metadata.ITypedInstance">
+    <edge source="org.apache.atlas.ITypedReferenceableInstance" target="org.apache.atlas.ITypedInstance">
       <point x="-54.0" y="-15.0" />
       <point x="-58.0" y="26.0" />
     </edge>
-    <edge source="org.apache.metadata.ITypedReferenceableInstance" target="org.apache.metadata.IReferenceableInstance">
+    <edge source="org.apache.atlas.ITypedReferenceableInstance" target="org.apache.atlas.IReferenceableInstance">
       <point x="54.0" y="-15.0" />
       <point x="166.78645833333326" y="396.0" />
       <point x="447.125" y="396.0" />
       <point x="-77.25" y="48.0" />
     </edge>
-    <edge source="org.apache.metadata.storage.ReferenceableInstance" target="org.apache.metadata.ITypedReferenceableInstance">
+    <edge source="org.apache.atlas.storage.ReferenceableInstance" target="org.apache.atlas.ITypedReferenceableInstance">
       <point x="-82.25" y="-59.0" />
       <point x="0.0" y="15.0" />
     </edge>

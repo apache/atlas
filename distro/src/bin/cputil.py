@@ -24,28 +24,28 @@ DEFAULT_JVM_OPTS="-Xmx1024m"
 
 def main():
 
-    metadata_home = mc.metadataDir()
-    confdir = mc.dirMustExist(mc.confDir(metadata_home))
-    logdir = mc.dirMustExist(mc.logDir(metadata_home))
+    atlas_home = mc.atlasDir()
+    confdir = mc.dirMustExist(mc.confDir(atlas_home))
+    logdir = mc.dirMustExist(mc.logDir(atlas_home))
     mc.executeEnvSh(confdir)
 
     jvm_opts_list = []
 
     default_jvm_opts = DEFAULT_JVM_OPTS
-    metadata_jvm_opts = os.environ.get(mc.METADATA_OPTS, default_jvm_opts)
-    jvm_opts_list.extend(metadata_jvm_opts.split())
+    atlas_jvm_opts = os.environ.get(mc.ATLAS_OPTS, default_jvm_opts)
+    jvm_opts_list.extend(atlas_jvm_opts.split())
 
     #expand web app dir
-    web_app_dir = mc.webAppDir(metadata_home)
-    mc.expandWebApp(metadata_home)
+    web_app_dir = mc.webAppDir(atlas_home)
+    mc.expandWebApp(atlas_home)
 
     p = os.pathsep
-    metadata_classpath = confdir + p \
+    atlas_classpath = confdir + p \
                        + os.path.join(web_app_dir, "atlas", "WEB-INF", "classes" ) + p \
                        + os.path.join(web_app_dir, "atlas", "WEB-INF", "lib", "*" )  + p \
-                       + os.path.join(metadata_home, "libext", "*")
+                       + os.path.join(atlas_home, "libext", "*")
 
-    process = mc.java("org.apache.atlas.util.CredentialProviderUtility", sys.argv[1:], metadata_classpath, jvm_opts_list)
+    process = mc.java("org.apache.atlas.util.CredentialProviderUtility", sys.argv[1:], atlas_classpath, jvm_opts_list)
     process.wait()
 
 if __name__ == '__main__':

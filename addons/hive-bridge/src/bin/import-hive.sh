@@ -31,13 +31,13 @@ done
 BASEDIR=`dirname ${PRG}`
 BASEDIR=`cd ${BASEDIR}/..;pwd`
 
-if [ -z "$METADATA_CONF" ]; then
-  METADATA_CONF=${BASEDIR}/conf
+if [ -z "$ATLAS_CONF" ]; then
+  ATLAS_CONF=${BASEDIR}/conf
 fi
-export METADATA_CONF
+export ATLAS_CONF
 
-if [ -f "${METADATA_CONF}/atlas-env.sh" ]; then
-  . "${METADATA_CONF}/atlas-env.sh"
+if [ -f "${ATLAS_CONF}/atlas-env.sh" ]; then
+  . "${ATLAS_CONF}/atlas-env.sh"
 fi
 
 if test -z "${JAVA_HOME}"
@@ -57,20 +57,20 @@ fi
 
 # Construct classpath using Atlas conf directory
 # and jars from bridge/hive and hook/hive directories.
-METADATACPPATH="$METADATA_CONF"
+ATLASCPPATH="$ATLAS_CONF"
 
 for i in "${BASEDIR}/bridge/hive/"*.jar; do
-  METADATACPPATH="${METADATACPPATH}:$i"
+  ATLASCPPATH="${ATLASCPPATH}:$i"
 done
 
 for i in "${BASEDIR}/hook/hive/"*.jar; do
-  METADATACPPATH="${METADATACPPATH}:$i"
+  ATLASCPPATH="${ATLASCPPATH}:$i"
 done
 
 # log dir for applications
-METADATA_LOG_DIR="${METADATA_LOG_DIR:-$BASEDIR/logs}"
-export METADATA_LOG_DIR
-LOGFILE="$METADATA_LOG_DIR/import-hive.log"
+ATLAS_LOG_DIR="${ATLAS_LOG_DIR:-$BASEDIR/logs}"
+export ATLAS_LOG_DIR
+LOGFILE="$ATLAS_LOG_DIR/import-hive.log"
 
 TIME=`date +%Y%m%d%H%M%s`
 
@@ -87,18 +87,19 @@ else
 fi
 export HIVE_CP
 
-CP="${HIVE_CP}:${METADATACPPATH}"
+CP="${HIVE_CP}:${ATLASCPPATH}"
 
 # If running in cygwin, convert pathnames and classpath to Windows format.
 if [ "${CYGWIN}" == "true" ]
 then
-   METADATA_LOG_DIR=`cygpath -w ${METADATA_LOG_DIR}`
+   ATLAS_LOG_DIR=`cygpath -w ${ATLAS_LOG_DIR}`
    LOGFILE=`cygpath -w ${LOGFILE}`
    HIVE_CP=`cygpath -w ${HIVE_CP}`
    CP=`cygpath -w -p ${CP}`
 fi
 
-JAVA_PROPERTIES="$METADATA_OPTS -Datlas.log.dir=$METADATA_LOG_DIR -Datlas.log.file=import-hive.log -Dlog4j.configuration=atlas-log4j.xml"
+JAVA_PROPERTIES="$ATLAS_OPTS -Datlas.log.dir=$ATLAS_LOG_DIR -Datlas.log.file=import-hive.log
+-Dlog4j.configuration=atlas-log4j.xml"
 shift
 
 while [[ ${1} =~ ^\-D ]]; do
