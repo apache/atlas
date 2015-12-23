@@ -3,6 +3,7 @@ Apache Atlas Release Notes
 
 --trunk - unreleased
 INCOMPATIBLE CHANGES:
+ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
 ATLAS-392 Rename application.properties to atlas-application.properties (rishabhbhardwaj via shwethags)

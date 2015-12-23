@@ -1,0 +1,357 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <artifactId>apache-atlas</artifactId>
+        <groupId>org.apache.atlas</groupId>
+        <version>0.7-incubating-SNAPSHOT</version>
+        <relativePath>../../</relativePath>
+    </parent>
+    <artifactId>sqoop-bridge</artifactId>
+    <description>Apache Atlas Sqoop Bridge Module</description>
+    <name>Apache Atlas Sqoop Bridge</name>
+    <packaging>jar</packaging>
+
+    <properties>
+        <!-- maps to 1.4.7-SNAPSHOT version of apache sqoop -->
+        <sqoop.version>1.4.6.2.3.99.0-195</sqoop.version>
+        <hive.version>1.2.1</hive.version>
+    </properties>
+
+    <dependencies>
+        <!-- Logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-metastore</artifactId>
+            <version>${hive.version}</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.mortbay.jetty</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-exec</artifactId>
+            <version>${hive.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-cli</artifactId>
+            <version>${hive.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.eclipse.jetty.aggregate</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.sqoop</groupId>
+            <artifactId>sqoop</artifactId>
+            <version>${sqoop.version}</version>
+            <scope>compile</scope>
+        </dependency>
+
+       <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-typesystem</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-notification</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>hive-bridge</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-common</artifactId>
+            <version>${hive.version}</version>
+        </dependency>
+
+        <!-- to bring up atlas server for integration tests -->
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-webapp</artifactId>
+            <type>war</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-annotations</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-hook</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>${project.artifactId}</artifactId>
+                                    <version>${project.version}</version>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}/dependency/hook/sqoop</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-hook-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/dependency/hook/sqoop</outputDirectory>
+                            <overWriteReleases>false</overWriteReleases>
+                            <overWriteSnapshots>false</overWriteSnapshots>
+                            <overWriteIfNewer>true</overWriteIfNewer>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>${project.artifactId}</artifactId>
+                                    <version>${project.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>hive-bridge</artifactId>
+                                    <version>${project.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.json4s</groupId>
+                                    <artifactId>json4s-native_2.10</artifactId>
+                                    <version>${json.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.json4s</groupId>
+                                    <artifactId>json4s-core_2.10</artifactId>
+                                    <version>${json.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.json4s</groupId>
+                                    <artifactId>json4s-ast_2.10</artifactId>
+                                    <version>${json.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>atlas-client</artifactId>
+                                    <version>${project.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>atlas-typesystem</artifactId>
+                                    <version>${project.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>atlas-notification</artifactId>
+                                    <version>${project.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>atlas-common</artifactId>
+                                    <version>${project.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.scala-lang</groupId>
+                                    <artifactId>scala-compiler</artifactId>
+                                    <version>${scala.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.scala-lang</groupId>
+                                    <artifactId>scala-reflect</artifactId>
+                                    <version>${scala.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.scala-lang</groupId>
+                                    <artifactId>scala-library</artifactId>
+                                    <version>${scala.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.scala-lang</groupId>
+                                    <artifactId>scalap</artifactId>
+                                    <version>${scala.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>com.google.inject.extensions</groupId>
+                                    <artifactId>guice-multibindings</artifactId>
+                                    <version>${guice.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.apache.kafka</groupId>
+                                    <artifactId>kafka_${scala.binary.version}</artifactId>
+                                    <version>${kafka.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.apache.kafka</groupId>
+                                    <artifactId>kafka-clients</artifactId>
+                                    <version>${kafka.version}</version>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-maven-plugin</artifactId>
+                <configuration>
+                    <skip>${skipTests}</skip>
+                    <!--only skip int tests -->
+                    <httpConnector>
+                        <port>31000</port>
+                        <idleTimeout>60000</idleTimeout>
+                    </httpConnector>
+                    <war>../../webapp/target/atlas-webapp-${project.version}.war</war>
+                    <daemon>true</daemon>
+                    <webApp>
+                        <contextPath>/</contextPath>
+                        <descriptor>../../webapp/src/test/webapp/WEB-INF/web.xml</descriptor>
+                    </webApp>
+                    <useTestScope>true</useTestScope>
+                    <systemProperties>
+                        <systemProperty>
+                            <name>log4j.configuration</name>
+                            <value>atlas-log4j.xml</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>atlas.log.dir</name>
+                            <value>${project.build.directory}/logs</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>atlas.data</name>
+                            <value>${project.build.directory}/data</value>
+                        </systemProperty>
+                    </systemProperties>
+                    <stopKey>atlas-stop</stopKey>
+                    <stopPort>31001</stopPort>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>start-jetty</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>deploy-war</goal>
+                        </goals>
+                        <configuration>
+                            <daemon>true</daemon>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>stop-jetty</id>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>stop</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-site-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.doxia</groupId>
+                        <artifactId>doxia-module-twiki</artifactId>
+                        <version>1.3</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>site</goal>
+                        </goals>
+                        <phase>prepare-package</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <generateProjectInfo>false</generateProjectInfo>
+                    <generateReports>false</generateReports>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

@@ -429,6 +429,8 @@
         <module>webapp</module>
         <module>docs</module>
         <module>addons/hive-bridge</module>
+        <module>addons/falcon-bridge</module>
+        <module>addons/sqoop-bridge</module>
         <module>distro</module>
     </modules>
 
@@ -971,6 +973,24 @@
             <dependency>
                 <groupId>org.apache.atlas</groupId>
                 <artifactId>atlas-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>hive-bridge</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>falcon-bridge</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>sqoop-bridge</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

@@ -18,6 +18,7 @@
 
 package org.apache.atlas.hive.bridge;
 
+import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
@@ -487,9 +488,11 @@ public class HiveMetaStoreBridge {
             dgiClient.getType(HiveDataTypes.HIVE_PROCESS.getName());
             LOG.info("Hive data model is already registered!");
         } catch(AtlasServiceException ase) {
-            //Expected in case types do not exist
-            LOG.info("Registering Hive data model");
-            dgiClient.createType(dataModelGenerator.getModelAsJson());
+            if (ase.getStatus() == ClientResponse.Status.NOT_FOUND) {
+                //Expected in case types do not exist
+                LOG.info("Registering Hive data model");
+                dgiClient.createType(dataModelGenerator.getModelAsJson());
+            }
         }
     }
 

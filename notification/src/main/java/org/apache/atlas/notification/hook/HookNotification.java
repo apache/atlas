@@ -102,8 +102,11 @@ public class HookNotification implements JsonDeserializer<HookNotification.HookN
         private EntityCreateRequest() { }
 
         public EntityCreateRequest(Referenceable... entities) {
-            super(HookNotificationType.ENTITY_CREATE);
-            this.entities = Arrays.asList(entities);
+            this(HookNotificationType.ENTITY_CREATE, Arrays.asList(entities));
+        }
+
+        public EntityCreateRequest(List<Referenceable> entities) {
+            this(HookNotificationType.ENTITY_CREATE, entities);
         }
 
         protected EntityCreateRequest(HookNotificationType type, List<Referenceable> entities) {

@@ -47,6 +47,8 @@ allows integration with the whole enterprise data ecosystem.
       * [[Notification-Entity][Entity Notification]]
    * Bridges
       * [[Bridge-Hive][Hive Bridge]]
+      * [[Bridge-Sqoop][Sqoop Bridge]]
+      * [[Bridge-Falcon][Falcon Bridge]]
    * [[HighAvailability][Fault Tolerance And High Availability Options]]
 
 
