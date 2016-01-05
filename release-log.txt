@@ -6,6 +6,7 @@ INCOMPATIBLE CHANGES:
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-182 Add data model for Storm topology elements (svenkat,yhemanth via shwethags)
 ATLAS-414 Doc: Increase MAVEN_OPTS limit to 512m in InstallationSteps.twiki (yhemanth via shwethags)
 ATLAS-418 Update atlas website (shwethags)
 ATLAS-392 Rename application.properties to atlas-application.properties (rishabhbhardwaj via shwethags)
