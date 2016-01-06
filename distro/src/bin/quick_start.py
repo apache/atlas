@@ -52,13 +52,15 @@ def main():
                        + os.path.join(atlas_home, "libext", "*")
 
     process = mc.java("org.apache.atlas.examples.QuickStart", sys.argv[1:], atlas_classpath, jvm_opts_list)
-    process.wait()
-
-    print "Example data added to Apache Atlas Server!!!\n"
+    return process.wait()
 
 if __name__ == '__main__':
     try:
         returncode = main()
+        if returncode == 0:
+            print "Example data added to Apache Atlas Server!!!\n"
+        else:
+            print "No data was added to the Apache Atlas Server.\n"
     except Exception as e:
         print "Exception: %s " % str(e)
         returncode = -1
