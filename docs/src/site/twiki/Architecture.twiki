@@ -17,7 +17,7 @@ Architecturally, Atlas has the following components:
 ---++ Bridges
 External components like hive/sqoop/storm/falcon should model their taxonomy using typesystem and register the types with Atlas. For every entity created in this external component, the corresponding entity should be registered in Atlas as well.
 This is typically done in a hook which runs in the external component and is called for every entity operation. Hook generally processes the entity asynchronously using a thread pool to avoid adding latency to the main operation.
-The hook can then build the entity and register the entity using Atlas REST APIs. Howerver, any failure in APIs because of network issue etc can in result entity not registered in Atlas and hence inconsistent metadata.
+The hook can then build the entity and register the entity using Atlas REST APIs. Howerver, any failure in APIs because of network issue etc can result in entity not registered in Atlas and hence inconsistent metadata.
 
 Atlas exposes notification interface and can be used for reliable entity registration by hook as well. The hook can send notification message containing the list of entities to be registered.  Atlas service contains hook consumer that listens to these messages and registers the entities.
 
