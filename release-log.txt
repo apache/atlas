@@ -6,6 +6,7 @@ INCOMPATIBLE CHANGES:
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-432 QuickStart lineage is broken (yhemanth via shwethags)
 ATLAS-421 typo in Architecture.twiki (dbist13 via shwethags)
 ATLAS-387 Running quick_start without a valid atlas endpoint in configuration or argument prints a spurious success message (yhemanth via shwethags)
 ATLAS-182 Add data model for Storm topology elements (svenkat,yhemanth via shwethags)

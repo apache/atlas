@@ -184,7 +184,7 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
                 table("sales_fact_daily_mv" + randomString(), "sales fact daily materialized view", reportingDB,
                         "Joe BI", "MANAGED", salesFactColumns, "Metric");
 
-        loadProcess("loadSalesDaily", "John ETL", ImmutableList.of(salesFact, timeDim),
+        loadProcess("loadSalesDaily" + randomString(), "John ETL", ImmutableList.of(salesFact, timeDim),
                 ImmutableList.of(salesFactDaily), "create table as select ", "plan", "id", "graph", "ETL");
 
         salesMonthlyTable = "sales_fact_monthly_mv" + randomString();
@@ -192,7 +192,7 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
                 table(salesMonthlyTable, "sales fact monthly materialized view", reportingDB, "Jane BI",
                         "MANAGED", salesFactColumns, "Metric");
 
-        loadProcess("loadSalesMonthly", "John ETL", ImmutableList.of(salesFactDaily),
+        loadProcess("loadSalesMonthly" + randomString(), "John ETL", ImmutableList.of(salesFactDaily),
                 ImmutableList.of(salesFactMonthly), "create table as select ", "plan", "id", "graph", "ETL");
     }
 
