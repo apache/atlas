@@ -69,7 +69,7 @@ div.lineage {
 
 .lineage-viz {
     margin: 0 auto;
-    overflow: auto;
+    overflow: hidden;
     /*border: 1px solid #ddd;
     border-top: none;*/
 
@@ -77,6 +77,10 @@ div.lineage {
 .lineage-viz button{
     margin: 5px;
     border-radius: 2px
+}
+
+.title-font{
+    font-size:12px!important;
 }
 /*.images {*/
     /*background-image: url("../img/process.png");*/

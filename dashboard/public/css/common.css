@@ -114,14 +114,14 @@ header ul.menuBar li a{
 header ul.menuBar li a>i {
     margin-right: 3px;
     font-size: 12px;
-} 
+}
 header ul.menuBar li a:hover{
     color: #fff;
     background: transparent;
-} 
+}
 header ul.menuBar li a:focus{
     background: transparent;
-} 
+}
 header ul.menuBar li.active a{
     color: #333333;
     background-color: #ffffff;
@@ -319,11 +319,11 @@ Tags on Home Page design
     -o-text-overflow: ellipsis;
     white-space: nowrap;
     text-transform: capitalize;
-    float: left; 
-    
+    float: left;
+
     background: lightblue !important;
     color: black !important;
-    margin: 4px !important; 
+    margin: 4px !important;
     padding-left: 7px !important;
     padding-right: 7px !important;
 }
@@ -335,7 +335,7 @@ Tags on Home Page design
     text-overflow: ellipsis;
     -o-text-overflow: ellipsis;
     white-space: nowrap;
-    text-transform: capitalize; 
+    text-transform: capitalize;
 }
 .searchResultCount {
     max-width: 500px;
@@ -343,7 +343,7 @@ Tags on Home Page design
     overflow: hidden;
     text-overflow: ellipsis;
     -o-text-overflow: ellipsis;
-    text-transform: capitalize; 
+    text-transform: capitalize;
 }
 
 .maxwidth125px {
@@ -361,11 +361,18 @@ Tags on Home Page design
 
 .tagAlign{
     text-align: center;
-} 
+}
 
 .h160 {
     height: 160px !important;
 }
 .tag-attr{
     font-weight:bold;
+}
+.zoom-buttons{
+   width:63px !important;
+}
+.graph{
+  overflow: hidden!important;
+
 }

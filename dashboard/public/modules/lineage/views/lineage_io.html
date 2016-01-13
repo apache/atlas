@@ -20,6 +20,8 @@
     <button type="button" class="btn btn-primary pull-right" ng-click="onReset()">
         Reset
     </button>
+    <button type="button" class="btn btn-primary zoom-buttons pull-right" id="zoom_out"><i class="fa fa-minus"></i></button>
+    <button type="button" class="btn btn-primary zoom-buttons pull-right" id="zoom_in"><i class="fa fa-plus"></i> </button>
     <div class="graph">
       <h4 data-ng-if="!requested && !lineageData" class="alignLineage">No lineage data found</h4>
       <i data-ng-if="requested" class="fa fa-spinner fa-spin fa-5x"></i>
