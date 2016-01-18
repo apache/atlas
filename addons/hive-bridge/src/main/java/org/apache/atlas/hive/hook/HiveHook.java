@@ -20,15 +20,11 @@ package org.apache.atlas.hive.hook;
 
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
-import org.apache.atlas.notification.NotificationInterface;
-import org.apache.atlas.notification.NotificationModule;
+import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.commons.configuration.Configuration;
@@ -63,7 +59,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * AtlasHook sends lineage information to the AtlasSever.
  */
-public class HiveHook implements ExecuteWithHookContext {
+public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
     private static final Logger LOG = LoggerFactory.getLogger(HiveHook.class);
 
@@ -103,16 +99,13 @@ public class HiveHook implements ExecuteWithHookContext {
         public Long queryStartTime;
     }
 
-    @Inject
-    private static NotificationInterface notifInterface;
-
     private List<HookNotification.HookNotificationMessage> messages = new ArrayList<>();
 
     private static final HiveConf hiveConf;
 
     static {
         try {
-            atlasProperties = ApplicationProperties.get(ApplicationProperties.CLIENT_PROPERTIES);
+            atlasProperties = ApplicationProperties.get();
 
             // initialize the async facility to process hook calls. We don't
             // want to do this inline since it adds plenty of overhead for the query.
@@ -142,12 +135,14 @@ public class HiveHook implements ExecuteWithHookContext {
             LOG.info("Attempting to send msg while shutdown in progress.", e);
         }
 
-        Injector injector = Guice.createInjector(new NotificationModule());
-        notifInterface = injector.getInstance(NotificationInterface.class);
-
         hiveConf = new HiveConf();
 
         LOG.info("Created Atlas Hook");
+    }
+
+    @Override
+    protected String getNumberOfRetriesPropertyKey() {
+        return HOOK_NUM_RETRIES;
     }
 
     @Override
@@ -233,7 +228,7 @@ public class HiveHook implements ExecuteWithHookContext {
         default:
         }
 
-        notifyAtlas();
+        notifyEntities(messages);
     }
 
     private void renameTable(HiveMetaStoreBridge dgiBridge, HiveEvent event) throws Exception {
@@ -320,31 +315,6 @@ public class HiveHook implements ExecuteWithHookContext {
         for (WriteEntity entity : event.outputs) {
             if (entity.getType() == entityType) {
                 createEntities(dgiBridge, entity);
-            }
-        }
-    }
-
-    /**
-     * Notify atlas of the entity through message. The entity can be a complex entity with reference to other entities.
-     * De-duping of entities is done on server side depending on the unique attribute on the
-     */
-    private void notifyAtlas() {
-        int maxRetries = atlasProperties.getInt(HOOK_NUM_RETRIES, 3);
-
-        LOG.debug("Notifying atlas with messages {}", messages);
-        int numRetries = 0;
-        while (true) {
-            try {
-                notifInterface.send(NotificationInterface.NotificationType.HOOK, messages);
-                break;
-            } catch(Exception e) {
-                numRetries++;
-                if(numRetries < maxRetries) {
-                    LOG.debug("Failed to notify atlas. Retrying", e);
-                } else {
-                    LOG.error("Failed to notify atlas after {} retries. Quitting", maxRetries, e);
-                    break;
-                }
             }
         }
     }

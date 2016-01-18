@@ -16,25 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.kafka;
+package org.apache.atlas;
 
-import com.google.inject.Provider;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasException;
-import org.apache.commons.configuration.Configuration;
+public interface AtlasConstants {
+    String CLUSTER_NAME_KEY = "atlas.cluster.name";
+    String DEFAULT_CLUSTER_NAME = "primary";
+    String CLUSTER_NAME_ATTRIBUTE = "clusterName";
 
-public class KafkaNotificationProvider implements Provider<KafkaNotification> {
-    @Override
-    @Provides
-    @Singleton
-    public KafkaNotification get() {
-        try {
-            Configuration applicationProperties = ApplicationProperties.get();
-            return new KafkaNotification(applicationProperties);
-        } catch(AtlasException e) {
-            throw new RuntimeException(e);
-        }
-    }
 }

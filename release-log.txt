@@ -6,6 +6,7 @@ INCOMPATIBLE CHANGES:
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-183 Add a Hook in Storm to post the topology metadata (svenkat,yhemanth via shwethags)
 ATLAS-370 Implement deleteEntities at repository level (dkantor via shwethags)
 ATLAS-406 Resizing lineage window – should be an anchor on a corner – like ppt for graphic (sanjayp via shwethags)
 ATLAS-432 QuickStart lineage is broken (yhemanth via shwethags)

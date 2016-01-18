@@ -110,6 +110,12 @@
             <directory>../addons/sqoop-bridge/target/dependency/hook</directory>
             <outputDirectory>hook</outputDirectory>
         </fileSet>
+
+        <!-- addons/storm -->
+        <fileSet>
+            <directory>../addons/storm-bridge/target/dependency/hook</directory>
+            <outputDirectory>hook</outputDirectory>
+        </fileSet>
     </fileSets>
 
     <files>

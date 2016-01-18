@@ -31,6 +31,7 @@
 
     <properties>
         <storm.version>0.10.0.2.3.99.0-195</storm.version>
+        <hive.version>1.2.1</hive.version>
     </properties>
 
     <dependencies>
@@ -64,6 +65,24 @@
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>hive-bridge</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-exec</artifactId>
+            <version>${hive.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-common</artifactId>
+            <version>${hbase.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
         </dependency>
 
         <!-- apache storm core dependencies -->
@@ -269,7 +288,16 @@
                                     <artifactId>paranamer</artifactId>
                                     <version>${paranamer.version}</version>
                                 </artifactItem>
-
+                                <artifactItem>
+                                    <groupId>org.apache.hive</groupId>
+                                    <artifactId>hive-exec</artifactId>
+                                    <version>${hive.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.apache.hbase</groupId>
+                                    <artifactId>hbase-common</artifactId>
+                                    <version>${hbase.version}</version>
+                                </artifactItem>
                             </artifactItems>
                         </configuration>
                     </execution>
