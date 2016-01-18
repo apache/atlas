@@ -24,18 +24,22 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
+
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.RepositoryException;
+import org.apache.atlas.repository.graph.TypedInstanceToGraphMapper.Operation;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.exception.EntityExistsException;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
+import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.IDataType;
+import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.TypeUtils;
 import org.slf4j.Logger;
@@ -43,6 +47,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -258,7 +263,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 titanGraph.removeEdge(traitEdge);
 
                 if (traitVertex != null) { // remove the trait instance from the repository
-                    titanGraph.removeVertex(traitVertex);
+                    TypedInstanceToGraphMapper instanceToGraphMapper = new TypedInstanceToGraphMapper(graphToInstanceMapper);
+                    instanceToGraphMapper.deleteTraitVertex(traitNameToBeDeleted, traitVertex);
 
                     // update the traits in entity once trait removal is successful
                     traitNames.remove(traitNameToBeDeleted);
@@ -270,6 +276,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         }
     }
 
+    
     private void updateTraits(Vertex instanceVertex, List<String> traitNames) {
         // remove the key
         instanceVertex.removeProperty(Constants.TRAIT_NAMES_PROPERTY_KEY);
@@ -303,5 +310,35 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         } catch (AtlasException e) {
             throw new RepositoryException(e);
         }
+    }
+
+    @Override
+    @GraphTransaction
+    public List<String> deleteEntities(String... guids) throws RepositoryException {
+
+        if (guids == null || guids.length == 0) {
+            throw new IllegalArgumentException("guids must be non-null and non-empty");
+        }
+        
+        TypedInstanceToGraphMapper instanceToGraphMapper = new TypedInstanceToGraphMapper(graphToInstanceMapper);
+        for (String guid : guids) {
+            if (guid == null) {
+                LOG.warn("deleteEntities: Ignoring null guid");
+                continue;
+            }
+            try {
+                Vertex instanceVertex = graphHelper.getVertexForGUID(guid);
+                String typeName = GraphHelper.getTypeName(instanceVertex);
+                instanceToGraphMapper.deleteEntity(typeName, instanceVertex);
+            } catch (EntityNotFoundException e) {
+                // Entity does not exist - treat as non-error, since the caller
+                // wanted to delete the entity and it's already gone.
+                LOG.info("Deletion request ignored for non-existent entity with guid " + guid);
+                continue;
+            } catch (AtlasException e) {
+                throw new RepositoryException(e);
+            }
+        }
+        return instanceToGraphMapper.getDeletedEntities();
     }
 }

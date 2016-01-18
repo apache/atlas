@@ -104,13 +104,15 @@ public interface MetadataRepository {
     List<String> getEntityList(String entityType) throws RepositoryException;
 
     /**
-     * Deletes an entity definition (instance) corresponding to a given type.
+     * Deletes entities for the specified guids.
      *
-     * @param guid globally unique identifier for the entity
-     * @return true if deleted else false
+     * @param guids globally unique identifiers for the deletion candidate entities
+     * @return guids of deleted entities
      * @throws RepositoryException
      */
-    // boolean deleteEntity(String guid) throws RepositoryException;
+     List <String> deleteEntities(String... guids) throws RepositoryException;
+    
+    
     // Trait management functions
 
     /**

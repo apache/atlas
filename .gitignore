@@ -39,6 +39,9 @@ test-output
 #Python
 *.pyc
 
+# review board
+.reviewboardrc
+
 # other files
 .DS_Store
 *.swp

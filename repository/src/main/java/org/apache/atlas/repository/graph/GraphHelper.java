@@ -26,6 +26,7 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
+
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.typesystem.IReferenceableInstance;
@@ -39,6 +40,7 @@ import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.HierarchicalType;
 import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.TypeSystem;
+import org.apache.atlas.typesystem.types.TypeUtils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -175,10 +177,43 @@ public final class GraphHelper {
         LOG.info("Removed edge {}", edge);
         if (cascade) {
            Vertex referredVertex = edge.getVertex(Direction.IN);
-           titanGraph.removeVertex(referredVertex);
-           LOG.info("Removed vertex {}", referredVertex);
+           removeVertex(referredVertex);
         }
         return edge;
+    }
+    
+    /**
+     * Remove the specified edge from the graph.
+     * 
+     * @param edge
+     */
+    public void removeEdge(Edge edge) {
+        LOG.debug("Removing edge {}", edge);
+        titanGraph.removeEdge(edge);
+        LOG.info("Removed edge {}", edge);
+    }
+    
+    /**
+     * Return the edge and target vertex for the specified edge ID.
+     * 
+     * @param edgeId
+     * @return edge and target vertex
+     */
+    public Pair<Edge, Vertex> getEdgeAndTargetVertex(String edgeId) {
+        final Edge edge = titanGraph.getEdge(edgeId);
+        Vertex referredVertex = edge.getVertex(Direction.IN);
+        return Pair.of(edge, referredVertex);
+    }
+    
+    /**
+     * Remove the specified vertex from the graph.
+     * 
+     * @param vertex
+     */
+    public void removeVertex(Vertex vertex) {
+        LOG.debug("Removing vertex {}", vertex);
+        titanGraph.removeVertex(vertex);
+        LOG.info("Removed vertex {}", vertex);
     }
 
     public Vertex getVertexForGUID(String guid) throws EntityNotFoundException {
@@ -268,7 +303,6 @@ public final class GraphHelper {
 
         return result;
     }
-
 
     public static void dumpToLog(final Graph graph) {
         LOG.debug("*******************Graph Dump****************************");
