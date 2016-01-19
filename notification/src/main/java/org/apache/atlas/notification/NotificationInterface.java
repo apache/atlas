@@ -1,10 +1,11 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -14,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.atlas.notification;
 
 import org.apache.atlas.notification.entity.EntityNotification;
@@ -22,11 +22,18 @@ import org.apache.atlas.notification.hook.HookNotification;
 
 import java.util.List;
 
-// TODO : docs!
+/**
+ * Notification interface for sending/receiving messages.
+ * 1. Atlas sends entity notifications
+ * 2. Hooks send notifications to create/update types/entities. Atlas reads these messages
+ */
 public interface NotificationInterface {
 
     String PROPERTY_PREFIX = "atlas.notification";
 
+    /**
+     * Notification type - hooks and entities.
+     */
     enum NotificationType {
         HOOK(HookNotification.HookNotificationMessage.class), ENTITIES(EntityNotification.class);
 

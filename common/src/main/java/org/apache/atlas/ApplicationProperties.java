@@ -1,10 +1,11 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -14,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.atlas;
 
 import org.apache.commons.configuration.CompositeConfiguration;
@@ -29,29 +29,32 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.Iterator;
 
-public class ApplicationProperties extends PropertiesConfiguration {
+/**
+ * Application properties used by Atlas.
+ */
+public final class ApplicationProperties extends PropertiesConfiguration {
     private static final Logger LOG = LoggerFactory.getLogger(ApplicationProperties.class);
 
     public static final String APPLICATION_PROPERTIES = "atlas-application.properties";
     public static final String CLIENT_PROPERTIES = "client.properties";
 
-    private static Configuration INSTANCE = null;
+    private static Configuration instance = null;
 
     private ApplicationProperties(URL url) throws ConfigurationException {
         super(url);
     }
 
     public static Configuration get() throws AtlasException {
-        if (INSTANCE == null) {
+        if (instance == null) {
             synchronized (ApplicationProperties.class) {
-                if (INSTANCE == null) {
+                if (instance == null) {
                     Configuration applicationProperties = get(APPLICATION_PROPERTIES);
                     Configuration clientProperties = get(CLIENT_PROPERTIES);
-                    INSTANCE = new CompositeConfiguration(Arrays.asList(applicationProperties, clientProperties));
+                    instance = new CompositeConfiguration(Arrays.asList(applicationProperties, clientProperties));
                 }
             }
         }
-        return INSTANCE;
+        return instance;
     }
 
     public static Configuration get(String fileName) throws AtlasException {
@@ -80,7 +83,7 @@ public class ApplicationProperties extends PropertiesConfiguration {
         }
     }
 
-    public static final Configuration getSubsetConfiguration(Configuration inConf, String prefix) {
+    public static Configuration getSubsetConfiguration(Configuration inConf, String prefix) {
         return inConf.subset(prefix);
     }
 }

@@ -368,6 +368,7 @@
 
         <!-- skips checkstyle and find bugs -->
         <skipCheck>false</skipCheck>
+        <checkstyle.failOnViolation>false</checkstyle.failOnViolation>
         <skipUTs>false</skipUTs>
         <skipITs>false</skipITs>
         <skipDocs>true</skipDocs>
@@ -1611,7 +1612,9 @@
                             <includeTestSourceDirectory>true</includeTestSourceDirectory>
                             <configLocation>src/build/checkstyle.xml</configLocation>
                             <headerLocation>src/build/checkstyle-java-header.txt</headerLocation>
-                            <failOnViolation>false</failOnViolation>
+                            <suppressionsLocation>src/build/checkstyle-suppressions.xml</suppressionsLocation>
+                            <suppressionsFileExpression>checkstyle.suppressions.file</suppressionsFileExpression>
+                            <failOnViolation>${checkstyle.failOnViolation}</failOnViolation>
                         </configuration>
                     </execution>
                 </executions>

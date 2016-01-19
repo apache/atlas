@@ -1,10 +1,11 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -14,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.atlas.notification;
 
 import com.google.inject.Inject;
@@ -35,7 +35,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Consumer of notifications from hooks e.g., hive hook etc
+ * Consumer of notifications from hooks e.g., hive hook etc.
  */
 @Singleton
 public class NotificationHookConsumer implements Service {
@@ -93,7 +93,8 @@ public class NotificationHookConsumer implements Service {
             this(atlasClient, consumer);
         }
 
-        public HookConsumer(AtlasClient client, NotificationConsumer<HookNotification.HookNotificationMessage> consumer) {
+        public HookConsumer(AtlasClient client,
+                            NotificationConsumer<HookNotification.HookNotificationMessage> consumer) {
             this.client = client;
             this.consumer = consumer;
         }
@@ -101,7 +102,7 @@ public class NotificationHookConsumer implements Service {
         private boolean hasNext() {
             try {
                 return consumer.hasNext();
-            } catch(ConsumerTimeoutException e) {
+            } catch (ConsumerTimeoutException e) {
                 return false;
             }
         }
@@ -113,38 +114,41 @@ public class NotificationHookConsumer implements Service {
                 return;
             }
 
-            while(true) {
+            while (true) {
                 try {
                     if (hasNext()) {
                         HookNotification.HookNotificationMessage message = consumer.next();
                         try {
                             switch (message.getType()) {
-                                case ENTITY_CREATE:
-                                    HookNotification.EntityCreateRequest createRequest =
-                                            (HookNotification.EntityCreateRequest) message;
-                                    atlasClient.createEntity(createRequest.getEntities());
-                                    break;
+                            case ENTITY_CREATE:
+                                HookNotification.EntityCreateRequest createRequest =
+                                        (HookNotification.EntityCreateRequest) message;
+                                atlasClient.createEntity(createRequest.getEntities());
+                                break;
 
-                                case ENTITY_PARTIAL_UPDATE:
-                                    HookNotification.EntityPartialUpdateRequest partialUpdateRequest =
-                                            (HookNotification.EntityPartialUpdateRequest) message;
-                                    atlasClient.updateEntity(partialUpdateRequest.getTypeName(),
-                                            partialUpdateRequest.getAttribute(), partialUpdateRequest.getAttributeValue(),
-                                            partialUpdateRequest.getEntity());
-                                    break;
+                            case ENTITY_PARTIAL_UPDATE:
+                                HookNotification.EntityPartialUpdateRequest partialUpdateRequest =
+                                        (HookNotification.EntityPartialUpdateRequest) message;
+                                atlasClient.updateEntity(partialUpdateRequest.getTypeName(),
+                                        partialUpdateRequest.getAttribute(),
+                                        partialUpdateRequest.getAttributeValue(), partialUpdateRequest.getEntity());
+                                break;
 
-                                case ENTITY_FULL_UPDATE:
-                                    HookNotification.EntityUpdateRequest updateRequest =
-                                            (HookNotification.EntityUpdateRequest) message;
-                                    atlasClient.updateEntities(updateRequest.getEntities());
-                                    break;
+                            case ENTITY_FULL_UPDATE:
+                                HookNotification.EntityUpdateRequest updateRequest =
+                                        (HookNotification.EntityUpdateRequest) message;
+                                atlasClient.updateEntities(updateRequest.getEntities());
+                                break;
+
+                            default:
+                                throw new IllegalStateException("Unhandled exception!");
                             }
                         } catch (Exception e) {
                             //todo handle failures
                             LOG.warn("Error handling message {}", message, e);
                         }
                     }
-                } catch(Throwable t) {
+                } catch (Throwable t) {
                     LOG.warn("Failure in NotificationHookConsumer", t);
                 }
             }
@@ -158,15 +162,15 @@ public class NotificationHookConsumer implements Service {
                                 SERVER_READY_WAIT_TIME_MS);
                         timer.sleep(SERVER_READY_WAIT_TIME_MS);
                     } catch (InterruptedException e) {
-                        LOG.info("Interrupted while waiting for Atlas Server to become ready, " +
-                                "exiting consumer thread.", e);
+                        LOG.info("Interrupted while waiting for Atlas Server to become ready, "
+                                + "exiting consumer thread.", e);
                         return false;
                     }
                 }
             } catch (Throwable e) {
                 LOG.info(
-                        "Handled AtlasServiceException while waiting for Atlas Server to become ready, " +
-                                "exiting consumer thread.", e);
+                        "Handled AtlasServiceException while waiting for Atlas Server to become ready, "
+                                + "exiting consumer thread.", e);
                 return false;
             }
             LOG.info("Atlas Server is ready, can start reading Kafka events.");

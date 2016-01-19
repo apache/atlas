@@ -79,7 +79,7 @@ public class EntityNotificationImplTest {
     }
 
     @Test
-    public void testGetAllTraits_superTraits() throws Exception {
+    public void testGetAllTraitsSuperTraits() throws Exception {
 
         TypeSystem typeSystem = mock(TypeSystem.class);
 

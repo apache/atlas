@@ -6,16 +6,15 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * <p/>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p/>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.atlas.notification;
 
 import com.google.common.collect.ImmutableList;
@@ -100,54 +99,59 @@ public abstract class AbstractNotificationConsumer<T> implements NotificationCon
 
     protected abstract String peekMessage();
 
-    // ----- inner class : ImmutableListDeserializer ---------------------------
+    /**
+     * Deserializer for ImmutableList used by AbstractNotificationConsumer.GSON.
+     */
+    public static class ImmutableListDeserializer implements JsonDeserializer<ImmutableList<?>> {
 
-    private static class ImmutableListDeserializer implements JsonDeserializer<ImmutableList<?>> {
-
-        public static final Type LIST_TYPE = new TypeToken<List<?>>() {}.getType();
+        public static final Type LIST_TYPE = new TypeToken<List<?>>() {
+        }.getType();
 
         @Override
         public ImmutableList<?> deserialize(JsonElement json, Type type,
-                                            JsonDeserializationContext context) throws JsonParseException {
-
+                                            JsonDeserializationContext context) {
             final List<?> list = context.deserialize(json, LIST_TYPE);
             return ImmutableList.copyOf(list);
         }
     }
 
 
-    // ----- inner class : ImmutableMapDeserializer ----------------------------
-
+    /**
+     * Deserializer for ImmutableMap used by AbstractNotificationConsumer.GSON.
+     */
     public static class ImmutableMapDeserializer implements JsonDeserializer<ImmutableMap<?, ?>> {
 
-        public static final Type MAP_TYPE = new TypeToken<Map<?, ?>>() {}.getType();
+        public static final Type MAP_TYPE = new TypeToken<Map<?, ?>>() {
+        }.getType();
 
         @Override
         public ImmutableMap<?, ?> deserialize(JsonElement json, Type type,
-                                              JsonDeserializationContext context) throws JsonParseException {
+                                              JsonDeserializationContext context) {
             final Map<?, ?> map = context.deserialize(json, MAP_TYPE);
             return ImmutableMap.copyOf(map);
         }
     }
 
 
-    // ----- inner class : EntityNotificationDeserializer ----------------------
-
-    public final static class EntityNotificationDeserializer implements JsonDeserializer<EntityNotification> {
+    /**
+     * Deserializer for EntityNotification used by AbstractNotificationConsumer.GSON.
+     */
+    public static final class EntityNotificationDeserializer implements JsonDeserializer<EntityNotification> {
         @Override
         public EntityNotification deserialize(final JsonElement json, final Type type,
-                                              final JsonDeserializationContext context) throws JsonParseException {
+                                              final JsonDeserializationContext context) {
             return context.deserialize(json, EntityNotificationImpl.class);
         }
     }
 
 
-    // ----- inner class : StructDeserializer -------------------------------
-
-    public final static class StructDeserializer implements JsonDeserializer<IStruct>, JsonSerializer<IStruct> {
+    /**
+     * Serde for Struct used by AbstractNotificationConsumer.GSON.
+     */
+    public static final class StructDeserializer implements JsonDeserializer<IStruct>, JsonSerializer<IStruct> {
         @Override
         public IStruct deserialize(final JsonElement json, final Type type,
-                                              final JsonDeserializationContext context) throws JsonParseException {
+                                   final JsonDeserializationContext context) {
             return context.deserialize(json, Struct.class);
         }
 
@@ -159,13 +163,14 @@ public abstract class AbstractNotificationConsumer<T> implements NotificationCon
     }
 
 
-    // ----- inner class : ReferenceableSerializerDeserializer ------------------------
-
-    public final static class ReferenceableSerializerDeserializer implements JsonDeserializer<IStruct>,
+    /**
+     * Serde for Referenceable used by AbstractNotificationConsumer.GSON.
+     */
+    public static final class ReferenceableSerializerDeserializer implements JsonDeserializer<IStruct>,
             JsonSerializer<IReferenceableInstance> {
         @Override
         public IReferenceableInstance deserialize(final JsonElement json, final Type type,
-                                   final JsonDeserializationContext context) throws JsonParseException {
+                                                  final JsonDeserializationContext context) {
 
             return InstanceSerialization.fromJsonReferenceable(json.toString(), true);
         }
@@ -178,14 +183,14 @@ public abstract class AbstractNotificationConsumer<T> implements NotificationCon
     }
 
 
-    // ----- inner class : JSONArraySerializerDeserializer ----------------------------
-
-    public final static class JSONArraySerializerDeserializer implements JsonDeserializer<JSONArray>,
+    /**
+     * Serde for JSONArray used by AbstractNotificationConsumer.GSON.
+     */
+    public static final class JSONArraySerializerDeserializer implements JsonDeserializer<JSONArray>,
             JsonSerializer<JSONArray> {
         @Override
         public JSONArray deserialize(final JsonElement json, final Type type,
-                                                  final JsonDeserializationContext context) throws JsonParseException {
-
+                                     final JsonDeserializationContext context) {
             try {
                 return new JSONArray(json.toString());
             } catch (JSONException e) {

@@ -1,10 +1,11 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -14,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.atlas.kafka;
 
 import com.google.inject.Inject;
@@ -99,7 +99,7 @@ public class KafkaNotificationTest {
         assertTrue(streams.contains(kafkaStream2));
 
         // assert that the given consumer group id was added to the properties used to create the consumer connector
-        Properties properties = kafkaNotification.consumerProperties;
+        Properties properties = kafkaNotification.myProperties;
         assertEquals(groupId, properties.getProperty(ConsumerConfig.GROUP_ID_CONFIG));
     }
 
@@ -113,7 +113,7 @@ public class KafkaNotificationTest {
 
         private final ConsumerConnector consumerConnector;
 
-        private Properties consumerProperties;
+        private Properties myProperties;
         private List<KafkaStream> kafkaStreams = new LinkedList<>();
 
         public TestKafkaNotification(Configuration applicationProperties,
@@ -123,8 +123,8 @@ public class KafkaNotificationTest {
         }
 
         @Override
-        protected ConsumerConnector createConsumerConnector(Properties properties) {
-            this.consumerProperties = properties;
+        protected ConsumerConnector createConsumerConnector(Properties consumerProperties) {
+            this.myProperties = consumerProperties;
             kafkaStreams.clear();
             return consumerConnector;
         }

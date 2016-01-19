@@ -1,10 +1,11 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -14,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.atlas.kafka;
 
 import com.google.inject.Singleton;
@@ -57,10 +57,10 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Future;
 
-@Singleton
 /**
  * Kafka specific access point to the Atlas notification framework.
  */
+@Singleton
 public class KafkaNotification extends AbstractNotification implements Service {
     public static final Logger LOG = LoggerFactory.getLogger(KafkaNotification.class);
 
@@ -68,9 +68,8 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
     private static final String ATLAS_KAFKA_DATA = "data";
 
-    public static final String ATLAS_HOOK_TOPIC     = "ATLAS_HOOK";
+    public static final String ATLAS_HOOK_TOPIC = "ATLAS_HOOK";
     public static final String ATLAS_ENTITIES_TOPIC = "ATLAS_ENTITIES";
-    public static final String ATLAS_TYPES_TOPIC    = "ATLAS_TYPES";
 
     protected static final String CONSUMER_GROUP_ID_PROPERTY = "group.id";
 
@@ -81,10 +80,12 @@ public class KafkaNotification extends AbstractNotification implements Service {
     private KafkaProducer producer = null;
     private List<ConsumerConnector> consumerConnectors = new ArrayList<>();
 
-    private static final Map<NotificationType, String> topicMap = new HashMap<NotificationType, String>() {{
-        put(NotificationType.HOOK, ATLAS_HOOK_TOPIC);
-        put(NotificationType.ENTITIES, ATLAS_ENTITIES_TOPIC);
-    }};
+    private static final Map<NotificationType, String> TOPIC_MAP = new HashMap<NotificationType, String>() {
+        {
+            put(NotificationType.HOOK, ATLAS_HOOK_TOPIC);
+            put(NotificationType.ENTITIES, ATLAS_ENTITIES_TOPIC);
+        }
+    };
 
 
     // ----- Constructors ----------------------------------------------------
@@ -106,14 +107,14 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
         //Override default configs
         properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
-            "org.apache.kafka.common.serialization.StringSerializer");
+                "org.apache.kafka.common.serialization.StringSerializer");
         properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-            "org.apache.kafka.common.serialization.StringSerializer");
+                "org.apache.kafka.common.serialization.StringSerializer");
 
         properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
 
         properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
-            "org.apache.kafka.common.serialization.StringDeserializer");
+                "org.apache.kafka.common.serialization.StringDeserializer");
         properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
                 "org.apache.kafka.common.serialization.StringDeserializer");
         properties.put(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY, "roundrobin");
@@ -129,7 +130,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
             try {
                 startZk();
                 startKafka();
-            } catch(Exception e) {
+            } catch (Exception e) {
                 throw new AtlasException("Failed to start embedded kafka", e);
             }
         }
@@ -152,7 +153,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
     @Override
     public <T> List<NotificationConsumer<T>> createConsumers(NotificationType notificationType,
                                                              int numConsumers) {
-        String topic = topicMap.get(notificationType);
+        String topic = TOPIC_MAP.get(notificationType);
 
         Properties consumerProperties = getConsumerProperties(notificationType);
 
@@ -174,12 +175,12 @@ public class KafkaNotification extends AbstractNotification implements Service {
     }
 
     @Override
-    public void _send(NotificationType type, String... messages) throws NotificationException {
+    public void sendInternal(NotificationType type, String... messages) throws NotificationException {
         if (producer == null) {
             createProducer();
         }
 
-        String topic = topicMap.get(type);
+        String topic = TOPIC_MAP.get(type);
         List<Future<RecordMetadata>> futures = new ArrayList<>();
         for (String message : messages) {
             ProducerRecord record = new ProducerRecord(topic, message);
@@ -217,12 +218,12 @@ public class KafkaNotification extends AbstractNotification implements Service {
     /**
      * Create a Kafka consumer connector from the given properties.
      *
-     * @param properties  the properties for creating the consumer connector
+     * @param consumerProperties  the properties for creating the consumer connector
      *
      * @return a new Kafka consumer connector
      */
-    protected ConsumerConnector createConsumerConnector(Properties properties) {
-        return Consumer.createJavaConsumerConnector(new kafka.consumer.ConsumerConfig(properties));
+    protected ConsumerConnector createConsumerConnector(Properties consumerProperties) {
+        return Consumer.createJavaConsumerConnector(new kafka.consumer.ConsumerConfig(consumerProperties));
     }
 
     /**
@@ -239,7 +240,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
     }
 
     // Get properties for consumer request
-    private Properties getConsumerProperties(NotificationType type)  {
+    private Properties getConsumerProperties(NotificationType type) {
         // find the configured group id for the given notification type
         String groupId = properties.getProperty(type.toString().toLowerCase() + "." + CONSUMER_GROUP_ID_PROPERTY);
 
@@ -271,7 +272,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
     private URL getURL(String url) throws MalformedURLException {
         try {
             return new URL(url);
-        } catch(MalformedURLException e) {
+        } catch (MalformedURLException e) {
             return new URL("http://" + url);
         }
     }
@@ -282,7 +283,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
         URL zkAddress = getURL(zkValue);
         this.factory = NIOServerCnxnFactory.createFactory(
-            new InetSocketAddress(zkAddress.getHost(), zkAddress.getPort()), 1024);
+                new InetSocketAddress(zkAddress.getHost(), zkAddress.getPort()), 1024);
         File snapshotDir = constructDir("zk/txn");
         File logDir = constructDir("zk/snap");
 

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * <p/>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p/>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,9 +18,14 @@
 
 package org.apache.atlas;
 
-public interface AtlasConstants {
-    String CLUSTER_NAME_KEY = "atlas.cluster.name";
-    String DEFAULT_CLUSTER_NAME = "primary";
-    String CLUSTER_NAME_ATTRIBUTE = "clusterName";
+/**
+ * Constants used in Atlas configuration.
+ */
+public final class AtlasConstants {
+    private AtlasConstants() {
+    }
 
+    public static final String CLUSTER_NAME_KEY = "atlas.cluster.name";
+    public static final String DEFAULT_CLUSTER_NAME = "primary";
+    public static final String CLUSTER_NAME_ATTRIBUTE = "clusterName";
 }
