@@ -49,8 +49,8 @@ allows integration with the whole enterprise data ecosystem.
       * [[Bridge-Hive][Hive Bridge]]
       * [[Bridge-Sqoop][Sqoop Bridge]]
       * [[Bridge-Falcon][Falcon Bridge]]
+      * [[StormAtlasHook][Storm Bridge]]
    * [[HighAvailability][Fault Tolerance And High Availability Options]]
-
 
 ---++ API Documentation
 

@@ -7,6 +7,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-181 Integrate storm topology metadata into Atlas (svenkat,yhemanth via shwethags)
 ATLAS-311 UI: Local storage for traits - caching [not cleared on refresh] To be cleared on time lapse for 1hr (Anilg via shwethags)
 ATLAS-106 Store createTimestamp and modified timestamp separately for an entity (dkantor via shwethags)
 ATLAS-433 Fix checkstyle issues for common and notification module (shwethags)

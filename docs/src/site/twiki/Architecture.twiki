@@ -25,6 +25,7 @@ Available bridges are:
    * [[Bridge-Hive][Hive Bridge]]
    * [[Bridge-Sqoop][Sqoop Bridge]]
    * [[Bridge-Falcon][Falcon Bridge]]
+   * [[StormAtlasHook][Storm Bridge]]
 
 ---++ Notification
 Notification is used for reliable entity registration from hooks and for entity/type change notifications. Atlas, by default, provides Kafka integration, but its possible to provide other implementations as well. Atlas service starts embedded Kafka server by default.
