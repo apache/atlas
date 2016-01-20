@@ -18,11 +18,9 @@
 
 package org.apache.atlas.repository.graph;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.inject.Inject;
-
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.util.TitanCleanup;
+import com.tinkerpop.blueprints.Vertex;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
@@ -40,9 +38,9 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.util.TitanCleanup;
-import com.tinkerpop.blueprints.Vertex;
+import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Test for GraphBackedMetadataRepository.deleteEntities
@@ -102,7 +100,8 @@ public class GraphBackedMetadataRepositoryDeleteEntitiesTest {
         Assert.assertTrue(refValue instanceof List);
         List<Object> employees = (List<Object>)refValue;
         Assert.assertEquals(employees.size(), 4);
-        List<String> employeeGuids = new ArrayList<String>(4);
+
+        List<String> employeeGuids = new ArrayList(4);
         for (Object listValue : employees) {
             Assert.assertTrue(listValue instanceof ITypedReferenceableInstance);
             ITypedReferenceableInstance employee = (ITypedReferenceableInstance) listValue;
@@ -123,6 +122,7 @@ public class GraphBackedMetadataRepositoryDeleteEntitiesTest {
         for (String employeeGuid : employeeGuids) {
             verifyEntityDoesNotExist(employeeGuid);
         }
+
         // Verify all Person.address struct vertices were removed.
         vertexCount = countVertices(Constants.ENTITY_TYPE_PROPERTY_KEY, "Address");
         Assert.assertEquals(vertexCount, 0);
@@ -159,11 +159,11 @@ public class GraphBackedMetadataRepositoryDeleteEntitiesTest {
         List<String> guids = repositoryService.createEntities(hrDept2);
         Assert.assertNotNull(guids);
         Assert.assertEquals(guids.size(), 5);
+
         List<String> entityList = repositoryService.getEntityList("Department");
         Assert.assertNotNull(entityList);
         Assert.assertEquals(entityList.size(), 1);
-        String hrDeptGuid = entityList.get(0);
-        return hrDeptGuid;
+        return entityList.get(0);
     }
     
     private int countVertices(String propertyName, Object value) {
@@ -176,12 +176,10 @@ public class GraphBackedMetadataRepositoryDeleteEntitiesTest {
     }
     
     private void verifyEntityDoesNotExist(String hrDeptGuid) throws RepositoryException {
-
         try {
             repositoryService.getEntityDefinition(hrDeptGuid);
             Assert.fail("EntityNotFoundException was expected but none thrown");
-        }
-        catch(EntityNotFoundException e) {
+        } catch(EntityNotFoundException e) {
             // good
         }
     }

@@ -224,7 +224,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
             // update the traits in entity once adding trait instance is successful
             GraphHelper.addProperty(instanceVertex, Constants.TRAIT_NAMES_PROPERTY_KEY, traitName);
-
+            GraphHelper.setProperty(instanceVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.valueOf(System.currentTimeMillis()));
+            
         } catch (RepositoryException e) {
             throw e;
         } catch (Exception e) {
@@ -285,6 +286,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         for (String traitName : traitNames) {
             GraphHelper.addProperty(instanceVertex, Constants.TRAIT_NAMES_PROPERTY_KEY, traitName);
         }
+        GraphHelper.setProperty(instanceVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.valueOf(System.currentTimeMillis()));
     }
 
     @Override

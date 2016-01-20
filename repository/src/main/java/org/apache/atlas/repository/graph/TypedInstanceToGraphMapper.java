@@ -21,7 +21,6 @@ import com.thinkaurelius.titan.core.SchemaViolationException;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
-
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
@@ -166,8 +165,9 @@ public final class TypedInstanceToGraphMapper {
         if (Operation.CREATE.equals(operation)) {
             //TODO - Handle Trait updates
             addTraits(typedInstance, instanceVertex, classType);
+        } else if (Operation.UPDATE_FULL.equals(operation) || Operation.UPDATE_PARTIAL.equals(operation)) {
+            GraphHelper.setProperty(instanceVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.valueOf(System.currentTimeMillis()));
         }
-
         return getId(typedInstance)._getId();
     }
 

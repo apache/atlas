@@ -24,10 +24,12 @@ import org.apache.atlas.BaseHiveRepositoryTest;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.graph.GraphProvider;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
@@ -43,6 +45,10 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
@@ -71,6 +77,13 @@ public class GraphBackedDiscoveryServiceTest extends BaseHiveRepositoryTest {
         ITypedReferenceableInstance hrDept2 = deptType.convert(hrDept, Multiplicity.REQUIRED);
 
         repositoryService.createEntities(hrDept2);
+        
+        ITypedReferenceableInstance jane = repositoryService.getEntityDefinition("Person", "name", "Jane");
+        Id janeGuid = jane.getId();
+        ClassType personType = typeSystem.getDataType(ClassType.class, "Person");
+        ITypedReferenceableInstance instance = personType.createInstance(janeGuid);
+        instance.set("orgLevel", "L1");
+        repositoryService.updateEntities(instance);
     }
 
     @AfterClass
@@ -115,15 +128,45 @@ public class GraphBackedDiscoveryServiceTest extends BaseHiveRepositoryTest {
     public void testRawSearch1() throws Exception {
         // Query for all Vertices in Graph
         Object r = discoveryService.searchByGremlin("g.V.toList()");
+        Assert.assertTrue(r instanceof List);
+        List<Map<String, Object>> resultList = (List<Map<String, Object>>) r;
+        Assert.assertTrue(resultList.size() > 0);
         System.out.println("search result = " + r);
 
         // Query for all Vertices of a Type
-        r = discoveryService.searchByGremlin("g.V.filter{it.typeName == 'Department'}.toList()");
+        r = discoveryService.searchByGremlin("g.V.filter{it." + Constants.ENTITY_TYPE_PROPERTY_KEY + " == 'Department'}.toList()");
+        Assert.assertTrue(r instanceof List);
+        resultList = (List<Map<String, Object>>) r;
+        Assert.assertTrue(resultList.size() > 0);
         System.out.println("search result = " + r);
 
         // Property Query: list all Person names
-        r = discoveryService.searchByGremlin("g.V.filter{it.typeName == 'Person'}.'Person.name'.toList()");
+        r = discoveryService.searchByGremlin("g.V.filter{it." + Constants.ENTITY_TYPE_PROPERTY_KEY + " == 'Person'}.'Person.name'.toList()");
+        Assert.assertTrue(r instanceof List);
+        resultList = (List<Map<String, Object>>) r;
+        Assert.assertTrue(resultList.size() > 0);
         System.out.println("search result = " + r);
+        List<Object> names = new ArrayList<Object>(resultList.size());
+        for (Map<String, Object> vertexProps : resultList) {
+            names.addAll(vertexProps.values());
+        }
+        for (String name : Arrays.asList("John", "Max")) {
+            Assert.assertTrue(names.contains(name));
+        }
+        
+        // Query for all Vertices modified after 01/01/2015 00:00:00 GMT
+        r = discoveryService.searchByGremlin("g.V.filter{it." + Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY + " > 1420070400000}.toList()");
+        Assert.assertTrue(r instanceof List);
+        resultList = (List<Map<String, Object>>) r;
+        Assert.assertTrue(resultList.size() > 0);
+        for (Map<String, Object> vertexProps : resultList) {
+            Object object = vertexProps.get(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY);
+            Assert.assertNotNull(object);
+            Long timestampAsLong = Long.valueOf((String)object);
+            Assert.assertTrue(timestampAsLong > 1420070400000L);
+            object = vertexProps.get(Constants.TIMESTAMP_PROPERTY_KEY);
+            Assert.assertNotNull(object);
+        }
     }
 
     @DataProvider(name = "dslQueriesProvider")

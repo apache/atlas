@@ -24,6 +24,7 @@ import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
+
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
@@ -52,9 +53,11 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
+
 import scala.actors.threadpool.Arrays;
 
 import javax.inject.Inject;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -237,6 +240,9 @@ public class GraphBackedMetadataRepositoryTest {
     @Test(dependsOnMethods = "testGetTraitNames")
     public void testAddTrait() throws Exception {
         final String aGUID = getGUID();
+        Vertex vertex = GraphHelper.getInstance().getVertexForGUID(aGUID);
+        Long modificationTimestampPreUpdate = vertex.getProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY);
+        Assert.assertNull(modificationTimestampPreUpdate);
 
         List<String> traitNames = repositoryService.getTraitNames(aGUID);
         System.out.println("traitNames = " + traitNames);
@@ -254,6 +260,11 @@ public class GraphBackedMetadataRepositoryTest {
         Assert.assertEquals(traitNames.size(), 2);
         Assert.assertTrue(traitNames.contains(TestUtils.PII));
         Assert.assertTrue(traitNames.contains(TestUtils.CLASSIFICATION));
+        
+        // Verify modification timestamp was updated.
+        GraphHelper.getInstance().getVertexForGUID(aGUID);
+        Long modificationTimestampPostUpdate = vertex.getProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY);
+        Assert.assertNotNull(modificationTimestampPostUpdate);
     }
 
     @Test(dependsOnMethods = "testAddTrait")
@@ -301,6 +312,9 @@ public class GraphBackedMetadataRepositoryTest {
     @Test(dependsOnMethods = "testAddTrait")
     public void testDeleteTrait() throws Exception {
         final String aGUID = getGUID();
+        Vertex vertex = GraphHelper.getInstance().getVertexForGUID(aGUID);
+        Long modificationTimestampPreUpdate = vertex.getProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY);
+        Assert.assertNotNull(modificationTimestampPreUpdate);
 
         List<String> traitNames = repositoryService.getTraitNames(aGUID);
         Assert.assertEquals(traitNames.size(), 3);
@@ -315,6 +329,12 @@ public class GraphBackedMetadataRepositoryTest {
         Assert.assertEquals(traitNames.size(), 2);
         Assert.assertTrue(traitNames.contains(TestUtils.CLASSIFICATION));
         Assert.assertFalse(traitNames.contains(TestUtils.PII));
+        
+        // Verify modification timestamp was updated.
+        GraphHelper.getInstance().getVertexForGUID(aGUID);
+        Long modificationTimestampPostUpdate = vertex.getProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY);
+        Assert.assertNotNull(modificationTimestampPostUpdate);
+        Assert.assertTrue(modificationTimestampPostUpdate > modificationTimestampPreUpdate);
     }
 
     @Test(expectedExceptions = RepositoryException.class)
@@ -479,8 +499,16 @@ public class GraphBackedMetadataRepositoryTest {
     public void testUpdateEntity_MultiplicityOneNonCompositeReference() throws Exception {
         ITypedReferenceableInstance john = repositoryService.getEntityDefinition("Person", "name", "John");
         Id johnGuid = john.getId();
+
         ITypedReferenceableInstance max = repositoryService.getEntityDefinition("Person", "name", "Max");
         String maxGuid = max.getId()._getId();
+        Vertex vertex = GraphHelper.getInstance().getVertexForGUID(maxGuid);
+        Long creationTimestamp = vertex.getProperty(Constants.TIMESTAMP_PROPERTY_KEY);
+        Assert.assertNotNull(creationTimestamp);
+
+        Long modificationTimestampPreUpdate = vertex.getProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY);
+        Assert.assertNull(modificationTimestampPreUpdate);
+
         ITypedReferenceableInstance jane = repositoryService.getEntityDefinition("Person", "name", "Jane");
         Id janeGuid = jane.getId();
         
@@ -497,6 +525,13 @@ public class GraphBackedMetadataRepositoryTest {
         ITypedReferenceableInstance refTarget = (ITypedReferenceableInstance) object;
         Assert.assertEquals(refTarget.getId()._getId(), johnGuid._getId());
 
+
+        // Verify modification timestamp was updated.
+        vertex = GraphHelper.getInstance().getVertexForGUID(maxGuid);
+        Long modificationTimestampPostUpdate = vertex.getProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY);
+        Assert.assertNotNull(modificationTimestampPostUpdate);
+        Assert.assertTrue(creationTimestamp < modificationTimestampPostUpdate);
+
         // Update max's mentor reference to jane.
         instance = personType.createInstance(max.getId());
         instance.set("mentor", janeGuid);
@@ -508,6 +543,12 @@ public class GraphBackedMetadataRepositoryTest {
         Assert.assertTrue(object instanceof ITypedReferenceableInstance);
         refTarget = (ITypedReferenceableInstance) object;
         Assert.assertEquals(refTarget.getId()._getId(), janeGuid._getId());
+        
+        // Verify modification timestamp was updated.
+        vertex = GraphHelper.getInstance().getVertexForGUID(maxGuid);
+        Long modificationTimestampPost2ndUpdate = vertex.getProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY);
+        Assert.assertNotNull(modificationTimestampPost2ndUpdate);
+        Assert.assertTrue(modificationTimestampPostUpdate < modificationTimestampPost2ndUpdate);
     }
 
     private ITypedReferenceableInstance createHiveTableInstance(Referenceable databaseInstance) throws Exception {

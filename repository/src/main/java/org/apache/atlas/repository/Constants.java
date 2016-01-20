@@ -57,6 +57,8 @@ public final class Constants {
 
     public static final String VERSION_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "version";
     public static final String TIMESTAMP_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "timestamp";
+    public static final String MODIFICATION_TIMESTAMP_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "modificationTimestamp";
+
 
     /**
      * search backing index name.
