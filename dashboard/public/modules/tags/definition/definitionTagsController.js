@@ -17,8 +17,8 @@
  */
 'use strict';
 
-angular.module('dgc.tags.definition').controller('DefinitionTagsController', ['$scope', '$resource', '$state', '$stateParams', 'lodash', 'AttributeDefinition', 'TagClasses', 'TagsResource', 'NotificationService', 'NavigationResource',
-    function($scope, $resource, $state, $stateParams, _, AttributeDefinition, Categories, TagsResource, NotificationService, NavigationResource) {
+angular.module('dgc.tags.definition').controller('DefinitionTagsController', ['$scope', '$resource', '$state', '$stateParams', 'lodash', 'AttributeDefinition', 'TagClasses', 'TagsResource', 'NotificationService', 'NavigationResource', '$cacheFactory',
+    function($scope, $resource, $state, $stateParams, _, AttributeDefinition, Categories, TagsResource, NotificationService, NavigationResource, $cacheFactory) {
         $scope.categoryList = Categories;
         $scope.category = 'TRAIT';
         $scope.tagModel = {
@@ -40,6 +40,12 @@ angular.module('dgc.tags.definition').controller('DefinitionTagsController', ['$
             $scope.categoryInst = Categories[$scope.category].clearTags();
         };
 
+        $scope.refreshTags = function(){
+            var httpDefaultCache = $cacheFactory.get('$http');
+            httpDefaultCache.remove('/api/atlas/types?type=TRAIT');
+            $scope.typesList = NavigationResource.get();
+        }; 
+
         $scope.save = function saveTag(form) {
             $scope.savedTag = null;
             if (form.$valid) {
@@ -53,6 +59,8 @@ angular.module('dgc.tags.definition').controller('DefinitionTagsController', ['$
                 TagsResource.save($scope.categoryInst.toJson()).$promise
                     .then(function TagCreateSuccess() {
                         NotificationService.info('"' + $scope.tagModel.typeName + '" has been created', false);
+                        var httpDefaultCache = $cacheFactory.get('$http');
+                        httpDefaultCache.remove('/api/atlas/types?type=TRAIT');
                     }).catch(function TagCreateFailed(error) {
                         NotificationService.error(error.data.error, false);
                     }).finally(function() {

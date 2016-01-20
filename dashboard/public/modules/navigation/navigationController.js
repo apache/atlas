@@ -17,8 +17,8 @@
  */
 'use strict';
 
-angular.module('dgc.navigation').controller('NavigationController', ['$scope', 'NavigationResource',
-    function($scope, NavigationResource) {
+angular.module('dgc.navigation').controller('NavigationController', ['$scope', 'NavigationResource', '$cacheFactory',
+    function($scope, NavigationResource, $cacheFactory) {
 
         $scope.updateVar = function(event) {
             $scope.$$prevSibling.query = angular.element(event.target).text();
@@ -28,6 +28,17 @@ angular.module('dgc.navigation').controller('NavigationController', ['$scope', '
         $scope.$on('load_Traits', function() {
             $scope.leftnav = NavigationResource.get();
         });
+
+        setTimeout(function() {
+         	var httpDefaultCache = $cacheFactory.get('$http');
+            httpDefaultCache.remove('/api/atlas/types?type=TRAIT');
+        }, 3600000);
+
+        $scope.refreshTags = function(){
+        	var httpDefaultCache = $cacheFactory.get('$http');
+        	httpDefaultCache.remove('/api/atlas/types?type=TRAIT');
+        	$scope.leftnav = NavigationResource.get();
+        }; 
 
     }
 ]);

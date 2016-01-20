@@ -24,6 +24,7 @@ angular.module('dgc.navigation').factory('NavigationResource', ['$resource', fun
             'method': 'GET',
             'responseType': 'json',
             'isArray': true,
+            'cache' : true,
             'transformResponse': function(data) {
                 var results = [];
                 angular.forEach(data && data.results, function(val) {
