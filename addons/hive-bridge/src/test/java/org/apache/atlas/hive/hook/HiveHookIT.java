@@ -20,11 +20,11 @@ package org.apache.atlas.hive.hook;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringEscapeUtils;
@@ -32,6 +32,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.ql.Driver;
+import org.apache.hadoop.hive.ql.processors.CommandProcessorResponse;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
@@ -42,6 +43,8 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.util.Map;
+
+import static org.testng.Assert.assertEquals;
 
 public class HiveHookIT {
     public static final Logger LOG = org.slf4j.LoggerFactory.getLogger(HiveHookIT.class);
@@ -67,8 +70,10 @@ public class HiveHookIT {
     }
 
     private void runCommand(String cmd) throws Exception {
+        LOG.debug("Running command '{}'", cmd);
         ss.setCommandType(null);
-        driver.run(cmd);
+        CommandProcessorResponse response = driver.run(cmd);
+        assertEquals(response.getResponseCode(), 0);
     }
 
     @Test
@@ -148,17 +153,6 @@ public class HiveHookIT {
         //Create table where database doesn't exist, will create database instance as well
         assertDatabaseIsRegistered(DEFAULT_DB);
     }
-
-    @Test
-    public void testRenameTable() throws Exception {
-        String tableName = createTable();
-        String newTableName = tableName();
-        runCommand(String.format("alter table %s rename to %s", tableName, newTableName));
-
-        assertTableIsRegistered(DEFAULT_DB, newTableName);
-        assertTableIsNotRegistered(DEFAULT_DB, tableName);
-    }
-
 
     private String assertColumnIsRegistered(String colName) throws Exception {
         LOG.debug("Searching for column {}", colName);
@@ -265,8 +259,8 @@ public class HiveHookIT {
         assertProcessIsRegistered(query);
     }
 
-    @Test(enabled = false)
-    public void testAlterTable() throws Exception {
+    @Test
+    public void testAlterTableRename() throws Exception {
         String tableName = createTable();
         String newName = tableName();
         String query = "alter table " + tableName + " rename to " + newName;
@@ -276,8 +270,8 @@ public class HiveHookIT {
         assertTableIsNotRegistered(DEFAULT_DB, tableName);
     }
 
-    @Test(enabled = false)
-    public void testAlterView() throws Exception {
+    @Test
+    public void testAlterViewRename() throws Exception {
         String tableName = createTable();
         String viewName = tableName();
         String newName = tableName();
@@ -394,6 +388,13 @@ public class HiveHookIT {
         vertices = response.getJSONObject("values").getJSONObject("vertices");
         Assert.assertTrue(vertices.has(table1Id));
         Assert.assertTrue(vertices.has(table2Id));
+    }
+
+    //For ATLAS-448
+    @Test
+    public void testNoopOperation() throws Exception {
+        runCommand("show compactions");
+        runCommand("show transactions");
     }
 
     public interface Predicate {

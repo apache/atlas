@@ -49,7 +49,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -71,6 +73,8 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     public static final String QUEUE_SIZE = CONF_PREFIX + "queueSize";
 
     public static final String HOOK_NUM_RETRIES = CONF_PREFIX + "numRetries";
+
+    private static final Map<String, HiveOperation> OPERATION_MAP = new HashMap<>();
 
     // wait time determines how long we wait before we exit the jvm on
     // shutdown. Pending requests after that will not be sent.
@@ -131,6 +135,8 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                         // shutdown client
                     }
                 });
+
+            setupOperationMap();
         } catch (Exception e) {
             LOG.info("Attempting to send msg while shutdown in progress.", e);
         }
@@ -138,6 +144,13 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         hiveConf = new HiveConf();
 
         LOG.info("Created Atlas Hook");
+    }
+
+    private static void setupOperationMap() {
+        //Populate OPERATION_MAP - string to HiveOperation mapping
+        for (HiveOperation hiveOperation : HiveOperation.values()) {
+            OPERATION_MAP.put(hiveOperation.getOperationName(), hiveOperation);
+        }
     }
 
     @Override
@@ -156,7 +169,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
         event.user = hookContext.getUserName() == null ? hookContext.getUgi().getUserName() : hookContext.getUserName();
         event.ugi = hookContext.getUgi();
-        event.operation = HiveOperation.valueOf(hookContext.getOperationName());
+        event.operation = OPERATION_MAP.get(hookContext.getOperationName());
         event.hookType = hookContext.getHookType();
         event.queryId = hookContext.getQueryPlan().getQueryId();
         event.queryStr = hookContext.getQueryPlan().getQueryStr();
