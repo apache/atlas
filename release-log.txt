@@ -7,6 +7,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-439 Investigate apache build failure - EntityJerseyResourceIT.testEntityDeduping (shwethags)
 ATLAS-426 atlas_start fails on cygwin (dkantor via shwethags)
 ATLAS-448 Hive IllegalArgumentException with Atlas hook enabled on SHOW TRANSACTIONS AND SHOW COMPACTIONS (shwethags)
 ATLAS-181 Integrate storm topology metadata into Atlas (svenkat,yhemanth via shwethags)

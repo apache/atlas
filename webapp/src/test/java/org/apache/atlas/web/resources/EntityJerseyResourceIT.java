@@ -141,12 +141,12 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         db.set("name", dbName);
         db.set("description", randomString());
 
-        serviceClient.createEntity(db).getString(0);
+        final String dbid = serviceClient.createEntity(db).getString(0);
 
         waitForNotification(notificationConsumer, MAX_WAIT_TIME, new NotificationPredicate() {
             @Override
             public boolean evaluate(EntityNotification notification) throws Exception {
-                return notification != null && notification.getEntity().get("name").equals(dbName);
+                return notification != null && notification.getEntity().getId()._getId().equals(dbid);
             }
         });
 
@@ -155,12 +155,13 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         assertEquals(results.length(), 1);
 
         //create entity again shouldn't create another instance with same unique attribute value
-        serviceClient.createEntity(db);
+        results = serviceClient.createEntity(db);
+        assertEquals(results.length(), 0);
         try {
             waitForNotification(notificationConsumer, MAX_WAIT_TIME, new NotificationPredicate() {
                 @Override
                 public boolean evaluate(EntityNotification notification) throws Exception {
-                    return notification != null && notification.getEntity().get("name").equals(dbName);
+                    return notification != null && notification.getEntity().getId()._getId().equals(dbid);
                 }
             });
             fail("Expected time out exception");
