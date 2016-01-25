@@ -93,8 +93,11 @@ def expandWebApp(dir):
             if e.errno != errno.EEXIST:
                 raise e
             pass
+        atlasWarPath = os.path.join(atlasDir(), "server", "webapp", "atlas.war")
+        if (isCygwin()):
+            atlasWarPath = convertCygwinPath(atlasWarPath)
         os.chdir(webAppMetadataDir)
-        jar(os.path.join(atlasDir(), "server", "webapp", "atlas.war"))
+        jar(atlasWarPath)
 
 def dirMustExist(dirname):
     if not os.path.exists(dirname):
@@ -337,3 +340,19 @@ def grep(file, value):
         if re.match(value, line):	
            return line
     return None
+
+def isCygwin():
+    return platform.system().startswith("CYGWIN")
+
+# Convert the specified cygwin-style pathname to Windows format,
+# using the cygpath utility.  By default, path is assumed
+# to be a file system pathname.  If isClasspath is True,
+# then path is treated as a Java classpath string.
+def convertCygwinPath(path, isClasspath=False):
+    if (isClasspath):
+        cygpathArgs = ["cygpath", "-w", "-p", path]
+    else:
+        cygpathArgs = ["cygpath", "-w", path]
+    windowsPath = subprocess.Popen(cygpathArgs, stdout=subprocess.PIPE).communicate()[0]
+    windowsPath = windowsPath.strip()
+    return windowsPath

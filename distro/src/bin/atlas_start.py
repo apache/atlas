@@ -34,14 +34,23 @@ def main():
     confdir = mc.dirMustExist(mc.confDir(atlas_home))
     mc.executeEnvSh(confdir)
     logdir = mc.dirMustExist(mc.logDir(atlas_home))
+    if mc.isCygwin():
+        # Pathnames that are passed to JVM must be converted to Windows format.
+        jvm_atlas_home = mc.convertCygwinPath(atlas_home)
+        jvm_confdir = mc.convertCygwinPath(confdir)
+        jvm_logdir = mc.convertCygwinPath(logdir)
+    else:
+        jvm_atlas_home = atlas_home
+        jvm_confdir = confdir
+        jvm_logdir = logdir
 
     #create sys property for conf dirs
-    jvm_opts_list = (ATLAS_LOG_OPTS % logdir).split()
+    jvm_opts_list = (ATLAS_LOG_OPTS % jvm_logdir).split()
 
-    cmd_opts = (ATLAS_COMMAND_OPTS % atlas_home)
+    cmd_opts = (ATLAS_COMMAND_OPTS % jvm_atlas_home)
     jvm_opts_list.extend(cmd_opts.split())
 
-    config_opts = (ATLAS_CONFIG_OPTS % confdir)
+    config_opts = (ATLAS_CONFIG_OPTS % jvm_confdir)
     jvm_opts_list.extend(config_opts.split())
 
     default_jvm_opts = DEFAULT_JVM_OPTS
@@ -69,8 +78,10 @@ def main():
        if storage_backend != None:
 	   raise Exception("Could not find hbase-site.xml in %s. Please set env var HBASE_CONF_DIR to the hbase client conf dir", hbase_conf_dir)
     
+    if mc.isCygwin():
+        atlas_classpath = mc.convertCygwinPath(atlas_classpath, True)
+
     atlas_pid_file = mc.pidFile(atlas_home)
-    
             
     if os.path.isfile(atlas_pid_file):
        #Check if process listed in atlas.pid file is still running
@@ -99,11 +110,13 @@ def main():
                 mc.server_already_running(pid)
              
 
-
-    args = ["-app", os.path.join(web_app_dir, "atlas")]
+    web_app_path = os.path.join(web_app_dir, "atlas")
+    if (mc.isCygwin()):
+        web_app_path = mc.convertCygwinPath(web_app_path)
+    args = ["-app", web_app_path]
     args.extend(sys.argv[1:])
 
-    process = mc.java("org.apache.atlas.Atlas", args, atlas_classpath, jvm_opts_list, logdir)
+    process = mc.java("org.apache.atlas.Atlas", args, atlas_classpath, jvm_opts_list, jvm_logdir)
     mc.writePid(atlas_pid_file, process)
 
     print "Apache Atlas Server started!!!\n"
