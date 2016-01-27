@@ -69,14 +69,14 @@ rep1sep => one or more, separated by second arg.
 {noformat}
 
 Language Notes:
-   * A *SingleQuery* expression can be used to search for entities of a _Trait_ or _Class_.
+   * A *!SingleQuery* expression can be used to search for entities of a _Trait_ or _Class_.
  Entities can be filtered based on a 'Where Clause' and Entity Attributes can be retrieved based on a 'Select Clause'.
-   * An Entity Graph can be traversed/joined by combining one or more SingleQueries.
+   * An Entity Graph can be traversed/joined by combining one or more !SingleQueries.
    * An attempt is made to make the expressions look SQL like by accepting keywords "SELECT",
  "FROM", and "WHERE"; but these are optional and users can simply think in terms of Entity Graph Traversals.
    * The transitive closure of an Entity relationship can be expressed via the _Loop_ expression. A
   _Loop_ expression can be any traversal (recursively a query) that represents a _Path_ that ends in an Entity of the same _Type_ as the starting Entity.
-   * The _WithPath_ clause can be used with transitive closure queries to retrieve the Path that
+   * The _!WithPath_ clause can be used with transitive closure queries to retrieve the Path that
  connects the two related Entities. (We also provide a higher level interface for Closure Queries
   see scaladoc for 'org.apache.atlas.query.ClosureQuery')
    * There are couple of Predicate functions different from SQL:
@@ -90,7 +90,7 @@ Language Notes:
    * from DB
    * DB where name="Reporting" select name, owner
    * DB has name
-   * DB is JdbcAccess
+   * DB is !JdbcAccess
    * Column where Column isa PII
    * Table where name="sales_fact", columns
    * Table where name="sales_fact", columns as column select column.name, column.dataType, column.comment

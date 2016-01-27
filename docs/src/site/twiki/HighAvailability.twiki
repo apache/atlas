@@ -85,5 +85,5 @@ to configure Atlas to use Kafka in HA mode, do the following:
 
 ---++ Known Issues
 
-   * [[https://issues.apache.org/jira/browse/ATLAS-338][ATLAS-338]]: ATLAS-338: Metadata events generated from a Hive CLI (as opposed to Beeline or any client going HiveServer2) would be lost if Atlas server is down.
+   * [[https://issues.apache.org/jira/browse/ATLAS-338][ATLAS-338]]: ATLAS-338: Metadata events generated from a Hive CLI (as opposed to Beeline or any client going !HiveServer2) would be lost if Atlas server is down.
    * If the HBase region servers hosting the Atlas ‘titan’ HTable are down, Atlas would not be able to store or retrieve metadata from HBase until they are brought back online.

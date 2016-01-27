@@ -88,14 +88,14 @@ HBase on the other hand doesnt provide ACID guarantees but is able to scale for 
 
 ---+++ Choosing between Indexing Backends
 
-Refer http://s3.thinkaurelius.com/docs/titan/0.5.4/elasticsearch.html and http://s3.thinkaurelius.com/docs/titan/0.5.4/solr.html for chossing between ElasticSarch and Solr.
+Refer http://s3.thinkaurelius.com/docs/titan/0.5.4/elasticsearch.html and http://s3.thinkaurelius.com/docs/titan/0.5.4/solr.html for choosing between !ElasticSearch and Solr.
 Solr in cloud mode is the recommended setup.
 
 ---+++ Switching Persistence Backend
 
 For switching the storage backend from BerkeleyDB to HBase and vice versa, refer the documentation for "Graph Persistence Engine" described above and restart ATLAS.
 The data in the indexing backend needs to be cleared else there will be discrepancies between the storage and indexing backend which could result in errors during the search.
-ElasticSearch runs by default in embedded mode and the data could easily be cleared by deleting the ATLAS_HOME/data/es directory.
+!ElasticSearch runs by default in embedded mode and the data could easily be cleared by deleting the ATLAS_HOME/data/es directory.
 For Solr, the collections which were created during ATLAS Installation - vertex_index, edge_index, fulltext_index could be deleted which will cleanup the indexes
 
 ---+++ Switching Index Backend

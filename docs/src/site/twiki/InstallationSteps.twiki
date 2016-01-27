@@ -131,8 +131,8 @@ The HBase versions currently supported are 1.1.x. For configuring ATLAS graph pe
 for more details.
 
 Pre-requisites for running HBase as a distributed cluster
-   * 3 or 5 ZooKeeper nodes
-   * Atleast 3 RegionServer nodes. It would be ideal to run the DataNodes on the same hosts as the Region servers for data locality.
+   * 3 or 5 !ZooKeeper nodes
+   * Atleast 3 !RegionServer nodes. It would be ideal to run the !DataNodes on the same hosts as the Region servers for data locality.
 
 *Configuring SOLR as the Indexing Backend for the Graph Repository*
 
@@ -142,8 +142,8 @@ For configuring Titan to work with Solr, please follow the instructions below
    * Install solr if not already running. The version of SOLR supported is 5.2.1. Could be installed from http://archive.apache.org/dist/lucene/solr/5.2.1/solr-5.2.1.tgz
 
    * Start solr in cloud mode.
-  SolrCloud mode uses a ZooKeeper Service as a highly available, central location for cluster management.
-  For a small cluster, running with an existing ZooKeeper quorum should be fine. For larger clusters, you would want to run separate multiple ZooKeeper quorum with atleast 3 servers.
+  !SolrCloud mode uses a !ZooKeeper Service as a highly available, central location for cluster management.
+  For a small cluster, running with an existing !ZooKeeper quorum should be fine. For larger clusters, you would want to run separate multiple !ZooKeeper quorum with atleast 3 servers.
   Note: Atlas currently supports solr in "cloud" mode only. "http" mode is not supported. For more information, refer solr documentation - https://cwiki.apache.org/confluence/display/solr/SolrCloud
 
    * For e.g., to bring up a Solr node listening on port 8983 on a machine, you can use the command:
@@ -163,7 +163,7 @@ For configuring Titan to work with Solr, please follow the instructions below
 
   Note: If numShards and replicationFactor are not specified, they default to 1 which suffices if you are trying out solr with ATLAS on a single node instance.
   Otherwise specify numShards according to the number of hosts that are in the Solr cluster and the maxShardsPerNode configuration.
-  The number of shards cannot exceed the total number of Solr nodes in your SolrCloud cluster.
+  The number of shards cannot exceed the total number of Solr nodes in your !SolrCloud cluster.
 
   The number of replicas (replicationFactor) can be set according to the redundancy required.
 
@@ -182,8 +182,8 @@ Pre-requisites for running Solr in cloud mode
   * Memory - Solr is both memory and CPU intensive. Make sure the server running Solr has adequate memory, CPU and disk.
     Solr works well with 32GB RAM. Plan to provide as much memory as possible to Solr process
   * Disk - If the number of entities that need to be stored are large, plan to have at least 500 GB free space in the volume where Solr is going to store the index data
-  * SolrCloud has support for replication and sharding. It is highly recommended to use SolrCloud with at least two Solr nodes running on different servers with replication enabled.
-    If using SolrCloud, then you also need ZooKeeper installed and configured with 3 or 5 ZooKeeper nodes
+  * !SolrCloud has support for replication and sharding. It is highly recommended to use !SolrCloud with at least two Solr nodes running on different servers with replication enabled.
+    If using !SolrCloud, then you also need !ZooKeeper installed and configured with 3 or 5 !ZooKeeper nodes
 
 *Starting Atlas Server*
 <verbatim>

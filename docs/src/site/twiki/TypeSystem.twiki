@@ -8,7 +8,7 @@
 <img src="images/twiki/data-types.png" height="400" width="600" />
 
 ---+++ Types Instances Overview
-<img src="images/twiki/types-instances.png" height="400" width="600" />
+<img src="images/twiki/types-instance.png" height="400" width="600" />
 
 ---++ Details
 
@@ -23,7 +23,7 @@
 - can have inheritence
 - can contain structs
 - don't necessarily need to use a struct inside the class to define props
-- can also define props using AttributeDefinition using the basic data types
+- can also define props using !AttributeDefinition using the basic data types
 - classes are immutable once created
 
 ### On search interface:
@@ -58,17 +58,17 @@
 
 ### Other useful information
 
-HierarchicalClassType - base type for ClassType and TraitType
+!HierarchicalClassType - base type for !ClassType and !TraitType
 Instances created from Definitions
 
 Every instance is referenceable - i.e. something can point to it in the graph db
-MetadataService may not be used longterm - it is currently used for bootstrapping the repo & type system
+!MetadataService may not be used longterm - it is currently used for bootstrapping the repo & type system
 
 Id class - represents the Id of an instance
 
-When the web service receives an object graph, the ObjectGraphWalker is used to update things
-	- DiscoverInstances is used to discover the instances in the object graph received by the web service
+When the web service receives an object graph, the !ObjectGraphWalker is used to update things
+	- !DiscoverInstances is used to discover the instances in the object graph received by the web service
 
-MapIds assigns new ids to the discovered instances in the object graph
+!MapIds assigns new ids to the discovered instances in the object graph
 
 Anything under the storage package is not part of the public interface
