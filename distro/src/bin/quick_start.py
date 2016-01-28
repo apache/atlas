@@ -30,11 +30,18 @@ def main():
     confdir = mc.dirMustExist(mc.confDir(atlas_home))
     mc.executeEnvSh(confdir)
     logdir = mc.dirMustExist(mc.logDir(atlas_home))
+    if mc.isCygwin():
+        # Pathnames that are passed to JVM must be converted to Windows format.
+        jvm_atlas_home = mc.convertCygwinPath(atlas_home)
+        jvm_logdir = mc.convertCygwinPath(logdir)
+    else:
+        jvm_atlas_home = atlas_home
+        jvm_logdir = logdir
 
     #create sys property for conf dirs
-    jvm_opts_list = (ATLAS_LOG_OPTS % logdir).split()
+    jvm_opts_list = (ATLAS_LOG_OPTS % jvm_logdir).split()
 
-    cmd_opts = (ATLAS_COMMAND_OPTS % atlas_home)
+    cmd_opts = (ATLAS_COMMAND_OPTS % jvm_atlas_home)
     jvm_opts_list.extend(cmd_opts.split())
 
     default_jvm_opts = DEFAULT_JVM_OPTS
@@ -50,6 +57,8 @@ def main():
                        + os.path.join(web_app_dir, "atlas", "WEB-INF", "classes" ) + p \
                        + os.path.join(web_app_dir, "atlas", "WEB-INF", "lib", "*" )  + p \
                        + os.path.join(atlas_home, "libext", "*")
+    if mc.isCygwin():
+        atlas_classpath = mc.convertCygwinPath(atlas_classpath, True)
 
     process = mc.java("org.apache.atlas.examples.QuickStart", sys.argv[1:], atlas_classpath, jvm_opts_list)
     return process.wait()
