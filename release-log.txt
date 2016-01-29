@@ -7,6 +7,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-199 webapp build fails (grunt + tests) (sanjayp via shwethags)
 ATLAS-415 Hive import fails when importing a table that is already imported without StorageDescriptor information (yhemanth via shwethags)
 ATLAS-450 quick_start fails on cygwin (dkantor via shwethags)
 ATLAS-451 Doc: Fix few broken links due to Wiki words in Atlas documentation (ssainath via shwethags)
