@@ -23,16 +23,49 @@ angular.module('dgc.details').controller('DetailsController', ['$window', '$scop
         $scope.tableName = false;
         $scope.isTable = false;
         $scope.isLineage = false;
-        
+
         DetailsResource.get({
             id: $stateParams.id
 
         }, function(data) {
-            $scope.details = data;
+
             $scope.tableName = data.values.name;
             $scope.onActivate('io');
             $scope.isTags = (typeof data.traits !== 'undefined' && typeof data.traits === 'object') ? true : false;
 
+            if (data && data.values) {
+                var getName = function(aaa, attr) {
+                    DetailsResource.get({
+                        id: attr.id
+                    }, function(data1) {
+                        if (data1.values && data1.values.name) {
+                            attr.name = data1.values.name;
+                        }
+                    });
+                };
+
+                for (var aaa in data.values) {
+                    if (typeof data.values[aaa] === 'object' && data.values[aaa] !== null && data.values[aaa].id && typeof data.values[aaa].id === 'string') {
+                        data.values[aaa].name = data.values[aaa].id;
+                        getName(aaa, data.values[aaa]);
+                    }
+                    if (typeof data.values[aaa] === 'object' && data.values[aaa] !== null && data.values[aaa].id && typeof data.values[aaa].id === 'object') {
+                        data.values[aaa].id.name = data.values[aaa].id.id;
+                        getName(aaa, data.values[aaa].id);
+                    }
+                    if (typeof data.values[aaa] === 'object' && angular.isArray(data.values[aaa]) === true) {
+                        var arrObj = data.values[aaa];
+                        for(var a=0; a < arrObj.length; a++){
+                            if(typeof arrObj[a].id === 'string'){ 
+                                arrObj[a].name = arrObj[a].id;
+                                getName(arrObj[a], arrObj[a]);
+                            }
+                        } 
+                    }
+                }
+            }
+ 
+            $scope.details = data;
             if (data && data.values && data.values.name && data.values.name !== "") {
                 SchemaResource.get({
                     tableName: data.values.name
@@ -42,15 +75,15 @@ angular.module('dgc.details').controller('DetailsController', ['$window', '$scop
                         $scope.isSchema = (data1.results.rows && data1.results.rows.length > 0) ? true : false;
                         for (var t = 0; t < data1.results.rows.length; t++) {
                             if (data1.results.rows[t].$id$) {
-                                $scope.isTraitId = true; 
+                                $scope.isTraitId = true;
                             }
                             if (data1.results.rows[t].type) {
-                                $scope.isHiveSchema = true; 
-                            }  
-                            if($scope.isTraitId && $scope.isHiveSchema){
+                                $scope.isHiveSchema = true;
+                            }
+                            if ($scope.isTraitId && $scope.isHiveSchema) {
                                 break;
                             }
-                        } 
+                        }
                     }
                 });
             }
@@ -68,7 +101,7 @@ angular.module('dgc.details').controller('DetailsController', ['$window', '$scop
             $scope.$broadcast('render-lineage', {
                 type: tabname,
                 tableName: $scope.tableName,
-                guid : $stateParams.id
+                guid: $stateParams.id
             });
         };
 
@@ -77,7 +110,6 @@ angular.module('dgc.details').controller('DetailsController', ['$window', '$scop
                 tId: traitId
             });
         };
-
 
         $scope.goDetails = function(id) {
             $state.go("details", {

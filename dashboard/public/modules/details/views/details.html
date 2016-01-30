@@ -1,101 +1,93 @@
-
-
 <!--
-    ~ Licensed to the Apache Software Foundation (ASF) under one
-    ~ or more contributor license agreements.  See the NOTICE file
-    ~ distributed with this work for additional information
-    ~ regarding copyright ownership.  The ASF licenses this file
-    ~ to you under the Apache License, Version 2.0 (the
-    ~ "License"); you may not use this file except in compliance
-    ~ with the License.  You may obtain a copy of the License at
-    ~
-    ~     http://www.apache.org/licenses/LICENSE-2.0
-    ~
-    ~ Unless required by applicable law or agreed to in writing, software
-    ~ distributed under the License is distributed on an "AS IS" BASIS,
-    ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    ~ See the License for the specific language governing permissions and
-    ~ limitations under the License.
-    -->
+   ~ Licensed to the Apache Software Foundation (ASF) under one
+   ~ or more contributor license agreements.  See the NOTICE file
+   ~ distributed with this work for additional information
+   ~ regarding copyright ownership.  The ASF licenses this file
+   ~ to you under the Apache License, Version 2.0 (the
+   ~ "License"); you may not use this file except in compliance
+   ~ with the License.  You may obtain a copy of the License at
+   ~
+   ~     http://www.apache.org/licenses/LICENSE-2.0
+   ~
+   ~ Unless required by applicable law or agreed to in writing, software
+   ~ distributed under the License is distributed on an "AS IS" BASIS,
+   ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   ~ See the License for the specific language governing permissions and
+   ~ limitations under the License.
+   -->
 <div class="row detailsPage" data-ng-controller="DetailsController">
-    <div class="col-lg-12 padding0">
-        <ul class="breadcrumb">
-            <li><button class="btn btn-link" data-ng-click="goBack()"><i class="fa fa-arrow-left"></i> Back To Result</button> </li>
-        </ul>
-    </div>
-    <div role="tabpanel" class="col-lg-12 padding0">
-        <div class="mB20">
-            <h4 ng-if="details.values && details.values.name && details.values.name != ''">
-            <b>Name:</b> <span class="black">{{details.values.name}}</span></h2>
-            <h4 ng-if="details.values && details.values.description && details.values.description != ''"><b>Description:</b> <span class="black">{{details.values.description}}</span></h4>
-            <h4 data-disable="!tableName" data-select="onActivate('io')" id="lineageGraph" class="hide">
-                <span class="lineage">Lineage</span> 
-                <ng-include data-table-type="io" src="'/modules/lineage/views/lineage_io.html'"/>
-            </h4>
-        </div>
-        <tabset>
-            <tab heading="Details">
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Key</th>
-                            <th>Value</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr data-ng-repeat="(key,value) in details.values" ng-if="value && !(key==='columns') && !(key==='name') && !(key==='description')">
-                            <td>{{key}}</td>
-                            <td data-ng-if="isObject(value) && isString(value.id)" class="pointer"> 
-                                <a data-ui-sref="details({id:value.id})">{{ value.id }}</a>
-                            </td>
-                            <td data-ng-if="isObject(value) && isObject(value.id) && isString(value.id.id)" class="pointer">  <a data-ui-sref="details({id:value.id.id})">{{ value.id.id }}</a>
-                            </td>
-                           <td data-ng-if="isObject(value) && !isArray(value) && !isString(value.id) && !isObject(value.id)">
-                                <span data-ng-repeat="(key2, value2) in value"> {{ key2 }} : {{ value2 }}<span ng-if="!$last">,</span></span>
-                            </td>
-                             <td data-ng-if="isArray(value) && !isString(value.id) && !isObject(value.id)">
-                                <div  data-ng-repeat="(key2, value2) in value">
-                                <a class=" pointer" data-ng-if="isObject(value2) && isString(value2.id)"   data-ui-sref="details({id:value2.id})">{{ value2.id }}</a>
-                              
-                                    <div class="row pdLft15px" data-ng-repeat="(key1, value1) in value2">
-                                  
-                                    <span ng-if="isObject(value1)">
-                                        <a class=" pointer" data-ng-if="isString(value1.id)"   data-ui-sref="details({id:value1.id})">{{ value1.id }}</a>
-                                       
-                                        
-                                    </span> 
-                                   
-                                       
-                                        
-                                    </div>
-                                </div>
-                            </td>
-                            <td data-ng-if="isArray(value) && !isObject(value)" >
-                                <div class="row" data-ng-repeat="(key1, value1) in value" ng-if="value1">
-                                    <div data-ng-if="isObject(value1)" data-ng-repeat="(key2, value2) in value1" > 
-                                        <a data-ng-if="isString(value2) && key2 == 'id'" class="pointer pdLft15px" data-ui-sref="details({id:value2})">{{ value2 }}</a> 
-                                    </div>
-                                </div>
-                            </td>
-                            <td data-ng-if="!isArray(value) && isObject(value[0]) && isString(value[0].id) && key=='inputTables'" data-ng-click="goDetails(value[0].id)" class="pointer">
-                                <div class="row" data-ng-repeat="(key1, value1) in value[0]" ng-if="value1">
-                                    <div class="col-md-6" data-ng-if="!isString(value1)" data-ng-repeat="(key2, value2) in value1 track by $index"></div>
-                                    <div data-ng-if="isString(value2)" data-ng-repeat="(key3, value3) in value2"> {{key3}}: {{value3}}</div>
-                                    <div class="col-md-6" data-ng-if="isString(value1)"> {{key1}} : {{value1 | date:'medium'}} UTC</div>
-                                </div>
-                            </td>
-                            <td data-ng-if="isNumber(value)">{{value * 1000 | date:'yyyy-MM-dd HH:mm:ss'}} UTC</td>
-                            <td data-ng-if="isString(value)">{{value}}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </tab>
-            <tab data-heading="Schema" data-ng-if="isSchema">
-                <ng-include src="'/modules/details/views/schema.html'"/>
-            </tab>
-            <tab data-heading="Tags" data-ng-if="isTags">
-                <ng-include  src="'/modules/tags/instance/views/tags.html'"/>
-            </tab>
-        </tabset>
-    </div>
+   <div class="col-lg-12 padding0">
+      <ul class="breadcrumb">
+         <li><button class="btn btn-link" data-ng-click="goBack()"><i class="fa fa-arrow-left"></i> Back To Result</button> </li>
+      </ul>
+   </div>
+   <div role="tabpanel" class="col-lg-12 padding0">
+      <div class="mB20">
+         <h4 ng-if="details.values && details.values.name && details.values.name != ''">
+         <b>Name:</b> <span class="black">{{details.values.name}}</span></h2>
+         <h4 ng-if="details.values && details.values.description && details.values.description != ''"><b>Description:</b> <span class="black">{{details.values.description}}</span></h4>
+         <h4 data-disable="!tableName" data-select="onActivate('io')" id="lineageGraph" class="hide">
+            <span class="lineage">Lineage</span> 
+            <ng-include data-table-type="io" src="'/modules/lineage/views/lineage_io.html'"/>
+         </h4>
+      </div>
+      <tabset>
+         <tab heading="Details">
+            <table class="table table-bordered">
+               <thead>
+                  <tr>
+                     <th>Key</th>
+                     <th>Value</th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr data-ng-repeat="(key,value) in details.values" ng-if="value && !(key==='columns') && !(key==='name') && !(key==='description')">
+                     <td>{{key}}</td>
+                     <td data-ng-if="isObject(value) && isString(value.id)" class="pointer"> 
+                        <a data-ui-sref="details({id:value.id})">{{ value.name }}</a>
+                     </td>
+                     <td data-ng-if="isObject(value) && isObject(value.id) && isString(value.id.id)" class="pointer">  <a data-ui-sref="details({id:value.id.id})">{{ value.id.name }}</a>
+                     </td>
+                     <td data-ng-if="isObject(value) && !isArray(value) && !isString(value.id) && !isObject(value.id)">
+                        <span data-ng-repeat="(key2, value2) in value"> {{ key2 }} : {{ value2 }}<span ng-if="!$last">,</span></span>
+                     </td>
+                     <td data-ng-if="isArray(value) && !isString(value.id) && !isObject(value.id)">
+                        <div  data-ng-repeat="(key2, value2) in value">
+                           <a class=" pointer" data-ng-if="isObject(value2) && isString(value2.id)"   data-ui-sref="details({id:value2.id})">{{ value2.name }}<span ng-if="!$last">,</span></a>
+                           <div class="row pdLft15px" data-ng-repeat="(key1, value1) in value2">
+                              <span ng-if="isObject(value1)">
+                              <a class=" pointer" data-ng-if="isString(value1.id)"   data-ui-sref="details({id:value1.id})">{{ value1.id }}</a> 
+                              </span>  
+                           </div>
+                        </div>
+                     </td>
+                     <td data-ng-if="isArray(value) && !isObject(value)" >
+                        <div class="row" data-ng-repeat="(key1, value1) in value" ng-if="value1">
+                           <div data-ng-if="isObject(value1)" data-ng-repeat="(key2, value2) in value1" > 
+                              <a data-ng-if="isString(value2) && key2 == 'id'" class="pointer pdLft15px" data-ui-sref="details({id:value2})">{{ value2 }}</a> 
+                           </div>
+                        </div>
+                     </td>
+                     <td data-ng-if="!isArray(value) && isObject(value[0]) && isString(value[0].id) && key=='inputTables'" data-ng-click="goDetails(value[0].id)" class="pointer">
+                        <div class="row" data-ng-repeat="(key1, value1) in value[0]" ng-if="value1">
+                           <div class="col-md-6" data-ng-if="!isString(value1)" data-ng-repeat="(key2, value2) in value1 track by $index"></div>
+                           <div data-ng-if="isString(value2)" data-ng-repeat="(key3, value3) in value2"> {{key3}}: {{value3}}</div>
+                           <div class="col-md-6" data-ng-if="isString(value1)"> {{key1}} : {{value1 | date:'medium'}} UTC</div>
+                        </div>
+                     </td>
+                     <td data-ng-if="isNumber(value)">{{value | date:'yyyy-MM-dd HH:mm:ss'}} UTC</td>
+                     <td data-ng-if="isString(value)">{{value}}</td>
+                  </tr>
+               </tbody>
+            </table>
+         </tab>
+         <tab data-heading="Schema" data-ng-if="isSchema">
+            <ng-include src="'/modules/details/views/schema.html'"/>
+         </tab>
+         <tab data-heading="Tags" data-ng-if="isTags">
+            <ng-include  src="'/modules/tags/instance/views/tags.html'"/>
+         </tab>
+      </tabset>
+   </div>
 </div>
+

@@ -37,6 +37,58 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
         $scope.setPage = function(pageNo) {
             $scope.currentPage = pageNo;
         };
+
+        $scope.initalPage = function() {
+            var begin = (($scope.currentPage - 1) * $scope.itemsPerPage),
+                end = begin + $scope.itemsPerPage,
+                currentRowData = [],
+                res = [],
+                count = 0,
+                firstRowId = 0;
+
+            if ($scope.transformedResults && $scope.transformedResults.length > 0) {
+                currentRowData = $scope.transformedResults.slice(begin, end);
+            }
+
+            var getName = function(gid, obj) {
+                DetailsResource.get({
+                    id: gid
+                }, function(data) {
+                    if (data.values && data.values.name) {
+                        obj.name = data.values.name;
+                    } else {
+                        obj.name = gid;
+                    }
+                    res.push(obj);
+                    count++;
+
+                    $scope.filteredResults = res;
+                    if (!$scope.transformedProperties && firstRowId === gid) {
+                        $scope.transformedProperties = $scope.filterProperties();
+                    }
+                });
+            };
+
+            angular.forEach(currentRowData, function(value) {
+                var objVal = value;
+
+                if (objVal.guid && !objVal.name) {
+                    if (!firstRowId) {
+                        firstRowId = objVal.guid;
+                    }
+                    getName(objVal.guid, objVal);
+                } else {
+                    res.push(objVal);
+                    count++;
+
+                    $scope.filteredResults = res;
+                    if (!$scope.transformedProperties) {
+                        $scope.transformedProperties = $scope.filterProperties();
+                    }
+                }
+            });
+        };
+
         $scope.search = function(query) {
             $scope.results = [];
             NotificationService.reset();
@@ -46,7 +98,6 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
             SearchResource.search({
                 query: query
             }, function searchSuccess(response) {
-
                 $scope.resultCount = response.count;
                 $scope.results = response.results;
                 $scope.resultRows = ($scope.results && $scope.results.rows) ? $scope.results.rows : $scope.results;
@@ -84,13 +135,10 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
                         }
                     }
                     $scope.transformedResults = $scope.filterResults();
-                    $scope.transformedProperties = $scope.filterProperties();
-
                 } else if (typeof response.dataType === 'undefined') {
                     $scope.dataTransitioned = true;
                     $scope.searchKey = '';
                     $scope.transformedResults = $scope.filterResults();
-                    $scope.transformedProperties = $scope.filterProperties();
                 } else if (response.dataType.typeName && response.dataType.typeName.toLowerCase().indexOf('table') !== -1) {
                     $scope.searchKey = "Table";
                     $scope.transformedResults = $scope.resultRows;
@@ -100,11 +148,7 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
                 }
 
                 $scope.$watch('currentPage + itemsPerPage', function() {
-                    var begin = (($scope.currentPage - 1) * $scope.itemsPerPage),
-                        end = begin + $scope.itemsPerPage;
-                    if ($scope.transformedResults) {
-                        $scope.filteredResults = $scope.transformedResults.slice(begin, end);
-                    }
+                    $scope.initalPage();
                     $scope.pageCount = function() {
                         return Math.ceil($scope.resultCount / $scope.itemsPerPage);
                     };
@@ -125,9 +169,11 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
 
         $scope.filterResults = function() {
             var res = [];
+
             if ($scope.searchKey !== '') {
                 angular.forEach($scope.resultRows, function(value) {
-                    res.push(value[$scope.searchKey]);
+                    var objVal = value[$scope.searchKey];
+                    res.push(objVal);
                 });
             } else {
                 angular.forEach($scope.resultRows, function(value) {
@@ -161,7 +207,6 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
                     if (onlyId) {
                         objVal.guid = objVal.id;
                     }
-
                     res.push(objVal);
                 });
             }
@@ -189,11 +234,13 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
         $scope.doToggle = function($event, el) {
             this.isCollapsed = !el;
         };
+
         $scope.openAddTagHome = function(traitId) {
             $state.go('addTagHome', {
                 tId: traitId
             });
         };
+
         $scope.isTag = function(typename) {
 
             if (typename.indexOf("__tempQueryResultStruct") > -1 || $scope.searchKey === '') {
@@ -202,6 +249,7 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
                 return false;
             }
         };
+
         $scope.getResourceDataHome = function(event, id) {
             DetailsResource.get({
                 id: id
@@ -215,7 +263,9 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
                 }
             });
         };
+
         $scope.$on('refreshResourceData', $scope.getResourceDataHome);
+
         $scope.filterSearchResults = function(items) {
             var res = {};
             var count = 0;
@@ -229,10 +279,12 @@ angular.module('dgc.search').controller('SearchController', ['$scope', '$locatio
             $scope.keyLength = count;
             return res;
         };
-        $scope.searchQuery = $location.search();
-        $scope.query = ($location.search()).query;
-        if ($scope.query) {
 
+        $scope.searchQuery = $location.search();
+
+        $scope.query = ($location.search()).query;
+
+        if ($scope.query) {
             $scope.search($scope.query);
         }
     }
