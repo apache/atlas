@@ -376,3 +376,7 @@ Tags on Home Page design
   overflow: hidden!important;
 
 }
+.notifier{
+    margin-right: 15px;
+    margin-left: -15px;
+}

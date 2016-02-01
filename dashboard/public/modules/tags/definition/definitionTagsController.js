@@ -27,9 +27,9 @@ angular.module('dgc.tags.definition').controller('DefinitionTagsController', ['$
             attributeDefinitions: []
         };
         $scope.typesList = NavigationResource.get();
-
+        $scope.newtagModel = angular.copy($scope.tagModel);
         $scope.addAttribute = function AddAttribute() {
-            $scope.tagModel.attributeDefinitions.push(AttributeDefinition.getModel());
+        $scope.tagModel.attributeDefinitions.push(AttributeDefinition.getModel());
         };
 
         $scope.removeAttribute = function(index) {
@@ -38,6 +38,11 @@ angular.module('dgc.tags.definition').controller('DefinitionTagsController', ['$
 
         $scope.categoryChange = function CategorySwitched() {
             $scope.categoryInst = Categories[$scope.category].clearTags();
+        };
+
+        $scope.reset = function(){
+            $scope.tagModel = angular.copy($scope.newtagModel);
+            $scope.selectedParent = undefined;
         };
 
         $scope.refreshTags = function(){
@@ -61,6 +66,8 @@ angular.module('dgc.tags.definition').controller('DefinitionTagsController', ['$
                         NotificationService.info('"' + $scope.tagModel.typeName + '" has been created', false);
                         var httpDefaultCache = $cacheFactory.get('$http');
                         httpDefaultCache.remove('/api/atlas/types?type=TRAIT');
+                        $scope.typesList = NavigationResource.get();
+                        $scope.reset();
                     }).catch(function TagCreateFailed(error) {
                         NotificationService.error(error.data.error, false);
                     }).finally(function() {

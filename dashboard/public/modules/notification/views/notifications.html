@@ -17,7 +17,7 @@
   -->
 
 <div class="container" data-ng-controller="NotificationController">
-    <alert data-ng-repeat="notification in getNotifications()" data-type="{{notification.type}}" data-close="close(notification)">
+    <alert data-ng-repeat="notification in getNotifications()" data-type="{{notification.type}}" data-close="close(notification)" class="notifier">
         {{notification.message}}
     </alert>
 </div>
