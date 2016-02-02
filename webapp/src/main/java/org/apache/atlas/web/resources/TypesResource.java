@@ -214,7 +214,7 @@ public class TypesResource {
         } catch (IllegalArgumentException | AtlasException ie) {
             LOG.error("Unsupported typeName while retrieving type list {}", type);
             throw new WebApplicationException(
-                    Servlets.getErrorResponse("Unsupported type " + type, Response.Status.BAD_REQUEST));
+                    Servlets.getErrorResponse(new Exception("Unsupported type " + type, ie), Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
             LOG.error("Unable to get types list", e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));

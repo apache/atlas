@@ -104,7 +104,8 @@ public final class Servlets {
     }
 
     public static Response getErrorResponse(Throwable e, Response.Status status) {
-        Response response = getErrorResponse(e.getMessage(), status);
+        String message = e.getMessage() == null ? "Failed with " + e.getClass().getName() : e.getMessage();
+        Response response = getErrorResponse(message, status);
         JSONObject responseJson = (JSONObject) response.getEntity();
         try {
             responseJson.put(AtlasClient.STACKTRACE, printStackTrace(e));
@@ -122,7 +123,7 @@ public final class Servlets {
 
     public static Response getErrorResponse(String message, Response.Status status) {
         JSONObject errorJson = new JSONObject();
-        Object errorEntity = Servlets.escapeJsonString(message);
+        Object errorEntity = escapeJsonString(message);
         try {
             errorJson.put(AtlasClient.ERROR, errorEntity);
             errorEntity = errorJson;

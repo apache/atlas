@@ -109,8 +109,9 @@ public final class GraphHelper {
 
     public Edge addEdge(Vertex fromVertex, Vertex toVertex, String edgeLabel) {
         LOG.debug("Adding edge for {} -> label {} -> {}", fromVertex, edgeLabel, toVertex);
-
-        return titanGraph.addEdge(null, fromVertex, toVertex, edgeLabel);
+        Edge edge = titanGraph.addEdge(null, fromVertex, toVertex, edgeLabel);
+        LOG.debug("Added edge for {} -> label {}, id {} -> {}", fromVertex, edgeLabel, edge.getId(), toVertex);
+        return edge;
     }
 
     public Vertex findVertex(String propertyKey, Object value) {
@@ -161,6 +162,7 @@ public final class GraphHelper {
         } else {
             if (!value.equals(existValue)) {
                 vertex.setProperty(propertyName, value);
+                LOG.debug("Set property {} = \"{}\" to vertex {}", propertyName, value, vertex);
             }
         }
     }
