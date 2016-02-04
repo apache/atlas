@@ -1583,6 +1583,7 @@
                         <exclude>.bowerrc</exclude>
                         <exclude>*.json</exclude>
                         <exclude>**/overlays/**</exclude>
+                        <exclude>dev-support/**</exclude>
                     </excludes>
                 </configuration>
                 <executions>
