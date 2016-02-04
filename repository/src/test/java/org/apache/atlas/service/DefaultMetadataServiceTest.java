@@ -22,14 +22,20 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
+
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.typesystem.exception.TypeNotFoundException;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
 import org.apache.atlas.utils.ParamChecker;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
+import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.repository.graph.GraphProvider;
 import org.apache.atlas.services.MetadataService;
+import org.apache.atlas.typesystem.IReferenceableInstance;
+import org.apache.atlas.typesystem.IStruct;
+import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.TypesDef;
@@ -49,6 +55,7 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -152,6 +159,12 @@ public class DefaultMetadataServiceTest {
         return entity;
     }
 
+    private Referenceable createColumnEntity() {
+        Referenceable entity = new Referenceable(TestUtils.COLUMN_TYPE);
+        entity.set("name", RandomStringUtils.randomAlphanumeric(10));
+        entity.set("type", "VARCHAR(32)");
+        return entity;
+    }
     @Test
     public void testCreateEntityWithUniqueAttribute() throws Exception {
         //name is the unique attribute
@@ -683,6 +696,123 @@ public class DefaultMetadataServiceTest {
             Assert.fail("Expected IllegalArgumentException");
         } catch (IllegalArgumentException e) {
             //expected
+        }
+    }
+    
+    @Test
+    public void testDeleteEntities() throws Exception {
+        
+        
+        // Create 2 table entities, each with 3 composite column entities
+        Referenceable dbEntity = createDBEntity();
+        String dbGuid = createInstance(dbEntity);
+        Id dbId = new Id(dbGuid, 0, TestUtils.DATABASE_TYPE);
+        Referenceable table1Entity = createTableEntity(dbId);
+        Referenceable table2Entity = createTableEntity(dbId);
+        Referenceable col1 = createColumnEntity();
+        Referenceable col2 = createColumnEntity();
+        Referenceable col3 = createColumnEntity();
+        table1Entity.set("columns", ImmutableList.of(col1, col2, col3));
+        table2Entity.set("columns", ImmutableList.of(col1, col2, col3));
+        createInstance(table1Entity);
+        createInstance(table2Entity);
+        
+        // Retrieve the table entities from the repository,
+        // to get their guids and the composite column guids.
+        String entityJson = metadataService.getEntityDefinition(TestUtils.TABLE_TYPE, 
+            "name", (String)table1Entity.get("name"));
+        Assert.assertNotNull(entityJson);
+        table1Entity = InstanceSerialization.fromJsonReferenceable(entityJson, true);
+        Object val = table1Entity.get("columns");
+        Assert.assertTrue(val instanceof List);
+        List<IReferenceableInstance> table1Columns = (List<IReferenceableInstance>) val;
+        entityJson = metadataService.getEntityDefinition(TestUtils.TABLE_TYPE, 
+            "name", (String)table2Entity.get("name"));
+        Assert.assertNotNull(entityJson);
+        table2Entity = InstanceSerialization.fromJsonReferenceable(entityJson, true);
+        val = table2Entity.get("columns");
+        Assert.assertTrue(val instanceof List);
+        List<IReferenceableInstance> table2Columns = (List<IReferenceableInstance>) val;
+
+        // Register an EntityChangeListener to verify the notification mechanism
+        // is working for deleteEntities().
+        DeleteEntitiesChangeListener listener = new DeleteEntitiesChangeListener();
+        metadataService.registerListener(listener);
+        
+        // Delete the table entities.  The deletion should cascade
+        // to their composite columns.
+        JSONArray deleteCandidateGuids = new JSONArray();
+        deleteCandidateGuids.put(table1Entity.getId()._getId());
+        deleteCandidateGuids.put(table2Entity.getId()._getId());
+        List<String> deletedGuids = metadataService.deleteEntities(
+            Arrays.asList(table1Entity.getId()._getId(), table2Entity.getId()._getId()));
+
+        // Verify that deleteEntities() response has guids for tables and their composite columns. 
+        Assert.assertTrue(deletedGuids.contains(table1Entity.getId()._getId()));
+        Assert.assertTrue(deletedGuids.contains(table2Entity.getId()._getId()));
+        for (IReferenceableInstance column : table1Columns) {
+            Assert.assertTrue(deletedGuids.contains(column.getId()._getId()));
+        }
+        for (IReferenceableInstance column : table2Columns) {
+            Assert.assertTrue(deletedGuids.contains(column.getId()._getId()));
+        }
+        
+        // Verify that tables and their composite columns have been deleted from the repository.
+        for (String guid : deletedGuids) {
+            try {
+                metadataService.getEntityDefinition(guid);
+                Assert.fail(EntityNotFoundException.class.getSimpleName() + 
+                    " expected but not thrown.  The entity with guid " + guid + 
+                    " still exists in the repository after being deleted." );
+            }
+            catch(EntityNotFoundException e) {
+                // The entity does not exist in the repository, so deletion was successful.
+            }
+        }
+        
+        // Verify that the listener was notified about the deleted entities.
+        Collection<ITypedReferenceableInstance> deletedEntitiesFromListener = listener.getDeletedEntities();
+        Assert.assertNotNull(deletedEntitiesFromListener);
+        Assert.assertEquals(deletedEntitiesFromListener.size(), deletedGuids.size());
+        List<String> deletedGuidsFromListener = new ArrayList<>(deletedGuids.size());
+        for (ITypedReferenceableInstance deletedEntity : deletedEntitiesFromListener) {
+            deletedGuidsFromListener.add(deletedEntity.getId()._getId());
+        }
+        Assert.assertEquals(deletedGuidsFromListener, deletedGuids);
+    }
+    
+    private static class DeleteEntitiesChangeListener implements EntityChangeListener {
+        
+        private Collection<ITypedReferenceableInstance> deletedEntities_;
+        
+        @Override
+        public void onEntitiesAdded(Collection<ITypedReferenceableInstance> entities)
+            throws AtlasException {
+        }
+
+        @Override
+        public void onEntitiesUpdated(Collection<ITypedReferenceableInstance> entities)
+            throws AtlasException {
+        }
+
+        @Override
+        public void onTraitAdded(ITypedReferenceableInstance entity, IStruct trait)
+            throws AtlasException {
+        }
+
+        @Override
+        public void onTraitDeleted(ITypedReferenceableInstance entity, String traitName)
+            throws AtlasException {
+        }
+
+        @Override
+        public void onEntitiesDeleted(Collection<ITypedReferenceableInstance> entities)
+            throws AtlasException {
+            deletedEntities_ = entities;
+        }
+        
+        public Collection<ITypedReferenceableInstance> getDeletedEntities() {
+            return deletedEntities_;
         }
     }
 }

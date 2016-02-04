@@ -21,6 +21,7 @@ package org.apache.atlas.repository.graph;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.tinkerpop.blueprints.Vertex;
+
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
@@ -32,6 +33,7 @@ import org.apache.atlas.typesystem.exception.EntityNotFoundException;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.TypeSystem;
+import org.apache.atlas.typesystem.types.TypeUtils.Pair;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -39,7 +41,9 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -114,8 +118,8 @@ public class GraphBackedMetadataRepositoryDeleteEntitiesTest {
         vertexCount = countVertices(Constants.ENTITY_TYPE_PROPERTY_KEY, "SecurityClearance");
         Assert.assertEquals(vertexCount, 1);
         
-        List<String> deletedEntities = repositoryService.deleteEntities(hrDeptGuid);
-        Assert.assertTrue(deletedEntities.contains(hrDeptGuid));
+        Pair<List<String>, List<ITypedReferenceableInstance>> deletedEntities = repositoryService.deleteEntities(Arrays.asList(hrDeptGuid));
+        Assert.assertTrue(deletedEntities.left.contains(hrDeptGuid));
         
         // Verify Department entity and its contained Person entities were deleted.
         verifyEntityDoesNotExist(hrDeptGuid);
@@ -145,8 +149,8 @@ public class GraphBackedMetadataRepositoryDeleteEntitiesTest {
         ITypedReferenceableInstance employee = (ITypedReferenceableInstance) listValue;
         String employeeGuid = employee.getId()._getId();
         
-        List<String> deletedEntities = repositoryService.deleteEntities(employeeGuid);
-        Assert.assertTrue(deletedEntities.contains(employeeGuid));
+        Pair<List<String>, List<ITypedReferenceableInstance>> deletedEntities = repositoryService.deleteEntities(Arrays.asList(employeeGuid));
+        Assert.assertTrue(deletedEntities.left.contains(employeeGuid));
         verifyEntityDoesNotExist(employeeGuid);
         
     }

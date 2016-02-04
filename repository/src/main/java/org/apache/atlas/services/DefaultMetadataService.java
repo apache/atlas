@@ -21,6 +21,7 @@ package org.apache.atlas.services;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Provider;
+
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.classification.InterfaceAudience;
@@ -54,6 +55,7 @@ import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.TypeUtils;
+import org.apache.atlas.typesystem.types.TypeUtils.Pair;
 import org.apache.atlas.typesystem.types.ValueConversionException;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.utils.ParamChecker;
@@ -65,6 +67,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -679,5 +682,24 @@ public class DefaultMetadataService implements MetadataService {
 
     public void unregisterListener(EntityChangeListener listener) {
         entityChangeListeners.remove(listener);
+    }
+
+    /* (non-Javadoc)
+     * @see org.apache.atlas.services.MetadataService#deleteEntities(java.lang.String)
+     */
+    @Override
+    public List<String> deleteEntities(List<String> deleteCandidateGuids) throws AtlasException {
+        ParamChecker.notEmpty(deleteCandidateGuids, "delete candidate guids cannot be empty");
+        Pair<List<String>, List<ITypedReferenceableInstance>> deleteEntitiesResult = repository.deleteEntities(deleteCandidateGuids);
+        if (deleteEntitiesResult.right.size() > 0) {
+            onEntitiesDeleted(deleteEntitiesResult.right);
+        }
+        return deleteEntitiesResult.left;
+    }
+
+    private void onEntitiesDeleted(List<ITypedReferenceableInstance> entities) throws AtlasException {
+        for (EntityChangeListener listener : entityChangeListeners) {
+            listener.onEntitiesDeleted(entities);
+        }
     }
 }

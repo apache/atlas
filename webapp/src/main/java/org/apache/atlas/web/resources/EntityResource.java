@@ -21,14 +21,14 @@ package org.apache.atlas.web.resources;
 import com.google.common.base.Preconditions;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.services.MetadataService;
+import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.exception.EntityExistsException;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
 import org.apache.atlas.typesystem.exception.TypeNotFoundException;
-import org.apache.atlas.utils.ParamChecker;
-import org.apache.atlas.services.MetadataService;
-import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.types.ValueConversionException;
+import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.jettison.json.JSONArray;
@@ -250,7 +250,7 @@ public class EntityResource {
             return updateEntityAttributeByGuid(guid, attribute, request);
         }
     }
-
+    
     private Response updateEntityPartialByGuid(String guid, HttpServletRequest request) {
         try {
             ParamChecker.notEmpty(guid, "Guid property cannot be null");
@@ -307,6 +307,37 @@ public class EntityResource {
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
             LOG.error("Unable to add property {} to entity id {}", property, guid, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    /**
+     * Delete entities from the repository
+     * 
+     * @param guids deletion candidate guids
+     * @param request
+     * @return response payload as json
+     */
+    @DELETE
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response deleteEntities(@QueryParam("guid") List<String> guids, @Context HttpServletRequest request) {
+        
+        try {
+            List<String> deletedGuids = metadataService.deleteEntities(guids);
+            JSONObject response = new JSONObject();
+            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
+            JSONArray guidArray = new JSONArray(deletedGuids.size());
+            for (String guid : deletedGuids) {
+                guidArray.put(guid);
+            }
+            response.put(AtlasClient.GUID, guidArray);
+            return Response.ok(response).build();
+        }  catch (AtlasException | IllegalArgumentException e) {
+            LOG.error("Unable to delete entities {}", guids, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (Throwable e) {
+            LOG.error("Unable to delete entities {}", guids, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }

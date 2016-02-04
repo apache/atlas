@@ -175,6 +175,15 @@ public interface MetadataService {
     void deleteTrait(String guid, String traitNameToBeDeleted) throws AtlasException;
 
     /**
+     * Delete the specified entities from the repository
+     * 
+     * @param guids entity guids to be deleted
+     * @return List of guids for deleted entities 
+     * @throws AtlasException
+     */
+    List<String> deleteEntities(List<String> guids) throws AtlasException;
+    
+    /**
      * Register a listener for entity change.
      *
      * @param listener  the listener to register

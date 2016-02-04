@@ -23,6 +23,7 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.io.graphson.GraphSONWriter;
+
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
@@ -187,6 +188,7 @@ public final class TestUtils {
     public static final String DATABASE_TYPE = "hive_database";
     public static final String DATABASE_NAME = "foo";
     public static final String TABLE_TYPE = "hive_table";
+    public static final String COLUMN_TYPE = "column_type";
     public static final String TABLE_NAME = "bar";
     public static final String CLASSIFICATION = "classification";
     public static final String PII = "PII";
@@ -220,7 +222,7 @@ public final class TestUtils {
         EnumTypeDefinition enumTypeDefinition = new EnumTypeDefinition("tableType", values);
 
         HierarchicalTypeDefinition<ClassType> columnsDefinition =
-                createClassTypeDef("column_type", ImmutableList.<String>of(),
+                createClassTypeDef(COLUMN_TYPE, ImmutableList.<String>of(),
                         createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         createRequiredAttrDef("type", DataTypes.STRING_TYPE));
 
@@ -228,7 +230,7 @@ public final class TestUtils {
                 new AttributeDefinition[]{createRequiredAttrDef("name", DataTypes.STRING_TYPE),});
 
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-            new AttributeDefinition("cols", String.format("array<%s>", "column_type"),
+            new AttributeDefinition("cols", String.format("array<%s>", COLUMN_TYPE),
                 Multiplicity.OPTIONAL, true, null),
             new AttributeDefinition("location", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
                 null),
@@ -256,7 +258,7 @@ public final class TestUtils {
                 null),
             new AttributeDefinition("sd", STORAGE_DESC_TYPE, Multiplicity.REQUIRED, true,
                 null),
-            new AttributeDefinition("columns", DataTypes.arrayTypeName("column_type"),
+            new AttributeDefinition("columns", DataTypes.arrayTypeName(COLUMN_TYPE),
                 Multiplicity.OPTIONAL, true, null),
             new AttributeDefinition("parameters", new DataTypes.MapType(DataTypes.STRING_TYPE, DataTypes.STRING_TYPE).getName(), Multiplicity.OPTIONAL, false, null),};
 
@@ -277,7 +279,7 @@ public final class TestUtils {
                                 String.format("array<%s>", DataTypes.STRING_TYPE.getName()), Multiplicity.OPTIONAL,
                                 false, null),
                         // array of classes
-                        new AttributeDefinition("columns", String.format("array<%s>", "column_type"),
+                        new AttributeDefinition("columns", String.format("array<%s>", COLUMN_TYPE),
                                 Multiplicity.OPTIONAL, true, null),
                         // array of structs
                         new AttributeDefinition("partitions", String.format("array<%s>", "partition_struct_type"),
@@ -289,7 +291,7 @@ public final class TestUtils {
                         //map of classes -
                         new AttributeDefinition("columnsMap",
                                                         DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),
-                                                                "column_type"),
+                                                                COLUMN_TYPE),
                                                         Multiplicity.OPTIONAL, true, null),
                          //map of structs
                         new AttributeDefinition("partitionsMap",

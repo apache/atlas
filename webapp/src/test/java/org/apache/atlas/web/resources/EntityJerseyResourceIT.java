@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.notification.NotificationConsumer;
@@ -58,6 +59,7 @@ import org.testng.annotations.Test;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.Response;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -698,4 +700,85 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertTrue(refs.get(0).equalsContents(columns.get(0)));
         Assert.assertTrue(refs.get(1).equalsContents(columns.get(1)));
     }
+    
+    @Test
+    public void testDeleteEntitiesViaRestApi() throws Exception {
+        // Create 2 database entities
+        Referenceable db1 = new Referenceable(DATABASE_TYPE);
+        db1.set("name", randomString());
+        db1.set("description", randomString());
+        Id db1Id = createInstance(db1);
+        Referenceable db2 = new Referenceable(DATABASE_TYPE);
+        db2.set("name", randomString());
+        db2.set("description", randomString());
+        Id db2Id = createInstance(db2);
+        
+        // Delete the database entities
+        ClientResponse clientResponse = service.path(ENTITIES).
+            queryParam(AtlasClient.GUID.toLowerCase(), db1Id._getId()).
+            queryParam(AtlasClient.GUID.toLowerCase(), db2Id._getId()).
+            accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE).method(HttpMethod.DELETE, ClientResponse.class);
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+
+        // Verify that response has guids for both database entities
+        JSONObject response = new JSONObject(clientResponse.getEntity(String.class));
+        final String deletedGuidsJson = response.getString(AtlasClient.GUID);
+        Assert.assertNotNull(deletedGuidsJson);
+        JSONArray guidsArray = new JSONArray(deletedGuidsJson);
+        Assert.assertEquals(guidsArray.length(), 2);
+        List<String> deletedGuidsList = new ArrayList<>(2);
+        for (int index = 0; index < guidsArray.length(); index++) {
+            deletedGuidsList.add(guidsArray.getString(index));
+        }
+        Assert.assertTrue(deletedGuidsList.contains(db1Id._getId()));
+        Assert.assertTrue(deletedGuidsList.contains(db2Id._getId()));
+
+        // Verify entities were deleted from the repository.
+        for (String guid : deletedGuidsList) {
+            try {
+                serviceClient.getEntity(guid);
+                Assert.fail(AtlasServiceException.class.getSimpleName() + 
+                    " was expected but not thrown.  The entity with guid " + guid + 
+                    " still exists in the repository after being deleted.");
+            }
+            catch (AtlasServiceException e) {
+                Assert.assertTrue(e.getMessage().contains(Integer.toString(Response.Status.NOT_FOUND.getStatusCode())));
+            }
+        }
+    }
+    
+    @Test
+    public void testDeleteEntitiesViaClientApi() throws Exception {
+        // Create 2 database entities
+        Referenceable db1 = new Referenceable(DATABASE_TYPE);
+        db1.set("name", randomString());
+        db1.set("description", randomString());
+        Id db1Id = createInstance(db1);
+        Referenceable db2 = new Referenceable(DATABASE_TYPE);
+        db2.set("name", randomString());
+        db2.set("description", randomString());
+        Id db2Id = createInstance(db2);
+        
+        // Delete the database entities
+        List<String> deletedGuidsList = serviceClient.deleteEntities(db1Id._getId(), db2Id._getId());
+        
+        // Verify that deleteEntities() response has database entity guids 
+        Assert.assertEquals(deletedGuidsList.size(), 2);
+        Assert.assertTrue(deletedGuidsList.contains(db1Id._getId()));   
+        Assert.assertTrue(deletedGuidsList.contains(db2Id._getId()));
+        
+        // Verify entities were deleted from the repository.
+        for (String guid : deletedGuidsList) {
+            try {
+                serviceClient.getEntity(guid);
+                Assert.fail(AtlasServiceException.class.getSimpleName() + 
+                    " was expected but not thrown.  The entity with guid " + guid + 
+                    " still exists in the repository after being deleted.");
+            }
+            catch (AtlasServiceException e) {
+                Assert.assertTrue(e.getMessage().contains(Integer.toString(Response.Status.NOT_FOUND.getStatusCode())));
+            }
+        }
+    }
+
 }

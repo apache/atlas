@@ -110,7 +110,7 @@ public interface MetadataRepository {
      * @return guids of deleted entities
      * @throws RepositoryException
      */
-     List <String> deleteEntities(String... guids) throws RepositoryException;
+    TypeUtils.Pair<List<String>, List<ITypedReferenceableInstance>> deleteEntities(List<String> guids) throws RepositoryException;
     
     
     // Trait management functions

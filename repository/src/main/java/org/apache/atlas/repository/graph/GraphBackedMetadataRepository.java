@@ -30,16 +30,13 @@ import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.RepositoryException;
-import org.apache.atlas.repository.graph.TypedInstanceToGraphMapper.Operation;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.exception.EntityExistsException;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
-import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.IDataType;
-import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.TypeUtils;
 import org.slf4j.Logger;
@@ -316,9 +313,9 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
     @Override
     @GraphTransaction
-    public List<String> deleteEntities(String... guids) throws RepositoryException {
+    public TypeUtils.Pair<List<String>, List<ITypedReferenceableInstance>>  deleteEntities(List<String> guids) throws RepositoryException {
 
-        if (guids == null || guids.length == 0) {
+        if (guids == null || guids.size() == 0) {
             throw new IllegalArgumentException("guids must be non-null and non-empty");
         }
         
@@ -341,6 +338,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 throw new RepositoryException(e);
             }
         }
-        return instanceToGraphMapper.getDeletedEntities();
+        return new TypeUtils.Pair<>(
+                instanceToGraphMapper.getDeletedEntityGuids(), instanceToGraphMapper.getDeletedEntities());
     }
 }

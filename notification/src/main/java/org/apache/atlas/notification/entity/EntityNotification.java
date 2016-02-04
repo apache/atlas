@@ -33,6 +33,7 @@ public interface EntityNotification {
     enum OperationType {
         ENTITY_CREATE,
         ENTITY_UPDATE,
+        ENTITY_DELETE,
         TRAIT_ADD,
         TRAIT_DELETE
     }

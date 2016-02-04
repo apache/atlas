@@ -61,8 +61,8 @@ public final class TypedInstanceToGraphMapper {
     private static final Logger LOG = LoggerFactory.getLogger(TypedInstanceToGraphMapper.class);
     private final Map<Id, Vertex> idToVertexMap = new HashMap<>();
     private final TypeSystem typeSystem = TypeSystem.getInstance();
-    private final List<String> deletedEntities = new ArrayList<>();
-
+    private final List<String> deletedEntityGuids = new ArrayList<>();
+    private final List<ITypedReferenceableInstance> deletedEntities = new ArrayList<>();
     private final GraphToTypedInstanceMapper graphToTypedInstanceMapper;
 
     private static final GraphHelper graphHelper = GraphHelper.getInstance();
@@ -688,7 +688,8 @@ public final class TypedInstanceToGraphMapper {
         
         //  Remove any underlying structs and composite entities owned by this entity.
         mapInstanceToVertex(typedInstance, instanceVertex, classType.fieldMapping().fields, false, Operation.DELETE);
-        deletedEntities.add(id._getId());
+        deletedEntityGuids.add(id._getId());
+        deletedEntities.add(typedInstance);
     }
 
     /**
@@ -728,12 +729,31 @@ public final class TypedInstanceToGraphMapper {
 
     
     /**
-     * Get the IDs of entities that have been deleted.
+     * Get the GUIDs of entities that have been deleted.
      * 
      * @return
      */
-    List<String> getDeletedEntities() {
-        return Collections.unmodifiableList(deletedEntities);
+    List<String> getDeletedEntityGuids() {
+        if (deletedEntityGuids.size() == 0) {
+            return Collections.emptyList();
+        }
+        else {
+            return Collections.unmodifiableList(deletedEntityGuids);
+        }
+    }
+    
+    /**
+     * Get the entities that have been deleted.
+     * 
+     * @return
+     */
+    List<ITypedReferenceableInstance> getDeletedEntities() {
+        if (deletedEntities.size() == 0) {
+            return Collections.emptyList();
+        }
+        else {
+            return Collections.unmodifiableList(deletedEntities);
+        }
     }
 
 }

@@ -76,8 +76,14 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
         notifyOfEntityEvent(Collections.singleton(entity), EntityNotification.OperationType.TRAIT_DELETE);
     }
 
+    @Override
+    public void onEntitiesDeleted(Collection<ITypedReferenceableInstance> entities) throws AtlasException {
+        notifyOfEntityEvent(entities, EntityNotification.OperationType.ENTITY_DELETE);
+    }
+
 
     // ----- helper methods -------------------------------------------------
+
 
     // send notification of entity change
     private void notifyOfEntityEvent(Collection<ITypedReferenceableInstance> entityDefinitions,

@@ -166,6 +166,8 @@ public class AtlasClient {
         UPDATE_ENTITY(BASE_URI + URI_ENTITY, HttpMethod.PUT, Response.Status.OK),
         UPDATE_ENTITY_PARTIAL(BASE_URI + URI_ENTITY, HttpMethod.POST, Response.Status.OK),
         LIST_ENTITIES(BASE_URI + URI_ENTITY, HttpMethod.GET, Response.Status.OK),
+        DELETE_ENTITIES(BASE_URI + URI_ENTITY, HttpMethod.DELETE, Response.Status.OK),
+
 
         //Trait operations
         ADD_TRAITS(BASE_URI + URI_ENTITY, HttpMethod.POST, Response.Status.CREATED),
@@ -378,6 +380,23 @@ public class AtlasClient {
         }
     }
 
+    /**
+     * Delete the specified entities from the repository
+     * 
+     * @param guids guids of entities to delete
+     * @return List of deleted entity guids
+     * @throws AtlasServiceException
+     */
+    public List<String> deleteEntities(String ... guids) throws AtlasServiceException {
+        API api = API.DELETE_ENTITIES;
+        WebResource resource = getResource(api);
+        for (String guid : guids) {
+            resource = resource.queryParam(GUID.toLowerCase(), guid);
+        }
+        JSONObject jsonResponse = callAPIWithResource(API.DELETE_ENTITIES, resource);
+        return extractResults(jsonResponse, GUID);
+    }
+    
     /**
      * Get an entity given the entity id
      * @param guid entity id
