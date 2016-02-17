@@ -43,6 +43,7 @@ import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.Option;
 
 import java.io.File;
 import java.io.IOException;
@@ -117,7 +118,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
                 "org.apache.kafka.common.serialization.StringDeserializer");
         properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
                 "org.apache.kafka.common.serialization.StringDeserializer");
-        properties.put(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY, "roundrobin");
+        properties.put(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG, "roundrobin");
         properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "smallest");
     }
 
@@ -303,7 +304,8 @@ public class KafkaNotification extends AbstractNotification implements Service {
         brokerConfig.setProperty("log.dirs", constructDir("kafka").getAbsolutePath());
         brokerConfig.setProperty("log.flush.interval.messages", String.valueOf(1));
 
-        kafkaServer = new KafkaServer(new KafkaConfig(brokerConfig), new SystemTime());
+        kafkaServer = new KafkaServer(KafkaConfig.fromProps(brokerConfig), new SystemTime(),
+                Option.apply(this.getClass().getName()));
         kafkaServer.startup();
         LOG.debug("Embedded kafka server started with broker config {}", brokerConfig);
     }

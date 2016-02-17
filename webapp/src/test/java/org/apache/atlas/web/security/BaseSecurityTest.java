@@ -100,6 +100,16 @@ public class BaseSecurityTest {
     protected void bindJVMtoJAASFile(File jaasFile) {
         String path = jaasFile.getAbsolutePath();
         System.setProperty(Environment.JAAS_CONF_KEY, path);
+        disableZookeeperSecurity();
+    }
+
+    /* We only want Atlas to work in secure mode for the tests
+     * for otherwise a lot more configuration is required to
+     * make other components like Kafka run in secure mode.
+     */
+    private void disableZookeeperSecurity() {
+        System.setProperty("zookeeper.sasl.client", "false");
+        System.setProperty("zookeeper.sasl.clientconfig", "");
     }
 
     protected File createKeytab(MiniKdc kdc, File kdcWorkDir, String principal, String filename) throws Exception {
