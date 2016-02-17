@@ -82,10 +82,10 @@
     </mailingLists>
 
     <scm>
-        <connection>scm:https://git-wip-us.apache.org/repos/asf/incubator-atlas.git</connection>
-        <developerConnection>scm:https://git-wip-us.apache.org/repos/asf/incubator-atlas.git</developerConnection>
+        <connection>scm:git:https://github.com/apache/incubator-atlas.git</connection>
+        <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-atlas.git</developerConnection>
         <tag>HEAD</tag>
-        <url>https://git-wip-us.apache.org/repos/asf/incubator-atlas.git</url>
+        <url>https://github.com/apache/incubator-atlas.git</url>
     </scm>
 
     <developers>
@@ -330,6 +330,7 @@
 
     <properties>
         <!-- platform encoding override -->
+        <skipTests>false</skipTests>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <node.version>v0.10.30</node.version>
@@ -1249,7 +1250,7 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>buildnumber-maven-plugin</artifactId>
-                    <version>1.0</version>
+                    <version>1.4</version>
                 </plugin>
 
                 <plugin>
@@ -1447,7 +1448,7 @@
                         <user.dir>${project.basedir}</user.dir>
                         <atlas.data>${project.build.directory}/data</atlas.data>
                     </systemProperties>
-                    <!--<skipTests>true</skipTests>-->
+                    <skipTests>${skipTests}</skipTests>
                     <forkMode>always</forkMode>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}
