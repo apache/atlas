@@ -37,6 +37,7 @@ import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
+import org.apache.atlas.typesystem.exception.TraitNotFoundException;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
@@ -337,13 +338,13 @@ public class GraphBackedMetadataRepositoryTest {
         Assert.assertTrue(modificationTimestampPostUpdate > modificationTimestampPreUpdate);
     }
 
-    @Test(expectedExceptions = RepositoryException.class)
+    @Test(expectedExceptions = EntityNotFoundException.class)
     public void testDeleteTraitForNonExistentEntity() throws Exception {
         repositoryService.deleteTrait(UUID.randomUUID().toString(), TestUtils.PII);
         Assert.fail();
     }
 
-    @Test(expectedExceptions = RepositoryException.class)
+    @Test(expectedExceptions = TraitNotFoundException.class)
     public void testDeleteTraitForNonExistentTrait() throws Exception {
         final String aGUID = getGUID();
         repositoryService.deleteTrait(aGUID, "PCI");

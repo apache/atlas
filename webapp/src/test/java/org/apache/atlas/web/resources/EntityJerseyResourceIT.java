@@ -69,6 +69,7 @@ import java.util.UUID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
+
 /**
  * Integration tests for Entity Jersey Resource.
  */
@@ -594,7 +595,32 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 "trait=" + traitName + " should be defined in type system before it can be deleted");
         Assert.assertNotNull(response.get(AtlasClient.STACKTRACE));
     }
+@Test(dependsOnMethods = "testSubmitEntity()")
+    public void testDeleteExistentTraitNonExistentForEntity() throws Exception {
+    
+        final String guid = tableId._getId();
+        final String traitName = "PII_Trait" + randomString();
+        HierarchicalTypeDefinition<TraitType> piiTrait = TypesUtil
+                .createTraitTypeDef(traitName, ImmutableList.<String>of(),
+                        TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
+        String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
+        createType(traitDefinitionAsJSON);
+        
+        ClientResponse clientResponse = service.path(ENTITIES).path(guid).path(TRAITS).path(traitName)
+                .accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
+                .method(HttpMethod.DELETE, ClientResponse.class);
+        
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
 
+        String responseAsString = clientResponse.getEntity(String.class);
+        Assert.assertNotNull(responseAsString);
+
+        JSONObject response = new JSONObject(responseAsString);
+        Assert.assertNotNull(response.get(AtlasClient.ERROR));
+        Assert.assertNotNull(response.get(AtlasClient.STACKTRACE));
+     
+        
+    }
     private String random() {
         return RandomStringUtils.random(10);
     }

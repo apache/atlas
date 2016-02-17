@@ -34,6 +34,7 @@ import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.exception.EntityExistsException;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
+import org.apache.atlas.typesystem.exception.TraitNotFoundException;
 import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.IDataType;
@@ -239,16 +240,19 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
      */
     @Override
     @GraphTransaction
-    public void deleteTrait(String guid, String traitNameToBeDeleted) throws EntityNotFoundException, RepositoryException {
+    public void deleteTrait(String guid, String traitNameToBeDeleted) throws TraitNotFoundException, EntityNotFoundException, RepositoryException {
         LOG.info("Deleting trait={} from entity={}", traitNameToBeDeleted, guid);
-        try {
-            Vertex instanceVertex = graphHelper.getVertexForGUID(guid);
+        
+        Vertex instanceVertex = graphHelper.getVertexForGUID(guid);
 
-            List<String> traitNames = GraphHelper.getTraitNames(instanceVertex);
-            if (!traitNames.contains(traitNameToBeDeleted)) {
-                throw new EntityNotFoundException(
+        List<String> traitNames = GraphHelper.getTraitNames(instanceVertex);
+        if (!traitNames.contains(traitNameToBeDeleted)) {
+                throw new TraitNotFoundException(
                         "Could not find trait=" + traitNameToBeDeleted + " in the repository for entity: " + guid);
-            }
+        }
+
+        try {
+            
 
             final String entityTypeName = GraphHelper.getTypeName(instanceVertex);
             String relationshipLabel = GraphHelper.getTraitLabel(entityTypeName, traitNameToBeDeleted);

@@ -26,6 +26,7 @@ import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.exception.EntityExistsException;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
 import org.apache.atlas.typesystem.exception.TypeNotFoundException;
+import org.apache.atlas.typesystem.exception.TraitNotFoundException;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.types.ValueConversionException;
 import org.apache.atlas.utils.ParamChecker;
@@ -565,6 +566,9 @@ public class EntityResource {
             return Response.ok(response).build();
         } catch (EntityNotFoundException | TypeNotFoundException e) {
             LOG.error("An entity with GUID={} does not exist", guid, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
+        } catch (TraitNotFoundException e) {
+            LOG.error("The trait name={} for entity={} does not exist.", traitName, guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (AtlasException | IllegalArgumentException e) {
             LOG.error("Unable to delete trait name={} for entity={}", traitName, guid, e);

@@ -7,6 +7,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-398 Delete trait that exists but not linked to entity results in "400 Bad request". It should result "404 not found" (ndjouhr via shwethags)
 ATLAS-372 Expose entity deletion through REST API (dkantor via shwethags)
 ATLAS-452 Exceptions while running HiveHookIT#testAlterTableRename (shwethags)
 ATLAS-388 UI : On creating Tag, the page to be reset for creating new Tag (Anilg via shwethags)

@@ -23,6 +23,7 @@ import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.exception.EntityExistsException;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
+import org.apache.atlas.typesystem.exception.TraitNotFoundException;
 import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.TypeUtils;
@@ -140,7 +141,7 @@ public interface MetadataRepository {
      * @param traitNameToBeDeleted name of the trait
      * @throws RepositoryException
      */
-    void deleteTrait(String guid, String traitNameToBeDeleted) throws EntityNotFoundException, RepositoryException;
+    void deleteTrait(String guid, String traitNameToBeDeleted) throws TraitNotFoundException, EntityNotFoundException, RepositoryException;
 
     /**
      * Adds/Updates the property to the entity that corresponds to the GUID
