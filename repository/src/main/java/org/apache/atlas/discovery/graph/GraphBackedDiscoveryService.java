@@ -128,8 +128,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
     public GremlinQueryResult evaluate(String dslQuery) throws DiscoveryException {
         LOG.info("Executing dsl query={}", dslQuery);
         try {
-            QueryParser queryParser = new QueryParser();
-            Either<Parsers.NoSuccess, Expressions.Expression> either = queryParser.apply(dslQuery);
+            Either<Parsers.NoSuccess, Expressions.Expression> either = QueryParser.apply(dslQuery);
             if (either.isRight()) {
                 Expressions.Expression expression = either.right().get();
                 return evaluate(expression);

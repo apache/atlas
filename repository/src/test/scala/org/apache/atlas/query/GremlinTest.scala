@@ -899,7 +899,7 @@ class GremlinTest extends BaseGremlinTest {
   }
 
   @Test def testArrayComparision {
-    val p = new QueryParser
+    val p = QueryParser
     val e = p("Partition as p where values = ['2015-01-01']," +
       " table where name = 'sales_fact_daily_mv'," +
       " db where name = 'Reporting' and clusterName = 'test' select p").right.get
@@ -937,7 +937,7 @@ class GremlinTest extends BaseGremlinTest {
   }
 
   @Test def testArrayComparisionWithSelectOnArray {
-    val p = new QueryParser
+    val p = QueryParser
     val e = p("Partition as p where values = ['2015-01-01']," +
       " table where name = 'sales_fact_daily_mv'," +
       " db where name = 'Reporting' and clusterName = 'test' select p.values").right.get
@@ -976,7 +976,7 @@ class GremlinTest extends BaseGremlinTest {
   }
 
   @Test def testArrayInWhereClause {
-    val p = new QueryParser
+    val p = QueryParser
     val e = p("Partition as p where values = ['2015-01-01']").right.get
     val r = QueryProcessor.evaluate(e, g, gp)
     validateJson(r, """{
@@ -1045,13 +1045,13 @@ class GremlinTest extends BaseGremlinTest {
 
   @Test(expectedExceptions =  Array(classOf[ExpressionException]))
   def testNegativeInvalidType {
-    val p = new QueryParser
+    val p = QueryParser
     val e = p("from blah").right.get
     QueryProcessor.evaluate(e, g, gp)
   }
 
   @Test def testJoinAndSelect5 {
-    val p = new QueryParser
+    val p = QueryParser
     val e = p("Table as t where name = 'sales_fact' db where name = 'Sales' and owner = 'John ETL' select t").right.get
     val r = QueryProcessor.evaluate(e, g, gp)
     validateJson(r)

@@ -31,74 +31,61 @@ class ParserTest extends BaseTest {
     }
 
     @Test def testFrom: Unit = {
-        val p = new QueryParser
-        println(p("from DB").right.get.toString)
+        println(QueryParser.apply("from DB").right.get.toString)
     }
 
     @Test def testFrom2: Unit = {
-        val p = new QueryParser
-        println(p("DB").right.get.toString)
+        println(QueryParser.apply("DB").right.get.toString)
     }
 
     @Test def testJoin1: Unit = {
-        val p = new QueryParser
-        println(p("DB, Table").right.get.toString)
+        println(QueryParser.apply("DB, Table").right.get.toString)
     }
 
     @Test def testWhere1: Unit = {
-        val p = new QueryParser
-        println(p("DB as db1 Table where db1.name ").right.get.toString)
+        println(QueryParser.apply("DB as db1 Table where db1.name ").right.get.toString)
     }
 
     @Test def testWhere2: Unit = {
-        val p = new QueryParser
-        println(p("DB name = \"Reporting\"").right.get.toString)
+        println(QueryParser.apply("DB name = \"Reporting\"").right.get.toString)
     }
 
   @Test def testIsTrait: Unit = {
-    val p = new QueryParser
-    println(p("Table isa Dimension").right.get.toString)
-    println(p("Table is Dimension").right.get.toString)
+    println(QueryParser.apply("Table isa Dimension").right.get.toString)
+    println(QueryParser.apply("Table is Dimension").right.get.toString)
   }
 
     @Test def test4: Unit = {
-        val p = new QueryParser
-        println(p("DB where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1").right.get.toString)
+        println(QueryParser.apply("DB where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1").right.get.toString)
     }
 
     @Test def testJoin2: Unit = {
-        val p = new QueryParser
-        println(p("DB as db1 where (createTime + 1) > 0 and (db1.name = \"Reporting\") or DB has owner Table as tab " +
+        println(QueryParser.apply("DB as db1 where (createTime + 1) > 0 and (db1.name = \"Reporting\") or DB has owner Table as tab " +
             " select db1.name as dbName, tab.name as tabName").right.get.toString)
     }
 
     @Test def testLoop: Unit = {
-        val p = new QueryParser
-        println(p("Table loop (LoadProcess outputTable)").right.get.toString)
+        println(QueryParser.apply("Table loop (LoadProcess outputTable)").right.get.toString)
     }
 
   @Test def testNegInvalidateType: Unit = {
-    val p = new QueryParser
-    val x = p("from blah")
-    println(p("from blah").left)
+    val x = QueryParser.apply("from blah")
+    println(QueryParser.apply("from blah").left)
   }
 
     @Test def testPath1: Unit = {
-      val p = new QueryParser
-      println(p("Table loop (LoadProcess outputTable) withPath").right.get.toString)
+      println(QueryParser.apply("Table loop (LoadProcess outputTable) withPath").right.get.toString)
     }
 
     @Test def testPath2: Unit = {
-      val p = new QueryParser
-      println(p(
+      println(QueryParser.apply(
         "Table as src loop (LoadProcess outputTable) as dest " +
           "select src.name as srcTable, dest.name as destTable withPath").right.get.toString
       )
     }
 
   @Test def testList: Unit = {
-    val p = new QueryParser
-    println(p(
+    println(QueryParser.apply(
       "Partition as p where values = ['2015-01-01']," +
         " table where name = 'tableoq8ty'," +
         " db where name = 'default' and clusterName = 'test'").right.get.toString

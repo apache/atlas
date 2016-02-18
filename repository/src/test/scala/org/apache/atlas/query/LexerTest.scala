@@ -25,8 +25,8 @@ import scala.util.parsing.input.CharArrayReader
 
 class LexerTest {
 
-    def scan(p: QueryParser, str: String): p.lexical.ParseResult[_] = {
-        val l = p.lexical
+    def scan(str: String): QueryParser.lexical.ParseResult[_] = {
+        val l = QueryParser.lexical
         var s: l.Input = new CharArrayReader(str.toCharArray)
         var r = (l.whitespace.? ~ l.token)(s)
         s = r.next
@@ -37,12 +37,11 @@ class LexerTest {
                 r = (l.whitespace.? ~ l.token)(s)
             }
         }
-        r.asInstanceOf[p.lexical.ParseResult[_]]
+        r.asInstanceOf[QueryParser.lexical.ParseResult[_]]
     }
 
     @Test def testSimple {
-        val p = new QueryParser
-        val r = scan(p, """DB where db1.name""")
+        val r = scan("""DB where db1.name""")
         Assert.assertTrue(r.successful)
 
     }

@@ -89,7 +89,7 @@ class GremlinTest2 extends BaseGremlinTest {
   }
 
   @Test def testLineageAllSelectWithPathFromParser {
-    val p = new QueryParser
+    val p = QueryParser
     val e = p("Table as src loop (LoadProcess outputTable) as dest " +
       "select src.name as srcTable, dest.name as destTable withPath").right.get
     //Table as src loop (LoadProcess where LoadProcess.outputTable) as dest select src.name as srcTable, dest.name as destTable withPath
@@ -98,7 +98,7 @@ class GremlinTest2 extends BaseGremlinTest {
   }
 
   @Test def testLineageAllSelectWithPathFromParser2 {
-    val p = new QueryParser
+    val p = QueryParser
 
     val e = p("Table as src loop (`LoadProcess->outputTable` inputTables) as dest " +
       "select src.name as srcTable, dest.name as destTable withPath").right.get

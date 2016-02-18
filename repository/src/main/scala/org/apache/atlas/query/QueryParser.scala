@@ -107,7 +107,7 @@ trait ExpressionUtils {
     }
 }
 
-class QueryParser extends StandardTokenParsers with QueryKeywords with ExpressionUtils with PackratParsers {
+object QueryParser extends StandardTokenParsers with QueryKeywords with ExpressionUtils with PackratParsers {
 
     import scala.language.higherKinds
 
@@ -119,7 +119,7 @@ class QueryParser extends StandardTokenParsers with QueryKeywords with Expressio
 
     override val lexical = new QueryLexer(queryreservedWords, querydelims)
 
-    def apply(input: String): Either[NoSuccess, Expression] = {
+    def apply(input: String): Either[NoSuccess, Expression] = synchronized {
         phrase(queryWithPath)(new lexical.Scanner(input)) match {
             case Success(r, x) => Right(r)
             case f@Failure(m, x) => Left(f)
