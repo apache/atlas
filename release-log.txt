@@ -7,8 +7,12 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-318 Config file conatining API endpoint + all api calls to be centralized (sanjayp via sumasai)
+ATLAS-471 Atlas Server could run out of memory due to Scala memory leak (yhemanth via sumasai)
+ATLAS-486 Updated pom.xml to fix scm url and upgrade plugin (sneethiraj via sumasai)
 ATLAS-457 Upgrade to 0.9 version of Kafka dependency (yhemanth via shwethags)
 ATLAS-398 Delete trait that exists but not linked to entity results in "400 Bad request". It should result "404 not found" (ndjouhr via shwethags)
+ATLAS-287: UI: GUID on table details page
 ATLAS-372 Expose entity deletion through REST API (dkantor via shwethags)
 ATLAS-452 Exceptions while running HiveHookIT#testAlterTableRename (shwethags)
 ATLAS-388 UI : On creating Tag, the page to be reset for creating new Tag (Anilg via shwethags)
