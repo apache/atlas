@@ -17,8 +17,8 @@
  */
 'use strict';
 
-angular.module('dgc.tags.definition').controller('DefinitionTagsController', ['$scope', '$resource', '$state', '$stateParams', 'lodash', 'AttributeDefinition', 'TagClasses', 'TagsResource', 'NotificationService', 'NavigationResource', '$cacheFactory',
-    function($scope, $resource, $state, $stateParams, _, AttributeDefinition, Categories, TagsResource, NotificationService, NavigationResource, $cacheFactory) {
+angular.module('dgc.tags.definition').controller('DefinitionTagsController', ['$scope', '$resource', '$state', '$stateParams', 'lodash', 'AttributeDefinition', 'TagClasses', 'TagsResource', 'NotificationService', 'NavigationResource', '$cacheFactory','AtlasConfig',
+    function($scope, $resource, $state, $stateParams, _, AttributeDefinition, Categories, TagsResource, NotificationService, NavigationResource, $cacheFactory,AtlasConfig) {
         $scope.categoryList = Categories;
         $scope.category = 'TRAIT';
         $scope.tagModel = {
@@ -47,7 +47,7 @@ angular.module('dgc.tags.definition').controller('DefinitionTagsController', ['$
 
         $scope.refreshTags = function(){
             var httpDefaultCache = $cacheFactory.get('$http');
-            httpDefaultCache.remove('/api/atlas/types?type=TRAIT');
+            httpDefaultCache.remove(AtlasConfig.API_ENDPOINTS.TRAITS_LIST);
             $scope.typesList = NavigationResource.get();
         }; 
 
@@ -65,7 +65,7 @@ angular.module('dgc.tags.definition').controller('DefinitionTagsController', ['$
                     .then(function TagCreateSuccess() {
                         NotificationService.info('"' + $scope.tagModel.typeName + '" has been created', false);
                         var httpDefaultCache = $cacheFactory.get('$http');
-                        httpDefaultCache.remove('/api/atlas/types?type=TRAIT');
+                        httpDefaultCache.remove(AtlasConfig.API_ENDPOINTS.TRAITS_LIST);
                         $scope.typesList = NavigationResource.get();
                         $scope.reset();
                     }).catch(function TagCreateFailed(error) {

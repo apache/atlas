@@ -18,6 +18,6 @@
 
 'use strict';
 
-angular.module('dgc.about').factory('AboutResource', ['$resource', function($resource) {
-    return $resource('/api/atlas/admin/version', {});
+angular.module('dgc.about').factory('AboutResource', ['$resource', 'AtlasConfig', function($resource, AtlasConfig) {
+    return $resource(AtlasConfig.API_ENDPOINTS.ABOUT, {});
 }]);

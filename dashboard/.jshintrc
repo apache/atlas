@@ -40,7 +40,8 @@
     "unused": true, // Warn unused variables.
     "globals": { // Globals variables.
         "angular": true,
-        "$": false
+        "$": false,
+        "baseUrl":true
     },
     "predef": [ // Extra globals.
         "define",

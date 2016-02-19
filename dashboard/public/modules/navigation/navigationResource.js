@@ -18,8 +18,8 @@
 
 'use strict';
 
-angular.module('dgc.navigation').factory('NavigationResource', ['$resource', function($resource) {
-    return $resource('/api/atlas/types?type=TRAIT', {}, {
+angular.module('dgc.navigation').factory('NavigationResource', ['$resource','AtlasConfig', function($resource, AtlasConfig) {
+    return $resource(AtlasConfig.API_ENDPOINTS.TRAITS_LIST, {}, {
         get: {
             'method': 'GET',
             'responseType': 'json',

@@ -95,6 +95,7 @@ module.exports = function(grunt) {
         dist: distPath + '/js/app.min.js',
         modules: grunt.file.expand(
             modulesPath + 'js/app.js',
+            modulesPath + 'js/config.js',
             modulesPath + 'js/routes.js',
             modulesPath + 'modules/**/*Module.js',
             modulesPath + 'modules/**/*.js',

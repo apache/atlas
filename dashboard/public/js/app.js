@@ -51,8 +51,8 @@ angular.module('dgc').factory('lodash', ['$window',
     }
 ]).factory('HttpInterceptor', ['Global', function(Global) {
     return {
-        'request': function(config) {
-            if (config.url && (config.url.indexOf('api/atlas/') === 0 || config.url.indexOf('/api/atlas/') === 0)) {
+        'request': function(config) { 
+            if (config.url && (config.url.indexOf(baseUrl) === 0 || config.url.indexOf(baseUrl) === 0)) {
                 config.params = config.params || {};
                 config.params['user.name'] = Global.user;
             }
