@@ -165,6 +165,17 @@ public class DefaultMetadataServiceTest {
         entity.set("type", "VARCHAR(32)");
         return entity;
     }
+
+    @Test(expectedExceptions = TypeNotFoundException.class)
+    public void testCreateEntityWithUnknownDatatype() throws Exception {
+        Referenceable entity = new Referenceable("Unknown datatype");
+        String dbName = RandomStringUtils.randomAlphanumeric(10);
+        entity.set("name", dbName);
+        entity.set("description", "us db");
+        createInstance(entity);
+        Assert.fail(TypeNotFoundException.class.getSimpleName() +" was expected but none thrown.");
+    }
+
     @Test
     public void testCreateEntityWithUniqueAttribute() throws Exception {
         //name is the unique attribute

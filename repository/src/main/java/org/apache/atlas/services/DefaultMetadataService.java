@@ -309,11 +309,11 @@ public class DefaultMetadataService implements MetadataService {
                 instances[index] = typedInstrance;
             }
             return instances;
-        } catch(ValueConversionException e) {
+        } catch(ValueConversionException | TypeNotFoundException  e) {
             throw e;
         } catch (Exception e) {  // exception from deserializer
             LOG.error("Unable to deserialize json={}", entityInstanceDefinition, e);
-            throw new IllegalArgumentException("Unable to deserialize json");
+            throw new IllegalArgumentException("Unable to deserialize json", e);
         }
     }
 
