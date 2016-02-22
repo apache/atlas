@@ -5,6 +5,7 @@ Apache Atlas Release Notes
 INCOMPATIBLE CHANGES:
 ATLAS-409 Atlas will not import avro tables with schema read from a file (dossett@gmail.com via shwethags)
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
+ATLAS-349 SSL - Atlas SSL connection has weak/unsafe Ciphers suites (ndjouhr via shwethags)
 
 ALL CHANGES:
 ATLAS-318 Config file conatining API endpoint + all api calls to be centralized (sanjayp via sumasai)

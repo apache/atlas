@@ -17,6 +17,9 @@
  */
 package org.apache.atlas.security;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  *
  */
@@ -33,4 +36,7 @@ public interface SecurityProperties {
     String CERT_STORES_CREDENTIAL_PROVIDER_PATH = "cert.stores.credential.provider.path";
     String SSL_CLIENT_PROPERTIES = "ssl-client.xml";
     String BIND_ADDRESS = "atlas.server.bind.address";
+    String ATLAS_SSL_EXCLUDE_CIPHER_SUITES = "atlas.ssl.exclude.cipher.suites";
+    List<String> DEFAULT_CIPHER_SUITES = Arrays.asList(".*NULL.*", ".*RC4.*", ".*MD5.*",".*DES.*",".*DSS.*");
+    
 }
