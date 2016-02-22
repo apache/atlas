@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.List;
 
 import static org.apache.atlas.security.SecurityProperties.CERT_STORES_CREDENTIAL_PROVIDER_PATH;
 import static org.apache.atlas.security.SecurityProperties.CLIENT_AUTH_KEY;
@@ -45,6 +46,8 @@ import static org.apache.atlas.security.SecurityProperties.KEYSTORE_PASSWORD_KEY
 import static org.apache.atlas.security.SecurityProperties.SERVER_CERT_PASSWORD_KEY;
 import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_FILE_KEY;
 import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_PASSWORD_KEY;
+import static org.apache.atlas.security.SecurityProperties.ATLAS_SSL_EXCLUDE_CIPHER_SUITES;
+import static org.apache.atlas.security.SecurityProperties.DEFAULT_CIPHER_SUITES;
 
 /**
  * This is a jetty server which requires client auth via certificates.
@@ -62,13 +65,17 @@ public class SecureEmbeddedServer extends EmbeddedServer {
 
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(config.getString(KEYSTORE_FILE_KEY,
-            System.getProperty(KEYSTORE_FILE_KEY, DEFAULT_KEYSTORE_FILE_LOCATION)));
+                System.getProperty(KEYSTORE_FILE_KEY, DEFAULT_KEYSTORE_FILE_LOCATION)));
         sslContextFactory.setKeyStorePassword(getPassword(config, KEYSTORE_PASSWORD_KEY));
         sslContextFactory.setKeyManagerPassword(getPassword(config, SERVER_CERT_PASSWORD_KEY));
         sslContextFactory.setTrustStorePath(config.getString(TRUSTSTORE_FILE_KEY,
-            System.getProperty(TRUSTSTORE_FILE_KEY, DEFATULT_TRUSTORE_FILE_LOCATION)));
+                System.getProperty(TRUSTSTORE_FILE_KEY, DEFATULT_TRUSTORE_FILE_LOCATION)));
         sslContextFactory.setTrustStorePassword(getPassword(config, TRUSTSTORE_PASSWORD_KEY));
         sslContextFactory.setWantClientAuth(config.getBoolean(CLIENT_AUTH_KEY, Boolean.getBoolean(CLIENT_AUTH_KEY)));
+
+        List<Object> cipherList = config.getList(ATLAS_SSL_EXCLUDE_CIPHER_SUITES, DEFAULT_CIPHER_SUITES);
+        sslContextFactory.setExcludeCipherSuites(cipherList.toArray(new String[cipherList.size()]));
+        sslContextFactory.setRenegotiationAllowed(false);
 
         // SSL HTTP Configuration
         // HTTP Configuration
