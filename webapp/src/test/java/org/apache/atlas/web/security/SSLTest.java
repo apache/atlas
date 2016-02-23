@@ -18,6 +18,7 @@
 
 package org.apache.atlas.web.security;
 
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.web.TestUtils;
@@ -73,7 +74,8 @@ public class SSLTest extends BaseSSLAndKerberosTest {
         setupCredentials();
 
         final PropertiesConfiguration configuration = getSSLConfiguration(providerUrl);
-        TestUtils.writeConfiguration(configuration, persistDir + File.separator + "client.properties");
+        TestUtils.writeConfiguration(configuration, persistDir + File.separator +
+            ApplicationProperties.APPLICATION_PROPERTIES);
 
         dgiCLient = new AtlasClient(DGI_URL) {
             @Override

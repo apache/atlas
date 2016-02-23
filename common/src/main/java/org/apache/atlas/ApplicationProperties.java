@@ -17,7 +17,6 @@
  */
 package org.apache.atlas;
 
-import org.apache.commons.configuration.CompositeConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -26,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.Iterator;
 
 /**
@@ -36,7 +34,6 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     private static final Logger LOG = LoggerFactory.getLogger(ApplicationProperties.class);
 
     public static final String APPLICATION_PROPERTIES = "atlas-application.properties";
-    public static final String CLIENT_PROPERTIES = "client.properties";
 
     private static Configuration instance = null;
 
@@ -48,9 +45,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
         if (instance == null) {
             synchronized (ApplicationProperties.class) {
                 if (instance == null) {
-                    Configuration applicationProperties = get(APPLICATION_PROPERTIES);
-                    Configuration clientProperties = get(CLIENT_PROPERTIES);
-                    instance = new CompositeConfiguration(Arrays.asList(applicationProperties, clientProperties));
+                    instance = get(APPLICATION_PROPERTIES);
                 }
             }
         }

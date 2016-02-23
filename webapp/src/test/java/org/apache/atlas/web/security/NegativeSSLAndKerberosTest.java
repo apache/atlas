@@ -61,7 +61,8 @@ public class NegativeSSLAndKerberosTest extends BaseSSLAndKerberosTest {
         final PropertiesConfiguration configuration = getSSLConfiguration(providerUrl);
         configuration.setProperty("atlas.http.authentication.type", "kerberos");
 
-        TestUtils.writeConfiguration(configuration, persistDir + File.separator + "client.properties");
+        TestUtils.writeConfiguration(configuration, persistDir + File.separator +
+            ApplicationProperties.APPLICATION_PROPERTIES);
 
         String confLocation = System.getProperty("atlas.conf");
         URL url;

@@ -60,7 +60,7 @@ public abstract class AtlasHook {
 
     static {
         try {
-            atlasProperties = ApplicationProperties.get(ApplicationProperties.CLIENT_PROPERTIES);
+            atlasProperties = ApplicationProperties.get();
         } catch (Exception e) {
             LOG.info("Attempting to send msg while shutdown in progress.", e);
         }

@@ -3,9 +3,10 @@ Apache Atlas Release Notes
 
 --trunk - unreleased
 INCOMPATIBLE CHANGES:
+ATLAS-483 Remove client.properties (tbeerbower via shwethags)
+ATLAS-349 SSL - Atlas SSL connection has weak/unsafe Ciphers suites (ndjouhr via shwethags)
 ATLAS-409 Atlas will not import avro tables with schema read from a file (dossett@gmail.com via shwethags)
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
-ATLAS-349 SSL - Atlas SSL connection has weak/unsafe Ciphers suites (ndjouhr via shwethags)
 
 ALL CHANGES:
 ATLAS_396 Creating an entity with non-existing type results in "Unable to deserialize json" error (guptaneeru via sumasai)

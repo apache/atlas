@@ -28,7 +28,7 @@ Follow these instructions in your sqoop set-up to add sqoop hook for Atlas in <s
      <name>atlas.cluster.name</name>
      <value><clustername></value>
    </property>
-   * Copy <atlas-conf>/atlas-application.properties and <atlas-conf>/client.properties to to the sqoop conf directory <sqoop-conf>/
+   * Copy <atlas-conf>/atlas-application.properties to to the sqoop conf directory <sqoop-conf>/
    * Link <atlas-home>/hook/sqoop/*.jar in sqoop lib
 
 Refer [[Configuration][Configuration]] for notification related configurations

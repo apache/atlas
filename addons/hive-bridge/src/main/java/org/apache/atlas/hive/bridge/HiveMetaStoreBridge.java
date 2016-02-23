@@ -604,7 +604,7 @@ public class HiveMetaStoreBridge {
     }
 
     public static void main(String[] argv) throws Exception {
-        Configuration atlasConf = ApplicationProperties.get(ApplicationProperties.CLIENT_PROPERTIES);
+        Configuration atlasConf = ApplicationProperties.get();
         HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(new HiveConf(), atlasConf);
         hiveMetaStoreBridge.registerHiveDataModel();
         hiveMetaStoreBridge.importHiveMetadata();

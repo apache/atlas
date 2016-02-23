@@ -87,8 +87,8 @@ For a more detailed discussion of the HTTP authentication mechanism refer to [[h
 
 ---+++ Client security configuration
 
-When leveraging Atlas client code to communicate with an Atlas server configured for SSL transport and/or Kerberos authentication, there is a requirement to provide a client configuration file that provides the security properties that allow for communication with, or authenticating to, the server.
-Create a client.properties file with the appropriate settings (see below) and place it on the client's classpath or in the directory specified by the "atlas.conf" system property.
+When leveraging Atlas client code to communicate with an Atlas server configured for SSL transport and/or Kerberos authentication, there is a requirement to provide the Atlas client configuration file that provides the security properties that allow for communication with, or authenticating to, the server.
+Update the atlas-application.properties file with the appropriate settings (see below) and copy it to the client's classpath or to the directory specified by the "atlas.conf" system property.
 
 The client properties for SSL communication are:
 

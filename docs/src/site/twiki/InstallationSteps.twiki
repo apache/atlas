@@ -32,7 +32,6 @@ Tar is structured as follows
    |- cputil.py
 |- conf
    |- atlas-application.properties
-   |- client.properties
    |- atlas-env.sh
    |- log4j.xml
    |- solr
