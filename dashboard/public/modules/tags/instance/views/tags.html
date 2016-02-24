@@ -17,7 +17,7 @@
    ~ See the License for the specific language governing permissions and
    ~ limitations under the License.
    -->
-<div data-ng-controller="InstanceTagController" >
+<div data-ng-controller="instanceTagController" >
    <div>
       <a ng-click="openAddTag()" class="add-tag btn btn-primary pull-right">Add Tag</a>
    </div>
@@ -37,13 +37,12 @@
              <td class="col-lg-5 tag-attr" >
               {{trait.values}}
             </td>
-            <td class="col-lg-1 tagAlign">
+            <td class="col-lg-1 tag-align">
                <a href="" class="deleteTag confirm-delete" data-toggle="modal" data-target="#myModal" ><i class="fa fa-trash-o " ng-click="detachTag($event, trait.typeName)"></i></a>
             </td>
          </tr>
       </tbody>
    </table>
-  <!-- Modal -->
   <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
@@ -61,7 +60,7 @@
       </div>
     </div>
   </div>
-  <div ng-if="noTags" class="noTags"> 
+  <div ng-if="noTags" class="no-tags"> 
       No tags to display 
   </div>  
 </div>

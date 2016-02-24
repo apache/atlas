@@ -18,13 +18,13 @@
 
 'use strict';
 
-angular.module('dgc.system.notification', ['ui.router']).constant('ColorCoding', {
+angular.module('dgc.system.notification', ['ui.router']).constant('colorCoding', {
     info: 'success',
     error: 'danger'
-}).run(['$rootScope', 'NotificationService', function($rootScope, NotificationService) {
+}).run(['$rootScope', 'notificationService', function($rootScope, notificationService) {
     $rootScope.$on('$locationChangeSuccess', function(evt, from, to) {
         if (from !== to) {
-            NotificationService.reset();
+            notificationService.reset();
         }
     });
 }]);

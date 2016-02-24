@@ -30,16 +30,16 @@ angular.module('dgc.details').config(['$stateProvider',
             parent: 'details',
             params: {
                 tId: null,
-                frm : 'details'
+                frm: 'details'
             },
-            onEnter: ['$stateParams', '$state', '$modal', 'NavigationResource', function($stateParams, $state, $modal, NavigationResource) {
+            onEnter: ['$stateParams', '$state', '$modal', 'navigationResource', function($stateParams, $state, $modal, navigationResource) {
                 $modal.open({
                     templateUrl: '/modules/tags/instance/views/createTag.html',
-                    controller: 'CreateTagController',
+                    controller: 'createTagController',
                     windowClass: 'create-tag-entity',
                     resolve: {
                         typesList: function() {
-                            return NavigationResource.get().$promise;
+                            return navigationResource.get().$promise;
                         }
                     }
                 }).result.finally(function() {

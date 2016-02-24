@@ -19,7 +19,7 @@
    -->
 <div class="col-lg-10 paddingR0">
    <div class="">
-      <div class="row mainSearch">
+      <div class="row main-search">
          <form class="col-lg-12" name="form" novalidate>
             <div class="input-group">
                <input type="text" class="form-control" placeholder="Search: Table, DB, Column" data-ng-model="query" required/>
@@ -31,11 +31,11 @@
             </div>
          </form>
       </div>
-      <div class="col-lg-12 padding0 searchresults">
+      <div class="col-lg-12 padding0 search-results">
          <div ng-switch on="searchMessage">
             <div ng-switch-when="load-gif" class="search-spinner"><img src="../img/spinner.gif" align="middle" /></div>
             <div ng-switch-default>
-               <h4 ng-show="searchMessage" title="{{searchMessage}}" class="tabsearchResult">{{searchMessage}}</h4>
+               <h4 ng-show="searchMessage" title="{{searchMessage}}" class="tabsearch-result">{{searchMessage}}</h4>
             </div>
          </div>
          <div class="panel panel-default" ng-show='resultCount > 0'>
@@ -68,9 +68,9 @@
                         </span>
                      </td>
                      <td>
-                        <div id="{{result['$id$'].id || result.guid}}" ng-show="!dataTransitioned" class="wordBreak"><a class="tabsearchanchor" ng-repeat="(key, value) in result['$traits$']" data-ui-sref="search({query: key})" title="{{key}}">{{key}}<span> </span></a></div>
+                        <div id="{{result['$id$'].id || result.guid}}" ng-show="!dataTransitioned" class="word-break"><a class="tab-search-tags" ng-repeat="(key, value) in result['$traits$']" data-ui-sref="search({query: key})" title="{{key}}">{{key}}<span> </span></a></div>
                      </td>
-                     <td class="addTag"><img ng-src="img/addTag.png" tooltip="Add Tag" ng-click="openAddTagHome(result['$id$'].id || result.guid)"></td>
+                     <td class="add-tag"><img ng-src="img/addTag.png" tooltip="Add Tag" ng-click="openAddTagHome(result['$id$'].id || result.guid)"></td>
                   </tr>
                   <tr ng-if="isTag(resultType)" ng-repeat="result in filteredResults track by $index">
                      <td data-ng-if="isObject(result) && !isString(result) && res != 'id' && res != 'guid'" data-ng-repeat="res in transformedProperties track by $index">
@@ -85,11 +85,11 @@
 
                         <span data-ng-if="res.toLowerCase().indexOf('name') != -1 && !result['id'] && !result['guid']">{{result[res]}}</span> 
                         
-                        <div data-ng-if="res == '$traits$'" class="wordBreak tags" id="{{result['id']|| result['guid']}}">
-                           <a class="tabsearchanchor" ng-repeat="(key, value) in result[res]" data-ui-sref="search({query: key})" title="{{key}}">{{key}}<span> </span></a>
+                        <div data-ng-if="res == '$traits$'" class="word-break tags" id="{{result['id']|| result['guid']}}">
+                           <a class="tab-search-tags" ng-repeat="(key, value) in result[res]" data-ui-sref="search({query: key})" title="{{key}}">{{key}}<span> </span></a>
                         </div>
                         
-                        <span data-ng-if="res == 'Tools'" class="addTag"> <img ng-src="img/addTag.png" tooltip="Add Tag" ng-click="openAddTagHome(result['id']|| result['guid'])"> </span>
+                        <span data-ng-if="res == 'Tools'" class="add-tag"> <img ng-src="img/addTag.png" tooltip="Add Tag" ng-click="openAddTagHome(result['id']|| result['guid'])"> </span>
                      </td>
                      <td data-ng-if="isString(result) || result == false || result == true">
                         <a data-ng-if="result.toLowerCase() == 'guid'" data-ui-sref="details({id:result})">{{result}}</a>

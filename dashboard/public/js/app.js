@@ -41,7 +41,7 @@ angular.module('dgc').factory('lodash', ['$window',
     function($window) {
         return $window.d3;
     }
-]).factory('Global', ['$window', '$location',
+]).factory('global', ['$window', '$location',
     function($window, $location) {
         return {
             user: $location.search()['user.name'],
@@ -49,32 +49,32 @@ angular.module('dgc').factory('lodash', ['$window',
             renderErrors: $window.renderErrors
         };
     }
-]).factory('HttpInterceptor', ['Global', function(Global) {
+]).factory('httpInterceptor', ['global', function(global) {
     return {
-        'request': function(config) { 
+        'request': function(config) {
             if (config.url && (config.url.indexOf(baseUrl) === 0 || config.url.indexOf(baseUrl) === 0)) {
                 config.params = config.params || {};
-                config.params['user.name'] = Global.user;
+                config.params['user.name'] = global.user;
             }
             return config;
         }
     };
 }]).config(['$httpProvider', function($httpProvider) {
-    $httpProvider.interceptors.push('HttpInterceptor');
-}]).run(['$rootScope', 'Global', 'NotificationService', 'lodash', 'd3', function($rootScope, Global, NotificationService, lodash, d3) {
-    var errors = Global.renderErrors;
+    $httpProvider.interceptors.push('httpInterceptor');
+}]).run(['$rootScope', 'global', 'notificationService', 'lodash', 'd3', function($rootScope, global, notificationService, lodash, d3) {
+    var errors = global.renderErrors;
     if (angular.isArray(errors) || angular.isObject(errors)) {
         lodash.forEach(errors, function(err) {
             err = angular.isObject(err) ? err : {
                 message: err
             };
             err.timeout = false;
-            NotificationService.error(err);
+            notificationService.error(err);
         });
     } else {
         if (errors) {
             errors.timeout = false;
-            NotificationService.error(errors);
+            notificationService.error(errors);
         }
     }
     $rootScope.$on('$stateChangeStart', function() {
@@ -99,9 +99,9 @@ angular.module('dgc').factory('lodash', ['$window',
         }
 
         if (typeof to.parent === 'undefined') {
-            if (to.name !== 'search') { 
+            if (to.name !== 'search') {
                 $rootScope.leftNav = true;
-            } else { 
+            } else {
                 $rootScope.leftNav = false;
             }
         }

@@ -17,14 +17,14 @@
  */
 'use strict';
 
-angular.module('dgc.details').controller('DetailsController', ['$window', '$scope', '$state', '$stateParams', 'DetailsResource', 'SchemaResource',
-    function($window, $scope, $state, $stateParams, DetailsResource, SchemaResource) {
+angular.module('dgc.details').controller('detailsController', ['$window', '$scope', '$state', '$stateParams', 'detailsResource', 'schemaResource',
+    function($window, $scope, $state, $stateParams, detailsResource, schemaResource) {
 
         $scope.tableName = false;
         $scope.isTable = false;
         $scope.isLineage = false;
 
-        DetailsResource.get({
+        detailsResource.get({
             id: $stateParams.id
 
         }, function(data) {
@@ -35,7 +35,7 @@ angular.module('dgc.details').controller('DetailsController', ['$window', '$scop
 
             if (data && data.values) {
                 var getName = function(aaa, attr) {
-                    DetailsResource.get({
+                    detailsResource.get({
                         id: attr.id
                     }, function(data1) {
                         if (data1.values && data1.values.name) {
@@ -55,19 +55,19 @@ angular.module('dgc.details').controller('DetailsController', ['$window', '$scop
                     }
                     if (typeof data.values[aaa] === 'object' && angular.isArray(data.values[aaa]) === true) {
                         var arrObj = data.values[aaa];
-                        for(var a=0; a < arrObj.length; a++){
-                            if(typeof arrObj[a].id === 'string'){ 
+                        for (var a = 0; a < arrObj.length; a++) {
+                            if (typeof arrObj[a].id === 'string') {
                                 arrObj[a].name = arrObj[a].id;
                                 getName(arrObj[a], arrObj[a]);
                             }
-                        } 
+                        }
                     }
                 }
             }
- 
+
             $scope.details = data;
             if (data && data.values && data.values.name && data.values.name !== "") {
-                SchemaResource.get({
+                schemaResource.get({
                     tableName: data.values.name
                 }, function(data1) {
                     if (data1.results) {

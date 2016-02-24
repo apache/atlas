@@ -18,6 +18,6 @@
 
 'use strict';
 
-angular.module('dgc.lineage').factory('LineageResource', ['$resource','AtlasConfig', function($resource, AtlasConfig) {
-    return $resource(AtlasConfig.API_ENDPOINTS.SCHEMA_LINEAGE_PREPEND+'/:tableName/:type/'+AtlasConfig.API_ENDPOINTS.GRAPH, {});
+angular.module('dgc.lineage').factory('lineageResource', ['$resource', 'atlasConfig', function($resource, atlasConfig) {
+    return $resource(atlasConfig.API_ENDPOINTS.SCHEMA_LINEAGE_PREPEND + '/:tableName/:type/' + atlasConfig.API_ENDPOINTS.GRAPH, {});
 }]);

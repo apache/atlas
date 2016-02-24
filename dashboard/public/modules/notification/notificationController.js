@@ -18,13 +18,13 @@
 
 'use strict';
 
-angular.module('dgc.system.notification').controller('NotificationController', ['$scope', 'NotificationService',
-    function($scope, NotificationService) {
+angular.module('dgc.system.notification').controller('notificationController', ['$scope', 'notificationService',
+    function($scope, notificationService) {
 
-        $scope.getNotifications = NotificationService.getAll;
+        $scope.getNotifications = notificationService.getAll;
 
         $scope.close = function(notification) {
-            NotificationService.close(notification);
+            notificationService.close(notification);
         };
     }
 ]);

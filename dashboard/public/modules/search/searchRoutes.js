@@ -23,22 +23,22 @@ angular.module('dgc.search').config(['$stateProvider',
         $stateProvider.state('search', {
             url: '/search?query',
             templateUrl: '/modules/search/views/search.html',
-            controller: 'SearchController'
+            controller: 'searchController'
         });
         $stateProvider.state('addTagHome', {
             parent: 'search',
             params: {
                 tId: null,
-                 frm : 'search'
+                frm: 'search'
             },
-            onEnter: ['$stateParams', '$state', '$modal', 'NavigationResource', function($stateParams, $state, $modal, NavigationResource) {
+            onEnter: ['$stateParams', '$state', '$modal', 'navigationResource', function($stateParams, $state, $modal, navigationResource) {
                 $modal.open({
                     templateUrl: '/modules/tags/instance/views/createTag.html',
-                    controller: 'CreateTagController',
+                    controller: 'createTagController',
                     windowClass: 'create-tag-entity',
                     resolve: {
                         typesList: function() {
-                            return NavigationResource.get().$promise;
+                            return navigationResource.get().$promise;
                         }
                     }
                 }).result.finally(function() {

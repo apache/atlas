@@ -17,8 +17,8 @@
  */
 'use strict';
 
-angular.module('dgc.navigation').controller('NavigationController', ['$scope', 'NavigationResource', '$cacheFactory','AtlasConfig',
-    function($scope, NavigationResource, $cacheFactory,AtlasConfig) {
+angular.module('dgc.navigation').controller('navigationController', ['$scope', 'navigationResource', '$cacheFactory', 'atlasConfig',
+    function($scope, navigationResource, $cacheFactory, atlasConfig) {
 
         $scope.updateVar = function(event) {
             $scope.$$prevSibling.query = angular.element(event.target).text();
@@ -26,19 +26,19 @@ angular.module('dgc.navigation').controller('NavigationController', ['$scope', '
         };
 
         $scope.$on('load_Traits', function() {
-            $scope.leftnav = NavigationResource.get();
+            $scope.leftnav = navigationResource.get();
         });
 
         setTimeout(function() {
-         	var httpDefaultCache = $cacheFactory.get('$http');
-            httpDefaultCache.remove(AtlasConfig.API_ENDPOINTS.TRAITS_LIST);
+            var httpDefaultCache = $cacheFactory.get('$http');
+            httpDefaultCache.remove(atlasConfig.API_ENDPOINTS.TRAITS_LIST);
         }, 3600000);
 
-        $scope.refreshTags = function(){
-        	var httpDefaultCache = $cacheFactory.get('$http');
-        	httpDefaultCache.remove(AtlasConfig.API_ENDPOINTS.TRAITS_LIST);
-        	$scope.leftnav = NavigationResource.get();
-        }; 
+        $scope.refreshTags = function() {
+            var httpDefaultCache = $cacheFactory.get('$http');
+            httpDefaultCache.remove(atlasConfig.API_ENDPOINTS.TRAITS_LIST);
+            $scope.leftnav = navigationResource.get();
+        };
 
     }
 ]);

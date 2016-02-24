@@ -18,8 +18,8 @@
 
 'use strict';
 
-angular.module('dgc.details').factory('DetailsResource', ['$resource', 'AtlasConfig', function($resource, AtlasConfig) {
-    return $resource(AtlasConfig.API_ENDPOINTS.GET_ENTITY +'/:id', {}, {
+angular.module('dgc.details').factory('detailsResource', ['$resource', 'atlasConfig', function($resource, atlasConfig) {
+    return $resource(atlasConfig.API_ENDPOINTS.GET_ENTITY + '/:id', {}, {
         get: {
             method: 'GET',
             transformResponse: function(data) {
@@ -31,16 +31,16 @@ angular.module('dgc.details').factory('DetailsResource', ['$resource', 'AtlasCon
         },
         saveTag: {
             method: 'POST',
-            url : AtlasConfig.API_ENDPOINTS.GET_ENTITY + '/:id/' + AtlasConfig.API_ENDPOINTS.ATTACH_DETACH_TRAITS
+            url: atlasConfig.API_ENDPOINTS.GET_ENTITY + '/:id/' + atlasConfig.API_ENDPOINTS.ATTACH_DETACH_TRAITS
         },
-        detachTag : {
+        detachTag: {
             method: 'DELETE',
-            url : AtlasConfig.API_ENDPOINTS.GET_ENTITY + '/:id/' + AtlasConfig.API_ENDPOINTS.ATTACH_DETACH_TRAITS + '/:tagName'
+            url: atlasConfig.API_ENDPOINTS.GET_ENTITY + '/:id/' + atlasConfig.API_ENDPOINTS.ATTACH_DETACH_TRAITS + '/:tagName'
         }
-     });
+    });
 
-}]).factory('SchemaResource', ['$resource','AtlasConfig', function($resource, AtlasConfig) {
-    return $resource(AtlasConfig.API_ENDPOINTS.SCHEMA_LINEAGE_PREPEND + '/:tableName/' + AtlasConfig.API_ENDPOINTS.SCHEMA_APPEND, {}, {
+}]).factory('schemaResource', ['$resource', 'atlasConfig', function($resource, atlasConfig) {
+    return $resource(atlasConfig.API_ENDPOINTS.SCHEMA_LINEAGE_PREPEND + '/:tableName/' + atlasConfig.API_ENDPOINTS.SCHEMA_APPEND, {}, {
         get: {
             method: 'GET',
             transformResponse: function(data) {
@@ -50,5 +50,5 @@ angular.module('dgc.details').factory('DetailsResource', ['$resource', 'AtlasCon
             },
             responseType: 'json'
         }
-});
+    });
 }]);

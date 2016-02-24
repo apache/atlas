@@ -16,17 +16,6 @@
  * limitations under the License.
  */
 
-/*g circle {*/
-    /*cursor: pointer;*/
-    /*stroke: green;*/
-    /*stroke-width: 2px;*/
-    /*fill: url(#process-image);*/
-/*}*/
-
-/*g circle.empty {*/
-    /*fill: #90ef96;*/
-/*}*/
-
 .link {
     fill: none;
     stroke: green;
@@ -48,31 +37,14 @@ div.lineage {
     border-bottom: 2px solid #006600;
 
 }
-
-/*.node rect {*/
-    /*stroke: #333;*/
-    /*fill: #fff;*/
-/*}*/
-
-.edgePath path {
+.edge-path path {
     stroke: #333;
     fill: #333;
     stroke-width: 1.5px;
 }
-
-/*.node rect,*/
-/*.node circle {*/
-    /*stroke: #333;*/
-    /*fill: #fff;*/
-    /*stroke-width: 1.5px;*/
-/*}*/
-
 .lineage-viz {
     margin: 0 auto;
     overflow: hidden;
-    /*border: 1px solid #ddd;
-    border-top: none;*/
-
 }
 .lineage-viz button{
     margin: 5px;
@@ -82,12 +54,7 @@ div.lineage {
 .title-font{
     font-size:12px!important;
 }
-/*.images {*/
-    /*background-image: url("../img/process.png");*/
-/*}​*/
-
-
-.alignLineage{
+.align-lineage{
     text-align: center;
     margin-top: 100px;
     font-size: 24px;

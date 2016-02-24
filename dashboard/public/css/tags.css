@@ -59,13 +59,13 @@
     border-radius: 4px;
     background-color: #a94442;
 }
-.appForm .panel {
+.app-form .panel {
     border-radius: 0 !important;
 }
-.appForm .panel-footer {
+.app-form .panel-footer {
     margin-bottom: 0;
 }
-.appForm .panel-body {
+.app-form .panel-body {
     padding-bottom: 0;
 }
 .input-spacing {
@@ -93,22 +93,22 @@
     background-color: inherit;
     padding-right: 20px !important;
 }
-.addTag {
+.add-tag {
     text-align: center;
 }
-.addTag img {
+.add-tag img {
     cursor: pointer;
 }
-.searchResults td {
+.search-results td {
     border: 0;
 }
-.tagalign {
+.tag-align {
     margin-top: 14px;
 }
-.tagsAdded {
+.tags-added {
     display: inline;
 }
-.noTags {
+.no-tags {
     font-size: 24px;
     font-weight: bold;
     text-align: center;

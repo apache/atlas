@@ -18,7 +18,7 @@
 
 'use strict';
 
-angular.module('dgc.home').controller('HeaderController', ['$scope', '$modal', function($scope, $modal) {
+angular.module('dgc.home').controller('headerController', ['$scope', '$modal', function($scope, $modal) {
 
     $scope.menu = [{
         title: "Tags",
@@ -30,11 +30,11 @@ angular.module('dgc.home').controller('HeaderController', ['$scope', '$modal', f
         return true;
     };
 
-    $scope.ShowAbout = function() {
+    $scope.showAbout = function() {
         $modal.open({
             animation: true,
             templateUrl: '/modules/about/views/about.html',
-            controller: 'AboutController',
+            controller: 'aboutController',
             size: 'lg'
         });
     };

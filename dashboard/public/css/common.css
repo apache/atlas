@@ -96,33 +96,33 @@ header.navbar-top {
 }
 
 
-header a.mainLogo{
+header a.main-logo{
     color: #ffffff;
     font-size: 16px;
     line-height: 40px;
     padding: 2px 5px 0 15px;
     text-shadow: 0 1px 0 #555555;
 }
-header a.mainLogo:hover,header a.mainLogo:focus{
+header a.main-logo:hover,header a.main-logo:focus{
     text-decoration: none;
 }
 
-header ul.menuBar li a{
+header ul.menu-bar li a{
     line-height: 10px;
     color: #c3c3c3;
 }
-header ul.menuBar li a>i {
+header ul.menu-bar li a>i {
     margin-right: 3px;
     font-size: 12px;
 }
-header ul.menuBar li a:hover{
+header ul.menu-bar li a:hover{
     color: #fff;
     background: transparent;
 }
-header ul.menuBar li a:focus{
+header ul.menu-bar li a:focus{
     background: transparent;
 }
-header ul.menuBar li.active a{
+header ul.menu-bar li.active a{
     color: #333333;
     background-color: #ffffff;
     -webkit-box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.125);
@@ -148,7 +148,7 @@ footer.navbar-bottom img {
 /*=======================================================================================
 Search Bar design
 =======================================================================================*/
-.mainSearch input{
+.main-search input{
     height: 50px;
     border-radius: 0px;
     border: 1px solid #e3e3e3;
@@ -157,7 +157,7 @@ Search Bar design
     border-bottom-right-radius: 0px;
     box-shadow: none;
 }
-.mainSearch .input-group-btn button{
+.main-search .input-group-btn button{
     border-radius: 0;
     border-radius: 0;
     padding: 14px 20px;
@@ -166,7 +166,7 @@ Search Bar design
 /*=======================================================================================
 Tags on Home Page design
 =======================================================================================*/
-.mainTags{
+.main-tags{
     min-height: 20px;
     margin-bottom: 20px;
     background-color: #f5f5f5;
@@ -175,7 +175,7 @@ Tags on Home Page design
     -moz-border-radius: 0px;
     border-radius: 0px;
 }
-.mainTags a{
+.main-tags a{
     background: transparent;
     border: none;
     padding:5px 10px;
@@ -183,18 +183,18 @@ Tags on Home Page design
     color: #0088cc !important;
     border-radius: 0 !important;
 }
-.mainTags a:hover{
+.main-tags a:hover{
     color: #005580 !important;
     background: #eeeeee !important;
 }
-.mainTags h4{
+.main-tags h4{
     padding:0 10px;
 }
-.mainTags i{
+.main-tags i{
     font-size: 12px;
     margin-right: 3px;
 }
-.mainTags .list-group-item.limitSize{
+.main-tags .list-group-item.limit-size{
     overflow: hidden;
     text-overflow: ellipsis;
     -o-text-overflow: ellipsis;
@@ -205,7 +205,7 @@ Tags on Home Page design
 /*=======================================================================================
 Search Bar design
 =======================================================================================*/
-.mainSearch input{
+.main-search input{
     height: 50px;
     border-radius: 2px;
     border: 1px solid #e3e3e3;
@@ -214,18 +214,15 @@ Search Bar design
     border-bottom-right-radius: 0px;
     box-shadow: none;
 }
-.mainSearch .input-group-btn button{
+.main-search .input-group-btn button{
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
     padding: 14px 20px;
 }
-.breakword{
-    word-wrap: break-word;
-}
 /*=======================================================================================
 Tags on Home Page design
 =======================================================================================*/
-.mainTags{
+.main-tags{
     min-height: 20px;
     margin-bottom: 20px;
     background-color: #f5f5f5;
@@ -234,7 +231,7 @@ Tags on Home Page design
     -moz-border-radius: 0px;
     border-radius: 0px;
 }
-.mainTags a{
+.main-tags a{
     background: transparent;
     border: none;
     padding:5px 10px;
@@ -242,14 +239,14 @@ Tags on Home Page design
     color: #0088cc !important;
     border-radius: 0 !important;
 }
-.mainTags a:hover{
+.main-tags a:hover{
     color: #005580 !important;
     background: #eeeeee !important;
 }
-.mainTags h4{
+.main-tags h4{
     padding:0 10px;
 }
-.mainTags i{
+.main-tags i{
     font-size: 12px;
     margin-right: 3px;
 }
@@ -266,52 +263,25 @@ Tags on Home Page design
 .mt20px {
     margin-top: 20px;
 }
-
-/*.searchresults {
-    border: 1px solid #ddd;
-    padding: 10px;
-}
-.searchresults:first-child {
-    border-top-right-radius: 4px;
-    border-top-left-radius: 4px;
-}
-
-.searchresults:last-child {
-    margin-bottom: 0;
-    border-bottom-right-radius: 4px;
-    border-bottom-left-radius: 4px;
-}
-.searchresults hr {
-    margin: 0;
-    border: 0;
-}
-.searchresults .well {
-    background-color: #fff;
-    border: 0;
-    box-shadow: none;
-    height: auto;
-    min-height: 0;
-    padding: 5px 5px 5px 0;
-}*/
 .search-spinner {
     text-align: center;
 }
-.menulink{
+.menu-link{
     padding-left: 10px;
     padding-right: 10px;
 }
 
-.btnToggle
+.btn-toggle
 {
     border: 1px solid #CCCCCC;
     padding: 5px;
 }
 
-.wordBreak {
+.word-break  {
     word-break: break-word;
 }
 
-.tabsearchanchor {
+.tab-search-tags {
     max-width: 100px;
     display: list-item;
     overflow: hidden;
@@ -328,7 +298,7 @@ Tags on Home Page design
     padding-right: 7px !important;
 }
 
-.tabsearchResult {
+.tabsearch-result {
     max-width: 500px;
     display: list-item;
     overflow: hidden;
@@ -337,7 +307,7 @@ Tags on Home Page design
     white-space: nowrap;
     text-transform: capitalize;
 }
-.searchResultCount {
+.search-resultcount {
     max-width: 500px;
     display: list-item;
     overflow: hidden;
@@ -350,16 +320,16 @@ Tags on Home Page design
     max-width: 125px !important;
 }
 
-.anchorAbsolute {
+.anchor-absolute {
     position: absolute;
     right: 4px;
 }
 
-.addTag{
+.add-tag{
    margin-top: -35px;
 }
 
-.tagAlign{
+.tag-align{
     text-align: center;
 }
 

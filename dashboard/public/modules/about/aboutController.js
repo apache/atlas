@@ -18,9 +18,9 @@
 
 'use strict';
 
-angular.module('dgc.about').controller('AboutController', ['$scope', 'AboutResource', function($scope, AboutResource) {
+angular.module('dgc.about').controller('aboutController', ['$scope', 'aboutResource', function($scope, aboutResource) {
 
-    AboutResource.get(function(data) {
+    aboutResource.get(function(data) {
         $scope.versionInfo = data;
     });
 

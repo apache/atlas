@@ -17,13 +17,13 @@
  */
 'use strict';
 
-angular.module('dgc.tags.instance').controller('InstanceTagController', ['$scope', 'DetailsResource', '$stateParams', '$state',
-    function($scope, DetailsResource, $stateParams, $state) {
+angular.module('dgc.tags.instance').controller('instanceTagController', ['$scope', 'detailsResource', '$stateParams', '$state',
+    function($scope, detailsResource, $stateParams, $state) {
         $scope.id = $stateParams.id;
         var $$ = angular.element;
 
         function getResourceData() {
-            DetailsResource.get({
+            detailsResource.get({
                 id: $stateParams.id
             }, function(data) {
 
@@ -58,7 +58,6 @@ angular.module('dgc.tags.instance').controller('InstanceTagController', ['$scope
             }
         });
 
-
         $scope.openAddTag = function() {
             $state.go('addTag', {
                 tId: $scope.id
@@ -72,7 +71,7 @@ angular.module('dgc.tags.instance').controller('InstanceTagController', ['$scope
         $scope.removeTag = function() {
             $$("#myModal").modal();
             var name = $scope.displayName;
-            DetailsResource.detachTag({
+            detailsResource.detachTag({
                 id: $stateParams.id,
                 tagName: name
             }, function(data) {

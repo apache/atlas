@@ -18,7 +18,7 @@
 
 'use strict';
 
-angular.module('dgc.system.notification').service('NotificationService', ['$timeout', 'lodash', 'ColorCoding', function($timeout, _, colorCoding) {
+angular.module('dgc.system.notification').service('notificationService', ['$timeout', 'lodash', 'colorCoding', function($timeout, _, colorCoding) {
 
     var notifications = [],
         service = {

@@ -18,7 +18,7 @@
 
 'use strict';
 
-angular.module('dgc.tags.definition').service('AttributeDefinition', function Attribute() {
+angular.module('dgc.tags.definition').service('attributeDefinition', function attribute() {
     this.getModel = function getJson() {
         return {
             name: null,

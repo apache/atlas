@@ -16,7 +16,7 @@
   ~ limitations under the License.
   -->
 
-<div data-ng-controller="NavigationController" class="mainTags leftNavigation"> 
+<div data-ng-controller="navigationController" class="main-tags leftNavigation"> 
     <div>
        <h4 class="pull-left">Tags</h4>  
        <a href ng-click="refreshTags()" class="pull-right"> <img src="../img/refresh.png" style="margin: 5px;" title="Refresh Tags" ></a>
@@ -24,6 +24,6 @@
     </br>
     </br> 
     <div class="list-group">
-       <a ng-repeat="nav in leftnav" ui-sref="search({ query: nav })" class="list-group-item limitSize" title="{{nav}}"><i class="fa fa-tag"></i> {{nav}} </a>
+       <a ng-repeat="nav in leftnav" ui-sref="search({ query: nav })" class="list-group-item limit-size" title="{{nav}}"><i class="fa fa-tag"></i> {{nav}} </a>
     </div>
 </div>
