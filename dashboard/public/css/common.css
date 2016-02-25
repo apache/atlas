@@ -350,3 +350,18 @@ Tags on Home Page design
     margin-right: 15px;
     margin-left: -15px;
 }
+.main-tags .list-tag{
+    height: 640px;
+    overflow-y: scroll;
+}
+.filter-tag{
+    width: 95%;
+    padding: 3px;
+    margin-left: 6px;
+    margin-top: 3px;
+    margin-bottom: 3px;
+}
+.see-more {
+    font-weight: bold;
+    font-size: 16px;
+} 
