@@ -23,20 +23,30 @@ import org.apache.atlas.notification.hook.HookNotification;
 import java.util.List;
 
 /**
- * Notification interface for sending/receiving messages.
+ * Interface to the Atlas notification framework.  Use this interface to create consumers and to send messages of a
+ * given notification type.
+ *
  * 1. Atlas sends entity notifications
  * 2. Hooks send notifications to create/update types/entities. Atlas reads these messages
  */
 public interface NotificationInterface {
 
+    /**
+     * Prefix for Atlas notification related configuration properties.
+     */
     String PROPERTY_PREFIX = "atlas.notification";
 
     /**
-     * Notification type - hooks and entities.
+     * Atlas notification types.
      */
     enum NotificationType {
-        HOOK(HookNotification.HookNotificationMessage.class), ENTITIES(EntityNotification.class);
 
+        HOOK(HookNotification.HookNotificationMessage.class), // notifications from the Atlas integration hook producers
+        ENTITIES(EntityNotification.class);                   // notifications to entity change consumers
+
+        /**
+         * The notification class associated with this type.
+         */
         private final Class classType;
 
         NotificationType(Class classType) {
@@ -59,9 +69,30 @@ public interface NotificationInterface {
      */
     <T> List<NotificationConsumer<T>> createConsumers(NotificationType notificationType, int numConsumers);
 
+    /**
+     * Send the given messages.
+     *
+     * @param type      the message type
+     * @param messages  the messages to send
+     * @param <T>       the message type
+     *
+     * @throws NotificationException if an error occurs while sending
+     */
     <T> void send(NotificationType type, T... messages) throws NotificationException;
 
+    /**
+     * Send the given messages.
+     *
+     * @param type      the message type
+     * @param messages  the list of messages to send
+     * @param <T>       the message type
+     *
+     * @throws NotificationException if an error occurs while sending
+     */
     <T> void send(NotificationType type, List<T> messages) throws NotificationException;
 
+    /**
+     * Shutdown any notification producers and consumers associated with this interface instance.
+     */
     void close();
 }

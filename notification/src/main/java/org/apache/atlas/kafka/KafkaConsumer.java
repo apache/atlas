@@ -52,7 +52,7 @@ public class KafkaConsumer<T> extends AbstractNotificationConsumer<T> {
     }
 
 
-    // ----- Iterator --------------------------------------------------------
+    // ----- NotificationConsumer --------------------------------------------
 
     @Override
     public boolean hasNext() {

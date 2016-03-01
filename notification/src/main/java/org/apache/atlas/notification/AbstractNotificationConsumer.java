@@ -63,7 +63,7 @@ public abstract class AbstractNotificationConsumer<T> implements NotificationCon
     private final Class<T> type;
 
 
-    // ----- Constructors ------------------------------------------------------
+    // ----- Constructors ----------------------------------------------------
 
     /**
      * Construct an AbstractNotificationConsumer.
@@ -84,8 +84,15 @@ public abstract class AbstractNotificationConsumer<T> implements NotificationCon
      */
     protected abstract String getNext();
 
+    /**
+     * Get the next notification as a string without advancing.
+     *
+     * @return the next notification in string form
+     */
+    protected abstract String peekMessage();
 
-    // ----- Iterator ---------------------------------------------------------
+
+    // ----- NotificationConsumer ---------------------------------------------
 
     @Override
     public T next() {
@@ -97,13 +104,11 @@ public abstract class AbstractNotificationConsumer<T> implements NotificationCon
         return GSON.fromJson(peekMessage(), type);
     }
 
-    protected abstract String peekMessage();
 
     /**
      * Deserializer for ImmutableList used by AbstractNotificationConsumer.GSON.
      */
     public static class ImmutableListDeserializer implements JsonDeserializer<ImmutableList<?>> {
-
         public static final Type LIST_TYPE = new TypeToken<List<?>>() {
         }.getType();
 
@@ -114,7 +119,6 @@ public abstract class AbstractNotificationConsumer<T> implements NotificationCon
             return ImmutableList.copyOf(list);
         }
     }
-
 
     /**
      * Deserializer for ImmutableMap used by AbstractNotificationConsumer.GSON.
@@ -144,7 +148,6 @@ public abstract class AbstractNotificationConsumer<T> implements NotificationCon
         }
     }
 
-
     /**
      * Serde for Struct used by AbstractNotificationConsumer.GSON.
      */
@@ -161,7 +164,6 @@ public abstract class AbstractNotificationConsumer<T> implements NotificationCon
             return new JsonParser().parse(instanceJson).getAsJsonObject();
         }
     }
-
 
     /**
      * Serde for Referenceable used by AbstractNotificationConsumer.GSON.
@@ -181,7 +183,6 @@ public abstract class AbstractNotificationConsumer<T> implements NotificationCon
             return new JsonParser().parse(instanceJson).getAsJsonObject();
         }
     }
-
 
     /**
      * Serde for JSONArray used by AbstractNotificationConsumer.GSON.

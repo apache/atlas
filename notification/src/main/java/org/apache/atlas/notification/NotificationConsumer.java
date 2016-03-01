@@ -18,13 +18,29 @@
 package org.apache.atlas.notification;
 
 /**
- * Interface for notification consumer.
- * @param <T> message type
+ * Atlas notification consumer.  This consumer blocks until a notification can be read.
+ *
+ * @param <T>  the class type of notifications returned by this consumer
  */
-public interface NotificationConsumer<T> {
+public interface NotificationConsumer<T>{
+    /**
+     * Returns true when the consumer has more notifications.  Blocks until a notification becomes available.
+     *
+     * @return true when the consumer has notifications to be read
+     */
     boolean hasNext();
 
+    /**
+     * Returns the next notification.
+     *
+     * @return the next notification
+     */
     T next();
 
+    /**
+     * Returns the next notification without advancing.
+     *
+     * @return the next notification
+     */
     T peek();
 }
