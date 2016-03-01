@@ -9,6 +9,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-536 Falcon hook loads incorrect configuration when -Datlas.conf is not given when falcon server startup (ayubkhan via shwethags)
 ATLAS-502 UI: Provide the ability to search for tags (anilsg via shwethags)
 ATLAS-364 UI Code standardization (darshankumar89 via shwethags)
 ATLAS_396 Creating an entity with non-existing type results in "Unable to deserialize json" error (guptaneeru via sumasai)
