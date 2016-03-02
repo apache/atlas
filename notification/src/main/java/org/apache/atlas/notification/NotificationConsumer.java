@@ -22,7 +22,7 @@ package org.apache.atlas.notification;
  *
  * @param <T>  the class type of notifications returned by this consumer
  */
-public interface NotificationConsumer<T>{
+public interface NotificationConsumer<T> {
     /**
      * Returns true when the consumer has more notifications.  Blocks until a notification becomes available.
      *
