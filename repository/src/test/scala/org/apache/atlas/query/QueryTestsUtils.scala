@@ -29,8 +29,11 @@ import org.apache.atlas.repository.graph.TitanGraphProvider
 import org.apache.atlas.typesystem.types._
 import org.apache.commons.configuration.{Configuration, ConfigurationException, MapConfiguration}
 import org.apache.commons.io.FileUtils
+import org.apache.commons.lang.RandomStringUtils
 import org.json.JSONObject
 import org.skyscreamer.jsonassert.JSONAssert
+
+import scala.util.Random
 
 
 trait GraphUtils {
@@ -152,7 +155,10 @@ object QueryTestsUtils extends GraphUtils {
     }
 
     def setupTestGraph(gp: TitanGraphProvider): TitanGraph = {
-        val g = gp.get
+        var conf = TitanGraphProvider.getConfiguration
+        conf.setProperty("storage.directory",
+            conf.getString("storage.directory") + "/../graph-data/" + RandomStringUtils.randomAlphanumeric(10))
+        val g = TitanFactory.open(conf)
         val manager: ScriptEngineManager = new ScriptEngineManager
         val engine: ScriptEngine = manager.getEngineByName("gremlin-groovy")
         val bindings: Bindings = engine.createBindings
