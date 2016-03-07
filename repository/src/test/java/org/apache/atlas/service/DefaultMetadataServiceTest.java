@@ -389,7 +389,7 @@ public class DefaultMetadataServiceTest {
         Assert.assertEquals(arrColumnsList.size(), columns.size());
         assertReferenceables(arrColumnsList.get(1), columns.get(1));
         assertReferenceables(arrColumnsList.get(2), columns.get(2));
-
+        
         //Remove a class reference/Id and insert another reference
         //Also covers isComposite case since columns is a composite
         values.clear();
@@ -788,7 +788,8 @@ public class DefaultMetadataServiceTest {
         for (ITypedReferenceableInstance deletedEntity : deletedEntitiesFromListener) {
             deletedGuidsFromListener.add(deletedEntity.getId()._getId());
         }
-        Assert.assertEquals(deletedGuidsFromListener, deletedGuids);
+        Assert.assertEquals(deletedGuidsFromListener.size(), deletedGuids.size());
+        Assert.assertTrue(deletedGuidsFromListener.containsAll(deletedGuids));
     }
     
     private static class DeleteEntitiesChangeListener implements EntityChangeListener {

@@ -170,7 +170,7 @@ public final class TestUtils {
         max.set("mentor", julius);
         
         john.set("manager", jane);
-
+        john.set("mentor", max);
         hrDept.set("employees", ImmutableList.of(john, jane, julius, max));
 
         jane.set("subordinates", ImmutableList.of(john, max));

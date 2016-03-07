@@ -534,7 +534,6 @@ public class GraphBackedMetadataRepositoryTest {
         Assert.assertTrue(creationTimestamp < modificationTimestampPostUpdate);
 
         // Update max's mentor reference to jane.
-        instance = personType.createInstance(max.getId());
         instance.set("mentor", janeGuid);
         repositoryService.updatePartial(instance);
 
@@ -550,6 +549,30 @@ public class GraphBackedMetadataRepositoryTest {
         Long modificationTimestampPost2ndUpdate = vertex.getProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY);
         Assert.assertNotNull(modificationTimestampPost2ndUpdate);
         Assert.assertTrue(modificationTimestampPostUpdate < modificationTimestampPost2ndUpdate);
+        
+        ITypedReferenceableInstance julius = repositoryService.getEntityDefinition("Person", "name", "Julius");
+        Id juliusGuid = julius.getId();
+        instance = personType.createInstance(max.getId());
+        instance.set("manager", juliusGuid);
+        repositoryService.updatePartial(instance);
+
+        // Verify the update was applied correctly - julius should now be max's manager.
+        max = repositoryService.getEntityDefinition(maxGuid);
+        object = max.get("manager");
+        Assert.assertTrue(object instanceof ITypedReferenceableInstance);
+        refTarget = (ITypedReferenceableInstance) object;
+        Assert.assertEquals(refTarget.getId()._getId(), juliusGuid._getId());
+        
+        // Verify that max is no longer a subordinate of jane.
+        jane = repositoryService.getEntityDefinition(janeGuid._getId());
+        Object refValue = jane.get("subordinates");
+        Assert.assertTrue(refValue instanceof List);
+        List<Object> subordinates = (List<Object>)refValue;
+        Assert.assertEquals(subordinates.size(), 1);
+        Object listValue = subordinates.get(0);
+        Assert.assertTrue(listValue instanceof ITypedReferenceableInstance);
+        ITypedReferenceableInstance subordinate = (ITypedReferenceableInstance) listValue;
+        Assert.assertNotEquals(subordinate.getId()._getId(), maxGuid);
     }
 
     private ITypedReferenceableInstance createHiveTableInstance(Referenceable databaseInstance) throws Exception {
