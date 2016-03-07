@@ -17,15 +17,22 @@
    ~ See the License for the specific language governing permissions and
    ~ limitations under the License.
    -->
-<div class="col-lg-10 paddingR0">
+<div class="col-lg-10 paddingR0" xmlns="http://www.w3.org/1999/html">
    <div class="">
       <div class="row main-search">
          <form class="col-lg-12" name="form" novalidate>
-            <div class="input-group">
-               <input type="text" class="form-control" placeholder="Search: Table, DB, Column" data-ng-model="query" required/>
+            <div class="col-lg-2 search-type-large">
+               <select class="form-control" ng-model="searchTypeModel" ng-change="searchTypeChanged()">
+                  <option ng-selected = "{{searchTypeModel === searchTypes.dsl.value}}" value={{searchTypes.dsl.value}}>{{ searchTypes.dsl.displayText }}</option>
+                  <option ng-selected = "{{searchTypeModel === searchTypes.fulltext.value}}" value={{searchTypes.fulltext.value}}>{{ searchTypes.fulltext.displayText }}</option>
+               </select>
+            </div>
+            <div class="input-group col-lg-10">
+               <input type="text" class="form-control" placeholder={{searchTypes[searchTypeModel].placeholder}} data-ng-model="query" required>
+              </input>
                <span class="input-group-btn">
-               <button class="btn btn-success" type="submit" data-ng-disabled="form.$invalid" ui-sref="search({ query: query })">
-               <i class="glyphicon glyphicon-search white "></i>
+               <button class="btn btn-success" type="submit" data-ng-disabled="form.$invalid" ui-sref="search({ query: query, searchType: searchTypeModel })">
+                  <i class="glyphicon glyphicon-search white "></i>
                </button>
                </span>
             </div>
@@ -35,7 +42,8 @@
          <div ng-switch on="searchMessage">
             <div ng-switch-when="load-gif" class="search-spinner"><img src="../img/spinner.gif" align="middle" /></div>
             <div ng-switch-default>
-               <h4 ng-show="searchMessage" title="{{searchMessage}}" class="tabsearch-result">{{searchMessage}}</h4>
+               <h5 ng-show="searchMessage" title="{{searchMessage}}" class="tabsearch-result">{{searchMessage}}</h5>
+               <h5 ng-show="searchMessageDsl" title="{{searchMessage}}" class="tabsearch-result">Invalid DSL Syntax, Click<a ui-sref="search({ query: query, searchType: searchTypes.fulltext.value })"> here</a> to execute as a Text search.</h5>
             </div>
          </div>
          <div class="panel panel-default" ng-show='resultCount > 0'>
@@ -62,7 +70,7 @@
                      <td>
                         {{result.description}}
                      </td>
-                     <td>                    
+                     <td>
                         <span ng-repeat="(key, value) in filterSearchResults(result)">
                         <span ng-if="key =='owner'">{{value}}</span>
                         </span>
@@ -74,21 +82,21 @@
                   </tr>
                   <tr ng-if="isTag(resultType)" ng-repeat="result in filteredResults track by $index">
                      <td data-ng-if="isObject(result) && !isString(result) && res != 'id' && res != 'guid'" data-ng-repeat="res in transformedProperties track by $index">
-                        
+
                         <a data-ng-if="res == 'guid' && !result['name']" data-ui-sref="details({id:result[res]})">{{result[res]}}</a>
-                        
-                        <span data-ng-if="res != '$traits$' && res != 'Tools' && res != 'guid' && res.toLowerCase().indexOf('name') == -1 && res.toLowerCase().indexOf('time') == -1">{{result[res]}}</span> 
-                        
-                        <span data-ng-if="res.toLowerCase().indexOf('time') != -1 && isNumber(result[res])">{{result[res] * 1000 | date:'yyyy-MM-dd HH:mm:ss'}} UTC</span> 
-                        
+
+                        <span data-ng-if="res != '$traits$' && res != 'Tools' && res != 'guid' && res.toLowerCase().indexOf('name') == -1 && res.toLowerCase().indexOf('time') == -1">{{result[res]}}</span>
+
+                        <span data-ng-if="res.toLowerCase().indexOf('time') != -1 && isNumber(result[res])">{{result[res] * 1000 | date:'yyyy-MM-dd HH:mm:ss'}} UTC</span>
+
                         <a data-ng-if="res.toLowerCase().indexOf('name') != -1 && (result['id'] || result['guid']) " data-ui-sref="details({id:result['id']|| result['guid']})">{{result[res]}}</a>
 
-                        <span data-ng-if="res.toLowerCase().indexOf('name') != -1 && !result['id'] && !result['guid']">{{result[res]}}</span> 
-                        
+                        <span data-ng-if="res.toLowerCase().indexOf('name') != -1 && !result['id'] && !result['guid']">{{result[res]}}</span>
+
                         <div data-ng-if="res == '$traits$'" class="word-break tags" id="{{result['id']|| result['guid']}}">
                            <a class="tab-search-tags" ng-repeat="(key, value) in result[res]" data-ui-sref="search({query: key})" title="{{key}}">{{key}}<span> </span></a>
                         </div>
-                        
+
                         <span data-ng-if="res == 'Tools'" class="add-tag"> <img ng-src="img/addTag.png" tooltip="Add Tag" ng-click="openAddTagHome(result['id']|| result['guid'])"> </span>
                      </td>
                      <td data-ng-if="isString(result) || result == false || result == true">

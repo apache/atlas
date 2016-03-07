@@ -27,6 +27,8 @@ angular.module('dgc.navigation').controller('navigationController', ['$scope', '
 
         };
 
+        $scope.dslQueryVal = atlasConfig.SEARCH_TYPE.dsl.value;
+
         $scope.$on('load_Traits', function() {
             $scope.leftnav = navigationResource.get();
         });
@@ -43,12 +45,12 @@ angular.module('dgc.navigation').controller('navigationController', ['$scope', '
             $scope.intialCount = limitIntialCount;
         };
 
-        $scope.showMore = function(){
+        $scope.showMore = function() {
             $scope.intialCount += limitIntialCount;
         };
 
-        $scope.filterTags = function(){ 
-            $scope.intialCount = limitIntialCount; 
+        $scope.filterTags = function() {
+            $scope.intialCount = limitIntialCount;
         };
     }
 ]);

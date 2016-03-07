@@ -17,8 +17,8 @@
  */
 'use strict';
 
-angular.module('dgc.search').controller('searchController', ['$scope', '$location', '$http', '$state', '$stateParams', 'lodash', 'searchResource', 'detailsResource', 'notificationService',
-    function($scope, $location, $http, $state, $stateParams, _, searchResource, detailsResource, notificationService) {
+angular.module('dgc.search').controller('searchController', ['$scope', '$location', '$http', '$state', '$stateParams', 'lodash', 'searchResource', 'detailsResource', 'notificationService', 'atlasConfig',
+    function($scope, $location, $http, $state, $stateParams, _, searchResource, detailsResource, notificationService, atlasConfig) {
 
         $scope.results = [];
         $scope.resultCount = 0;
@@ -32,6 +32,7 @@ angular.module('dgc.search').controller('searchController', ['$scope', '$locatio
         $scope.isString = angular.isString;
         $scope.isArray = angular.isArray;
         $scope.isNumber = angular.isNumber;
+        $scope.searchTypes = atlasConfig.SEARCH_TYPE;
         $scope.mapAttr = ['guid', 'typeName', 'owner', 'description', 'createTime', '$traits$', '$id$', 'comment', 'dataType'];
 
         $scope.setPage = function(pageNo) {
@@ -89,14 +90,15 @@ angular.module('dgc.search').controller('searchController', ['$scope', '$locatio
             });
         };
 
-        $scope.search = function(query) {
+        $scope.search = function(query, type) {
             $scope.results = [];
             notificationService.reset();
             $scope.limit = 4;
             $scope.searchMessage = 'load-gif';
             $scope.$parent.query = query;
             searchResource.search({
-                query: query
+                query: query,
+                searchType: type
             }, function searchSuccess(response) {
                 $scope.resultCount = response.count;
                 $scope.results = response.results;
@@ -106,6 +108,11 @@ angular.module('dgc.search').controller('searchController', ['$scope', '$locatio
                 $scope.transformedResults = {};
                 $scope.dataTransitioned = false;
 
+                $scope.showText = "Text";
+                if ($scope.searchTypeModel === $scope.searchTypes.dsl.value) {
+                    $scope.showText = "DSL";
+                }
+
                 if ($scope.results) {
                     if (response.dataType) {
                         $scope.resultType = response.dataType.typeName;
@@ -114,9 +121,9 @@ angular.module('dgc.search').controller('searchController', ['$scope', '$locatio
                     } else if (typeof response.dataType === 'undefined') {
                         $scope.resultType = "full text";
                     }
-                    $scope.searchMessage = $scope.resultCount + ' results matching your search query ' + $scope.query + ' were found';
+                    $scope.searchMessage = $scope.resultCount + ' results matching your ' + $scope.showText + '  search query ' + $scope.query + ' were found';
                 } else {
-                    $scope.searchMessage = '0 results matching your search query ' + $scope.query + ' were found';
+                    $scope.searchMessage = '0 results matching your ' + $scope.showText + '  search query ' + $scope.query + ' were found';
                 }
 
                 if (response.dataType && response.dataType.typeName && response.dataType.typeName.toLowerCase().indexOf('table') === -1) {
@@ -157,8 +164,16 @@ angular.module('dgc.search').controller('searchController', ['$scope', '$locatio
                     }
                 });
             }, function searchError(err) {
-                $scope.searchMessage = '0 results matching your search query ' + $scope.query + ' were found';
-                notificationService.error('Error occurred during executing search query, error status code = ' + err.status + ', status text = ' + err.statusText, false);
+                if (($scope.searchTypeModel === $scope.searchTypes.dsl.value) && err.status === 400) {
+                    $scope.searchMessageDsl = true;
+                    $scope.searchMessage = false;
+                } else {
+                    $scope.searchMessageDsl = false;
+                    $scope.searchMessage = true;
+                    $scope.searchMessage = '0 results matching your ' + $scope.showText + '  search query ' + $scope.query + ' were found';
+                    notificationService.error('Error occurred during executing search query, error status code = ' + err.status + ', status text = ' + err.statusText, false);
+                }
+
             });
             $state.go('search', {
                 query: query
@@ -281,11 +296,22 @@ angular.module('dgc.search').controller('searchController', ['$scope', '$locatio
         };
 
         $scope.searchQuery = $location.search();
-
+        $scope.searchTypeModel = $stateParams.searchType;
         $scope.query = ($location.search()).query;
-
-        if ($scope.query) {
-            $scope.search($scope.query);
+        $stateParams.searchType = ($location.search()).searchType;
+        if ($scope.query && $stateParams.searchType) {
+            $scope.search($scope.query, $stateParams.searchType);
         }
+
+        $scope.searchTypeChanged = function() {
+            if ($scope.query) {
+                $state.go('search', {
+                    query: $scope.query,
+                    searchType: $scope.searchTypeModel
+                }, {
+                    location: 'replace'
+                });
+            }
+        };
     }
 ]);

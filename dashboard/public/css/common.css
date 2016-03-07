@@ -163,6 +163,31 @@ Search Bar design
     padding: 14px 20px;
 }
 
+.main-search .search-type-large {
+    width: 95px!important;
+}
+
+.main-search select {
+    height: 50px!important;
+    padding-right: 0px;
+    margin-right: 0px;
+    width: 83px;
+    font-weight:bold;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    cursor:pointer;
+    background: url('../img/select_arrow_img.png') no-repeat;
+    background-size: 22px 22px;
+    background-position: 54px 13px!important;
+}
+
+.search-type-large .form-control:focus {
+     border-color: #ccc;
+     box-shadow: none;
+     outline: 0 none;
+}
+
 /*=======================================================================================
 Tags on Home Page design
 =======================================================================================*/
@@ -299,7 +324,7 @@ Tags on Home Page design
 }
 
 .tabsearch-result {
-    max-width: 500px;
+    max-width: 93%;
     display: list-item;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -364,4 +389,4 @@ Tags on Home Page design
 .see-more {
     font-weight: bold;
     font-size: 16px;
-} 
+}

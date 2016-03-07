@@ -32,5 +32,17 @@ angular.module('dgc').constant('atlasConfig', {
         TRAITS_LIST: apiHost + 'types?type=TRAIT',
         SEARCH: apiHost + 'discovery/search/',
         CREATE_TRAIT: apiHost + 'types'
+    },
+    SEARCH_TYPE: {
+        dsl: {
+            value: 'dsl',
+            displayText: 'DSL',
+            placeholder: 'Search using a DSL query: e.g. DataSet where name="sales_fact"'
+        },
+        fulltext: {
+            value: 'fulltext',
+            displayText: 'Text',
+            placeholder: 'Search using a query string: e.g. sales_fact'
+        }
     }
 });

@@ -16,20 +16,20 @@
   ~ limitations under the License.
   -->
 
-<div data-ng-controller="navigationController" class="main-tags leftNavigation"> 
+<div data-ng-controller="navigationController" class="main-tags leftNavigation">
     <div>
-       <h4 class="pull-left">Tags</h4>  
-       <a href ng-click="refreshTags()" class="pull-right"> 
+       <h4 class="pull-left">Tags</h4>
+       <a href ng-click="refreshTags()" class="pull-right">
          <img src="../img/refresh.png" style="margin: 5px;" title="Refresh Tags" >
        </a>
        <form ng-submit="filterTags()">
          <input type="text" class="filter-tag" placeholder="Search for Tags…" ng-model="tagFilter" ng-keydown="filterTags()"> </input>
          <input type="submit" id="submit" value="Submit" class="hide" />
        </form>
-    </div> 
-    </br> 
+    </div>
+    </br>
     <div class="list-group">
-       <a ng-repeat="nav in filtered = (leftnav | filter:tagFilter | limitTo:intialCount + 1)" ui-sref="search({ query: nav })" class="list-group-item limitSize" title="{{nav}}"><i class="fa fa-tag"></i> {{nav}} </a>
+       <a ng-repeat="nav in filtered = (leftnav | filter:tagFilter | limitTo:intialCount + 1)" ui-sref="search({ query: nav , searchType: dslQueryVal})" class="list-group-item limitSize" title="{{nav}}"><i class="fa fa-tag"></i> {{nav}} </a>
        <a ng-click="showMore()" class="see-more" ng-class="filtered.length > intialCount ? 'show' : 'hide'"> Load more ... </a>
     </div>
 </div>
