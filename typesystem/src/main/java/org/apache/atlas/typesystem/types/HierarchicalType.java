@@ -49,7 +49,6 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
 
     public final TypeSystem typeSystem;
     public final Class<ST> superTypeClass;
-    public final String name;
     public final FieldMapping fieldMapping;
     public final int numFields;
     public final ImmutableList<String> superTypes;
@@ -58,14 +57,19 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
     protected ImmutableMap<String, List<Path>> superTypePaths;
     protected ImmutableMap<String, Path> pathNameToPathMap;
 
+    HierarchicalType(TypeSystem typeSystem, Class<ST> superTypeClass, String name, ImmutableList<String> superTypes,
+        int numFields) {
+        this(typeSystem, superTypeClass, name, null, superTypes, numFields);
+    }
+
     /**
      * Used when creating a Type, to support recursive Structs.
      */
-    HierarchicalType(TypeSystem typeSystem, Class<ST> superTypeClass, String name, ImmutableList<String> superTypes,
+    HierarchicalType(TypeSystem typeSystem, Class<ST> superTypeClass, String name, String description, ImmutableList<String> superTypes,
             int numFields) {
+        super(name, description);
         this.typeSystem = typeSystem;
         this.superTypeClass = superTypeClass;
-        this.name = name;
         this.fieldMapping = null;
         this.numFields = numFields;
         this.superTypes = superTypes;
@@ -74,21 +78,20 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
     }
 
     HierarchicalType(TypeSystem typeSystem, Class<ST> superTypeClass, String name, ImmutableList<String> superTypes,
+        AttributeInfo... fields) throws AtlasException {
+        this(typeSystem, superTypeClass, name, null, superTypes, fields);
+    }
+    HierarchicalType(TypeSystem typeSystem, Class<ST> superTypeClass, String name, String description, ImmutableList<String> superTypes,
             AttributeInfo... fields) throws AtlasException {
+        super(name, description);
         this.typeSystem = typeSystem;
         this.superTypeClass = superTypeClass;
-        this.name = name;
         Pair<FieldMapping, ImmutableMap<String, String>> p = constructFieldMapping(superTypes, fields);
         this.fieldMapping = p.left;
         this.attributeNameToType = p.right;
         this.numFields = this.fieldMapping.fields.size();
         this.superTypes = superTypes == null ? ImmutableList.<String>of() : superTypes;
         this.immediateAttrs = ImmutableList.copyOf(fields);
-    }
-
-    @Override
-    public String getName() {
-        return name;
     }
 
     public FieldMapping fieldMapping() {
@@ -490,6 +493,4 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
             throw new UnsupportedOperationException();
         }
     }
-
-
 }

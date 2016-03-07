@@ -34,5 +34,7 @@ public interface IDataType<T> {
     void validateUpdate(IDataType newType) throws TypeUpdateException;
 
     void updateSignatureHash(MessageDigest digester, Object val) throws AtlasException;
+
+    String getDescription();
 }
 

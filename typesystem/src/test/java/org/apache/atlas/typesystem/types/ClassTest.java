@@ -18,15 +18,17 @@
 
 package org.apache.atlas.typesystem.types;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.TypesDef;
+import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import com.google.common.collect.ImmutableList;
 
 public class ClassTest extends HierarchicalTypeTest<ClassType> {
 
@@ -72,15 +74,38 @@ public class ClassTest extends HierarchicalTypeTest<ClassType> {
                 "}");
     }
 
+
+    @Test
+    public void testSerDeWithoutDescription() throws Exception {
+        HierarchicalTypeDefinition<ClassType> clsType = TypesUtil
+                .createClassTypeDef("Random", ImmutableList.<String>of(),
+                        TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE));
+        
+        TypesDef typesDef = getTypesDef(clsType);
+        String json = TypesSerialization.toJson(typesDef);
+        System.out.println("json " +  json);
+        TypesSerialization.fromJson(json);
+    }
+    
+    @Test
+    public void testSerDeWithDescription() throws Exception {
+        HierarchicalTypeDefinition<ClassType> clsType = TypesUtil
+                .createClassTypeDef("Random", "Random-description", ImmutableList.<String>of(),
+                        TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE));
+        TypesDef typesDef = getTypesDef(clsType);
+        String json = TypesSerialization.toJson(typesDef);
+        System.out.println("json " +  json);
+        TypesSerialization.fromJson(json);
+    }
     @Override
     protected HierarchicalTypeDefinition<ClassType> getTypeDefinition(String name, AttributeDefinition... attributes) {
-        return new HierarchicalTypeDefinition(ClassType.class, name, null, attributes);
+        return new HierarchicalTypeDefinition(ClassType.class, name, null, null, attributes);
     }
 
     @Override
     protected HierarchicalTypeDefinition<ClassType> getTypeDefinition(String name, ImmutableList<String> superTypes,
                                                                       AttributeDefinition... attributes) {
-        return new HierarchicalTypeDefinition(ClassType.class, name, superTypes, attributes);
+        return new HierarchicalTypeDefinition(ClassType.class, name, null, superTypes, attributes);
     }
 
     @Override

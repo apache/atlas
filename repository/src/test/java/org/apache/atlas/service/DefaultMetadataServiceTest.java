@@ -165,7 +165,6 @@ public class DefaultMetadataServiceTest {
         entity.set("type", "VARCHAR(32)");
         return entity;
     }
-
     @Test(expectedExceptions = TypeNotFoundException.class)
     public void testCreateEntityWithUnknownDatatype() throws Exception {
         Referenceable entity = new Referenceable("Unknown datatype");

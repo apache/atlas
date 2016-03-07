@@ -78,7 +78,7 @@ object QueryTestsUtils extends GraphUtils {
             new AttributeDefinition(name, dT.getName, m, isComposite, reverseAttributeName)
         }
 
-        def dbClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "DB", null,
+        def dbClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "DB", null, null,
             Array(
                 attrDef("name", DataTypes.STRING_TYPE),
                 attrDef("owner", DataTypes.STRING_TYPE),
@@ -92,21 +92,21 @@ object QueryTestsUtils extends GraphUtils {
                 attrDef("order", DataTypes.INT_TYPE)
             ))
 
-        def storageDescClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "StorageDescriptor", null,
+        def storageDescClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "StorageDescriptor", null, null,
             Array(
                 attrDef("inputFormat", DataTypes.STRING_TYPE),
                 attrDef("outputFormat", DataTypes.STRING_TYPE),
                 new AttributeDefinition("sortCols", DataTypes.arrayTypeName("HiveOrder"), Multiplicity.REQUIRED, false, null)
             ))
 
-        def columnClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "Column", null,
+        def columnClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "Column", null, null,
             Array(
                 attrDef("name", DataTypes.STRING_TYPE),
                 attrDef("dataType", DataTypes.STRING_TYPE),
                 new AttributeDefinition("sd", "StorageDescriptor", Multiplicity.REQUIRED, false, null)
             ))
 
-        def tblClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "Table", null,
+        def tblClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "Table", null, null,
             Array(
                 attrDef("name", DataTypes.STRING_TYPE),
                 new AttributeDefinition("db", "DB", Multiplicity.REQUIRED, false, null),
@@ -114,34 +114,34 @@ object QueryTestsUtils extends GraphUtils {
                 attrDef("created", DataTypes.DATE_TYPE)
             ))
 
-        def partitionClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "Partition", null,
+        def partitionClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "Partition", null, null,
             Array(
                 new AttributeDefinition("values", DataTypes.arrayTypeName(DataTypes.STRING_TYPE.getName), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("table", "Table", Multiplicity.REQUIRED, false, null)
             ))
 
-        def loadProcessClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "LoadProcess", null,
+        def loadProcessClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "LoadProcess", null, null,
             Array(
                 attrDef("name", DataTypes.STRING_TYPE),
                 new AttributeDefinition("inputTables", DataTypes.arrayTypeName("Table"), Multiplicity.COLLECTION, false, null),
                 new AttributeDefinition("outputTable", "Table", Multiplicity.REQUIRED, false, null)
             ))
 
-        def viewClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "View", null,
+        def viewClsDef = new HierarchicalTypeDefinition[ClassType](classOf[ClassType], "View", null, null,
             Array(
                 attrDef("name", DataTypes.STRING_TYPE),
                 new AttributeDefinition("inputTables", DataTypes.arrayTypeName("Table"), Multiplicity.COLLECTION, false, null)
             ))
 
-        def dimTraitDef = new HierarchicalTypeDefinition[TraitType](classOf[TraitType], "Dimension", null,
+        def dimTraitDef = new HierarchicalTypeDefinition[TraitType](classOf[TraitType], "Dimension", null, null,
             Array[AttributeDefinition]())
-        def piiTraitDef = new HierarchicalTypeDefinition[TraitType](classOf[TraitType], "PII", null,
+        def piiTraitDef = new HierarchicalTypeDefinition[TraitType](classOf[TraitType], "PII", null, null,
             Array[AttributeDefinition]())
-        def metricTraitDef = new HierarchicalTypeDefinition[TraitType](classOf[TraitType], "Metric", null,
+        def metricTraitDef = new HierarchicalTypeDefinition[TraitType](classOf[TraitType], "Metric", null, null,
             Array[AttributeDefinition]())
-        def etlTraitDef = new HierarchicalTypeDefinition[TraitType](classOf[TraitType], "ETL", null,
+        def etlTraitDef = new HierarchicalTypeDefinition[TraitType](classOf[TraitType], "ETL", null, null,
             Array[AttributeDefinition]())
-        def jdbcTraitDef = new HierarchicalTypeDefinition[TraitType](classOf[TraitType], "JdbcAccess", null,
+        def jdbcTraitDef = new HierarchicalTypeDefinition[TraitType](classOf[TraitType], "JdbcAccess", null, null,
             Array[AttributeDefinition]())
 
         TypeSystem.getInstance().defineTypes(ImmutableList.of[EnumTypeDefinition],

@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.persistence.Id;
@@ -57,6 +58,7 @@ public class DataTypes {
     static String MAP_TYPE_SUFFIX = ">";
 
     public static String arrayTypeName(String elemTypeName) {
+        assert elemTypeName != null;
         return String.format("%s%s%s", ARRAY_TYPE_PREFIX, elemTypeName, ARRAY_TYPE_SUFFIX);
     }
 
@@ -69,6 +71,8 @@ public class DataTypes {
     }
 
     public static String mapTypeName(IDataType keyType, IDataType valueType) {
+        assert keyType != null;
+        assert valueType != null;
         return mapTypeName(keyType.getName(), valueType.getName());
     }
 
@@ -83,6 +87,10 @@ public class DataTypes {
     }
 
     public static abstract class PrimitiveType<T> extends AbstractDataType<T> {
+        public PrimitiveType(String name, String description) {
+            super(name, description);
+        }
+
         @Override
         public TypeCategory getTypeCategory() {
             return TypeCategory.PRIMITIVE;
@@ -113,11 +121,7 @@ public class DataTypes {
         private static final String name = "boolean".intern();
 
         private BooleanType() {
-        }
-
-        @Override
-        public String getName() {
-            return name;
+            super(name, null);
         }
 
         @Override
@@ -146,11 +150,7 @@ public class DataTypes {
         private static final String name = "byte".intern();
 
         private ByteType() {
-        }
-
-        @Override
-        public String getName() {
-            return name;
+            super(name, null);
         }
 
         @Override
@@ -186,11 +186,7 @@ public class DataTypes {
         private static final String name = "short".intern();
 
         private ShortType() {
-        }
-
-        @Override
-        public String getName() {
-            return name;
+            super(name, null);
         }
 
         @Override
@@ -219,11 +215,7 @@ public class DataTypes {
         private static final String name = "int".intern();
 
         private IntType() {
-        }
-
-        @Override
-        public String getName() {
-            return name;
+            super(name, null);
         }
 
         @Override
@@ -252,11 +244,7 @@ public class DataTypes {
         private static final String name = "long".intern();
 
         private LongType() {
-        }
-
-        @Override
-        public String getName() {
-            return name;
+            super(name, null);
         }
 
         @Override
@@ -285,11 +273,7 @@ public class DataTypes {
         private static final String name = "float".intern();
 
         private FloatType() {
-        }
-
-        @Override
-        public String getName() {
-            return name;
+            super(name, null);
         }
 
         @Override
@@ -318,11 +302,7 @@ public class DataTypes {
         private static final String name = "double".intern();
 
         private DoubleType() {
-        }
-
-        @Override
-        public String getName() {
-            return name;
+            super(name, null);
         }
 
         @Override
@@ -351,11 +331,7 @@ public class DataTypes {
         private static final String name = "biginteger".intern();
 
         private BigIntegerType() {
-        }
-
-        @Override
-        public String getName() {
-            return name;
+            super(name, null);
         }
 
         @Override
@@ -390,11 +366,7 @@ public class DataTypes {
         private static final String name = "bigdecimal".intern();
 
         private BigDecimalType() {
-        }
-
-        @Override
-        public String getName() {
-            return name;
+            super(name, null);
         }
 
         @Override
@@ -429,11 +401,7 @@ public class DataTypes {
         private static final String name = "date".intern();
 
         private DateType() {
-        }
-
-        @Override
-        public String getName() {
-            return name;
+            super(name, null);
         }
 
         @Override
@@ -472,11 +440,7 @@ public class DataTypes {
         private static final String name = "string".intern();
 
         private StringType() {
-        }
-
-        @Override
-        public String getName() {
-            return name;
+            super(name, null);
         }
 
         @Override
@@ -493,13 +457,11 @@ public class DataTypes {
     }
 
     public static class ArrayType extends AbstractDataType<ImmutableCollection<?>> {
-        private final String nm;
         private IDataType elemType;
 
         public ArrayType(IDataType elemType) {
-            assert elemType != null;
+            super(arrayTypeName(elemType), null);
             this.elemType = elemType;
-            this.nm = arrayTypeName(elemType);
         }
 
         public IDataType getElemType() {
@@ -508,11 +470,6 @@ public class DataTypes {
 
         protected void setElemType(IDataType elemType) {
             this.elemType = elemType;
-        }
-
-        @Override
-        public String getName() {
-            return nm;
         }
 
         @Override
@@ -589,16 +546,13 @@ public class DataTypes {
 
     public static class MapType extends AbstractDataType<ImmutableMap<?, ?>> {
 
-        private final String nm;
         private IDataType keyType;
         private IDataType valueType;
 
         public MapType(IDataType keyType, IDataType valueType) {
-            assert keyType != null;
-            assert valueType != null;
+            super(mapTypeName(keyType, valueType), null);
             this.keyType = keyType;
             this.valueType = valueType;
-            this.nm = mapTypeName(keyType, valueType);
         }
 
         public IDataType getKeyType() {
@@ -615,11 +569,6 @@ public class DataTypes {
 
         protected void setValueType(IDataType valueType) {
             this.valueType = valueType;
-        }
-
-        @Override
-        public String getName() {
-            return nm;
         }
 
         @Override

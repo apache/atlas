@@ -21,6 +21,7 @@ package org.apache.atlas.typesystem.types;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
@@ -47,17 +48,14 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
 
     public final Map<AttributeInfo, List<String>> infoToNameMap;
 
-    /**
-     * Used when creating a ClassType, to support recursive Structs.
-     */
-    ClassType(TypeSystem typeSystem, String name, ImmutableList<String> superTypes, int numFields) {
-        super(typeSystem, ClassType.class, name, superTypes, numFields);
+    ClassType(TypeSystem typeSystem, String name, String description, ImmutableList<String> superTypes, int numFields) {
+        super(typeSystem, ClassType.class, name, description, superTypes, numFields);
         infoToNameMap = null;
     }
 
-    ClassType(TypeSystem typeSystem, String name, ImmutableList<String> superTypes, AttributeInfo... fields)
+    ClassType(TypeSystem typeSystem, String name, String description, ImmutableList<String> superTypes, AttributeInfo... fields)
     throws AtlasException {
-        super(typeSystem, ClassType.class, name, superTypes, fields);
+        super(typeSystem, ClassType.class, name, description, superTypes, fields);
         infoToNameMap = TypeUtils.buildAttrInfoToNameMap(fieldMapping);
     }
 

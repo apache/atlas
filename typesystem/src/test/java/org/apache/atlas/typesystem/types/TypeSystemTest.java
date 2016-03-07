@@ -27,10 +27,8 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import scala.actors.threadpool.Arrays;
-
 import java.util.Collections;
 import java.util.List;
-
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createStructTypeDef;
@@ -53,6 +51,50 @@ public class TypeSystemTest extends BaseTest {
         getTypeSystem().defineEnumType("enum_test", new EnumValue("0", 0), new EnumValue("1", 1), new EnumValue("2", 2),
                 new EnumValue("3", 3));
         Assert.assertTrue(getTypeSystem().getTypeNames().contains("enum_test"));
+    }
+
+    @Test
+    public void testGetTypeDescription() throws Exception {
+        String typeName = "enum_type";
+        String description = "_description";
+        String typeDescription = typeName + description;
+        getTypeSystem().defineEnumType(typeName, typeDescription, new EnumValue("0", 0), new EnumValue("1", 1), new EnumValue("2", 2),
+                new EnumValue("3", 3));
+        Assert.assertTrue(getTypeSystem().getTypeNames().contains(typeName));
+        IDataType type = getTypeSystem().getDataType(EnumType.class, typeName);
+        Assert.assertNotNull(type);
+        Assert.assertEquals(type.getDescription(), typeDescription);
+
+        typeName = "trait_type";
+        typeDescription = typeName + description;
+        HierarchicalTypeDefinition<TraitType> trait = TypesUtil
+            .createTraitTypeDef(typeName, typeDescription, ImmutableList.<String>of(),
+                TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
+        getTypeSystem().defineTraitType(trait);
+        Assert.assertTrue(getTypeSystem().getTypeNames().contains(typeName));
+        type = getTypeSystem().getDataType(TraitType.class, typeName);
+        Assert.assertNotNull(type);
+        Assert.assertEquals(type.getDescription(), typeDescription);
+
+        typeName = "class_type";
+        typeDescription = typeName + description;
+        HierarchicalTypeDefinition<ClassType> classType = TypesUtil
+            .createClassTypeDef(typeName, typeDescription, ImmutableList.<String>of(),
+                TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
+        getTypeSystem().defineClassType(classType);
+        Assert.assertTrue(getTypeSystem().getTypeNames().contains(typeName));
+        type = getTypeSystem().getDataType(ClassType.class, typeName);
+        Assert.assertNotNull(type);
+        Assert.assertEquals(type.getDescription(), typeDescription);
+
+        typeName = "struct_type";
+        typeDescription = typeName + description;
+        getTypeSystem().defineStructType(typeName, typeDescription, true, createRequiredAttrDef("a", DataTypes.INT_TYPE));
+        Assert.assertTrue(getTypeSystem().getTypeNames().contains(typeName));
+        type = getTypeSystem().getDataType(StructType.class, typeName);
+        Assert.assertNotNull(type);
+        Assert.assertEquals(type.getDescription(), typeDescription);
+        
     }
 
     @Test

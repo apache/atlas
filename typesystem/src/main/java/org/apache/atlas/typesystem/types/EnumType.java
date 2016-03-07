@@ -29,13 +29,16 @@ import java.security.MessageDigest;
 public class EnumType extends AbstractDataType<EnumValue> {
 
     public final TypeSystem typeSystem;
-    public final String name;
     public final ImmutableMap<String, EnumValue> valueMap;
     public final ImmutableMap<Integer, EnumValue> ordinalMap;
 
     protected EnumType(TypeSystem typeSystem, String name, EnumValue... values) {
+       this(typeSystem, name, null, values);
+    }
+
+    protected EnumType(TypeSystem typeSystem, String name, String description, EnumValue... values) {
+        super(name, description);
         this.typeSystem = typeSystem;
-        this.name = name;
         ImmutableMap.Builder<String, EnumValue> b1 = new ImmutableMap.Builder();
         ImmutableMap.Builder<Integer, EnumValue> b2 = new ImmutableMap.Builder();
         for (EnumValue v : values) {
@@ -44,12 +47,6 @@ public class EnumType extends AbstractDataType<EnumValue> {
         }
         valueMap = b1.build();
         ordinalMap = b2.build();
-    }
-
-
-    @Override
-    public String getName() {
-        return name;
     }
 
     @Override

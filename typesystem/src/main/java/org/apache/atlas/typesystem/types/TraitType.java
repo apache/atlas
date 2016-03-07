@@ -34,18 +34,15 @@ public class TraitType extends HierarchicalType<TraitType, IStruct>
     public final Map<AttributeInfo, List<String>> infoToNameMap;
     private final TypedStructHandler handler;
 
-    /**
-     * Used when creating a TraitType, to support recursive Structs.
-     */
-    TraitType(TypeSystem typeSystem, String name, ImmutableList<String> superTraits, int numFields) {
-        super(typeSystem, TraitType.class, name, superTraits, numFields);
+    TraitType(TypeSystem typeSystem, String name, String description, ImmutableList<String> superTraits, int numFields) {
+        super(typeSystem, TraitType.class, name, description, superTraits, numFields);
         handler = null;
         infoToNameMap = null;
     }
 
-    TraitType(TypeSystem typeSystem, String name, ImmutableList<String> superTraits, AttributeInfo... fields)
+    TraitType(TypeSystem typeSystem, String name, String description, ImmutableList<String> superTraits, AttributeInfo... fields)
     throws AtlasException {
-        super(typeSystem, TraitType.class, name, superTraits, fields);
+        super(typeSystem, TraitType.class, name, description, superTraits, fields);
         handler = new TypedStructHandler(this);
         infoToNameMap = TypeUtils.buildAttrInfoToNameMap(fieldMapping);
     }

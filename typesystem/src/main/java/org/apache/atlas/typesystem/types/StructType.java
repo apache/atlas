@@ -18,10 +18,6 @@
 
 package org.apache.atlas.typesystem.types;
 
-import org.apache.atlas.AtlasException;
-import org.apache.atlas.typesystem.IStruct;
-import org.apache.atlas.typesystem.ITypedStruct;
-
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.util.HashMap;
@@ -29,31 +25,31 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.typesystem.IStruct;
+import org.apache.atlas.typesystem.ITypedStruct;
+
 public class StructType extends AbstractDataType<IStruct> implements IConstructableType<IStruct, ITypedStruct> {
 
     public final TypeSystem typeSystem;
-    public final String name;
     public final FieldMapping fieldMapping;
     public final Map<AttributeInfo, List<String>> infoToNameMap;
     public final int numFields;
     private final TypedStructHandler handler;
 
-    /**
-     * Used when creating a StructType, to support recursive Structs.
-     */
-    protected StructType(TypeSystem typeSystem, String name, int numFields) {
+    protected StructType(TypeSystem typeSystem, String name, String description, int numFields) {
+        super(name, description);
         this.typeSystem = typeSystem;
-        this.name = name;
         this.fieldMapping = null;
         infoToNameMap = null;
         this.numFields = numFields;
         this.handler = null;
     }
 
-    protected StructType(TypeSystem typeSystem, String name, AttributeInfo... fields)
+    protected StructType(TypeSystem typeSystem, String name, String description, AttributeInfo... fields)
     throws AtlasException {
+        super(name, description);
         this.typeSystem = typeSystem;
-        this.name = name;
         this.fieldMapping = constructFieldMapping(fields);
         infoToNameMap = TypeUtils.buildAttrInfoToNameMap(this.fieldMapping);
         this.numFields = this.fieldMapping.fields.size();
@@ -62,11 +58,6 @@ public class StructType extends AbstractDataType<IStruct> implements IConstructa
 
     public FieldMapping fieldMapping() {
         return fieldMapping;
-    }
-
-    @Override
-    public String getName() {
-        return name;
     }
 
     /**
@@ -216,4 +207,5 @@ public class StructType extends AbstractDataType<IStruct> implements IConstructa
     public List<String> getNames(AttributeInfo info) {
         return infoToNameMap.get(info);
     }
+
 }

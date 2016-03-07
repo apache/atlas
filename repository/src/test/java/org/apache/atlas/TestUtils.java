@@ -23,7 +23,6 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.io.graphson.GraphSONWriter;
-
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
@@ -97,19 +96,20 @@ public final class TestUtils {
      */
     public static void defineDeptEmployeeTypes(TypeSystem ts) throws AtlasException {
 
+        String _description = "_description";
         EnumTypeDefinition orgLevelEnum =
-                new EnumTypeDefinition("OrgLevel", new EnumValue("L1", 1), new EnumValue("L2", 2));
+                new EnumTypeDefinition("OrgLevel", "OrgLevel"+_description, new EnumValue("L1", 1), new EnumValue("L2", 2));
 
         StructTypeDefinition addressDetails =
-                createStructTypeDef("Address", createRequiredAttrDef("street", DataTypes.STRING_TYPE),
+                createStructTypeDef("Address", "Address"+_description, createRequiredAttrDef("street", DataTypes.STRING_TYPE),
                         createRequiredAttrDef("city", DataTypes.STRING_TYPE));
 
-        HierarchicalTypeDefinition<ClassType> deptTypeDef = createClassTypeDef("Department", ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<ClassType> deptTypeDef = createClassTypeDef("Department", "Department"+_description, ImmutableList.<String>of(),
                 createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                 new AttributeDefinition("employees", String.format("array<%s>", "Person"), Multiplicity.COLLECTION,
                         true, "department"));
 
-        HierarchicalTypeDefinition<ClassType> personTypeDef = createClassTypeDef("Person", ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<ClassType> personTypeDef = createClassTypeDef("Person", "Person"+_description, ImmutableList.<String>of(),
                 createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                 createOptionalAttrDef("orgLevel", "OrgLevel"),
                 createOptionalAttrDef("address", "Address"),
@@ -117,12 +117,12 @@ public final class TestUtils {
                 new AttributeDefinition("manager", "Manager", Multiplicity.OPTIONAL, false, "subordinates"),
                 new AttributeDefinition("mentor", "Person", Multiplicity.OPTIONAL, false, null));
 
-        HierarchicalTypeDefinition<ClassType> managerTypeDef = createClassTypeDef("Manager", ImmutableList.of("Person"),
+        HierarchicalTypeDefinition<ClassType> managerTypeDef = createClassTypeDef("Manager", "Manager"+_description, ImmutableList.of("Person"),
                 new AttributeDefinition("subordinates", String.format("array<%s>", "Person"), Multiplicity.COLLECTION,
                         false, "manager"));
 
         HierarchicalTypeDefinition<TraitType> securityClearanceTypeDef =
-                createTraitTypeDef("SecurityClearance", ImmutableList.<String>of(),
+                createTraitTypeDef("SecurityClearance", "SecurityClearance"+_description, ImmutableList.<String>of(),
                         createRequiredAttrDef("level", DataTypes.INT_TYPE));
 
         ts.defineTypes(ImmutableList.of(orgLevelEnum), ImmutableList.of(addressDetails),
@@ -199,6 +199,7 @@ public final class TestUtils {
     public static final String SERDE_TYPE = "serdeType";
 
     public static TypesDef defineHiveTypes() {
+        String _description = "_description";
         HierarchicalTypeDefinition<ClassType> superTypeDefinition =
                 createClassTypeDef(SUPER_TYPE_NAME, ImmutableList.<String>of(),
                         createOptionalAttrDef("namespace", DataTypes.STRING_TYPE),
@@ -206,27 +207,27 @@ public final class TestUtils {
                         createOptionalAttrDef("colo", DataTypes.STRING_TYPE));
 
         HierarchicalTypeDefinition<ClassType> databaseTypeDefinition =
-                createClassTypeDef(DATABASE_TYPE, ImmutableList.of(SUPER_TYPE_NAME),
+                createClassTypeDef(DATABASE_TYPE, DATABASE_TYPE + _description,ImmutableList.of(SUPER_TYPE_NAME),
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         createOptionalAttrDef("created", DataTypes.DATE_TYPE),
                         createRequiredAttrDef("description", DataTypes.STRING_TYPE));
 
 
-        StructTypeDefinition structTypeDefinition = new StructTypeDefinition("serdeType",
+        StructTypeDefinition structTypeDefinition = new StructTypeDefinition("serdeType", "serdeType" + _description,
                 new AttributeDefinition[]{createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                     createRequiredAttrDef("serde", DataTypes.STRING_TYPE),
                     createOptionalAttrDef("description", DataTypes.STRING_TYPE)});
 
         EnumValue values[] = {new EnumValue("MANAGED", 1), new EnumValue("EXTERNAL", 2),};
 
-        EnumTypeDefinition enumTypeDefinition = new EnumTypeDefinition("tableType", values);
+        EnumTypeDefinition enumTypeDefinition = new EnumTypeDefinition("tableType", "tableType" + _description, values);
 
         HierarchicalTypeDefinition<ClassType> columnsDefinition =
                 createClassTypeDef(COLUMN_TYPE, ImmutableList.<String>of(),
                         createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         createRequiredAttrDef("type", DataTypes.STRING_TYPE));
 
-        StructTypeDefinition partitionDefinition = new StructTypeDefinition("partition_struct_type",
+        StructTypeDefinition partitionDefinition = new StructTypeDefinition("partition_struct_type", "partition_struct_type" + _description,
                 new AttributeDefinition[]{createRequiredAttrDef("name", DataTypes.STRING_TYPE),});
 
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
@@ -245,7 +246,7 @@ public final class TestUtils {
             };
 
         HierarchicalTypeDefinition<ClassType> storageDescClsDef =
-            new HierarchicalTypeDefinition<>(ClassType.class, STORAGE_DESC_TYPE,
+            new HierarchicalTypeDefinition<>(ClassType.class, STORAGE_DESC_TYPE, STORAGE_DESC_TYPE + _description,
                 ImmutableList.of(SUPER_TYPE_NAME), attributeDefinitions);
 
         AttributeDefinition[] partClsAttributes = new AttributeDefinition[]{
@@ -263,11 +264,11 @@ public final class TestUtils {
             new AttributeDefinition("parameters", new DataTypes.MapType(DataTypes.STRING_TYPE, DataTypes.STRING_TYPE).getName(), Multiplicity.OPTIONAL, false, null),};
 
         HierarchicalTypeDefinition<ClassType> partClsDef =
-            new HierarchicalTypeDefinition<>(ClassType.class, "partition_class_type",
+            new HierarchicalTypeDefinition<>(ClassType.class, "partition_class_type", "partition_class_type" + _description,
                 ImmutableList.of(SUPER_TYPE_NAME), partClsAttributes);
 
         HierarchicalTypeDefinition<ClassType> tableTypeDefinition =
-                createClassTypeDef(TABLE_TYPE, ImmutableList.of(SUPER_TYPE_NAME),
+                createClassTypeDef(TABLE_TYPE, TABLE_TYPE + _description, ImmutableList.of(SUPER_TYPE_NAME),
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         createRequiredAttrDef("description", DataTypes.STRING_TYPE),
                         createRequiredAttrDef("type", DataTypes.STRING_TYPE),
@@ -307,14 +308,14 @@ public final class TestUtils {
                         new AttributeDefinition("databaseComposite", DATABASE_TYPE, Multiplicity.OPTIONAL, true, null));
 
         HierarchicalTypeDefinition<TraitType> piiTypeDefinition =
-                createTraitTypeDef(PII, ImmutableList.<String>of());
+                createTraitTypeDef(PII, PII + _description, ImmutableList.<String>of());
 
         HierarchicalTypeDefinition<TraitType> classificationTypeDefinition =
-                createTraitTypeDef(CLASSIFICATION, ImmutableList.<String>of(),
+                createTraitTypeDef(CLASSIFICATION, CLASSIFICATION + _description, ImmutableList.<String>of(),
                         createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
 
         HierarchicalTypeDefinition<TraitType> fetlClassificationTypeDefinition =
-                createTraitTypeDef("fetl" + CLASSIFICATION, ImmutableList.of(CLASSIFICATION),
+                createTraitTypeDef("fetl" + CLASSIFICATION, "fetl" + CLASSIFICATION + _description, ImmutableList.of(CLASSIFICATION),
                         createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
 
         return TypesUtil.getTypesDef(ImmutableList.of(enumTypeDefinition),

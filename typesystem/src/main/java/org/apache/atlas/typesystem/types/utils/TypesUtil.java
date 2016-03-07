@@ -65,16 +65,30 @@ public class TypesUtil {
 
     public static HierarchicalTypeDefinition<TraitType> createTraitTypeDef(String name,
             ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
-        return new HierarchicalTypeDefinition<>(TraitType.class, name, superTypes, attrDefs);
+        return createTraitTypeDef(name, null, superTypes, attrDefs);
+    }
+
+    public static HierarchicalTypeDefinition<TraitType> createTraitTypeDef(String name, String description,
+        ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
+        return new HierarchicalTypeDefinition<>(TraitType.class, name, description, superTypes, attrDefs);
     }
 
     public static StructTypeDefinition createStructTypeDef(String name, AttributeDefinition... attrDefs) {
-        return new StructTypeDefinition(name, attrDefs);
+        return createStructTypeDef(name, null, attrDefs);
+    }
+
+    public static StructTypeDefinition createStructTypeDef(String name, String description, AttributeDefinition... attrDefs) {
+        return new StructTypeDefinition(name, description, attrDefs);
     }
 
     public static HierarchicalTypeDefinition<ClassType> createClassTypeDef(String name,
             ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
-        return new HierarchicalTypeDefinition<>(ClassType.class, name, superTypes, attrDefs);
+        return createClassTypeDef(name, null, superTypes, attrDefs);
+    }
+
+    public static HierarchicalTypeDefinition<ClassType> createClassTypeDef(String name, String description,
+        ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
+    return new HierarchicalTypeDefinition<>(ClassType.class, name, description, superTypes, attrDefs);
     }
 
     public static TypesDef getTypesDef(ImmutableList<EnumTypeDefinition> enums,

@@ -168,7 +168,12 @@ public class TypeSystem {
 
     public StructType defineStructType(String name, boolean errorIfExists, AttributeDefinition... attrDefs)
     throws AtlasException {
-        StructTypeDefinition structDef = new StructTypeDefinition(name, attrDefs);
+        return defineStructType(name, null, errorIfExists, attrDefs);
+    }
+
+    public StructType defineStructType(String name, String description, boolean errorIfExists, AttributeDefinition... attrDefs)
+    throws AtlasException {
+        StructTypeDefinition structDef = new StructTypeDefinition(name, description, attrDefs);
         defineTypes(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.of(structDef),
                 ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
                 ImmutableList.<HierarchicalTypeDefinition<ClassType>>of());
@@ -192,7 +197,7 @@ public class TypeSystem {
             infos[i] = new AttributeInfo(this, attrDefs[i], tempTypes);
         }
 
-        return new StructType(this, name, infos);
+        return new StructType(this, name, null, infos);
     }
 
     public TraitType defineTraitType(HierarchicalTypeDefinition<TraitType> traitDef) throws AtlasException {
@@ -272,13 +277,17 @@ public class TypeSystem {
         return defineEnumType(new EnumTypeDefinition(name, values));
     }
 
+    public EnumType defineEnumType(String name, String description, EnumValue... values) throws AtlasException {
+        return defineEnumType(new EnumTypeDefinition(name, description, values));
+    }
+
     public EnumType defineEnumType(EnumTypeDefinition eDef) throws AtlasException {
         assert eDef.name != null;
         if (types.containsKey(eDef.name)) {
             throw new AtlasException(String.format("Redefinition of type %s not supported", eDef.name));
         }
 
-        EnumType eT = new EnumType(this, eDef.name, eDef.enumValues);
+        EnumType eT = new EnumType(this, eDef.name, eDef.description, eDef.enumValues);
         types.put(eDef.name, eT);
         typeCategoriesToTypeNamesMap.put(DataTypes.TypeCategory.ENUM, eDef.name);
         return eT;
@@ -348,7 +357,7 @@ public class TypeSystem {
                     throw new AtlasException(String.format("Redefinition of type %s not supported", eDef.name));
                 }
 
-                EnumType eT = new EnumType(this, eDef.name, eDef.enumValues);
+                EnumType eT = new EnumType(this, eDef.name, eDef.description, eDef.enumValues);
                 transientTypes.put(eDef.name, eT);
             }
 
@@ -357,7 +366,7 @@ public class TypeSystem {
                 if (!update && (transientTypes.containsKey(sDef.typeName) || types.containsKey(sDef.typeName))) {
                     throw new TypeExistsException(String.format("Cannot redefine type %s", sDef.typeName));
                 }
-                StructType sT = new StructType(this, sDef.typeName, sDef.attributeDefinitions.length);
+                StructType sT = new StructType(this, sDef.typeName, sDef.typeDescription, sDef.attributeDefinitions.length);
                 structNameToDefMap.put(sDef.typeName, sDef);
                 transientTypes.put(sDef.typeName, sT);
             }
@@ -368,7 +377,7 @@ public class TypeSystem {
                         (transientTypes.containsKey(traitDef.typeName) || types.containsKey(traitDef.typeName))) {
                     throw new TypeExistsException(String.format("Cannot redefine type %s", traitDef.typeName));
                 }
-                TraitType tT = new TraitType(this, traitDef.typeName, traitDef.superTypes,
+                TraitType tT = new TraitType(this, traitDef.typeName, traitDef.typeDescription, traitDef.superTypes,
                         traitDef.attributeDefinitions.length);
                 traitNameToDefMap.put(traitDef.typeName, traitDef);
                 transientTypes.put(traitDef.typeName, tT);
@@ -381,7 +390,7 @@ public class TypeSystem {
                     throw new TypeExistsException(String.format("Cannot redefine type %s", classDef.typeName));
                 }
 
-                ClassType cT = new ClassType(this, classDef.typeName, classDef.superTypes,
+                ClassType cT = new ClassType(this, classDef.typeName, classDef.typeDescription, classDef.superTypes,
                         classDef.attributeDefinitions.length);
                 classNameToDefMap.put(classDef.typeName, classDef);
                 transientTypes.put(classDef.typeName, cT);
@@ -471,7 +480,7 @@ public class TypeSystem {
                 infos[i] = constructAttributeInfo(def.attributeDefinitions[i]);
             }
 
-            StructType type = new StructType(this, def.typeName, infos);
+            StructType type = new StructType(this, def.typeName, def.typeDescription, infos);
             transientTypes.put(def.typeName, type);
             return type;
         }
@@ -484,9 +493,9 @@ public class TypeSystem {
             }
 
             try {
-                Constructor<U> cons = cls.getDeclaredConstructor(TypeSystem.class, String.class, ImmutableList.class,
+                Constructor<U> cons = cls.getDeclaredConstructor(TypeSystem.class, String.class, String.class, ImmutableList.class,
                         AttributeInfo[].class);
-                U type = cons.newInstance(this, def.typeName, def.superTypes, infos);
+                U type = cons.newInstance(this, def.typeName, def.typeDescription, def.superTypes, infos);
                 transientTypes.put(def.typeName, type);
                 return type;
             } catch (Exception e) {
@@ -682,7 +691,7 @@ public class TypeSystem {
                 infos[0] = new AttributeInfo(TypeSystem.this, idAttr, null);
                 infos[1] = new AttributeInfo(TypeSystem.this, typNmAttr, null);
 
-                StructType type = new StructType(TypeSystem.this, TYP_NAME, infos);
+                StructType type = new StructType(TypeSystem.this, TYP_NAME, null, infos);
                 TypeSystem.this.types.put(TYP_NAME, type);
 
             } catch (AtlasException me) {

@@ -25,10 +25,16 @@ import java.util.Arrays;
 public final class EnumTypeDefinition {
 
     public final String name;
+    public final String description;
     public final EnumValue[] enumValues;
 
     public EnumTypeDefinition(String name, EnumValue... enumValues) {
+        this(name, null, enumValues);
+    }
+
+    public EnumTypeDefinition(String name, String description, EnumValue... enumValues) {
         this.name = ParamChecker.notEmpty(name, "Enum type name");
+        this.description = description;
         this.enumValues = ParamChecker.notNullElements(enumValues, "Enum values");
     }
 

@@ -131,28 +131,28 @@ object TypesSerialization {
 
     private def convertEnumTypeToEnumTypeDef(et: EnumType) = {
         val eVals: Seq[EnumValue] = et.valueMap.values().toSeq
-        new EnumTypeDefinition(et.name, eVals: _*)
+        new EnumTypeDefinition(et.name, et.description, eVals: _*)
     }
 
     private def convertStructTypeToStructDef(st: StructType): StructTypeDefinition = {
 
         val aDefs: Iterable[AttributeDefinition] =
             st.fieldMapping.fields.values().map(convertAttributeInfoToAttributeDef(_))
-        new StructTypeDefinition(st.name, aDefs.toArray)
+        new StructTypeDefinition(st.name, st.description, aDefs.toArray)
     }
 
     private def convertTraitTypeToHierarchicalTypeDefintion(tt: TraitType): HierarchicalTypeDefinition[TraitType] = {
 
         val aDefs: Iterable[AttributeDefinition] =
             tt.immediateAttrs.map(convertAttributeInfoToAttributeDef(_))
-        new HierarchicalTypeDefinition[TraitType](classOf[TraitType], tt.name, tt.superTypes, aDefs.toArray)
+        new HierarchicalTypeDefinition[TraitType](classOf[TraitType], tt.name, tt.description, tt.superTypes, aDefs.toArray)
     }
 
     private def convertClassTypeToHierarchicalTypeDefintion(tt: ClassType): HierarchicalTypeDefinition[ClassType] = {
 
         val aDefs: Iterable[AttributeDefinition] =
             tt.immediateAttrs.map(convertAttributeInfoToAttributeDef(_))
-        new HierarchicalTypeDefinition[ClassType](classOf[ClassType], tt.name, tt.superTypes, aDefs.toArray)
+        new HierarchicalTypeDefinition[ClassType](classOf[ClassType], tt.name, tt.description, tt.superTypes, aDefs.toArray)
     }
 
     def convertToTypesDef(ts: TypeSystem, export: IDataType[_] => Boolean): TypesDef = {
@@ -212,8 +212,13 @@ trait TypeHelpers {
     def optionalAttr(name: String, dataType: IDataType[_]) =
         new AttributeDefinition(name, dataType.getName, Multiplicity.OPTIONAL, false, null)
 
-    def structDef(name: String, attrs: AttributeDefinition*) = {
-        new StructTypeDefinition(name, attrs.toArray)
+    def structDef(name: String, attrs: AttributeDefinition*):
+    StructTypeDefinition = {
+        structDef(name, None, attrs:_*)
+    }
+
+   def structDef(name: String, description: Option[String], attrs: AttributeDefinition*) = {
+        new StructTypeDefinition(name, description.getOrElse(null), attrs.toArray)
     }
 
     def defineTraits(ts: TypeSystem, tDefs: HierarchicalTypeDefinition[TraitType]*) = {
@@ -222,15 +227,25 @@ trait TypeHelpers {
 
     def createTraitTypeDef(name: String, superTypes: Seq[String], attrDefs: AttributeDefinition*):
     HierarchicalTypeDefinition[TraitType] = {
+        createTraitTypeDef(name, None, superTypes, attrDefs:_*)
+    }
+    
+    def createTraitTypeDef(name: String, description: Option[String], superTypes: Seq[String], attrDefs: AttributeDefinition*):
+    HierarchicalTypeDefinition[TraitType] = {
         val sts = ImmutableList.copyOf(superTypes.toArray)
-        return new HierarchicalTypeDefinition[TraitType](classOf[TraitType], name,
+        return new HierarchicalTypeDefinition[TraitType](classOf[TraitType], name, description.getOrElse(null),
             sts, attrDefs.toArray)
     }
 
     def createClassTypeDef(name: String, superTypes: Seq[String], attrDefs: AttributeDefinition*):
     HierarchicalTypeDefinition[ClassType] = {
+         createClassTypeDef( name, None, superTypes, attrDefs:_*)
+    }
+    
+    def createClassTypeDef(name: String, description: Option[String], superTypes: Seq[String], attrDefs: AttributeDefinition*):
+    HierarchicalTypeDefinition[ClassType] = {
         val sts = ImmutableList.copyOf(superTypes.toArray)
-        return new HierarchicalTypeDefinition[ClassType](classOf[ClassType], name,
+        return new HierarchicalTypeDefinition[ClassType](classOf[ClassType], name, description.getOrElse(null),
             sts, attrDefs.toArray)
     }
 

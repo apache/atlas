@@ -19,11 +19,22 @@
 package org.apache.atlas.typesystem.types;
 
 import com.google.common.collect.ImmutableSortedMap;
+
 import org.apache.atlas.AtlasException;
 
 import java.util.Map;
 
 abstract class AbstractDataType<T> implements IDataType<T> {
+
+    public final String name;
+    public final String description;
+    
+    public AbstractDataType(String name, String description) {
+
+        super();
+        this.name = name;
+        this.description = description;
+    }
 
     protected T convertNull(Multiplicity m) throws AtlasException {
         if (!m.nullAllowed()) {
@@ -51,6 +62,16 @@ abstract class AbstractDataType<T> implements IDataType<T> {
         if (!getName().equals(newType.getName()) || !getClass().getName().equals(newType.getClass().getName())) {
             throw new TypeUpdateException(newType);
         }
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public String getDescription() {
+        return description;
     }
 }
 

@@ -24,6 +24,7 @@ import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
@@ -50,6 +51,7 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+
 import java.util.List;
 
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
@@ -103,6 +105,7 @@ public class GraphBackedTypeStoreTest {
 
     @Test(dependsOnMethods = "testStore")
     public void testRestore() throws Exception {
+        String description = "_description";
         TypesDef types = typeStore.restore();
 
         //validate enum
@@ -110,6 +113,7 @@ public class GraphBackedTypeStoreTest {
         Assert.assertEquals(1, enumTypes.size());
         EnumTypeDefinition orgLevel = enumTypes.get(0);
         Assert.assertEquals(orgLevel.name, "OrgLevel");
+        Assert.assertEquals(orgLevel.description, "OrgLevel"+description);
         Assert.assertEquals(orgLevel.enumValues.length, 2);
         EnumValue enumValue = orgLevel.enumValues[0];
         Assert.assertEquals(enumValue.value, "L1");
@@ -126,6 +130,7 @@ public class GraphBackedTypeStoreTest {
                 ClassType expectedType = ts.getDataType(ClassType.class, classType.typeName);
                 Assert.assertEquals(expectedType.immediateAttrs.size(), classType.attributeDefinitions.length);
                 Assert.assertEquals(expectedType.superTypes.size(), classType.superTypes.size());
+                Assert.assertEquals(classType.typeDescription, classType.typeName+description);
                 clsTypeFound = true;
             }
         }
@@ -136,6 +141,7 @@ public class GraphBackedTypeStoreTest {
         Assert.assertEquals(1, traitTypes.size());
         HierarchicalTypeDefinition<TraitType> trait = traitTypes.get(0);
         Assert.assertEquals("SecurityClearance", trait.typeName);
+        Assert.assertEquals(trait.typeName+description, trait.typeDescription);
         Assert.assertEquals(1, trait.attributeDefinitions.length);
         AttributeDefinition attribute = trait.attributeDefinitions[0];
         Assert.assertEquals("level", attribute.name);
@@ -149,7 +155,8 @@ public class GraphBackedTypeStoreTest {
     @Test(dependsOnMethods = "testStore")
     public void testTypeUpdate() throws Exception {
         //Add enum value
-        EnumTypeDefinition orgLevelEnum = new EnumTypeDefinition("OrgLevel", new EnumValue("L1", 1),
+        String _description = "_description_updated";
+        EnumTypeDefinition orgLevelEnum = new EnumTypeDefinition("OrgLevel", "OrgLevel"+_description, new EnumValue("L1", 1),
                 new EnumValue("L2", 2), new EnumValue("L3", 3));
 
         //Add attribute
@@ -162,7 +169,7 @@ public class GraphBackedTypeStoreTest {
         HierarchicalTypeDefinition<ClassType> superTypeDef = createClassTypeDef("Division", ImmutableList.<String>of(),
                 createOptionalAttrDef("dname", DataTypes.STRING_TYPE));
 
-        HierarchicalTypeDefinition<ClassType> deptTypeDef = createClassTypeDef("Department",
+        HierarchicalTypeDefinition<ClassType> deptTypeDef = createClassTypeDef("Department", "Department"+_description,
                 ImmutableList.of(superTypeDef.typeName), createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                 new AttributeDefinition("employees", String.format("array<%s>", "Person"), Multiplicity.COLLECTION,
                         true, "department"));
@@ -182,6 +189,7 @@ public class GraphBackedTypeStoreTest {
         //Assert new enum value
         EnumType orgLevel = ts.getDataType(EnumType.class, orgLevelEnum.name);
         Assert.assertEquals(orgLevel.name, orgLevelEnum.name);
+        Assert.assertEquals(orgLevel.description, orgLevelEnum.description);
         Assert.assertEquals(orgLevel.values().size(), orgLevelEnum.enumValues.length);
         Assert.assertEquals(orgLevel.fromValue("L3").ordinal, 3);
 

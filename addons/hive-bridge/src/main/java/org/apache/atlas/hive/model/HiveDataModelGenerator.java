@@ -201,7 +201,7 @@ public class HiveDataModelGenerator {
                         Multiplicity.OPTIONAL, false, null),};
 
         HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_STORAGEDESC.getName(),
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_STORAGEDESC.getName(), null,
                         ImmutableList.of(AtlasClient.REFERENCEABLE_SUPER_TYPE), attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_STORAGEDESC.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_STORAGEDESC.getName());
@@ -236,7 +236,7 @@ public class HiveDataModelGenerator {
                         false, null),};
 
         HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_DB.getName(),
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_DB.getName(), null,
                         ImmutableList.of(AtlasClient.REFERENCEABLE_SUPER_TYPE), attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_DB.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_DB.getName());
@@ -250,7 +250,7 @@ public class HiveDataModelGenerator {
                 new AttributeDefinition("fields", String.format("array<%s>", HiveDataTypes.HIVE_COLUMN.getName()),
                         Multiplicity.OPTIONAL, false, null),};
         HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_TYPE.getName(), null,
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_TYPE.getName(), null, null,
                         attributeDefinitions);
 
         classTypeDefinitions.put(HiveDataTypes.HIVE_TYPE.getName(), definition);
@@ -263,7 +263,7 @@ public class HiveDataModelGenerator {
                 new AttributeDefinition("type", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition(COMMENT, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),};
         HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_COLUMN.getName(),
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_COLUMN.getName(), null,
                         ImmutableList.of(AtlasClient.REFERENCEABLE_SUPER_TYPE), attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_COLUMN.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_COLUMN.getName());
@@ -284,7 +284,7 @@ public class HiveDataModelGenerator {
                         Multiplicity.OPTIONAL, true, null),
                 new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(), Multiplicity.OPTIONAL, false, null),};
         HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_PARTITION.getName(),
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_PARTITION.getName(), null,
                         ImmutableList.of(AtlasClient.REFERENCEABLE_SUPER_TYPE), attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_PARTITION.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_PARTITION.getName());
@@ -318,7 +318,7 @@ public class HiveDataModelGenerator {
                 new AttributeDefinition("temporary", DataTypes.BOOLEAN_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),};
         HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_TABLE.getName(),
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_TABLE.getName(), null,
                         ImmutableList.of("DataSet"), attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_TABLE.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_TABLE.getName());
@@ -333,7 +333,7 @@ public class HiveDataModelGenerator {
                 new AttributeDefinition("ownerName", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
                         null),};
         HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_ROLE.getName(), null,
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_ROLE.getName(), null, null,
                         attributeDefinitions);
 
         classTypeDefinitions.put(HiveDataTypes.HIVE_ROLE.getName(), definition);
@@ -357,7 +357,7 @@ public class HiveDataModelGenerator {
                         null),};
 
         HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_PROCESS.getName(),
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_PROCESS.getName(), null,
                         ImmutableList.of(AtlasClient.PROCESS_SUPER_TYPE), attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_PROCESS.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_PROCESS.getName());

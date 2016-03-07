@@ -31,20 +31,21 @@ public class HierarchicalTypeDefinition<T extends HierarchicalType> extends Stru
      * not intended public consumption
      * @param hierarchicalMetaTypeName
      * @param typeName
+     * @param typeDescription
      * @param superTypes
      * @param attributeDefinitions
      * @throws ClassNotFoundException
      */
     @InterfaceAudience.Private
-    public HierarchicalTypeDefinition(String hierarchicalMetaTypeName, String typeName, String[] superTypes,
+    public HierarchicalTypeDefinition(String hierarchicalMetaTypeName, String typeName, String typeDescription, String[] superTypes,
             AttributeDefinition[] attributeDefinitions) throws ClassNotFoundException {
-        this((Class<T>) Class.forName(hierarchicalMetaTypeName), typeName, ImmutableList.copyOf(superTypes),
+        this((Class<T>) Class.forName(hierarchicalMetaTypeName), typeName, typeDescription, ImmutableList.copyOf(superTypes),
                 attributeDefinitions);
     }
 
-    public HierarchicalTypeDefinition(Class<T> hierarchicalMetaType, String typeName, ImmutableList<String> superTypes,
-            AttributeDefinition[] attributeDefinitions) {
-        super(typeName, false, attributeDefinitions);
+    public HierarchicalTypeDefinition(Class<T> hierarchicalMetaType, String typeName, String typeDescription, ImmutableList<String> superTypes,
+        AttributeDefinition[] attributeDefinitions) {
+        super(typeName, typeDescription, false, attributeDefinitions);
         hierarchicalMetaTypeName = hierarchicalMetaType.getName();
         this.superTypes = superTypes == null ? ImmutableList.<String>of() : superTypes;
     }

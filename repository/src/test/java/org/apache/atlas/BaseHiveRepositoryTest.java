@@ -151,7 +151,7 @@ public class BaseHiveRepositoryTest {
             new AttributeDefinition("table", HIVE_TABLE_TYPE, Multiplicity.REQUIRED, false, null),
             };
         HierarchicalTypeDefinition<ClassType> partClsDef =
-            new HierarchicalTypeDefinition<>(ClassType.class, PARTITION_TYPE, null,
+            new HierarchicalTypeDefinition<>(ClassType.class, PARTITION_TYPE, null, null,
                 attributeDefinitions);
 
         HierarchicalTypeDefinition<TraitType> dimTraitDef = TypesUtil.createTraitTypeDef("Dimension", null);
