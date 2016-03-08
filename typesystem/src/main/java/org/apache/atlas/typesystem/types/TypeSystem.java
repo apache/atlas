@@ -31,7 +31,6 @@ import javax.inject.Singleton;
 import java.lang.reflect.Constructor;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -218,7 +217,7 @@ public class TypeSystem {
                 new TransientTypeSystem(ImmutableList.<EnumTypeDefinition>of(),
                         ImmutableList.<StructTypeDefinition>of(), ImmutableList.copyOf(traitDefs),
                         ImmutableList.<HierarchicalTypeDefinition<ClassType>>of());
-        return transientTypes.defineTypes();
+        return transientTypes.defineTypes(false);
     }
 
     public Map<String, IDataType> defineClassTypes(HierarchicalTypeDefinition<ClassType>... classDefs)
@@ -226,7 +225,7 @@ public class TypeSystem {
         TransientTypeSystem transientTypes = new TransientTypeSystem(ImmutableList.<EnumTypeDefinition>of(),
                 ImmutableList.<StructTypeDefinition>of(), ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
                 ImmutableList.copyOf(classDefs));
-        return transientTypes.defineTypes();
+        return transientTypes.defineTypes(false);
     }
 
     public Map<String, IDataType> updateTypes(TypesDef typesDef) throws AtlasException {
@@ -257,7 +256,7 @@ public class TypeSystem {
             ImmutableList<HierarchicalTypeDefinition<TraitType>> traitDefs,
             ImmutableList<HierarchicalTypeDefinition<ClassType>> classDefs) throws AtlasException {
         TransientTypeSystem transientTypes = new TransientTypeSystem(enumDefs, structDefs, traitDefs, classDefs);
-        return transientTypes.defineTypes();
+        return transientTypes.defineTypes(false);
     }
 
     public DataTypes.ArrayType defineArrayType(IDataType elemType) throws AtlasException {
@@ -301,16 +300,44 @@ public class TypeSystem {
         return false;
     }
 
-    public void removeTypes(Collection<String> typeNames) {
-        for (String typeName : typeNames) {
-            IDataType dataType = types.get(typeName);
-            final DataTypes.TypeCategory typeCategory = dataType.getTypeCategory();
-            typeCategoriesToTypeNamesMap.get(typeCategory).remove(typeName);
-            types.remove(typeName);
+    /**
+     * Create an instance of {@link TransientTypeSystem} with the types defined in the {@link TypesDef}.
+     *
+     * As part of this, a set of verifications are run on the types defined.
+     * @param typesDef The new list of types to be created or updated.
+     * @param isUpdate True, if types are updated, false otherwise.
+     * @return {@link TransientTypeSystem} that holds the newly added types.
+     * @throws AtlasException
+     */
+    public TransientTypeSystem createTransientTypeSystem(TypesDef typesDef, boolean isUpdate) throws AtlasException {
+        ImmutableList<EnumTypeDefinition> enumDefs = ImmutableList.copyOf(typesDef.enumTypesAsJavaList());
+        ImmutableList<StructTypeDefinition> structDefs = ImmutableList.copyOf(typesDef.structTypesAsJavaList());
+        ImmutableList<HierarchicalTypeDefinition<TraitType>> traitDefs =
+                ImmutableList.copyOf(typesDef.traitTypesAsJavaList());
+        ImmutableList<HierarchicalTypeDefinition<ClassType>> classDefs =
+                ImmutableList.copyOf(typesDef.classTypesAsJavaList());
+        TransientTypeSystem transientTypeSystem = new TransientTypeSystem(enumDefs, structDefs, traitDefs, classDefs);
+        transientTypeSystem.verifyTypes(isUpdate);
+        return transientTypeSystem;
+    }
+
+    /**
+     * Commit the given types to this {@link TypeSystem} instance.
+     *
+     * This step should be called only after the types have been committed to the backend stores successfully.
+     * @param typesAdded newly added types.
+     */
+    public void commitTypes(Map<String, IDataType> typesAdded) {
+        for (Map.Entry<String, IDataType> typeEntry : typesAdded.entrySet()) {
+            String typeName = typeEntry.getKey();
+            IDataType type = typeEntry.getValue();
+            //Add/replace the new type in the typesystem
+            types.put(typeName, type);
+            typeCategoriesToTypeNamesMap.put(type.getTypeCategory(), typeName);
         }
     }
 
-    class TransientTypeSystem extends TypeSystem {
+    public class TransientTypeSystem extends TypeSystem {
 
         final ImmutableList<StructTypeDefinition> structDefs;
         final ImmutableList<HierarchicalTypeDefinition<TraitType>> traitDefs;
@@ -350,7 +377,7 @@ public class TypeSystem {
          * - validate cannot redefine types
          * - setup shallow Type instances to facilitate recursive type graphs
          */
-        private void step1(boolean update) throws AtlasException {
+        private void validateAndSetupShallowTypes(boolean update) throws AtlasException {
             for (EnumTypeDefinition eDef : enumDefs) {
                 assert eDef.name != null;
                 if (!update && (transientTypes.containsKey(eDef.name) || types.containsKey(eDef.name))) {
@@ -430,7 +457,7 @@ public class TypeSystem {
          * - for Hierarchical Types, validate SuperTypes.
          * - for each Hierarchical Type setup their SuperTypes Graph
          */
-        private void step2() throws AtlasException {
+        private void validateAndSetupSuperTypes() throws AtlasException {
             for (HierarchicalTypeDefinition<TraitType> traitDef : traitDefs) {
                 validateSuperTypes(TraitType.class, traitDef);
                 TraitType traitType = getDataType(TraitType.class, traitDef.typeName);
@@ -509,7 +536,7 @@ public class TypeSystem {
          * - Order Hierarchical Types in order of SuperType before SubType.
          * - Construct all the Types
          */
-        private void step3() throws AtlasException {
+        private void orderAndConstructTypes() throws AtlasException {
 
             List<TraitType> traitTypes = new ArrayList<>();
             for (String traitTypeName : traitNameToDefMap.keySet()) {
@@ -540,7 +567,7 @@ public class TypeSystem {
          * Step 4:
          * - fix up references in recursive AttrInfo and recursive Collection Types.
          */
-        private void step4() throws AtlasException {
+        private void setupRecursiveTypes() throws AtlasException {
             for (AttributeInfo info : recursiveRefs) {
                 info.setDataType(dataType(info.dataType().getName()));
             }
@@ -557,7 +584,7 @@ public class TypeSystem {
          * Step 5:
          * - Validate that the update can be done
          */
-        private void step5() throws TypeUpdateException {
+        private void validateUpdateIsPossible() throws TypeUpdateException {
             //If the type is modified, validate that update can be done
             for (IDataType newType : transientTypes.values()) {
                 if (TypeSystem.this.types.containsKey(newType.getName())) {
@@ -567,34 +594,11 @@ public class TypeSystem {
             }
         }
 
-        Map<String, IDataType> defineTypes() throws AtlasException {
-            return defineTypes(false);
-        }
-
         Map<String, IDataType> defineTypes(boolean update) throws AtlasException {
-            step1(update);
-            step2();
-
-            step3();
-            step4();
-
-            if (update) {
-                step5();
-            }
-
-            Map<String, IDataType> newTypes = new HashMap<>();
-
-            for (Map.Entry<String, IDataType> typeEntry : transientTypes.entrySet()) {
-                String typeName = typeEntry.getKey();
-                IDataType type = typeEntry.getValue();
-
-                //Add/replace the new type in the typesystem
-                TypeSystem.this.types.put(typeName, type);
-                typeCategoriesToTypeNamesMap.put(type.getTypeCategory(), typeName);
-
-                newTypes.put(typeName, type);
-            }
-            return newTypes;
+            verifyTypes(update);
+            Map<String, IDataType> typesAdded = getTypesAdded();
+            commitTypes(typesAdded);
+            return typesAdded;
         }
 
         @Override
@@ -671,6 +675,25 @@ public class TypeSystem {
         @Override
         public DataTypes.MapType defineMapType(IDataType keyType, IDataType valueType) throws AtlasException {
             return super.defineMapType(keyType, valueType);
+        }
+
+        void verifyTypes(boolean isUpdate) throws AtlasException {
+            validateAndSetupShallowTypes(isUpdate);
+            validateAndSetupSuperTypes();
+            orderAndConstructTypes();
+            setupRecursiveTypes();
+            if (isUpdate) {
+                validateUpdateIsPossible();
+            }
+        }
+
+        @Override
+        public void commitTypes(Map<String, IDataType> typesAdded) {
+            TypeSystem.this.commitTypes(typesAdded);
+        }
+
+        public Map<String, IDataType> getTypesAdded() {
+            return new HashMap<>(transientTypes);
         }
     }
 

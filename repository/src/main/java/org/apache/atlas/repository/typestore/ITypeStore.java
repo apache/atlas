@@ -24,18 +24,13 @@ import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.types.TypeSystem;
 
 public interface ITypeStore {
-    /**
-     * Persist the entire type system - insert or update
-     * @param typeSystem type system to persist
-     * @throws StorageException
-     */
-    void store(TypeSystem typeSystem) throws AtlasException;
 
     /**
-     * Persist the given type in the type system - insert or update
-     * @param typeSystem type system
-     * @param types types to persist
-     * @throws StorageException
+     * Add types to the underlying type storage layer
+     * @param typeSystem {@link TypeSystem} object which contains existing types. To lookup newly added types,
+     *                                     an instance of {@link TypeSystem.TransientTypeSystem} can be passed.
+     * @param types names of newly added types.
+     * @throws AtlasException
      */
     void store(TypeSystem typeSystem, ImmutableList<String> types) throws AtlasException;
 

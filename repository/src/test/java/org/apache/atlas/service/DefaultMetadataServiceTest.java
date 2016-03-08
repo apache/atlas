@@ -26,6 +26,10 @@ import com.thinkaurelius.titan.core.util.TitanCleanup;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.typesystem.exception.TypeNotFoundException;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
+import org.apache.atlas.typesystem.types.ClassType;
+import org.apache.atlas.typesystem.types.DataTypes;
+import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RepositoryMetadataModule;
@@ -47,6 +51,8 @@ import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.ValueConversionException;
 import org.apache.commons.lang.RandomStringUtils;
 import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
@@ -791,7 +797,33 @@ public class DefaultMetadataServiceTest {
         Assert.assertEquals(deletedGuidsFromListener.size(), deletedGuids.size());
         Assert.assertTrue(deletedGuidsFromListener.containsAll(deletedGuids));
     }
-    
+
+    @Test
+    public void testTypeUpdateWithReservedAttributes() throws AtlasException, JSONException {
+        String typeName = "test_type_"+ RandomStringUtils.randomAlphanumeric(10);
+        HierarchicalTypeDefinition<ClassType> typeDef = TypesUtil.createClassTypeDef(
+                typeName, ImmutableList.<String>of(),
+                TypesUtil.createUniqueRequiredAttrDef("test_type_attribute", DataTypes.STRING_TYPE));
+        TypesDef typesDef = new TypesDef(typeDef, false);
+        JSONObject type = metadataService.createType(TypesSerialization.toJson(typesDef));
+        Assert.assertNotNull(type.get(AtlasClient.TYPES));
+
+        HierarchicalTypeDefinition<ClassType> updatedTypeDef = TypesUtil.createClassTypeDef(
+            typeName, ImmutableList.<String>of(),
+            TypesUtil.createUniqueRequiredAttrDef("test_type_attribute", DataTypes.STRING_TYPE),
+            TypesUtil.createOptionalAttrDef("test_type_invalid_attribute$", DataTypes.STRING_TYPE));
+        TypesDef updatedTypesDef = new TypesDef(updatedTypeDef, false);
+
+        try {
+            metadataService.updateType(TypesSerialization.toJson(updatedTypesDef));
+            Assert.fail("Should not be able to update type with reserved character");
+        } catch (AtlasException ae) {
+            // pass.. expected
+        }
+        String typeDefinition = metadataService.getTypeDefinition(typeName);
+        Assert.assertNotNull(typeDefinition);
+    }
+
     private static class DeleteEntitiesChangeListener implements EntityChangeListener {
         
         private Collection<ITypedReferenceableInstance> deletedEntities_;

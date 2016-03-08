@@ -10,6 +10,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-476 Update type attribute with Reserved characters updated the original type as unknown (yhemanth via shwethags)
 ATLAS-463 Disconnect inverse references ( dkantor via sumasai)
 ATLAS-479 Add description for different types during create time (guptaneeru via shwethags)
 ATLAS-508 Apache nightly build failure - UnsupportedOperationException: Not a single key: __traitNames (shwethags)

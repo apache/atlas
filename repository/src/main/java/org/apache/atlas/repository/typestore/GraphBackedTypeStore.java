@@ -70,11 +70,6 @@ public class GraphBackedTypeStore implements ITypeStore {
     }
 
     @Override
-    public void store(TypeSystem typeSystem) throws AtlasException {
-        store(typeSystem, ImmutableList.copyOf(typeSystem.getTypeNames()));
-    }
-
-    @Override
     @GraphTransaction
     public void store(TypeSystem typeSystem, ImmutableList<String> typeNames) throws AtlasException {
         for (String typeName : typeNames) {
@@ -133,12 +128,9 @@ public class GraphBackedTypeStore implements ITypeStore {
     }
 
     private void storeInGraph(TypeSystem typeSystem, DataTypes.TypeCategory category, String typeName,
-        ImmutableList<AttributeInfo> attributes, ImmutableList<String> superTypes) throws AtlasException {
-        storeInGraph(typeSystem, category, typeName, null, attributes, superTypes);
-    }
-
-    private void storeInGraph(TypeSystem typeSystem, DataTypes.TypeCategory category, String typeName, String typeDescription,
-            ImmutableList<AttributeInfo> attributes, ImmutableList<String> superTypes) throws AtlasException {
+                              String typeDescription, ImmutableList<AttributeInfo> attributes,
+                              ImmutableList<String> superTypes)
+            throws AtlasException {
         Vertex vertex = createVertex(category, typeName, typeDescription);
         List<String> attrNames = new ArrayList<>();
         if (attributes != null) {
@@ -165,7 +157,6 @@ public class GraphBackedTypeStore implements ITypeStore {
         }
     }
 
-    //Add edges for complex attributes
     private void addReferencesForAttribute(TypeSystem typeSystem, Vertex vertex, AttributeInfo attribute)
             throws AtlasException {
         ImmutableList<String> coreTypes = typeSystem.getCoreTypes();

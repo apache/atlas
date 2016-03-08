@@ -38,6 +38,7 @@ import org.apache.atlas.typesystem.types.EnumType;
 import org.apache.atlas.typesystem.types.EnumTypeDefinition;
 import org.apache.atlas.typesystem.types.EnumValue;
 import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.StructType;
 import org.apache.atlas.typesystem.types.StructTypeDefinition;
@@ -51,8 +52,8 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
-
 import java.util.List;
+import java.util.Map;
 
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
@@ -89,7 +90,8 @@ public class GraphBackedTypeStoreTest {
 
     @Test
     public void testStore() throws AtlasException {
-        typeStore.store(ts);
+        ImmutableList<String> typeNames = ts.getTypeNames();
+        typeStore.store(ts, typeNames);
         dumpGraph();
     }
 
@@ -177,9 +179,8 @@ public class GraphBackedTypeStoreTest {
                 ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
                 ImmutableList.of(deptTypeDef, superTypeDef));
 
-        ts.updateTypes(typesDef);
-        typeStore.store(ts, ImmutableList.of(orgLevelEnum.name, addressDetails.typeName, superTypeDef.typeName,
-                deptTypeDef.typeName));
+        Map<String, IDataType> typesAdded = ts.updateTypes(typesDef);
+        typeStore.store(ts, ImmutableList.copyOf(typesAdded.keySet()));
 
         //Validate the updated types
         TypesDef types = typeStore.restore();

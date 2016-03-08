@@ -169,20 +169,28 @@ public class DefaultMetadataService implements MetadataService {
      */
     @Override
     public JSONObject createType(String typeDefinition) throws AtlasException {
+        return createOrUpdateTypes(typeDefinition, false);
+    }
+
+    private JSONObject createOrUpdateTypes(String typeDefinition, boolean isUpdate) throws AtlasException {
         ParamChecker.notEmpty(typeDefinition, "type definition cannot be empty");
         TypesDef typesDef = validateTypeDefinition(typeDefinition);
 
         try {
-            final Map<String, IDataType> typesAdded = typeSystem.defineTypes(typesDef);
-
+            final TypeSystem.TransientTypeSystem transientTypeSystem = typeSystem.createTransientTypeSystem(typesDef, isUpdate);
+            final Map<String, IDataType> typesAdded = transientTypeSystem.getTypesAdded();
             try {
                 /* Create indexes first so that if index creation fails then we rollback
                    the typesystem and also do not persist the graph
                  */
-                onTypesAdded(typesAdded);
-                typeStore.store(typeSystem, ImmutableList.copyOf(typesAdded.keySet()));
+                if (isUpdate) {
+                    onTypesUpdated(typesAdded);
+                } else {
+                    onTypesAdded(typesAdded);
+                }
+                typeStore.store(transientTypeSystem, ImmutableList.copyOf(typesAdded.keySet()));
+                typeSystem.commitTypes(typesAdded);
             } catch (Throwable t) {
-                typeSystem.removeTypes(typesAdded.keySet());
                 throw new AtlasException("Unable to persist types ", t);
             }
 
@@ -197,30 +205,7 @@ public class DefaultMetadataService implements MetadataService {
 
     @Override
     public JSONObject updateType(String typeDefinition) throws AtlasException {
-        ParamChecker.notEmpty(typeDefinition, "type definition cannot be empty");
-        TypesDef typesDef = validateTypeDefinition(typeDefinition);
-
-        try {
-            final Map<String, IDataType> typesAdded = typeSystem.updateTypes(typesDef);
-
-            try {
-                /* Create indexes first so that if index creation fails then we rollback
-                   the typesystem and also do not persist the graph
-                 */
-                onTypesUpdated(typesAdded);
-                typeStore.store(typeSystem, ImmutableList.copyOf(typesAdded.keySet()));
-            } catch (Throwable t) {
-                typeSystem.removeTypes(typesAdded.keySet());
-                throw new AtlasException("Unable to persist types ", t);
-            }
-
-            return new JSONObject() {{
-                put(AtlasClient.TYPES, typesAdded.keySet());
-            }};
-        } catch (JSONException e) {
-            LOG.error("Unable to create response for types={}", typeDefinition, e);
-            throw new AtlasException("Unable to create response ", e);
-        }
+        return createOrUpdateTypes(typeDefinition, true);
     }
 
     private TypesDef validateTypeDefinition(String typeDefinition) {
