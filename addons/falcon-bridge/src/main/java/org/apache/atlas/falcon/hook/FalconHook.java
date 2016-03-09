@@ -235,8 +235,10 @@ public class FalconHook extends FalconEventPublisher {
                 if (process.getInputs() != null) {
                     for (Input input : process.getInputs().getInputs()) {
                         List<Referenceable> clusterInputs = getInputOutputEntity(cluster, input.getFeed());
-                        entities.addAll(clusterInputs);
-                        inputs.add(clusterInputs.get(clusterInputs.size() -1 ));
+                        if (clusterInputs != null) {
+                            entities.addAll(clusterInputs);
+                            inputs.add(clusterInputs.get(clusterInputs.size() - 1));
+                        }
                     }
                 }
 
@@ -244,8 +246,10 @@ public class FalconHook extends FalconEventPublisher {
                 if (process.getOutputs() != null) {
                     for (Output output : process.getOutputs().getOutputs()) {
                         List<Referenceable> clusterOutputs = getInputOutputEntity(cluster, output.getFeed());
-                        entities.addAll(clusterOutputs);
-                        outputs.add(clusterOutputs.get(clusterOutputs.size() -1 ));
+                        if (clusterOutputs != null) {
+                            entities.addAll(clusterOutputs);
+                            outputs.add(clusterOutputs.get(clusterOutputs.size() - 1));
+                        }
                     }
                 }
 

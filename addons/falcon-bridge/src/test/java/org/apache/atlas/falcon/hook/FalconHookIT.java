@@ -43,12 +43,15 @@ import javax.xml.bind.JAXBException;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 
 public class FalconHookIT {
     public static final Logger LOG = org.slf4j.LoggerFactory.getLogger(FalconHookIT.class);
 
     public static final String CLUSTER_RESOURCE = "/cluster.xml";
     public static final String FEED_RESOURCE = "/feed.xml";
+    public static final String FEED_HDFS_RESOURCE = "/feed-hdfs.xml";
     public static final String PROCESS_RESOURCE = "/process.xml";
 
     private AtlasClient dgiCLient;
@@ -96,21 +99,13 @@ public class FalconHookIT {
         Cluster cluster = loadEntity(EntityType.CLUSTER, CLUSTER_RESOURCE, "cluster" + random());
         STORE.publish(EntityType.CLUSTER, cluster);
 
-        Feed infeed = loadEntity(EntityType.FEED, FEED_RESOURCE, "feedin" + random());
-        org.apache.falcon.entity.v0.feed.Cluster feedCluster = infeed.getClusters().getClusters().get(0);
-        feedCluster.setName(cluster.getName());
-        String inTableName = "table" + random();
-        String inDbName = "db" + random();
-        feedCluster.getTable().setUri(getTableUri(inDbName, inTableName));
-        STORE.publish(EntityType.FEED, infeed);
+        Feed infeed = getTableFeed(FEED_RESOURCE, cluster.getName());
+        String inTableName = getTableName(infeed);
+        String inDbName = getDBName(infeed);
 
-        Feed outfeed = loadEntity(EntityType.FEED, FEED_RESOURCE, "feedout" + random());
-        feedCluster = outfeed.getClusters().getClusters().get(0);
-        feedCluster.setName(cluster.getName());
-        String outTableName = "table" + random();
-        String outDbName = "db" + random();
-        feedCluster.getTable().setUri(getTableUri(outDbName, outTableName));
-        STORE.publish(EntityType.FEED, outfeed);
+        Feed outfeed = getTableFeed(FEED_RESOURCE, cluster.getName());
+        String outTableName = getTableName(outfeed);
+        String outDbName = getDBName(outfeed);
 
         Process process = loadEntity(EntityType.PROCESS, PROCESS_RESOURCE, "process" + random());
         process.getClusters().getClusters().get(0).setName(cluster.getName());
@@ -120,6 +115,7 @@ public class FalconHookIT {
 
         String pid = assertProcessIsRegistered(cluster.getName(), process.getName());
         Referenceable processEntity = dgiCLient.getEntity(pid);
+        assertNotNull(processEntity);
         assertEquals(processEntity.get("processName"), process.getName());
 
         Id inId = (Id) ((List)processEntity.get("inputs")).get(0);
@@ -133,7 +129,60 @@ public class FalconHookIT {
                 HiveMetaStoreBridge.getTableQualifiedName(cluster.getName(), outDbName, outTableName));
     }
 
-//    @Test (enabled = true, dependsOnMethods = "testCreateProcess")
+    private Feed getTableFeed(String feedResource, String clusterName) throws Exception {
+        Feed feed = loadEntity(EntityType.FEED, feedResource, "feed" + random());
+        org.apache.falcon.entity.v0.feed.Cluster feedCluster = feed.getClusters().getClusters().get(0);
+        feedCluster.setName(clusterName);
+        feedCluster.getTable().setUri(getTableUri("db" + random(), "table" + random()));
+        STORE.publish(EntityType.FEED, feed);
+        return feed;
+    }
+
+    private String getDBName(Feed feed) {
+        String uri = feed.getClusters().getClusters().get(0).getTable().getUri();
+        String[] parts = uri.split(":");
+        return parts[1];
+    }
+
+    private String getTableName(Feed feed) {
+        String uri = feed.getClusters().getClusters().get(0).getTable().getUri();
+        String[] parts = uri.split(":");
+        parts = parts[2].split("#");
+        return parts[0];
+    }
+
+    @Test (enabled = true)
+    public void testCreateProcessWithHDFSFeed() throws Exception {
+        Cluster cluster = loadEntity(EntityType.CLUSTER, CLUSTER_RESOURCE, "cluster" + random());
+        STORE.publish(EntityType.CLUSTER, cluster);
+
+        Feed infeed = loadEntity(EntityType.FEED, FEED_HDFS_RESOURCE, "feed" + random());
+        org.apache.falcon.entity.v0.feed.Cluster feedCluster = infeed.getClusters().getClusters().get(0);
+        feedCluster.setName(cluster.getName());
+        STORE.publish(EntityType.FEED, infeed);
+
+        Feed outfeed = getTableFeed(FEED_RESOURCE, cluster.getName());
+        String outTableName = getTableName(outfeed);
+        String outDbName = getDBName(outfeed);
+
+        Process process = loadEntity(EntityType.PROCESS, PROCESS_RESOURCE, "process" + random());
+        process.getClusters().getClusters().get(0).setName(cluster.getName());
+        process.getInputs().getInputs().get(0).setFeed(infeed.getName());
+        process.getOutputs().getOutputs().get(0).setFeed(outfeed.getName());
+        STORE.publish(EntityType.PROCESS, process);
+
+        String pid = assertProcessIsRegistered(cluster.getName(), process.getName());
+        Referenceable processEntity = dgiCLient.getEntity(pid);
+        assertEquals(processEntity.get("processName"), process.getName());
+        assertNull(processEntity.get("inputs"));
+
+        Id outId = (Id) ((List)processEntity.get("outputs")).get(0);
+        Referenceable outEntity = dgiCLient.getEntity(outId._getId());
+        assertEquals(outEntity.get("name"),
+                HiveMetaStoreBridge.getTableQualifiedName(cluster.getName(), outDbName, outTableName));
+    }
+
+    //    @Test (enabled = true, dependsOnMethods = "testCreateProcess")
 //    public void testUpdateProcess() throws Exception {
 //        FalconEvent event = createProcessEntity(PROCESS_NAME_2, INPUT, OUTPUT);
 //        FalconEventPublisher.Data data = new FalconEventPublisher.Data(event);
@@ -156,7 +205,7 @@ public class FalconHookIT {
     }
 
     private String assertEntityIsRegistered(final String query) throws Exception {
-        waitFor(20000, new Predicate() {
+        waitFor(2000000, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
                 JSONArray results = dgiCLient.search(query);

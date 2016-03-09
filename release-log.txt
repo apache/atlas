@@ -11,6 +11,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-537 Falcon hook failing when tried to submit a process which creates a hive table ( shwethags via sumasai)
 ATLAS-476 Update type attribute with Reserved characters updated the original type as unknown (yhemanth via shwethags)
 ATLAS-463 Disconnect inverse references ( dkantor via sumasai)
 ATLAS-479 Add description for different types during create time (guptaneeru via shwethags)
