@@ -110,8 +110,6 @@ public class BaseHiveRepositoryTest {
 
         HierarchicalTypeDefinition<ClassType> storageDescClsDef = TypesUtil
             .createClassTypeDef(STORAGE_DESC_TYPE, null,
-                new AttributeDefinition("cols", String.format("array<%s>", COLUMN_TYPE),
-                    Multiplicity.COLLECTION, false, null),
                 attrDef("location", DataTypes.STRING_TYPE),
                 attrDef("inputFormat", DataTypes.STRING_TYPE), attrDef("outputFormat", DataTypes.STRING_TYPE),
                 attrDef("compressed", DataTypes.STRING_TYPE, Multiplicity.REQUIRED, false, null));

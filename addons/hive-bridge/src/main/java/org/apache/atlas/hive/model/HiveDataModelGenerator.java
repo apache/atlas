@@ -58,6 +58,7 @@ public class HiveDataModelGenerator {
     private final Map<String, StructTypeDefinition> structTypeDefinitionMap;
 
     public static final String COMMENT = "comment";
+    public static final String COLUMNS = "columns";
 
     public static final String STORAGE_NUM_BUCKETS = "numBuckets";
     public static final String STORAGE_IS_STORED_AS_SUB_DIRS = "storedAsSubDirectories";
@@ -67,6 +68,7 @@ public class HiveDataModelGenerator {
     public static final String CLUSTER_NAME = "clusterName";
     public static final String TABLE = "table";
     public static final String DB = "db";
+    public static final String STORAGE_DESC = "sd";
 
     public HiveDataModelGenerator() {
         classTypeDefinitions = new HashMap<>();
@@ -176,8 +178,6 @@ public class HiveDataModelGenerator {
 
     private void createStorageDescClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition("cols", String.format("array<%s>", HiveDataTypes.HIVE_COLUMN.getName()),
-                        Multiplicity.OPTIONAL, true, null),
                 new AttributeDefinition("location", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
                 new AttributeDefinition("inputFormat", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
@@ -278,7 +278,7 @@ public class HiveDataModelGenerator {
                         null),
                 new AttributeDefinition("lastAccessTime", DataTypes.LONG_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
-                new AttributeDefinition("sd", HiveDataTypes.HIVE_STORAGEDESC.getName(), Multiplicity.REQUIRED, true,
+                new AttributeDefinition(STORAGE_DESC, HiveDataTypes.HIVE_STORAGEDESC.getName(), Multiplicity.REQUIRED, true,
                         null),
                 new AttributeDefinition("columns", DataTypes.arrayTypeName(HiveDataTypes.HIVE_COLUMN.getName()),
                         Multiplicity.OPTIONAL, true, null),
@@ -302,7 +302,7 @@ public class HiveDataModelGenerator {
                         null),
                 new AttributeDefinition(COMMENT, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("retention", DataTypes.INT_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("sd", HiveDataTypes.HIVE_STORAGEDESC.getName(), Multiplicity.OPTIONAL, true,
+                new AttributeDefinition(STORAGE_DESC, HiveDataTypes.HIVE_STORAGEDESC.getName(), Multiplicity.OPTIONAL, true,
                         null),
                 new AttributeDefinition("partitionKeys", DataTypes.arrayTypeName(HiveDataTypes.HIVE_COLUMN.getName()),
                         Multiplicity.OPTIONAL, true, null),

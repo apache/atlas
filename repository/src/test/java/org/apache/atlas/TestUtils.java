@@ -231,8 +231,6 @@ public final class TestUtils {
                 new AttributeDefinition[]{createRequiredAttrDef("name", DataTypes.STRING_TYPE),});
 
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-            new AttributeDefinition("cols", String.format("array<%s>", COLUMN_TYPE),
-                Multiplicity.OPTIONAL, true, null),
             new AttributeDefinition("location", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
                 null),
             new AttributeDefinition("inputFormat", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,

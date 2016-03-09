@@ -192,8 +192,8 @@ public class GraphBackedDiscoveryServiceTest extends BaseHiveRepositoryTest {
                 {"hive_column where hive_column isa PII", 6},
                 {"View is Dimension" , 2},
 //                {"hive_column where hive_column isa PII select hive_column.name", 6}, //Not working - ATLAS-175
-                {"hive_column select hive_column.name", 37},
-                {"hive_column select name", 37},
+                {"hive_column select hive_column.name", 29},
+                {"hive_column select name", 29},
                 {"hive_column where hive_column.name=\"customer_id\"", 4},
                 {"from hive_table select hive_table.name", 8},
                 {"hive_db where (name = \"Reporting\")", 1},

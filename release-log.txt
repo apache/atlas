@@ -3,6 +3,7 @@ Apache Atlas Release Notes
 
 --trunk - unreleased
 INCOMPATIBLE CHANGES:
+ATLAS-521 Support Alter Table column commands (suma.shivaprasad via shwethags)
 ATLAS-500 UI: Search Default (sanjayp via shwethags)
 ATLAS-483 Remove client.properties (tbeerbower via shwethags)
 ATLAS-349 SSL - Atlas SSL connection has weak/unsafe Ciphers suites (ndjouhr via shwethags)

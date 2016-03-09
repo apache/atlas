@@ -62,6 +62,7 @@ public class HiveMetaStoreBridge {
     public static final String TABLE_TYPE_ATTR = "tableType";
     public static final String SEARCH_ENTRY_GUID_ATTR = "__guid";
     public static final String LAST_ACCESS_TIME_ATTR = "lastAccessTime";
+
     private final String clusterName;
 
     public static final String ATLAS_ENDPOINT = "atlas.rest.address";
@@ -321,9 +322,9 @@ public class HiveMetaStoreBridge {
         // add reference to the database
         tableReference.set(HiveDataModelGenerator.DB, dbReference);
 
-        tableReference.set("columns", getColumns(hiveTable.getCols(), tableQualifiedName));
+        tableReference.set(HiveDataModelGenerator.COLUMNS, getColumns(hiveTable.getCols(), tableQualifiedName));
 
-        // add reference to the StorageDescriptor
+        // add reference to the StorageDescriptorx
         Referenceable sdReferenceable = fillStorageDescStruct(hiveTable.getSd(), tableQualifiedName, tableQualifiedName);
         tableReference.set("sd", sdReferenceable);
 
@@ -501,8 +502,8 @@ public class HiveMetaStoreBridge {
                 partition.getTable().getTableName(), StringUtils.join(partition.getValues(), "-"), clusterName);
     }
 
-    private Referenceable fillStorageDescStruct(StorageDescriptor storageDesc, String tableQualifiedName,
-                                                String sdQualifiedName) throws Exception {
+    public Referenceable fillStorageDescStruct(StorageDescriptor storageDesc, String tableQualifiedName,
+        String sdQualifiedName) throws Exception {
         LOG.debug("Filling storage descriptor information for " + storageDesc);
 
         Referenceable sdReferenceable = new Referenceable(HiveDataTypes.HIVE_STORAGEDESC.getName());
@@ -523,12 +524,6 @@ public class HiveMetaStoreBridge {
         sdReferenceable.set(HiveDataModelGenerator.STORAGE_NUM_BUCKETS, storageDesc.getNumBuckets());
         sdReferenceable
                 .set(HiveDataModelGenerator.STORAGE_IS_STORED_AS_SUB_DIRS, storageDesc.isStoredAsSubDirectories());
-
-        //Use the passed column list if not null, ex: use same references for table and SD
-        List<FieldSchema> columns = storageDesc.getCols();
-        if (columns != null && !columns.isEmpty()) {
-            sdReferenceable.set("cols", getColumns(columns, tableQualifiedName));
-        }
 
         List<Struct> sortColsStruct = new ArrayList<>();
         for (Order sortcol : storageDesc.getSortCols()) {
@@ -558,13 +553,14 @@ public class HiveMetaStoreBridge {
         return sdReferenceable;
     }
 
-    private String getColumnQualifiedName(String tableQualifiedName, String colName) {
-        String[] parts = tableQualifiedName.split("@");
-        String tableName = parts[0];
+    public static String getColumnQualifiedName(final String tableQualifiedName, final String colName) {
+        final String[] parts = tableQualifiedName.split("@");
+        final String tableName = parts[0];
+        final String clusterName = parts[1];
         return String.format("%s.%s@%s", tableName, colName, clusterName);
     }
 
-    private List<Referenceable> getColumns(List<FieldSchema> schemaList, String tableQualifiedName) throws Exception {
+    public List<Referenceable> getColumns(List<FieldSchema> schemaList, String tableQualifiedName) throws Exception {
         List<Referenceable> colList = new ArrayList<>();
         for (FieldSchema fs : schemaList) {
             LOG.debug("Processing field " + fs);
