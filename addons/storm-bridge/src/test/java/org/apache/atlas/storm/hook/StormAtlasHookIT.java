@@ -57,6 +57,7 @@ public class StormAtlasHookIT {
 
         Configuration configuration = ApplicationProperties.get();
         atlasClient = new AtlasClient(configuration.getString("atlas.rest.address", ATLAS_URL));
+        new StormAtlasHook().registerDataModel(new HiveDataModelGenerator());
     }
 
     @AfterClass

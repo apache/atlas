@@ -98,10 +98,6 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
 
         LOG.info("Collecting metadata for a new storm topology: {}", topologyInfo.get_name());
         try {
-            if( ! typesRegistered ) {
-                registerDataModel(new HiveDataModelGenerator());
-            }
-
             ArrayList<Referenceable> entities = new ArrayList<>();
             Referenceable topologyReferenceable = createTopologyInstance(topologyInfo, stormConf);
             List<Referenceable> dependentEntities = addTopologyDataSets(stormTopology, topologyReferenceable,

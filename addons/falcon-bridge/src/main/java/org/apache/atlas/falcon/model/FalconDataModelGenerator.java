@@ -21,6 +21,7 @@ package org.apache.atlas.falcon.model;
 import com.google.common.collect.ImmutableList;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.addons.ModelDefinitionDump;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.typesystem.types.AttributeDefinition;
@@ -130,7 +131,14 @@ public class FalconDataModelGenerator {
 
     public static void main(String[] args) throws Exception {
         FalconDataModelGenerator falconDataModelGenerator = new FalconDataModelGenerator();
-        System.out.println("falconDataModelAsJSON = " + falconDataModelGenerator.getModelAsJson());
+        String modelAsJson = falconDataModelGenerator.getModelAsJson();
+
+        if (args.length == 1) {
+            ModelDefinitionDump.dumpModelToFile(args[0], modelAsJson);
+            return;
+        }
+
+        System.out.println("falconDataModelAsJSON = " + modelAsJson);
 
         TypesDef typesDef = falconDataModelGenerator.getTypesDef();
         for (EnumTypeDefinition enumType : typesDef.enumTypesAsJavaList()) {

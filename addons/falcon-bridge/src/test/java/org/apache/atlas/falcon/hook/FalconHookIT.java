@@ -65,6 +65,7 @@ public class FalconHookIT {
         AtlasService service = new AtlasService();
         service.init();
         STORE.registerListener(service);
+        new FalconHook().registerFalconDataModel();
         CurrentUser.authenticate(System.getProperty("user.name"));
     }
 

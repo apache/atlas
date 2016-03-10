@@ -21,6 +21,7 @@ package org.apache.atlas.hive.model;
 import com.google.common.collect.ImmutableList;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.addons.ModelDefinitionDump;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.typesystem.types.AttributeDefinition;
@@ -39,6 +40,11 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -370,7 +376,14 @@ public class HiveDataModelGenerator {
 
     public static void main(String[] args) throws Exception {
         HiveDataModelGenerator hiveDataModelGenerator = new HiveDataModelGenerator();
-        System.out.println("hiveDataModelAsJSON = " + hiveDataModelGenerator.getModelAsJson());
+        String modelAsJson = hiveDataModelGenerator.getModelAsJson();
+
+        if (args.length==1) {
+            ModelDefinitionDump.dumpModelToFile(args[0], modelAsJson);
+            return;
+        }
+
+        System.out.println("hiveDataModelAsJSON = " + modelAsJson);
 
         TypesDef typesDef = hiveDataModelGenerator.getTypesDef();
         for (EnumTypeDefinition enumType : typesDef.enumTypesAsJavaList()) {
@@ -390,4 +403,5 @@ public class HiveDataModelGenerator {
                     Arrays.toString(traitType.attributeDefinitions)));
         }
     }
+
 }

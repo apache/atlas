@@ -21,6 +21,7 @@ package org.apache.atlas.sqoop.model;
 import com.google.common.collect.ImmutableList;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.addons.ModelDefinitionDump;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.typesystem.types.AttributeDefinition;
@@ -161,7 +162,14 @@ public class SqoopDataModelGenerator {
 
     public static void main(String[] args) throws Exception {
         SqoopDataModelGenerator dataModelGenerator = new SqoopDataModelGenerator();
-        System.out.println("sqoopDataModelAsJSON = " + dataModelGenerator.getModelAsJson());
+        String modelAsJson = dataModelGenerator.getModelAsJson();
+
+        if (args.length == 1) {
+            ModelDefinitionDump.dumpModelToFile(args[0], modelAsJson);
+            return;
+        }
+
+        System.out.println("sqoopDataModelAsJSON = " + modelAsJson);
 
         TypesDef typesDef = dataModelGenerator.getTypesDef();
         for (EnumTypeDefinition enumType : typesDef.enumTypesAsJavaList()) {

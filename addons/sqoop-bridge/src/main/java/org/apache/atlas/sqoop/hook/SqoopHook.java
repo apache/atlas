@@ -70,7 +70,7 @@ public class SqoopHook extends SqoopJobDataPublisher {
         org.apache.hadoop.conf.Configuration.addDefaultResource("sqoop-site.xml");
     }
 
-    private synchronized void registerDataModels(AtlasClient client, Configuration atlasConf) throws Exception {
+    synchronized void registerDataModels(AtlasClient client, Configuration atlasConf) throws Exception {
         // Make sure hive model exists
         HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(new HiveConf(), atlasConf,
                 UserGroupInformation.getCurrentUser().getShortUserName(), UserGroupInformation.getCurrentUser());
@@ -190,7 +190,6 @@ public class SqoopHook extends SqoopJobDataPublisher {
                 UserGroupInformation.getCurrentUser(), UserGroupInformation.getCurrentUser().getShortUserName());
         org.apache.hadoop.conf.Configuration sqoopConf = new org.apache.hadoop.conf.Configuration();
         String clusterName = sqoopConf.get(ATLAS_CLUSTER_NAME, DEFAULT_CLUSTER_NAME);
-        registerDataModels(atlasClient, atlasProperties);
 
         Referenceable dbStoreRef = createDBStoreInstance(data);
         Referenceable dbRef = createHiveDatabaseInstance(clusterName, data.getHiveDB());

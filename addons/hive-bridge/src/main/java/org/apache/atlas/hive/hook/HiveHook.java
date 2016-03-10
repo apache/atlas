@@ -201,11 +201,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
         HiveMetaStoreBridge dgiBridge = new HiveMetaStoreBridge(hiveConf, atlasProperties, event.user, event.ugi);
 
-        if (!typesRegistered) {
-            dgiBridge.registerHiveDataModel();
-            typesRegistered = true;
-        }
-
         switch (event.operation) {
         case CREATEDATABASE:
             handleEventOutputs(dgiBridge, event, Type.DATABASE);

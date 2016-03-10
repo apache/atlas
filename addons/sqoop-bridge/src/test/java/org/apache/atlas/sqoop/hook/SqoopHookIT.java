@@ -22,6 +22,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.sqoop.model.SqoopDataTypes;
+import org.apache.commons.configuration.Configuration;
 import org.apache.sqoop.SqoopJobDataPublisher;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
@@ -41,7 +42,9 @@ public class SqoopHookIT {
     @BeforeClass
     public void setUp() throws Exception {
         //Set-up sqoop session
-        dgiCLient = new AtlasClient(ApplicationProperties.get().getString("atlas.rest.address"));
+        Configuration configuration = ApplicationProperties.get();
+        dgiCLient = new AtlasClient(configuration.getString("atlas.rest.address"));
+        new SqoopHook().registerDataModels(dgiCLient, configuration);
     }
 
     @Test

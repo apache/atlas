@@ -347,6 +347,27 @@
                     <generateReports>false</generateReports>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.2.1</version>
+                <inherited>false</inherited>
+                <executions>
+                    <execution>
+                        <configuration>
+                            <mainClass>org.apache.atlas.hive.model.HiveDataModelGenerator</mainClass>
+                            <arguments>
+                                <argument>${project.build.directory}/models/hive_model.json</argument>
+                            </arguments>
+                        </configuration>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

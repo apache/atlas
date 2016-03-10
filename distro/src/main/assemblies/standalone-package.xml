@@ -99,10 +99,20 @@
             <outputDirectory>hook</outputDirectory>
         </fileSet>
 
+        <fileSet>
+            <directory>../addons/hive-bridge/target/models</directory>
+            <outputDirectory>models</outputDirectory>
+        </fileSet>
+
         <!-- addons/falcon -->
         <fileSet>
             <directory>../addons/falcon-bridge/target/dependency/hook</directory>
             <outputDirectory>hook</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>../addons/falcon-bridge/target/models</directory>
+            <outputDirectory>models</outputDirectory>
         </fileSet>
 
         <!-- addons/sqoop -->
@@ -111,10 +121,20 @@
             <outputDirectory>hook</outputDirectory>
         </fileSet>
 
+        <fileSet>
+            <directory>../addons/sqoop-bridge/target/models</directory>
+            <outputDirectory>models</outputDirectory>
+        </fileSet>
+
         <!-- addons/storm -->
         <fileSet>
             <directory>../addons/storm-bridge/target/dependency/hook</directory>
             <outputDirectory>hook</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>../addons/storm-bridge/target/models</directory>
+            <outputDirectory>models</outputDirectory>
         </fileSet>
     </fileSets>
 

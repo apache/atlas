@@ -166,11 +166,6 @@ public class FalconHook extends FalconEventPublisher {
     private void fireAndForget(FalconEvent event) throws Exception {
         LOG.info("Entered Atlas hook for Falcon hook operation {}", event.getOperation());
 
-        if (!typesRegistered) {
-            registerFalconDataModel();
-            typesRegistered = true;
-        }
-
         notifyEntity(createEntities(event));
     }
 

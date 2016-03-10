@@ -68,6 +68,7 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -89,18 +90,28 @@ public class DefaultMetadataService implements MetadataService {
     private final TypeSystem typeSystem;
     private final MetadataRepository repository;
     private final ITypeStore typeStore;
+    private IBootstrapTypesRegistrar typesRegistrar;
     private final Collection<Provider<TypesChangeListener>> typeChangeListeners;
 
     @Inject
     DefaultMetadataService(final MetadataRepository repository, final ITypeStore typeStore,
+                           final IBootstrapTypesRegistrar typesRegistrar,
         final Collection<Provider<TypesChangeListener>> typeChangeListeners) throws AtlasException {
+        this(repository, typeStore, typesRegistrar, typeChangeListeners, TypeSystem.getInstance());
+    }
 
+    DefaultMetadataService(final MetadataRepository repository, final ITypeStore typeStore,
+                           final IBootstrapTypesRegistrar typesRegistrar,
+                           final Collection<Provider<TypesChangeListener>> typeChangeListeners,
+                           final TypeSystem typeSystem) throws AtlasException {
         this.typeStore = typeStore;
-        this.typeSystem = TypeSystem.getInstance();
+        this.typesRegistrar = typesRegistrar;
+        this.typeSystem = typeSystem;
         this.repository = repository;
 
         this.typeChangeListeners = typeChangeListeners;
         restoreTypeSystem();
+        typesRegistrar.registerTypes(ReservedTypesRegistrar.getTypesDir(), typeSystem, this);
     }
 
     private void restoreTypeSystem() {
@@ -111,7 +122,6 @@ public class DefaultMetadataService implements MetadataService {
 
             // restore types before creating super types
             createSuperTypes();
-
         } catch (AtlasException e) {
             throw new RuntimeException(e);
         }
