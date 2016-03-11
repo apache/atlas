@@ -19,6 +19,7 @@
 package org.apache.atlas.repository.graph;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.tinkerpop.blueprints.Compare;
@@ -274,7 +275,7 @@ public class GraphBackedMetadataRepositoryTest {
         final String traitName = "P_I_I";
 
         HierarchicalTypeDefinition<TraitType> piiTrait = TypesUtil
-            .createTraitTypeDef(traitName, ImmutableList.<String>of(),
+            .createTraitTypeDef(traitName, ImmutableSet.<String>of(),
                 TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
         TraitType traitType = typeSystem.defineTraitType(piiTrait);
         ITypedStruct traitInstance = traitType.createInstance();

@@ -18,7 +18,8 @@
 
 package org.apache.atlas.typesystem.types;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedInstance;
@@ -54,7 +55,7 @@ public class TypeInheritanceTest extends BaseTest {
         HierarchicalTypeDefinition A = createClassTypeDef("A", null, createRequiredAttrDef("a", DataTypes.INT_TYPE));
 
         HierarchicalTypeDefinition B =
-                createClassTypeDef("B", ImmutableList.of("A"), createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE));
+                createClassTypeDef("B", ImmutableSet.of("A"), createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE));
 
         defineClasses(A, B);
 
@@ -83,7 +84,7 @@ public class TypeInheritanceTest extends BaseTest {
                 createRequiredAttrDef("b", DataTypes.BOOLEAN_TYPE));
 
         HierarchicalTypeDefinition B =
-                createClassTypeDef("B", ImmutableList.of("A"), createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE));
+                createClassTypeDef("B", ImmutableSet.of("A"), createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE));
 
         defineClasses(A, B);
 
@@ -115,13 +116,13 @@ public class TypeInheritanceTest extends BaseTest {
         HierarchicalTypeDefinition A = createClassTypeDef("A", null, createRequiredAttrDef("a", DataTypes.INT_TYPE));
 
         HierarchicalTypeDefinition B =
-                createClassTypeDef("B", ImmutableList.of("A"), createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE));
+                createClassTypeDef("B", ImmutableSet.of("A"), createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE));
 
         HierarchicalTypeDefinition C =
-                createClassTypeDef("C", ImmutableList.of("B"), createOptionalAttrDef("c", DataTypes.BYTE_TYPE));
+                createClassTypeDef("C", ImmutableSet.of("B"), createOptionalAttrDef("c", DataTypes.BYTE_TYPE));
 
         HierarchicalTypeDefinition D =
-                createClassTypeDef("D", ImmutableList.of("C"), createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
+                createClassTypeDef("D", ImmutableSet.of("C"), createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
 
         defineClasses(A, B, C, D);
 
@@ -168,11 +169,11 @@ public class TypeInheritanceTest extends BaseTest {
                 createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE), createOptionalAttrDef("c", DataTypes.BYTE_TYPE),
                 createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
         HierarchicalTypeDefinition B =
-                createTraitTypeDef("B", ImmutableList.of("A"), createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE));
+                createTraitTypeDef("B", ImmutableSet.of("A"), createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE));
         HierarchicalTypeDefinition C =
-                createTraitTypeDef("C", ImmutableList.of("A"), createOptionalAttrDef("c", DataTypes.BYTE_TYPE));
+                createTraitTypeDef("C", ImmutableSet.of("A"), createOptionalAttrDef("c", DataTypes.BYTE_TYPE));
         HierarchicalTypeDefinition D =
-                createTraitTypeDef("D", ImmutableList.of("B", "C"), createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
+                createTraitTypeDef("D", ImmutableSet.of("B", "C"), createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
 
         defineTraits(A, B, C, D);
 

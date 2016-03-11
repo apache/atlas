@@ -18,8 +18,9 @@
 
 package org.apache.atlas.discovery;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.TitanGraph;
+
 import org.apache.atlas.BaseHiveRepositoryTest;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
@@ -45,6 +46,7 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -305,13 +307,13 @@ public class GraphBackedDiscoveryServiceTest extends BaseHiveRepositoryTest {
         HierarchicalTypeDefinition A = createClassTypeDef("A", null, createRequiredAttrDef("a", DataTypes.INT_TYPE));
 
         HierarchicalTypeDefinition B =
-                createClassTypeDef("B", ImmutableList.of("A"), createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE));
+                createClassTypeDef("B", ImmutableSet.of("A"), createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE));
 
         HierarchicalTypeDefinition C =
-                createClassTypeDef("C", ImmutableList.of("B"), createOptionalAttrDef("c", DataTypes.BYTE_TYPE));
+                createClassTypeDef("C", ImmutableSet.of("B"), createOptionalAttrDef("c", DataTypes.BYTE_TYPE));
 
         HierarchicalTypeDefinition D =
-                createClassTypeDef("D", ImmutableList.of("C"), createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
+                createClassTypeDef("D", ImmutableSet.of("C"), createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
 
         TypeSystem.getInstance().defineClassTypes(A, B, C, D);
     }

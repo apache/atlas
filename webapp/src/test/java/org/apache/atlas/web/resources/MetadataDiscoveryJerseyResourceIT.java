@@ -19,8 +19,10 @@
 package org.apache.atlas.web.resources;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
@@ -42,6 +44,7 @@ import org.testng.annotations.Test;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.Response;
+
 import java.util.List;
 
 /**
@@ -155,25 +158,25 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
 
     private void createTypes() throws Exception {
         HierarchicalTypeDefinition<ClassType> dslTestTypeDefinition = TypesUtil
-                .createClassTypeDef("dsl_test_type", ImmutableList.<String>of(),
+                .createClassTypeDef("dsl_test_type", ImmutableSet.<String>of(),
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
 
         HierarchicalTypeDefinition<TraitType> classificationTraitDefinition = TypesUtil
-                .createTraitTypeDef("Classification", ImmutableList.<String>of(),
+                .createTraitTypeDef("Classification", ImmutableSet.<String>of(),
                         TypesUtil.createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
         HierarchicalTypeDefinition<TraitType> piiTrait =
-                TypesUtil.createTraitTypeDef("PII_TYPE", ImmutableList.<String>of());
+                TypesUtil.createTraitTypeDef("PII_TYPE", ImmutableSet.<String>of());
         HierarchicalTypeDefinition<TraitType> phiTrait =
-                TypesUtil.createTraitTypeDef("PHI", ImmutableList.<String>of());
+                TypesUtil.createTraitTypeDef("PHI", ImmutableSet.<String>of());
         HierarchicalTypeDefinition<TraitType> pciTrait =
-                TypesUtil.createTraitTypeDef("PCI", ImmutableList.<String>of());
+                TypesUtil.createTraitTypeDef("PCI", ImmutableSet.<String>of());
         HierarchicalTypeDefinition<TraitType> soxTrait =
-                TypesUtil.createTraitTypeDef("SOX", ImmutableList.<String>of());
+                TypesUtil.createTraitTypeDef("SOX", ImmutableSet.<String>of());
         HierarchicalTypeDefinition<TraitType> secTrait =
-                TypesUtil.createTraitTypeDef("SEC", ImmutableList.<String>of());
+                TypesUtil.createTraitTypeDef("SEC", ImmutableSet.<String>of());
         HierarchicalTypeDefinition<TraitType> financeTrait =
-                TypesUtil.createTraitTypeDef("Finance", ImmutableList.<String>of());
+                TypesUtil.createTraitTypeDef("Finance", ImmutableSet.<String>of());
 
         TypesDef typesDef = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
                         ImmutableList

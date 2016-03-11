@@ -18,10 +18,8 @@
 
 package org.apache.atlas.repository.graph;
 
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
-
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.tinkerpop.blueprints.Vertex;
@@ -61,7 +59,6 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -163,12 +160,12 @@ public class GraphBackedMetadataRepositoryDeleteEntitiesTest {
     public void testDeleteEntitiesWithCompositeMapReference() throws Exception {
         // Define type for map value.
         HierarchicalTypeDefinition<ClassType> mapValueDef = TypesUtil.createClassTypeDef("CompositeMapValue", 
-            ImmutableList.<String>of(),
+            ImmutableSet.<String>of(),
             TypesUtil.createOptionalAttrDef("attr1", DataTypes.STRING_TYPE));
         
         // Define type with map where the value is a composite class reference to MapValue.
         HierarchicalTypeDefinition<ClassType> mapOwnerDef = TypesUtil.createClassTypeDef("CompositeMapOwner", 
-            ImmutableList.<String>of(),
+            ImmutableSet.<String>of(),
             new AttributeDefinition("map", DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),
                         "CompositeMapValue"), Multiplicity.OPTIONAL, true, null));
         TypesDef typesDef = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(),
@@ -342,11 +339,11 @@ public class GraphBackedMetadataRepositoryDeleteEntitiesTest {
     public void testDisconnectUnidirectionalArrayReferenceFromStructAndTraitTypes() throws Exception {
         // Define class types.
         HierarchicalTypeDefinition<ClassType> structTargetDef = TypesUtil.createClassTypeDef("StructTarget", 
-            ImmutableList.<String>of(), TypesUtil.createOptionalAttrDef("attr1", DataTypes.STRING_TYPE));
+            ImmutableSet.<String>of(), TypesUtil.createOptionalAttrDef("attr1", DataTypes.STRING_TYPE));
         HierarchicalTypeDefinition<ClassType> traitTargetDef = TypesUtil.createClassTypeDef("TraitTarget", 
-            ImmutableList.<String>of(), TypesUtil.createOptionalAttrDef("attr1", DataTypes.STRING_TYPE));
+            ImmutableSet.<String>of(), TypesUtil.createOptionalAttrDef("attr1", DataTypes.STRING_TYPE));
         HierarchicalTypeDefinition<ClassType> structContainerDef = TypesUtil.createClassTypeDef("StructContainer", 
-            ImmutableList.<String>of(), TypesUtil.createOptionalAttrDef("struct", "TestStruct"));
+            ImmutableSet.<String>of(), TypesUtil.createOptionalAttrDef("struct", "TestStruct"));
         
         // Define struct and trait types which have a unidirectional array reference
         // to a class type.
@@ -355,7 +352,7 @@ public class GraphBackedMetadataRepositoryDeleteEntitiesTest {
             new AttributeDefinition("nestedStructs", DataTypes.arrayTypeName("NestedStruct"), Multiplicity.OPTIONAL, false, null));
         StructTypeDefinition nestedStructDef = TypesUtil.createStructTypeDef("NestedStruct", 
             TypesUtil.createOptionalAttrDef("attr1", DataTypes.STRING_TYPE));
-        HierarchicalTypeDefinition<TraitType> traitDef = TypesUtil.createTraitTypeDef("TestTrait", ImmutableList.<String>of(), 
+        HierarchicalTypeDefinition<TraitType> traitDef = TypesUtil.createTraitTypeDef("TestTrait", ImmutableSet.<String>of(), 
             new AttributeDefinition("target", DataTypes.arrayTypeName("TraitTarget"), Multiplicity.OPTIONAL, false, null));
         
         TypesDef typesDef = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.of(structDef, nestedStructDef),
@@ -476,13 +473,13 @@ public class GraphBackedMetadataRepositoryDeleteEntitiesTest {
     public void testDisconnectMapReferenceFromClassType() throws Exception {
         // Define type for map value.
         HierarchicalTypeDefinition<ClassType> mapValueDef = TypesUtil.createClassTypeDef("MapValue", 
-            ImmutableList.<String>of(),
+            ImmutableSet.<String>of(),
             new AttributeDefinition("biMapOwner", "MapOwner", Multiplicity.OPTIONAL, false, "biMap"));
         
         // Define type with unidirectional and bidirectional map references,
         // where the map value is a class reference to MapValue.
         HierarchicalTypeDefinition<ClassType> mapOwnerDef = TypesUtil.createClassTypeDef("MapOwner", 
-            ImmutableList.<String>of(),
+            ImmutableSet.<String>of(),
             new AttributeDefinition("map", DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),
                         "MapValue"), Multiplicity.OPTIONAL, false, null),
             new AttributeDefinition("biMap", DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),

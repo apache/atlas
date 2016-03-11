@@ -19,8 +19,10 @@ package org.apache.atlas;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
+
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.GraphProvider;
@@ -44,6 +46,7 @@ import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.testng.annotations.Guice;
 
 import javax.inject.Inject;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -116,7 +119,7 @@ public class BaseHiveRepositoryTest {
 
 
         HierarchicalTypeDefinition<ClassType> tblClsDef = TypesUtil
-            .createClassTypeDef(HIVE_TABLE_TYPE, ImmutableList.of("DataSet"),
+            .createClassTypeDef(HIVE_TABLE_TYPE, ImmutableSet.of("DataSet"),
                 attrDef("owner", DataTypes.STRING_TYPE),
                 attrDef("createTime", DataTypes.DATE_TYPE),
                 attrDef("lastAccessTime", DataTypes.LONG_TYPE), attrDef("tableType", DataTypes.STRING_TYPE),
@@ -129,7 +132,7 @@ public class BaseHiveRepositoryTest {
                     Multiplicity.COLLECTION, true, null));
 
         HierarchicalTypeDefinition<ClassType> loadProcessClsDef = TypesUtil
-            .createClassTypeDef(HIVE_PROCESS_TYPE, ImmutableList.of("Process"),
+            .createClassTypeDef(HIVE_PROCESS_TYPE, ImmutableSet.of("Process"),
                 attrDef("userName", DataTypes.STRING_TYPE), attrDef("startTime", DataTypes.LONG_TYPE),
                 attrDef("endTime", DataTypes.LONG_TYPE),
                 attrDef("queryText", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),

@@ -18,7 +18,8 @@
 
 package org.apache.atlas.typesystem.types;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.testng.Assert;
@@ -38,7 +39,7 @@ public abstract class HierarchicalTypeTest<T extends HierarchicalType> extends T
         //Add super type with optional attribute
         HierarchicalTypeDefinition superType =
                 getTypeDefinition(newName(), TypesUtil.createOptionalAttrDef("s", DataTypes.INT_TYPE));
-        classType = getTypeDefinition(classType.typeName, ImmutableList.of(superType.typeName),
+        classType = getTypeDefinition(classType.typeName, ImmutableSet.of(superType.typeName),
                 TypesUtil.createRequiredAttrDef("a", DataTypes.INT_TYPE));
         ts.updateTypes(getTypesDef(superType, classType));
 
@@ -47,7 +48,7 @@ public abstract class HierarchicalTypeTest<T extends HierarchicalType> extends T
         HierarchicalTypeDefinition superTypeRequired =
                 getTypeDefinition(newName(), TypesUtil.createRequiredAttrDef("s", DataTypes.INT_TYPE));
         classType = getTypeDefinition(classType.typeName,
-                ImmutableList.of(superTypeRequired.typeName, superType.typeName),
+                ImmutableSet.of(superTypeRequired.typeName, superType.typeName),
                 TypesUtil.createRequiredAttrDef("a", DataTypes.INT_TYPE));
         try {
             ts.updateTypes(getTypesDef(superTypeRequired, classType));
@@ -69,7 +70,7 @@ public abstract class HierarchicalTypeTest<T extends HierarchicalType> extends T
     @Override
     protected abstract HierarchicalTypeDefinition<T> getTypeDefinition(String name, AttributeDefinition... attributes);
 
-    protected abstract HierarchicalTypeDefinition<T> getTypeDefinition(String name, ImmutableList<String> superTypes,
+    protected abstract HierarchicalTypeDefinition<T> getTypeDefinition(String name, ImmutableSet<String> superTypes,
                                                                        AttributeDefinition... attributes);
 
     @Override

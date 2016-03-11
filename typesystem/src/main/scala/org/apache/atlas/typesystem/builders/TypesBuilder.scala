@@ -22,10 +22,10 @@ import com.google.common.collect.ImmutableList
 import org.apache.atlas.typesystem.TypesDef
 import org.apache.atlas.typesystem.types._
 import org.apache.atlas.typesystem.types.utils.TypesUtil
-
 import scala.collection.mutable.ArrayBuffer
 import scala.language.{dynamics, implicitConversions, postfixOps}
 import scala.util.DynamicVariable
+import com.google.common.collect.ImmutableSet
 
 object TypesBuilder {
 
@@ -158,14 +158,14 @@ class TypesBuilder {
     val attrs = new ArrayBuffer[Attr]()
     context.withValue(context.value.copy(currentTypeAttrs = attrs)){f}
     context.value.classes +=
-      TypesUtil.createClassTypeDef(name, ImmutableList.copyOf[String](superTypes.toArray), attrs.map(_.getDef):_*)
+      TypesUtil.createClassTypeDef(name, ImmutableSet.copyOf[String](superTypes.toArray), attrs.map(_.getDef):_*)
   }
 
   def _trait(name : String, superTypes : List[String] = List())(f : => Unit): Unit = {
     val attrs = new ArrayBuffer[Attr]()
     context.withValue(context.value.copy(currentTypeAttrs = attrs)){f}
     context.value.traits +=
-      TypesUtil.createTraitTypeDef(name, ImmutableList.copyOf[String](superTypes.toArray), attrs.map(_.getDef):_*)
+      TypesUtil.createTraitTypeDef(name, ImmutableSet.copyOf[String](superTypes.toArray), attrs.map(_.getDef):_*)
     val v = context.value
     v.traits.size
   }

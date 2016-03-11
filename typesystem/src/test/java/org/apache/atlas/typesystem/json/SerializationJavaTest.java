@@ -19,6 +19,8 @@
 package org.apache.atlas.typesystem.json;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.ITypedInstance;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
@@ -63,21 +65,21 @@ public class SerializationJavaTest extends BaseTest {
 
         TypeSystem ts = getTypeSystem();
 
-        HierarchicalTypeDefinition<ClassType> deptTypeDef = createClassTypeDef("Department", ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<ClassType> deptTypeDef = createClassTypeDef("Department", ImmutableSet.<String>of(),
                 createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                 new AttributeDefinition("employees", String.format("array<%s>", "Person"), Multiplicity.COLLECTION,
                         true, "department"));
-        HierarchicalTypeDefinition<ClassType> personTypeDef = createClassTypeDef("Person", ImmutableList.<String>of(),
+        HierarchicalTypeDefinition<ClassType> personTypeDef = createClassTypeDef("Person", ImmutableSet.<String>of(),
                 createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                 new AttributeDefinition("department", "Department", Multiplicity.REQUIRED, false, "employees"),
                 new AttributeDefinition("manager", "Manager", Multiplicity.OPTIONAL, false, "subordinates"));
         HierarchicalTypeDefinition<ClassType> managerTypeDef =
-                createClassTypeDef("Manager", ImmutableList.<String>of("Person"),
+                createClassTypeDef("Manager", ImmutableSet.<String>of("Person"),
                         new AttributeDefinition("subordinates", String.format("array<%s>", "Person"),
                                 Multiplicity.COLLECTION, false, "manager"));
 
         HierarchicalTypeDefinition<TraitType> securityClearanceTypeDef =
-                createTraitTypeDef("SecurityClearance", ImmutableList.<String>of(),
+                createTraitTypeDef("SecurityClearance", ImmutableSet.<String>of(),
                         createRequiredAttrDef("level", DataTypes.INT_TYPE));
 
         ts.defineTypes(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
@@ -145,7 +147,7 @@ public class SerializationJavaTest extends BaseTest {
 
         TypeSystem ts = getTypeSystem();
         HierarchicalTypeDefinition<TraitType> securityClearanceTypeDef =
-                createTraitTypeDef("SecurityClearance2", ImmutableList.<String>of(),
+                createTraitTypeDef("SecurityClearance2", ImmutableSet.<String>of(),
                         createRequiredAttrDef("level", DataTypes.INT_TYPE));
 
         ts.defineTypes(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),

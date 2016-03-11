@@ -19,7 +19,6 @@
 package org.apache.atlas.typesystem.json
 
 import java.text.SimpleDateFormat
-
 import com.google.common.collect.ImmutableList
 import org.apache.atlas.AtlasException
 import org.apache.atlas.typesystem.TypesDef
@@ -28,6 +27,7 @@ import org.apache.atlas.typesystem.types._
 import org.json4s.JsonAST.JString
 import org.json4s._
 import org.json4s.native.Serialization._
+import com.google.common.collect.ImmutableSet
 
 
 /**
@@ -58,13 +58,13 @@ object TypesSerialization {
     def toJsonValue(typ: IDataType[_])(implicit formats: Formats): JValue = {
         typ.getTypeCategory match {
             case TypeCategory.CLASS => {
-                Extraction.decompose(convertClassTypeToHierarchicalTypeDefintion(typ.asInstanceOf[ClassType]))
+                Extraction.decompose(convertClassTypeToHierarchicalTypeDefinition(typ.asInstanceOf[ClassType]))
             }
             case TypeCategory.STRUCT => {
                 Extraction.decompose(convertStructTypeToStructDef(typ.asInstanceOf[StructType]))
             }
             case TypeCategory.TRAIT => {
-                Extraction.decompose(convertTraitTypeToHierarchicalTypeDefintion(typ.asInstanceOf[TraitType]))
+                Extraction.decompose(convertTraitTypeToHierarchicalTypeDefinition(typ.asInstanceOf[TraitType]))
             }
             case TypeCategory.ENUM => {
                 Extraction.decompose(convertEnumTypeToEnumTypeDef(typ.asInstanceOf[EnumType]))
@@ -141,14 +141,14 @@ object TypesSerialization {
         new StructTypeDefinition(st.name, st.description, aDefs.toArray)
     }
 
-    private def convertTraitTypeToHierarchicalTypeDefintion(tt: TraitType): HierarchicalTypeDefinition[TraitType] = {
+    private def convertTraitTypeToHierarchicalTypeDefinition(tt: TraitType): HierarchicalTypeDefinition[TraitType] = {
 
         val aDefs: Iterable[AttributeDefinition] =
             tt.immediateAttrs.map(convertAttributeInfoToAttributeDef(_))
         new HierarchicalTypeDefinition[TraitType](classOf[TraitType], tt.name, tt.description, tt.superTypes, aDefs.toArray)
     }
 
-    private def convertClassTypeToHierarchicalTypeDefintion(tt: ClassType): HierarchicalTypeDefinition[ClassType] = {
+    private def convertClassTypeToHierarchicalTypeDefinition(tt: ClassType): HierarchicalTypeDefinition[ClassType] = {
 
         val aDefs: Iterable[AttributeDefinition] =
             tt.immediateAttrs.map(convertAttributeInfoToAttributeDef(_))
@@ -173,8 +173,8 @@ object TypesSerialization {
             case typ: MapType => ()
             case typ: EnumType => enumTypes = enumTypes :+ convertEnumTypeToEnumTypeDef(typ)
             case typ: StructType => structTypes = structTypes :+ convertStructTypeToStructDef(typ)
-            case typ: TraitType => traitTypes = traitTypes :+ convertTraitTypeToHierarchicalTypeDefintion(typ)
-            case typ: ClassType => classTypes = classTypes :+ convertClassTypeToHierarchicalTypeDefintion(typ)
+            case typ: TraitType => traitTypes = traitTypes :+ convertTraitTypeToHierarchicalTypeDefinition(typ)
+            case typ: ClassType => classTypes = classTypes :+ convertClassTypeToHierarchicalTypeDefinition(typ)
         }
 
         TypesDef(enumTypes, structTypes, traitTypes, classTypes)
@@ -232,7 +232,7 @@ trait TypeHelpers {
     
     def createTraitTypeDef(name: String, description: Option[String], superTypes: Seq[String], attrDefs: AttributeDefinition*):
     HierarchicalTypeDefinition[TraitType] = {
-        val sts = ImmutableList.copyOf(superTypes.toArray)
+        val sts = ImmutableSet.copyOf(superTypes.toArray)
         return new HierarchicalTypeDefinition[TraitType](classOf[TraitType], name, description.getOrElse(null),
             sts, attrDefs.toArray)
     }
@@ -244,7 +244,7 @@ trait TypeHelpers {
     
     def createClassTypeDef(name: String, description: Option[String], superTypes: Seq[String], attrDefs: AttributeDefinition*):
     HierarchicalTypeDefinition[ClassType] = {
-        val sts = ImmutableList.copyOf(superTypes.toArray)
+        val sts = ImmutableSet.copyOf(superTypes.toArray)
         return new HierarchicalTypeDefinition[ClassType](classOf[ClassType], name, description.getOrElse(null),
             sts, attrDefs.toArray)
     }

@@ -19,6 +19,8 @@
 package org.apache.atlas.typesystem.types;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedStruct;
@@ -68,11 +70,11 @@ public class TraitTest extends HierarchicalTypeTest<TraitType> {
         HierarchicalTypeDefinition A = createTraitTypeDef("A", null, createRequiredAttrDef("a", DataTypes.INT_TYPE),
                 createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE), createOptionalAttrDef("c", DataTypes.BYTE_TYPE),
                 createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
-        HierarchicalTypeDefinition B = createTraitTypeDef("B", ImmutableList.<String>of("A"),
+        HierarchicalTypeDefinition B = createTraitTypeDef("B", ImmutableSet.<String>of("A"),
                 createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE));
         HierarchicalTypeDefinition C =
-                createTraitTypeDef("C", ImmutableList.<String>of("A"), createOptionalAttrDef("c", DataTypes.BYTE_TYPE));
-        HierarchicalTypeDefinition D = createTraitTypeDef("D", ImmutableList.<String>of("B", "C"),
+                createTraitTypeDef("C", ImmutableSet.<String>of("A"), createOptionalAttrDef("c", DataTypes.BYTE_TYPE));
+        HierarchicalTypeDefinition D = createTraitTypeDef("D", ImmutableSet.<String>of("B", "C"),
                 createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
 
         defineTraits(A, B, C, D);
@@ -176,11 +178,11 @@ public class TraitTest extends HierarchicalTypeTest<TraitType> {
         HierarchicalTypeDefinition A = createTraitTypeDef("A", null, createRequiredAttrDef("a", DataTypes.INT_TYPE),
                 createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE), createOptionalAttrDef("c", DataTypes.BYTE_TYPE),
                 createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
-        HierarchicalTypeDefinition B = createTraitTypeDef("B", ImmutableList.<String>of("A"),
+        HierarchicalTypeDefinition B = createTraitTypeDef("B", ImmutableSet.<String>of("A"),
                 createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE));
-        HierarchicalTypeDefinition C = createTraitTypeDef("C", ImmutableList.<String>of("A"),
+        HierarchicalTypeDefinition C = createTraitTypeDef("C", ImmutableSet.<String>of("A"),
                 createOptionalAttrDef("c", DataTypes.BYTE_TYPE));
-        HierarchicalTypeDefinition D = createTraitTypeDef("D", ImmutableList.<String>of("B", "C"),
+        HierarchicalTypeDefinition D = createTraitTypeDef("D", ImmutableSet.<String>of("B", "C"),
                 createOptionalAttrDef("d", DataTypes.SHORT_TYPE));
 
         defineTraits(B, D, A, C);
@@ -224,7 +226,7 @@ public class TraitTest extends HierarchicalTypeTest<TraitType> {
     }
 
     @Override
-    protected HierarchicalTypeDefinition<TraitType> getTypeDefinition(String name, ImmutableList<String> superTypes,
+    protected HierarchicalTypeDefinition<TraitType> getTypeDefinition(String name, ImmutableSet<String> superTypes,
                                                                       AttributeDefinition... attributes) {
         return new HierarchicalTypeDefinition(TraitType.class, name, null, superTypes, attributes);
     }

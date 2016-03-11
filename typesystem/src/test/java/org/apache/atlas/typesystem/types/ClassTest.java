@@ -29,6 +29,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 public class ClassTest extends HierarchicalTypeTest<ClassType> {
 
@@ -78,7 +79,7 @@ public class ClassTest extends HierarchicalTypeTest<ClassType> {
     @Test
     public void testSerDeWithoutDescription() throws Exception {
         HierarchicalTypeDefinition<ClassType> clsType = TypesUtil
-                .createClassTypeDef("Random", ImmutableList.<String>of(),
+                .createClassTypeDef("Random", ImmutableSet.<String>of(),
                         TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE));
         
         TypesDef typesDef = getTypesDef(clsType);
@@ -90,7 +91,7 @@ public class ClassTest extends HierarchicalTypeTest<ClassType> {
     @Test
     public void testSerDeWithDescription() throws Exception {
         HierarchicalTypeDefinition<ClassType> clsType = TypesUtil
-                .createClassTypeDef("Random", "Random-description", ImmutableList.<String>of(),
+                .createClassTypeDef("Random", "Random-description", ImmutableSet.<String>of(),
                         TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE));
         TypesDef typesDef = getTypesDef(clsType);
         String json = TypesSerialization.toJson(typesDef);
@@ -103,7 +104,7 @@ public class ClassTest extends HierarchicalTypeTest<ClassType> {
     }
 
     @Override
-    protected HierarchicalTypeDefinition<ClassType> getTypeDefinition(String name, ImmutableList<String> superTypes,
+    protected HierarchicalTypeDefinition<ClassType> getTypeDefinition(String name, ImmutableSet<String> superTypes,
                                                                       AttributeDefinition... attributes) {
         return new HierarchicalTypeDefinition(ClassType.class, name, null, superTypes, attributes);
     }

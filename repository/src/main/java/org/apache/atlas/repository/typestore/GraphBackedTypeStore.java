@@ -19,15 +19,18 @@
 package org.apache.atlas.repository.typestore;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graph.GraphProvider;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.types.AttributeDefinition;
@@ -51,8 +54,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 @Singleton
 public class GraphBackedTypeStore implements ITypeStore {
@@ -83,7 +88,7 @@ public class GraphBackedTypeStore implements ITypeStore {
             case STRUCT:
                 StructType structType = (StructType) dataType;
                 storeInGraph(typeSystem, dataType.getTypeCategory(), dataType.getName(), dataType.getDescription(),
-                        ImmutableList.copyOf(structType.infoToNameMap.keySet()), ImmutableList.<String>of());
+                        ImmutableList.copyOf(structType.infoToNameMap.keySet()), ImmutableSet.<String>of());
                 break;
 
             case TRAIT:
@@ -123,14 +128,12 @@ public class GraphBackedTypeStore implements ITypeStore {
         return PROPERTY_PREFIX + parent + "." + child;
     }
 
-    private String getEdgeLabel(String parent, String child) {
+    String getEdgeLabel(String parent, String child) {
         return PROPERTY_PREFIX + "edge." + parent + "." + child;
     }
 
-    private void storeInGraph(TypeSystem typeSystem, DataTypes.TypeCategory category, String typeName,
-                              String typeDescription, ImmutableList<AttributeInfo> attributes,
-                              ImmutableList<String> superTypes)
-            throws AtlasException {
+    private void storeInGraph(TypeSystem typeSystem, DataTypes.TypeCategory category, String typeName, String typeDescription,
+            ImmutableList<AttributeInfo> attributes, ImmutableSet<String> superTypes) throws AtlasException {
         Vertex vertex = createVertex(category, typeName, typeDescription);
         List<String> attrNames = new ArrayList<>();
         if (attributes != null) {
@@ -203,6 +206,15 @@ public class GraphBackedTypeStore implements ITypeStore {
     }
 
     private void addEdge(Vertex fromVertex, Vertex toVertex, String label) {
+        Iterable<Edge> edges = GraphHelper.getOutGoingEdgesByLabel(fromVertex, label);
+        // ATLAS-474: Check if this type system edge already exists, to avoid duplicates.
+        for (Edge edge : edges) {
+            if (edge.getVertex(Direction.IN).equals(toVertex)) {
+                LOG.debug("Edge from {} to {} with label {} already exists", 
+                    toString(fromVertex), toString(toVertex), label);
+                return;
+            }
+        }        
         LOG.debug("Adding edge from {} to {} with label {}", toString(fromVertex), toString(toVertex), label);
         titanGraph.addEdge(null, fromVertex, toVertex, label);
     }
@@ -236,7 +248,7 @@ public class GraphBackedTypeStore implements ITypeStore {
                 break;
 
             case CLASS:
-                ImmutableList<String> superTypes = getSuperTypes(vertex);
+                ImmutableSet<String> superTypes = getSuperTypes(vertex);
                 attributes = getAttributes(vertex, typeName);
                 classTypes.add(new HierarchicalTypeDefinition(ClassType.class, typeName, typeDescription, superTypes, attributes));
                 break;
@@ -266,14 +278,14 @@ public class GraphBackedTypeStore implements ITypeStore {
         return new EnumTypeDefinition(typeName, typeDescription, enumValues.toArray(new EnumValue[enumValues.size()]));
     }
 
-    private ImmutableList<String> getSuperTypes(Vertex vertex) {
-        List<String> superTypes = new ArrayList<>();
+    private ImmutableSet<String> getSuperTypes(Vertex vertex) {
+        Set<String> superTypes = new HashSet<>();
         Iterator<Edge> edges = vertex.getEdges(Direction.OUT, SUPERTYPE_EDGE_LABEL).iterator();
         while (edges.hasNext()) {
             Edge edge = edges.next();
             superTypes.add((String) edge.getVertex(Direction.IN).getProperty(Constants.TYPENAME_PROPERTY_KEY));
         }
-        return ImmutableList.copyOf(superTypes);
+        return ImmutableSet.copyOf(superTypes);
     }
 
     private AttributeDefinition[] getAttributes(Vertex vertex, String typeName) throws AtlasException {
@@ -302,7 +314,7 @@ public class GraphBackedTypeStore implements ITypeStore {
      * @param typeName
      * @return vertex
      */
-    private Vertex findVertex(DataTypes.TypeCategory category, String typeName) {
+    Vertex findVertex(DataTypes.TypeCategory category, String typeName) {
         LOG.debug("Finding vertex for {}.{}", category, typeName);
 
         Iterator results = titanGraph.query().has(Constants.TYPENAME_PROPERTY_KEY, typeName).vertices().iterator();

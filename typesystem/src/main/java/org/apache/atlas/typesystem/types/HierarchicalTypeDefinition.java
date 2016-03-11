@@ -19,11 +19,13 @@
 package org.apache.atlas.typesystem.types;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+
 import org.apache.atlas.classification.InterfaceAudience;
 
 public class HierarchicalTypeDefinition<T extends HierarchicalType> extends StructTypeDefinition {
 
-    public final ImmutableList<String> superTypes;
+    public final ImmutableSet<String> superTypes;
     public final String hierarchicalMetaTypeName;
 
     /**
@@ -39,15 +41,15 @@ public class HierarchicalTypeDefinition<T extends HierarchicalType> extends Stru
     @InterfaceAudience.Private
     public HierarchicalTypeDefinition(String hierarchicalMetaTypeName, String typeName, String typeDescription, String[] superTypes,
             AttributeDefinition[] attributeDefinitions) throws ClassNotFoundException {
-        this((Class<T>) Class.forName(hierarchicalMetaTypeName), typeName, typeDescription, ImmutableList.copyOf(superTypes),
+        this((Class<T>) Class.forName(hierarchicalMetaTypeName), typeName, typeDescription, ImmutableSet.copyOf(superTypes),
                 attributeDefinitions);
     }
 
-    public HierarchicalTypeDefinition(Class<T> hierarchicalMetaType, String typeName, String typeDescription, ImmutableList<String> superTypes,
+    public HierarchicalTypeDefinition(Class<T> hierarchicalMetaType, String typeName, String typeDescription, ImmutableSet<String> superTypes,
         AttributeDefinition[] attributeDefinitions) {
         super(typeName, typeDescription, false, attributeDefinitions);
         hierarchicalMetaTypeName = hierarchicalMetaType.getName();
-        this.superTypes = superTypes == null ? ImmutableList.<String>of() : superTypes;
+        this.superTypes = superTypes == null ? ImmutableSet.<String>of() : superTypes;
     }
 
     @Override

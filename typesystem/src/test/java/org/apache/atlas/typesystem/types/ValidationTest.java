@@ -18,6 +18,8 @@
 package org.apache.atlas.typesystem.types;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -74,14 +76,14 @@ public class ValidationTest {
     public void testClassType(String name) {
         AttributeDefinition value = TypesUtil.createRequiredAttrDef("name", "type");
         ;
-        TypesUtil.createClassTypeDef(name, ImmutableList.of("super"), value);
+        TypesUtil.createClassTypeDef(name, ImmutableSet.of("super"), value);
     }
 
     @Test(dataProvider = "classTypeData", expectedExceptions = {IllegalArgumentException.class})
     public void testTraitType(String name) {
         AttributeDefinition value = TypesUtil.createRequiredAttrDef("name", "type");
         ;
-        TypesUtil.createTraitTypeDef(name, ImmutableList.of("super"), value);
+        TypesUtil.createTraitTypeDef(name, ImmutableSet.of("super"), value);
     }
 
     @Test
@@ -89,15 +91,15 @@ public class ValidationTest {
         AttributeDefinition attribute = TypesUtil.createRequiredAttrDef("name", "type");
 
         //class with no attributes
-        TypesUtil.createClassTypeDef("name", ImmutableList.of("super"));
+        TypesUtil.createClassTypeDef("name", ImmutableSet.of("super"));
 
         //class with no super types
-        TypesUtil.createClassTypeDef("name", ImmutableList.<String>of(), attribute);
+        TypesUtil.createClassTypeDef("name", ImmutableSet.<String>of(), attribute);
 
         //trait with no attributes
-        TypesUtil.createTraitTypeDef("name", ImmutableList.of("super"));
+        TypesUtil.createTraitTypeDef("name", ImmutableSet.of("super"));
 
         //trait with no super types
-        TypesUtil.createTraitTypeDef("name", ImmutableList.<String>of(), attribute);
+        TypesUtil.createTraitTypeDef("name", ImmutableSet.<String>of(), attribute);
     }
 }

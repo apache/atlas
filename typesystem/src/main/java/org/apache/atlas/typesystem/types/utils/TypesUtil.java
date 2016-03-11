@@ -19,6 +19,8 @@
 package org.apache.atlas.typesystem.types.utils;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.types.AttributeDefinition;
 import org.apache.atlas.typesystem.types.ClassType;
@@ -29,6 +31,7 @@ import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
+
 import scala.collection.JavaConversions;
 
 /**
@@ -64,12 +67,12 @@ public class TypesUtil {
     }
 
     public static HierarchicalTypeDefinition<TraitType> createTraitTypeDef(String name,
-            ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
+            ImmutableSet<String> superTypes, AttributeDefinition... attrDefs) {
         return createTraitTypeDef(name, null, superTypes, attrDefs);
     }
 
     public static HierarchicalTypeDefinition<TraitType> createTraitTypeDef(String name, String description,
-        ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
+        ImmutableSet<String> superTypes, AttributeDefinition... attrDefs) {
         return new HierarchicalTypeDefinition<>(TraitType.class, name, description, superTypes, attrDefs);
     }
 
@@ -82,13 +85,13 @@ public class TypesUtil {
     }
 
     public static HierarchicalTypeDefinition<ClassType> createClassTypeDef(String name,
-            ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
+            ImmutableSet<String> superTypes, AttributeDefinition... attrDefs) {
         return createClassTypeDef(name, null, superTypes, attrDefs);
     }
 
     public static HierarchicalTypeDefinition<ClassType> createClassTypeDef(String name, String description,
-        ImmutableList<String> superTypes, AttributeDefinition... attrDefs) {
-    return new HierarchicalTypeDefinition<>(ClassType.class, name, description, superTypes, attrDefs);
+        ImmutableSet<String> superTypes, AttributeDefinition... attrDefs) {
+        return new HierarchicalTypeDefinition<>(ClassType.class, name, description, superTypes, attrDefs);
     }
 
     public static TypesDef getTypesDef(ImmutableList<EnumTypeDefinition> enums,

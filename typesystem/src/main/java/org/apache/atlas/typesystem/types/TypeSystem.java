@@ -20,7 +20,9 @@ package org.apache.atlas.typesystem.types;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
+
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.classification.InterfaceAudience;
 import org.apache.atlas.typesystem.TypesDef;
@@ -28,12 +30,12 @@ import org.apache.atlas.typesystem.exception.TypeExistsException;
 import org.apache.atlas.typesystem.exception.TypeNotFoundException;
 
 import javax.inject.Singleton;
+
 import java.lang.reflect.Constructor;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,7 +46,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @InterfaceAudience.Private
 public class TypeSystem {
     private static final TypeSystem INSTANCE = new TypeSystem();
-    private static ThreadLocal<SimpleDateFormat> dateFormat = new ThreadLocal() {
+    private static ThreadLocal<SimpleDateFormat> dateFormat = new ThreadLocal<SimpleDateFormat>() {
         @Override
         public SimpleDateFormat initialValue() {
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -426,14 +428,7 @@ public class TypeSystem {
 
         private <U extends HierarchicalType> void validateSuperTypes(Class<U> cls, HierarchicalTypeDefinition<U> def)
         throws AtlasException {
-            Set<String> s = new HashSet<>();
-            ImmutableList<String> superTypes = def.superTypes;
-            for (String superTypeName : superTypes) {
-
-                if (s.contains(superTypeName)) {
-                    throw new AtlasException(
-                            String.format("Type %s extends superType %s multiple times", def.typeName, superTypeName));
-                }
+            for (String superTypeName : def.superTypes) {
 
                 IDataType dT = dataType(superTypeName);
 
@@ -448,7 +443,6 @@ public class TypeSystem {
                             String.format("SuperType %s must be a %s, in definition of type %s", superTypeName,
                                     cls.getName(), def.typeName));
                 }
-                s.add(superTypeName);
             }
         }
 
@@ -520,7 +514,7 @@ public class TypeSystem {
             }
 
             try {
-                Constructor<U> cons = cls.getDeclaredConstructor(TypeSystem.class, String.class, String.class, ImmutableList.class,
+                Constructor<U> cons = cls.getDeclaredConstructor(TypeSystem.class, String.class, String.class, ImmutableSet.class,
                         AttributeInfo[].class);
                 U type = cons.newInstance(this, def.typeName, def.typeDescription, def.superTypes, infos);
                 transientTypes.put(def.typeName, type);

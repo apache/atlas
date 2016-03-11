@@ -19,8 +19,10 @@
 package org.apache.atlas.web.resources;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.TypesSerialization;
@@ -44,6 +46,7 @@ import org.testng.annotations.Test;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.Response;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -92,7 +95,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testUpdate() throws Exception {
         HierarchicalTypeDefinition<ClassType> typeDefinition = TypesUtil
-                .createClassTypeDef(randomString(), ImmutableList.<String>of(),
+                .createClassTypeDef(randomString(), ImmutableSet.<String>of(),
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE));
         List<String> typesCreated = serviceClient.createType(TypesSerialization.toJson(typeDefinition, false));
         Assert.assertEquals(typesCreated.size(), 1);
@@ -100,11 +103,11 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
 
         //Add super type
         HierarchicalTypeDefinition<ClassType> superTypeDefinition = TypesUtil
-                .createClassTypeDef(randomString(), ImmutableList.<String>of(),
+                .createClassTypeDef(randomString(), ImmutableSet.<String>of(),
                         TypesUtil.createOptionalAttrDef("sname", DataTypes.STRING_TYPE));
 
         typeDefinition = TypesUtil.createClassTypeDef(typeDefinition.typeName,
-                ImmutableList.of(superTypeDefinition.typeName),
+            ImmutableSet.of(superTypeDefinition.typeName),
                 TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                 TypesUtil.createOptionalAttrDef("description", DataTypes.STRING_TYPE));
         TypesDef typeDef = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(),
@@ -206,7 +209,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
 
         for (String traitName : traitNames) {
             HierarchicalTypeDefinition<TraitType> traitTypeDef =
-                    TypesUtil.createTraitTypeDef(traitName, ImmutableList.<String>of());
+                    TypesUtil.createTraitTypeDef(traitName, ImmutableSet.<String>of());
             String json = TypesSerialization$.MODULE$.toJson(traitTypeDef, true);
             createType(json);
         }
@@ -218,13 +221,13 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         ArrayList<HierarchicalTypeDefinition> typeDefinitions = new ArrayList<>();
 
         HierarchicalTypeDefinition<ClassType> databaseTypeDefinition = TypesUtil
-                .createClassTypeDef("database", ImmutableList.<String>of(),
+                .createClassTypeDef("database", ImmutableSet.<String>of(),
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE));
         typeDefinitions.add(databaseTypeDefinition);
 
         HierarchicalTypeDefinition<ClassType> tableTypeDefinition = TypesUtil
-                .createClassTypeDef("table", ImmutableList.<String>of(),
+                .createClassTypeDef("table", ImmutableSet.<String>of(),
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE),
                         TypesUtil.createOptionalAttrDef("columnNames", DataTypes.arrayTypeName(DataTypes.STRING_TYPE)),
@@ -236,7 +239,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         typeDefinitions.add(tableTypeDefinition);
 
         HierarchicalTypeDefinition<TraitType> fetlTypeDefinition = TypesUtil
-                .createTraitTypeDef("fetl", ImmutableList.<String>of(),
+                .createTraitTypeDef("fetl", ImmutableSet.<String>of(),
                         TypesUtil.createRequiredAttrDef("level", DataTypes.INT_TYPE));
         typeDefinitions.add(fetlTypeDefinition);
 

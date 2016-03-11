@@ -18,7 +18,8 @@
 
 package org.apache.atlas.typesystem.types;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedStruct;
@@ -34,13 +35,13 @@ public class TraitType extends HierarchicalType<TraitType, IStruct>
     public final Map<AttributeInfo, List<String>> infoToNameMap;
     private final TypedStructHandler handler;
 
-    TraitType(TypeSystem typeSystem, String name, String description, ImmutableList<String> superTraits, int numFields) {
+    TraitType(TypeSystem typeSystem, String name, String description, ImmutableSet<String> superTraits, int numFields) {
         super(typeSystem, TraitType.class, name, description, superTraits, numFields);
         handler = null;
         infoToNameMap = null;
     }
 
-    TraitType(TypeSystem typeSystem, String name, String description, ImmutableList<String> superTraits, AttributeInfo... fields)
+    TraitType(TypeSystem typeSystem, String name, String description, ImmutableSet<String> superTraits, AttributeInfo... fields)
     throws AtlasException {
         super(typeSystem, TraitType.class, name, description, superTraits, fields);
         handler = new TypedStructHandler(this);

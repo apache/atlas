@@ -19,6 +19,7 @@
 package org.apache.atlas.service;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
@@ -802,14 +803,14 @@ public class DefaultMetadataServiceTest {
     public void testTypeUpdateWithReservedAttributes() throws AtlasException, JSONException {
         String typeName = "test_type_"+ RandomStringUtils.randomAlphanumeric(10);
         HierarchicalTypeDefinition<ClassType> typeDef = TypesUtil.createClassTypeDef(
-                typeName, ImmutableList.<String>of(),
+                typeName, ImmutableSet.<String>of(),
                 TypesUtil.createUniqueRequiredAttrDef("test_type_attribute", DataTypes.STRING_TYPE));
         TypesDef typesDef = new TypesDef(typeDef, false);
         JSONObject type = metadataService.createType(TypesSerialization.toJson(typesDef));
         Assert.assertNotNull(type.get(AtlasClient.TYPES));
 
         HierarchicalTypeDefinition<ClassType> updatedTypeDef = TypesUtil.createClassTypeDef(
-            typeName, ImmutableList.<String>of(),
+            typeName, ImmutableSet.<String>of(),
             TypesUtil.createUniqueRequiredAttrDef("test_type_attribute", DataTypes.STRING_TYPE),
             TypesUtil.createOptionalAttrDef("test_type_invalid_attribute$", DataTypes.STRING_TYPE));
         TypesDef updatedTypesDef = new TypesDef(updatedTypeDef, false);

@@ -19,8 +19,10 @@
 package org.apache.atlas.typesystem.types;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
@@ -118,22 +120,22 @@ public abstract class BaseTest {
     protected void defineDeptEmployeeTypes(TypeSystem ts) throws AtlasException {
 
         HierarchicalTypeDefinition<ClassType> deptTypeDef = TypesUtil
-                .createClassTypeDef("Department", ImmutableList.<String>of(),
+                .createClassTypeDef("Department", ImmutableSet.<String>of(),
                         TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         new AttributeDefinition("employees", String.format("array<%s>", "Person"),
                                 Multiplicity.COLLECTION, true, "department"));
         HierarchicalTypeDefinition<ClassType> personTypeDef = TypesUtil
-                .createClassTypeDef("Person", ImmutableList.<String>of(),
+                .createClassTypeDef("Person", ImmutableSet.<String>of(),
                         TypesUtil.createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         new AttributeDefinition("department", "Department", Multiplicity.REQUIRED, false, "employees"),
                         new AttributeDefinition("manager", "Manager", Multiplicity.OPTIONAL, false, "subordinates"));
         HierarchicalTypeDefinition<ClassType> managerTypeDef = TypesUtil
-                .createClassTypeDef("Manager", ImmutableList.of("Person"),
+                .createClassTypeDef("Manager", ImmutableSet.of("Person"),
                         new AttributeDefinition("subordinates", String.format("array<%s>", "Person"),
                                 Multiplicity.COLLECTION, false, "manager"));
 
         HierarchicalTypeDefinition<TraitType> securityClearanceTypeDef = TypesUtil
-                .createTraitTypeDef("SecurityClearance", ImmutableList.<String>of(),
+                .createTraitTypeDef("SecurityClearance", ImmutableSet.<String>of(),
                         TypesUtil.createRequiredAttrDef("level", DataTypes.INT_TYPE));
 
         ts.defineTypes(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),

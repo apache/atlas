@@ -20,11 +20,14 @@ package org.apache.atlas.web.resources;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
+
 import kafka.consumer.ConsumerTimeoutException;
+
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
@@ -62,6 +65,7 @@ import org.testng.annotations.BeforeClass;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
+
 import java.util.List;
 
 /**
@@ -158,7 +162,7 @@ public abstract class BaseResourceIT {
         EnumTypeDefinition enumTypeDefinition = new EnumTypeDefinition("tableType", values);
 
         HierarchicalTypeDefinition<ClassType> tblClsDef = TypesUtil
-                .createClassTypeDef(HIVE_TABLE_TYPE, ImmutableList.of("DataSet"),
+                .createClassTypeDef(HIVE_TABLE_TYPE, ImmutableSet.of("DataSet"),
                         attrDef("owner", DataTypes.STRING_TYPE), attrDef("createTime", DataTypes.LONG_TYPE),
                         attrDef("lastAccessTime", DataTypes.DATE_TYPE),
                         attrDef("temporary", DataTypes.BOOLEAN_TYPE),
@@ -170,7 +174,7 @@ public abstract class BaseResourceIT {
                 new AttributeDefinition("serde2", "serdeType", Multiplicity.OPTIONAL, false, null));
 
         HierarchicalTypeDefinition<ClassType> loadProcessClsDef = TypesUtil
-                .createClassTypeDef(HIVE_PROCESS_TYPE, ImmutableList.of("Process"),
+                .createClassTypeDef(HIVE_PROCESS_TYPE, ImmutableSet.of("Process"),
                         attrDef("userName", DataTypes.STRING_TYPE), attrDef("startTime", DataTypes.INT_TYPE),
                         attrDef("endTime", DataTypes.LONG_TYPE),
                         attrDef("queryText", DataTypes.STRING_TYPE, Multiplicity.REQUIRED),
@@ -179,20 +183,20 @@ public abstract class BaseResourceIT {
                         attrDef("queryGraph", DataTypes.STRING_TYPE, Multiplicity.REQUIRED));
 
         HierarchicalTypeDefinition<TraitType> classificationTrait = TypesUtil
-                .createTraitTypeDef("classification", ImmutableList.<String>of(),
+                .createTraitTypeDef("classification", ImmutableSet.<String>of(),
                         TypesUtil.createRequiredAttrDef("tag", DataTypes.STRING_TYPE));
         HierarchicalTypeDefinition<TraitType> piiTrait =
-                TypesUtil.createTraitTypeDef("pii", ImmutableList.<String>of());
+                TypesUtil.createTraitTypeDef("pii", ImmutableSet.<String>of());
         HierarchicalTypeDefinition<TraitType> phiTrait =
-                TypesUtil.createTraitTypeDef("phi", ImmutableList.<String>of());
+                TypesUtil.createTraitTypeDef("phi", ImmutableSet.<String>of());
         HierarchicalTypeDefinition<TraitType> pciTrait =
-                TypesUtil.createTraitTypeDef("pci", ImmutableList.<String>of());
+                TypesUtil.createTraitTypeDef("pci", ImmutableSet.<String>of());
         HierarchicalTypeDefinition<TraitType> soxTrait =
-                TypesUtil.createTraitTypeDef("sox", ImmutableList.<String>of());
+                TypesUtil.createTraitTypeDef("sox", ImmutableSet.<String>of());
         HierarchicalTypeDefinition<TraitType> secTrait =
-                TypesUtil.createTraitTypeDef("sec", ImmutableList.<String>of());
+                TypesUtil.createTraitTypeDef("sec", ImmutableSet.<String>of());
         HierarchicalTypeDefinition<TraitType> financeTrait =
-                TypesUtil.createTraitTypeDef("finance", ImmutableList.<String>of());
+                TypesUtil.createTraitTypeDef("finance", ImmutableSet.<String>of());
 
         TypesDef typesDef = TypesUtil.getTypesDef(ImmutableList.of(enumTypeDefinition),
                 ImmutableList.of(structTypeDefinition),
