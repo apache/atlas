@@ -3,6 +3,8 @@ Apache Atlas Release Notes
 
 --trunk - unreleased
 INCOMPATIBLE CHANGES:
+ATLAS-474 Server does not start if the type is updated with same super type class information (dkantor via shwethags)
+ATLAS-479 Add description for different types during create time (guptaneeru via shwethags)
 ATLAS-521 Support Alter Table column commands (suma.shivaprasad via shwethags)
 ATLAS-500 UI: Search Default (sanjayp via shwethags)
 ATLAS-483 Remove client.properties (tbeerbower via shwethags)
@@ -11,14 +13,12 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
-ATLAS-474 Server does not start if the type is updated with same super type class information (dkantor via shwethags)
 ATLAS-555 Tag creation from UI fails due to missing description attribute (guptaneeru via shwethags)
 ATLAS-522 Support Alter table commands (sumasai via shwethags)
 ATLAS-512 Decouple currently integrating components from availability of Atlas service for raising metadata events ( yhemanth via sumasai)
 ATLAS-537 Falcon hook failing when tried to submit a process which creates a hive table ( shwethags via sumasai)
 ATLAS-476 Update type attribute with Reserved characters updated the original type as unknown (yhemanth via shwethags)
 ATLAS-463 Disconnect inverse references ( dkantor via sumasai)
-ATLAS-479 Add description for different types during create time (guptaneeru via shwethags)
 ATLAS-508 Apache nightly build failure - UnsupportedOperationException: Not a single key: __traitNames (shwethags)
 ATLAS-422 JavaDoc NotificationConsumer and NotificationInterface.(tbeerbower via sumasai)
 ATLAS-536 Falcon hook loads incorrect configuration when -Datlas.conf is not given when falcon server startup (ayubkhan via shwethags)
