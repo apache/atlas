@@ -18,8 +18,11 @@
 
 package org.apache.atlas.hive.hook;
 
+import com.google.common.collect.ImmutableList;
+import groovy.transform.Immutable;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
@@ -35,6 +38,13 @@ import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.ql.Driver;
 import org.apache.hadoop.hive.ql.processors.CommandProcessorResponse;
 import org.apache.hadoop.hive.ql.session.SessionState;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.mapreduce.InputFormat;
+import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.JobContext;
+import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
@@ -42,7 +52,15 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.File;
+import java.io.IOException;
+import java.net.URLClassLoader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -62,6 +80,10 @@ public class HiveHookIT {
     public void setUp() throws Exception {
         //Set-up hive session
         HiveConf conf = new HiveConf();
+        //Run in local mode
+        conf.set("mapreduce.framework.name", "local");
+        conf.set("fs.default.name", "file:///'");
+        conf.setClassLoader(Thread.currentThread().getContextClassLoader());
         driver = new Driver(conf);
         ss = new SessionState(conf, System.getProperty("user.name"));
         ss = SessionState.start(ss);
@@ -87,7 +109,7 @@ public class HiveHookIT {
         String dbId = assertDatabaseIsRegistered(dbName);
 
         Referenceable definition = dgiCLient.getEntity(dbId);
-        Map params = (Map) definition.get("parameters");
+        Map params = (Map) definition.get(HiveDataModelGenerator.PARAMETERS);
         Assert.assertNotNull(params);
         Assert.assertEquals(params.size(), 2);
         Assert.assertEquals(params.get("p1"), "v1");
@@ -380,6 +402,184 @@ public class HiveHookIT {
         assertTableIsNotRegistered(DEFAULT_DB, viewName);
     }
 
+    @Test
+    public void testAlterTableLocation() throws Exception {
+        String tableName = createTable();
+        final String testPath = "file://" + System.getProperty("java.io.tmpdir", "/tmp") + File.pathSeparator + "testPath";
+        String query = "alter table " + tableName + " set location '" + testPath + "'";
+        runCommand(query);
+
+        String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
+        //Verify the number of columns present in the table
+        Referenceable tableRef = dgiCLient.getEntity(tableId);
+        Referenceable sdRef = (Referenceable)tableRef.get(HiveDataModelGenerator.STORAGE_DESC);
+        Assert.assertEquals(sdRef.get("location"), testPath);
+    }
+
+    @Test
+    public void testAlterTableFileFormat() throws Exception {
+        String tableName = createTable();
+        final String testFormat = "orc";
+        String query = "alter table " + tableName + " set FILEFORMAT " + testFormat;
+        runCommand(query);
+
+        String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
+
+        Referenceable tableRef = dgiCLient.getEntity(tableId);
+        Referenceable sdRef = (Referenceable)tableRef.get(HiveDataModelGenerator.STORAGE_DESC);
+        Assert.assertEquals(sdRef.get(HiveDataModelGenerator.STORAGE_DESC_INPUT_FMT), "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat");
+        Assert.assertEquals(sdRef.get(HiveDataModelGenerator.STORAGE_DESC_OUTPUT_FMT), "org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat");
+        Assert.assertNotNull(sdRef.get("serdeInfo"));
+
+        Struct serdeInfo = (Struct) sdRef.get("serdeInfo");
+        Assert.assertEquals(serdeInfo.get("serializationLib"), "org.apache.hadoop.hive.ql.io.orc.OrcSerde");
+        Assert.assertNotNull(serdeInfo.get(HiveDataModelGenerator.PARAMETERS));
+        Assert.assertEquals(((Map<String, String>) serdeInfo.get(HiveDataModelGenerator.PARAMETERS)).get("serialization.format"), "1");
+
+
+        /**
+         * Hive 'alter table stored as' is not supported - See https://issues.apache.org/jira/browse/HIVE-9576
+         * query = "alter table " + tableName + " STORED AS " + testFormat.toUpperCase();
+         * runCommand(query);
+
+         * tableRef = dgiCLient.getEntity(tableId);
+         * sdRef = (Referenceable)tableRef.get(HiveDataModelGenerator.STORAGE_DESC);
+         * Assert.assertEquals(sdRef.get(HiveDataModelGenerator.STORAGE_DESC_INPUT_FMT), "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat");
+         * Assert.assertEquals(sdRef.get(HiveDataModelGenerator.STORAGE_DESC_OUTPUT_FMT), "org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat");
+         * Assert.assertEquals(((Map) sdRef.get(HiveDataModelGenerator.PARAMETERS)).get("orc.compress"), "ZLIB");
+         */
+    }
+
+    @Test
+    public void testAlterTableBucketingClusterSort() throws Exception {
+        String tableName = createTable();
+        ImmutableList<String> cols = ImmutableList.<String>of("id");
+        runBucketSortQuery(tableName, 5, cols, cols);
+
+        cols = ImmutableList.<String>of("id", "name");
+        runBucketSortQuery(tableName, 2, cols, cols);
+    }
+
+    private void runBucketSortQuery(String tableName, int numBuckets,  ImmutableList<String> bucketCols,ImmutableList<String> sortCols) throws Exception {
+        final String fmtQuery = "alter table %s CLUSTERED BY (%s) SORTED BY (%s) INTO %s BUCKETS";
+        String query = String.format(fmtQuery, tableName, stripListBrackets(bucketCols.toString()), stripListBrackets(sortCols.toString()), numBuckets);
+        runCommand(query);
+
+        verifyBucketSortingProperties(tableName, numBuckets, bucketCols, sortCols);
+    }
+
+    private String stripListBrackets(String listElements) {
+        return StringUtils.strip(StringUtils.strip(listElements, "["), "]");
+    }
+
+    private void verifyBucketSortingProperties(String tableName, int numBuckets, ImmutableList<String> bucketColNames, ImmutableList<String>  sortcolNames) throws Exception {
+
+        String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
+
+        Referenceable tableRef = dgiCLient.getEntity(tableId);
+        Referenceable sdRef = (Referenceable)tableRef.get(HiveDataModelGenerator.STORAGE_DESC);
+        Assert.assertEquals(((scala.math.BigInt) sdRef.get(HiveDataModelGenerator.STORAGE_NUM_BUCKETS)).intValue(), numBuckets);
+        Assert.assertEquals(sdRef.get("bucketCols"), bucketColNames);
+
+        List<Struct> hiveOrderStructList = (List<Struct>) sdRef.get("sortCols");
+        Assert.assertNotNull(hiveOrderStructList);
+        Assert.assertEquals(hiveOrderStructList.size(), sortcolNames.size());
+
+        for (int i = 0; i < sortcolNames.size(); i++) {
+            Assert.assertEquals(hiveOrderStructList.get(i).get("col"), sortcolNames.get(i));
+            Assert.assertEquals(((scala.math.BigInt)hiveOrderStructList.get(i).get("order")).intValue(), 1);
+        }
+    }
+
+    @Test
+    public void testAlterTableSerde() throws Exception {
+        //SERDE PROPERTIES
+        String tableName = createTable();
+        Map<String, String> expectedProps = new HashMap<String, String>() {{
+            put("key1", "value1");
+        }};
+
+        runSerdePropsQuery(tableName, expectedProps);
+
+        expectedProps.put("key2", "value2");
+
+        //Add another property
+        runSerdePropsQuery(tableName, expectedProps);
+
+    }
+
+    private void runSerdePropsQuery(String tableName, Map<String, String> expectedProps) throws Exception {
+
+        final String serdeLib = "org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe";
+
+        final String serializedProps = getSerializedProps(expectedProps);
+        String query = String.format("alter table %s set SERDE '%s' WITH SERDEPROPERTIES (%s)", tableName, serdeLib, serializedProps);
+        runCommand(query);
+
+        verifyTableSdProperties(tableName, serdeLib, expectedProps);
+    }
+
+    private String getSerializedProps(Map<String, String> expectedProps) {
+        StringBuffer sb = new StringBuffer();
+        for(String expectedPropKey : expectedProps.keySet()) {
+            if(sb.length() > 0) {
+                sb.append(",");
+            }
+            sb.append("'").append(expectedPropKey).append("'");
+            sb.append("=");
+            sb.append("'").append(expectedProps.get(expectedPropKey)).append("'");
+        }
+        return sb.toString();
+    }
+
+    @Test
+    public void testAlterTableProperties() throws Exception {
+        String tableName = createTable();
+        final Map<String, String> expectedProps = new HashMap<String, String>() {{
+            put("testPropKey1", "testPropValue1");
+            put("comment", "test comment");
+        }};
+
+        final String fmtQuery = "alter table %s set TBLPROPERTIES (%s)";
+        String query = String.format(fmtQuery, tableName, getSerializedProps(expectedProps));
+        runCommand(query);
+
+        verifyTableProperties(tableName, expectedProps);
+
+
+        expectedProps.put("testPropKey2", "testPropValue2");
+        //Add another property
+        query = String.format(fmtQuery, tableName, getSerializedProps(expectedProps));
+        runCommand(query);
+
+        verifyTableProperties(tableName, expectedProps);
+    }
+
+    private void verifyTableProperties(String tableName, Map<String, String> expectedProps) throws Exception {
+        String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
+        Referenceable tableRef = dgiCLient.getEntity(tableId);
+        Map<String, String> parameters = (Map<String, String>) tableRef.get(HiveDataModelGenerator.PARAMETERS);
+        Assert.assertNotNull(parameters);
+        //Comment should exist since SET TBLPOPERTIES only adds properties. Doe not remove existing ones
+        for (String propKey : expectedProps.keySet()) {
+            Assert.assertEquals(parameters.get(propKey), expectedProps.get(propKey));
+        }
+    }
+
+    private void verifyTableSdProperties(String tableName, String serdeLib, Map<String, String> expectedProps) throws Exception {
+        String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
+        Referenceable tableRef = dgiCLient.getEntity(tableId);
+        Referenceable sdRef = (Referenceable) tableRef.get(HiveDataModelGenerator.STORAGE_DESC);
+        Struct serdeInfo = (Struct) sdRef.get("serdeInfo");
+        Assert.assertEquals(serdeInfo.get("serializationLib"), serdeLib);
+        Map<String, String> parameters = (Map<String, String>) serdeInfo.get(HiveDataModelGenerator.PARAMETERS);
+        Assert.assertNotNull(parameters);
+        //Comment should exist since SET TBLPOPERTIES only adds properties. Doe not remove existing ones
+        for (String propKey : expectedProps.keySet()) {
+            Assert.assertEquals(parameters.get(propKey), expectedProps.get(propKey));
+        }
+    }
+
     private String assertProcessIsRegistered(String queryStr) throws Exception {
         //        String dslQuery = String.format("%s where queryText = \"%s\"", HiveDataTypes.HIVE_PROCESS.getName(),
         //                normalize(queryStr));
@@ -442,7 +642,7 @@ public class HiveHookIT {
     }
 
     private String assertEntityIsRegistered(final String query, String... arg) throws Exception {
-        waitFor(2000, new Predicate() {
+        waitFor(60000, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
                 JSONArray results = dgiCLient.search(query);

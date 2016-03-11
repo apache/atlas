@@ -64,6 +64,7 @@ public class HiveDataModelGenerator {
     private final Map<String, StructTypeDefinition> structTypeDefinitionMap;
 
     public static final String COMMENT = "comment";
+    public static final String PARAMETERS = "parameters";
     public static final String COLUMNS = "columns";
 
     public static final String STORAGE_NUM_BUCKETS = "numBuckets";
@@ -74,7 +75,10 @@ public class HiveDataModelGenerator {
     public static final String CLUSTER_NAME = "clusterName";
     public static final String TABLE = "table";
     public static final String DB = "db";
+
     public static final String STORAGE_DESC = "sd";
+    public static final String STORAGE_DESC_INPUT_FMT = "inputFormat";
+    public static final String STORAGE_DESC_OUTPUT_FMT = "outputFormat";
 
     public HiveDataModelGenerator() {
         classTypeDefinitions = new HashMap<>();
@@ -164,7 +168,7 @@ public class HiveDataModelGenerator {
                 new AttributeDefinition(NAME, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("serializationLib", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL,
                         false, null),
-                new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(), Multiplicity.OPTIONAL, false, null),};
+                new AttributeDefinition(HiveDataModelGenerator.PARAMETERS, STRING_MAP_TYPE.getName(), Multiplicity.OPTIONAL, false, null),};
         StructTypeDefinition definition =
                 new StructTypeDefinition(HiveDataTypes.HIVE_SERDE.getName(), attributeDefinitions);
         structTypeDefinitionMap.put(HiveDataTypes.HIVE_SERDE.getName(), definition);
@@ -235,7 +239,7 @@ public class HiveDataModelGenerator {
                         null),
                 new AttributeDefinition("locationUri", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
-                new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition(HiveDataModelGenerator.PARAMETERS, STRING_MAP_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("ownerName", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
                 new AttributeDefinition("ownerType", HiveDataTypes.HIVE_PRINCIPAL_TYPE.getName(), Multiplicity.OPTIONAL,
@@ -288,7 +292,7 @@ public class HiveDataModelGenerator {
                         null),
                 new AttributeDefinition("columns", DataTypes.arrayTypeName(HiveDataTypes.HIVE_COLUMN.getName()),
                         Multiplicity.OPTIONAL, true, null),
-                new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(), Multiplicity.OPTIONAL, false, null),};
+                new AttributeDefinition(HiveDataModelGenerator.PARAMETERS, STRING_MAP_TYPE.getName(), Multiplicity.OPTIONAL, false, null),};
         HierarchicalTypeDefinition<ClassType> definition =
                 new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_PARTITION.getName(), null,
                         ImmutableList.of(AtlasClient.REFERENCEABLE_SUPER_TYPE), attributeDefinitions);
@@ -314,7 +318,7 @@ public class HiveDataModelGenerator {
                         Multiplicity.OPTIONAL, true, null),
                 new AttributeDefinition("columns", DataTypes.arrayTypeName(HiveDataTypes.HIVE_COLUMN.getName()),
                         Multiplicity.OPTIONAL, true, null),
-                new AttributeDefinition("parameters", STRING_MAP_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition(HiveDataModelGenerator.PARAMETERS, STRING_MAP_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("viewOriginalText", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL,
                         false, null),
                 new AttributeDefinition("viewExpandedText", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL,

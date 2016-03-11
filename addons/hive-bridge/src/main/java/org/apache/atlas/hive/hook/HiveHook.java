@@ -224,6 +224,16 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             renameTable(dgiBridge, event);
             break;
 
+        case ALTERTABLE_FILEFORMAT:
+        case ALTERTABLE_LOCATION:
+        case ALTERTABLE_CLUSTER_SORT:
+        case ALTERTABLE_BUCKETNUM:
+        case ALTERTABLE_PROPERTIES:
+        case ALTERTABLE_SERDEPROPERTIES:
+        case ALTERTABLE_SERIALIZER:
+            alterTable(dgiBridge, event);
+            break;
+
         case ALTERVIEW_AS:
             //update inputs/outputs?
             break;
@@ -231,7 +241,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         case ALTERTABLE_ADDCOLS:
         case ALTERTABLE_REPLACECOLS:
         case ALTERTABLE_RENAMECOL:
-            alterTableColumns(dgiBridge, event);
+            alterTable(dgiBridge, event);
             break;
 
         default:
@@ -240,21 +250,16 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         notifyEntities(messages);
     }
 
-    private void alterTableColumns(HiveMetaStoreBridge dgiBridge, HiveEvent event) throws Exception {
+    private void alterTable(HiveMetaStoreBridge dgiBridge, HiveEvent event) throws Exception {
         assert event.inputs != null && event.inputs.size() == 1;
         assert event.outputs != null && event.outputs.size() > 0;
 
         for (WriteEntity writeEntity : event.outputs) {
-            if (writeEntity.getType() == Entity.Type.TABLE) {
-                Table newTable = writeEntity.getTable();
-
-                //Reload table since hive is not providing the updated column set here
-                Table updatedTable = dgiBridge.hiveClient.getTable(newTable.getDbName(), newTable.getTableName());
-                writeEntity.setT(updatedTable);
-
-                //Create/update table entity
-                createOrUpdateEntities(dgiBridge, writeEntity);
-            }
+           //Below check should  filter out partition related
+           if (writeEntity.getType() == Entity.Type.TABLE) {
+               //Create/update table entity
+               createOrUpdateEntities(dgiBridge, writeEntity);
+           }
         }
     }
 
@@ -279,7 +284,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                             oldTable.getDbName(), oldTable.getTableName());
                     tableEntity.set(HiveDataModelGenerator.NAME, oldQualifiedName);
                     tableEntity.set(HiveDataModelGenerator.TABLE_NAME, oldTable.getTableName().toLowerCase());
-
 
                     String newQualifiedName = dgiBridge.getTableQualifiedName(dgiBridge.getClusterName(),
                             newTable.getDbName(), newTable.getTableName());
@@ -415,4 +419,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             return new JSONObject();
         }
     }
+
+
 }
