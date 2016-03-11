@@ -23,6 +23,7 @@ angular.module('dgc.tags.definition').controller('definitionTagsController', ['$
         $scope.category = 'TRAIT';
         $scope.tagModel = {
             typeName: null,
+            typeDescription: null,
             superTypes: [],
             attributeDefinitions: []
         };

@@ -24,6 +24,7 @@ angular.module('dgc.tags').factory('tagClasses', ['lodash', function classFactor
         return _.merge({
             superTypes: [],
             typeName: null,
+            typeDescription: null,
             attributeDefinitions: []
         }, props);
     }
