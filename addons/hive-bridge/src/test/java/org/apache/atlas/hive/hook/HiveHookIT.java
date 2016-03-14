@@ -18,8 +18,8 @@
 
 package org.apache.atlas.hive.hook;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import groovy.transform.Immutable;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
@@ -38,13 +38,6 @@ import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.ql.Driver;
 import org.apache.hadoop.hive.ql.processors.CommandProcessorResponse;
 import org.apache.hadoop.hive.ql.session.SessionState;
-import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.mapreduce.InputFormat;
-import org.apache.hadoop.mapreduce.InputSplit;
-import org.apache.hadoop.mapreduce.JobContext;
-import org.apache.hadoop.mapreduce.RecordReader;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
@@ -52,14 +45,7 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.File;
-import java.io.IOException;
-import java.net.URLClassLoader;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -219,6 +205,55 @@ public class HiveHookIT {
         assertProcessIsRegistered(query);
         assertTableIsRegistered(DEFAULT_DB, viewName);
     }
+
+    @Test
+    public void testAlterViewAsSelect() throws Exception {
+
+        //Create the view from table1
+        String table1Name = createTable();
+        String viewName = tableName();
+        String query = "create view " + viewName + " as select * from " + table1Name;
+        runCommand(query);
+
+        String table1Id = assertTableIsRegistered(DEFAULT_DB, table1Name);
+        assertProcessIsRegistered(query);
+        String viewId = assertTableIsRegistered(DEFAULT_DB, viewName);
+
+        //Check lineage which includes table1
+        String datasetName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, viewName);
+        JSONObject response = dgiCLient.getInputGraph(datasetName);
+        JSONObject vertices = response.getJSONObject("values").getJSONObject("vertices");
+        Assert.assertTrue(vertices.has(viewId));
+        Assert.assertTrue(vertices.has(table1Id));
+
+        //Alter the view from table2
+        String table2Name = createTable();
+        query = "alter view " + viewName + " as select * from " + table2Name;
+        runCommand(query);
+
+        //Check if alter view process is reqistered
+        assertProcessIsRegistered(query);
+        String table2Id = assertTableIsRegistered(DEFAULT_DB, table2Name);
+        Assert.assertEquals(assertTableIsRegistered(DEFAULT_DB, viewName), viewId);
+
+        //Check lineage which includes both table1 and table2
+        datasetName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, viewName);
+        response = dgiCLient.getInputGraph(datasetName);
+        vertices = response.getJSONObject("values").getJSONObject("vertices");
+        Assert.assertTrue(vertices.has(viewId));
+
+        //This is through the alter view process
+        Assert.assertTrue(vertices.has(table2Id));
+
+        //This is through the Create view process
+        Assert.assertTrue(vertices.has(table1Id));
+
+        //Outputs dont exist
+        response = dgiCLient.getOutputGraph(datasetName);
+        vertices = response.getJSONObject("values").getJSONObject("vertices");
+        Assert.assertEquals(vertices.length(), 0);
+    }
+
 
     @Test
     public void testLoadData() throws Exception {
@@ -520,7 +555,7 @@ public class HiveHookIT {
     }
 
     private String getSerializedProps(Map<String, String> expectedProps) {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for(String expectedPropKey : expectedProps.keySet()) {
             if(sb.length() > 0) {
                 sb.append(",");
@@ -535,34 +570,68 @@ public class HiveHookIT {
     @Test
     public void testAlterTableProperties() throws Exception {
         String tableName = createTable();
+        final String fmtQuery = "alter table %s %s TBLPROPERTIES (%s)";
+        testAlterProperties(tableName, fmtQuery);
+    }
+
+    private void testAlterProperties(String tableName, String fmtQuery) throws Exception {
+
+        final String SET_OP = "set";
+        final String UNSET_OP = "unset";
+
         final Map<String, String> expectedProps = new HashMap<String, String>() {{
             put("testPropKey1", "testPropValue1");
             put("comment", "test comment");
         }};
 
-        final String fmtQuery = "alter table %s set TBLPROPERTIES (%s)";
-        String query = String.format(fmtQuery, tableName, getSerializedProps(expectedProps));
+        String query = String.format(fmtQuery, tableName, SET_OP, getSerializedProps(expectedProps));
         runCommand(query);
 
-        verifyTableProperties(tableName, expectedProps);
-
+        verifyTableProperties(tableName, expectedProps, false);
 
         expectedProps.put("testPropKey2", "testPropValue2");
         //Add another property
-        query = String.format(fmtQuery, tableName, getSerializedProps(expectedProps));
+        query = String.format(fmtQuery, tableName, SET_OP, getSerializedProps(expectedProps));
         runCommand(query);
 
-        verifyTableProperties(tableName, expectedProps);
+        verifyTableProperties(tableName, expectedProps, false);
+
+        //Unset all the props
+        StringBuilder sb = new StringBuilder("'");
+        query = String.format(fmtQuery, tableName, UNSET_OP, Joiner.on("','").skipNulls().appendTo(sb, expectedProps.keySet()).append('\''));
+        runCommand(query);
+
+        verifyTableProperties(tableName, expectedProps, true);
     }
 
-    private void verifyTableProperties(String tableName, Map<String, String> expectedProps) throws Exception {
+    @Test
+    public void testAlterViewProperties() throws Exception {
+        String tableName = createTable();
+        String viewName = tableName();
+        String query = "create view " + viewName + " as select * from " + tableName;
+        runCommand(query);
+
+        final String fmtQuery = "alter view %s %s TBLPROPERTIES (%s)";
+        testAlterProperties(viewName, fmtQuery);
+    }
+
+    private void verifyTableProperties(String tableName, Map<String, String> expectedProps, boolean checkIfNotExists) throws Exception {
         String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
         Referenceable tableRef = dgiCLient.getEntity(tableId);
         Map<String, String> parameters = (Map<String, String>) tableRef.get(HiveDataModelGenerator.PARAMETERS);
-        Assert.assertNotNull(parameters);
-        //Comment should exist since SET TBLPOPERTIES only adds properties. Doe not remove existing ones
-        for (String propKey : expectedProps.keySet()) {
-            Assert.assertEquals(parameters.get(propKey), expectedProps.get(propKey));
+        if (checkIfNotExists == false) {
+            //Check if properties exist
+            Assert.assertNotNull(parameters);
+            for (String propKey : expectedProps.keySet()) {
+                Assert.assertEquals(parameters.get(propKey), expectedProps.get(propKey));
+            }
+        } else {
+            //Check if properties dont exist
+            if (expectedProps != null && parameters != null) {
+                for (String propKey : expectedProps.keySet()) {
+                    Assert.assertFalse(parameters.containsKey(propKey));
+                }
+            }
         }
     }
 
