@@ -241,10 +241,26 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             alterTable(dgiBridge, event);
             break;
 
+        case ALTERDATABASE:
+        case ALTERDATABASE_OWNER:
+            alterDatabase(dgiBridge, event);
+            break;
+
         default:
         }
 
         notifyEntities(messages);
+    }
+
+    private void alterDatabase(HiveMetaStoreBridge dgiBridge, HiveEvent event) throws Exception {
+        assert event.outputs != null && event.outputs.size() > 0;
+
+        for (WriteEntity writeEntity : event.outputs) {
+            if (writeEntity.getType() == Type.DATABASE) {
+                //Create/update table entity
+                createOrUpdateEntities(dgiBridge, writeEntity);
+            }
+        }
     }
 
     private void alterTable(HiveMetaStoreBridge dgiBridge, HiveEvent event) throws Exception {

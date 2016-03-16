@@ -36,6 +36,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.ql.Driver;
+import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.processors.CommandProcessorResponse;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.codehaus.jettison.json.JSONArray;
@@ -236,7 +237,6 @@ public class HiveHookIT {
         String table2Id = assertTableIsRegistered(DEFAULT_DB, table2Name);
         Assert.assertEquals(assertTableIsRegistered(DEFAULT_DB, viewName), viewId);
 
-        //Check lineage which includes both table1 and table2
         datasetName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, viewName);
         response = dgiCLient.getInputGraph(datasetName);
         vertices = response.getJSONObject("values").getJSONObject("vertices");
@@ -469,7 +469,7 @@ public class HiveHookIT {
         Struct serdeInfo = (Struct) sdRef.get("serdeInfo");
         Assert.assertEquals(serdeInfo.get("serializationLib"), "org.apache.hadoop.hive.ql.io.orc.OrcSerde");
         Assert.assertNotNull(serdeInfo.get(HiveDataModelGenerator.PARAMETERS));
-        Assert.assertEquals(((Map<String, String>) serdeInfo.get(HiveDataModelGenerator.PARAMETERS)).get("serialization.format"), "1");
+        Assert.assertEquals(((Map<String, String>)serdeInfo.get(HiveDataModelGenerator.PARAMETERS)).get("serialization.format"), "1");
 
 
         /**
@@ -499,7 +499,6 @@ public class HiveHookIT {
         final String fmtQuery = "alter table %s CLUSTERED BY (%s) SORTED BY (%s) INTO %s BUCKETS";
         String query = String.format(fmtQuery, tableName, stripListBrackets(bucketCols.toString()), stripListBrackets(sortCols.toString()), numBuckets);
         runCommand(query);
-
         verifyBucketSortingProperties(tableName, numBuckets, bucketCols, sortCols);
     }
 
@@ -568,14 +567,35 @@ public class HiveHookIT {
     }
 
     @Test
+    public void testAlterDBOwner() throws Exception {
+        String dbName = createDatabase();
+        final String owner = "testOwner";
+        String dbId = assertDatabaseIsRegistered(dbName);
+        final String fmtQuery = "alter database %s set OWNER %s %s";
+        String query = String.format(fmtQuery, dbName, "USER", owner);
+
+        runCommand(query);
+
+        assertDatabaseIsRegistered(dbName);
+        Referenceable entity = dgiCLient.getEntity(dbId);
+        Assert.assertEquals(entity.get(HiveDataModelGenerator.OWNER), owner);
+    }
+
+    @Test
+    public void testAlterDBProperties() throws Exception {
+        String dbName = createDatabase();
+        final String fmtQuery = "alter database %s %s DBPROPERTIES (%s)";
+        testAlterProperties(Entity.Type.DATABASE, dbName, fmtQuery);
+    }
+
+    @Test
     public void testAlterTableProperties() throws Exception {
         String tableName = createTable();
         final String fmtQuery = "alter table %s %s TBLPROPERTIES (%s)";
-        testAlterProperties(tableName, fmtQuery);
+        testAlterProperties(Entity.Type.TABLE, tableName, fmtQuery);
     }
 
-    private void testAlterProperties(String tableName, String fmtQuery) throws Exception {
-
+    private void testAlterProperties(Entity.Type entityType, String entityName, String fmtQuery) throws Exception {
         final String SET_OP = "set";
         final String UNSET_OP = "unset";
 
@@ -584,24 +604,25 @@ public class HiveHookIT {
             put("comment", "test comment");
         }};
 
-        String query = String.format(fmtQuery, tableName, SET_OP, getSerializedProps(expectedProps));
+        String query = String.format(fmtQuery, entityName, SET_OP, getSerializedProps(expectedProps));
         runCommand(query);
-
-        verifyTableProperties(tableName, expectedProps, false);
+        verifyEntityProperties(entityType, entityName, expectedProps, false);
 
         expectedProps.put("testPropKey2", "testPropValue2");
         //Add another property
-        query = String.format(fmtQuery, tableName, SET_OP, getSerializedProps(expectedProps));
+        query = String.format(fmtQuery, entityName, SET_OP, getSerializedProps(expectedProps));
         runCommand(query);
+        verifyEntityProperties(entityType, entityName, expectedProps, false);
 
-        verifyTableProperties(tableName, expectedProps, false);
+        if (entityType != Entity.Type.DATABASE) {
+            //Database unset properties doesnt work strangely - alter database %s unset DBPROPERTIES doesnt work
+            //Unset all the props
+            StringBuilder sb = new StringBuilder("'");
+            query = String.format(fmtQuery, entityName, UNSET_OP, Joiner.on("','").skipNulls().appendTo(sb, expectedProps.keySet()).append('\''));
+            runCommand(query);
 
-        //Unset all the props
-        StringBuilder sb = new StringBuilder("'");
-        query = String.format(fmtQuery, tableName, UNSET_OP, Joiner.on("','").skipNulls().appendTo(sb, expectedProps.keySet()).append('\''));
-        runCommand(query);
-
-        verifyTableProperties(tableName, expectedProps, true);
+            verifyEntityProperties(entityType, entityName, expectedProps, true);
+        }
     }
 
     @Test
@@ -612,13 +633,38 @@ public class HiveHookIT {
         runCommand(query);
 
         final String fmtQuery = "alter view %s %s TBLPROPERTIES (%s)";
-        testAlterProperties(viewName, fmtQuery);
+        testAlterProperties(Entity.Type.TABLE, viewName, fmtQuery);
     }
 
-    private void verifyTableProperties(String tableName, Map<String, String> expectedProps, boolean checkIfNotExists) throws Exception {
+    private void verifyEntityProperties(Entity.Type type, String entityName, Map<String, String> expectedProps, boolean checkIfNotExists) throws Exception {
+
+        String entityId = null;
+
+        switch(type) {
+        case TABLE:
+            entityId = assertTableIsRegistered(DEFAULT_DB, entityName);
+            break;
+        case DATABASE:
+            entityId = assertDatabaseIsRegistered(entityName);
+            break;
+        }
+
+        Referenceable ref = dgiCLient.getEntity(entityId);
+        verifyProperties(ref, expectedProps, checkIfNotExists);
+    }
+
+    private void verifyTableSdProperties(String tableName, String serdeLib, Map<String, String> expectedProps) throws Exception {
         String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
         Referenceable tableRef = dgiCLient.getEntity(tableId);
-        Map<String, String> parameters = (Map<String, String>) tableRef.get(HiveDataModelGenerator.PARAMETERS);
+        Referenceable sdRef = (Referenceable) tableRef.get(HiveDataModelGenerator.STORAGE_DESC);
+        Struct serdeInfo = (Struct) sdRef.get("serdeInfo");
+        Assert.assertEquals(serdeInfo.get("serializationLib"), serdeLib);
+        verifyProperties(serdeInfo, expectedProps, false);
+    }
+
+    private void verifyProperties(Struct referenceable, Map<String, String> expectedProps, boolean checkIfNotExists) {
+        Map<String, String> parameters = (Map<String, String>) referenceable.get(HiveDataModelGenerator.PARAMETERS);
+
         if (checkIfNotExists == false) {
             //Check if properties exist
             Assert.assertNotNull(parameters);
@@ -632,20 +678,6 @@ public class HiveHookIT {
                     Assert.assertFalse(parameters.containsKey(propKey));
                 }
             }
-        }
-    }
-
-    private void verifyTableSdProperties(String tableName, String serdeLib, Map<String, String> expectedProps) throws Exception {
-        String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
-        Referenceable tableRef = dgiCLient.getEntity(tableId);
-        Referenceable sdRef = (Referenceable) tableRef.get(HiveDataModelGenerator.STORAGE_DESC);
-        Struct serdeInfo = (Struct) sdRef.get("serdeInfo");
-        Assert.assertEquals(serdeInfo.get("serializationLib"), serdeLib);
-        Map<String, String> parameters = (Map<String, String>) serdeInfo.get(HiveDataModelGenerator.PARAMETERS);
-        Assert.assertNotNull(parameters);
-        //Comment should exist since SET TBLPOPERTIES only adds properties. Doe not remove existing ones
-        for (String propKey : expectedProps.keySet()) {
-            Assert.assertEquals(parameters.get(propKey), expectedProps.get(propKey));
         }
     }
 

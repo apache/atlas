@@ -79,4 +79,4 @@ Refer [[Configuration][Configuration]] for notification related configurations
 
 ---++ Limitations
    * Since database name, table name and column names are case insensitive in hive, the corresponding names in entities are lowercase. So, any search APIs should use lowercase while querying on the entity names
-   * Only the following hive operations are captured by hive hook currently - create database, create table, create view, CTAS, load, import, export, query, alter table rename and alter view rename
+   * Only the following hive operations are captured by hive hook currently - create database, create table, create view, CTAS, load, import, export, query, alter database, alter table(except alter table replace columns and alter table change column position), alter view (except replacing and changing column position)

@@ -166,7 +166,7 @@ public class HiveMetaStoreBridge {
         dbRef.set(DESCRIPTION_ATTR, hiveDB.getDescription());
         dbRef.set("locationUri", hiveDB.getLocationUri());
         dbRef.set(HiveDataModelGenerator.PARAMETERS, hiveDB.getParameters());
-        dbRef.set("ownerName", hiveDB.getOwnerName());
+        dbRef.set(HiveDataModelGenerator.OWNER, hiveDB.getOwnerName());
         if (hiveDB.getOwnerType() != null) {
             dbRef.set("ownerType", hiveDB.getOwnerType().getValue());
         }

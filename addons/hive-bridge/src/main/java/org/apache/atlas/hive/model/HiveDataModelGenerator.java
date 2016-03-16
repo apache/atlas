@@ -42,11 +42,6 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -81,6 +76,7 @@ public class HiveDataModelGenerator {
     public static final String STORAGE_DESC = "sd";
     public static final String STORAGE_DESC_INPUT_FMT = "inputFormat";
     public static final String STORAGE_DESC_OUTPUT_FMT = "outputFormat";
+    public static final String OWNER = "owner";
 
     public HiveDataModelGenerator() {
         classTypeDefinitions = new HashMap<>();
@@ -242,7 +238,7 @@ public class HiveDataModelGenerator {
                 new AttributeDefinition("locationUri", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
                 new AttributeDefinition(HiveDataModelGenerator.PARAMETERS, STRING_MAP_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("ownerName", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                new AttributeDefinition(OWNER, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
                 new AttributeDefinition("ownerType", HiveDataTypes.HIVE_PRINCIPAL_TYPE.getName(), Multiplicity.OPTIONAL,
                         false, null),};
@@ -307,7 +303,7 @@ public class HiveDataModelGenerator {
                 new AttributeDefinition(TABLE_NAME, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
                         null),
                 new AttributeDefinition(DB, HiveDataTypes.HIVE_DB.getName(), Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("owner", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition(OWNER, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("createTime", DataTypes.LONG_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
                 new AttributeDefinition("lastAccessTime", DataTypes.LONG_TYPE.getName(), Multiplicity.OPTIONAL, false,
@@ -342,7 +338,7 @@ public class HiveDataModelGenerator {
                         null),
                 new AttributeDefinition("createTime", DataTypes.LONG_TYPE.getName(), Multiplicity.REQUIRED, false,
                         null),
-                new AttributeDefinition("ownerName", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
+                new AttributeDefinition(OWNER, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
                         null),};
         HierarchicalTypeDefinition<ClassType> definition =
                 new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_ROLE.getName(), null, null,
