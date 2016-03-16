@@ -52,7 +52,11 @@ public class Services {
     public void stop() {
         for (Service service : services) {
             LOG.debug("Stopping service {}", service.getClass().getName());
-            service.stop();
+            try {
+                service.stop();
+            } catch (Throwable e) {
+                LOG.warn("Error stopping service {}", service.getClass().getName(), e);
+            }
         }
     }
 }

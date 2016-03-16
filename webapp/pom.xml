@@ -353,7 +353,11 @@
                     <systemProperties>
                         <systemProperty>
                             <name>log4j.configuration</name>
-                            <value>atlas-log4j.xml</value>
+                            <value>file://${project.build.directory}/../../distro/src/conf/atlas-log4j.xml</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>atlas.log.file</name>
+                            <value>application.log</value>
                         </systemProperty>
                         <systemProperty>
                             <name>atlas.log.dir</name>

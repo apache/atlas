@@ -26,5 +26,5 @@ public interface Service {
 
     void start() throws AtlasException;
 
-    void stop();
+    void stop() throws AtlasException;
 }
