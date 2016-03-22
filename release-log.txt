@@ -13,7 +13,6 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
-ATLAS-576 Build with Maven 3.0.5 fails (rpatil via shwethags)
 ATLAS-408 UI : Add a close link (x) on the top right when Tag is added (darshankumar89 via shwethags)
 ATLAS-524 Support alter database (sumasai via shwethags)
 ATLAS-539 Store for entity audit events (shwethags)
