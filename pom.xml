@@ -375,6 +375,8 @@
         <skipDocs>true</skipDocs>
         <skipSite>true</skipSite>
         <projectBaseDir>${project.basedir}</projectBaseDir>
+        <jetty-maven-plugin.stopWait>10</jetty-maven-plugin.stopWait>
+
         <titan.storage.backend>berkeleyje</titan.storage.backend>
         <titan.index.backend>elasticsearch</titan.index.backend>
     </properties>

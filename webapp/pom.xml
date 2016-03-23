@@ -383,6 +383,7 @@
                     </systemProperties>
                     <stopKey>atlas-stop</stopKey>
                     <stopPort>31001</stopPort>
+                    <stopWait>${jetty-maven-plugin.stopWait}</stopWait>
                     <daemon>${debug.jetty.daemon}</daemon>
                     <testClassesDirectory>${project.build.directory}/../../webapp/target/test-classes/</testClassesDirectory>
                     <useTestClasspath>true</useTestClasspath>

@@ -302,6 +302,7 @@
                     </systemProperties>
                     <stopKey>atlas-stop</stopKey>
                     <stopPort>31001</stopPort>
+                    <stopWait>${jetty-maven-plugin.stopWait}</stopWait>
                 </configuration>
                 <executions>
                     <execution>
