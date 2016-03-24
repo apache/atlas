@@ -35,6 +35,7 @@ import org.codehaus.jettison.json.JSONObject;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import scala.actors.threadpool.Arrays;
@@ -163,6 +164,34 @@ public class HiveMetaStoreBridgeTest {
                         new Integer(lastAccessTime))));
     }
 
+    @Test
+    public void testImportWhenPartitionKeysAreNull() throws Exception {
+        setupDB(hiveClient, TEST_DB_NAME);
+        Table hiveTable = setupTable(hiveClient, TEST_DB_NAME, TEST_TABLE_NAME);
+
+        returnExistingDatabase(TEST_DB_NAME, atlasClient, CLUSTER_NAME);
+
+        when(atlasClient.searchByDSL(HiveMetaStoreBridge.getTableDSLQuery(CLUSTER_NAME, TEST_DB_NAME,
+            TEST_TABLE_NAME,
+            HiveDataTypes.HIVE_TABLE.getName()))).thenReturn(
+            getEntityReference("82e06b34-9151-4023-aa9d-b82103a50e77"));
+        when(atlasClient.getEntity("82e06b34-9151-4023-aa9d-b82103a50e77")).thenReturn(createTableReference());
+
+        Partition partition = mock(Partition.class);
+        when(partition.getTable()).thenReturn(hiveTable);
+        List partitionValues = Arrays.asList(new String[]{});
+        when(partition.getValues()).thenReturn(partitionValues);
+
+        when(hiveClient.getPartitions(hiveTable)).thenReturn(Arrays.asList(new Partition[]{partition}));
+
+        HiveMetaStoreBridge bridge = new HiveMetaStoreBridge(CLUSTER_NAME, hiveClient, atlasClient);
+        try {
+            bridge.importHiveMetadata();
+        } catch (Exception e) {
+            Assert.fail("Partition with null key caused import to fail with exception ", e);
+        }
+    }
+
     private JSONArray getPartitionReference(String id) throws JSONException {
         JSONObject resultEntry = new JSONObject();
         resultEntry.put(HiveMetaStoreBridge.SEARCH_ENTRY_GUID_ATTR, id);
@@ -203,4 +232,6 @@ public class HiveMetaStoreBridgeTest {
             return attrValue.equals(((Referenceable) o).get(attrName));
         }
     }
+
+
 }
