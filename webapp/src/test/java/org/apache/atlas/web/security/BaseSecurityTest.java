@@ -32,11 +32,15 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.net.URL;
 import java.nio.file.Files;
 import java.util.Locale;
 import java.util.Properties;
 
-import static org.apache.atlas.security.SecurityProperties.*;
+import static org.apache.atlas.security.SecurityProperties.CERT_STORES_CREDENTIAL_PROVIDER_PATH;
+import static org.apache.atlas.security.SecurityProperties.KEYSTORE_FILE_KEY;
+import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
+import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_FILE_KEY;
 
 /**
  *
@@ -135,4 +139,23 @@ public class BaseSecurityTest {
         return  configuration;
     }
 
+    public static String writeConfiguration(final PropertiesConfiguration configuration) throws Exception {
+        String persistDir = TestUtils.getTempDirectory();
+        TestUtils.writeConfiguration(configuration, persistDir + File.separator +
+                ApplicationProperties.APPLICATION_PROPERTIES);
+
+        String confLocation = System.getProperty("atlas.conf");
+        URL url;
+        if (confLocation == null) {
+            url = BaseSecurityTest.class.getResource("/" + ApplicationProperties.APPLICATION_PROPERTIES);
+        } else {
+            url = new File(confLocation, ApplicationProperties.APPLICATION_PROPERTIES).toURI().toURL();
+        }
+        PropertiesConfiguration configuredProperties = new PropertiesConfiguration();
+        configuredProperties.load(url);
+        TestUtils.writeConfiguration(configuredProperties, persistDir + File.separator +
+                ApplicationProperties.APPLICATION_PROPERTIES);
+        ApplicationProperties.forceReload();
+        return persistDir;
+    }
 }

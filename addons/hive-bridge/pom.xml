@@ -283,13 +283,18 @@
                     <daemon>true</daemon>
                     <webApp>
                         <contextPath>/</contextPath>
-                        <descriptor>../../webapp/src/test/webapp/WEB-INF/web.xml</descriptor>
+                        <descriptor>${project.basedir}/../../webapp/src/test/webapp/WEB-INF/web.xml</descriptor>
+                        <extraClasspath>${project.basedir}/../../webapp/target/test-classes/</extraClasspath>
                     </webApp>
                     <useTestScope>true</useTestScope>
                     <systemProperties>
                         <systemProperty>
                             <name>log4j.configuration</name>
-                            <value>atlas-log4j.xml</value>
+                            <value>file://${project.basedir}/../../distro/src/conf/atlas-log4j.xml</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <name>atlas.log.file</name>
+                            <value>application.log</value>
                         </systemProperty>
                         <systemProperty>
                             <name>atlas.log.dir</name>

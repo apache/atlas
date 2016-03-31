@@ -20,22 +20,32 @@ package org.apache.atlas.web.filters;
 
 import com.google.inject.Singleton;
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.security.SecurityProperties;
+import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.authentication.server.AuthenticationFilter;
 import org.apache.hadoop.security.authentication.server.KerberosAuthenticationHandler;
+import org.apache.log4j.NDC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Enumeration;
-import java.util.Iterator;
 import java.util.Properties;
 
 /**
@@ -46,6 +56,27 @@ import java.util.Properties;
 public class AtlasAuthenticationFilter extends AuthenticationFilter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthenticationFilter.class);
     static final String PREFIX = "atlas.http.authentication";
+
+    /**
+     * An options servlet is used to authenticate users. OPTIONS method is used for triggering authentication
+     * before invoking the actual resource.
+     */
+    private HttpServlet optionsServlet;
+
+    /**
+     * Initialize the filter.
+     *
+     * @param filterConfig filter configuration.
+     * @throws ServletException thrown if the filter could not be initialized.
+     */
+    @Override
+    public void init(FilterConfig filterConfig) throws ServletException {
+        LOG.info("AtlasAuthenticationFilter initialization started");
+        super.init(filterConfig);
+
+        optionsServlet = new HttpServlet() {};
+        optionsServlet.init();
+    }
 
     @Override
     protected Properties getConfiguration(String configPrefix, FilterConfig filterConfig) throws ServletException {
@@ -94,4 +125,50 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
         return config;
     }
 
+    @Override
+    public void doFilter(final ServletRequest request, final ServletResponse response,
+                         final FilterChain filterChain) throws IOException, ServletException {
+
+        FilterChain filterChainWrapper = new FilterChain() {
+
+            @Override
+            public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse)
+                    throws IOException, ServletException {
+                HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
+
+                if (httpRequest.getMethod().equals("OPTIONS")) { // option request meant only for authentication
+                    optionsServlet.service(request, response);
+                } else {
+                    final String user = Servlets.getUserFromRequest(httpRequest);
+                    if (StringUtils.isEmpty(user)) {
+                        ((HttpServletResponse) response).sendError(Response.Status.BAD_REQUEST.getStatusCode(),
+                                "Param user.name can't be empty");
+                    } else {
+                        try {
+                            NDC.push(user + ":" + httpRequest.getMethod() + httpRequest.getRequestURI());
+                            RequestContext requestContext = RequestContext.get();
+                            requestContext.setUser(user);
+                            LOG.info("Request from authenticated user: {}, URL={}", user,
+                                    Servlets.getRequestURI(httpRequest));
+
+                            filterChain.doFilter(servletRequest, servletResponse);
+                        } finally {
+                            NDC.pop();
+                        }
+                    }
+                }
+            }
+        };
+
+        super.doFilter(request, response, filterChainWrapper);
+    }
+
+    @Override
+    public void destroy() {
+        if (optionsServlet != null) {
+            optionsServlet.destroy();
+        }
+
+        super.destroy();
+    }
 }

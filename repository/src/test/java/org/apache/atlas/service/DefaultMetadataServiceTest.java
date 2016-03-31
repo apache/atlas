@@ -25,6 +25,9 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.repository.audit.EntityAuditRepository;
+import org.apache.atlas.repository.audit.HBaseBasedAuditRepository;
+import org.apache.atlas.repository.audit.HBaseTestUtils;
 import org.apache.atlas.typesystem.exception.TypeNotFoundException;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
 import org.apache.atlas.typesystem.types.ClassType;
@@ -71,13 +74,18 @@ import java.util.Map;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 @Guice(modules = RepositoryMetadataModule.class)
 public class DefaultMetadataServiceTest {
     @Inject
     private MetadataService metadataService;
+
     @Inject
     private GraphProvider<TitanGraph> graphProvider;
+
+    @Inject
+    private EntityAuditRepository repository;
 
     private Referenceable db = createDBEntity();
 
@@ -90,6 +98,11 @@ public class DefaultMetadataServiceTest {
 
     @BeforeTest
     public void setUp() throws Exception {
+        if (repository instanceof HBaseBasedAuditRepository) {
+            HBaseTestUtils.startCluster();
+            ((HBaseBasedAuditRepository) repository).start();
+        }
+
         TypesDef typesDef = TestUtils.defineHiveTypes();
         try {
             metadataService.getTypeDefinition(TestUtils.TABLE_TYPE);
@@ -109,7 +122,7 @@ public class DefaultMetadataServiceTest {
     }
 
     @AfterTest
-    public void shutdown() {
+    public void shutdown() throws Exception {
         TypeSystem.getInstance().reset();
         try {
             //TODO - Fix failure during shutdown while using BDB
@@ -121,6 +134,11 @@ public class DefaultMetadataServiceTest {
             TitanCleanup.clear(graphProvider.get());
         } catch(Exception e) {
             e.printStackTrace();
+        }
+
+        if (repository instanceof HBaseBasedAuditRepository) {
+            ((HBaseBasedAuditRepository) repository).stop();
+            HBaseTestUtils.stopCluster();
         }
     }
 
@@ -172,6 +190,7 @@ public class DefaultMetadataServiceTest {
         entity.set("type", "VARCHAR(32)");
         return entity;
     }
+
     @Test(expectedExceptions = TypeNotFoundException.class)
     public void testCreateEntityWithUnknownDatatype() throws Exception {
         Referenceable entity = new Referenceable("Unknown datatype");
@@ -179,7 +198,7 @@ public class DefaultMetadataServiceTest {
         entity.set("name", dbName);
         entity.set("description", "us db");
         createInstance(entity);
-        Assert.fail(TypeNotFoundException.class.getSimpleName() +" was expected but none thrown.");
+        Assert.fail(TypeNotFoundException.class.getSimpleName() + " was expected but none thrown.");
     }
 
     @Test
@@ -187,6 +206,7 @@ public class DefaultMetadataServiceTest {
         //name is the unique attribute
         Referenceable entity = createDBEntity();
         String id = createInstance(entity);
+        assertAuditEvents(id, EntityAuditRepository.EntityAuditAction.ENTITY_CREATE);
 
         //using the same name should succeed, but not create another entity
         String newId = createInstance(entity);
@@ -196,6 +216,35 @@ public class DefaultMetadataServiceTest {
         entity.set("name", TestUtils.randomString());
         newId = createInstance(entity);
         Assert.assertNotEquals(newId, id);
+    }
+
+    @Test
+    public void testEntityAudit() throws Exception {
+        //create entity
+        Referenceable entity = createDBEntity();
+        String id = createInstance(entity);
+        assertAuditEvents(id, EntityAuditRepository.EntityAuditAction.ENTITY_CREATE);
+
+        Struct tag = new Struct(TestUtils.PII);
+        metadataService.addTrait(id, InstanceSerialization.toJson(tag, true));
+        assertAuditEvents(id, EntityAuditRepository.EntityAuditAction.TAG_ADD);
+
+        metadataService.deleteTrait(id, TestUtils.PII);
+        assertAuditEvents(id, EntityAuditRepository.EntityAuditAction.TAG_DELETE);
+
+        metadataService.deleteEntities(Arrays.asList(id));
+        assertAuditEvents(id, EntityAuditRepository.EntityAuditAction.ENTITY_DELETE);
+    }
+
+    private void assertAuditEvents(String id, EntityAuditRepository.EntityAuditAction action) throws Exception {
+        List<EntityAuditRepository.EntityAuditEvent> events =
+                repository.listEvents(id, System.currentTimeMillis(), (short) 10);
+        for (EntityAuditRepository.EntityAuditEvent event : events) {
+            if (event.getAction() == action) {
+                return;
+            }
+        }
+        fail("Didn't find " + action + " in audit events");
     }
 
     @Test
@@ -468,7 +517,7 @@ public class DefaultMetadataServiceTest {
         tableDefinitionJson =
             metadataService.getEntityDefinition(tableId._getId());
         tableDefinition = InstanceSerialization.fromJsonReferenceable(tableDefinitionJson, true);
-        Assert.assertNull(((Struct)tableDefinition.get("serde1")).get("description"));
+        Assert.assertNull(((Struct) tableDefinition.get("serde1")).get("description"));
     }
 
 
@@ -718,8 +767,6 @@ public class DefaultMetadataServiceTest {
     
     @Test
     public void testDeleteEntities() throws Exception {
-        
-        
         // Create 2 table entities, each with 3 composite column entities
         Referenceable dbEntity = createDBEntity();
         String dbGuid = createInstance(dbEntity);

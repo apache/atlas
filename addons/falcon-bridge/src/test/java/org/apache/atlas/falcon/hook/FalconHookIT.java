@@ -18,12 +18,16 @@
 
 package org.apache.atlas.falcon.hook;
 
+import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasServiceException;
+import org.apache.atlas.falcon.model.FalconDataModelGenerator;
 import org.apache.atlas.falcon.model.FalconDataTypes;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.persistence.Id;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.falcon.atlas.service.AtlasService;
 import org.apache.falcon.entity.store.ConfigurationStore;
@@ -33,6 +37,8 @@ import org.apache.falcon.entity.v0.cluster.Cluster;
 import org.apache.falcon.entity.v0.feed.Feed;
 import org.apache.falcon.entity.v0.process.Process;
 import org.apache.falcon.security.CurrentUser;
+import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
@@ -54,19 +60,49 @@ public class FalconHookIT {
     public static final String FEED_HDFS_RESOURCE = "/feed-hdfs.xml";
     public static final String PROCESS_RESOURCE = "/process.xml";
 
-    private AtlasClient dgiCLient;
+    private AtlasClient atlasClient;
 
     private static final ConfigurationStore STORE = ConfigurationStore.get();
+    private Configuration atlasProperties;
 
     @BeforeClass
     public void setUp() throws Exception {
-        dgiCLient = new AtlasClient(ApplicationProperties.get().getString("atlas.rest.address"));
+        atlasProperties = ApplicationProperties.get();
+        atlasClient = new AtlasClient(atlasProperties.getString("atlas.rest.address"));
 
         AtlasService service = new AtlasService();
         service.init();
         STORE.registerListener(service);
-        new FalconHook().registerFalconDataModel();
+        registerFalconDataModel();
         CurrentUser.authenticate(System.getProperty("user.name"));
+    }
+
+    private void registerFalconDataModel() throws Exception {
+        if (isDataModelAlreadyRegistered()) {
+            LOG.info("Falcon data model is already registered!");
+            return;
+        }
+
+        HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(new HiveConf(), atlasProperties,
+                UserGroupInformation.getCurrentUser().getShortUserName(), UserGroupInformation.getCurrentUser());
+        hiveMetaStoreBridge.registerHiveDataModel();
+
+        FalconDataModelGenerator dataModelGenerator = new FalconDataModelGenerator();
+        LOG.info("Registering Falcon data model");
+        atlasClient.createType(dataModelGenerator.getModelAsJson());
+    }
+
+    private boolean isDataModelAlreadyRegistered() throws Exception {
+        try {
+            atlasClient.getType(FalconDataTypes.FALCON_PROCESS_ENTITY.getName());
+            LOG.info("Hive data model is already registered!");
+            return true;
+        } catch(AtlasServiceException ase) {
+            if (ase.getStatus() == ClientResponse.Status.NOT_FOUND) {
+                return false;
+            }
+            throw ase;
+        }
     }
 
     private <T extends Entity> T loadEntity(EntityType type, String resource, String name) throws JAXBException {
@@ -115,17 +151,17 @@ public class FalconHookIT {
         STORE.publish(EntityType.PROCESS, process);
 
         String pid = assertProcessIsRegistered(cluster.getName(), process.getName());
-        Referenceable processEntity = dgiCLient.getEntity(pid);
+        Referenceable processEntity = atlasClient.getEntity(pid);
         assertNotNull(processEntity);
         assertEquals(processEntity.get("processName"), process.getName());
 
         Id inId = (Id) ((List)processEntity.get("inputs")).get(0);
-        Referenceable inEntity = dgiCLient.getEntity(inId._getId());
+        Referenceable inEntity = atlasClient.getEntity(inId._getId());
         assertEquals(inEntity.get("name"),
                 HiveMetaStoreBridge.getTableQualifiedName(cluster.getName(), inDbName, inTableName));
 
         Id outId = (Id) ((List)processEntity.get("outputs")).get(0);
-        Referenceable outEntity = dgiCLient.getEntity(outId._getId());
+        Referenceable outEntity = atlasClient.getEntity(outId._getId());
         assertEquals(outEntity.get("name"),
                 HiveMetaStoreBridge.getTableQualifiedName(cluster.getName(), outDbName, outTableName));
     }
@@ -173,12 +209,12 @@ public class FalconHookIT {
         STORE.publish(EntityType.PROCESS, process);
 
         String pid = assertProcessIsRegistered(cluster.getName(), process.getName());
-        Referenceable processEntity = dgiCLient.getEntity(pid);
+        Referenceable processEntity = atlasClient.getEntity(pid);
         assertEquals(processEntity.get("processName"), process.getName());
         assertNull(processEntity.get("inputs"));
 
         Id outId = (Id) ((List)processEntity.get("outputs")).get(0);
-        Referenceable outEntity = dgiCLient.getEntity(outId._getId());
+        Referenceable outEntity = atlasClient.getEntity(outId._getId());
         assertEquals(outEntity.get("name"),
                 HiveMetaStoreBridge.getTableQualifiedName(cluster.getName(), outDbName, outTableName));
     }
@@ -209,13 +245,13 @@ public class FalconHookIT {
         waitFor(2000000, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
-                JSONArray results = dgiCLient.search(query);
+                JSONArray results = atlasClient.search(query);
                 System.out.println(results);
                 return results.length() == 1;
             }
         });
 
-        JSONArray results = dgiCLient.search(query);
+        JSONArray results = atlasClient.search(query);
         JSONObject row = results.getJSONObject(0).getJSONObject("t");
 
         return row.getString("id");

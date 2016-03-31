@@ -35,10 +35,20 @@ public final class ApplicationProperties extends PropertiesConfiguration {
 
     public static final String APPLICATION_PROPERTIES = "atlas-application.properties";
 
-    private static Configuration instance = null;
+    private static volatile Configuration instance = null;
 
     private ApplicationProperties(URL url) throws ConfigurationException {
         super(url);
+    }
+
+    public static void forceReload() {
+        if (instance != null) {
+            synchronized (ApplicationProperties.class) {
+                if (instance != null) {
+                    instance = null;
+                }
+            }
+        }
     }
 
     public static Configuration get() throws AtlasException {

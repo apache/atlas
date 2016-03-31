@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.notification.entity;
 
+import com.google.inject.Inject;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.notification.NotificationInterface;
@@ -48,6 +49,7 @@ public class NotificationEntityChangeListener implements EntityChangeListener {
      * @param notificationInterface the notification framework interface
      * @param typeSystem the Atlas type system
      */
+    @Inject
     public NotificationEntityChangeListener(NotificationInterface notificationInterface, TypeSystem typeSystem) {
         this.notificationInterface = notificationInterface;
         this.typeSystem = typeSystem;

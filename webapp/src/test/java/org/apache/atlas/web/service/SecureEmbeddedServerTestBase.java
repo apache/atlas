@@ -103,8 +103,11 @@ public class SecureEmbeddedServerTestBase {
 
     @Test
     public void testNoConfiguredCredentialProvider() throws Exception {
-
+        String originalConf = null;
         try {
+            originalConf = System.getProperty("atlas.conf");
+            System.clearProperty("atlas.conf");
+            ApplicationProperties.forceReload();
             secureEmbeddedServer = new SecureEmbeddedServer(securePort, TestUtils.getWarPath());
             secureEmbeddedServer.server.start();
 
@@ -113,7 +116,15 @@ public class SecureEmbeddedServerTestBase {
             Assert.assertEquals(e.getMessage(),
                     "No credential provider path configured for storage of certificate store passwords");
         } finally {
-            secureEmbeddedServer.server.stop();
+            if (secureEmbeddedServer != null) {
+                secureEmbeddedServer.server.stop();
+            }
+
+            if (originalConf == null) {
+                System.clearProperty("atlas.conf");
+            } else {
+                System.setProperty("atlas.conf", originalConf);
+            }
         }
     }
 

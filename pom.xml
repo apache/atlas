@@ -1474,6 +1474,8 @@
                         <user.dir>${project.basedir}</user.dir>
                         <atlas.data>${project.build.directory}/data</atlas.data>
                         <log4j.configuration>atlas-log4j.xml</log4j.configuration>
+                        <zookeeper.client.secure>false</zookeeper.client.secure>
+                        <zookeeper.sasl.client>false</zookeeper.sasl.client>
                     </systemProperties>
                     <skipTests>${skipTests}</skipTests>
                     <forkMode>always</forkMode>
@@ -1483,9 +1485,6 @@
                         -Xmx1024m -XX:MaxPermSize=512m -Djava.net.preferIPv4Stack=true
                     </argLine>
                     <skip>${skipUTs}</skip>
-                    <excludes>
-                        <exclude>**/*Base*</exclude>
-                    </excludes>
                 </configuration>
                 <dependencies>
                     <dependency>

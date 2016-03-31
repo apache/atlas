@@ -20,6 +20,7 @@ package org.apache.atlas.web.filters;
 
 import com.google.inject.Singleton;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.web.util.DateTimeHelper;
 import org.apache.atlas.web.util.Servlets;
 import org.slf4j.Logger;
@@ -60,15 +61,19 @@ public class AuditFilter implements Filter {
         final String requestId = UUID.randomUUID().toString();
         final Thread currentThread = Thread.currentThread();
         final String oldName = currentThread.getName();
+        String user = getUserFromRequest(httpRequest);
 
         try {
             currentThread.setName(formatName(oldName, requestId));
-            recordAudit(httpRequest, requestTimeISO9601);
+            RequestContext requestContext = RequestContext.createContext();
+            requestContext.setUser(user);
+            recordAudit(httpRequest, requestTimeISO9601, user);
             filterChain.doFilter(request, response);
         } finally {
             // put the request id into the response so users can trace logs for this request
             ((HttpServletResponse) response).setHeader(AtlasClient.REQUEST_ID, requestId);
             currentThread.setName(oldName);
+            RequestContext.clear();;
         }
     }
 
@@ -76,8 +81,7 @@ public class AuditFilter implements Filter {
         return oldName + " - " + requestId;
     }
 
-    private void recordAudit(HttpServletRequest httpRequest, String whenISO9601) {
-        final String who = getUserFromRequest(httpRequest);
+    private void recordAudit(HttpServletRequest httpRequest, String whenISO9601, String who) {
         final String fromHost = httpRequest.getRemoteHost();
         final String fromAddress = httpRequest.getRemoteAddr();
         final String whatRequest = httpRequest.getMethod();

@@ -19,20 +19,21 @@
 package org.apache.atlas.hook;
 
 import com.google.inject.Guice;
-import com.google.inject.Inject;
 import com.google.inject.Injector;
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasClient;
 import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.notification.NotificationModule;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.codehaus.jettison.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -44,25 +45,19 @@ import java.util.List;
 public abstract class AtlasHook {
 
     private static final Logger LOG = LoggerFactory.getLogger(AtlasHook.class);
-    private static final String DEFAULT_ATLAS_URL = "http://localhost:21000/";
-
-    public static final String ATLAS_ENDPOINT = "atlas.rest.address";
-
-    protected final AtlasClient atlasClient;
 
     /**
      * Hadoop Cluster name for this instance, typically used for namespace.
      */
     protected static Configuration atlasProperties;
 
-    @Inject
     protected static NotificationInterface notifInterface;
 
     static {
         try {
             atlasProperties = ApplicationProperties.get();
         } catch (Exception e) {
-            LOG.info("Attempting to send msg while shutdown in progress.", e);
+            LOG.info("Failed to load application properties", e);
         }
 
         Injector injector = Guice.createInjector(new NotificationModule());
@@ -71,18 +66,9 @@ public abstract class AtlasHook {
         LOG.info("Created Atlas Hook");
     }
 
-    public AtlasHook() {
-        this(new AtlasClient(atlasProperties.getString(ATLAS_ENDPOINT, DEFAULT_ATLAS_URL)));
-    }
-
-    public AtlasHook(AtlasClient atlasClient) {
-        this.atlasClient = atlasClient;
-        //TODO - take care of passing in - ugi, doAsUser for secure cluster
-    }
-
     protected abstract String getNumberOfRetriesPropertyKey();
 
-    protected void notifyEntities(Collection<Referenceable> entities) {
+    protected void notifyEntities(String user, Collection<Referenceable> entities) {
         JSONArray entitiesArray = new JSONArray();
 
         for (Referenceable entity : entities) {
@@ -92,27 +78,26 @@ public abstract class AtlasHook {
         }
 
         List<HookNotification.HookNotificationMessage> hookNotificationMessages = new ArrayList<>();
-        hookNotificationMessages.add(new HookNotification.EntityCreateRequest(entitiesArray));
+        hookNotificationMessages.add(new HookNotification.EntityCreateRequest(user, entitiesArray));
         notifyEntities(hookNotificationMessages);
     }
 
     /**
-     * Notify atlas
-     * of the entity through message. The entity can be a
+     * Notify atlas of the entity through message. The entity can be a
      * complex entity with reference to other entities.
      * De-duping of entities is done on server side depending on the
      * unique attribute on the entities.
      *
-     * @param entities entities
+     * @param messages hook notification messages
+     * @param maxRetries maximum number of retries while sending message to messaging system
      */
-    protected void notifyEntities(List<HookNotification.HookNotificationMessage> entities) {
-        final int maxRetries = atlasProperties.getInt(getNumberOfRetriesPropertyKey(), 3);
-        final String message = entities.toString();
+    public static void notifyEntities(List<HookNotification.HookNotificationMessage> messages, int maxRetries) {
+        final String message = messages.toString();
 
         int numRetries = 0;
         while (true) {
             try {
-                notifInterface.send(NotificationInterface.NotificationType.HOOK, entities);
+                notifInterface.send(NotificationInterface.NotificationType.HOOK, messages);
                 return;
             } catch(Exception e) {
                 numRetries++;
@@ -123,6 +108,52 @@ public abstract class AtlasHook {
                             message, maxRetries, e);
                 }
             }
+        }
+    }
+
+    /**
+     * Notify atlas of the entity through message. The entity can be a
+     * complex entity with reference to other entities.
+     * De-duping of entities is done on server side depending on the
+     * unique attribute on the entities.
+     *
+     * @param messages hook notification messages
+     */
+    protected void notifyEntities(List<HookNotification.HookNotificationMessage> messages) {
+        final int maxRetries = atlasProperties.getInt(getNumberOfRetriesPropertyKey(), 3);
+        notifyEntities(messages, maxRetries);
+    }
+
+    /**
+     * Returns the logged in user.
+     * @return
+     */
+    public static String getUser() {
+        return getUser(null, null);
+    }
+
+    /**
+     * Returns the user. Order of preference:
+     * 1. Given userName
+     * 2. ugi.getShortUserName()
+     * 3. UserGroupInformation.getCurrentUser().getShortUserName()
+     * 4. System.getProperty("user.name")
+     */
+
+    public static String getUser(String userName, UserGroupInformation ugi) {
+        if (StringUtils.isNotEmpty(userName)) {
+            return userName;
+        }
+
+        if (ugi != null && StringUtils.isNotEmpty(ugi.getShortUserName())) {
+            return ugi.getShortUserName();
+        }
+
+        try {
+            return UserGroupInformation.getCurrentUser().getShortUserName();
+        } catch (IOException e) {
+            LOG.warn("Failed for UserGroupInformation.getCurrentUser()");
+            return System.getProperty("user.name");
         }
     }
 }

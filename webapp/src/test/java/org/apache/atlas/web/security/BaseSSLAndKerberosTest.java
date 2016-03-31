@@ -24,6 +24,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.alias.CredentialProvider;
 import org.apache.hadoop.security.alias.CredentialProviderFactory;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.webapp.WebAppContext;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,8 +52,11 @@ public class BaseSSLAndKerberosTest extends BaseSecurityTest {
         }
 
         @Override
-        public org.apache.commons.configuration.Configuration getConfiguration() {
-            return super.getConfiguration();
+        protected WebAppContext getWebAppContext(String path) {
+            WebAppContext application = new WebAppContext(path, "/");
+            application.setDescriptor(System.getProperty("projectBaseDir") + "/webapp/src/test/webapp/WEB-INF/web.xml");
+            application.setClassLoader(Thread.currentThread().getContextClassLoader());
+            return application;
         }
     }
 

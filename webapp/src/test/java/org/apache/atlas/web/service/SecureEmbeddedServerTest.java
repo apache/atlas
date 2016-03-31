@@ -18,8 +18,11 @@
 
 package org.apache.atlas.web.service;
 
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.web.TestUtils;
+import org.apache.atlas.web.security.BaseSecurityTest;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -34,10 +37,16 @@ public class SecureEmbeddedServerTest extends SecureEmbeddedServerTestBase {
         // setup the configuration
         final PropertiesConfiguration configuration = new PropertiesConfiguration();
         configuration.setProperty(CERT_STORES_CREDENTIAL_PROVIDER_PATH, providerUrl);
+        configuration.setProperty("atlas.services.enabled", false);
         configuration.setProperty("atlas.notification.embedded", "false");
         // setup the credential provider
         setupCredentials();
 
+        String persistDir = BaseSecurityTest.writeConfiguration(configuration);
+        String originalConf = System.getProperty("atlas.conf");
+        System.setProperty("atlas.conf", persistDir);
+
+        ApplicationProperties.forceReload();
         SecureEmbeddedServer secureEmbeddedServer = null;
         try {
             secureEmbeddedServer = new SecureEmbeddedServer(21443, TestUtils.getWarPath()) {
@@ -45,6 +54,16 @@ public class SecureEmbeddedServerTest extends SecureEmbeddedServerTestBase {
                 protected PropertiesConfiguration getConfiguration() {
                     return configuration;
                 }
+
+                @Override
+                protected WebAppContext getWebAppContext(String path) {
+                    WebAppContext application = new WebAppContext(path, "/");
+                    application.setDescriptor(
+                            System.getProperty("projectBaseDir") + "/webapp/src/test/webapp/WEB-INF/web.xml");
+                    application.setClassLoader(Thread.currentThread().getContextClassLoader());
+                    return application;
+                }
+
             };
             secureEmbeddedServer.server.start();
 
@@ -59,7 +78,12 @@ public class SecureEmbeddedServerTest extends SecureEmbeddedServerTestBase {
             Assert.fail("War deploy failed", e);
         } finally {
             secureEmbeddedServer.server.stop();
+
+            if (originalConf == null) {
+                System.clearProperty("atlas.conf");
+            } else {
+                System.setProperty("atlas.conf", originalConf);
+            }
         }
     }
-
 }

@@ -342,10 +342,10 @@
                     </httpConnector>
                     <war>${project.build.directory}/atlas-webapp-${project.version}.war</war>
                     <daemon>true</daemon>
-                    <!--<webAppSourceDirectory>webapp/src/test/webapp</webAppSourceDirectory>-->
+                    <webAppSourceDirectory>webapp/src/test/webapp</webAppSourceDirectory>
                     <webApp>
                         <contextPath>/</contextPath>
-                        <descriptor>webapp/src/test/webapp/WEB-INF/web.xml</descriptor>
+                        <descriptor>${project.basedir}/src/test/webapp/WEB-INF/web.xml</descriptor>
                         <!-- ${project.build.directory}/atlas-webapp-${project.version} -->
                         <extraClasspath>${project.build.directory}/../../webapp/target/test-classes/</extraClasspath>
                     </webApp>

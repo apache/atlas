@@ -22,13 +22,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Provider;
-
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.classification.InterfaceAudience;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.listener.TypesChangeListener;
-import org.apache.atlas.repository.IndexCreationException;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.typestore.ITypeStore;
@@ -68,11 +66,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -86,32 +81,44 @@ public class DefaultMetadataService implements MetadataService {
 
     private static final Logger LOG = LoggerFactory.getLogger(DefaultMetadataService.class);
 
-    private final Collection<EntityChangeListener> entityChangeListeners = new LinkedHashSet<>();
-
     private final TypeSystem typeSystem;
     private final MetadataRepository repository;
     private final ITypeStore typeStore;
     private IBootstrapTypesRegistrar typesRegistrar;
-    private final Collection<Provider<TypesChangeListener>> typeChangeListeners;
+
+    private final Collection<TypesChangeListener> typeChangeListeners = new LinkedHashSet<>();
+    private final Collection<EntityChangeListener> entityChangeListeners = new LinkedHashSet<>();
 
     @Inject
     DefaultMetadataService(final MetadataRepository repository, final ITypeStore typeStore,
                            final IBootstrapTypesRegistrar typesRegistrar,
-        final Collection<Provider<TypesChangeListener>> typeChangeListeners) throws AtlasException {
-        this(repository, typeStore, typesRegistrar, typeChangeListeners, TypeSystem.getInstance());
+                           final Collection<Provider<TypesChangeListener>> typeListenerProviders,
+                           final Collection<Provider<EntityChangeListener>> entityListenerProviders)
+            throws AtlasException {
+        this(repository, typeStore, typesRegistrar, typeListenerProviders, entityListenerProviders,
+                TypeSystem.getInstance());
     }
 
     DefaultMetadataService(final MetadataRepository repository, final ITypeStore typeStore,
                            final IBootstrapTypesRegistrar typesRegistrar,
-                           final Collection<Provider<TypesChangeListener>> typeChangeListeners,
+                           final Collection<Provider<TypesChangeListener>> typeListenerProviders,
+                           final Collection<Provider<EntityChangeListener>> entityListenerProviders,
                            final TypeSystem typeSystem) throws AtlasException {
         this.typeStore = typeStore;
         this.typesRegistrar = typesRegistrar;
         this.typeSystem = typeSystem;
         this.repository = repository;
 
-        this.typeChangeListeners = typeChangeListeners;
+        for (Provider<TypesChangeListener> provider : typeListenerProviders) {
+            typeChangeListeners.add(provider.get());
+        }
+
+        for (Provider<EntityChangeListener> provider : entityListenerProviders) {
+            entityChangeListeners.add(provider.get());
+        }
+
         restoreTypeSystem();
+
         typesRegistrar.registerTypes(ReservedTypesRegistrar.getTypesDir(), typeSystem, this);
     }
 
@@ -604,19 +611,8 @@ public class DefaultMetadataService implements MetadataService {
     }
 
     private void onTypesAdded(Map<String, IDataType> typesAdded) throws AtlasException {
-        Map<TypesChangeListener, Throwable> caughtExceptions = new HashMap<>();
-        for (Provider<TypesChangeListener> indexerProvider : typeChangeListeners) {
-            final TypesChangeListener listener = indexerProvider.get();
-            try {
-                listener.onAdd(typesAdded.values());
-            } catch (IndexCreationException ice) {
-                LOG.error("Index creation for listener {} failed ", indexerProvider, ice);
-                caughtExceptions.put(listener, ice);
-            }
-        }
-
-        if (caughtExceptions.size() > 0) {
-            throw new IndexCreationException("Index creation failed for types " + typesAdded.keySet() + ". Aborting");
+        for (TypesChangeListener listener : typeChangeListeners) {
+            listener.onAdd(typesAdded.values());
         }
     }
 
@@ -637,19 +633,8 @@ public class DefaultMetadataService implements MetadataService {
     }
 
     private void onTypesUpdated(Map<String, IDataType> typesUpdated) throws AtlasException {
-        Map<TypesChangeListener, Throwable> caughtExceptions = new HashMap<>();
-        for (Provider<TypesChangeListener> indexerProvider : typeChangeListeners) {
-            final TypesChangeListener listener = indexerProvider.get();
-            try {
-                listener.onChange(typesUpdated.values());
-            } catch (IndexCreationException ice) {
-                LOG.error("Index creation for listener {} failed ", indexerProvider, ice);
-                caughtExceptions.put(listener, ice);
-            }
-        }
-
-        if (caughtExceptions.size() > 0) {
-            throw new IndexCreationException("Index creation failed for types " + typesUpdated.keySet() + ". Aborting");
+        for (TypesChangeListener listener : typeChangeListeners) {
+            listener.onChange(typesUpdated.values());
         }
     }
 

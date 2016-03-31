@@ -19,31 +19,24 @@
 package org.apache.atlas.sqoop.hook;
 
 
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
-import org.apache.atlas.notification.NotificationInterface;
-import org.apache.atlas.notification.NotificationModule;
+import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.sqoop.model.SqoopDataModelGenerator;
 import org.apache.atlas.sqoop.model.SqoopDataTypes;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sqoop.SqoopJobDataPublisher;
 import org.apache.sqoop.util.ImportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -55,41 +48,14 @@ import java.util.Properties;
 public class SqoopHook extends SqoopJobDataPublisher {
 
     private static final Logger LOG = LoggerFactory.getLogger(SqoopHook.class);
-    private static final String DEFAULT_DGI_URL = "http://localhost:21000/";
     public static final String CONF_PREFIX = "atlas.hook.sqoop.";
     public static final String HOOK_NUM_RETRIES = CONF_PREFIX + "numRetries";
 
     public static final String ATLAS_CLUSTER_NAME = "atlas.cluster.name";
     public static final String DEFAULT_CLUSTER_NAME = "primary";
-    public static final String ATLAS_REST_ADDRESS = "atlas.rest.address";
-
-    @Inject
-    private static NotificationInterface notifInterface;
 
     static {
         org.apache.hadoop.conf.Configuration.addDefaultResource("sqoop-site.xml");
-    }
-
-    synchronized void registerDataModels(AtlasClient client, Configuration atlasConf) throws Exception {
-        // Make sure hive model exists
-        HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(new HiveConf(), atlasConf,
-                UserGroupInformation.getCurrentUser().getShortUserName(), UserGroupInformation.getCurrentUser());
-        hiveMetaStoreBridge.registerHiveDataModel();
-        SqoopDataModelGenerator dataModelGenerator = new SqoopDataModelGenerator();
-
-        //Register sqoop data model if its not already registered
-        try {
-            client.getType(SqoopDataTypes.SQOOP_PROCESS.getName());
-            LOG.info("Sqoop data model is already registered!");
-        } catch(AtlasServiceException ase) {
-            if (ase.getStatus() == ClientResponse.Status.NOT_FOUND) {
-                //Expected in case types do not exist
-                LOG.info("Registering Sqoop data model");
-                client.createType(dataModelGenerator.getModelAsJson());
-            } else {
-                throw ase;
-            }
-        }
     }
 
     public Referenceable createHiveDatabaseInstance(String clusterName, String dbName)
@@ -182,12 +148,7 @@ public class SqoopHook extends SqoopJobDataPublisher {
 
     @Override
     public void publish(SqoopJobDataPublisher.Data data) throws Exception {
-        Injector injector = Guice.createInjector(new NotificationModule());
-        notifInterface = injector.getInstance(NotificationInterface.class);
-
         Configuration atlasProperties = ApplicationProperties.get();
-        AtlasClient atlasClient = new AtlasClient(atlasProperties.getString(ATLAS_REST_ADDRESS, DEFAULT_DGI_URL),
-                UserGroupInformation.getCurrentUser(), UserGroupInformation.getCurrentUser().getShortUserName());
         org.apache.hadoop.conf.Configuration sqoopConf = new org.apache.hadoop.conf.Configuration();
         String clusterName = sqoopConf.get(ATLAS_CLUSTER_NAME, DEFAULT_CLUSTER_NAME);
 
@@ -197,33 +158,9 @@ public class SqoopHook extends SqoopJobDataPublisher {
                 data.getHiveTable(), data.getHiveDB());
         Referenceable procRef = createSqoopProcessInstance(dbStoreRef, hiveTableRef, data, clusterName);
 
-        notifyEntity(atlasProperties, dbStoreRef, dbRef, hiveTableRef, procRef);
-    }
-
-    /**
-     * Notify atlas of the entity through message. The entity can be a complex entity with reference to other entities.
-     * De-duping of entities is done on server side depending on the unique attribute on the
-     * @param entities - Entity references to publish.
-     */
-    private void notifyEntity(Configuration atlasProperties, Referenceable... entities) {
         int maxRetries = atlasProperties.getInt(HOOK_NUM_RETRIES, 3);
-
-        int numRetries = 0;
-        while (true) {
-            try {
-                notifInterface.send(NotificationInterface.NotificationType.HOOK,
-                        new HookNotification.EntityCreateRequest(entities));
-                return;
-            } catch(Exception e) {
-                numRetries++;
-                if(numRetries < maxRetries) {
-                    LOG.debug("Failed to notify atlas for entity {}. Retrying", entities, e);
-                } else {
-                    LOG.error("Failed to notify atlas for entity {} after {} retries. Quitting", entities,
-                            maxRetries, e);
-                    break;
-                }
-            }
-        }
+        HookNotification.HookNotificationMessage message =
+                new HookNotification.EntityCreateRequest(AtlasHook.getUser(), dbStoreRef, dbRef, hiveTableRef, procRef);
+        AtlasHook.notifyEntities(Arrays.asList(message), maxRetries);
     }
 }

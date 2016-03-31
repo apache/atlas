@@ -26,6 +26,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.service.Service;
 import org.apache.commons.configuration.Configuration;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,14 +49,13 @@ public class NotificationHookConsumer implements Service {
     @Inject
     private NotificationInterface notificationInterface;
     private ExecutorService executors;
-    private AtlasClient atlasClient;
+    private String atlasEndpoint;
 
     @Override
     public void start() throws AtlasException {
         Configuration applicationProperties = ApplicationProperties.get();
 
-        String atlasEndpoint = applicationProperties.getString(ATLAS_ENDPOINT_PROPERTY, "http://localhost:21000");
-        atlasClient = new AtlasClient(atlasEndpoint);
+        atlasEndpoint = applicationProperties.getString(ATLAS_ENDPOINT_PROPERTY, "http://localhost:21000");
         int numThreads = applicationProperties.getInt(CONSUMER_THREADS_PROPERTY, 1);
         List<NotificationConsumer<HookNotification.HookNotificationMessage>> consumers =
                 notificationInterface.createConsumers(NotificationInterface.NotificationType.HOOK, numThreads);
@@ -87,15 +87,8 @@ public class NotificationHookConsumer implements Service {
 
     class HookConsumer implements Runnable {
         private final NotificationConsumer<HookNotification.HookNotificationMessage> consumer;
-        private final AtlasClient client;
 
         public HookConsumer(NotificationConsumer<HookNotification.HookNotificationMessage> consumer) {
-            this(atlasClient, consumer);
-        }
-
-        public HookConsumer(AtlasClient client,
-                            NotificationConsumer<HookNotification.HookNotificationMessage> consumer) {
-            this.client = client;
             this.consumer = consumer;
         }
 
@@ -118,6 +111,9 @@ public class NotificationHookConsumer implements Service {
                 try {
                     if (hasNext()) {
                         HookNotification.HookNotificationMessage message = consumer.next();
+                        UserGroupInformation ugi = UserGroupInformation.createRemoteUser(message.getUser());
+                        AtlasClient atlasClient = getAtlasClient(ugi);
+
                         try {
                             switch (message.getType()) {
                             case ENTITY_CREATE:
@@ -154,9 +150,14 @@ public class NotificationHookConsumer implements Service {
             }
         }
 
+        protected AtlasClient getAtlasClient(UserGroupInformation ugi) {
+            return new AtlasClient(atlasEndpoint, ugi, ugi.getShortUserName());
+        }
+
         boolean serverAvailable(Timer timer) {
             try {
-                while (!client.isServerReady()) {
+                AtlasClient atlasClient = getAtlasClient(UserGroupInformation.getCurrentUser());
+                while (!atlasClient.isServerReady()) {
                     try {
                         LOG.info("Atlas Server is not ready. Waiting for {} milliseconds to retry...",
                                 SERVER_READY_WAIT_TIME_MS);

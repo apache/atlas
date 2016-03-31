@@ -25,6 +25,7 @@ import com.google.gson.JsonParseException;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
+import org.apache.commons.lang.StringUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 
@@ -41,29 +42,24 @@ public class HookNotification implements JsonDeserializer<HookNotification.HookN
     @Override
     public HookNotificationMessage deserialize(JsonElement json, Type typeOfT,
                                                JsonDeserializationContext context) {
-        if (json.isJsonArray()) {
-            JSONArray jsonArray = context.deserialize(json, JSONArray.class);
-            return new EntityCreateRequest(jsonArray);
-        } else {
-            HookNotificationType type =
-                    context.deserialize(((JsonObject) json).get("type"), HookNotificationType.class);
-            switch (type) {
-            case ENTITY_CREATE:
-                return context.deserialize(json, EntityCreateRequest.class);
+        HookNotificationType type =
+                context.deserialize(((JsonObject) json).get("type"), HookNotificationType.class);
+        switch (type) {
+        case ENTITY_CREATE:
+            return context.deserialize(json, EntityCreateRequest.class);
 
-            case ENTITY_FULL_UPDATE:
-                return context.deserialize(json, EntityUpdateRequest.class);
+        case ENTITY_FULL_UPDATE:
+            return context.deserialize(json, EntityUpdateRequest.class);
 
-            case ENTITY_PARTIAL_UPDATE:
-                return context.deserialize(json, EntityPartialUpdateRequest.class);
+        case ENTITY_PARTIAL_UPDATE:
+            return context.deserialize(json, EntityPartialUpdateRequest.class);
 
-            case TYPE_CREATE:
-            case TYPE_UPDATE:
-                return context.deserialize(json, TypeRequest.class);
+        case TYPE_CREATE:
+        case TYPE_UPDATE:
+            return context.deserialize(json, TypeRequest.class);
 
-            default:
-                throw new IllegalStateException("Unhandled type " + type);
-            }
+        default:
+            throw new IllegalStateException("Unhandled type " + type);
         }
     }
 
@@ -78,18 +74,30 @@ public class HookNotification implements JsonDeserializer<HookNotification.HookN
      * Base type of hook message.
      */
     public static class HookNotificationMessage {
+        public static final String UNKNOW_USER = "UNKNOWN";
         protected HookNotificationType type;
+        protected String user;
 
         private HookNotificationMessage() {
         }
 
-        public HookNotificationMessage(HookNotificationType type) {
+        public HookNotificationMessage(HookNotificationType type, String user) {
             this.type = type;
+            this.user = user;
         }
 
         public HookNotificationType getType() {
             return type;
         }
+
+        public String getUser() {
+            if (StringUtils.isEmpty(user)) {
+                return UNKNOW_USER;
+            }
+            return user;
+        }
+
+
     }
 
     /**
@@ -101,8 +109,8 @@ public class HookNotification implements JsonDeserializer<HookNotification.HookN
         private TypeRequest() {
         }
 
-        public TypeRequest(HookNotificationType type, TypesDef typesDef) {
-            super(type);
+        public TypeRequest(HookNotificationType type, TypesDef typesDef, String user) {
+            super(type, user);
             this.typesDef = typesDef;
         }
 
@@ -120,21 +128,21 @@ public class HookNotification implements JsonDeserializer<HookNotification.HookN
         private EntityCreateRequest() {
         }
 
-        public EntityCreateRequest(Referenceable... entities) {
-            this(HookNotificationType.ENTITY_CREATE, Arrays.asList(entities));
+        public EntityCreateRequest(String user, Referenceable... entities) {
+            this(HookNotificationType.ENTITY_CREATE, Arrays.asList(entities), user);
         }
 
-        public EntityCreateRequest(List<Referenceable> entities) {
-            this(HookNotificationType.ENTITY_CREATE, entities);
+        public EntityCreateRequest(String user, List<Referenceable> entities) {
+            this(HookNotificationType.ENTITY_CREATE, entities, user);
         }
 
-        protected EntityCreateRequest(HookNotificationType type, List<Referenceable> entities) {
-            super(type);
+        protected EntityCreateRequest(HookNotificationType type, List<Referenceable> entities, String user) {
+            super(type, user);
             this.entities = entities;
         }
 
-        public EntityCreateRequest(JSONArray jsonArray) {
-            super(HookNotificationType.ENTITY_CREATE);
+        public EntityCreateRequest(String user, JSONArray jsonArray) {
+            super(HookNotificationType.ENTITY_CREATE, user);
             entities = new ArrayList<>();
             for (int index = 0; index < jsonArray.length(); index++) {
                 try {
@@ -154,12 +162,12 @@ public class HookNotification implements JsonDeserializer<HookNotification.HookN
      * Hook message for updating entities(full update).
      */
     public static class EntityUpdateRequest extends EntityCreateRequest {
-        public EntityUpdateRequest(Referenceable... entities) {
-            this(Arrays.asList(entities));
+        public EntityUpdateRequest(String user, Referenceable... entities) {
+            this(user, Arrays.asList(entities));
         }
 
-        public EntityUpdateRequest(List<Referenceable> entities) {
-            super(HookNotificationType.ENTITY_FULL_UPDATE, entities);
+        public EntityUpdateRequest(String user, List<Referenceable> entities) {
+            super(HookNotificationType.ENTITY_FULL_UPDATE, entities, user);
         }
     }
 
@@ -175,9 +183,9 @@ public class HookNotification implements JsonDeserializer<HookNotification.HookN
         private EntityPartialUpdateRequest() {
         }
 
-        public EntityPartialUpdateRequest(String typeName, String attribute, String attributeValue,
+        public EntityPartialUpdateRequest(String user, String typeName, String attribute, String attributeValue,
                                           Referenceable entity) {
-            super(HookNotificationType.ENTITY_PARTIAL_UPDATE);
+            super(HookNotificationType.ENTITY_PARTIAL_UPDATE, user);
             this.typeName = typeName;
             this.attribute = attribute;
             this.attributeValue = attributeValue;

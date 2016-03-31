@@ -19,6 +19,7 @@ package org.apache.atlas.notification;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.testng.annotations.Test;
 
 import static org.mockito.Mockito.*;
@@ -29,10 +30,15 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testConsumerCanProceedIfServerIsReady() throws InterruptedException, AtlasServiceException {
-        AtlasClient atlasClient = mock(AtlasClient.class);
+        final AtlasClient atlasClient = mock(AtlasClient.class);
         NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer();
         NotificationHookConsumer.HookConsumer hookConsumer =
-                notificationHookConsumer.new HookConsumer(atlasClient, mock(NotificationConsumer.class));
+                notificationHookConsumer.new HookConsumer(mock(NotificationConsumer.class)) {
+                    @Override
+                    protected AtlasClient getAtlasClient(UserGroupInformation ugi) {
+                        return atlasClient;
+                    }
+                };
         NotificationHookConsumer.Timer timer = mock(NotificationHookConsumer.Timer.class);
         when(atlasClient.isServerReady()).thenReturn(true);
 
@@ -43,10 +49,15 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testConsumerWaitsNTimesIfServerIsNotReadyNTimes() throws AtlasServiceException, InterruptedException {
-        AtlasClient atlasClient = mock(AtlasClient.class);
+        final AtlasClient atlasClient = mock(AtlasClient.class);
         NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer();
         NotificationHookConsumer.HookConsumer hookConsumer =
-                notificationHookConsumer.new HookConsumer(atlasClient, mock(NotificationConsumer.class));
+                notificationHookConsumer.new HookConsumer(mock(NotificationConsumer.class)) {
+                    @Override
+                    protected AtlasClient getAtlasClient(UserGroupInformation ugi) {
+                        return atlasClient;
+                    }
+                };
         NotificationHookConsumer.Timer timer = mock(NotificationHookConsumer.Timer.class);
         when(atlasClient.isServerReady()).thenReturn(false, false, false, true);
 
@@ -57,10 +68,15 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testConsumerProceedsWithFalseIfInterrupted() throws AtlasServiceException, InterruptedException {
-        AtlasClient atlasClient = mock(AtlasClient.class);
+        final AtlasClient atlasClient = mock(AtlasClient.class);
         NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer();
         NotificationHookConsumer.HookConsumer hookConsumer =
-                notificationHookConsumer.new HookConsumer(atlasClient, mock(NotificationConsumer.class));
+                notificationHookConsumer.new HookConsumer(mock(NotificationConsumer.class)) {
+                    @Override
+                    protected AtlasClient getAtlasClient(UserGroupInformation ugi) {
+                        return atlasClient;
+                    }
+                };
         NotificationHookConsumer.Timer timer = mock(NotificationHookConsumer.Timer.class);
         doThrow(new InterruptedException()).when(timer).sleep(NotificationHookConsumer.SERVER_READY_WAIT_TIME_MS);
         when(atlasClient.isServerReady()).thenReturn(false);
@@ -70,10 +86,15 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testConsumerProceedsWithFalseOnAtlasServiceException() throws AtlasServiceException {
-        AtlasClient atlasClient = mock(AtlasClient.class);
+        final AtlasClient atlasClient = mock(AtlasClient.class);
         NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer();
         NotificationHookConsumer.HookConsumer hookConsumer =
-                notificationHookConsumer.new HookConsumer(atlasClient, mock(NotificationConsumer.class));
+                notificationHookConsumer.new HookConsumer(mock(NotificationConsumer.class)) {
+                    @Override
+                    protected AtlasClient getAtlasClient(UserGroupInformation ugi) {
+                        return atlasClient;
+                    }
+                };
         NotificationHookConsumer.Timer timer = mock(NotificationHookConsumer.Timer.class);
         when(atlasClient.isServerReady()).thenThrow(new AtlasServiceException(AtlasClient.API.VERSION,
                 new Exception()));

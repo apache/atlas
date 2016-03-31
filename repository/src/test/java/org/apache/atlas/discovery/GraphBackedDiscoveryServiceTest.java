@@ -19,15 +19,12 @@
 package org.apache.atlas.discovery;
 
 import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.core.TitanGraph;
-
 import org.apache.atlas.BaseHiveRepositoryTest;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.MetadataRepository;
-import org.apache.atlas.repository.graph.GraphProvider;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.persistence.Id;
@@ -46,7 +43,6 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -58,9 +54,6 @@ import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAt
 
 @Guice(modules = RepositoryMetadataModule.class)
 public class GraphBackedDiscoveryServiceTest extends BaseHiveRepositoryTest {
-
-    @Inject
-    private GraphProvider<TitanGraph> graphProvider;
 
     @Inject
     private MetadataRepository repositoryService;

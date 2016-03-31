@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -80,16 +81,29 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
      * @param events events to be added
      * @throws AtlasException
      */
+    @Override
     public void putEvents(EntityAuditRepository.EntityAuditEvent... events) throws AtlasException {
-        LOG.info("Putting {} events", events.length);
+        putEvents(Arrays.asList(events));
+    }
+
+    @Override
+    /**
+     * Add events to the event repository
+     * @param events events to be added
+     * @throws AtlasException
+     */
+    public void putEvents(List<EntityAuditEvent> events) throws AtlasException {
+        LOG.info("Putting {} events", events.size());
         Table table = null;
         try {
             table = connection.getTable(tableName);
-            List<Put> puts = new ArrayList<>(events.length);
+            List<Put> puts = new ArrayList<>(events.size());
             for (EntityAuditRepository.EntityAuditEvent event : events) {
                 LOG.debug("Adding entity audit event {}", event);
                 Put put = new Put(getKey(event.entityId, event.timestamp));
-                addColumn(put, COLUMN_ACTION, event.action);
+                if (event.action != null) {
+                    put.addColumn(COLUMN_FAMILY, COLUMN_ACTION, Bytes.toBytes((short)event.action.ordinal()));
+                }
                 addColumn(put, COLUMN_USER, event.user);
                 addColumn(put, COLUMN_DETAIL, event.details);
                 puts.add(put);
@@ -145,7 +159,8 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
                 String key = Bytes.toString(result.getRow());
                 EntityAuditRepository.EntityAuditEvent event = fromKey(key);
                 event.user = getResultString(result, COLUMN_USER);
-                event.action = getResultString(result, COLUMN_ACTION);
+                event.action =
+                        EntityAuditAction.values()[(Bytes.toShort(result.getValue(COLUMN_FAMILY, COLUMN_ACTION)))];
                 event.details = getResultString(result, COLUMN_DETAIL);
                 events.add(event);
             }
@@ -189,7 +204,7 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
      * @throws AtlasException
      * @param atlasConf
      */
-    public org.apache.hadoop.conf.Configuration getHBaseConfiguration(Configuration atlasConf) throws AtlasException {
+    public static org.apache.hadoop.conf.Configuration getHBaseConfiguration(Configuration atlasConf) throws AtlasException {
         Configuration subsetAtlasConf =
                 ApplicationProperties.getSubsetConfiguration(atlasConf, CONFIG_PREFIX);
         org.apache.hadoop.conf.Configuration hbaseConf = HBaseConfiguration.create();

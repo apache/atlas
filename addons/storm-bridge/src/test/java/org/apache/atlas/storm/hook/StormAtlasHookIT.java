@@ -20,9 +20,13 @@ package org.apache.atlas.storm.hook;
 
 import backtype.storm.ILocalCluster;
 import backtype.storm.generated.StormTopology;
+import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
+import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.storm.model.StormDataModel;
 import org.apache.atlas.storm.model.StormDataTypes;
 import org.apache.atlas.typesystem.Referenceable;
@@ -57,8 +61,39 @@ public class StormAtlasHookIT {
 
         Configuration configuration = ApplicationProperties.get();
         atlasClient = new AtlasClient(configuration.getString("atlas.rest.address", ATLAS_URL));
-        new StormAtlasHook().registerDataModel(new HiveDataModelGenerator());
+        registerDataModel(new HiveDataModelGenerator());
     }
+
+    private void registerDataModel(HiveDataModelGenerator dataModelGenerator) throws AtlasException,
+            AtlasServiceException {
+        try {
+            atlasClient.getType(HiveDataTypes.HIVE_PROCESS.getName());
+            LOG.info("Hive data model is already registered! Going ahead with registration of Storm Data model");
+        } catch(AtlasServiceException ase) {
+            if (ase.getStatus() == ClientResponse.Status.NOT_FOUND) {
+                //Expected in case types do not exist
+                LOG.info("Registering Hive data model");
+                atlasClient.createType(dataModelGenerator.getModelAsJson());
+            } else {
+                throw ase;
+            }
+        }
+
+
+        try {
+            atlasClient.getType(StormDataTypes.STORM_TOPOLOGY.getName());
+        } catch(AtlasServiceException ase) {
+            if (ase.getStatus() == ClientResponse.Status.NOT_FOUND) {
+                LOG.info("Registering Storm/Kafka data model");
+                StormDataModel.main(new String[]{});
+                TypesDef typesDef = StormDataModel.typesDef();
+                String stormTypesAsJSON = TypesSerialization.toJson(typesDef);
+                LOG.info("stormTypesAsJSON = {}", stormTypesAsJSON);
+                atlasClient.createType(stormTypesAsJSON);
+            }
+        }
+    }
+
 
     @AfterClass
     public void tearDown() throws Exception {
@@ -76,7 +111,7 @@ public class StormAtlasHookIT {
         String stormTypesAsJSON = TypesSerialization.toJson(stormTypesDef);
         LOG.info("stormTypesAsJSON = {}", stormTypesAsJSON);
 
-        new StormAtlasHook().registerDataModel(new HiveDataModelGenerator());
+        registerDataModel(new HiveDataModelGenerator());
 
         // verify types are registered
         for (StormDataTypes stormDataType : StormDataTypes.values()) {

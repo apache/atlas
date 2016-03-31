@@ -16,13 +16,14 @@
  */
 package org.apache.atlas.web.filters;
 
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.web.security.BaseSecurityTest;
 import org.apache.atlas.web.service.EmbeddedServer;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.hdfs.web.URLConnectionFactory;
 import org.eclipse.jetty.server.Server;
-import org.testng.Assert;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.testng.annotations.Test;
 
 import javax.security.auth.Subject;
@@ -40,10 +41,12 @@ import java.net.URL;
 import java.security.PrivilegedExceptionAction;
 import java.util.Properties;
 
+import static org.testng.Assert.assertEquals;
+
 /**
  *
  */
-public class MetadataAuthenticationKerberosFilterIT extends BaseSecurityTest {
+public class AtlasAuthenticationKerberosFilterIT extends BaseSecurityTest {
     public static final String TEST_USER_JAAS_SECTION = "TestUser";
     public static final String TESTUSER = "testuser";
     public static final String TESTPASS = "testpass";
@@ -58,6 +61,14 @@ public class MetadataAuthenticationKerberosFilterIT extends BaseSecurityTest {
 
         Server getServer() {
             return server;
+        }
+
+        @Override
+        protected WebAppContext getWebAppContext(String path) {
+            WebAppContext application = new WebAppContext(path, "/");
+            application.setDescriptor(System.getProperty("projectBaseDir") + "/webapp/src/test/webapp/WEB-INF/web.xml");
+            application.setClassLoader(Thread.currentThread().getContextClassLoader());
+            return application;
         }
     }
 
@@ -86,7 +97,7 @@ public class MetadataAuthenticationKerberosFilterIT extends BaseSecurityTest {
             connection.setRequestMethod("GET");
             connection.connect();
 
-            Assert.assertEquals(connection.getResponseCode(), 401);
+            assertEquals(connection.getResponseCode(), 401);
 
             // need to populate the ticket cache with a local user, so logging in...
             Subject subject = loginTestUser();
@@ -100,8 +111,8 @@ public class MetadataAuthenticationKerberosFilterIT extends BaseSecurityTest {
                     connection.setRequestMethod("GET");
                     connection.connect();
 
-                    Assert.assertEquals(connection.getResponseCode(), 200);
-
+                    assertEquals(connection.getResponseCode(), 200);
+                    assertEquals(RequestContext.get().getUser(), TESTUSER);
                     return null;
                 }
             });

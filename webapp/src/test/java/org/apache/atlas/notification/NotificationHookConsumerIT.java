@@ -33,6 +33,8 @@ import static org.testng.Assert.assertEquals;
 @Guice(modules = NotificationModule.class)
 public class NotificationHookConsumerIT extends BaseResourceIT {
 
+    private static final String TEST_USER = "testuser";
+
     @Inject
     private NotificationInterface kafka;
 
@@ -57,7 +59,7 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         entity.set("name", "db" + randomString());
         entity.set("description", randomString());
 
-        sendHookMessage(new HookNotification.EntityCreateRequest(entity));
+        sendHookMessage(new HookNotification.EntityCreateRequest(TEST_USER, entity));
 
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
@@ -79,7 +81,8 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
 
         final Referenceable newEntity = new Referenceable(DATABASE_TYPE);
         newEntity.set("owner", randomString());
-        sendHookMessage(new HookNotification.EntityPartialUpdateRequest(DATABASE_TYPE, "name", dbName, newEntity));
+        sendHookMessage(
+                new HookNotification.EntityPartialUpdateRequest(TEST_USER, DATABASE_TYPE, "name", dbName, newEntity));
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
@@ -105,7 +108,8 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         final String newName = "db" + randomString();
         newEntity.set("name", newName);
 
-        sendHookMessage(new HookNotification.EntityPartialUpdateRequest(DATABASE_TYPE, "name", dbName, newEntity));
+        sendHookMessage(
+                new HookNotification.EntityPartialUpdateRequest(TEST_USER, DATABASE_TYPE, "name", dbName, newEntity));
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
@@ -135,7 +139,7 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         newEntity.set("owner", randomString());
 
         //updating unique attribute
-        sendHookMessage(new HookNotification.EntityUpdateRequest(newEntity));
+        sendHookMessage(new HookNotification.EntityUpdateRequest(TEST_USER, newEntity));
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {

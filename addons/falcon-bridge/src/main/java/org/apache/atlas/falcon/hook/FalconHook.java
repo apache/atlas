@@ -20,22 +20,17 @@ package org.apache.atlas.falcon.hook;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Guice;
-import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.sun.jersey.api.client.ClientResponse;
-import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.falcon.model.FalconDataModelGenerator;
 import org.apache.atlas.falcon.model.FalconDataTypes;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
+import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.notification.NotificationModule;
-import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.typesystem.Referenceable;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.falcon.atlas.Util.EventUtil;
 import org.apache.falcon.atlas.event.FalconEvent;
@@ -50,8 +45,7 @@ import org.apache.falcon.entity.v0.process.Cluster;
 import org.apache.falcon.entity.v0.process.Input;
 import org.apache.falcon.entity.v0.process.Output;
 import org.apache.falcon.entity.v0.process.Process;
-import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.falcon.security.CurrentUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +59,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Falcon hook sends lineage information to the Atlas Service.
  */
-public class FalconHook extends FalconEventPublisher {
+public class FalconHook extends AtlasHook implements FalconEventPublisher {
     private static final Logger LOG = LoggerFactory.getLogger(FalconHook.class);
 
     public static final String CONF_PREFIX = "atlas.hook.falcon.";
@@ -77,10 +71,6 @@ public class FalconHook extends FalconEventPublisher {
 
     public static final String HOOK_NUM_RETRIES = CONF_PREFIX + "numRetries";
 
-    public static final String ATLAS_ENDPOINT = "atlas.rest.address";
-
-    private static  AtlasClient atlasClient;
-
     // wait time determines how long we wait before we exit the jvm on
     // shutdown. Pending requests after that will not be sent.
     private static final int WAIT_TIME = 3;
@@ -91,20 +81,12 @@ public class FalconHook extends FalconEventPublisher {
     private static final long keepAliveTimeDefault = 10;
     private static final int queueSizeDefault = 10000;
 
-    private static Configuration atlasProperties;
-    @Inject
-    private static NotificationInterface notifInterface;
-
-    public static boolean typesRegistered = false;
-
     private static boolean sync;
 
     private static ConfigurationStore STORE;
 
     static {
         try {
-            atlasProperties = ApplicationProperties.get();
-
             // initialize the async facility to process hook calls. We don't
             // want to do this inline since it adds plenty of overhead for the query.
             int minThreads = atlasProperties.getInt(MIN_THREADS, minThreadsDefault);
@@ -130,8 +112,6 @@ public class FalconHook extends FalconEventPublisher {
                     // shutdown client
                 }
             });
-            atlasClient = new AtlasClient(atlasProperties.getString(ATLAS_ENDPOINT),
-                    EventUtil.getUgi(), EventUtil.getUgi().getShortUserName());
 
             STORE = ConfigurationStore.get();
         } catch (Exception e) {
@@ -166,7 +146,17 @@ public class FalconHook extends FalconEventPublisher {
     private void fireAndForget(FalconEvent event) throws Exception {
         LOG.info("Entered Atlas hook for Falcon hook operation {}", event.getOperation());
 
-        notifyEntity(createEntities(event));
+        notifyEntities(getAuthenticatedUser(), createEntities(event));
+    }
+
+    private String getAuthenticatedUser() {
+        String user = null;
+        try {
+            user = CurrentUser.getAuthenticatedUser();
+        } catch (IllegalArgumentException e) {
+            LOG.warn("Failed to get user from CurrentUser.getAuthenticatedUser");
+        }
+        return getUser(user, null);
     }
 
     private List<Referenceable> createEntities(FalconEvent event) throws Exception {
@@ -177,36 +167,6 @@ public class FalconHook extends FalconEventPublisher {
 
         return null;
     }
-
-    /**
-     * Notify atlas of the entity through message. The entity can be a complex entity with reference to other entities.
-     * De-duping of entities is done on server side depending on the unique attribute on the
-     *
-     * @param entities entitiies to add
-     */
-    private void notifyEntity(List<Referenceable> entities) {
-        int maxRetries = atlasProperties.getInt(HOOK_NUM_RETRIES, 3);
-        String message = entities.toString();
-
-        int numRetries = 0;
-        while (true) {
-            try {
-                notifInterface.send(NotificationInterface.NotificationType.HOOK,
-                        new HookNotification.EntityCreateRequest(entities));
-                return;
-            } catch (Exception e) {
-                numRetries++;
-                if (numRetries < maxRetries) {
-                    LOG.debug("Failed to notify atlas for entity {}. Retrying", message, e);
-                } else {
-                    LOG.error("Failed to notify atlas for entity {} after {} retries. Quitting", message,
-                            maxRetries, e);
-                    break;
-                }
-            }
-        }
-    }
-
 
     /**
      +     * Creates process entity
@@ -324,32 +284,9 @@ public class FalconHook extends FalconEventPublisher {
         return entities;
     }
 
-    public synchronized void registerFalconDataModel() throws Exception {
-        if (isDataModelAlreadyRegistered()) {
-            LOG.info("Falcon data model is already registered!");
-            return;
-        }
-
-        HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(new HiveConf(), atlasProperties,
-                UserGroupInformation.getCurrentUser().getShortUserName(), UserGroupInformation.getCurrentUser());
-        hiveMetaStoreBridge.registerHiveDataModel();
-
-        FalconDataModelGenerator dataModelGenerator = new FalconDataModelGenerator();
-        LOG.info("Registering Falcon data model");
-        atlasClient.createType(dataModelGenerator.getModelAsJson());
-    }
-
-    private boolean isDataModelAlreadyRegistered() throws Exception {
-        try {
-            atlasClient.getType(FalconDataTypes.FALCON_PROCESS_ENTITY.getName());
-            LOG.info("Hive data model is already registered!");
-            return true;
-        } catch(AtlasServiceException ase) {
-            if (ase.getStatus() == ClientResponse.Status.NOT_FOUND) {
-                return false;
-            }
-            throw ase;
-        }
+    @Override
+    protected String getNumberOfRetriesPropertyKey() {
+        return HOOK_NUM_RETRIES;
     }
 }
 

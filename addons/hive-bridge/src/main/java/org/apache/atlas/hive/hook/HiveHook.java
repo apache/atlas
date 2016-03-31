@@ -20,14 +20,12 @@ package org.apache.atlas.hive.hook;
 
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.typesystem.Referenceable;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.api.Database;
@@ -86,8 +84,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private static final long keepAliveTimeDefault = 10;
     private static final int queueSizeDefault = 10000;
 
-    private static Configuration atlasProperties;
-
     class HiveEvent {
         public Set<ReadEntity> inputs;
         public Set<WriteEntity> outputs;
@@ -108,8 +104,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
     static {
         try {
-            atlasProperties = ApplicationProperties.get();
-
             // initialize the async facility to process hook calls. We don't
             // want to do this inline since it adds plenty of overhead for the query.
             int minThreads = atlasProperties.getInt(MIN_THREADS, minThreadsDefault);
@@ -166,7 +160,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         event.inputs = hookContext.getInputs();
         event.outputs = hookContext.getOutputs();
 
-        event.user = hookContext.getUserName() == null ? hookContext.getUgi().getUserName() : hookContext.getUserName();
+        event.user = getUser(hookContext.getUserName(), hookContext.getUgi());
         event.ugi = hookContext.getUgi();
         event.operation = OPERATION_MAP.get(hookContext.getOperationName());
         event.hookType = hookContext.getHookType();
@@ -258,7 +252,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         for (WriteEntity writeEntity : event.outputs) {
             if (writeEntity.getType() == Type.DATABASE) {
                 //Create/update table entity
-                createOrUpdateEntities(dgiBridge, writeEntity);
+                createOrUpdateEntities(dgiBridge, event.user, writeEntity);
             }
         }
     }
@@ -271,7 +265,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
            //Below check should  filter out partition related
            if (writeEntity.getType() == Entity.Type.TABLE) {
                //Create/update table entity
-               createOrUpdateEntities(dgiBridge, writeEntity);
+               createOrUpdateEntities(dgiBridge, event.user, writeEntity);
            }
         }
     }
@@ -292,7 +286,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                     .equals(oldTable.getTableName())) {
 
                     //Create/update old table entity - create new entity and replace id
-                    Referenceable tableEntity = createOrUpdateEntities(dgiBridge, writeEntity);
+                    Referenceable tableEntity = createOrUpdateEntities(dgiBridge, event.user, writeEntity);
                     String oldQualifiedName = dgiBridge.getTableQualifiedName(dgiBridge.getClusterName(),
                             oldTable.getDbName(), oldTable.getTableName());
                     tableEntity.set(HiveDataModelGenerator.NAME, oldQualifiedName);
@@ -304,14 +298,15 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                     Referenceable newEntity = new Referenceable(HiveDataTypes.HIVE_TABLE.getName());
                     newEntity.set(HiveDataModelGenerator.NAME, newQualifiedName);
                     newEntity.set(HiveDataModelGenerator.TABLE_NAME, newTable.getTableName().toLowerCase());
-                    messages.add(new HookNotification.EntityPartialUpdateRequest(HiveDataTypes.HIVE_TABLE.getName(),
-                            HiveDataModelGenerator.NAME, oldQualifiedName, newEntity));
+                    messages.add(new HookNotification.EntityPartialUpdateRequest(event.user,
+                            HiveDataTypes.HIVE_TABLE.getName(), HiveDataModelGenerator.NAME,
+                            oldQualifiedName, newEntity));
                 }
             }
         }
     }
 
-    private Referenceable createOrUpdateEntities(HiveMetaStoreBridge dgiBridge, Entity entity) throws Exception {
+    private Referenceable createOrUpdateEntities(HiveMetaStoreBridge dgiBridge, String user, Entity entity) throws Exception {
         Database db = null;
         Table table = null;
         Partition partition = null;
@@ -351,14 +346,14 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             entities.add(partitionEntity);
         }
 
-        messages.add(new HookNotification.EntityUpdateRequest(entities));
+        messages.add(new HookNotification.EntityUpdateRequest(user, entities));
         return tableEntity;
     }
 
     private void handleEventOutputs(HiveMetaStoreBridge dgiBridge, HiveEvent event, Type entityType) throws Exception {
         for (WriteEntity entity : event.outputs) {
             if (entity.getType() == entityType) {
-                createOrUpdateEntities(dgiBridge, entity);
+                createOrUpdateEntities(dgiBridge, event.user, entity);
             }
         }
     }
@@ -396,7 +391,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         List<Referenceable> source = new ArrayList<>();
         for (ReadEntity readEntity : inputs) {
             if (readEntity.getType() == Type.TABLE || readEntity.getType() == Type.PARTITION) {
-                Referenceable inTable = createOrUpdateEntities(dgiBridge, readEntity);
+                Referenceable inTable = createOrUpdateEntities(dgiBridge, event.user, readEntity);
                 source.add(inTable);
             }
         }
@@ -405,7 +400,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         List<Referenceable> target = new ArrayList<>();
         for (WriteEntity writeEntity : outputs) {
             if (writeEntity.getType() == Type.TABLE || writeEntity.getType() == Type.PARTITION) {
-                Referenceable outTable = createOrUpdateEntities(dgiBridge, writeEntity);
+                Referenceable outTable = createOrUpdateEntities(dgiBridge, event.user, writeEntity);
                 target.add(outTable);
             }
         }
@@ -417,7 +412,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
         //TODO set
         processReferenceable.set("queryGraph", "queryGraph");
-        messages.add(new HookNotification.EntityCreateRequest(processReferenceable));
+        messages.add(new HookNotification.EntityCreateRequest(event.user, processReferenceable));
     }
 
 
@@ -432,6 +427,4 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             return new JSONObject();
         }
     }
-
-
 }

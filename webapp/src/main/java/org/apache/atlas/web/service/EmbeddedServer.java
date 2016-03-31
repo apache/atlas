@@ -45,9 +45,14 @@ public class EmbeddedServer {
         Connector connector = getConnector(port);
         server.addConnector(connector);
 
+        WebAppContext application = getWebAppContext(path);
+        server.setHandler(application);
+    }
+
+    protected WebAppContext getWebAppContext(String path) {
         WebAppContext application = new WebAppContext(path, "/");
         application.setClassLoader(Thread.currentThread().getContextClassLoader());
-        server.setHandler(application);
+        return application;
     }
 
     public static EmbeddedServer newServer(int port, String path, boolean secure) throws IOException {

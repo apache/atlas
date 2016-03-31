@@ -22,6 +22,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.web.TestUtils;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.alias.JavaKeyStoreProvider;
@@ -95,7 +96,7 @@ public class NegativeSSLAndKerberosTest extends BaseSSLAndKerberosTest {
         System.setProperty("atlas.conf", persistDir);
         secureEmbeddedServer = new TestSecureEmbeddedServer(21443, getWarPath()) {
             @Override
-            public PropertiesConfiguration getConfiguration() {
+            public Configuration getConfiguration() {
                 return configuration;
             }
         };

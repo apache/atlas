@@ -27,6 +27,10 @@ import java.util.List;
  * Interface for repository for storing entity audit events
  */
 public interface EntityAuditRepository {
+    enum EntityAuditAction {
+        ENTITY_CREATE, ENTITY_UPDATE, ENTITY_DELETE, TAG_ADD, TAG_DELETE;
+    }
+
     /**
      * Structure of entity audit event
      */
@@ -34,13 +38,13 @@ public interface EntityAuditRepository {
         String entityId;
         Long timestamp;
         String user;
-        String action;
+        EntityAuditAction action;
         String details;
 
         public EntityAuditEvent() {
         }
 
-        public EntityAuditEvent(String entityId, long ts, String user, String action, String details) {
+        public EntityAuditEvent(String entityId, Long ts, String user, EntityAuditAction action, String details) {
             this.entityId = entityId;
             this.timestamp = ts;
             this.user = user;
@@ -61,7 +65,7 @@ public interface EntityAuditRepository {
             EntityAuditEvent otherEvent = (EntityAuditEvent) other;
             return StringUtils.equals(entityId, otherEvent.entityId) &&
                     (timestamp.longValue() == otherEvent.timestamp.longValue()) &&
-                    StringUtils.equals(user, otherEvent.user) && StringUtils.equals(action, otherEvent.action) &&
+                    StringUtils.equals(user, otherEvent.user) && (action == otherEvent.action) &&
                     StringUtils.equals(details, otherEvent.details);
         }
 
@@ -77,6 +81,26 @@ public interface EntityAuditRepository {
                    .append(user).append(";Action=").append(action).append(";Details=").append(details);
             return builder.toString();
         }
+
+        public String getEntityId() {
+            return entityId;
+        }
+
+        public Long getTimestamp() {
+            return timestamp;
+        }
+
+        public String getUser() {
+            return user;
+        }
+
+        public EntityAuditAction getAction() {
+            return action;
+        }
+
+        public String getDetails() {
+            return details;
+        }
     }
 
     /**
@@ -85,6 +109,13 @@ public interface EntityAuditRepository {
      * @throws AtlasException
      */
     void putEvents(EntityAuditEvent... events) throws AtlasException;
+
+    /**
+     * Add events to the event repository
+     * @param events events to be added
+     * @throws AtlasException
+     */
+    void putEvents(List<EntityAuditEvent> events) throws AtlasException;
 
     /**
      * List events for the given entity id in decreasing order of timestamp, from the given timestamp. Returns n results

@@ -16,11 +16,11 @@
  */
 package org.apache.atlas.web.filters;
 
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.web.security.BaseSecurityTest;
 import org.apache.atlas.web.service.EmbeddedServer;
 import org.apache.commons.configuration.ConfigurationException;
 import org.eclipse.jetty.server.Server;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -28,10 +28,13 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Properties;
 
+import static org.testng.Assert.assertEquals;
+
 /**
  *
  */
-public class MetadataAuthenticationSimpleFilterIT extends BaseSecurityTest {
+public class AtlasAuthenticationSimpleFilterIT extends BaseSecurityTest {
+    public static final String TESTUSER = "testuser";
 
     class TestEmbeddedServer extends EmbeddedServer {
         public TestEmbeddedServer(int port, String path) throws IOException {
@@ -60,7 +63,7 @@ public class MetadataAuthenticationSimpleFilterIT extends BaseSecurityTest {
             connection.connect();
 
             try {
-                Assert.assertEquals(connection.getResponseCode(), 403);
+                assertEquals(connection.getResponseCode(), 403);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -70,7 +73,8 @@ public class MetadataAuthenticationSimpleFilterIT extends BaseSecurityTest {
             connection.setRequestMethod("GET");
             connection.connect();
 
-            Assert.assertEquals(connection.getResponseCode(), 200);
+            assertEquals(connection.getResponseCode(), 200);
+            assertEquals(RequestContext.get().getUser(), TESTUSER);
         } finally {
             server.getServer().stop();
             if (originalConf != null) {

@@ -18,10 +18,8 @@
 
 package org.apache.atlas.web.security;
 
-import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.web.TestUtils;
 import org.apache.atlas.web.service.SecureEmbeddedServer;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.conf.Configuration;
@@ -30,6 +28,7 @@ import org.apache.hadoop.security.alias.CredentialProvider;
 import org.apache.hadoop.security.alias.CredentialProviderFactory;
 import org.apache.hadoop.security.alias.JavaKeyStoreProvider;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -47,6 +46,7 @@ public class SSLTest extends BaseSSLAndKerberosTest {
     private Path jksPath;
     private String providerUrl;
     private TestSecureEmbeddedServer secureEmbeddedServer;
+    private String originalConf;
 
     class TestSecureEmbeddedServer extends SecureEmbeddedServer {
 
@@ -59,8 +59,11 @@ public class SSLTest extends BaseSSLAndKerberosTest {
         }
 
         @Override
-        public org.apache.commons.configuration.Configuration getConfiguration() {
-            return super.getConfiguration();
+        protected WebAppContext getWebAppContext(String path) {
+            WebAppContext application = new WebAppContext(path, "/");
+            application.setDescriptor(System.getProperty("projectBaseDir") + "/webapp/src/test/webapp/WEB-INF/web.xml");
+            application.setClassLoader(Thread.currentThread().getContextClassLoader());
+            return application;
         }
     }
 
@@ -69,13 +72,9 @@ public class SSLTest extends BaseSSLAndKerberosTest {
         jksPath = new Path(Files.createTempDirectory("tempproviders").toString(), "test.jks");
         providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file/" + jksPath.toUri();
 
-        String persistDir = TestUtils.getTempDirectory();
-
         setupCredentials();
-
         final PropertiesConfiguration configuration = getSSLConfiguration(providerUrl);
-        TestUtils.writeConfiguration(configuration, persistDir + File.separator +
-            ApplicationProperties.APPLICATION_PROPERTIES);
+        String persistDir = writeConfiguration(configuration);
 
         dgiCLient = new AtlasClient(DGI_URL) {
             @Override
@@ -84,6 +83,8 @@ public class SSLTest extends BaseSSLAndKerberosTest {
             }
         };
 
+        originalConf = System.getProperty("atlas.conf");
+        System.setProperty("atlas.conf", persistDir);
         secureEmbeddedServer = new TestSecureEmbeddedServer(21443, getWarPath()) {
             @Override
             public PropertiesConfiguration getConfiguration() {
@@ -97,6 +98,10 @@ public class SSLTest extends BaseSSLAndKerberosTest {
     public void tearDown() throws Exception {
         if (secureEmbeddedServer != null) {
             secureEmbeddedServer.getServer().stop();
+        }
+
+        if (originalConf != null) {
+            System.setProperty("atlas.conf", originalConf);
         }
     }
 

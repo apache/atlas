@@ -17,6 +17,7 @@
 package org.apache.atlas.web.listeners;
 
 import com.google.inject.Key;
+import com.google.inject.Module;
 import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
 import com.thinkaurelius.titan.core.TitanGraph;
@@ -57,6 +58,11 @@ public class TestGuiceServletConfig extends GuiceServletConfig {
                 LOG.warn("Clearing graph store failed ", e);
             }
         }
+    }
+
+    @Override
+    protected Module getRepositoryModule() {
+        return new TestModule();
     }
 
     @Override

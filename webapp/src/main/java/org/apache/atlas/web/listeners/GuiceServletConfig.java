@@ -21,6 +21,7 @@ package org.apache.atlas.web.listeners;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.inject.Module;
 import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
 import com.google.inject.servlet.GuiceServletContextListener;
@@ -33,13 +34,9 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RepositoryMetadataModule;
-import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.notification.NotificationModule;
-import org.apache.atlas.notification.entity.NotificationEntityChangeListener;
 import org.apache.atlas.repository.graph.GraphProvider;
 import org.apache.atlas.service.Services;
-import org.apache.atlas.services.MetadataService;
-import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.web.filters.AtlasAuthenticationFilter;
 import org.apache.atlas.web.filters.AuditFilter;
 import org.apache.commons.configuration.Configuration;
@@ -75,7 +72,7 @@ public class GuiceServletConfig extends GuiceServletContextListener {
             LoginProcessor loginProcessor = new LoginProcessor();
             loginProcessor.login();
 
-            injector = Guice.createInjector(new RepositoryMetadataModule(), new NotificationModule(),
+            injector = Guice.createInjector(getRepositoryModule(), new NotificationModule(),
                     new JerseyServletModule() {
                         @Override
                         protected void configureServlets() {
@@ -99,6 +96,7 @@ public class GuiceServletConfig extends GuiceServletContextListener {
                             try {
                                 Configuration configuration = ApplicationProperties.get();
                                 if (Boolean.valueOf(configuration.getString(HTTP_AUTHENTICATION_ENABLED))) {
+                                    LOG.info("Enabling AuthenticationFilter");
                                     filter("/*").through(AtlasAuthenticationFilter.class);
                                 }
                             } catch (AtlasException e) {
@@ -113,13 +111,16 @@ public class GuiceServletConfig extends GuiceServletContextListener {
         return injector;
     }
 
+    protected Module getRepositoryModule() {
+        return new RepositoryMetadataModule();
+    }
+
     @Override
     public void contextInitialized(ServletContextEvent servletContextEvent) {
         super.contextInitialized(servletContextEvent);
 
         installLogBridge();
 
-        initMetadataService();
         startServices();
     }
 
@@ -148,7 +149,12 @@ public class GuiceServletConfig extends GuiceServletContextListener {
             TypeLiteral<GraphProvider<TitanGraph>> graphProviderType = new TypeLiteral<GraphProvider<TitanGraph>>() {};
             Provider<GraphProvider<TitanGraph>> graphProvider = injector.getProvider(Key.get(graphProviderType));
             final Graph graph = graphProvider.get().get();
-            graph.shutdown();
+
+            try {
+                graph.shutdown();
+            } catch(Throwable t) {
+                LOG.warn("Error while shutting down graph", t);
+            }
 
             //stop services
             stopServices();
@@ -159,18 +165,5 @@ public class GuiceServletConfig extends GuiceServletContextListener {
         LOG.debug("Stopping services");
         Services services = injector.getInstance(Services.class);
         services.stop();
-    }
-
-    // initialize the metadata service
-    private void initMetadataService() {
-        MetadataService metadataService = injector.getInstance(MetadataService.class);
-
-        // add a listener for entity changes
-        NotificationInterface notificationInterface = injector.getInstance(NotificationInterface.class);
-
-        NotificationEntityChangeListener listener =
-            new NotificationEntityChangeListener(notificationInterface, TypeSystem.getInstance());
-
-        metadataService.registerListener(listener);
     }
 }
