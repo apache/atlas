@@ -21,6 +21,7 @@ package org.apache.atlas.sqoop.hook;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
@@ -61,7 +62,7 @@ public class SqoopHook extends SqoopJobDataPublisher {
     public Referenceable createHiveDatabaseInstance(String clusterName, String dbName)
             throws Exception {
         Referenceable dbRef = new Referenceable(HiveDataTypes.HIVE_DB.getName());
-        dbRef.set(HiveDataModelGenerator.CLUSTER_NAME, clusterName);
+        dbRef.set(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, clusterName);
         dbRef.set(HiveDataModelGenerator.NAME, dbName);
         dbRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 HiveMetaStoreBridge.getDBQualifiedName(clusterName, dbName));

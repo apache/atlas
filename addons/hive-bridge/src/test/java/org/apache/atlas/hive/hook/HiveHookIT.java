@@ -62,6 +62,11 @@ public class HiveHookIT {
     private AtlasClient dgiCLient;
     private SessionState ss;
 
+    private enum QUERY_TYPE {
+        GREMLIN,
+        DSL
+    }
+
     @BeforeClass
     public void setUp() throws Exception {
         //Set-up hive session
@@ -130,12 +135,19 @@ public class HiveHookIT {
     }
 
     private String createTable() throws Exception {
-        return createTable(true);
+        return createTable(false);
     }
 
-    private String createTable(boolean partition) throws Exception {
+    private String createTable(boolean isPartitioned) throws Exception {
         String tableName = tableName();
-        runCommand("create table " + tableName + "(id int, name string) comment 'table comment' " + (partition ?
+        runCommand("create table " + tableName + "(id int, name string) comment 'table comment' " + (isPartitioned ?
+            " partitioned by(dt string)" : ""));
+        return tableName;
+    }
+
+    private String createTable(boolean isPartitioned, boolean isTemporary) throws Exception {
+        String tableName = tableName();
+        runCommand("create " + (isTemporary ? "TEMPORARY " : "") + "table " + tableName + "(id int, name string) comment 'table comment' " + (isPartitioned ?
             " partitioned by(dt string)" : ""));
         return tableName;
     }
@@ -181,7 +193,7 @@ public class HiveHookIT {
         LOG.debug("Searching for column {}", colName);
         String query =
             String.format("%s where qualifiedName = '%s'", HiveDataTypes.HIVE_COLUMN.getName(), colName.toLowerCase());
-        assertEntityIsNotRegistered(query);
+        assertEntityIsNotRegistered(QUERY_TYPE.DSL, query);
     }
 
     @Test
@@ -266,19 +278,99 @@ public class HiveHookIT {
     }
 
     @Test
-    public void testInsert() throws Exception {
+    public void testLoadDataIntoPartition() throws Exception {
+        String tableName = createTable(true);
+
+        String loadFile = file("load");
+        String query = "load data local inpath 'file://" + loadFile + "' into table " + tableName +  " partition(dt = '2015-01-01')";
+        runCommand(query);
+
+        String processId = assertProcessIsRegistered(query);
+        Referenceable process = dgiCLient.getEntity(processId);
+        Assert.assertNull(process.get("inputs"));
+
+        System.out.println(" Ref Ops : " + process.get("outputs"));
+        Assert.assertEquals(((List<Referenceable>) process.get("outputs")).size(), 1);
+    }
+
+    @Test
+    public void testInsertIntoTable() throws Exception {
         String tableName = createTable();
         String insertTableName = createTable();
         String query =
-                "insert into " + insertTableName + " partition(dt = '2015-01-01') select id, name from " + tableName
-                        + " where dt = '2015-01-01'";
+                "insert into " + insertTableName + " select id, name from " + tableName;
 
         runCommand(query);
-        assertProcessIsRegistered(query);
-        String partId = assertPartitionIsRegistered(DEFAULT_DB, insertTableName, "2015-01-01");
-        Referenceable partitionEntity = dgiCLient.getEntity(partId);
-        Assert.assertEquals(partitionEntity.get("qualifiedName"),
-            String.format("%s.%s.%s@%s", "default", insertTableName.toLowerCase(), "2015-01-01", CLUSTER_NAME));
+        String processId = assertProcessIsRegistered(query);
+        Referenceable process = dgiCLient.getEntity(processId);
+        Assert.assertEquals(((List<Referenceable>) process.get("inputs")).size(), 1);
+        Assert.assertEquals(((List<Referenceable>) process.get("outputs")).size(), 1);
+
+        assertTableIsRegistered(DEFAULT_DB, tableName);
+        assertTableIsRegistered(DEFAULT_DB, insertTableName);
+    }
+
+    @Test
+    public void testInsertIntoLocalDir() throws Exception {
+        String tableName = createTable();
+        File randomLocalPath = File.createTempFile("hiverandom", ".tmp");
+        String query =
+            "insert overwrite LOCAL DIRECTORY '" + randomLocalPath.getAbsolutePath() + "' select id, name from " + tableName;
+
+        runCommand(query);
+        String processId = assertProcessIsRegistered(query);
+        Referenceable process = dgiCLient.getEntity(processId);
+        Assert.assertEquals(((List<Referenceable>) process.get("inputs")).size(), 1);
+        Assert.assertNull(process.get("outputs"));
+
+        assertTableIsRegistered(DEFAULT_DB, tableName);
+    }
+
+    @Test
+    public void testInsertIntoDFSDir() throws Exception {
+        String tableName = createTable();
+        String pFile = "pfile://" + mkdir("somedfspath");
+        String query =
+            "insert overwrite DIRECTORY '" + pFile  + "' select id, name from " + tableName;
+
+        runCommand(query);
+        String processId = assertProcessIsRegistered(query);
+        Referenceable process = dgiCLient.getEntity(processId);
+        Assert.assertEquals(((List<Referenceable>) process.get("inputs")).size(), 1);
+        Assert.assertNull(process.get("outputs"));
+
+        assertTableIsRegistered(DEFAULT_DB, tableName);
+    }
+
+    @Test
+    public void testInsertIntoTempTable() throws Exception {
+        String tableName = createTable();
+        String insertTableName = createTable(false, true);
+        String query =
+            "insert into " + insertTableName + " select id, name from " + tableName;
+
+        runCommand(query);
+        String processId = assertProcessIsRegistered(query);
+        Referenceable process = dgiCLient.getEntity(processId);
+        Assert.assertEquals(((List<Referenceable>) process.get("inputs")).size(), 1);
+        Assert.assertEquals(((List<Referenceable>) process.get("outputs")).size(), 1);
+
+        assertTableIsRegistered(DEFAULT_DB, tableName);
+        assertTableIsRegistered(DEFAULT_DB, insertTableName);
+    }
+
+    @Test
+    public void testInsertIntoPartition() throws Exception {
+        String tableName = createTable(true);
+        String insertTableName = createTable(true);
+        String query =
+            "insert into " + insertTableName + " partition(dt = '2015-01-01') select id, name from " + tableName
+                + " where dt = '2015-01-01'";
+        runCommand(query);
+        String processId = assertProcessIsRegistered(query);
+        Referenceable process = dgiCLient.getEntity(processId);
+        Assert.assertEquals(((List<Referenceable>) process.get("inputs")).size(), 1);
+        Assert.assertEquals(((List<Referenceable>) process.get("outputs")).size(), 1);
     }
 
     private String random() {
@@ -316,18 +408,16 @@ public class HiveHookIT {
     }
 
     @Test
-    public void testSelect() throws Exception {
+    public void testIgnoreSelect() throws Exception {
         String tableName = createTable();
         String query = "select * from " + tableName;
         runCommand(query);
-        String pid = assertProcessIsRegistered(query);
-        Referenceable processEntity = dgiCLient.getEntity(pid);
-        Assert.assertEquals(processEntity.get("name"), query.toLowerCase());
+        assertProcessIsNotRegistered(query);
 
-        //single entity per query
+        //check with uppercase table name
         query = "SELECT * from " + tableName.toUpperCase();
         runCommand(query);
-        assertProcessIsRegistered(query);
+        assertProcessIsNotRegistered(query);
     }
 
     @Test
@@ -727,6 +817,18 @@ public class HiveHookIT {
         return assertEntityIsRegistered(gremlinQuery);
     }
 
+    private void assertProcessIsNotRegistered(String queryStr) throws Exception {
+        //        String dslQuery = String.format("%s where queryText = \"%s\"", HiveDataTypes.HIVE_PROCESS.getName(),
+        //                normalize(queryStr));
+        //        assertEntityIsRegistered(dslQuery, true);
+        //todo replace with DSL
+        String typeName = HiveDataTypes.HIVE_PROCESS.getName();
+        String gremlinQuery =
+            String.format("g.V.has('__typeName', '%s').has('%s.queryText', \"%s\").toList()", typeName, typeName,
+                normalize(queryStr));
+        assertEntityIsNotRegistered(QUERY_TYPE.GREMLIN, gremlinQuery);
+    }
+
     private String normalize(String str) {
         if (StringUtils.isEmpty(str)) {
             return null;
@@ -739,7 +841,7 @@ public class HiveHookIT {
         String query = String.format(
                 "%s as t where tableName = '%s', db where name = '%s' and clusterName = '%s'" + " select t",
                 HiveDataTypes.HIVE_TABLE.getName(), tableName.toLowerCase(), dbName.toLowerCase(), CLUSTER_NAME);
-        assertEntityIsNotRegistered(query);
+        assertEntityIsNotRegistered(QUERY_TYPE.DSL, query);
     }
 
     private String assertTableIsRegistered(String dbName, String tableName) throws Exception {
@@ -765,17 +867,6 @@ public class HiveHookIT {
         return assertEntityIsRegistered(query);
     }
 
-    private String assertPartitionIsRegistered(String dbName, String tableName, String value) throws Exception {
-        String typeName = HiveDataTypes.HIVE_PARTITION.getName();
-
-        LOG.debug("Searching for partition of {}.{} with values {}", dbName, tableName, value);
-        String dslQuery = String.format("%s as p where values = ['%s'], table where tableName = '%s', "
-                        + "db where name = '%s' and clusterName = '%s' select p", typeName, value,
-                tableName.toLowerCase(), dbName.toLowerCase(), CLUSTER_NAME);
-
-        return assertEntityIsRegistered(dslQuery, "p");
-    }
-
     private String assertEntityIsRegistered(final String query, String... arg) throws Exception {
         waitFor(60000, new Predicate() {
             @Override
@@ -798,8 +889,16 @@ public class HiveHookIT {
         }
     }
 
-    private void assertEntityIsNotRegistered(String dslQuery) throws Exception {
-        JSONArray results = dgiCLient.searchByDSL(dslQuery);
+    private void assertEntityIsNotRegistered(QUERY_TYPE queryType, String query) throws Exception {
+        JSONArray results = null;
+        switch(queryType) {
+        case DSL :
+            results = dgiCLient.searchByDSL(query);
+            break;
+        case GREMLIN :
+            results = dgiCLient.searchByGremlin(query);
+            break;
+        }
         Assert.assertEquals(results.length(), 0);
     }
 

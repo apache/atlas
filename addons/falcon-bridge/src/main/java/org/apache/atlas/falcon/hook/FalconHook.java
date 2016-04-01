@@ -22,6 +22,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.falcon.model.FalconDataModelGenerator;
 import org.apache.atlas.falcon.model.FalconDataTypes;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
@@ -262,7 +263,7 @@ public class FalconHook extends AtlasHook implements FalconEventPublisher {
     private Referenceable createHiveDatabaseInstance(String clusterName, String dbName)
             throws Exception {
         Referenceable dbRef = new Referenceable(HiveDataTypes.HIVE_DB.getName());
-        dbRef.set(HiveDataModelGenerator.CLUSTER_NAME, clusterName);
+        dbRef.set(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, clusterName);
         dbRef.set(HiveDataModelGenerator.NAME, dbName);
         dbRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 HiveMetaStoreBridge.getDBQualifiedName(clusterName, dbName));
