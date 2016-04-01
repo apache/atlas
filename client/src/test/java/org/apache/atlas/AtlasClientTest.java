@@ -28,6 +28,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.testng.Assert.fail;
 
 public class AtlasClientTest {
 
@@ -63,5 +64,34 @@ public class AtlasClientTest {
         when(builder.method(AtlasClient.API.VERSION.getMethod(), ClientResponse.class, null)).thenThrow(
                 new ClientHandlerException());
         assertFalse(atlasClient.isServerReady());
+    }
+
+    @Test
+    public void shouldReturnFalseIfServiceIsUnavailable() throws AtlasServiceException {
+        WebResource webResource = mock(WebResource.class);
+        AtlasClient atlasClient = new AtlasClient(webResource);
+        WebResource.Builder builder = setupBuilder(webResource);
+        ClientResponse response = mock(ClientResponse.class);
+        when(response.getStatus()).thenReturn(Response.Status.SERVICE_UNAVAILABLE.getStatusCode());
+        when(response.getClientResponseStatus()).thenReturn(ClientResponse.Status.SERVICE_UNAVAILABLE);
+
+        when(builder.method(AtlasClient.API.VERSION.getMethod(), ClientResponse.class, null)).thenReturn(response);
+
+        assertFalse(atlasClient.isServerReady());
+    }
+
+    @Test(expectedExceptions = AtlasServiceException.class)
+    public void shouldThrowErrorIfAnyResponseOtherThanServiceUnavailable() throws AtlasServiceException {
+        WebResource webResource = mock(WebResource.class);
+        AtlasClient atlasClient = new AtlasClient(webResource);
+        WebResource.Builder builder = setupBuilder(webResource);
+        ClientResponse response = mock(ClientResponse.class);
+        when(response.getStatus()).thenReturn(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+        when(response.getClientResponseStatus()).thenReturn(ClientResponse.Status.INTERNAL_SERVER_ERROR);
+
+        when(builder.method(AtlasClient.API.VERSION.getMethod(), ClientResponse.class, null)).thenReturn(response);
+
+        atlasClient.isServerReady();
+        fail("Should throw exception");
     }
 }

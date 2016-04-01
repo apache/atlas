@@ -28,4 +28,6 @@ public final class AtlasConstants {
     public static final String CLUSTER_NAME_KEY = "atlas.cluster.name";
     public static final String DEFAULT_CLUSTER_NAME = "primary";
     public static final String CLUSTER_NAME_ATTRIBUTE = "clusterName";
+    public static final String SYSTEM_PROPERTY_APP_PORT = "atlas.app.port";
+    public static final String DEFAULT_APP_PORT_STR = "21000";
 }

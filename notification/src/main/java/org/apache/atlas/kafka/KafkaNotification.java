@@ -127,6 +127,10 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
     @Override
     public void start() throws AtlasException {
+        if (isHAEnabled()) {
+            LOG.info("Not starting embedded instances when HA is enabled.");
+            return;
+        }
         if (isEmbedded()) {
             try {
                 startZk();

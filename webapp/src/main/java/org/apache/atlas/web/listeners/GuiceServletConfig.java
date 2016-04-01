@@ -34,11 +34,14 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RepositoryMetadataModule;
+import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.notification.NotificationModule;
 import org.apache.atlas.repository.graph.GraphProvider;
 import org.apache.atlas.service.Services;
+import org.apache.atlas.web.filters.ActiveServerFilter;
 import org.apache.atlas.web.filters.AtlasAuthenticationFilter;
 import org.apache.atlas.web.filters.AuditFilter;
+import org.apache.atlas.web.service.ActiveInstanceElectorModule;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.slf4j.Logger;
@@ -72,11 +75,26 @@ public class GuiceServletConfig extends GuiceServletContextListener {
             LoginProcessor loginProcessor = new LoginProcessor();
             loginProcessor.login();
 
-            injector = Guice.createInjector(getRepositoryModule(), new NotificationModule(),
-                    new JerseyServletModule() {
+            injector = Guice.createInjector(getRepositoryModule(), new ActiveInstanceElectorModule(),
+                    new NotificationModule(), new JerseyServletModule() {
+
+                        private Configuration appConfiguration = null;
+
+                        private Configuration getConfiguration() {
+                            if (appConfiguration == null) {
+                                try {
+                                    appConfiguration = ApplicationProperties.get();
+                                } catch (AtlasException e) {
+                                    LOG.warn("Could not load application configuration", e);
+                                }
+                            }
+                            return appConfiguration;
+                        }
+
                         @Override
                         protected void configureServlets() {
                             filter("/*").through(AuditFilter.class);
+                            configureActiveServerFilterIfNecessary();
                             try {
                                 configureAuthenticationFilter();
                             } catch (ConfigurationException e) {
@@ -92,15 +110,24 @@ public class GuiceServletConfig extends GuiceServletContextListener {
                             serve("/" + AtlasClient.BASE_URI + "*").with(GuiceContainer.class, params);
                         }
 
+                        private void configureActiveServerFilterIfNecessary() {
+                            Configuration configuration = getConfiguration();
+                            if ((configuration == null) ||
+                                    !HAConfiguration.isHAEnabled(configuration)) {
+                                LOG.info("HA configuration is disabled, not activating ActiveServerFilter");
+                            } else {
+                                filter("/*").through(ActiveServerFilter.class);
+                            }
+                        }
+
                         private void configureAuthenticationFilter() throws ConfigurationException {
-                            try {
-                                Configuration configuration = ApplicationProperties.get();
-                                if (Boolean.valueOf(configuration.getString(HTTP_AUTHENTICATION_ENABLED))) {
-                                    LOG.info("Enabling AuthenticationFilter");
-                                    filter("/*").through(AtlasAuthenticationFilter.class);
-                                }
-                            } catch (AtlasException e) {
-                                LOG.warn("Error loading configuration and initializing authentication filter", e);
+                            Configuration configuration = getConfiguration();
+                            if (configuration == null) {
+                                throw new ConfigurationException("Could not load application configuration");
+                            }
+                            if (Boolean.valueOf(configuration.getString(HTTP_AUTHENTICATION_ENABLED))) {
+                                LOG.info("Enabling AuthenticationFilter");
+                                filter("/*").through(AtlasAuthenticationFilter.class);
                             }
                         }
                     });

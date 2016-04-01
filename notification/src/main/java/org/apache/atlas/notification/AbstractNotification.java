@@ -18,6 +18,7 @@
 package org.apache.atlas.notification;
 
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.ha.HAConfiguration;
 import org.apache.commons.configuration.Configuration;
 
 import java.util.Arrays;
@@ -30,12 +31,14 @@ public abstract class AbstractNotification implements NotificationInterface {
 
     private static final String PROPERTY_EMBEDDED = PROPERTY_PREFIX + ".embedded";
     private final boolean embedded;
+    private final boolean isHAEnabled;
 
 
     // ----- Constructors ------------------------------------------------------
 
     public AbstractNotification(Configuration applicationProperties) throws AtlasException {
         this.embedded = applicationProperties.getBoolean(PROPERTY_EMBEDDED, false);
+        this.isHAEnabled = HAConfiguration.isHAEnabled(applicationProperties);
     }
 
 
@@ -48,6 +51,10 @@ public abstract class AbstractNotification implements NotificationInterface {
      */
     protected final boolean isEmbedded() {
         return embedded;
+    }
+
+    protected final boolean isHAEnabled() {
+        return isHAEnabled;
     }
 
     @Override

@@ -27,11 +27,14 @@ import org.apache.atlas.classification.InterfaceAudience;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.exception.TypeExistsException;
 import org.apache.atlas.typesystem.exception.TypeNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
 import java.lang.reflect.Constructor;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -43,6 +46,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Singleton
 @InterfaceAudience.Private
 public class TypeSystem {
+    private static final Logger LOG = LoggerFactory.getLogger(TypeSystem.class);
+
     private static final TypeSystem INSTANCE = new TypeSystem();
     private static ThreadLocal<SimpleDateFormat> dateFormat = new ThreadLocal<SimpleDateFormat>() {
         @Override
@@ -333,7 +338,10 @@ public class TypeSystem {
             IDataType type = typeEntry.getValue();
             //Add/replace the new type in the typesystem
             types.put(typeName, type);
-            typeCategoriesToTypeNamesMap.put(type.getTypeCategory(), typeName);
+            // ArrayListMultiMap allows duplicates - we want to avoid this during re-activation.
+            if (!typeCategoriesToTypeNamesMap.containsEntry(type.getTypeCategory(), typeName)) {
+                typeCategoriesToTypeNamesMap.put(type.getTypeCategory(), typeName);
+            }
         }
     }
 

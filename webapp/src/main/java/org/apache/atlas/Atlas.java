@@ -18,6 +18,7 @@
 
 package org.apache.atlas;
 
+import org.apache.atlas.security.SecurityProperties;
 import org.apache.atlas.web.service.EmbeddedServer;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
@@ -96,10 +97,11 @@ public final class Atlas {
 
         setApplicationHome();
         Configuration configuration = ApplicationProperties.get();
-        final String enableTLSFlag = configuration.getString("atlas.enableTLS");
+        final String enableTLSFlag = configuration.getString(SecurityProperties.TLS_ENABLED);
         final int appPort = getApplicationPort(cmd, enableTLSFlag, configuration);
+        System.setProperty(AtlasConstants.SYSTEM_PROPERTY_APP_PORT, String.valueOf(appPort));
         final boolean enableTLS = isTLSEnabled(enableTLSFlag, appPort);
-        configuration.setProperty("atlas.enableTLS", String.valueOf(enableTLS));
+        configuration.setProperty(SecurityProperties.TLS_ENABLED, String.valueOf(enableTLS));
 
         showStartupInfo(buildConfiguration, enableTLS, appPort);
 
@@ -147,7 +149,7 @@ public final class Atlas {
 
     private static boolean isTLSEnabled(String enableTLSFlag, int appPort) {
         return Boolean.valueOf(StringUtils.isEmpty(enableTLSFlag) ?
-                System.getProperty("atlas.enableTLS", (appPort % 1000) == 443 ? "true" : "false") : enableTLSFlag);
+                System.getProperty(SecurityProperties.TLS_ENABLED, (appPort % 1000) == 443 ? "true" : "false") : enableTLSFlag);
     }
 
     private static void showStartupInfo(PropertiesConfiguration buildConfiguration, boolean enableTLS, int appPort) {

@@ -32,12 +32,14 @@ import org.testng.annotations.Test;
 import scala.actors.threadpool.Arrays;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createStructTypeDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createTraitTypeDef;
+import static org.testng.Assert.assertTrue;
 
 public class TypeSystemTest extends BaseTest {
 
@@ -55,7 +57,7 @@ public class TypeSystemTest extends BaseTest {
     public void testGetTypeNames() throws Exception {
         getTypeSystem().defineEnumType("enum_test", new EnumValue("0", 0), new EnumValue("1", 1), new EnumValue("2", 2),
                 new EnumValue("3", 3));
-        Assert.assertTrue(getTypeSystem().getTypeNames().contains("enum_test"));
+        assertTrue(getTypeSystem().getTypeNames().contains("enum_test"));
     }
 
     @Test
@@ -65,7 +67,7 @@ public class TypeSystemTest extends BaseTest {
         String typeDescription = typeName + description;
         getTypeSystem().defineEnumType(typeName, typeDescription, new EnumValue("0", 0), new EnumValue("1", 1), new EnumValue("2", 2),
                 new EnumValue("3", 3));
-        Assert.assertTrue(getTypeSystem().getTypeNames().contains(typeName));
+        assertTrue(getTypeSystem().getTypeNames().contains(typeName));
         IDataType type = getTypeSystem().getDataType(EnumType.class, typeName);
         Assert.assertNotNull(type);
         Assert.assertEquals(type.getDescription(), typeDescription);
@@ -76,7 +78,7 @@ public class TypeSystemTest extends BaseTest {
             .createTraitTypeDef(typeName, typeDescription, ImmutableSet.<String>of(),
                 TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
         getTypeSystem().defineTraitType(trait);
-        Assert.assertTrue(getTypeSystem().getTypeNames().contains(typeName));
+        assertTrue(getTypeSystem().getTypeNames().contains(typeName));
         type = getTypeSystem().getDataType(TraitType.class, typeName);
         Assert.assertNotNull(type);
         Assert.assertEquals(type.getDescription(), typeDescription);
@@ -87,7 +89,7 @@ public class TypeSystemTest extends BaseTest {
             .createClassTypeDef(typeName, typeDescription, ImmutableSet.<String>of(),
                 TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
         getTypeSystem().defineClassType(classType);
-        Assert.assertTrue(getTypeSystem().getTypeNames().contains(typeName));
+        assertTrue(getTypeSystem().getTypeNames().contains(typeName));
         type = getTypeSystem().getDataType(ClassType.class, typeName);
         Assert.assertNotNull(type);
         Assert.assertEquals(type.getDescription(), typeDescription);
@@ -95,7 +97,7 @@ public class TypeSystemTest extends BaseTest {
         typeName = "struct_type";
         typeDescription = typeName + description;
         getTypeSystem().defineStructType(typeName, typeDescription, true, createRequiredAttrDef("a", DataTypes.INT_TYPE));
-        Assert.assertTrue(getTypeSystem().getTypeNames().contains(typeName));
+        assertTrue(getTypeSystem().getTypeNames().contains(typeName));
         type = getTypeSystem().getDataType(StructType.class, typeName);
         Assert.assertNotNull(type);
         Assert.assertEquals(type.getDescription(), typeDescription);
@@ -106,7 +108,7 @@ public class TypeSystemTest extends BaseTest {
     public void testIsRegistered() throws Exception {
         getTypeSystem().defineEnumType("enum_test", new EnumValue("0", 0), new EnumValue("1", 1), new EnumValue("2", 2),
                 new EnumValue("3", 3));
-        Assert.assertTrue(getTypeSystem().isRegistered("enum_test"));
+        assertTrue(getTypeSystem().isRegistered("enum_test"));
     }
 
     @Test
@@ -182,9 +184,9 @@ public class TypeSystemTest extends BaseTest {
         ClassType bc = ts.getDataType(ClassType.class, "B");
         ClassType cc = ts.getDataType(ClassType.class, "C");
 
-        Assert.assertTrue(ac.compareTo(bc) < 0);
-        Assert.assertTrue(bc.compareTo(cc) < 0);
-        Assert.assertTrue(ac.compareTo(cc) < 0);
+        assertTrue(ac.compareTo(bc) < 0);
+        assertTrue(bc.compareTo(cc) < 0);
+        assertTrue(ac.compareTo(cc) < 0);
     }
 
     @Test
@@ -223,4 +225,31 @@ public class TypeSystemTest extends BaseTest {
         Assert.assertEquals(traitNames.size(), 4);
         Assert.assertEquals(classNames.size(), 3);
     }
+
+    @Test
+    public void testTypeNamesAreNotDuplicated() {
+        TypeSystem typeSystem = getTypeSystem();
+        ImmutableList<String> traitNames = typeSystem.getTypeNamesByCategory(DataTypes.TypeCategory.TRAIT);
+        int numTraits = traitNames.size();
+
+        HashMap<String, IDataType> typesAdded = new HashMap<>();
+        String traitName = "dup_type_test" + random();
+        TraitType traitType = new TraitType(typeSystem, traitName, null, null, 0);
+        typesAdded.put(traitName, traitType);
+        typeSystem.commitTypes(typesAdded);
+
+        traitNames = typeSystem.getTypeNamesByCategory(DataTypes.TypeCategory.TRAIT);
+        Assert.assertEquals(traitNames.size(), numTraits+1);
+
+        // add again with another trait this time
+        traitName = "dup_type_test" + random();
+        TraitType traitTypeNew = new TraitType(typeSystem, traitName, null, null, 0);
+        typesAdded.put(traitName, traitTypeNew);
+
+        typeSystem.commitTypes(typesAdded);
+        traitNames = typeSystem.getTypeNamesByCategory(DataTypes.TypeCategory.TRAIT);
+        Assert.assertEquals(traitNames.size(), numTraits+2);
+    }
+
+
 }

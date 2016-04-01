@@ -26,12 +26,15 @@ import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.discovery.SearchIndexer;
+import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.IndexCreationException;
 import org.apache.atlas.repository.IndexException;
 import org.apache.atlas.repository.RepositoryException;
+import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
@@ -39,6 +42,7 @@ import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.StructType;
 import org.apache.atlas.typesystem.types.TraitType;
+import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +57,7 @@ import java.util.Map;
 /**
  * Adds index for properties of a given type when its added before any instances are added.
  */
-public class GraphBackedSearchIndexer implements SearchIndexer {
+public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChangeHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphBackedSearchIndexer.class);
 
@@ -67,13 +71,16 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
 
     @Inject
     public GraphBackedSearchIndexer(GraphProvider<TitanGraph> graphProvider) throws RepositoryException,
-            IndexException {
+            AtlasException {
+        this(graphProvider, ApplicationProperties.get());
+    }
 
+    GraphBackedSearchIndexer(GraphProvider<TitanGraph> graphProvider, Configuration configuration)
+            throws IndexException, RepositoryException {
         this.titanGraph = graphProvider.get();
-
-        /* Create the transaction for indexing.
-         */
-        initialize();
+        if (!HAConfiguration.isHAEnabled(configuration)) {
+            initialize();
+        }
     }
 
     /**
@@ -353,6 +360,28 @@ public class GraphBackedSearchIndexer implements SearchIndexer {
             LOG.error("Index rollback failed ", e);
             throw new IndexException("Index rollback failed ", e);
         }
+    }
+
+    /**
+     * Initialize global indices for Titan graph on server activation.
+     *
+     * Since the indices are shared state, we need to do this only from an active instance.
+     */
+    @Override
+    public void instanceIsActive() throws AtlasException {
+        LOG.info("Reacting to active: initializing index");
+        try {
+            initialize();
+        } catch (RepositoryException e) {
+            throw new AtlasException("Error in reacting to active on initialization", e);
+        } catch (IndexException e) {
+            throw new AtlasException("Error in reacting to active on initialization", e);
+        }
+    }
+
+    @Override
+    public void instanceIsPassive() {
+        LOG.info("Reacting to passive state: No action right now.");
     }
 
     /* Commenting this out since we do not need an index for edge label here

@@ -18,8 +18,12 @@
 
 package org.apache.atlas.repository.audit;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.inject.Singleton;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.ha.HAConfiguration;
+import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.service.Service;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
@@ -59,7 +63,8 @@ import java.util.List;
  * and only 1 version is kept, there can be just 1 audit event per entity id + timestamp. This is ok for one atlas server.
  * But if there are more than one atlas servers, we should use server id in the key
  */
-public class HBaseBasedAuditRepository implements Service, EntityAuditRepository {
+@Singleton
+public class HBaseBasedAuditRepository implements Service, EntityAuditRepository, ActiveStateChangeHandler {
     private static final Logger LOG = LoggerFactory.getLogger(HBaseBasedAuditRepository.class);
 
     public static final String CONFIG_PREFIX = "atlas.audit";
@@ -237,23 +242,47 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
 
     @Override
     public void start() throws AtlasException {
-        Configuration atlasConf = ApplicationProperties.get();
+        Configuration configuration = ApplicationProperties.get();
+        startInternal(configuration, getHBaseConfiguration(configuration));
+    }
+
+    @VisibleForTesting
+    void startInternal(Configuration atlasConf,
+                                 org.apache.hadoop.conf.Configuration hbaseConf) throws AtlasException {
 
         String tableNameStr = atlasConf.getString(CONFIG_TABLE_NAME, DEFAULT_TABLE_NAME);
         tableName = TableName.valueOf(tableNameStr);
 
         try {
-            org.apache.hadoop.conf.Configuration hbaseConf = getHBaseConfiguration(atlasConf);
-            connection = ConnectionFactory.createConnection(hbaseConf);
+            connection = createConnection(hbaseConf);
         } catch (IOException e) {
             throw new AtlasException(e);
         }
 
-        createTableIfNotExists();
+        if (!HAConfiguration.isHAEnabled(atlasConf)) {
+            LOG.info("HA is disabled. Hence creating table on startup.");
+            createTableIfNotExists();
+        }
+    }
+
+    @VisibleForTesting
+    protected Connection createConnection(org.apache.hadoop.conf.Configuration hbaseConf) throws IOException {
+        return ConnectionFactory.createConnection(hbaseConf);
     }
 
     @Override
     public void stop() throws AtlasException {
         close(connection);
+    }
+
+    @Override
+    public void instanceIsActive() throws AtlasException {
+        LOG.info("Reacting to active: Creating HBase table for Audit if required.");
+        createTableIfNotExists();
+    }
+
+    @Override
+    public void instanceIsPassive() {
+        LOG.info("Reacting to passive: No action for now.");
     }
 }

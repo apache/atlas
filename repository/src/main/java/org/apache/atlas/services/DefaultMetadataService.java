@@ -22,9 +22,13 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Provider;
+
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.classification.InterfaceAudience;
+import org.apache.atlas.ha.HAConfiguration;
+import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.listener.TypesChangeListener;
 import org.apache.atlas.repository.MetadataRepository;
@@ -58,6 +62,7 @@ import org.apache.atlas.typesystem.types.TypeUtils.Pair;
 import org.apache.atlas.typesystem.types.ValueConversionException;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.utils.ParamChecker;
+import org.apache.commons.configuration.Configuration;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -71,13 +76,14 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Simple wrapper over TypeSystem and MetadataRepository services with hooks
  * for listening to changes to the repository.
  */
 @Singleton
-public class DefaultMetadataService implements MetadataService {
+public class DefaultMetadataService implements MetadataService, ActiveStateChangeHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(DefaultMetadataService.class);
 
@@ -89,6 +95,8 @@ public class DefaultMetadataService implements MetadataService {
     private final Collection<TypesChangeListener> typeChangeListeners = new LinkedHashSet<>();
     private final Collection<EntityChangeListener> entityChangeListeners = new LinkedHashSet<>();
 
+    private boolean wasInitialized = false;
+
     @Inject
     DefaultMetadataService(final MetadataRepository repository, final ITypeStore typeStore,
                            final IBootstrapTypesRegistrar typesRegistrar,
@@ -96,14 +104,15 @@ public class DefaultMetadataService implements MetadataService {
                            final Collection<Provider<EntityChangeListener>> entityListenerProviders)
             throws AtlasException {
         this(repository, typeStore, typesRegistrar, typeListenerProviders, entityListenerProviders,
-                TypeSystem.getInstance());
+                TypeSystem.getInstance(), ApplicationProperties.get());
     }
 
     DefaultMetadataService(final MetadataRepository repository, final ITypeStore typeStore,
                            final IBootstrapTypesRegistrar typesRegistrar,
                            final Collection<Provider<TypesChangeListener>> typeListenerProviders,
                            final Collection<Provider<EntityChangeListener>> entityListenerProviders,
-                           final TypeSystem typeSystem) throws AtlasException {
+                           final TypeSystem typeSystem,
+                           final Configuration configuration) throws AtlasException {
         this.typeStore = typeStore;
         this.typesRegistrar = typesRegistrar;
         this.typeSystem = typeSystem;
@@ -117,23 +126,35 @@ public class DefaultMetadataService implements MetadataService {
             entityChangeListeners.add(provider.get());
         }
 
-        restoreTypeSystem();
-
-        typesRegistrar.registerTypes(ReservedTypesRegistrar.getTypesDir(), typeSystem, this);
+        if (!HAConfiguration.isHAEnabled(configuration)) {
+            restoreTypeSystem();
+        }
     }
 
-    private void restoreTypeSystem() {
+    private void restoreTypeSystem() throws AtlasException {
         LOG.info("Restoring type system from the store");
-        try {
-            TypesDef typesDef = typeStore.restore();
+        TypesDef typesDef = typeStore.restore();
+        if (!wasInitialized) {
+            LOG.info("Initializing type system for the first time.");
             typeSystem.defineTypes(typesDef);
 
             // restore types before creating super types
             createSuperTypes();
-        } catch (AtlasException e) {
-            throw new RuntimeException(e);
+            typesRegistrar.registerTypes(ReservedTypesRegistrar.getTypesDir(), typeSystem, this);
+            wasInitialized = true;
+        } else {
+            LOG.info("Type system was already initialized, refreshing cache.");
+            refreshCache(typesDef);
         }
         LOG.info("Restored type system from the store");
+    }
+
+    private void refreshCache(TypesDef typesDef) throws AtlasException {
+        TypeSystem.TransientTypeSystem transientTypeSystem
+                = typeSystem.createTransientTypeSystem(typesDef, true);
+        Map<String, IDataType> typesAdded = transientTypeSystem.getTypesAdded();
+        LOG.info("Number of types got from transient type system: " + typesAdded.size());
+        typeSystem.commitTypes(typesAdded);
     }
 
     private static final AttributeDefinition NAME_ATTRIBUTE =
@@ -682,5 +703,24 @@ public class DefaultMetadataService implements MetadataService {
         for (EntityChangeListener listener : entityChangeListeners) {
             listener.onEntitiesDeleted(entities);
         }
+    }
+
+    /**
+     * Create or restore the {@link TypeSystem} cache on server activation.
+     *
+     * When an instance is passive, types could be created outside of its cache by the active instance.
+     * Hence, when this instance becomes active, it needs to restore the cache from the backend store.
+     * The first time initialization happens, the indices for these types also needs to be created.
+     * This must happen only from the active instance, as it updates shared backend state.
+     */
+    @Override
+    public void instanceIsActive() throws AtlasException {
+        LOG.info("Reacting to active state: restoring type system");
+        restoreTypeSystem();
+    }
+
+    @Override
+    public void instanceIsPassive() {
+        LOG.info("Reacting to passive state: no action right now");
     }
 }

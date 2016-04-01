@@ -13,6 +13,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-511 Ability to run multiple instances of Atlas Server with automatic failover to one active server (yhemanth via shwethags)
 ATLAS-577 Integrate entity audit with DefaultMetadataService (shwethags)
 ATLAS-588 import-hive.sh fails while importing partitions for a non-partitioned table (sumasai via shwethags)
 ATLAS-575 jetty-maven-plugin fails with ShutdownMonitorThread already started (shwethags)

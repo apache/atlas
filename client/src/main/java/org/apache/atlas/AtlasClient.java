@@ -145,6 +145,12 @@ public class AtlasClient {
             return true;
         } catch (ClientHandlerException che) {
             return false;
+        } catch (AtlasServiceException ase) {
+            if (ase.getStatus().equals(ClientResponse.Status.SERVICE_UNAVAILABLE)) {
+                LOG.warn("Received SERVICE_UNAVAILABLE, server is not yet ready");
+                return false;
+            }
+            throw ase;
         }
     }
 
