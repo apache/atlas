@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,29 +15,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.atlas.fs.model;
 
-package org.apache.atlas.storm.model;
+import org.apache.atlas.addons.ModelDefinitionDump;
+import org.apache.atlas.typesystem.TypesDef;
+import org.apache.atlas.typesystem.json.TypesSerialization;
 
+import java.io.IOException;
 
-/**
- * Storm Data Types for model and hook.
- */
-public enum StormDataTypes {
+public class FSDataModelGenerator {
 
-    // Topology Classes
-    STORM_TOPOLOGY,  // represents the topology containing the DAG
-
-    STORM_NODE,  // base abstraction for producer and processor
-    STORM_SPOUT, // data producer node having only outputs
-    STORM_BOLT,  // data processing node having both inputs and outputs
-
-    // Data Sets
-    KAFKA_TOPIC,  // kafka data set
-    JMS_TOPIC,  // jms data set
-    HBASE_TABLE,  // hbase table data set
-    ;
-
-    public String getName() {
-        return name().toLowerCase();
+    public static void main(String[] args) throws IOException {
+      FSDataModel.main(args);
+      TypesDef typesDef = FSDataModel.typesDef();
+      String fsTypesAsJSON = TypesSerialization.toJson(typesDef);
+      if (args.length == 1) {
+        ModelDefinitionDump.dumpModelToFile(args[0], fsTypesAsJSON);
+        return;
+      }
+      System.out.println("FS Data Model as JSON = " + fsTypesAsJSON);
     }
 }

@@ -26,6 +26,7 @@ import backtype.storm.generated.TopologyInfo;
 import backtype.storm.utils.Utils;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConstants;
+import org.apache.atlas.fs.model.FSDataTypes;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hook.AtlasHook;
@@ -33,6 +34,7 @@ import org.apache.atlas.storm.model.StormDataTypes;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.slf4j.Logger;
@@ -208,14 +210,17 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
                 break;
 
             case "HdfsBolt":
-                dataSetReferenceable = new Referenceable(StormDataTypes.HDFS_DATA_SET.getName());
+                dataSetReferenceable = new Referenceable(FSDataTypes.HDFS_PATH().toString());
                 String hdfsUri = config.get("HdfsBolt.rotationActions") == null
                         ? config.get("HdfsBolt.fileNameFormat.path")
                         : config.get("HdfsBolt.rotationActions");
-                final String hdfsPath = config.get("HdfsBolt.fsUrl") + hdfsUri;
-                dataSetReferenceable.set("pathURI", hdfsPath);
+                final String hdfsPathStr = config.get("HdfsBolt.fsUrl") + hdfsUri;
+                dataSetReferenceable.set(HiveDataModelGenerator.CLUSTER_NAME, getClusterName(stormConf));
+                dataSetReferenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, hdfsPathStr);
+                dataSetReferenceable.set("path", hdfsPathStr);
                 dataSetReferenceable.set("owner", stormConf.get("hdfs.kerberos.principal"));
-                dataSetReferenceable.set("name", hdfsPath);
+                final Path hdfsPath = new Path(hdfsPathStr);
+                dataSetReferenceable.set(AtlasClient.NAME, hdfsPath.getName());
                 break;
 
             case "HiveBolt":

@@ -100,15 +100,6 @@ object StormDataModel extends App {
             "owner" ~ (string, required, indexed)
         }
 
-        // HDFS Data Set
-        // todo: replace this with a generic data model for HDFS data sets
-        // todo: should only be used in light of storm
-        _class(StormDataTypes.HDFS_DATA_SET.getName, List("DataSet")) {
-            // fully qualified path to file or dir
-            "pathURI" ~ (string, required, unique, indexed)
-            "owner" ~ (string, required, indexed)
-        }
-
         _trait("DataProcessor") {
 
         }
