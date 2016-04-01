@@ -22,7 +22,6 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
@@ -365,14 +364,16 @@ public class HiveHookIT {
     @Test
     public void testAlterTableDropColumn() throws Exception {
         String tableName = createTable();
-        final String colDropped = "name";
-        String query = "alter table " + tableName + " replace columns (id int)";
+        final String colDropped = "id";
+        String query = "alter table " + tableName + " replace columns (name string)";
         runCommand(query);
         assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), colDropped));
 
         //Verify the number of columns present in the table
         final List<Referenceable> columns = getColumns(DEFAULT_DB, tableName);
         Assert.assertEquals(columns.size(), 1);
+
+        Assert.assertEquals(columns.get(0).get(HiveDataModelGenerator.NAME), "name");
     }
 
     @Test
@@ -420,6 +421,39 @@ public class HiveHookIT {
         assertColumnIsRegistered(newColQualifiedName);
 
         Assert.assertEquals(columns.get(1).get(HiveDataModelGenerator.COMMENT), comment);
+
+        //Change column position
+        oldColName = "name3";
+        newColName = "name4";
+        query = String.format("alter table %s change column %s %s %s first", tableName, oldColName, newColName, newColType);
+        runCommand(query);
+
+        columns = getColumns(DEFAULT_DB, tableName);
+        Assert.assertEquals(columns.size(), 2);
+
+        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), oldColName));
+        newColQualifiedName = HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), newColName);
+        assertColumnIsRegistered(newColQualifiedName);
+
+        //Change col position again
+        Assert.assertEquals(columns.get(0).get(HiveDataModelGenerator.NAME), newColName);
+        Assert.assertEquals(columns.get(1).get(HiveDataModelGenerator.NAME), "id");
+
+        oldColName = "name4";
+        newColName = "name5";
+        query = String.format("alter table %s change column %s %s %s after id", tableName, oldColName, newColName, newColType);
+        runCommand(query);
+
+        columns = getColumns(DEFAULT_DB, tableName);
+        Assert.assertEquals(columns.size(), 2);
+
+        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), oldColName));
+        newColQualifiedName = HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), newColName);
+        assertColumnIsRegistered(newColQualifiedName);
+
+        //Check col position
+        Assert.assertEquals(columns.get(1).get(HiveDataModelGenerator.NAME), newColName);
+        Assert.assertEquals(columns.get(0).get(HiveDataModelGenerator.NAME), "id");
     }
 
     @Test

@@ -199,6 +199,7 @@ public final class TestUtils {
     public static final String PARTITION_STRUCT_TYPE = "partition_struct_type";
     public static final String PARTITION_CLASS_TYPE = "partition_class_type";
     public static final String SERDE_TYPE = "serdeType";
+    public static final String COLUMNS_MAP = "columnsMap";
 
     public static TypesDef defineHiveTypes() {
         String _description = "_description";
@@ -290,7 +291,7 @@ public final class TestUtils {
                                 DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(), DataTypes.STRING_TYPE.getName()),
                                 Multiplicity.OPTIONAL, true, null),
                         //map of classes -
-                        new AttributeDefinition("columnsMap",
+                        new AttributeDefinition(COLUMNS_MAP,
                                                         DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(),
                                                                 COLUMN_TYPE),
                                                         Multiplicity.OPTIONAL, true, null),

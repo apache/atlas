@@ -13,6 +13,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-553 Entity mutation - Fix issue with reordering of elements in array<class> with composite references (sumasai via shwethags)
 ATLAS-513 Admin support for HA (yhemanth via sumasai)
 ATLAS-511 Ability to run multiple instances of Atlas Server with automatic failover to one active server (yhemanth via shwethags)
 ATLAS-577 Integrate entity audit with DefaultMetadataService (shwethags)
