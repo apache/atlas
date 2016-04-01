@@ -24,19 +24,15 @@ import atlas_client_cmdline as cmdline
 def main():
 
     conf_dir = cmdline.setup_conf_dir()
-    jvm_opts_list = cmdline.setup_jvm_opts_list(conf_dir, 'quick_start.log')
+    jvm_opts_list = cmdline.setup_jvm_opts_list(conf_dir, 'atlas_admin.log')
     atlas_classpath = cmdline.get_atlas_classpath(conf_dir)
 
-    process = mc.java("org.apache.atlas.examples.QuickStart", sys.argv[1:], atlas_classpath, jvm_opts_list)
+    process = mc.java("org.apache.atlas.AtlasAdminClient", sys.argv[1:], atlas_classpath, jvm_opts_list)
     return process.wait()
 
 if __name__ == '__main__':
     try:
         returncode = main()
-        if returncode == 0:
-            print "Example data added to Apache Atlas Server!!!\n"
-        else:
-            print "No data was added to the Apache Atlas Server.\n"
     except Exception as e:
         print "Exception: %s " % str(e)
         returncode = -1

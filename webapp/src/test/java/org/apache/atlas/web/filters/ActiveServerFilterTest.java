@@ -34,6 +34,7 @@ import javax.ws.rs.HttpMethod;
 import java.io.IOException;
 
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -64,6 +65,8 @@ public class ActiveServerFilterTest {
     @Test
     public void testShouldPassThroughRequestsIfActive() throws IOException, ServletException {
         when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.ACTIVE);
+        when(servletRequest.getRequestURI()).thenReturn("api/atlas/types");
+
         ActiveServerFilter activeServerFilter = new ActiveServerFilter(activeInstanceState, serviceState);
 
         activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
@@ -74,6 +77,8 @@ public class ActiveServerFilterTest {
     @Test
     public void testShouldFailIfCannotRetrieveActiveServerAddress() throws IOException, ServletException {
         when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
+        when(servletRequest.getRequestURI()).thenReturn("api/atlas/types");
+
         ActiveServerFilter activeServerFilter = new ActiveServerFilter(activeInstanceState, serviceState);
 
         when(activeInstanceState.getActiveServerAddress()).thenReturn(null);
@@ -86,6 +91,8 @@ public class ActiveServerFilterTest {
     @Test
     public void testShouldRedirectRequestToActiveServerAddress() throws IOException, ServletException {
         when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
+        when(servletRequest.getRequestURI()).thenReturn("api/atlas/types");
+
         ActiveServerFilter activeServerFilter = new ActiveServerFilter(activeInstanceState, serviceState);
 
         when(activeInstanceState.getActiveServerAddress()).thenReturn(ACTIVE_SERVER_ADDRESS);
@@ -100,6 +107,8 @@ public class ActiveServerFilterTest {
     @Test
     public void testRedirectedRequestShouldContainQueryParameters() throws IOException, ServletException {
         when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
+        when(servletRequest.getRequestURI()).thenReturn("api/atlas/types");
+
         ActiveServerFilter activeServerFilter = new ActiveServerFilter(activeInstanceState, serviceState);
 
         when(activeInstanceState.getActiveServerAddress()).thenReturn(ACTIVE_SERVER_ADDRESS);
@@ -116,6 +125,8 @@ public class ActiveServerFilterTest {
     @Test
     public void testShouldRedirectPOSTRequest() throws IOException, ServletException {
         when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
+        when(servletRequest.getRequestURI()).thenReturn("api/atlas/types");
+
         ActiveServerFilter activeServerFilter = new ActiveServerFilter(activeInstanceState, serviceState);
 
         when(activeInstanceState.getActiveServerAddress()).thenReturn(ACTIVE_SERVER_ADDRESS);
@@ -131,6 +142,8 @@ public class ActiveServerFilterTest {
     @Test
     public void testShouldRedirectPUTRequest() throws IOException, ServletException {
         when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
+        when(servletRequest.getRequestURI()).thenReturn("api/atlas/types");
+
         ActiveServerFilter activeServerFilter = new ActiveServerFilter(activeInstanceState, serviceState);
 
         when(activeInstanceState.getActiveServerAddress()).thenReturn(ACTIVE_SERVER_ADDRESS);
@@ -146,6 +159,8 @@ public class ActiveServerFilterTest {
     @Test
     public void testShouldRedirectDELETERequest() throws IOException, ServletException {
         when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
+        when(servletRequest.getRequestURI()).thenReturn("api/atlas/types");
+
         ActiveServerFilter activeServerFilter = new ActiveServerFilter(activeInstanceState, serviceState);
 
         when(activeInstanceState.getActiveServerAddress()).thenReturn(ACTIVE_SERVER_ADDRESS);
@@ -163,10 +178,26 @@ public class ActiveServerFilterTest {
     @Test
     public void testShouldReturnServiceUnavailableIfStateBecomingActive() throws IOException, ServletException {
         when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.BECOMING_ACTIVE);
+        when(servletRequest.getRequestURI()).thenReturn("api/atlas/types");
+
         ActiveServerFilter activeServerFilter = new ActiveServerFilter(activeInstanceState, serviceState);
 
         activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
 
         verify(servletResponse).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+    }
+
+    @Test
+    public void testShouldNotRedirectAdminAPIs() throws IOException, ServletException {
+        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
+        when(servletRequest.getMethod()).thenReturn(HttpMethod.GET);
+        when(servletRequest.getRequestURI()).
+                thenReturn("api/atlas/admin/asmasn"); // any Admin URI is fine.
+
+        ActiveServerFilter activeServerFilter = new ActiveServerFilter(activeInstanceState, serviceState);
+        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
+
+        verify(filterChain).doFilter(servletRequest, servletResponse);
+        verifyZeroInteractions(activeInstanceState);
     }
 }

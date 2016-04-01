@@ -28,6 +28,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
 public class AtlasClientTest {
@@ -37,7 +38,7 @@ public class AtlasClientTest {
         WebResource webResource = mock(WebResource.class);
         AtlasClient atlasClient = new AtlasClient(webResource);
 
-        WebResource.Builder builder = setupBuilder(webResource);
+        WebResource.Builder builder = setupBuilder(AtlasClient.API.VERSION, webResource);
         ClientResponse response = mock(ClientResponse.class);
         when(response.getStatus()).thenReturn(Response.Status.OK.getStatusCode());
         when(response.getEntity(String.class)).thenReturn("{\"Version\":\"version-rrelease\",\"Name\":\"apache-atlas\"," +
@@ -47,9 +48,9 @@ public class AtlasClientTest {
         assertTrue(atlasClient.isServerReady());
     }
 
-    private WebResource.Builder setupBuilder(WebResource webResource) {
+    private WebResource.Builder setupBuilder(AtlasClient.API api, WebResource webResource) {
         WebResource adminVersionResource = mock(WebResource.class);
-        when(webResource.path(AtlasClient.API.VERSION.getPath())).thenReturn(adminVersionResource);
+        when(webResource.path(api.getPath())).thenReturn(adminVersionResource);
         WebResource.Builder builder = mock(WebResource.Builder.class);
         when(adminVersionResource.accept(AtlasClient.JSON_MEDIA_TYPE)).thenReturn(builder);
         when(builder.type(AtlasClient.JSON_MEDIA_TYPE)).thenReturn(builder);
@@ -60,7 +61,7 @@ public class AtlasClientTest {
     public void shouldReturnFalseIfServerIsNotReady() throws AtlasServiceException {
         WebResource webResource = mock(WebResource.class);
         AtlasClient atlasClient = new AtlasClient(webResource);
-        WebResource.Builder builder = setupBuilder(webResource);
+        WebResource.Builder builder = setupBuilder(AtlasClient.API.VERSION, webResource);
         when(builder.method(AtlasClient.API.VERSION.getMethod(), ClientResponse.class, null)).thenThrow(
                 new ClientHandlerException());
         assertFalse(atlasClient.isServerReady());
@@ -70,7 +71,7 @@ public class AtlasClientTest {
     public void shouldReturnFalseIfServiceIsUnavailable() throws AtlasServiceException {
         WebResource webResource = mock(WebResource.class);
         AtlasClient atlasClient = new AtlasClient(webResource);
-        WebResource.Builder builder = setupBuilder(webResource);
+        WebResource.Builder builder = setupBuilder(AtlasClient.API.VERSION, webResource);
         ClientResponse response = mock(ClientResponse.class);
         when(response.getStatus()).thenReturn(Response.Status.SERVICE_UNAVAILABLE.getStatusCode());
         when(response.getClientResponseStatus()).thenReturn(ClientResponse.Status.SERVICE_UNAVAILABLE);
@@ -84,7 +85,7 @@ public class AtlasClientTest {
     public void shouldThrowErrorIfAnyResponseOtherThanServiceUnavailable() throws AtlasServiceException {
         WebResource webResource = mock(WebResource.class);
         AtlasClient atlasClient = new AtlasClient(webResource);
-        WebResource.Builder builder = setupBuilder(webResource);
+        WebResource.Builder builder = setupBuilder(AtlasClient.API.VERSION, webResource);
         ClientResponse response = mock(ClientResponse.class);
         when(response.getStatus()).thenReturn(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
         when(response.getClientResponseStatus()).thenReturn(ClientResponse.Status.INTERNAL_SERVER_ERROR);
@@ -93,5 +94,50 @@ public class AtlasClientTest {
 
         atlasClient.isServerReady();
         fail("Should throw exception");
+    }
+    
+    @Test
+    public void shouldGetAdminStatus() throws AtlasServiceException {
+        WebResource webResource = mock(WebResource.class);
+        AtlasClient atlasClient = new AtlasClient(webResource);
+
+        WebResource.Builder builder = setupBuilder(AtlasClient.API.STATUS, webResource);
+        ClientResponse response = mock(ClientResponse.class);
+        when(response.getStatus()).thenReturn(Response.Status.OK.getStatusCode());
+        when(response.getEntity(String.class)).thenReturn("{\"Status\":\"Active\"}");
+        when(builder.method(AtlasClient.API.STATUS.getMethod(), ClientResponse.class, null)).thenReturn(response);
+
+        String status = atlasClient.getAdminStatus();
+        assertEquals(status, "Active");
+    }
+
+    @Test(expectedExceptions = AtlasServiceException.class)
+    public void shouldReturnStatusAsUnknownOnException() throws AtlasServiceException {
+        WebResource webResource = mock(WebResource.class);
+        AtlasClient atlasClient = new AtlasClient(webResource);
+
+        WebResource.Builder builder = setupBuilder(AtlasClient.API.STATUS, webResource);
+        ClientResponse response = mock(ClientResponse.class);
+        when(response.getStatus()).thenReturn(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+        when(response.getClientResponseStatus()).thenReturn(ClientResponse.Status.INTERNAL_SERVER_ERROR);
+        when(builder.method(AtlasClient.API.STATUS.getMethod(), ClientResponse.class, null)).thenReturn(response);
+
+        String status = atlasClient.getAdminStatus();
+        fail("Should fail with AtlasServiceException");
+    }
+
+    @Test
+    public void shouldReturnStatusAsUnknownIfJSONIsInvalid() throws AtlasServiceException {
+        WebResource webResource = mock(WebResource.class);
+        AtlasClient atlasClient = new AtlasClient(webResource);
+
+        WebResource.Builder builder = setupBuilder(AtlasClient.API.STATUS, webResource);
+        ClientResponse response = mock(ClientResponse.class);
+        when(response.getStatus()).thenReturn(Response.Status.OK.getStatusCode());
+        when(response.getEntity(String.class)).thenReturn("{\"status\":\"Active\"}");
+        when(builder.method(AtlasClient.API.STATUS.getMethod(), ClientResponse.class, null)).thenReturn(response);
+
+        String status = atlasClient.getAdminStatus();
+        assertEquals(status, AtlasClient.UNKNOWN_STATUS);
     }
 }

@@ -77,7 +77,11 @@ public class ActiveServerFilter implements Filter {
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse,
                          FilterChain filterChain) throws IOException, ServletException {
-        if (isInstanceActive()) {
+        if (isFilteredURI(servletRequest)) {
+            LOG.debug("Is a filtered URI: {}. Passing request downstream.",
+                    ((HttpServletRequest)servletRequest).getRequestURI());
+            filterChain.doFilter(servletRequest, servletResponse);
+        } else if (isInstanceActive()) {
             LOG.debug("Active. Passing request downstream");
             filterChain.doFilter(servletRequest, servletResponse);
         } else if (serviceState.isInstanceInTransition()) {
@@ -95,6 +99,12 @@ public class ActiveServerFilter implements Filter {
                 handleRedirect((HttpServletRequest) servletRequest, httpServletResponse, activeServerAddress);
             }
         }
+    }
+
+    private boolean isFilteredURI(ServletRequest servletRequest) {
+        HttpServletRequest httpServletRequest = (HttpServletRequest) servletRequest;
+        String requestURI = httpServletRequest.getRequestURI();
+        return requestURI.contains("/admin/");
     }
 
     boolean isInstanceActive() {

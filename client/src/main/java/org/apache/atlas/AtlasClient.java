@@ -70,6 +70,7 @@ public class AtlasClient {
 
     public static final String BASE_URI = "api/atlas/";
     public static final String ADMIN_VERSION = "admin/version";
+    public static final String ADMIN_STATUS = "admin/status";
     public static final String TYPES = "types";
     public static final String URI_ENTITY = "entities";
     public static final String URI_SEARCH = "discovery/search";
@@ -88,6 +89,7 @@ public class AtlasClient {
     public static final String REFERENCEABLE_ATTRIBUTE_NAME = "qualifiedName";
 
     public static final String JSON_MEDIA_TYPE = MediaType.APPLICATION_JSON + "; charset=UTF-8";
+    public static final String UNKNOWN_STATUS = "Unknown status";
 
     private WebResource service;
 
@@ -154,10 +156,30 @@ public class AtlasClient {
         }
     }
 
+    /**
+     * Return status of the service instance the client is pointing to.
+     *
+     * @return One of the values in ServiceState.ServiceStateValue or {@link #UNKNOWN_STATUS} if there is a JSON parse
+     * exception
+     * @throws AtlasServiceException if there is a HTTP error.
+     */
+    public String getAdminStatus() throws AtlasServiceException {
+        String result = UNKNOWN_STATUS;
+        WebResource resource = getResource(API.STATUS);
+        JSONObject response = callAPIWithResource(API.STATUS, resource);
+        try {
+            result = response.getString("Status");
+        } catch (JSONException e) {
+            LOG.error("Exception while parsing admin status response. Returned response {}", response.toString(), e);
+        }
+        return result;
+    }
+
     public enum API {
 
         //Admin operations
         VERSION(BASE_URI + ADMIN_VERSION, HttpMethod.GET, Response.Status.OK),
+        STATUS(BASE_URI + ADMIN_STATUS, HttpMethod.GET, Response.Status.OK),
 
         //Type operations
         CREATE_TYPE(BASE_URI + TYPES, HttpMethod.POST, Response.Status.CREATED),
