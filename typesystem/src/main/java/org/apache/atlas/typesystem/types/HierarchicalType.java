@@ -46,8 +46,7 @@ import java.util.Set;
  *            as SuperTypes.
  * @param <T> the class of the Instance of this DataType.
  */
-public abstract class HierarchicalType<ST extends HierarchicalType, T> extends AbstractDataType<T>
-        implements Comparable<ST> {
+public abstract class HierarchicalType<ST extends HierarchicalType, T> extends AbstractDataType<T> {
 
     public final TypeSystem typeSystem;
     public final Class<ST> superTypeClass;
@@ -367,19 +366,10 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
     }
 
     @Override
-    public int compareTo(ST o) {
-        String oName = o.getName();
-        try {
-            if (o.isSubType(getName())) {
-                return 1;
-            } else if (isSubType(oName)) {
-                return -1;
-            } else {
-                return getName().compareTo(oName);
-            }
-        } catch(AtlasException e) {
-            throw new RuntimeException(e);
-        }
+    public String toString() {
+
+        return "[name=" + name + ", description=" + description + 
+            ", superTypes=" + superTypes + ", immediateAttrs=" + immediateAttrs + "]";
     }
 
     public Set<String> getAllSuperTypeNames() {

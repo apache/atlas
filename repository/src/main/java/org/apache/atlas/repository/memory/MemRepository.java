@@ -30,13 +30,13 @@ import org.apache.atlas.typesystem.persistence.ReferenceableInstance;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.HierarchicalType;
+import org.apache.atlas.typesystem.types.HierarchicalTypeDependencySorter;
 import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.ObjectGraphWalker;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,11 +45,6 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MemRepository implements IRepository {
-
-/*
-    public static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-    public static SimpleDateFormat timestampFormat = new SimpleDateFormat("yyyy-MM-dd");
-*/
 
     final TypeSystem typeSystem;
     /*
@@ -62,23 +57,6 @@ public class MemRepository implements IRepository {
         this.typeSystem = typeSystem;
         this.typeStores = new HashMap<>();
     }
-
-/*
-    @Override
-    public DateFormat getDateFormat() {
-        return dateFormat;
-    }
-
-    @Override
-    public DateFormat getTimestampFormat() {
-        return timestampFormat;
-    }
-
-    @Override
-    public boolean allowNullsInCollections() {
-        return false;
-    }
-*/
 
     @Override
     public Id newId(String typeName) {
@@ -306,9 +284,8 @@ public class MemRepository implements IRepository {
                 cTypes.add((ClassType) h);
             }
         }
-
-        Collections.sort(tTypes);
-        Collections.sort(cTypes);
+        tTypes = HierarchicalTypeDependencySorter.sortTypes(tTypes);
+        cTypes = HierarchicalTypeDependencySorter.sortTypes(cTypes);
 
         for (TraitType tT : tTypes) {
             defineTrait(tT);

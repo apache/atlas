@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createStructTypeDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createTraitTypeDef;
@@ -171,25 +172,6 @@ public class TypeSystemTest extends BaseTest {
     }
 
     @Test
-    public void testHierarchy() throws AtlasException {
-        HierarchicalTypeDefinition<ClassType> a = TypesUtil.createClassTypeDef("a", ImmutableSet.<String>of());
-        HierarchicalTypeDefinition<ClassType> b = TypesUtil.createClassTypeDef("B", ImmutableSet.of("a"));
-        HierarchicalTypeDefinition<ClassType> c = TypesUtil.createClassTypeDef("C", ImmutableSet.of("B"));
-
-        TypeSystem ts = getTypeSystem();
-        ts.defineTypes(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
-                ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
-                ImmutableList.of(a, b, c));
-        ClassType ac = ts.getDataType(ClassType.class, "a");
-        ClassType bc = ts.getDataType(ClassType.class, "B");
-        ClassType cc = ts.getDataType(ClassType.class, "C");
-
-        assertTrue(ac.compareTo(bc) < 0);
-        assertTrue(bc.compareTo(cc) < 0);
-        assertTrue(ac.compareTo(cc) < 0);
-    }
-
-    @Test
     public void testTypeCategory() throws AtlasException {
         TypeSystem ts = getTypeSystem();
         ts.reset();
@@ -251,5 +233,37 @@ public class TypeSystemTest extends BaseTest {
         Assert.assertEquals(traitNames.size(), numTraits+2);
     }
 
+    @Test
+    public void testHierarchy() throws Exception {
+        HierarchicalTypeDefinition<ClassType> testObjectDef = TypesUtil.createClassTypeDef("TestObject", ImmutableSet.<String>of(),
+            createOptionalAttrDef("name", DataTypes.STRING_TYPE),
+            createOptionalAttrDef("description", DataTypes.STRING_TYPE),
+            createOptionalAttrDef("topAttribute", DataTypes.STRING_TYPE));
+        HierarchicalTypeDefinition<ClassType> testDataSetDef = TypesUtil.createClassTypeDef("TestDataSet", ImmutableSet.of("TestObject"));
+        HierarchicalTypeDefinition<ClassType> testColumnDef = TypesUtil.createClassTypeDef("TestColumn", ImmutableSet.of("TestObject"),
+            createRequiredAttrDef("name", DataTypes.STRING_TYPE));
+        HierarchicalTypeDefinition<ClassType> testRelationalDataSetDef = 
+            TypesUtil.createClassTypeDef("TestRelationalDataSet", ImmutableSet.of("TestDataSet"),
+                new AttributeDefinition("columns", DataTypes.arrayTypeName("TestColumn"),
+                    Multiplicity.OPTIONAL, true, null));
+        HierarchicalTypeDefinition<ClassType> testTableDef = TypesUtil.createClassTypeDef("TestTable", ImmutableSet.of("TestRelationalDataSet"),
+            createOptionalAttrDef("schema", DataTypes.STRING_TYPE));
+        HierarchicalTypeDefinition<ClassType> testDataFileDef = TypesUtil.createClassTypeDef("TestDataFile", ImmutableSet.of("TestRelationalDataSet"),
+            createOptionalAttrDef("urlString", DataTypes.STRING_TYPE));
+        HierarchicalTypeDefinition<ClassType> testDocumentDef = TypesUtil.createClassTypeDef("TestDocument", ImmutableSet.of("TestDataSet"),
+            createOptionalAttrDef("urlString", DataTypes.STRING_TYPE),
+            createOptionalAttrDef("encoding", DataTypes.STRING_TYPE));
+        HierarchicalTypeDefinition<ClassType> testAnnotationDef =TypesUtil.createClassTypeDef("TestAnnotation",  ImmutableSet.<String>of(),
+            createOptionalAttrDef("inheritedAttribute", DataTypes.STRING_TYPE));
+        HierarchicalTypeDefinition<ClassType> myNewAnnotationDef = TypesUtil.createClassTypeDef("MyNewAnnotation", ImmutableSet.of("TestAnnotation"),
+            createRequiredAttrDef("myNewAnnotationAttribute", DataTypes.STRING_TYPE));
+        getTypeSystem().defineTypes(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
+            ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
+            ImmutableList.of(testObjectDef, testDataSetDef, testColumnDef, testRelationalDataSetDef, testTableDef, testDataFileDef, testDocumentDef, testAnnotationDef, myNewAnnotationDef));
 
+        // Verify that field mappings for MyNewAnnotation contains the attribute inherited from the TestAnnotation superclass.
+        // Prior to fix for ATLAS-573, the inherited attribute was missing.
+        ClassType dataType = getTypeSystem().getDataType(ClassType.class, "MyNewAnnotation");
+        Assert.assertTrue(dataType.fieldMapping.fields.containsKey("inheritedAttribute"));
+    }
 }

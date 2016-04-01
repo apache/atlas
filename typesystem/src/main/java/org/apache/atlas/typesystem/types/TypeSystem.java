@@ -34,8 +34,6 @@ import javax.inject.Singleton;
 import java.lang.reflect.Constructor;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -542,13 +540,13 @@ public class TypeSystem {
             for (String traitTypeName : traitNameToDefMap.keySet()) {
                 traitTypes.add(getDataType(TraitType.class, traitTypeName));
             }
-            Collections.sort(traitTypes);
+            traitTypes = HierarchicalTypeDependencySorter.sortTypes(traitTypes);
 
             List<ClassType> classTypes = new ArrayList<>();
             for (String classTypeName : classNameToDefMap.keySet()) {
                 classTypes.add(getDataType(ClassType.class, classTypeName));
             }
-            Collections.sort(classTypes);
+            classTypes = HierarchicalTypeDependencySorter.sortTypes(classTypes);
 
             for (StructTypeDefinition structDef : structDefs) {
                 constructStructureType(structDef);
