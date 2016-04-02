@@ -20,13 +20,11 @@ package org.apache.atlas.web.service;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
+import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.notification.NotificationHookConsumer;
-import org.apache.atlas.repository.audit.HBaseBasedAuditRepository;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.service.Service;
-import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.services.DefaultMetadataService;
-import org.apache.atlas.web.filters.ActiveServerFilter;
 
 /**
  * A Guice module that registers the handlers of High Availability state change handlers and other services.
@@ -41,7 +39,8 @@ public class ActiveInstanceElectorModule extends AbstractModule {
         activeStateChangeHandlerBinder.addBinding().to(GraphBackedSearchIndexer.class);
         activeStateChangeHandlerBinder.addBinding().to(DefaultMetadataService.class);
         activeStateChangeHandlerBinder.addBinding().to(NotificationHookConsumer.class);
-        activeStateChangeHandlerBinder.addBinding().to(HBaseBasedAuditRepository.class);
+        //Enable this after ATLAS-498 is committed
+        //activeStateChangeHandlerBinder.addBinding().to(HBaseBasedAuditRepository.class);
 
         Multibinder<Service> serviceBinder = Multibinder.newSetBinder(binder(), Service.class);
         serviceBinder.addBinding().to(ActiveInstanceElectorService.class);

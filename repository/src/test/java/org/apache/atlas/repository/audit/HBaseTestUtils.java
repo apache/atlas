@@ -19,7 +19,6 @@
 package org.apache.atlas.repository.audit;
 
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.RequestContext;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.hbase.LocalHBaseCluster;
@@ -40,9 +39,6 @@ public class HBaseTestUtils {
 
         hbaseCluster = new LocalHBaseCluster(hbaseTestUtility.getConfiguration());
         hbaseCluster.startup();
-
-        RequestContext.createContext();
-        RequestContext.get().setUser("testuser");
     }
 
     public static void stopCluster() throws Exception {
