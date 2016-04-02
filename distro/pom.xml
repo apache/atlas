@@ -133,7 +133,7 @@
     <dependencies>
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>hive-bridge</artifactId>
+            <artifactId>storm-bridge</artifactId>
             <version>0.7-incubating-SNAPSHOT</version>
         </dependency>
     </dependencies>

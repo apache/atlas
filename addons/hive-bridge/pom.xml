@@ -103,6 +103,11 @@
             <artifactId>atlas-notification</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>hdfs-model</artifactId>
+        </dependency>
+
         <!-- to bring up atlas server for integration tests -->
         <dependency>
             <groupId>org.apache.atlas</groupId>
@@ -221,6 +226,11 @@
                                 <artifactItem>
                                     <groupId>${project.groupId}</groupId>
                                     <artifactId>atlas-notification</artifactId>
+                                    <version>${project.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>hdfs-model</artifactId>
                                     <version>${project.version}</version>
                                 </artifactItem>
                                 <artifactItem>

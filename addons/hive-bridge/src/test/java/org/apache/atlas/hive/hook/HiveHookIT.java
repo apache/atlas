@@ -288,8 +288,6 @@ public class HiveHookIT {
         String processId = assertProcessIsRegistered(query);
         Referenceable process = dgiCLient.getEntity(processId);
         Assert.assertNull(process.get("inputs"));
-
-        System.out.println(" Ref Ops : " + process.get("outputs"));
         Assert.assertEquals(((List<Referenceable>) process.get("outputs")).size(), 1);
     }
 

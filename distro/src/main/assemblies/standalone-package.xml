@@ -81,6 +81,12 @@
             <outputDirectory>examples</outputDirectory>
         </fileSet>
 
+        <!-- addons/hdfs-model -->
+        <fileSet>
+            <directory>../addons/hdfs-model/target/models</directory>
+            <outputDirectory>models</outputDirectory>
+        </fileSet>
+
         <!-- addons/hive -->
         <fileSet>
             <directory>../addons/hive-bridge/src/bin</directory>
