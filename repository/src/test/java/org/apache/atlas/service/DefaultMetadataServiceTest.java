@@ -24,14 +24,21 @@ import com.google.inject.Inject;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.repository.audit.EntityAuditRepository;
+import org.apache.atlas.repository.audit.HBaseBasedAuditRepository;
+import org.apache.atlas.repository.audit.HBaseTestUtils;
+import org.apache.atlas.typesystem.exception.TypeNotFoundException;
+import org.apache.atlas.typesystem.exception.EntityNotFoundException;
+import org.apache.atlas.typesystem.types.ClassType;
+import org.apache.atlas.typesystem.types.DataTypes;
+import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.atlas.typesystem.types.utils.TypesUtil;
+import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.listener.EntityChangeListener;
-import org.apache.atlas.repository.audit.EntityAuditRepository;
-import org.apache.atlas.repository.audit.HBaseBasedAuditRepository;
-import org.apache.atlas.repository.audit.HBaseTestUtils;
 import org.apache.atlas.repository.graph.GraphProvider;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.typesystem.IReferenceableInstance;
@@ -40,19 +47,12 @@ import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.TypesDef;
-import org.apache.atlas.typesystem.exception.EntityNotFoundException;
-import org.apache.atlas.typesystem.exception.TypeNotFoundException;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.typesystem.persistence.Id;
-import org.apache.atlas.typesystem.types.ClassType;
-import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.EnumValue;
-import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.ValueConversionException;
-import org.apache.atlas.typesystem.types.utils.TypesUtil;
-import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.lang.RandomStringUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -906,6 +906,68 @@ public class DefaultMetadataServiceTest {
             }
         }
         
+        // Verify that the listener was notified about the deleted entities.
+        Collection<ITypedReferenceableInstance> deletedEntitiesFromListener = listener.getDeletedEntities();
+        Assert.assertNotNull(deletedEntitiesFromListener);
+        Assert.assertEquals(deletedEntitiesFromListener.size(), deletedGuids.size());
+        List<String> deletedGuidsFromListener = new ArrayList<>(deletedGuids.size());
+        for (ITypedReferenceableInstance deletedEntity : deletedEntitiesFromListener) {
+            deletedGuidsFromListener.add(deletedEntity.getId()._getId());
+        }
+        Assert.assertEquals(deletedGuidsFromListener.size(), deletedGuids.size());
+        Assert.assertTrue(deletedGuidsFromListener.containsAll(deletedGuids));
+    }
+
+    @Test
+    public void testDeleteEntityByUniqueAttribute() throws Exception {
+        // Create 2 table entities, each with 3 composite column entities
+        Referenceable dbEntity = createDBEntity();
+        String dbGuid = createInstance(dbEntity);
+        Id dbId = new Id(dbGuid, 0, TestUtils.DATABASE_TYPE);
+        Referenceable table1Entity = createTableEntity(dbId);
+        Referenceable col1 = createColumnEntity();
+        Referenceable col2 = createColumnEntity();
+        Referenceable col3 = createColumnEntity();
+        table1Entity.set(COLUMNS_ATTR_NAME, ImmutableList.of(col1, col2, col3));
+        createInstance(table1Entity);
+
+        // to get their guids and the composite column guids.
+        String entityJson = metadataService.getEntityDefinition(TestUtils.TABLE_TYPE,
+            NAME, (String)table1Entity.get(NAME));
+        Assert.assertNotNull(entityJson);
+        table1Entity = InstanceSerialization.fromJsonReferenceable(entityJson, true);
+        Object val = table1Entity.get(COLUMNS_ATTR_NAME);
+        Assert.assertTrue(val instanceof List);
+        List<IReferenceableInstance> table1Columns = (List<IReferenceableInstance>) val;
+
+        // Register an EntityChangeListener to verify the notification mechanism
+        // is working for deleteEntityByUniqueAttribute().
+        DeleteEntitiesChangeListener listener = new DeleteEntitiesChangeListener();
+        metadataService.registerListener(listener);
+
+        // Delete the table entities.  The deletion should cascade
+        // to their composite columns.
+        List<String> deletedGuids = metadataService.deleteEntityByUniqueAttribute(TestUtils.TABLE_TYPE, NAME, (String) table1Entity.get(NAME));
+
+        // Verify that deleteEntities() response has guids for tables and their composite columns.
+        Assert.assertTrue(deletedGuids.contains(table1Entity.getId()._getId()));
+        for (IReferenceableInstance column : table1Columns) {
+            Assert.assertTrue(deletedGuids.contains(column.getId()._getId()));
+        }
+
+        // Verify that tables and their composite columns have been deleted from the repository.
+        for (String guid : deletedGuids) {
+            try {
+                metadataService.getEntityDefinition(guid);
+                Assert.fail(EntityNotFoundException.class.getSimpleName() +
+                    " expected but not thrown.  The entity with guid " + guid +
+                    " still exists in the repository after being deleted." );
+            }
+            catch(EntityNotFoundException e) {
+                // The entity does not exist in the repository, so deletion was successful.
+            }
+        }
+
         // Verify that the listener was notified about the deleted entities.
         Collection<ITypedReferenceableInstance> deletedEntitiesFromListener = listener.getDeletedEntities();
         Assert.assertNotNull(deletedEntitiesFromListener);

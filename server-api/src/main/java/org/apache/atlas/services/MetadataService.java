@@ -196,4 +196,15 @@ public interface MetadataService {
      * @param listener  the listener to unregister
      */
     void unregisterListener(EntityChangeListener listener);
+
+    /**
+     * Delete the specified entity from the repository identified by its unique attribute (including its composite references)
+     *
+     * @param typeName The entity's type
+     * @param uniqueAttributeName attribute name by which the entity could be identified uniquely
+     * @param attrValue attribute value by which the entity could be identified uniquely
+     * @return List of guids for deleted entities (including their composite references)
+     * @throws AtlasException
+     */
+    List<String> deleteEntityByUniqueAttribute(String typeName, String uniqueAttributeName, String attrValue) throws AtlasException;
 }

@@ -346,7 +346,7 @@ public class AtlasClient {
         UPDATE_ENTITY_PARTIAL(BASE_URI + URI_ENTITY, HttpMethod.POST, Response.Status.OK),
         LIST_ENTITIES(BASE_URI + URI_ENTITY, HttpMethod.GET, Response.Status.OK),
         DELETE_ENTITIES(BASE_URI + URI_ENTITY, HttpMethod.DELETE, Response.Status.OK),
-
+        DELETE_ENTITY(BASE_URI + URI_ENTITY, HttpMethod.DELETE, Response.Status.OK),
 
         //Trait operations
         ADD_TRAITS(BASE_URI + URI_ENTITY, HttpMethod.POST, Response.Status.CREATED),
@@ -608,6 +608,23 @@ public class AtlasClient {
                 return resource;
             }
         });
+        return extractResults(jsonResponse, GUID);
+    }
+
+    /**
+     * Supports Deletion of an entity identified by its unique attribute value
+     * @param entityType Type of the entity being deleted
+     * @param uniqueAttributeName Attribute Name that uniquely identifies the entity
+     * @param uniqueAttributeValue Attribute Value that uniquely identifies the entity
+     * @return List of deleted entity guids(including composite references from that entity)
+     */
+    public List<String> deleteEntity(String entityType, String uniqueAttributeName, String uniqueAttributeValue) throws AtlasServiceException {
+        API api = API.DELETE_ENTITY;
+        WebResource resource = getResource(api);
+        resource = resource.queryParam(TYPE, entityType);
+        resource = resource.queryParam(ATTRIBUTE_NAME, uniqueAttributeName);
+        resource = resource.queryParam(ATTRIBUTE_VALUE, uniqueAttributeValue);
+        JSONObject jsonResponse = callAPIWithResource(API.DELETE_ENTITIES, resource, null);
         return extractResults(jsonResponse, GUID);
     }
     

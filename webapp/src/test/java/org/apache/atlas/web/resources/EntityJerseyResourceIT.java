@@ -808,4 +808,34 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }
     }
 
+    @Test
+    public void testDeleteEntityByUniqAttribute() throws Exception {
+        // Create database entity
+        Referenceable db1 = new Referenceable(DATABASE_TYPE);
+        String dbName = randomString();
+        db1.set("name", dbName);
+        db1.set("description", randomString());
+        Id db1Id = createInstance(db1);
+
+        // Delete the database entity
+        List<String> deletedGuidsList = serviceClient.deleteEntity(DATABASE_TYPE, "name", dbName);
+
+        // Verify that deleteEntities() response has database entity guids
+        Assert.assertEquals(deletedGuidsList.size(), 1);
+        Assert.assertTrue(deletedGuidsList.contains(db1Id._getId()));
+
+        // Verify entities were deleted from the repository.
+        for (String guid : deletedGuidsList) {
+            try {
+                serviceClient.getEntity(guid);
+                Assert.fail(AtlasServiceException.class.getSimpleName() +
+                    " was expected but not thrown.  The entity with guid " + guid +
+                    " still exists in the repository after being deleted.");
+            }
+            catch (AtlasServiceException e) {
+                Assert.assertTrue(e.getMessage().contains(Integer.toString(Response.Status.NOT_FOUND.getStatusCode())));
+            }
+        }
+    }
+
 }

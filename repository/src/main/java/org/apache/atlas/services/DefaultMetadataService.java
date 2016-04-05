@@ -76,7 +76,6 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Simple wrapper over TypeSystem and MetadataRepository services with hooks
@@ -691,7 +690,25 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
      */
     @Override
     public List<String> deleteEntities(List<String> deleteCandidateGuids) throws AtlasException {
-        ParamChecker.notEmpty(deleteCandidateGuids, "delete candidate guids cannot be empty");
+        ParamChecker.notEmpty(deleteCandidateGuids, "delete candidate guids");
+        return deleteGuids(deleteCandidateGuids);
+    }
+
+    @Override
+    public List<String> deleteEntityByUniqueAttribute(String typeName, String uniqueAttributeName, String attrValue) throws AtlasException {
+        ParamChecker.notEmpty(typeName, "delete candidate typeName");
+        ParamChecker.notEmpty(uniqueAttributeName, "delete candidate unique attribute name");
+        ParamChecker.notEmpty(attrValue, "delete candidate unique attribute value");
+
+        //Throws EntityNotFoundException if the entity could not be found by its unique attribute
+        ITypedReferenceableInstance instance = getEntityDefinitionReference(typeName, uniqueAttributeName, attrValue);
+        final Id instanceId = instance.getId();
+        List<String> deleteCandidateGuids  = new ArrayList<String>() {{ add(instanceId._getId());}};
+
+        return deleteGuids(deleteCandidateGuids);
+    }
+
+    private List<String> deleteGuids(List<String> deleteCandidateGuids) throws AtlasException {
         Pair<List<String>, List<ITypedReferenceableInstance>> deleteEntitiesResult = repository.deleteEntities(deleteCandidateGuids);
         if (deleteEntitiesResult.right.size() > 0) {
             onEntitiesDeleted(deleteEntitiesResult.right);
