@@ -113,7 +113,8 @@ public class QuickStart {
     private final AtlasClient metadataServiceClient;
 
     QuickStart(String baseUrl) {
-        metadataServiceClient = new AtlasClient(baseUrl);
+        String[] urls = baseUrl.split(",");
+        metadataServiceClient = new AtlasClient(null, null, urls);
     }
 
     void createTypes() throws Exception {

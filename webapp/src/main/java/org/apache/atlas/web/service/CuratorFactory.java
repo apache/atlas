@@ -85,7 +85,7 @@ public class CuratorFactory {
      * Create a new instance {@link LeaderLatch}
      * @param serverId the ID used to register this instance with curator.
      *                 This ID should typically be obtained using
-     *                 {@link HAConfiguration#getAtlasServerId(Configuration)}
+     *                 {@link org.apache.atlas.ha.AtlasServerIdSelector#selectServerId(Configuration)}
      * @return
      */
     public LeaderLatch leaderLatchInstance(String serverId) {

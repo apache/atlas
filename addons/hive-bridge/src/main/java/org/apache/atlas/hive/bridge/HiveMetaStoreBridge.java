@@ -96,7 +96,15 @@ public class HiveMetaStoreBridge {
                                UserGroupInformation ugi) throws Exception {
         this(hiveConf.get(HIVE_CLUSTER_NAME, DEFAULT_CLUSTER_NAME),
                 Hive.get(hiveConf),
-                new AtlasClient(atlasConf.getString(ATLAS_ENDPOINT, DEFAULT_DGI_URL), ugi, doAsUser));
+                atlasConf, doAsUser, ugi);
+    }
+
+    HiveMetaStoreBridge(String clusterName, Hive hiveClient,
+                        Configuration atlasConf, String doAsUser, UserGroupInformation ugi) {
+        this.clusterName = clusterName;
+        this.hiveClient = hiveClient;
+        String baseUrls = atlasConf.getString(ATLAS_ENDPOINT, DEFAULT_DGI_URL);
+        this.atlasClient = new AtlasClient(ugi, doAsUser, baseUrls.split(","));
     }
 
     HiveMetaStoreBridge(String clusterName, Hive hiveClient, AtlasClient atlasClient) {

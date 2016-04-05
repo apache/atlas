@@ -13,6 +13,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-571 Modify Atlas client for necessary changes in context of HA (yhemanth via sumasai)
 ATLAS-620 Disable hbase based entity audit (shwethags)
 ATLAS-618 Fix assembly for hdfs-module (sumasai via yhemanth)
 ATLAS-573 Inherited attributes disappear from entities after server restart (dkantor via sumasai)

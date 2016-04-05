@@ -20,7 +20,6 @@ package org.apache.atlas.ha;
 
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.security.SecurityProperties;
 import org.apache.commons.configuration.Configuration;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -31,8 +30,7 @@ import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
-public class HAConfigurationTest {
-
+public class AtlasServerIdSelectorTest {
     @Mock
     private Configuration configuration;
 
@@ -48,14 +46,14 @@ public class HAConfigurationTest {
         when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id1")).thenReturn("127.0.0.1:31000");
         when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id2")).thenReturn("127.0.0.1:21000");
 
-        String atlasServerId = HAConfiguration.getAtlasServerId(configuration);
+        String atlasServerId = AtlasServerIdSelector.selectServerId(configuration);
         assertEquals(atlasServerId, "id2");
     }
 
     @Test(expectedExceptions = AtlasException.class)
     public void testShouldFailIfNoIDsConfiguration() throws AtlasException {
         when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(new String[] {});
-        HAConfiguration.getAtlasServerId(configuration);
+        AtlasServerIdSelector.selectServerId(configuration);
         fail("Should not return any server id if IDs not found in configuration");
     }
 
@@ -64,27 +62,7 @@ public class HAConfigurationTest {
         when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(new String[] {"id1", "id2"});
         when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id1")).thenReturn("127.0.0.1:31000");
 
-        HAConfiguration.getAtlasServerId(configuration);
+        AtlasServerIdSelector.selectServerId(configuration);
         fail("Should not return any server id if no matching address found for any ID");
-    }
-
-    @Test
-    public void testShouldReturnHTTPBoundAddress() {
-        when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id1")).thenReturn("127.0.0.1:21000");
-        when(configuration.getBoolean(SecurityProperties.TLS_ENABLED)).thenReturn(false);
-
-        String address = HAConfiguration.getBoundAddressForId(configuration, "id1");
-
-        assertEquals(address, "http://127.0.0.1:21000");
-    }
-
-    @Test
-    public void testShouldReturnHTTPSBoundAddress() {
-        when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id1")).thenReturn("127.0.0.1:21443");
-        when(configuration.getBoolean(SecurityProperties.TLS_ENABLED)).thenReturn(true);
-
-        String address = HAConfiguration.getBoundAddressForId(configuration, "id1");
-
-        assertEquals(address, "https://127.0.0.1:21443");
     }
 }

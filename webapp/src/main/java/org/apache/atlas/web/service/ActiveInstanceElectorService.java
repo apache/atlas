@@ -23,6 +23,7 @@ import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.ha.AtlasServerIdSelector;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.service.Service;
@@ -101,7 +102,7 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
             return;
         }
         cacheActiveStateChangeHandlers();
-        serverId = HAConfiguration.getAtlasServerId(configuration);
+        serverId = AtlasServerIdSelector.selectServerId(configuration);
         joinElection();
     }
 

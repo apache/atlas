@@ -86,7 +86,7 @@ public class NegativeSSLAndKerberosTest extends BaseSSLAndKerberosTest {
 
         dgiClient = new AtlasClient(DGI_URL) {
             @Override
-            protected PropertiesConfiguration getClientProperties() throws AtlasException {
+            protected PropertiesConfiguration getClientProperties() {
                 return configuration;
             }
         };

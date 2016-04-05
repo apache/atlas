@@ -18,6 +18,7 @@
 
 package org.apache.atlas;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
@@ -42,6 +43,8 @@ import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
+import java.io.IOException;
+import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -91,23 +94,66 @@ public class AtlasClient {
     public static final String JSON_MEDIA_TYPE = MediaType.APPLICATION_JSON + "; charset=UTF-8";
     public static final String UNKNOWN_STATUS = "Unknown status";
 
+    public static final String ATLAS_CLIENT_HA_RETRIES_KEY = "atlas.client.ha.retries";
+    // Setting the default value based on testing failovers while client code like quickstart is running.
+    public static final int DEFAULT_NUM_RETRIES = 4;
+    public static final String ATLAS_CLIENT_HA_SLEEP_INTERVAL_MS_KEY = "atlas.client.ha.sleep.interval.ms";
+    // Setting the default value based on testing failovers while client code like quickstart is running.
+    // With number of retries, this gives a total time of about 20s for the server to start.
+    public static final int DEFAULT_SLEEP_BETWEEN_RETRIES_MS = 5000;
+
     private WebResource service;
+    private AtlasClientContext atlasClientContext;
+    private Configuration configuration;
 
-    protected AtlasClient() {
-        //do nothing. For LocalAtlasClient
-    }
-
+    /**
+     * Create a new AtlasClient.
+     *
+     * @param baseUrl The URL of the Atlas server to connect to.
+     */
     public AtlasClient(String baseUrl) {
         this(baseUrl, null, null);
     }
 
+    /**
+     * Create a new Atlas Client.
+     * @param baseUrl The URL of the Atlas server to connect to.
+     * @param ugi The {@link UserGroupInformation} of logged in user.
+     * @param doAsUser The user on whose behalf queries will be executed.
+     */
     public AtlasClient(String baseUrl, UserGroupInformation ugi, String doAsUser) {
+        initializeState(new String[] {baseUrl}, ugi, doAsUser);
+    }
+
+    /**
+     * Create a new Atlas client.
+     * @param ugi The {@link UserGroupInformation} of logged in user, can be null in unsecure mode.
+     * @param doAsUser The user on whose behalf queries will be executed, can be null in unsecure mode.
+     * @param baseUrls A list of URLs that point to an ensemble of Atlas servers working in
+     *                 High Availability mode. The client will automatically determine the
+     *                 active instance on startup and also when there is a scenario of
+     *                 failover.
+     */
+    public AtlasClient(UserGroupInformation ugi, String doAsUser, String... baseUrls) {
+        initializeState(baseUrls, ugi, doAsUser);
+    }
+
+    private void initializeState(String[] baseUrls, UserGroupInformation ugi, String doAsUser) {
+        configuration = getClientProperties();
+        Client client = getClient(configuration, ugi, doAsUser);
+        String activeServiceUrl = determineActiveServiceURL(baseUrls, client);
+        atlasClientContext = new AtlasClientContext(baseUrls, client, ugi, doAsUser);
+        service = client.resource(UriBuilder.fromUri(activeServiceUrl).build());
+    }
+
+    @VisibleForTesting
+    protected Client getClient(Configuration configuration, UserGroupInformation ugi, String doAsUser) {
         DefaultClientConfig config = new DefaultClientConfig();
         Configuration clientConfig = null;
         int readTimeout = 60000;
         int connectTimeout = 60000;
         try {
-            clientConfig = getClientProperties();
+            clientConfig = configuration;
             if (clientConfig.getBoolean(TLS_ENABLED, false)) {
                 // create an SSL properties configuration if one doesn't exist.  SSLFactory expects a file, so forced
                 // to create a
@@ -124,26 +170,109 @@ public class AtlasClient {
             SecureClientUtils.getClientConnectionHandler(config, clientConfig, doAsUser, ugi);
 
         Client client = new Client(handler, config);
-        client.resource(UriBuilder.fromUri(baseUrl).build());
         client.setReadTimeout(readTimeout);
         client.setConnectTimeout(connectTimeout);
-
-        service = client.resource(UriBuilder.fromUri(baseUrl).build());
+        return client;
     }
 
-    // for testing
-    AtlasClient(WebResource service) {
+    @VisibleForTesting
+    protected String determineActiveServiceURL(String[] baseUrls, Client client) {
+        if (baseUrls.length == 0) {
+            throw new IllegalArgumentException("Base URLs cannot be null or empty");
+        }
+        String baseUrl;
+        AtlasServerEnsemble atlasServerEnsemble = new AtlasServerEnsemble(baseUrls);
+        if (atlasServerEnsemble.hasSingleInstance()) {
+            baseUrl = atlasServerEnsemble.firstURL();
+            LOG.info("Client has only one service URL, will use that for all actions: {}", baseUrl);
+            return baseUrl;
+        } else {
+            try {
+                baseUrl = selectActiveServerAddress(client, atlasServerEnsemble);
+            } catch (AtlasServiceException e) {
+                LOG.error("None of the passed URLs are active: {}", atlasServerEnsemble, e);
+                throw new IllegalArgumentException("None of the passed URLs are active " + atlasServerEnsemble, e);
+            }
+        }
+        return baseUrl;
+    }
+
+    private String selectActiveServerAddress(Client client, AtlasServerEnsemble serverEnsemble)
+            throws AtlasServiceException {
+        List<String> serverInstances = serverEnsemble.getMembers();
+        String activeServerAddress = null;
+        for (String serverInstance : serverInstances) {
+            LOG.info("Trying with address {}", serverInstance);
+            activeServerAddress = getAddressIfActive(client, serverInstance);
+            if (activeServerAddress != null) {
+                LOG.info("Found service {} as active service.", serverInstance);
+                break;
+            }
+        }
+        if (activeServerAddress != null)
+            return activeServerAddress;
+        else
+            throw new AtlasServiceException(API.STATUS, new RuntimeException("Could not find any active instance"));
+    }
+
+    private String getAddressIfActive(Client client, String serverInstance) {
+        String activeServerAddress = null;
+        for (int i = 0; i < getNumberOfRetries(); i++) {
+            try {
+                WebResource service = client.resource(UriBuilder.fromUri(serverInstance).build());
+                String adminStatus = getAdminStatus(service);
+                if (adminStatus.equals("ACTIVE")) {
+                    activeServerAddress = serverInstance;
+                    break;
+                } else {
+                    LOG.info("Service {} is not active.. will retry.", serverInstance);
+                }
+            } catch (Exception e) {
+                LOG.error("Could not get status from service {} after {} tries.", serverInstance, i, e);
+            }
+            sleepBetweenRetries();
+            LOG.warn("Service {} is not active.", serverInstance);
+        }
+        return activeServerAddress;
+    }
+
+    private void sleepBetweenRetries(){
+        try {
+            Thread.sleep(getSleepBetweenRetriesMs());
+        } catch (InterruptedException e) {
+            LOG.error("Interrupted from sleeping between retries.", e);
+        }
+    }
+
+    private int getSleepBetweenRetriesMs() {
+        return configuration.getInt(ATLAS_CLIENT_HA_SLEEP_INTERVAL_MS_KEY, DEFAULT_SLEEP_BETWEEN_RETRIES_MS);
+    }
+
+    private int getNumberOfRetries() {
+        return configuration.getInt(ATLAS_CLIENT_HA_RETRIES_KEY, DEFAULT_NUM_RETRIES);
+    }
+
+    @VisibleForTesting
+    AtlasClient(WebResource service, Configuration configuration) {
         this.service = service;
+        this.configuration = configuration;
     }
 
-    protected Configuration getClientProperties() throws AtlasException {
-        return ApplicationProperties.get();
+    protected Configuration getClientProperties() {
+        try {
+            if (configuration == null) {
+                configuration = ApplicationProperties.get();
+            }
+        } catch (AtlasException e) {
+            LOG.error("Exception while loading configuration.", e);
+        }
+        return configuration;
     }
 
     public boolean isServerReady() throws AtlasServiceException {
         WebResource resource = getResource(API.VERSION);
         try {
-            callAPIWithResource(API.VERSION, resource);
+            callAPIWithResource(API.VERSION, resource, null);
             return true;
         } catch (ClientHandlerException che) {
             return false;
@@ -164,9 +293,31 @@ public class AtlasClient {
      * @throws AtlasServiceException if there is a HTTP error.
      */
     public String getAdminStatus() throws AtlasServiceException {
+        return getAdminStatus(service);
+    }
+
+    private void handleClientHandlerException(ClientHandlerException che) {
+        if (isRetryableException(che)) {
+            atlasClientContext.getClient().destroy();
+            LOG.warn("Destroyed current context while handling ClientHandlerEception.");
+            LOG.warn("Will retry and create new context.");
+            sleepBetweenRetries();
+            initializeState(atlasClientContext.getBaseUrls(), atlasClientContext.getUgi(),
+                    atlasClientContext.getDoAsUser());
+            return;
+        }
+        throw che;
+    }
+
+    private boolean isRetryableException(ClientHandlerException che) {
+        return che.getCause().getClass().equals(IOException.class)
+                || che.getCause().getClass().equals(ConnectException.class);
+    }
+
+    private String getAdminStatus(WebResource service) throws AtlasServiceException {
         String result = UNKNOWN_STATUS;
-        WebResource resource = getResource(API.STATUS);
-        JSONObject response = callAPIWithResource(API.STATUS, resource);
+        WebResource resource = getResource(service, API.STATUS);
+        JSONObject response = callAPIWithResource(API.STATUS, resource, null);
         try {
             result = response.getString("Status");
         } catch (JSONException e) {
@@ -282,9 +433,8 @@ public class AtlasClient {
     }
 
     public String getType(String typeName) throws AtlasServiceException {
-        WebResource resource = getResource(API.GET_TYPE, typeName);
         try {
-            JSONObject response = callAPIWithResource(API.GET_TYPE, resource);
+            JSONObject response = callAPI(API.GET_TYPE, null, typeName);;
             return response.getString(DEFINITION);
         } catch (AtlasServiceException e) {
             if (Response.Status.NOT_FOUND.equals(e.getStatus())) {
@@ -366,11 +516,37 @@ public class AtlasClient {
      * @param attribute  property key
      * @param value     property value
      */
-    public void updateEntityAttribute(String guid, String attribute, String value) throws AtlasServiceException {
-        API api = API.UPDATE_ENTITY_PARTIAL;
-        WebResource resource = getResource(api, guid);
-        resource = resource.queryParam(ATTRIBUTE_NAME, attribute);
-        callAPIWithResource(api, resource, value);
+    public void updateEntityAttribute(final String guid, final String attribute, String value) throws AtlasServiceException {
+        callAPIWithRetries(API.UPDATE_ENTITY_PARTIAL, value, new ResourceCreator() {
+            @Override
+            public WebResource createResource() {
+                API api = API.UPDATE_ENTITY_PARTIAL;
+                WebResource resource = getResource(api, guid);
+                resource = resource.queryParam(ATTRIBUTE_NAME, attribute);
+                return resource;
+            }
+        });
+    }
+
+    @VisibleForTesting
+    JSONObject callAPIWithRetries(API api, Object requestObject, ResourceCreator resourceCreator)
+            throws AtlasServiceException {
+        for (int i = 0; i < getNumberOfRetries(); i++) {
+            WebResource resource = resourceCreator.createResource();
+            try {
+                LOG.info("using resource {} for {} times", resource.getURI(), i);
+                JSONObject result = callAPIWithResource(api, resource, requestObject);
+                return result;
+            } catch (ClientHandlerException che) {
+                if (i==(getNumberOfRetries()-1)) {
+                    throw che;
+                }
+                LOG.warn("Handled exception in calling api {}", api.getPath(), che);
+                LOG.warn("Exception's cause: {}", che.getCause().getClass());
+                handleClientHandlerException(che);
+            }
+        }
+        throw new AtlasServiceException(api, new RuntimeException("Could not get response after retries."));
     }
 
     /**
@@ -392,15 +568,20 @@ public class AtlasClient {
      * @param uniqueAttributeValue Attribute Value that uniquely identifies the entity
      * @param entity entity definition
      */
-    public String updateEntity(String entityType, String uniqueAttributeName, String uniqueAttributeValue,
+    public String updateEntity(final String entityType, final String uniqueAttributeName, final String uniqueAttributeValue,
                                Referenceable entity) throws AtlasServiceException {
-        API api = API.UPDATE_ENTITY_PARTIAL;
-        WebResource resource = getResource(api, "qualifiedName");
-        resource = resource.queryParam(TYPE, entityType);
-        resource = resource.queryParam(ATTRIBUTE_NAME, uniqueAttributeName);
-        resource = resource.queryParam(ATTRIBUTE_VALUE, uniqueAttributeValue);
+        final API api = API.UPDATE_ENTITY_PARTIAL;
         String entityJson = InstanceSerialization.toJson(entity, true);
-        JSONObject response = callAPIWithResource(api, resource, entityJson);
+        JSONObject response = callAPIWithRetries(api, entityJson, new ResourceCreator() {
+            @Override
+            public WebResource createResource() {
+                WebResource resource = getResource(api, "qualifiedName");
+                resource = resource.queryParam(TYPE, entityType);
+                resource = resource.queryParam(ATTRIBUTE_NAME, uniqueAttributeName);
+                resource = resource.queryParam(ATTRIBUTE_VALUE, uniqueAttributeValue);
+                return resource;
+            }
+        });
         try {
             return response.getString(GUID);
         } catch (JSONException e) {
@@ -415,13 +596,18 @@ public class AtlasClient {
      * @return List of deleted entity guids
      * @throws AtlasServiceException
      */
-    public List<String> deleteEntities(String ... guids) throws AtlasServiceException {
-        API api = API.DELETE_ENTITIES;
-        WebResource resource = getResource(api);
-        for (String guid : guids) {
-            resource = resource.queryParam(GUID.toLowerCase(), guid);
-        }
-        JSONObject jsonResponse = callAPIWithResource(API.DELETE_ENTITIES, resource);
+    public List<String> deleteEntities(final String ... guids) throws AtlasServiceException {
+        JSONObject jsonResponse = callAPIWithRetries(API.DELETE_ENTITIES, null, new ResourceCreator() {
+            @Override
+            public WebResource createResource() {
+                API api = API.DELETE_ENTITIES;
+                WebResource resource = getResource(api);
+                for (String guid : guids) {
+                    resource = resource.queryParam(GUID.toLowerCase(), guid);
+                }
+                return resource;
+            }
+        });
         return extractResults(jsonResponse, GUID);
     }
     
@@ -457,12 +643,18 @@ public class AtlasClient {
      * @return result object
      * @throws AtlasServiceException
      */
-    public Referenceable getEntity(String entityType, String attribute, String value) throws AtlasServiceException {
-        WebResource resource = getResource(API.GET_ENTITY);
-        resource = resource.queryParam(TYPE, entityType);
-        resource = resource.queryParam(ATTRIBUTE_NAME, attribute);
-        resource = resource.queryParam(ATTRIBUTE_VALUE, value);
-        JSONObject jsonResponse = callAPIWithResource(API.GET_ENTITY, resource);
+    public Referenceable getEntity(final String entityType, final String attribute, final String value)
+            throws AtlasServiceException {
+        JSONObject jsonResponse = callAPIWithRetries(API.GET_ENTITY, null, new ResourceCreator() {
+            @Override
+            public WebResource createResource() {
+                WebResource resource = getResource(API.GET_ENTITY);
+                resource = resource.queryParam(TYPE, entityType);
+                resource = resource.queryParam(ATTRIBUTE_NAME, attribute);
+                resource = resource.queryParam(ATTRIBUTE_VALUE, value);
+                return resource;
+            }
+        });
         try {
             String entityInstanceDefinition = jsonResponse.getString(AtlasClient.DEFINITION);
             return InstanceSerialization.fromJsonReferenceable(entityInstanceDefinition, true);
@@ -477,10 +669,15 @@ public class AtlasClient {
      * @return
      * @throws AtlasServiceException
      */
-    public List<String> listEntities(String entityType) throws AtlasServiceException {
-        WebResource resource = getResource(API.LIST_ENTITIES);
-        resource = resource.queryParam(TYPE, entityType);
-        JSONObject jsonResponse = callAPIWithResource(API.LIST_ENTITIES, resource);
+    public List<String> listEntities(final String entityType) throws AtlasServiceException {
+        JSONObject jsonResponse = callAPIWithRetries(API.LIST_ENTITIES, null, new ResourceCreator() {
+            @Override
+            public WebResource createResource() {
+                WebResource resource = getResource(API.LIST_ENTITIES);
+                resource = resource.queryParam(TYPE, entityType);
+                return resource;
+            }
+        });
         return extractResults(jsonResponse, AtlasClient.RESULTS);
     }
 
@@ -508,10 +705,15 @@ public class AtlasClient {
      * @return
      * @throws AtlasServiceException
      */
-    public JSONArray search(String searchQuery) throws AtlasServiceException {
-        WebResource resource = getResource(API.SEARCH);
-        resource = resource.queryParam(QUERY, searchQuery);
-        JSONObject result = callAPIWithResource(API.SEARCH, resource);
+    public JSONArray search(final String searchQuery) throws AtlasServiceException {
+        JSONObject result = callAPIWithRetries(API.SEARCH, null, new ResourceCreator() {
+            @Override
+            public WebResource createResource() {
+                WebResource resource = getResource(API.SEARCH);
+                resource = resource.queryParam(QUERY, searchQuery);
+                return resource;
+            }
+        });
         try {
             return result.getJSONArray(RESULTS);
         } catch (JSONException e) {
@@ -521,34 +723,21 @@ public class AtlasClient {
     }
 
     /**
-     * Search given type name, an attribute and its value. Uses search dsl
-     * @param typeName name of the entity type
-     * @param attributeName attribute name
-     * @param attributeValue attribute value
-     * @return result json object
-     * @throws AtlasServiceException
-     */
-    public JSONArray rawSearch(String typeName, String attributeName, Object attributeValue)
-            throws AtlasServiceException {
-        //        String gremlinQuery = String.format(
-        //                "g.V.has(\"typeName\",\"%s\").and(_().has(\"%s.%s\", T.eq, \"%s\")).toList()",
-        //                typeName, typeName, attributeName, attributeValue);
-        //        return searchByGremlin(gremlinQuery);
-        String dslQuery = String.format("%s where %s = \"%s\"", typeName, attributeName, attributeValue);
-        return searchByDSL(dslQuery);
-    }
-
-    /**
      * Search given query DSL
      * @param query DSL query
      * @return result json object
      * @throws AtlasServiceException
      */
-    public JSONArray searchByDSL(String query) throws AtlasServiceException {
+    public JSONArray searchByDSL(final String query) throws AtlasServiceException {
         LOG.debug("DSL query: {}", query);
-        WebResource resource = getResource(API.SEARCH_DSL);
-        resource = resource.queryParam(QUERY, query);
-        JSONObject result = callAPIWithResource(API.SEARCH_DSL, resource);
+        JSONObject result = callAPIWithRetries(API.SEARCH_DSL, null, new ResourceCreator() {
+            @Override
+            public WebResource createResource() {
+                WebResource resource = getResource(API.SEARCH_DSL);
+                resource = resource.queryParam(QUERY, query);
+                return resource;
+            }
+        });
         try {
             return result.getJSONArray(RESULTS);
         } catch (JSONException e) {
@@ -562,11 +751,16 @@ public class AtlasClient {
      * @return result json object
      * @throws AtlasServiceException
      */
-    public JSONArray searchByGremlin(String gremlinQuery) throws AtlasServiceException {
+    public JSONArray searchByGremlin(final String gremlinQuery) throws AtlasServiceException {
         LOG.debug("Gremlin query: " + gremlinQuery);
-        WebResource resource = getResource(API.SEARCH_GREMLIN);
-        resource = resource.queryParam(QUERY, gremlinQuery);
-        JSONObject result = callAPIWithResource(API.SEARCH_GREMLIN, resource);
+        JSONObject result = callAPIWithRetries(API.SEARCH_GREMLIN, null, new ResourceCreator() {
+            @Override
+            public WebResource createResource() {
+                WebResource resource = getResource(API.SEARCH_GREMLIN);
+                resource = resource.queryParam(QUERY, gremlinQuery);
+                return resource;
+            }
+        });
         try {
             return result.getJSONArray(RESULTS);
         } catch (JSONException e) {
@@ -580,10 +774,15 @@ public class AtlasClient {
      * @return result json object
      * @throws AtlasServiceException
      */
-    public JSONObject searchByFullText(String query) throws AtlasServiceException {
-        WebResource resource = getResource(API.SEARCH_FULL_TEXT);
-        resource = resource.queryParam(QUERY, query);
-        return callAPIWithResource(API.SEARCH_FULL_TEXT, resource);
+    public JSONObject searchByFullText(final String query) throws AtlasServiceException {
+        return callAPIWithRetries(API.SEARCH_FULL_TEXT, null, new ResourceCreator() {
+            @Override
+            public WebResource createResource() {
+                WebResource resource = getResource(API.SEARCH_FULL_TEXT);
+                resource = resource.queryParam(QUERY, query);
+                return resource;
+            }
+        });
     }
 
     public JSONObject getInputGraph(String datasetName) throws AtlasServiceException {
@@ -604,15 +803,11 @@ public class AtlasClient {
         }
     }
 
-    public String getRequestId(JSONObject json) throws AtlasServiceException {
-        try {
-            return json.getString(REQUEST_ID);
-        } catch (JSONException e) {
-            throw new AtlasServiceException(e);
-        }
+    private WebResource getResource(API api, String... pathParams) {
+        return getResource(service, api, pathParams);
     }
 
-    private WebResource getResource(API api, String... pathParams) {
+    private WebResource getResource(WebResource service, API api, String... pathParams) {
         WebResource resource = service.path(api.getPath());
         if (pathParams != null) {
             for (String pathParam : pathParams) {
@@ -622,29 +817,75 @@ public class AtlasClient {
         return resource;
     }
 
-    private JSONObject callAPIWithResource(API api, WebResource resource) throws AtlasServiceException {
-        return callAPIWithResource(api, resource, null);
-    }
-
     private JSONObject callAPIWithResource(API api, WebResource resource, Object requestObject)
         throws AtlasServiceException {
-        ClientResponse clientResponse = resource.accept(JSON_MEDIA_TYPE).type(JSON_MEDIA_TYPE)
-            .method(api.getMethod(), ClientResponse.class, requestObject);
+        ClientResponse clientResponse = null;
+        for (int i = 0; i < getNumberOfRetries(); i++) {
+            clientResponse = resource.accept(JSON_MEDIA_TYPE).type(JSON_MEDIA_TYPE)
+                .method(api.getMethod(), ClientResponse.class, requestObject);
 
-        if (clientResponse.getStatus() == api.getExpectedStatus().getStatusCode()) {
-            String responseAsString = clientResponse.getEntity(String.class);
-            try {
-                return new JSONObject(responseAsString);
-            } catch (JSONException e) {
-                throw new AtlasServiceException(api, e);
+            if (clientResponse.getStatus() == api.getExpectedStatus().getStatusCode()) {
+                String responseAsString = clientResponse.getEntity(String.class);
+                try {
+                    return new JSONObject(responseAsString);
+                } catch (JSONException e) {
+                    throw new AtlasServiceException(api, e);
+                }
+            } else if (clientResponse.getStatus() != ClientResponse.Status.SERVICE_UNAVAILABLE.getStatusCode()) {
+                break;
+            } else {
+                LOG.error("Got a service unavailable when calling: {}, will retry..", resource);
+                sleepBetweenRetries();
             }
         }
 
         throw new AtlasServiceException(api, clientResponse);
     }
 
-    private JSONObject callAPI(API api, Object requestObject, String... pathParams) throws AtlasServiceException {
-        WebResource resource = getResource(api, pathParams);
-        return callAPIWithResource(api, resource, requestObject);
+    private JSONObject callAPI(final API api, Object requestObject, final String... pathParams)
+            throws AtlasServiceException {
+        return callAPIWithRetries(api, requestObject, new ResourceCreator() {
+            @Override
+            public WebResource createResource() {
+                return getResource(api, pathParams);
+            }
+        });
     }
+
+    /**
+     * A class to capture input state while creating the client.
+     *
+     * The information here will be reused when the client is re-initialized on switch-over
+     * in case of High Availability.
+     */
+    private class AtlasClientContext {
+        private String[] baseUrls;
+        private Client client;
+        private final UserGroupInformation ugi;
+        private final String doAsUser;
+
+        public AtlasClientContext(String[] baseUrls, Client client, UserGroupInformation ugi, String doAsUser) {
+            this.baseUrls = baseUrls;
+            this.client = client;
+            this.ugi = ugi;
+            this.doAsUser = doAsUser;
+        }
+
+        public UserGroupInformation getUgi() {
+            return ugi;
+        }
+
+        public String getDoAsUser() {
+            return doAsUser;
+        }
+
+        public Client getClient() {
+            return client;
+        }
+
+        public String[] getBaseUrls() {
+            return baseUrls;
+        }
+    }
+
 }

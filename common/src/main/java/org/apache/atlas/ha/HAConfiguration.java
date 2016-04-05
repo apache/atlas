@@ -18,34 +18,36 @@
 
 package org.apache.atlas.ha;
 
-import org.apache.atlas.AtlasConstants;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.security.SecurityProperties;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.net.NetUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A wrapper for getting configuration entries related to HighAvailability.
  */
-public class HAConfiguration {
+public final class HAConfiguration {
+
+    private HAConfiguration() {
+    }
 
     private static final Logger LOG = LoggerFactory.getLogger(HAConfiguration.class);
 
-    public static final String ATLAS_SERVER_HA_PREFIX = "atlas.server.ha";
-    public static final String ATLAS_SERVER_HA_ENABLED_KEY = ATLAS_SERVER_HA_PREFIX + ".enabled";
+    public static final String ATLAS_SERVER_HA_PREFIX = "atlas.server.ha.";
+    public static final String ATLAS_SERVER_HA_ENABLED_KEY = ATLAS_SERVER_HA_PREFIX + "enabled";
     public static final String ATLAS_SERVER_ADDRESS_PREFIX = "atlas.server.address.";
     public static final String ATLAS_SERVER_IDS = "atlas.server.ids";
-    public static final String HA_ZOOKEEPER_CONNECT = ATLAS_SERVER_HA_PREFIX + ".zookeeper.connect";
+    public static final String HA_ZOOKEEPER_CONNECT = ATLAS_SERVER_HA_PREFIX + "zookeeper.connect";
     public static final int DEFAULT_ZOOKEEPER_CONNECT_SLEEPTIME_MILLIS = 1000;
-    public static final String HA_ZOOKEEPER_RETRY_SLEEPTIME_MILLIS = ATLAS_SERVER_HA_PREFIX + ".zookeeper.retry.sleeptime.ms";
-    public static final String HA_ZOOKEEPER_NUM_RETRIES = ATLAS_SERVER_HA_PREFIX + ".zookeeper.num.retries";
+    public static final String HA_ZOOKEEPER_RETRY_SLEEPTIME_MILLIS =
+            ATLAS_SERVER_HA_PREFIX + "zookeeper.retry.sleeptime.ms";
+    public static final String HA_ZOOKEEPER_NUM_RETRIES = ATLAS_SERVER_HA_PREFIX + "zookeeper.num.retries";
     public static final int DEFAULT_ZOOKEEPER_CONNECT_NUM_RETRIES = 3;
-    public static final String HA_ZOOKEEPER_SESSION_TIMEOUT_MS = ATLAS_SERVER_HA_PREFIX + ".zookeeper.session.timeout.ms";
+    public static final String HA_ZOOKEEPER_SESSION_TIMEOUT_MS =
+            ATLAS_SERVER_HA_PREFIX + "zookeeper.session.timeout.ms";
     public static final int DEFAULT_ZOOKEEPER_SESSION_TIMEOUT_MILLIS = 20000;
 
     /**
@@ -55,53 +57,6 @@ public class HAConfiguration {
      */
     public static boolean isHAEnabled(Configuration configuration) {
         return configuration.getBoolean(ATLAS_SERVER_HA_ENABLED_KEY, false);
-    }
-
-    /**
-     * Return the ID corresponding to this Atlas instance.
-     *
-     * The match is done by looking for an ID configured in {@link HAConfiguration#ATLAS_SERVER_IDS} key
-     * that has a host:port entry for the key {@link HAConfiguration#ATLAS_SERVER_ADDRESS_PREFIX}+ID where
-     * the host is a local IP address and port is set in the system property
-     * {@link AtlasConstants#SYSTEM_PROPERTY_APP_PORT}.
-     *
-     * @param configuration
-     * @return
-     * @throws AtlasException if no ID is found that maps to a local IP Address or port
-     */
-    public static String getAtlasServerId(Configuration configuration) throws AtlasException {
-        // ids are already trimmed by this method
-        String[] ids = configuration.getStringArray(ATLAS_SERVER_IDS);
-        String matchingServerId = null;
-        int appPort = Integer.parseInt(System.getProperty(AtlasConstants.SYSTEM_PROPERTY_APP_PORT));
-        for (String id : ids) {
-            String hostPort = configuration.getString(ATLAS_SERVER_ADDRESS_PREFIX +id);
-            if (!StringUtils.isEmpty(hostPort)) {
-                InetSocketAddress socketAddress;
-                try {
-                    socketAddress = NetUtils.createSocketAddr(hostPort);
-                } catch (Exception e) {
-                    LOG.warn("Exception while trying to get socket address for " + hostPort, e);
-                    continue;
-                }
-                if (!socketAddress.isUnresolved()
-                        && NetUtils.isLocalAddress(socketAddress.getAddress())
-                        && appPort == socketAddress.getPort()) {
-                    LOG.info("Found matched server id " + id + " with host port: " + hostPort);
-                    matchingServerId = id;
-                    break;
-                }
-            } else {
-                LOG.info("Could not find matching address entry for id: " + id);
-            }
-        }
-        if (matchingServerId == null) {
-            String msg = String.format("Could not find server id for this instance. " +
-                    "Unable to find IDs matching any local host and port binding among %s",
-                    StringUtils.join(ids, ","));
-            throw new AtlasException(msg);
-        }
-        return matchingServerId;
     }
 
     /**
@@ -121,8 +76,17 @@ public class HAConfiguration {
         return protocol + hostPort;
     }
 
+    public static List<String> getServerInstances(Configuration configuration) {
+        String[] serverIds = configuration.getStringArray(ATLAS_SERVER_IDS);
+        List<String> serverInstances = new ArrayList<>(serverIds.length);
+        for (String serverId : serverIds) {
+            serverInstances.add(getBoundAddressForId(configuration, serverId));
+        }
+        return serverInstances;
+    }
+
     /**
-     * A collection of Zookeeper specific configuration that is used by High Availability code
+     * A collection of Zookeeper specific configuration that is used by High Availability code.
      */
     public static class ZookeeperProperties {
         private String connectString;
@@ -156,14 +120,27 @@ public class HAConfiguration {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
 
             ZookeeperProperties that = (ZookeeperProperties) o;
 
-            if (retriesSleepTimeMillis != that.retriesSleepTimeMillis) return false;
-            if (numRetries != that.numRetries) return false;
-            if (sessionTimeout != that.sessionTimeout) return false;
+            if (retriesSleepTimeMillis != that.retriesSleepTimeMillis) {
+                return false;
+            }
+
+            if (numRetries != that.numRetries) {
+                return false;
+            }
+
+            if (sessionTimeout != that.sessionTimeout) {
+                return false;
+            }
+
             return !(connectString != null ? !connectString.equals(that.connectString) : that.connectString != null);
 
         }

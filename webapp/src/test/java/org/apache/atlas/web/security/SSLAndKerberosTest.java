@@ -102,7 +102,7 @@ public class SSLAndKerberosTest extends BaseSSLAndKerberosTest {
             public AtlasClient run() throws Exception {
                 return new AtlasClient(DGI_URL) {
                     @Override
-                    protected PropertiesConfiguration getClientProperties() throws AtlasException {
+                    protected PropertiesConfiguration getClientProperties() {
                         return configuration;
                     }
                 };
