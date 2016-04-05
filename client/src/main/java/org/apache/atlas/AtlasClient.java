@@ -627,7 +627,7 @@ public class AtlasClient {
         JSONObject jsonResponse = callAPIWithResource(API.DELETE_ENTITIES, resource, null);
         return extractResults(jsonResponse, GUID);
     }
-    
+
     /**
      * Get an entity given the entity id
      * @param guid entity id

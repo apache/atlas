@@ -126,6 +126,26 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
     }
 
     @Test
+    public void testDeleteByQualifiedName() throws Exception {
+        final Referenceable entity = new Referenceable(DATABASE_TYPE);
+        final String dbName = "db" + randomString();
+        entity.set("name", dbName);
+        entity.set("description", randomString());
+        serviceClient.createEntity(entity);
+
+        sendHookMessage(
+            new HookNotification.EntityDeleteRequest(TEST_USER, DATABASE_TYPE, "name", dbName));
+        waitFor(MAX_WAIT_TIME, new Predicate() {
+            @Override
+            public boolean evaluate() throws Exception {
+                JSONArray results = serviceClient.searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE,
+                    dbName));
+                return results.length() == 0;
+            }
+        });
+    }
+
+    @Test
     public void testUpdateEntityFullUpdate() throws Exception {
         Referenceable entity = new Referenceable(DATABASE_TYPE);
         final String dbName = "db" + randomString();
@@ -153,4 +173,6 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         assertEquals(actualEntity.get("description"), newEntity.get("description"));
         assertEquals(actualEntity.get("owner"), newEntity.get("owner"));
     }
+
+
 }

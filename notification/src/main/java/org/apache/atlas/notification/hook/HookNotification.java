@@ -54,6 +54,9 @@ public class HookNotification implements JsonDeserializer<HookNotification.HookN
         case ENTITY_PARTIAL_UPDATE:
             return context.deserialize(json, EntityPartialUpdateRequest.class);
 
+        case ENTITY_DELETE:
+            return context.deserialize(json, EntityDeleteRequest.class);
+
         case TYPE_CREATE:
         case TYPE_UPDATE:
             return context.deserialize(json, TypeRequest.class);
@@ -67,7 +70,7 @@ public class HookNotification implements JsonDeserializer<HookNotification.HookN
      * Type of the hook message.
      */
     public enum HookNotificationType {
-        TYPE_CREATE, TYPE_UPDATE, ENTITY_CREATE, ENTITY_PARTIAL_UPDATE, ENTITY_FULL_UPDATE
+        TYPE_CREATE, TYPE_UPDATE, ENTITY_CREATE, ENTITY_PARTIAL_UPDATE, ENTITY_FULL_UPDATE, ENTITY_DELETE
     }
 
     /**
@@ -202,6 +205,43 @@ public class HookNotification implements JsonDeserializer<HookNotification.HookN
 
         public Referenceable getEntity() {
             return entity;
+        }
+
+        public String getAttributeValue() {
+            return attributeValue;
+        }
+    }
+
+    /**
+     * Hook message for creating new entities.
+     */
+    public static class EntityDeleteRequest extends HookNotificationMessage {
+
+        private String typeName;
+        private String attribute;
+        private String attributeValue;
+
+        private EntityDeleteRequest() {
+        }
+
+        public EntityDeleteRequest(String user, String typeName, String attribute, String attributeValue) {
+            this(HookNotificationType.ENTITY_DELETE, user, typeName, attribute, attributeValue);
+        }
+
+        protected EntityDeleteRequest(HookNotificationType type,
+            String user, String typeName, String attribute, String attributeValue) {
+            super(type, user);
+            this.typeName = typeName;
+            this.attribute = attribute;
+            this.attributeValue = attributeValue;
+        }
+
+        public String getTypeName() {
+            return typeName;
+        }
+
+        public String getAttribute() {
+            return attribute;
         }
 
         public String getAttributeValue() {
