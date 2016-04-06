@@ -27,11 +27,17 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.framework.recipes.locks.InterProcessReadWriteLock;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.data.ACL;
+import org.apache.zookeeper.data.Id;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.actors.threadpool.Arrays;
 
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * An object that encapsulates storing and retrieving state related to an Active Atlas server.
@@ -45,7 +51,8 @@ public class ActiveInstanceState {
     private final Configuration configuration;
     private final CuratorFactory curatorFactory;
 
-    public static final String APACHE_ATLAS_ACTIVE_SERVER_INFO = "/apache_atlas_active_server_info";
+    public static final String APACHE_ATLAS_ACTIVE_SERVER_INFO = "/active_server_info";
+
     private static final Logger LOG = LoggerFactory.getLogger(ActiveInstanceState.class);
 
     /**
@@ -80,12 +87,27 @@ public class ActiveInstanceState {
     public void update(String serverId) throws Exception {
         CuratorFramework client = curatorFactory.clientInstance();
         String atlasServerAddress = HAConfiguration.getBoundAddressForId(configuration, serverId);
-        Stat serverInfo = client.checkExists().forPath(APACHE_ATLAS_ACTIVE_SERVER_INFO);
-        if (serverInfo == null) {
-            client.create().withMode(CreateMode.EPHEMERAL).forPath(APACHE_ATLAS_ACTIVE_SERVER_INFO);
+        HAConfiguration.ZookeeperProperties zookeeperProperties =
+                HAConfiguration.getZookeeperProperties(configuration);
+        List<ACL> acls = ZooDefs.Ids.OPEN_ACL_UNSAFE;
+        if (zookeeperProperties.hasAcl()) {
+            acls = Arrays.asList(new ACL[]{AtlasZookeeperSecurityProperties.parseAcl(zookeeperProperties.getAcl())});
         }
-        client.setData().forPath(APACHE_ATLAS_ACTIVE_SERVER_INFO,
+        Stat serverInfo = client.checkExists().forPath(getZnodePath());
+        if (serverInfo == null) {
+            client.create().
+                    withMode(CreateMode.EPHEMERAL).
+                    withACL(acls).
+                    forPath(getZnodePath());
+        }
+        client.setData().forPath(getZnodePath(),
                 atlasServerAddress.getBytes(Charset.forName("UTF-8")));
+    }
+
+    private String getZnodePath() {
+        String zkRoot = configuration.getString(HAConfiguration.ATLAS_SERVER_HA_ZK_ROOT_KEY,
+                HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT);
+        return zkRoot+APACHE_ATLAS_ACTIVE_SERVER_INFO;
     }
 
     /**
@@ -98,7 +120,7 @@ public class ActiveInstanceState {
         CuratorFramework client = curatorFactory.clientInstance();
         String serverAddress = null;
         try {
-            byte[] bytes = client.getData().forPath(APACHE_ATLAS_ACTIVE_SERVER_INFO);
+            byte[] bytes = client.getData().forPath(getZnodePath());
             serverAddress = new String(bytes, Charset.forName("UTF-8"));
         } catch (Exception e) {
             LOG.error("Error getting active server address", e);

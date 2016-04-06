@@ -20,8 +20,6 @@ package org.apache.atlas.ha;
 
 import org.apache.atlas.security.SecurityProperties;
 import org.apache.commons.configuration.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,24 +29,29 @@ import java.util.List;
  */
 public final class HAConfiguration {
 
+
+    public static final String ATLAS_SERVER_ZK_ROOT_DEFAULT = "/apache_atlas";
+
     private HAConfiguration() {
     }
 
-    private static final Logger LOG = LoggerFactory.getLogger(HAConfiguration.class);
-
     public static final String ATLAS_SERVER_HA_PREFIX = "atlas.server.ha.";
+    public static final String ZOOKEEPER_PREFIX = "zookeeper.";
+    public static final String ATLAS_SERVER_HA_ZK_ROOT_KEY = ATLAS_SERVER_HA_PREFIX + ZOOKEEPER_PREFIX + "zkroot";
     public static final String ATLAS_SERVER_HA_ENABLED_KEY = ATLAS_SERVER_HA_PREFIX + "enabled";
     public static final String ATLAS_SERVER_ADDRESS_PREFIX = "atlas.server.address.";
     public static final String ATLAS_SERVER_IDS = "atlas.server.ids";
-    public static final String HA_ZOOKEEPER_CONNECT = ATLAS_SERVER_HA_PREFIX + "zookeeper.connect";
+    public static final String HA_ZOOKEEPER_CONNECT = ATLAS_SERVER_HA_PREFIX + ZOOKEEPER_PREFIX + "connect";
     public static final int DEFAULT_ZOOKEEPER_CONNECT_SLEEPTIME_MILLIS = 1000;
     public static final String HA_ZOOKEEPER_RETRY_SLEEPTIME_MILLIS =
-            ATLAS_SERVER_HA_PREFIX + "zookeeper.retry.sleeptime.ms";
-    public static final String HA_ZOOKEEPER_NUM_RETRIES = ATLAS_SERVER_HA_PREFIX + "zookeeper.num.retries";
+            ATLAS_SERVER_HA_PREFIX + ZOOKEEPER_PREFIX + "retry.sleeptime.ms";
+    public static final String HA_ZOOKEEPER_NUM_RETRIES = ATLAS_SERVER_HA_PREFIX + ZOOKEEPER_PREFIX + "num.retries";
     public static final int DEFAULT_ZOOKEEPER_CONNECT_NUM_RETRIES = 3;
     public static final String HA_ZOOKEEPER_SESSION_TIMEOUT_MS =
-            ATLAS_SERVER_HA_PREFIX + "zookeeper.session.timeout.ms";
+            ATLAS_SERVER_HA_PREFIX + ZOOKEEPER_PREFIX + "session.timeout.ms";
     public static final int DEFAULT_ZOOKEEPER_SESSION_TIMEOUT_MILLIS = 20000;
+    public static final String HA_ZOOKEEPER_ACL = ATLAS_SERVER_HA_PREFIX + ZOOKEEPER_PREFIX + "acl";
+    public static final String HA_ZOOKEEPER_AUTH = ATLAS_SERVER_HA_PREFIX + ZOOKEEPER_PREFIX + "auth";
 
     /**
      * Return whether HA is enabled or not.
@@ -90,16 +93,22 @@ public final class HAConfiguration {
      */
     public static class ZookeeperProperties {
         private String connectString;
+        private String zkRoot;
         private int retriesSleepTimeMillis;
         private int numRetries;
         private int sessionTimeout;
+        private String acl;
+        private String auth;
 
-        public ZookeeperProperties(String connectString, int retriesSleepTimeMillis, int numRetries,
-                                   int sessionTimeout) {
+        public ZookeeperProperties(String connectString, String zkRoot, int retriesSleepTimeMillis, int numRetries,
+                                   int sessionTimeout, String acl, String auth) {
             this.connectString = connectString;
+            this.zkRoot = zkRoot;
             this.retriesSleepTimeMillis = retriesSleepTimeMillis;
             this.numRetries = numRetries;
             this.sessionTimeout = sessionTimeout;
+            this.acl = acl;
+            this.auth = auth;
         }
 
         public String getConnectString() {
@@ -118,6 +127,18 @@ public final class HAConfiguration {
             return sessionTimeout;
         }
 
+        public String getAcl() {
+            return acl;
+        }
+
+        public String getAuth() {
+            return auth;
+        }
+
+        public String getZkRoot() {
+            return zkRoot;
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) {
@@ -132,35 +153,53 @@ public final class HAConfiguration {
             if (retriesSleepTimeMillis != that.retriesSleepTimeMillis) {
                 return false;
             }
-
             if (numRetries != that.numRetries) {
                 return false;
             }
-
             if (sessionTimeout != that.sessionTimeout) {
                 return false;
             }
-
-            return !(connectString != null ? !connectString.equals(that.connectString) : that.connectString != null);
+            if (!connectString.equals(that.connectString)) {
+                return false;
+            }
+            if (!zkRoot.equals(that.zkRoot)) {
+                return false;
+            }
+            if (acl != null ? !acl.equals(that.acl) : that.acl != null) {
+                return false;
+            }
+            return !(auth != null ? !auth.equals(that.auth) : that.auth != null);
 
         }
 
         @Override
         public int hashCode() {
-            int result = connectString != null ? connectString.hashCode() : 0;
+            int result = connectString.hashCode();
+            result = 31 * result + zkRoot.hashCode();
             result = 31 * result + retriesSleepTimeMillis;
             result = 31 * result + numRetries;
             result = 31 * result + sessionTimeout;
+            result = 31 * result + (acl != null ? acl.hashCode() : 0);
+            result = 31 * result + (auth != null ? auth.hashCode() : 0);
             return result;
+        }
+
+        public boolean hasAcl() {
+            return getAcl()!=null;
+        }
+
+        public boolean hasAuth() {
+            return getAuth()!=null;
         }
     }
 
     public static ZookeeperProperties getZookeeperProperties(Configuration configuration) {
-        String zookeeperConnectString = configuration.getString("atlas.kafka.zookeeper.connect");
+        String zookeeperConnectString = configuration.getString("atlas.kafka." + ZOOKEEPER_PREFIX + "connect");
         if (configuration.containsKey(HA_ZOOKEEPER_CONNECT)) {
             zookeeperConnectString = configuration.getString(HA_ZOOKEEPER_CONNECT);
         }
 
+        String zkRoot = configuration.getString(ATLAS_SERVER_HA_ZK_ROOT_KEY, ATLAS_SERVER_ZK_ROOT_DEFAULT);
         int retriesSleepTimeMillis = configuration.getInt(HA_ZOOKEEPER_RETRY_SLEEPTIME_MILLIS,
                 DEFAULT_ZOOKEEPER_CONNECT_SLEEPTIME_MILLIS);
 
@@ -168,6 +207,10 @@ public final class HAConfiguration {
 
         int sessionTimeout = configuration.getInt(HA_ZOOKEEPER_SESSION_TIMEOUT_MS,
                 DEFAULT_ZOOKEEPER_SESSION_TIMEOUT_MILLIS);
-        return new ZookeeperProperties(zookeeperConnectString, retriesSleepTimeMillis, numRetries, sessionTimeout);
+
+        String acl = configuration.getString(HA_ZOOKEEPER_ACL);
+        String auth = configuration.getString(HA_ZOOKEEPER_AUTH);
+        return new ZookeeperProperties(zookeeperConnectString, zkRoot, retriesSleepTimeMillis, numRetries,
+                sessionTimeout, acl, auth);
     }
 }

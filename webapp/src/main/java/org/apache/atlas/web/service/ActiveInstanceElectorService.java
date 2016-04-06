@@ -108,7 +108,8 @@ public class ActiveInstanceElectorService implements Service, LeaderLatchListene
 
     private void joinElection() {
         LOG.info("Starting leader election for {}", serverId);
-        leaderLatch = curatorFactory.leaderLatchInstance(serverId);
+        String zkRoot = HAConfiguration.getZookeeperProperties(configuration).getZkRoot();
+        leaderLatch = curatorFactory.leaderLatchInstance(serverId, zkRoot);
         leaderLatch.addListener(this);
         try {
             leaderLatch.start();

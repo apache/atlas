@@ -64,4 +64,22 @@ public class HAConfigurationTest {
         assertTrue(serverInstances.contains("http://127.0.0.1:21000"));
         assertTrue(serverInstances.contains("http://127.0.0.1:31000"));
     }
+
+    @Test
+    public void testShouldGetZookeeperAcl() {
+        when(configuration.getString(HAConfiguration.HA_ZOOKEEPER_ACL)).thenReturn("sasl:myclient@EXAMPLE.COM");
+
+        HAConfiguration.ZookeeperProperties zookeeperProperties =
+                HAConfiguration.getZookeeperProperties(configuration);
+        assertTrue(zookeeperProperties.hasAcl());
+    }
+
+    @Test
+    public void testShouldGetZookeeperAuth() {
+        when(configuration.getString(HAConfiguration.HA_ZOOKEEPER_AUTH)).thenReturn("sasl:myclient@EXAMPLE.COM");
+
+        HAConfiguration.ZookeeperProperties zookeeperProperties =
+                HAConfiguration.getZookeeperProperties(configuration);
+        assertTrue(zookeeperProperties.hasAuth());
+    }
 }

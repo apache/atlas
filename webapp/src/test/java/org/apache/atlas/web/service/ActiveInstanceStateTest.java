@@ -28,12 +28,16 @@ import org.apache.curator.framework.api.SetDataBuilder;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.framework.recipes.locks.InterProcessReadWriteLock;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.data.ACL;
+import org.apache.zookeeper.data.Id;
 import org.apache.zookeeper.data.Stat;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
+import scala.actors.threadpool.Arrays;
 
 import java.nio.charset.Charset;
 
@@ -67,16 +71,20 @@ public class ActiveInstanceStateTest {
     public void testSharedPathIsCreatedIfNotExists() throws Exception {
 
         when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id1")).thenReturn(HOST_PORT);
+        when(configuration.getString(
+                HAConfiguration.ATLAS_SERVER_HA_ZK_ROOT_KEY, HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).
+                thenReturn(HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT);
 
         when(curatorFactory.clientInstance()).thenReturn(curatorFramework);
 
         ExistsBuilder existsBuilder = mock(ExistsBuilder.class);
         when(curatorFramework.checkExists()).thenReturn(existsBuilder);
-        when(existsBuilder.forPath(ActiveInstanceState.APACHE_ATLAS_ACTIVE_SERVER_INFO)).thenReturn(null);
+        when(existsBuilder.forPath(getPath())).thenReturn(null);
 
         CreateBuilder createBuilder = mock(CreateBuilder.class);
         when(curatorFramework.create()).thenReturn(createBuilder);
         when(createBuilder.withMode(CreateMode.EPHEMERAL)).thenReturn(createBuilder);
+        when(createBuilder.withACL(ZooDefs.Ids.OPEN_ACL_UNSAFE)).thenReturn(createBuilder);
 
         SetDataBuilder setDataBuilder = mock(SetDataBuilder.class);
         when(curatorFramework.setData()).thenReturn(setDataBuilder);
@@ -84,17 +92,58 @@ public class ActiveInstanceStateTest {
         ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory);
         activeInstanceState.update("id1");
 
-        verify(createBuilder).forPath(ActiveInstanceState.APACHE_ATLAS_ACTIVE_SERVER_INFO);
+        verify(createBuilder).forPath(getPath());
+    }
+
+    private String getPath() {
+        return HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT
+                + ActiveInstanceState.APACHE_ATLAS_ACTIVE_SERVER_INFO;
+    }
+
+    @Test
+    public void testSharedPathIsCreatedWithRightACLIfNotExists() throws Exception {
+
+        when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id1")).thenReturn(HOST_PORT);
+        when(configuration.getString(HAConfiguration.HA_ZOOKEEPER_ACL)).thenReturn("sasl:myclient@EXAMPLE.COM");
+        when(configuration.getString(
+                HAConfiguration.ATLAS_SERVER_HA_ZK_ROOT_KEY, HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).
+                thenReturn(HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT);
+
+
+        when(curatorFactory.clientInstance()).thenReturn(curatorFramework);
+
+        ExistsBuilder existsBuilder = mock(ExistsBuilder.class);
+        when(curatorFramework.checkExists()).thenReturn(existsBuilder);
+        when(existsBuilder.forPath(getPath())).thenReturn(null);
+
+        CreateBuilder createBuilder = mock(CreateBuilder.class);
+        when(curatorFramework.create()).thenReturn(createBuilder);
+        when(createBuilder.withMode(CreateMode.EPHEMERAL)).thenReturn(createBuilder);
+        ACL expectedAcl = new ACL(ZooDefs.Perms.ALL, new Id("sasl", "myclient@EXAMPLE.COM"));
+        when(createBuilder.
+                withACL(Arrays.asList(new ACL[]{expectedAcl}))).thenReturn(createBuilder);
+
+        SetDataBuilder setDataBuilder = mock(SetDataBuilder.class);
+        when(curatorFramework.setData()).thenReturn(setDataBuilder);
+
+        ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory);
+        activeInstanceState.update("id1");
+
+        verify(createBuilder).forPath(getPath());
     }
 
     @Test
     public void testDataIsUpdatedWithAtlasServerAddress() throws Exception {
         when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id1")).thenReturn(HOST_PORT);
+        when(configuration.getString(
+                HAConfiguration.ATLAS_SERVER_HA_ZK_ROOT_KEY, HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).
+                thenReturn(HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT);
+
 
         when(curatorFactory.clientInstance()).thenReturn(curatorFramework);
         ExistsBuilder existsBuilder = mock(ExistsBuilder.class);
         when(curatorFramework.checkExists()).thenReturn(existsBuilder);
-        when(existsBuilder.forPath(ActiveInstanceState.APACHE_ATLAS_ACTIVE_SERVER_INFO)).thenReturn(new Stat());
+        when(existsBuilder.forPath(getPath())).thenReturn(new Stat());
 
         SetDataBuilder setDataBuilder = mock(SetDataBuilder.class);
         when(curatorFramework.setData()).thenReturn(setDataBuilder);
@@ -103,17 +152,21 @@ public class ActiveInstanceStateTest {
         activeInstanceState.update("id1");
 
         verify(setDataBuilder).forPath(
-                ActiveInstanceState.APACHE_ATLAS_ACTIVE_SERVER_INFO,
+                getPath(),
                 SERVER_ADDRESS.getBytes(Charset.forName("UTF-8")));
     }
 
     @Test
     public void testShouldReturnActiveServerAddress() throws Exception {
         when(curatorFactory.clientInstance()).thenReturn(curatorFramework);
+        when(configuration.getString(
+                HAConfiguration.ATLAS_SERVER_HA_ZK_ROOT_KEY, HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).
+                thenReturn(HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT);
+
 
         GetDataBuilder getDataBuilder = mock(GetDataBuilder.class);
         when(curatorFramework.getData()).thenReturn(getDataBuilder);
-        when(getDataBuilder.forPath(ActiveInstanceState.APACHE_ATLAS_ACTIVE_SERVER_INFO)).
+        when(getDataBuilder.forPath(getPath())).
                 thenReturn(SERVER_ADDRESS.getBytes(Charset.forName("UTF-8")));
 
         ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory);
@@ -125,10 +178,14 @@ public class ActiveInstanceStateTest {
     @Test
     public void testShouldHandleExceptionsInFetchingServerAddress() throws Exception {
         when(curatorFactory.clientInstance()).thenReturn(curatorFramework);
+        when(configuration.getString(
+                HAConfiguration.ATLAS_SERVER_HA_ZK_ROOT_KEY, HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).
+                thenReturn(HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT);
+
 
         GetDataBuilder getDataBuilder = mock(GetDataBuilder.class);
         when(curatorFramework.getData()).thenReturn(getDataBuilder);
-        when(getDataBuilder.forPath(ActiveInstanceState.APACHE_ATLAS_ACTIVE_SERVER_INFO)).
+        when(getDataBuilder.forPath(getPath())).
                 thenThrow(new Exception());
 
         ActiveInstanceState activeInstanceState = new ActiveInstanceState(configuration, curatorFactory);

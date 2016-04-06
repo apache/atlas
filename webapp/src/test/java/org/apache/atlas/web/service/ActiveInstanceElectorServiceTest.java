@@ -67,8 +67,11 @@ public class ActiveInstanceElectorServiceTest {
         when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(true);
         when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(new String[] {"id1"});
         when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id1")).thenReturn("127.0.0.1:21000");
+        when(configuration.getString(
+                HAConfiguration.ATLAS_SERVER_HA_ZK_ROOT_KEY, HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).
+                thenReturn(HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT);
         LeaderLatch leaderLatch = mock(LeaderLatch.class);
-        when(curatorFactory.leaderLatchInstance("id1")).thenReturn(leaderLatch);
+        when(curatorFactory.leaderLatchInstance("id1", HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).thenReturn(leaderLatch);
 
         ActiveInstanceElectorService activeInstanceElectorService =
                 new ActiveInstanceElectorService(configuration, new ArrayList(), curatorFactory,
@@ -83,8 +86,12 @@ public class ActiveInstanceElectorServiceTest {
         when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(true);
         when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(new String[] {"id1"});
         when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id1")).thenReturn("127.0.0.1:21000");
+        when(configuration.getString(
+                HAConfiguration.ATLAS_SERVER_HA_ZK_ROOT_KEY, HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).
+                thenReturn(HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT);
+
         LeaderLatch leaderLatch = mock(LeaderLatch.class);
-        when(curatorFactory.leaderLatchInstance("id1")).thenReturn(leaderLatch);
+        when(curatorFactory.leaderLatchInstance("id1", HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).thenReturn(leaderLatch);
 
         ActiveInstanceElectorService activeInstanceElectorService =
                 new ActiveInstanceElectorService(configuration, new ArrayList(), curatorFactory,
@@ -111,9 +118,12 @@ public class ActiveInstanceElectorServiceTest {
         when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(true);
         when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(new String[] {"id1"});
         when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id1")).thenReturn("127.0.0.1:21000");
+        when(configuration.getString(
+                HAConfiguration.ATLAS_SERVER_HA_ZK_ROOT_KEY, HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).
+                thenReturn(HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT);
 
         LeaderLatch leaderLatch = mock(LeaderLatch.class);
-        when(curatorFactory.leaderLatchInstance("id1")).thenReturn(leaderLatch);
+        when(curatorFactory.leaderLatchInstance("id1", HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).thenReturn(leaderLatch);
 
         ActiveInstanceElectorService activeInstanceElectorService =
                 new ActiveInstanceElectorService(configuration, new ArrayList(), curatorFactory,
@@ -130,9 +140,12 @@ public class ActiveInstanceElectorServiceTest {
         when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(true);
         when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(new String[] {"id1"});
         when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id1")).thenReturn("127.0.0.1:21000");
+        when(configuration.getString(
+                HAConfiguration.ATLAS_SERVER_HA_ZK_ROOT_KEY, HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).
+                thenReturn(HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT);
 
         LeaderLatch leaderLatch = mock(LeaderLatch.class);
-        when(curatorFactory.leaderLatchInstance("id1")).thenReturn(leaderLatch);
+        when(curatorFactory.leaderLatchInstance("id1", HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).thenReturn(leaderLatch);
 
         ActiveInstanceElectorService activeInstanceElectorService =
                 new ActiveInstanceElectorService(configuration, new ArrayList(), curatorFactory,
@@ -161,8 +174,12 @@ public class ActiveInstanceElectorServiceTest {
         when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(true);
         when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(new String[] {"id1"});
         when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id1")).thenReturn("127.0.0.1:21000");
+        when(configuration.getString(
+                HAConfiguration.ATLAS_SERVER_HA_ZK_ROOT_KEY, HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).
+                thenReturn(HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT);
+
         LeaderLatch leaderLatch = mock(LeaderLatch.class);
-        when(curatorFactory.leaderLatchInstance("id1")).thenReturn(leaderLatch);
+        when(curatorFactory.leaderLatchInstance("id1", HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).thenReturn(leaderLatch);
 
         Collection<Provider<ActiveStateChangeHandler>> changeHandlers = new ArrayList();
         final ActiveStateChangeHandler handler1 = mock(ActiveStateChangeHandler.class);
@@ -197,8 +214,12 @@ public class ActiveInstanceElectorServiceTest {
         when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(true);
         when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(new String[] {"id1"});
         when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id1")).thenReturn("127.0.0.1:21000");
+        when(configuration.getString(
+                HAConfiguration.ATLAS_SERVER_HA_ZK_ROOT_KEY, HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).
+                thenReturn(HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT);
+
         LeaderLatch leaderLatch = mock(LeaderLatch.class);
-        when(curatorFactory.leaderLatchInstance("id1")).thenReturn(leaderLatch);
+        when(curatorFactory.leaderLatchInstance("id1", HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).thenReturn(leaderLatch);
 
         ActiveInstanceElectorService activeInstanceElectorService =
                 new ActiveInstanceElectorService(configuration, new ArrayList(), curatorFactory,
@@ -215,9 +236,13 @@ public class ActiveInstanceElectorServiceTest {
         when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(true);
         when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(new String[] {"id1"});
         when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id1")).thenReturn("127.0.0.1:21000");
+        when(configuration.getString(
+                HAConfiguration.ATLAS_SERVER_HA_ZK_ROOT_KEY, HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).
+                thenReturn(HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT);
+
 
         LeaderLatch leaderLatch = mock(LeaderLatch.class);
-        when(curatorFactory.leaderLatchInstance("id1")).thenReturn(leaderLatch);
+        when(curatorFactory.leaderLatchInstance("id1", HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).thenReturn(leaderLatch);
 
         Collection<Provider<ActiveStateChangeHandler>> changeHandlers = new ArrayList();
         final ActiveStateChangeHandler handler1 = mock(ActiveStateChangeHandler.class);
@@ -255,9 +280,13 @@ public class ActiveInstanceElectorServiceTest {
         when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(true);
         when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(new String[] {"id1"});
         when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id1")).thenReturn("127.0.0.1:21000");
+        when(configuration.getString(
+                HAConfiguration.ATLAS_SERVER_HA_ZK_ROOT_KEY, HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).
+                thenReturn(HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT);
+
 
         LeaderLatch leaderLatch = mock(LeaderLatch.class);
-        when(curatorFactory.leaderLatchInstance("id1")).thenReturn(leaderLatch);
+        when(curatorFactory.leaderLatchInstance("id1", HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).thenReturn(leaderLatch);
 
         doThrow(new Exception()).when(activeInstanceState).update("id1");
 
@@ -270,7 +299,7 @@ public class ActiveInstanceElectorServiceTest {
 
         InOrder inOrder = inOrder(leaderLatch, curatorFactory);
         inOrder.verify(leaderLatch).close();
-        inOrder.verify(curatorFactory).leaderLatchInstance("id1");
+        inOrder.verify(curatorFactory).leaderLatchInstance("id1", HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT);
         inOrder.verify(leaderLatch).addListener(activeInstanceElectorService);
         inOrder.verify(leaderLatch).start();
     }
@@ -281,9 +310,13 @@ public class ActiveInstanceElectorServiceTest {
         when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(true);
         when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(new String[] {"id1"});
         when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id1")).thenReturn("127.0.0.1:21000");
+        when(configuration.getString(
+                HAConfiguration.ATLAS_SERVER_HA_ZK_ROOT_KEY, HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).
+                thenReturn(HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT);
+
 
         LeaderLatch leaderLatch = mock(LeaderLatch.class);
-        when(curatorFactory.leaderLatchInstance("id1")).thenReturn(leaderLatch);
+        when(curatorFactory.leaderLatchInstance("id1", HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).thenReturn(leaderLatch);
 
         Collection<Provider<ActiveStateChangeHandler>> changeHandlers = new ArrayList();
         final ActiveStateChangeHandler handler1 = mock(ActiveStateChangeHandler.class);
@@ -344,9 +377,13 @@ public class ActiveInstanceElectorServiceTest {
         when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(true);
         when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(new String[] {"id1"});
         when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id1")).thenReturn("127.0.0.1:21000");
+        when(configuration.getString(
+                HAConfiguration.ATLAS_SERVER_HA_ZK_ROOT_KEY, HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).
+                thenReturn(HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT);
+
 
         LeaderLatch leaderLatch = mock(LeaderLatch.class);
-        when(curatorFactory.leaderLatchInstance("id1")).thenReturn(leaderLatch);
+        when(curatorFactory.leaderLatchInstance("id1", HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT)).thenReturn(leaderLatch);
 
         doThrow(new Exception()).when(activeInstanceState).update("id1");
 
