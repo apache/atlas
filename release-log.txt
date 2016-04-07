@@ -13,6 +13,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-527 Support lineage for load table, import, export (sumasai via shwethags)
 ATLAS-572 Handle secure instance of Zookeeper for leader election.(yhemanth via sumasai)
 ATLAS-605 Hook Notifications for DELETE entity needs to be supported (sumasai)
 ATLAS-607 Add Support for delete entity through a qualifiedName (sumasai via yhemanth)

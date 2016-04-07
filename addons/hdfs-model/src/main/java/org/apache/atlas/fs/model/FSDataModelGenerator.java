@@ -17,6 +17,9 @@
  */
 package org.apache.atlas.fs.model;
 
+import com.sun.jersey.api.client.ClientResponse;
+import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.addons.ModelDefinitionDump;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.TypesSerialization;

@@ -22,16 +22,19 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.fs.model.FSDataTypes;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
+import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.ql.Driver;
@@ -61,6 +64,9 @@ public class HiveHookIT {
     private Driver driver;
     private AtlasClient dgiCLient;
     private SessionState ss;
+    
+    private static final String INPUTS = AtlasClient.PROCESS_ATTRIBUTE_INPUTS;
+    private static final String OUTPUTS = AtlasClient.PROCESS_ATTRIBUTE_OUTPUTS;
 
     private enum QUERY_TYPE {
         GREMLIN,
@@ -81,9 +87,11 @@ public class HiveHookIT {
         SessionState.setCurrentSessionState(ss);
 
         Configuration configuration = ApplicationProperties.get();
+        dgiCLient = new AtlasClient(configuration.getString(HiveMetaStoreBridge.ATLAS_ENDPOINT, DGI_URL));
+
         HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(conf, configuration);
         hiveMetaStoreBridge.registerHiveDataModel();
-        dgiCLient = new AtlasClient(configuration.getString(HiveMetaStoreBridge.ATLAS_ENDPOINT, DGI_URL));
+
     }
 
     private void runCommand(String cmd) throws Exception {
@@ -145,10 +153,15 @@ public class HiveHookIT {
         return tableName;
     }
 
-    private String createTable(boolean isPartitioned, boolean isTemporary) throws Exception {
+    private String createTable(boolean isExternal, boolean isPartitioned, boolean isTemporary) throws Exception {
         String tableName = tableName();
-        runCommand("create " + (isTemporary ? "TEMPORARY " : "") + "table " + tableName + "(id int, name string) comment 'table comment' " + (isPartitioned ?
-            " partitioned by(dt string)" : ""));
+
+        String location = "";
+        if (isExternal) {
+            location = " location '" +  createTestDFSPath("someTestPath") + "'";
+        }
+        runCommand("create " + (isExternal ? " EXTERNAL " : "") + (isTemporary ? "TEMPORARY " : "") + "table " + tableName + "(id int, name string) comment 'table comment' " + (isPartitioned ?
+            " partitioned by(dt string)" : "") + location);
         return tableName;
     }
 
@@ -180,6 +193,37 @@ public class HiveHookIT {
 
         //Create table where database doesn't exist, will create database instance as well
         assertDatabaseIsRegistered(DEFAULT_DB);
+    }
+
+    @Test
+    public void testCreateExternalTable() throws Exception {
+        String tableName = tableName();
+        String dbName = createDatabase();
+        String colName = columnName();
+
+        String pFile = createTestDFSPath("parentPath");
+        final String query = String.format("create EXTERNAL table %s.%s( %s, %s) location '%s'", dbName , tableName , colName + " int", "name string",  pFile);
+        runCommand(query);
+        String tableId = assertTableIsRegistered(dbName, tableName);
+
+        Referenceable processReference = validateProcess(query, 1, 1);
+        validateHDFSPaths(processReference, pFile, INPUTS);
+        validateOutputTables(processReference, tableId);
+    }
+
+    private void validateOutputTables(Referenceable processReference, String... expectedTableGuids) throws Exception {
+       validateTables(processReference, OUTPUTS, expectedTableGuids);
+    }
+
+    private void validateInputTables(Referenceable processReference, String... expectedTableGuids) throws Exception {
+        validateTables(processReference, INPUTS, expectedTableGuids);
+    }
+
+    private void validateTables(Referenceable processReference, String attrName, String... expectedTableGuids) throws Exception {
+        List<Id> tableRef = (List<Id>) processReference.get(attrName);
+        for(int i = 0; i < expectedTableGuids.length; i++) {
+            Assert.assertEquals(tableRef.get(i)._getId(), expectedTableGuids[i]);
+        }
     }
 
     private String assertColumnIsRegistered(String colName) throws Exception {
@@ -265,9 +309,16 @@ public class HiveHookIT {
         Assert.assertEquals(vertices.length(), 0);
     }
 
+    private String createTestDFSPath(String path) throws Exception {
+        return "pfile://" + mkdir(path);
+    }
+
+    private String createTestDFSFile(String path) throws Exception {
+        return "pfile://" + file(path);
+    }
 
     @Test
-    public void testLoadData() throws Exception {
+    public void testLoadLocalPath() throws Exception {
         String tableName = createTable(false);
 
         String loadFile = file("load");
@@ -278,17 +329,69 @@ public class HiveHookIT {
     }
 
     @Test
-    public void testLoadDataIntoPartition() throws Exception {
+    public void testLoadLocalPathIntoPartition() throws Exception {
         String tableName = createTable(true);
 
         String loadFile = file("load");
         String query = "load data local inpath 'file://" + loadFile + "' into table " + tableName +  " partition(dt = '2015-01-01')";
         runCommand(query);
 
+        validateProcess(query, 0, 1);
+    }
+
+    @Test
+    public void testLoadDFSPath() throws Exception {
+        String tableName = createTable(true, true, false);
+
+        String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
+
+        String loadFile = createTestDFSFile("loadDFSFile");
+        String query = "load data inpath '" + loadFile + "' into table " + tableName + " partition(dt = '2015-01-01')";
+        runCommand(query);
+
+        Referenceable processReference = validateProcess(query, 1, 1);
+
+        validateHDFSPaths(processReference, loadFile, INPUTS);
+
+        validateOutputTables(processReference, tableId);
+    }
+
+    private Referenceable validateProcess(String query, int numInputs, int numOutputs) throws Exception {
         String processId = assertProcessIsRegistered(query);
         Referenceable process = dgiCLient.getEntity(processId);
-        Assert.assertNull(process.get("inputs"));
-        Assert.assertEquals(((List<Referenceable>) process.get("outputs")).size(), 1);
+        if (numInputs == 0) {
+            Assert.assertNull(process.get(INPUTS));
+        } else {
+            Assert.assertEquals(((List<Referenceable>) process.get(INPUTS)).size(), numInputs);
+        }
+
+        if (numOutputs == 0) {
+            Assert.assertNull(process.get(OUTPUTS));
+        } else {
+            Assert.assertEquals(((List<Id>) process.get(OUTPUTS)).size(), numOutputs);
+        }
+
+        return process;
+    }
+
+    private Referenceable validateProcess(String query, String[] inputs, String[] outputs) throws Exception {
+        String processId = assertProcessIsRegistered(query);
+        Referenceable process = dgiCLient.getEntity(processId);
+        if (inputs == null) {
+            Assert.assertNull(process.get(INPUTS));
+        } else {
+            Assert.assertEquals(((List<Referenceable>) process.get(INPUTS)).size(), inputs.length);
+            validateInputTables(process, inputs);
+        }
+
+        if (outputs == null) {
+            Assert.assertNull(process.get(OUTPUTS));
+        } else {
+            Assert.assertEquals(((List<Id>) process.get(OUTPUTS)).size(), outputs.length);
+            validateOutputTables(process, outputs);
+        }
+
+        return process;
     }
 
     @Test
@@ -299,13 +402,11 @@ public class HiveHookIT {
                 "insert into " + insertTableName + " select id, name from " + tableName;
 
         runCommand(query);
-        String processId = assertProcessIsRegistered(query);
-        Referenceable process = dgiCLient.getEntity(processId);
-        Assert.assertEquals(((List<Referenceable>) process.get("inputs")).size(), 1);
-        Assert.assertEquals(((List<Referenceable>) process.get("outputs")).size(), 1);
 
-        assertTableIsRegistered(DEFAULT_DB, tableName);
-        assertTableIsRegistered(DEFAULT_DB, insertTableName);
+        String inputTableId = assertTableIsRegistered(DEFAULT_DB, tableName);
+        String opTableId = assertTableIsRegistered(DEFAULT_DB, insertTableName);
+
+        validateProcess(query, new String[] {inputTableId}, new String[] {opTableId});
     }
 
     @Test
@@ -316,10 +417,7 @@ public class HiveHookIT {
             "insert overwrite LOCAL DIRECTORY '" + randomLocalPath.getAbsolutePath() + "' select id, name from " + tableName;
 
         runCommand(query);
-        String processId = assertProcessIsRegistered(query);
-        Referenceable process = dgiCLient.getEntity(processId);
-        Assert.assertEquals(((List<Referenceable>) process.get("inputs")).size(), 1);
-        Assert.assertNull(process.get("outputs"));
+        validateProcess(query, 1, 0);
 
         assertTableIsRegistered(DEFAULT_DB, tableName);
     }
@@ -327,34 +425,32 @@ public class HiveHookIT {
     @Test
     public void testInsertIntoDFSDir() throws Exception {
         String tableName = createTable();
-        String pFile = "pfile://" + mkdir("somedfspath");
+        String pFile = createTestDFSPath("somedfspath");
         String query =
             "insert overwrite DIRECTORY '" + pFile  + "' select id, name from " + tableName;
 
         runCommand(query);
-        String processId = assertProcessIsRegistered(query);
-        Referenceable process = dgiCLient.getEntity(processId);
-        Assert.assertEquals(((List<Referenceable>) process.get("inputs")).size(), 1);
-        Assert.assertNull(process.get("outputs"));
+        Referenceable processReference = validateProcess(query, 1, 1);
+        validateHDFSPaths(processReference, pFile, OUTPUTS);
 
-        assertTableIsRegistered(DEFAULT_DB, tableName);
+        String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
+
+        validateInputTables(processReference, tableId);
     }
 
     @Test
     public void testInsertIntoTempTable() throws Exception {
         String tableName = createTable();
-        String insertTableName = createTable(false, true);
+        String insertTableName = createTable(false, false, true);
         String query =
             "insert into " + insertTableName + " select id, name from " + tableName;
 
         runCommand(query);
-        String processId = assertProcessIsRegistered(query);
-        Referenceable process = dgiCLient.getEntity(processId);
-        Assert.assertEquals(((List<Referenceable>) process.get("inputs")).size(), 1);
-        Assert.assertEquals(((List<Referenceable>) process.get("outputs")).size(), 1);
+        validateProcess(query, 1, 1);
 
-        assertTableIsRegistered(DEFAULT_DB, tableName);
-        assertTableIsRegistered(DEFAULT_DB, insertTableName);
+        String ipTableId = assertTableIsRegistered(DEFAULT_DB, tableName);
+        String opTableId = assertTableIsRegistered(DEFAULT_DB, insertTableName);
+        validateProcess(query, new String[] {ipTableId}, new String[] {opTableId});
     }
 
     @Test
@@ -365,10 +461,11 @@ public class HiveHookIT {
             "insert into " + insertTableName + " partition(dt = '2015-01-01') select id, name from " + tableName
                 + " where dt = '2015-01-01'";
         runCommand(query);
-        String processId = assertProcessIsRegistered(query);
-        Referenceable process = dgiCLient.getEntity(processId);
-        Assert.assertEquals(((List<Referenceable>) process.get("inputs")).size(), 1);
-        Assert.assertEquals(((List<Referenceable>) process.get("outputs")).size(), 1);
+        validateProcess(query, 1, 1);
+
+        String ipTableId = assertTableIsRegistered(DEFAULT_DB, tableName);
+        String opTableId = assertTableIsRegistered(DEFAULT_DB, insertTableName);
+        validateProcess(query, new String[] {ipTableId}, new String[] {opTableId});
     }
 
     private String random() {
@@ -390,19 +487,62 @@ public class HiveHookIT {
     }
 
     @Test
-    public void testExportImport() throws Exception {
+    public void testExportImportUnPartitionedTable() throws Exception {
         String tableName = createTable(false);
+
+        String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
 
         String filename = "pfile://" + mkdir("export");
         String query = "export table " + tableName + " to \"" + filename + "\"";
         runCommand(query);
-        assertProcessIsRegistered(query);
+        Referenceable processReference = validateProcess(query, 1, 1);
+        validateHDFSPaths(processReference, filename, OUTPUTS);
 
+        validateInputTables(processReference, tableId);
+
+        //Import
         tableName = createTable(false);
+        tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
 
         query = "import table " + tableName + " from '" + filename + "'";
         runCommand(query);
-        assertProcessIsRegistered(query);
+        processReference = validateProcess(query, 1, 1);
+        validateHDFSPaths(processReference, filename, INPUTS);
+
+        validateOutputTables(processReference, tableId);
+
+    }
+
+    @Test
+    public void testExportImportPartitionedTable() throws Exception {
+        String tableName = createTable(true);
+        String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
+
+        //Add a partition
+        String partFile = "pfile://" + mkdir("partition");
+        String query = "alter table " + tableName + " add partition (dt='2015-01-01') location '" + partFile + "'";
+        runCommand(query);
+
+        String filename = "pfile://" + mkdir("export");
+        query = "export table " + tableName + " to \"" + filename + "\"";
+        runCommand(query);
+        Referenceable processReference = validateProcess(query, 1, 1);
+        validateHDFSPaths(processReference, filename, OUTPUTS);
+
+        validateInputTables(processReference, tableId);
+
+        //Import
+        tableName = createTable(true);
+        tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
+
+        query = "import table " + tableName + " from '" + filename + "'";
+        runCommand(query);
+        processReference = validateProcess(query, 1, 1);
+        validateHDFSPaths(processReference, filename, INPUTS);
+
+        validateOutputTables(processReference, tableId);
+
+
     }
 
     @Test
@@ -561,8 +701,9 @@ public class HiveHookIT {
 
     @Test
     public void testAlterTableLocation() throws Exception {
-        String tableName = createTable();
-        final String testPath = "file://" + System.getProperty("java.io.tmpdir", "/tmp") + File.pathSeparator + "testPath";
+        //Its an external table, so the HDFS location should also be registered as an entity
+        String tableName = createTable(true, true, false);
+        final String testPath = createTestDFSPath("testBaseDir");
         String query = "alter table " + tableName + " set location '" + testPath + "'";
         runCommand(query);
 
@@ -571,6 +712,38 @@ public class HiveHookIT {
         Referenceable tableRef = dgiCLient.getEntity(tableId);
         Referenceable sdRef = (Referenceable)tableRef.get(HiveDataModelGenerator.STORAGE_DESC);
         Assert.assertEquals(sdRef.get("location"), testPath);
+
+        Referenceable processReference = validateProcess(query, 1, 1);
+        validateHDFSPaths(processReference, testPath, INPUTS);
+
+        validateOutputTables(processReference, tableId);
+
+    }
+
+    private String validateHDFSPaths(Referenceable processReference, String testPath, String attributeName) throws Exception {
+        List<Id> hdfsPathRefs = (List<Id>) processReference.get(attributeName);
+
+        final String testPathNormed = normalize(new Path(testPath).toString());
+        String hdfsPathId = assertHDFSPathIsRegistered(testPathNormed);
+        Assert.assertEquals(hdfsPathRefs.get(0)._getId(), hdfsPathId);
+
+        Referenceable hdfsPathRef = dgiCLient.getEntity(hdfsPathId);
+        Assert.assertEquals(hdfsPathRef.get("path"), testPathNormed);
+        Assert.assertEquals(hdfsPathRef.get("name"), testPathNormed);
+//        Assert.assertEquals(hdfsPathRef.get("name"), new Path(testPath).getName());
+        Assert.assertEquals(hdfsPathRef.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME), testPathNormed);
+
+        return hdfsPathRef.getId()._getId();
+    }
+
+
+    private String assertHDFSPathIsRegistered(String path) throws Exception {
+        final String typeName = FSDataTypes.HDFS_PATH().toString();
+        final String parentTypeName = FSDataTypes.FS_PATH().toString();
+        String gremlinQuery =
+            String.format("g.V.has('__typeName', '%s').has('%s.path', \"%s\").toList()", typeName, parentTypeName,
+                normalize(path));
+        return assertEntityIsRegistered(gremlinQuery);
     }
 
     @Test

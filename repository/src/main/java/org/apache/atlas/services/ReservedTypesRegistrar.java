@@ -31,6 +31,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.Comparator;
 
 public class ReservedTypesRegistrar implements IBootstrapTypesRegistrar {
 
@@ -48,7 +50,17 @@ public class ReservedTypesRegistrar implements IBootstrapTypesRegistrar {
             LOG.info("No types directory {} found - not registering any reserved types", typesDirName);
             return;
         }
+
         File[] typeDefFiles = typesDir.listFiles();
+        //TODO - Enforce a dependency order among models registered by definition and not by modifiedTime as below
+        // Workaround - Sort by modifiedTime to get the dependency of models in the right order - first hdfs, followed by hive and hive is needed by storm, falcon models.
+        // Sorting them by time will ensure the right order since the modules are in the correct order in pom.
+        Arrays.sort(typeDefFiles, new Comparator<File>() {
+            public int compare(File f1, File f2) {
+                return Long.valueOf(f1.lastModified()).compareTo(f2.lastModified());
+            }
+        });
+
         for (File typeDefFile : typeDefFiles) {
             try {
                 String typeDefJSON = new String(Files.readAllBytes(typeDefFile.toPath()), StandardCharsets.UTF_8);

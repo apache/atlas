@@ -91,6 +91,9 @@ public class AtlasClient {
     public static final String REFERENCEABLE_SUPER_TYPE = "Referenceable";
     public static final String REFERENCEABLE_ATTRIBUTE_NAME = "qualifiedName";
 
+    public static final String PROCESS_ATTRIBUTE_INPUTS = "inputs";
+    public static final String PROCESS_ATTRIBUTE_OUTPUTS = "outputs";
+
     public static final String JSON_MEDIA_TYPE = MediaType.APPLICATION_JSON + "; charset=UTF-8";
     public static final String UNKNOWN_STATUS = "Unknown status";
 

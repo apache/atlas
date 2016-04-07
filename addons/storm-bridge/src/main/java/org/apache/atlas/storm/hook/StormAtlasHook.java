@@ -219,8 +219,10 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
                 dataSetReferenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, hdfsPathStr);
                 dataSetReferenceable.set("path", hdfsPathStr);
                 dataSetReferenceable.set("owner", stormConf.get("hdfs.kerberos.principal"));
-                final Path hdfsPath = new Path(hdfsPathStr);
-                dataSetReferenceable.set(AtlasClient.NAME, hdfsPath.getName());
+                //Fix after ATLAS-542
+//                final Path hdfsPath = new Path(hdfsPathStr);
+//                dataSetReferenceable.set(AtlasClient.NAME, hdfsPath.getName());
+                dataSetReferenceable.set(AtlasClient.NAME, hdfsPathStr);
                 break;
 
             case "HiveBolt":

@@ -31,13 +31,10 @@ import scala.tools.scalap.scalax.rules.scalasig.ClassFileParser.EnumConstValue
  */
 object FSDataModel extends App {
 
-    var typesDef : TypesDef = null
-
     val typesBuilder = new TypesBuilder
-
     import typesBuilder._
 
-    typesDef = types {
+    val typesDef : TypesDef = types {
 
         // FS DataSet
         _class(FSDataTypes.FS_PATH.toString, List("DataSet", AtlasClient.REFERENCEABLE_SUPER_TYPE)) {
