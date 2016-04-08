@@ -13,6 +13,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-603 Document High Availability of Atlas (yhemanth via sumasai)
 ATLAS-498 Support Embedded HBase (tbeerbower via sumasai)
 ATLAS-527 Support lineage for load table, import, export (sumasai via shwethags)
 ATLAS-572 Handle secure instance of Zookeeper for leader election.(yhemanth via sumasai)

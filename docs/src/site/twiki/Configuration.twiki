@@ -163,3 +163,44 @@ The following property is used to toggle the SSL feature.
 atlas.enableTLS=false
 </verbatim>
 
+---++ High Availability Properties
+
+The following properties describe High Availability related configuration options:
+
+<verbatim>
+# Set the following property to true, to enable High Availability. Default = false.
+atlas.server.ha.enabled=true
+
+# Define a unique set of strings to identify each instance that should run an Atlas Web Service instance as a comma separated list.
+atlas.server.ids=id1,id2
+# For each string defined above, define the host and port on which Atlas server binds to.
+atlas.server.address.id1=host1.company.com:21000
+atlas.server.address.id2=host2.company.com:31000
+
+# Specify Zookeeper properties needed for HA.
+# Specify the list of services running Zookeeper servers as a comma separated list.
+atlas.server.ha.zookeeper.connect=zk1.company.com:2181,zk2.company.com:2181,zk3.company.com:2181
+# Specify how many times should connection try to be established with a Zookeeper cluster, in case of any connection issues.
+atlas.server.ha.zookeeper.num.retries=3
+# Specify how much time should the server wait before attempting connections to Zookeeper, in case of any connection issues.
+atlas.server.ha.zookeeper.retry.sleeptime.ms=1000
+# Specify how long a session to Zookeeper should last without inactiviy to be deemed as unreachable.
+atlas.server.ha.zookeeper.session.timeout.ms=20000
+
+# Specify the scheme and the identity to be used for setting up ACLs on nodes created in Zookeeper for HA.
+# The format of these options is <scheme>:<identity>. For more information refer to http://zookeeper.apache.org/doc/r3.2.2/zookeeperProgrammers.html#sc_ZooKeeperAccessControl.
+# The 'acl' option allows to specify a scheme, identity pair to setup an ACL for.
+atlas.server.ha.zookeeper.acl=auth:sasl:client@comany.com
+# The 'auth' option specifies the authentication that should be used for connecting to Zookeeper.
+atlas.server.ha.zookeeper.auth=sasl:client@company.com
+
+# Since Zookeeper is a shared service that is typically used by many components,
+# it is preferable for each component to set its znodes under a namespace.
+# Specify the namespace under which the znodes should be written. Default = /apache_atlas
+atlas.server.ha.zookeeper.zkroot=/apache_atlas
+
+# Specify number of times a client should retry with an instance before selecting another active instance, or failing an operation.
+atlas.client.ha.retries=4
+# Specify interval between retries for a client.
+atlas.client.ha.sleep.interval.ms=5000
+</verbatim>
