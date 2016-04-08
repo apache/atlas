@@ -20,18 +20,18 @@ import os
 import re
 import platform
 import subprocess
-from threading import Thread
-from signal import SIGTERM
 import sys
 import time
 import errno
 from re import split
+from time import sleep
 
+BIN = "bin"
 LIB = "lib"
 CONF = "conf"
-LOG="logs"
-WEBAPP="server" + os.sep + "webapp"
-DATA="data"
+LOG = "logs"
+WEBAPP = "server" + os.sep + "webapp"
+DATA = "data"
 ENV_KEYS = ["JAVA_HOME", "ATLAS_OPTS", "ATLAS_LOG_DIR", "ATLAS_PID_DIR", "ATLAS_CONF", "ATLASCPPATH", "ATLAS_DATA_DIR", "ATLAS_HOME_DIR", "ATLAS_EXPANDED_WEBAPP_DIR", "HBASE_CONF_DIR"]
 ATLAS_CONF = "ATLAS_CONF"
 ATLAS_LOG = "ATLAS_LOG_DIR"
@@ -43,6 +43,9 @@ ATLAS_HOME = "ATLAS_HOME_DIR"
 HBASE_CONF_DIR = "HBASE_CONF_DIR"
 IS_WINDOWS = platform.system() == "Windows"
 ON_POSIX = 'posix' in sys.builtin_module_names
+CONF_FILE="atlas-application.properties"
+HBASE_STORAGE_CONF_ENTRY="atlas.graph.storage.backend\s*=\s*hbase"
+HBASE_STORAGE_LOCAL_CONF_ENTRY="atlas.graph.storage.hostname\s*=\s*localhost"
 DEBUG = False
 
 def scriptDir():
@@ -62,9 +65,11 @@ def confDir(dir):
     localconf = os.path.join(dir, CONF)
     return os.environ.get(ATLAS_CONF, localconf)
 
-def hbaseConfDir(atlasConfDir):
-    parentDir = os.path.dirname(atlasConfDir)
-    return os.environ.get(HBASE_CONF_DIR, os.path.join(parentDir, "hbase", CONF))
+def hbaseBinDir(dir):
+    return os.path.join(dir, "hbase", BIN)
+
+def hbaseConfDir(dir):
+    return os.environ.get(HBASE_CONF_DIR, os.path.join(dir, "hbase", CONF))
 
 def logDir(dir):
     localLog = os.path.join(dir, LOG)
@@ -171,21 +176,27 @@ def which(program):
 
     return None
 
-def runProcess(commandline, logdir=None):
+def runProcess(commandline, logdir=None, shell=False, wait=False):
     """
     Run a process
     :param commandline: command line
     :return:the return code
     """
     global finished
-    debug ("Executing : %s" % commandline)
+    debug ("Executing : %s" % str(commandline))
     timestr = time.strftime("atlas.%Y%m%d-%H%M%S")
     stdoutFile = None
     stderrFile = None
     if logdir:
         stdoutFile = open(os.path.join(logdir, timestr + ".out"), "w")
         stderrFile = open(os.path.join(logdir,timestr + ".err"), "w")
-    return subprocess.Popen(commandline, stdout=stdoutFile, stderr=stderrFile)
+
+    p = subprocess.Popen(commandline, stdout=stdoutFile, stderr=stderrFile, shell=shell)
+
+    if wait:
+        p.communicate()
+
+    return p
 
 def print_output(name, src, toStdErr):
     """
@@ -298,35 +309,84 @@ def writePid(atlas_pid_file, process):
     f.write(str(process.pid))
     f.close()
 
-def unix_exist_pid(pid):    
-    #check if process id exist in the current process table  
-    #See man 2 kill - Linux man page for info about the kill(pid,0) system function    
-    
-    try:
-        os.kill(pid, 0)
-    except OSError as e :
-        
-           return e.errno == errno.EPERM
-       
+def exist_pid(pid):
+    if  ON_POSIX:
+        #check if process id exist in the current process table
+        #See man 2 kill - Linux man page for info about the kill(pid,0) system function
+        try:
+            os.kill(pid, 0)
+        except OSError as e :
+            return e.errno == errno.EPERM
+        else:
+            return True
+
+    elif IS_WINDOWS:
+        #The os.kill approach does not work on Windows with python 2.7
+        #the output from tasklist command is searched for the process id
+        command='tasklist /fi  "pid eq '+ pid + '"'
+        sub_process=subprocess.Popen(command, stdout = subprocess.PIPE, shell=False)
+        sub_process.communicate()
+        output = subprocess.check_output(command)
+        output=split(" *",output)
+        for line in output:
+            if pid in line:
+                return True
+        return False
+    #os other than nt or posix - not supported - need to delete the file to restart server if pid no longer exist
+    return True
+
+def wait_for_shutdown(pid, msg, wait):
+    count = 0
+    sys.stdout.write(msg)
+    while exist_pid(pid):
+        sys.stdout.write('.')
+        sys.stdout.flush()
+        sleep(1)
+        if count > wait:
+            break
+        count = count + 1
+
+    sys.stdout.write('\n')
+
+def is_hbase(confdir):
+    confdir = os.path.join(confdir, CONF_FILE)
+    return grep(confdir, HBASE_STORAGE_CONF_ENTRY) is not None
+
+def is_hbase_local(confdir):
+    confdir = os.path.join(confdir, CONF_FILE)
+    return grep(confdir, HBASE_STORAGE_CONF_ENTRY) is not None and grep(confdir, HBASE_STORAGE_LOCAL_CONF_ENTRY) is not None
+
+def run_hbase(dir, action, hbase_conf_dir = None, logdir = None, wait=True):
+    if hbase_conf_dir is not None:
+        cmd = [os.path.join(dir, "hbase-daemon.sh"), '--config', hbase_conf_dir, action, 'master']
     else:
-        return True
+        cmd = [os.path.join(dir, "hbase-daemon.sh"), action, 'master']
 
+    return runProcess(cmd, logdir, False, wait)
 
-def win_exist_pid(pid):
-    #The os.kill approach does not work on Windows with python 2.7
-    #the output from tasklist command is searched for the process id
-    
-    command='tasklist /fi  "pid eq '+ pid + '"'
-    sub_process=subprocess.Popen(command, stdout = subprocess.PIPE, shell=False)
-    sub_process.communicate()
-    output = subprocess.check_output(command)
-    output=split(" *",output)
-    for line in output:
-   
-        if pid in line:
-           return True
+def configure_hbase(dir):
+    env_conf_dir = os.environ.get(HBASE_CONF_DIR)
+    conf_dir = os.path.join(dir, "hbase", CONF)
+    tmpl_dir = os.path.join(dir, CONF, "hbase")
 
-    return False
+    if env_conf_dir is None or env_conf_dir == conf_dir:
+        hbase_conf_file = "hbase-site.xml"
+
+        tmpl_file = os.path.join(tmpl_dir, hbase_conf_file + ".template")
+        conf_file = os.path.join(conf_dir, hbase_conf_file)
+        if os.path.exists(tmpl_file):
+
+            debug ("Configuring " + tmpl_file + " to " + conf_file)
+            f = open(tmpl_file,'r')
+            template = f.read()
+            f.close()
+
+            config = template.replace("${hbase_home}", dir)
+
+            f = open(conf_file,'w')
+            f.write(config)
+            f.close()
+            os.remove(tmpl_file)
 
 def server_already_running(pid):
     print "Atlas server is already running under process %s" % pid

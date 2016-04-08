@@ -27,7 +27,7 @@ def main():
     atlas_home = mc.atlasDir()
     confdir = mc.dirMustExist(mc.confDir(atlas_home))
     mc.executeEnvSh(confdir)
-    piddir = mc.dirMustExist(mc.logDir(atlas_home))
+    mc.dirMustExist(mc.logDir(atlas_home))
 
     atlas_pid_file = mc.pidFile(atlas_home)
 
@@ -40,24 +40,23 @@ def main():
     if not pid:
         sys.stderr.write("No process ID file found. Server not running?\n")
         return
-    if  mc.ON_POSIX:
 
-            if not mc.unix_exist_pid(pid):
-               sys.stderr.write("Server no longer running with pid %s\nImproper shutdown?\npid file deleted.\n" %pid)
-               os.remove(atlas_pid_file)
-               return
-    else:
-        if mc.IS_WINDOWS:
-            if not mc.win_exist_pid((str)(pid)):
-                sys.stderr.write("Server no longer running with pid %s\nImproper shutdown?\npid file deleted.\n" %pid)
-                os.remove(atlas_pid_file)
-                return
+    if not mc.exist_pid(pid):
+       sys.stderr.write("Server no longer running with pid %s\nImproper shutdown?\npid file deleted.\n" %pid)
+       os.remove(atlas_pid_file)
+       return
 
     os.kill(pid, SIGTERM)
+
+    mc.wait_for_shutdown(pid, "stopping atlas", 30)
 
     # assuming kill worked since process check on windows is more involved...
     if os.path.exists(atlas_pid_file):
         os.remove(atlas_pid_file)
+
+    # stop hbase
+    if mc.is_hbase_local(confdir):
+        mc.run_hbase(mc.hbaseBinDir(atlas_home), "stop", None, None, True)
 
 if __name__ == '__main__':
     try:

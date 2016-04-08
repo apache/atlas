@@ -25,8 +25,6 @@ ATLAS_LOG_OPTS="-Datlas.log.dir=%s -Datlas.log.file=application.log"
 ATLAS_COMMAND_OPTS="-Datlas.home=%s"
 ATLAS_CONFIG_OPTS="-Datlas.conf=%s"
 DEFAULT_JVM_OPTS="-Xmx1024m -XX:MaxPermSize=512m -Dlog4j.configuration=atlas-log4j.xml -Djava.net.preferIPv4Stack=true"
-CONF_FILE="atlas-application.properties"
-HBASE_STORAGE_CONF_ENTRY="atlas.graph.storage.backend\s*=\s*hbase"
 
 def main():
 
@@ -62,7 +60,13 @@ def main():
     mc.expandWebApp(atlas_home)
 
     #add hbase-site.xml to classpath
-    hbase_conf_dir = mc.hbaseConfDir(confdir)
+    hbase_conf_dir = mc.hbaseConfDir(atlas_home)
+
+    if mc.is_hbase_local(confdir):
+        print "configured for local hbase."
+        mc.configure_hbase(atlas_home)
+        mc.run_hbase(mc.hbaseBinDir(atlas_home), "start", hbase_conf_dir, logdir)
+        print "hbase started."
 
     p = os.pathsep
     atlas_classpath = confdir + p \
@@ -74,9 +78,8 @@ def main():
         atlas_classpath = atlas_classpath + p \
                             + hbase_conf_dir
     else: 
-       storage_backend = mc.grep(os.path.join(confdir, CONF_FILE), HBASE_STORAGE_CONF_ENTRY)
-       if storage_backend != None:
-	   raise Exception("Could not find hbase-site.xml in %s. Please set env var HBASE_CONF_DIR to the hbase client conf dir", hbase_conf_dir)
+       if mc.is_hbase(confdir):
+           raise Exception("Could not find hbase-site.xml in %s. Please set env var HBASE_CONF_DIR to the hbase client conf dir", hbase_conf_dir)
     
     if mc.isCygwin():
         atlas_classpath = mc.convertCygwinPath(atlas_classpath, True)
@@ -88,27 +91,11 @@ def main():
        pf = file(atlas_pid_file, 'r')
        pid = pf.read().strip()
        pf.close() 
-       
 
-       if  mc.ON_POSIX:
-            
-            if mc.unix_exist_pid((int)(pid)):
-                mc.server_already_running(pid)
-            else:
-                 mc.server_pid_not_running(pid)
-              
-              
+       if mc.exist_pid((int)(pid)):
+           mc.server_already_running(pid)
        else:
-            if mc.IS_WINDOWS:
-                if mc.win_exist_pid(pid):
-                   mc.server_already_running(pid)
-                else:
-                     mc.server_pid_not_running(pid)
-                   
-            else:
-                #os other than nt or posix - not supported - need to delete the file to restart server if pid no longer exist
-                mc.server_already_running(pid)
-             
+           mc.server_pid_not_running(pid)
 
     web_app_path = os.path.join(web_app_dir, "atlas")
     if (mc.isCygwin()):

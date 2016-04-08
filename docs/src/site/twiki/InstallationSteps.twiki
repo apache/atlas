@@ -33,6 +33,8 @@ Tar is structured as follows
 |- conf
    |- atlas-application.properties
    |- atlas-env.sh
+   |- hbase
+      |- hbase-site.xml.template
    |- log4j.xml
    |- solr
       |- currency.xml
@@ -44,6 +46,10 @@ Tar is structured as follows
       |- stopwords.txt
       |- synonyms.txt
 |- docs
+|- hbase
+   |- bin
+   |- conf
+   ...
 |- server
    |- webapp
       |- atlas.war
@@ -54,6 +60,12 @@ Tar is structured as follows
 |- CHANGES.txt
 
 </verbatim>
+
+Note that HBase is included in the distribution so that a standalone instance of HBase can be started as the default
+storage backend for the graph repository.  During Atlas installation the conf/hbase/hbase-site.xml.template gets
+expanded and moved to hbase/conf/hbase-site.xml for the initial standalone HBase configuration.  To configure ATLAS
+graph persistence for a different HBase instance, please see "Graph persistence engine - HBase" in the
+[[Configuration][Configuration]] section.
 
 ---+++ Installing & Running Atlas
 

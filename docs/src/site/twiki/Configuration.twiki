@@ -53,6 +53,9 @@ Without Ranger, HBase shell can be used to set the permissions.
    echo "grant 'atlas', 'RWXCA', 'titan'" | hbase shell
 </verbatim>
 
+Note that HBase is included in the distribution so that a standalone instance of HBase can be started as the default
+storage backend for the graph repository.
+
 ---+++ Graph Search Index
 This section sets up the graph db - titan - to use an search indexing system. The example
 configuration below sets up to use an embedded Elastic search indexing system.

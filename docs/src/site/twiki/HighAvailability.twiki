@@ -33,11 +33,10 @@ enabling hot failover. To minimize service loss, we recommend the following:
 
 ---++ Metadata Store
 
-As described above, Atlas uses Titan to store the metadata it manages. By default, Titan uses BerkeleyDB as an embedded
-backing store. However, this option would result in loss of data if the node running the Atlas server fails. In order
-to provide HA for the metadata store, we recommend that Atlas be configured to use HBase as the backing store for Titan.
-Doing this implies that you could benefit from the HA guarantees HBase provides. In order to configure Atlas to use
-HBase in HA mode, do the following:
+As described above, Atlas uses Titan to store the metadata it manages. By default, Atlas uses a standalone HBase
+instance as the backing store for Titan. In order to provide HA for the metadata store, we recommend that Atlas be
+configured to use distributed HBase as the backing store for Titan.  Doing this implies that you could benefit from the
+HA guarantees HBase provides. In order to configure Atlas to use HBase in HA mode, do the following:
 
    * Choose an existing HBase cluster that is set up in HA mode to configure in Atlas (OR) Set up a new HBase cluster in [[http://hbase.apache.org/book.html#quickstart_fully_distributed][HA mode]].
       * If setting up HBase for Atlas, please following instructions listed for setting up HBase in the [[InstallationSteps][Installation Steps]].

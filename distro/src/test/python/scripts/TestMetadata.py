@@ -30,8 +30,10 @@ IS_WINDOWS = platform.system() == "Windows"
 logger = logging.getLogger()
 
 class TestMetadata(unittest.TestCase):
-  @patch.object(mc,"win_exist_pid") 
-  @patch.object(mc,"unix_exist_pid") 
+  @patch.object(mc,"runProcess")
+  @patch.object(mc,"configure_hbase")
+  @patch.object(mc,"grep")
+  @patch.object(mc,"exist_pid")
   @patch.object(mc,"writePid")
   @patch.object(mc, "executeEnvSh")
   @patch.object(mc,"atlasDir")
@@ -39,17 +41,19 @@ class TestMetadata(unittest.TestCase):
   @patch("os.path.exists")
   @patch.object(mc, "java")
 
-  def test_main(self, java_mock, exists_mock, expandWebApp_mock, atlasDir_mock, executeEnvSh_mock, writePid_mock, unix_exist_pid_mock, win_exist_pid_mock):
+  def test_main(self, java_mock, exists_mock, expandWebApp_mock, atlasDir_mock, executeEnvSh_mock, writePid_mock, exist_pid_mock, grep_mock, configure_hbase_mock, runProcess_mock):
     sys.argv = []
     exists_mock.return_value = True
     expandWebApp_mock.return_value = "webapp"
     atlasDir_mock.return_value = "atlas_home"
 
-    win_exist_pid_mock("789")
-    win_exist_pid_mock.assert_called_with((str)(789))
-    unix_exist_pid_mock(789)
-    unix_exist_pid_mock.assert_called_with(789)
+    exist_pid_mock(789)
+    exist_pid_mock.assert_called_with(789)
+    grep_mock.return_value = "hbase"
+
     atlas.main()
+    self.assertTrue(configure_hbase_mock.called)
+    runProcess_mock.assert_called_with(['atlas_home/hbase/bin/hbase-daemon.sh', '--config', 'atlas_home/hbase/conf', 'start', 'master'], 'atlas_home/logs', False, True)
     self.assertTrue(java_mock.called)
     if IS_WINDOWS:
       
