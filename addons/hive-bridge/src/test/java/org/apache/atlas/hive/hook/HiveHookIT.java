@@ -497,7 +497,6 @@ public class HiveHookIT {
         runCommand(query);
         Referenceable processReference = validateProcess(query, 1, 1);
         validateHDFSPaths(processReference, filename, OUTPUTS);
-
         validateInputTables(processReference, tableId);
 
         //Import
@@ -510,7 +509,6 @@ public class HiveHookIT {
         validateHDFSPaths(processReference, filename, INPUTS);
 
         validateOutputTables(processReference, tableId);
-
     }
 
     @Test
@@ -541,8 +539,6 @@ public class HiveHookIT {
         validateHDFSPaths(processReference, filename, INPUTS);
 
         validateOutputTables(processReference, tableId);
-
-
     }
 
     @Test
@@ -682,6 +678,41 @@ public class HiveHookIT {
         //Check col position
         Assert.assertEquals(columns.get(1).get(HiveDataModelGenerator.NAME), newColName);
         Assert.assertEquals(columns.get(0).get(HiveDataModelGenerator.NAME), "id");
+    }
+
+    @Test()
+    public void testTruncateTable() throws Exception {
+        String tableName = createTable(false);
+        String query = String.format("truncate table %s", tableName);
+        runCommand(query);
+
+        String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
+        validateProcess(query, 0, 1);
+
+        //Check lineage
+        String datasetName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName);
+        JSONObject response = dgiCLient.getInputGraph(datasetName);
+        JSONObject vertices = response.getJSONObject("values").getJSONObject("vertices");
+        //Below should be assertTrue - Fix https://issues.apache.org/jira/browse/ATLAS-653
+        Assert.assertFalse(vertices.has(tableId));
+    }
+
+    @Test
+    public void testAlterTablePartitionColumnType() throws Exception {
+        String tableName = createTable(true, true, false);
+        final String newType = "int";
+        String query = String.format("ALTER TABLE %s PARTITION COLUMN (dt %s)", tableName, newType);
+        runCommand(query);
+
+        final String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
+        final String dtColId = assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), "dt"));
+        Referenceable table = dgiCLient.getEntity(tableId);
+        Referenceable column = dgiCLient.getEntity(dtColId);
+        Assert.assertEquals(column.get("type"), newType);
+
+        final List<Referenceable> partitionKeys = (List<Referenceable>) table.get("partitionKeys");
+        Assert.assertEquals(partitionKeys.size(), 1);
+        Assert.assertEquals(partitionKeys.get(0).getId()._getId(), dtColId);
     }
 
     @Test
@@ -834,7 +865,56 @@ public class HiveHookIT {
 
         //Add another property
         runSerdePropsQuery(tableName, expectedProps);
+    }
 
+    @Test
+    public void testDropTable() throws Exception {
+        //Test Deletion of tables and its corrresponding columns
+        String tableName = createTable(true, true, false);
+
+        assertTableIsRegistered(DEFAULT_DB, tableName);
+        assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), "id"));
+        assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), "name"));
+
+        final String query = String.format("drop table %s ", tableName);
+
+        runCommand(query);
+        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), "id"));
+        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), "name"));
+        assertTableIsNotRegistered(DEFAULT_DB, tableName);
+    }
+
+    @Test
+    public void testDropNonExistingTable() throws Exception {
+        //Test Deletion of a non existing table
+        final String tableName = "nonexistingtable";
+        assertTableIsNotRegistered(DEFAULT_DB, tableName);
+        final String query = String.format("drop table if exists %s", tableName);
+        runCommand(query);
+
+        //Should have no effect
+        assertTableIsNotRegistered(DEFAULT_DB, tableName);
+        assertProcessIsNotRegistered(query);
+    }
+
+    @Test
+    public void testDropView() throws Exception {
+        //Test Deletion of tables and its corrresponding columns
+        String tableName = createTable(true, true, false);
+        String viewName = tableName();
+        String query = "create view " + viewName + " as select * from " + tableName;
+        runCommand(query);
+
+        assertTableIsRegistered(DEFAULT_DB, viewName);
+        assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, viewName), "id"));
+        assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, viewName), "name"));
+
+        query = String.format("drop view %s ", viewName);
+
+        runCommand(query);
+        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, viewName), "id"));
+        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, viewName), "name"));
+        assertTableIsNotRegistered(DEFAULT_DB, viewName);
     }
 
     private void runSerdePropsQuery(String tableName, Map<String, String> expectedProps) throws Exception {

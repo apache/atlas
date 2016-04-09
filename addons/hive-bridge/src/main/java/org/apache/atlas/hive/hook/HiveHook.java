@@ -308,6 +308,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         case EXPORT:
         case IMPORT:
         case QUERY:
+        case TRUNCATETABLE:
             registerProcess(dgiBridge, event);
             break;
 
@@ -326,6 +327,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         case ALTERTABLE_ADDCOLS:
         case ALTERTABLE_REPLACECOLS:
         case ALTERTABLE_RENAMECOL:
+        case ALTERTABLE_PARTCOLTYPE:
             handleEventOutputs(dgiBridge, event, Type.TABLE);
             break;
         case ALTERTABLE_LOCATION:
@@ -334,15 +336,35 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                 //Track altered lineage in case of external tables
                 handleExternalTables(dgiBridge, event, tablesUpdated.get(0).getLeft(), tablesUpdated.get(0).getRight());
             }
+            break;
         case ALTERDATABASE:
         case ALTERDATABASE_OWNER:
             handleEventOutputs(dgiBridge, event, Type.DATABASE);
+            break;
+
+        case DROPTABLE:
+        case DROPVIEW:
+            deleteTable(dgiBridge, event);
             break;
 
         default:
         }
 
         notifyEntities(messages);
+    }
+
+    private void deleteTable(HiveMetaStoreBridge dgiBridge, HiveEventContext event) {
+        for (Entity output : event.outputs) {
+            if (Type.TABLE.equals(output.getType())) {
+                final String tblQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(dgiBridge.getClusterName(), output.getTable().getDbName(), output.getTable().getTableName());
+                LOG.info("Deleting table {} ", tblQualifiedName);
+                messages.add(
+                    new HookNotification.EntityDeleteRequest(event.getUser(),
+                        HiveDataTypes.HIVE_TABLE.getName(),
+                        HiveDataModelGenerator.NAME,
+                        tblQualifiedName));
+            }
+        }
     }
 
     private void renameTable(HiveMetaStoreBridge dgiBridge, HiveEventContext event) throws Exception {
