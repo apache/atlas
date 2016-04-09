@@ -20,6 +20,7 @@ package org.apache.atlas.hive.hook;
 
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
@@ -347,6 +348,10 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             deleteTable(dgiBridge, event);
             break;
 
+        case DROPDATABASE:
+            deleteDatabase(dgiBridge, event);
+            break;
+
         default:
         }
 
@@ -354,15 +359,38 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     }
 
     private void deleteTable(HiveMetaStoreBridge dgiBridge, HiveEventContext event) {
-        for (Entity output : event.outputs) {
+        for (WriteEntity output : event.outputs) {
             if (Type.TABLE.equals(output.getType())) {
-                final String tblQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(dgiBridge.getClusterName(), output.getTable().getDbName(), output.getTable().getTableName());
-                LOG.info("Deleting table {} ", tblQualifiedName);
+                deleteTable(dgiBridge, event, output);
+            }
+        }
+    }
+
+    private void deleteTable(HiveMetaStoreBridge dgiBridge, HiveEventContext event, WriteEntity output) {
+        final String tblQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(dgiBridge.getClusterName(), output.getTable().getDbName(), output.getTable().getTableName());
+        LOG.info("Deleting table {} ", tblQualifiedName);
+        messages.add(
+            new HookNotification.EntityDeleteRequest(event.getUser(),
+                HiveDataTypes.HIVE_TABLE.getName(),
+                HiveDataModelGenerator.NAME,
+                tblQualifiedName));
+    }
+
+    private void deleteDatabase(HiveMetaStoreBridge dgiBridge, HiveEventContext event) {
+        if (event.outputs.size() > 1) {
+            LOG.info("Starting deletion of tables and databases with cascade {} " , event.queryStr);
+        }
+
+        for (WriteEntity output : event.outputs) {
+            if (Type.TABLE.equals(output.getType())) {
+                deleteTable(dgiBridge, event, output);
+            } else if (Type.DATABASE.equals(output.getType())) {
+                final String dbQualifiedName = HiveMetaStoreBridge.getDBQualifiedName(dgiBridge.getClusterName(), output.getDatabase().getName());
                 messages.add(
                     new HookNotification.EntityDeleteRequest(event.getUser(),
-                        HiveDataTypes.HIVE_TABLE.getName(),
-                        HiveDataModelGenerator.NAME,
-                        tblQualifiedName));
+                        HiveDataTypes.HIVE_DB.getName(),
+                        AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+                        dbQualifiedName));
             }
         }
     }

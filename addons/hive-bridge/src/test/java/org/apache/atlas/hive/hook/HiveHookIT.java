@@ -877,11 +877,69 @@ public class HiveHookIT {
         assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), "name"));
 
         final String query = String.format("drop table %s ", tableName);
-
         runCommand(query);
         assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), "id"));
         assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), "name"));
         assertTableIsNotRegistered(DEFAULT_DB, tableName);
+    }
+
+    @Test
+    public void testDropDatabaseWithCascade() throws Exception {
+        //Test Deletion of database and its corresponding tables
+        String dbName = "db" + random();
+        runCommand("create database " + dbName + " WITH DBPROPERTIES ('p1'='v1')");
+
+        final int numTables = 10;
+        String[] tableNames = new String[numTables];
+        for(int i = 0; i < numTables; i++) {
+            tableNames[i] = createTable(true, true, false);
+        }
+
+        final String query = String.format("drop database %s cascade", dbName);
+        runCommand(query);
+
+        //Verify columns are not registered for one of the tables
+        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableNames[0]), "id"));
+        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableNames[0]), "name"));
+
+        for(int i = 0; i < numTables; i++) {
+            assertTableIsNotRegistered(dbName, tableNames[i]);
+        }
+        assertDBIsNotRegistered(dbName);
+    }
+
+    @Test
+    public void testDropDatabaseWithoutCascade() throws Exception {
+        //Test Deletion of database and its corresponding tables
+        String dbName = "db" + random();
+        runCommand("create database " + dbName + " WITH DBPROPERTIES ('p1'='v1')");
+
+        final int numTables = 10;
+        String[] tableNames = new String[numTables];
+        for(int i = 0; i < numTables; i++) {
+            tableNames[i] = createTable(true, true, false);
+            String query = String.format("drop table %s", tableNames[i]);
+            runCommand(query);
+            assertTableIsNotRegistered(dbName, tableNames[i]);
+        }
+
+        final String query = String.format("drop database %s", dbName);
+        runCommand(query);
+
+        assertDBIsNotRegistered(dbName);
+    }
+
+    @Test
+    public void testDropNonExistingDB() throws Exception {
+        //Test Deletion of a non existing DB
+        final String dbName = "nonexistingdb";
+        assertDBIsNotRegistered(dbName);
+        final String query = String.format("drop database if exists %s cascade", dbName);
+        runCommand(query);
+
+        //Should have no effect
+        assertDBIsNotRegistered(dbName);
+        assertProcessIsNotRegistered(query);
     }
 
     @Test
@@ -1092,6 +1150,14 @@ public class HiveHookIT {
         String query = String.format(
                 "%s as t where tableName = '%s', db where name = '%s' and clusterName = '%s'" + " select t",
                 HiveDataTypes.HIVE_TABLE.getName(), tableName.toLowerCase(), dbName.toLowerCase(), CLUSTER_NAME);
+        assertEntityIsNotRegistered(QUERY_TYPE.DSL, query);
+    }
+
+    private void assertDBIsNotRegistered(String dbName) throws Exception {
+        LOG.debug("Searching for database {}.{}", dbName);
+        String query = String.format(
+            "%s as d where name = '%s' and clusterName = '%s'" + " select d",
+            HiveDataTypes.HIVE_DB.getName(), dbName.toLowerCase(), CLUSTER_NAME);
         assertEntityIsNotRegistered(QUERY_TYPE.DSL, query);
     }
 
