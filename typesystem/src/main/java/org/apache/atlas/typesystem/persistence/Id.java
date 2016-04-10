@@ -35,21 +35,39 @@ import java.util.Map;
 import java.util.UUID;
 
 public class Id implements ITypedReferenceableInstance {
+    public enum EntityState {
+        ACTIVE, DELETED
+    }
 
     public final String id;
-    public final String className;
+    public final String typeName;
     public final int version;
+    public EntityState state;
+
+    public Id(String id, int version, String typeName, String state) {
+        ParamChecker.notEmpty(id, "id");
+        ParamChecker.notEmpty(typeName, "typeName");
+        ParamChecker.notEmptyIfNotNull(state, "state");
+        this.id = id;
+        this.typeName = typeName;
+        this.version = version;
+        if (state == null) {
+            this.state = EntityState.ACTIVE;
+        } else {
+            this.state = EntityState.valueOf(state.toUpperCase());
+        }
+    }
 
     public Id(String id, int version, String className) {
-        ParamChecker.notEmpty(className, "id");
-        ParamChecker.notEmpty(className, "className");
-        this.id = id;
-        this.className = className;
-        this.version = version;
+        this(id, version, className, null);
     }
 
     public Id(long id, int version, String className) {
         this("" + id, version, className);
+    }
+
+    public Id(long id, int version, String className, String state) {
+        this("" + id, version, className, state);
     }
 
     public Id(String className) {
@@ -76,11 +94,11 @@ public class Id implements ITypedReferenceableInstance {
     }
 
     public String toString() {
-        return String.format("(type: %s, id: %s)", className, isUnassigned() ? "<unassigned>" : "" + id);
+        return String.format("(type: %s, id: %s)", typeName, isUnassigned() ? "<unassigned>" : "" + id);
     }
 
     public String getClassName() {
-        return className;
+        return typeName;
     }
 
     public int getVersion() {
@@ -89,6 +107,14 @@ public class Id implements ITypedReferenceableInstance {
 
     public String _getId() {
         return id;
+    }
+
+    public EntityState getState() {
+        return state;
+    }
+
+    public String getStateAsString() {
+        return state == null ? null : state.name();
     }
 
     @Override
@@ -105,7 +131,7 @@ public class Id implements ITypedReferenceableInstance {
         if (version != id1.version) {
             return false;
         }
-        if (!className.equals(id1.className)) {
+        if (!typeName.equals(id1.typeName)) {
             return false;
         }
         if (!id.equals(id1.id)) {
@@ -118,7 +144,7 @@ public class Id implements ITypedReferenceableInstance {
     @Override
     public int hashCode() {
         int result = id.hashCode();
-        result = 31 * result + className.hashCode();
+        result = 31 * result + typeName.hashCode();
         result = 31 * result + version;
         return result;
     }
@@ -140,7 +166,7 @@ public class Id implements ITypedReferenceableInstance {
 
     @Override
     public String getTypeName() {
-        return className;
+        return typeName;
     }
 
     @Override
@@ -258,7 +284,7 @@ public class Id implements ITypedReferenceableInstance {
     @Override
     public String getSignatureHash(MessageDigest digester) throws AtlasException {
         digester.update(id.getBytes(Charset.forName("UTF-8")));
-        digester.update(className.getBytes(Charset.forName("UTF-8")));
+        digester.update(typeName.getBytes(Charset.forName("UTF-8")));
         byte[] digest = digester.digest();
         return MD5Utils.toString(digest);
     }

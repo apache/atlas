@@ -19,6 +19,7 @@
 package org.apache.atlas.typesystem.json
 
 import com.google.common.collect.ImmutableList
+import org.apache.atlas.typesystem.persistence.Id.EntityState
 import org.apache.atlas.typesystem.persistence.{Id, ReferenceableInstance, StructInstance}
 import org.apache.atlas.typesystem.types._
 import org.apache.atlas.typesystem.types.utils.TypesUtil
@@ -29,6 +30,7 @@ import org.json4s.{NoTypeHints, _}
 import org.testng.Assert
 import org.testng.annotations.{BeforeMethod,Test}
 import com.google.common.collect.ImmutableSet
+import org.testng.Assert.assertEquals
 
 class SerializationTest extends BaseTest {
 
@@ -241,4 +243,21 @@ class SerializationTest extends BaseTest {
 
   }
 
+  @Test def testIdSerde: Unit = {
+
+    val ts: TypeSystem = getTypeSystem
+    defineHRTypes(ts)
+    val hrDept: Referenceable = defineHRDept()
+    //default state is actiev by default
+    assertEquals(hrDept.getId.getState, EntityState.ACTIVE)
+
+    val deptType: ClassType = ts.getDataType(classOf[ClassType], "Department")
+    val hrDept2: ITypedReferenceableInstance = deptType.convert(hrDept, Multiplicity.REQUIRED)
+    hrDept2.getId.state = EntityState.DELETED
+
+    //updated state should be maintained correctly after serialisation-deserialisation
+    val deptJson: String = InstanceSerialization.toJson(hrDept2, true)
+    val deserDept: Referenceable = InstanceSerialization.fromJsonReferenceable(deptJson, true)
+    assertEquals(deserDept.getId.getState, EntityState.DELETED)
+  }
 }

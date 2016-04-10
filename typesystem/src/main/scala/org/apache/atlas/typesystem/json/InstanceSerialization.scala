@@ -31,7 +31,7 @@ import scala.collection.JavaConverters._
 
 object InstanceSerialization {
 
-  case class _Id(id : String, version : Int, typeName : String)
+  case class _Id(id : String, version : Int, typeName : String, state : String)
   case class _Struct(typeName : String, values : Map[String, AnyRef])
   case class _Reference(id : _Id,
                         typeName : String,
@@ -72,6 +72,14 @@ object InstanceSerialization {
     }
 
     /**
+     * validate and extract 'state' attribute from Map
+     * @return
+     */
+    def state: Option[String] = {
+      jsonMap.get("state").filter(_.isInstanceOf[String]).flatMap(v => Some(v.asInstanceOf[String]))
+    }
+
+    /**
      * validate and extract 'version' attribute from Map
      * @return
      */
@@ -93,11 +101,12 @@ object InstanceSerialization {
      */
     def convertId : Option[_Id] = {
       for {
-        refClass <- idClass;
-        typNm <- typeName;
-        i <- id;
+        refClass <- idClass
+        typNm <- typeName
+        i <- id
+        s <- state
         v <- version
-      } yield _Id(i, v, typNm)
+      } yield _Id(i, v, typNm, s)
     }
 
     /**
@@ -151,8 +160,8 @@ object InstanceSerialization {
      */
     def struct: Option[_Struct] = {
       for {
-        refClass <- structureClass;
-        typNm <- typeName;
+        refClass <- structureClass
+        typNm <- typeName
         values <- valuesMap
       } yield _Struct(typNm, values)
     }
@@ -218,11 +227,11 @@ object InstanceSerialization {
      */
     def reference : Option[_Reference] = {
       for {
-        refClass <- referenceClass;
-        typNm <- typeName;
-        i <- idObject;
-        values <- valuesMap;
-        traitNms <- traitNames;
+        refClass <- referenceClass
+        typNm <- typeName
+        i <- idObject
+        values <- valuesMap
+        traitNms <- traitNames
         ts <- traits
       } yield _Reference(i, typNm, values, traitNms.toList, ts)
     }
@@ -249,10 +258,10 @@ object InstanceSerialization {
   }
 
   def asJava(v : Any)(implicit format: Formats) : Any = v match {
-    case i : _Id => new Id(i.id, i.version, i.typeName)
+    case i : _Id => new Id(i.id, i.version, i.typeName, i.state)
     case s : _Struct => new Struct(s.typeName, asJava(s.values).asInstanceOf[java.util.Map[String, Object]])
     case r : _Reference => {
-      new Referenceable(r.id.asInstanceOf[_Id].id,
+      new Referenceable(new Id(r.id.id, r.id.version, r.id.typeName, r.id.state),
         r.typeName,
         asJava(r.values).asInstanceOf[java.util.Map[String, Object]],
         asJava(r.traitNames).asInstanceOf[java.util.List[String]],
@@ -271,7 +280,7 @@ object InstanceSerialization {
   }
 
   def asScala(v : Any) : Any = v match {
-    case i : Id => _Id(i._getId(), i.getVersion, i.getClassName)
+    case i : Id => _Id(i._getId(), i.getVersion, i.getClassName, i.getStateAsString)
     case r : IReferenceableInstance => {
       val traits = r.getTraits.map { tName =>
         val t = r.getTrait(tName).asInstanceOf[IStruct]

@@ -3,6 +3,7 @@ Apache Atlas Release Notes
 
 --trunk - unreleased
 INCOMPATIBLE CHANGES:
+ATLAS-621 Introduce entity state in Id object (shwethags)
 ATLAS-474 Server does not start if the type is updated with same super type class information (dkantor via shwethags)
 ATLAS-479 Add description for different types during create time (guptaneeru via shwethags)
 ATLAS-521 Support Alter Table column commands (suma.shivaprasad via shwethags)

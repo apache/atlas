@@ -134,6 +134,9 @@ public class GraphBackedMetadataRepositoryTest {
     public void testGetEntityDefinitionForDepartment() throws Exception {
         ITypedReferenceableInstance entity = repositoryService.getEntityDefinition(guid);
         Assert.assertNotNull(entity);
+
+        //entity state should be active by default
+        Assert.assertEquals(entity.getId().getState(), Id.EntityState.ACTIVE);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -158,8 +161,8 @@ public class GraphBackedMetadataRepositoryTest {
     @Test(dependsOnMethods = "testSubmitEntity")
     public void testGetTraitLabel() throws Exception {
         Assert.assertEquals(
-            repositoryService.getTraitLabel(typeSystem.getDataType(ClassType.class, TestUtils.TABLE_TYPE),
-                TestUtils.CLASSIFICATION), TestUtils.TABLE_TYPE + "." + TestUtils.CLASSIFICATION);
+                repositoryService.getTraitLabel(typeSystem.getDataType(ClassType.class, TestUtils.TABLE_TYPE),
+                        TestUtils.CLASSIFICATION), TestUtils.TABLE_TYPE + "." + TestUtils.CLASSIFICATION);
     }
 
     @Test

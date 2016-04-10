@@ -60,7 +60,7 @@ public class DiscoverInstances implements ObjectGraphWalker.NodeProcessor {
         if (id != null) {
             if (id.isUnassigned()) {
                 if (!idToNewIdMap.containsKey(id)) {
-                    idToNewIdMap.put(id, repository.newId(id.className));
+                    idToNewIdMap.put(id, repository.newId(id.typeName));
                 }
                 if (ref != null && idToInstanceMap.containsKey(ref)) {
                     // Oops

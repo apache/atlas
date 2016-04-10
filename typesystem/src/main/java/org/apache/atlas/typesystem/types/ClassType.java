@@ -67,7 +67,7 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
 
     public void validateId(Id id) throws AtlasException {
         if (id != null) {
-            ClassType cType = typeSystem.getDataType(ClassType.class, id.className);
+            ClassType cType = typeSystem.getDataType(ClassType.class, id.typeName);
             if (isSubType(cType.getName())) {
                 return;
             }
@@ -150,7 +150,7 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
                 validateId(((ReferenceableInstance) val).getId());
                 return (ReferenceableInstance) val;
             } else {
-                throw new ValueConversionException(this, val);
+                throw new ValueConversionException(this, val, "value's class is " + val.getClass().getName());
             }
         }
         if (!m.nullAllowed()) {

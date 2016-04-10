@@ -40,7 +40,6 @@ public abstract class BaseTest {
     public static final String STRUCT_TYPE_1 = "t1";
     public static final String STRUCT_TYPE_2 = "t2";
     public static final String TEST_DATE = "2014-12-11T02:35:58.440Z";
-    public static final long TEST_DATE_IN_LONG = 1418265358440L;
 
     public static Struct createStruct() throws AtlasException {
         StructType structType = TypeSystem.getInstance().getDataType(StructType.class, STRUCT_TYPE_1);

@@ -85,6 +85,9 @@ public final class GraphHelper {
         // add version information
         setProperty(vertexWithIdentity, Constants.VERSION_PROPERTY_KEY, typedInstance.getId().version);
 
+        // add state information
+        setProperty(vertexWithIdentity, Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
+
         return vertexWithIdentity;
     }
 

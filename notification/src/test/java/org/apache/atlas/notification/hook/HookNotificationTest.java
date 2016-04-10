@@ -51,15 +51,13 @@ public class HookNotificationTest {
 
     @Test
     public void testBackwardCompatibility() throws Exception {
-        /**
+        //Code to generate the json, use it for hard-coded json used later in this test
         Referenceable entity = new Referenceable("sometype");
         entity.set("attr", "value");
-        String user = "user";
         HookNotification.EntityCreateRequest request = new HookNotification.EntityCreateRequest(null, entity);
 
-        String notificationJson = AbstractNotificationConsumer.GSON.toJson(request);
-        System.out.println(notificationJson);
-         **/
+        String notificationJsonFromCode = AbstractNotificationConsumer.GSON.toJson(request);
+        System.out.println(notificationJsonFromCode);
 
         //Json without user and assert that the string can be deserialised
         String notificationJson = "{\n"
@@ -68,9 +66,10 @@ public class HookNotificationTest {
                 + "      \"jsonClass\": \"org.apache.atlas.typesystem.json.InstanceSerialization$_Reference\",\n"
                 + "      \"id\": {\n"
                 + "        \"jsonClass\": \"org.apache.atlas.typesystem.json.InstanceSerialization$_Id\",\n"
-                + "        \"id\": \"-1457685864305243000\",\n"
+                + "        \"id\": \"-1459493350903186000\",\n"
                 + "        \"version\": 0,\n"
-                + "        \"typeName\": \"sometype\"\n"
+                + "        \"typeName\": \"sometype\",\n"
+                + "        \"state\": \"ACTIVE\"\n"
                 + "      },\n"
                 + "      \"typeName\": \"sometype\",\n"
                 + "      \"values\": {\n"

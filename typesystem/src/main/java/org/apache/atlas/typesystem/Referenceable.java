@@ -78,6 +78,21 @@ public class Referenceable extends Struct implements IReferenceableInstance {
     }
 
     /**
+     * Not public - only use during deserialization
+     * @param id      entity id
+     * @param typeName  the type name
+     * @param values    the entity attribute values
+     */
+    @InterfaceAudience.Private
+    public Referenceable(Id id, String typeName, Map<String, Object> values, List<String> _traitNames,
+                         Map<String, IStruct> _traits) {
+        super(typeName, values);
+        this.id = id;
+        traitNames = ImmutableList.copyOf(_traitNames);
+        traits = ImmutableMap.copyOf(_traits);
+    }
+
+    /**
      * Construct a Referenceable from the given IReferenceableInstance.
      *
      * @param instance  the referenceable instance to copy

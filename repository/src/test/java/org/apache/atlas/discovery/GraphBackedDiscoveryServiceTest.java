@@ -87,7 +87,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseHiveRepositoryTest {
     }
 
     @Test
-    public void testSearchByDSL() throws Exception {
+    public void testSearchByDSLReturnsEntity() throws Exception {
         String dslQuery = "from Department";
 
         String jsonResults = discoveryService.searchByDSL(dslQuery);
@@ -109,6 +109,10 @@ public class GraphBackedDiscoveryServiceTest extends BaseHiveRepositoryTest {
         JSONArray rows = results.getJSONArray("rows");
         Assert.assertNotNull(rows);
         Assert.assertEquals(rows.length(), 1);
+
+        //Assert that entity state is set in the result entities
+        String entityState = rows.getJSONObject(0).getJSONObject("$id$").getString("state");
+        Assert.assertEquals(entityState, Id.EntityState.ACTIVE.name());
     }
 
     @Test(expectedExceptions = Throwable.class)

@@ -64,7 +64,8 @@ public final class GraphToTypedInstanceMapper {
         String typeName = instanceVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY);
         List<String> traits = GraphHelper.getTraitNames(instanceVertex);
 
-        Id id = new Id(guid, instanceVertex.<Integer>getProperty(Constants.VERSION_PROPERTY_KEY), typeName);
+        Id id = new Id(guid, instanceVertex.<Integer>getProperty(Constants.VERSION_PROPERTY_KEY), typeName,
+                instanceVertex.<String>getProperty(Constants.STATE_PROPERTY_KEY));
         LOG.debug("Created id {} for instance type {}", id, typeName);
 
         ClassType classType = typeSystem.getDataType(ClassType.class, typeName);
