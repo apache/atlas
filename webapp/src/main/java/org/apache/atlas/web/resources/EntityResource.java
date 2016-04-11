@@ -19,6 +19,7 @@
 package org.apache.atlas.web.resources;
 
 import com.google.common.base.Preconditions;
+
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
@@ -58,6 +59,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -165,9 +167,10 @@ public class EntityResource {
 
             JSONObject response = new JSONObject();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
-            response.put(AtlasClient.GUID, new JSONArray(guids));
-            response.put(AtlasClient.DEFINITION, metadataService.getEntityDefinition(new JSONArray(guids).getString(0)));
-
+            JSONArray guidsArray = new JSONArray(guids);
+            response.put(AtlasClient.GUID, guidsArray);
+            String entityDefinition = metadataService.getEntityDefinition(guidsArray.getString(0));
+            response.put(AtlasClient.DEFINITION, new JSONObject(entityDefinition));
             return Response.ok(response).build();
         } catch(EntityExistsException e) {
             LOG.error("Unique constraint violation", e);
