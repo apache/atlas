@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Singleton;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.service.Service;
@@ -59,7 +60,7 @@ import java.util.List;
  * Columns -> action, user, detail
  * versions -> 1
  *
- * Note: The timestamp in the key is assumed to be timestamp in nano seconds. Since the key is entity id + timestamp,
+ * Note: The timestamp in the key is assumed to be timestamp in milli seconds. Since the key is entity id + timestamp,
  * and only 1 version is kept, there can be just 1 audit event per entity id + timestamp. This is ok for one atlas server.
  * But if there are more than one atlas servers, we should use server id in the key
  */
@@ -87,7 +88,7 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
      * @throws AtlasException
      */
     @Override
-    public void putEvents(EntityAuditRepository.EntityAuditEvent... events) throws AtlasException {
+    public void putEvents(EntityAuditEvent... events) throws AtlasException {
         putEvents(Arrays.asList(events));
     }
 
@@ -103,14 +104,12 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
         try {
             table = connection.getTable(tableName);
             List<Put> puts = new ArrayList<>(events.size());
-            for (EntityAuditRepository.EntityAuditEvent event : events) {
+            for (EntityAuditEvent event : events) {
                 LOG.debug("Adding entity audit event {}", event);
-                Put put = new Put(getKey(event.entityId, event.timestamp));
-                if (event.action != null) {
-                    put.addColumn(COLUMN_FAMILY, COLUMN_ACTION, Bytes.toBytes((short)event.action.ordinal()));
-                }
-                addColumn(put, COLUMN_USER, event.user);
-                addColumn(put, COLUMN_DETAIL, event.details);
+                Put put = new Put(getKey(event.getEntityId(), event.getTimestamp()));
+                addColumn(put, COLUMN_ACTION, event.getAction());
+                addColumn(put, COLUMN_USER, event.getUser());
+                addColumn(put, COLUMN_DETAIL, event.getDetails());
                 puts.add(put);
             }
             table.put(puts);
@@ -121,9 +120,9 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
         }
     }
 
-    private void addColumn(Put put, byte[] columnName, String columnValue) {
-        if (StringUtils.isNotEmpty(columnValue)) {
-            put.addColumn(COLUMN_FAMILY, columnName, Bytes.toBytes(columnValue));
+    private <T> void addColumn(Put put, byte[] columnName, T columnValue) {
+        if (columnValue != null && !columnValue.toString().isEmpty()) {
+            put.addColumn(COLUMN_FAMILY, columnName, Bytes.toBytes(columnValue.toString()));
         }
     }
 
@@ -135,41 +134,58 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
     }
 
     /**
-     * List events for the given entity id in decreasing order of timestamp, from the given timestamp. Returns n results
+     * List events for the given entity id in decreasing order of timestamp, from the given startKey. Returns n results
      * @param entityId entity id
-     * @param ts starting timestamp for events
+     * @param startKey key for the first event to be returned, used for pagination
      * @param n number of events to be returned
      * @return list of events
      * @throws AtlasException
      */
-    public List<EntityAuditRepository.EntityAuditEvent> listEvents(String entityId, Long ts, short n)
+    public List<EntityAuditEvent> listEvents(String entityId, String startKey, short n)
             throws AtlasException {
-        LOG.info("Listing events for entity id {}, starting timestamp {}, #records {}", entityId, ts, n);
+        LOG.info("Listing events for entity id {}, starting timestamp {}, #records {}", entityId, startKey, n);
         Table table = null;
         ResultScanner scanner = null;
         try {
             table = connection.getTable(tableName);
+
+            /**
+             * Scan Details:
+             * In hbase, the events are stored in increasing order of timestamp. So, doing reverse scan to get the latest event first
+             * Page filter is set to limit the number of results returned.
+             * Stop row is set to the entity id to avoid going past the current entity while scanning
+             * small is set to true to optimise RPC calls as the scanner is created per request
+             */
             Scan scan = new Scan().setReversed(true).setFilter(new PageFilter(n))
-                                  .setStartRow(getKey(entityId, ts))
                                   .setStopRow(Bytes.toBytes(entityId))
                                   .setCaching(n)
                                   .setSmall(true);
+            if (StringUtils.isEmpty(startKey)) {
+                //Set start row to entity id + max long value
+                byte[] entityBytes = getKey(entityId, Long.MAX_VALUE);
+                scan = scan.setStartRow(entityBytes);
+            } else {
+                scan = scan.setStartRow(Bytes.toBytes(startKey));
+            }
             scanner = table.getScanner(scan);
             Result result;
-            List<EntityAuditRepository.EntityAuditEvent> events = new ArrayList<>();
+            List<EntityAuditEvent> events = new ArrayList<>();
 
             //PageFilter doesn't ensure n results are returned. The filter is per region server.
             //So, adding extra check on n here
             while ((result = scanner.next()) != null && events.size() < n) {
-                String key = Bytes.toString(result.getRow());
-                EntityAuditRepository.EntityAuditEvent event = fromKey(key);
-                event.user = getResultString(result, COLUMN_USER);
-                event.action =
-                        EntityAuditAction.values()[(Bytes.toShort(result.getValue(COLUMN_FAMILY, COLUMN_ACTION)))];
-                event.details = getResultString(result, COLUMN_DETAIL);
+                EntityAuditEvent event = fromKey(result.getRow());
+
+                //In case the user sets random start key, guarding against random events
+                if (!event.getEntityId().equals(entityId)) {
+                    continue;
+                }
+                event.setUser(getResultString(result, COLUMN_USER));
+                event.setAction(EntityAuditEvent.EntityAuditAction.valueOf(getResultString(result, COLUMN_ACTION)));
+                event.setDetails(getResultString(result, COLUMN_DETAIL));
                 events.add(event);
             }
-            LOG.info("Got events for entity id {}, starting timestamp {}, #records {}", entityId, ts, events.size());
+            LOG.info("Got events for entity id {}, starting timestamp {}, #records {}", entityId, startKey, events.size());
             return events;
         } catch (IOException e) {
             throw new AtlasException(e);
@@ -183,12 +199,14 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
         return Bytes.toString(result.getValue(COLUMN_FAMILY, columnName));
     }
 
-    private EntityAuditEvent fromKey(String key) {
+    private EntityAuditEvent fromKey(byte[] keyBytes) {
+        String key = Bytes.toString(keyBytes);
         EntityAuditEvent event = new EntityAuditEvent();
         if (StringUtils.isNotEmpty(key)) {
             String[] parts = key.split(FIELD_SEPARATOR);
-            event.entityId = parts[0];
-            event.timestamp = Long.valueOf(parts[1]);
+            event.setEntityId(parts[0]);
+            event.setTimestamp(Long.valueOf(parts[1]));
+            event.setEventKey(key);
         }
         return event;
     }
@@ -222,8 +240,9 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
     }
 
     private void createTableIfNotExists() throws AtlasException {
+        Admin admin = null;
         try {
-            Admin admin = connection.getAdmin();
+            admin = connection.getAdmin();
             LOG.info("Checking if table {} exists", tableName.getNameAsString());
             if (!admin.tableExists(tableName)) {
                 LOG.info("Creating table {}", tableName.getNameAsString());
@@ -237,6 +256,8 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
             }
         } catch (IOException e) {
             throw new AtlasException(e);
+        } finally {
+            close(admin);
         }
     }
 

@@ -38,7 +38,6 @@ import org.apache.falcon.entity.v0.feed.Feed;
 import org.apache.falcon.entity.v0.process.Process;
 import org.apache.falcon.security.CurrentUser;
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
@@ -63,11 +62,10 @@ public class FalconHookIT {
     private AtlasClient atlasClient;
 
     private static final ConfigurationStore STORE = ConfigurationStore.get();
-    private Configuration atlasProperties;
 
     @BeforeClass
     public void setUp() throws Exception {
-        atlasProperties = ApplicationProperties.get();
+        Configuration atlasProperties = ApplicationProperties.get();
         atlasClient = new AtlasClient(atlasProperties.getString("atlas.rest.address"));
 
         AtlasService service = new AtlasService();
@@ -83,8 +81,7 @@ public class FalconHookIT {
             return;
         }
 
-        HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(new HiveConf(), atlasProperties,
-                UserGroupInformation.getCurrentUser().getShortUserName(), UserGroupInformation.getCurrentUser());
+        HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(new HiveConf(), atlasClient);
         hiveMetaStoreBridge.registerHiveDataModel();
 
         FalconDataModelGenerator dataModelGenerator = new FalconDataModelGenerator();

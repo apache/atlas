@@ -19,6 +19,7 @@
 package org.apache.atlas.services;
 
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.types.DataTypes;
@@ -207,4 +208,13 @@ public interface MetadataService {
      * @throws AtlasException
      */
     List<String> deleteEntityByUniqueAttribute(String typeName, String uniqueAttributeName, String attrValue) throws AtlasException;
+
+    /**
+     * Returns entity audit events for entity id in the decreasing order of timestamp
+     * @param guid entity id
+     * @param startKey key for the first event, used for pagination
+     * @param count number of events to be returned
+     * @return
+     */
+    List<EntityAuditEvent> getAuditEvents(String guid, String startKey, short count) throws AtlasException;
 }

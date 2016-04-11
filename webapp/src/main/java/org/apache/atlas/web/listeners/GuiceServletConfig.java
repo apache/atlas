@@ -42,6 +42,7 @@ import org.apache.atlas.web.filters.ActiveServerFilter;
 import org.apache.atlas.web.filters.AtlasAuthenticationFilter;
 import org.apache.atlas.web.filters.AuditFilter;
 import org.apache.atlas.web.service.ActiveInstanceElectorModule;
+import org.apache.atlas.web.service.ServiceModule;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.slf4j.Logger;
@@ -76,7 +77,7 @@ public class GuiceServletConfig extends GuiceServletContextListener {
             loginProcessor.login();
 
             injector = Guice.createInjector(getRepositoryModule(), new ActiveInstanceElectorModule(),
-                    new NotificationModule(), new JerseyServletModule() {
+                    new NotificationModule(), new ServiceModule(), new JerseyServletModule() {
 
                         private Configuration appConfiguration = null;
 

@@ -205,8 +205,7 @@
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
                 <configuration>
-                    <!--<skip>${skipTests}</skip>-->
-                    <!--only skip int tests -->
+                    <skip>${skipTests}</skip>
                     <httpConnector>
                         <port>31000</port>
                         <idleTimeout>60000</idleTimeout>

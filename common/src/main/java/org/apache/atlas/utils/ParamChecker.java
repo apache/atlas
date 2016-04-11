@@ -151,4 +151,19 @@ public final class ParamChecker {
         }
         return list;
     }
+
+    /**
+     * Checks that the given value is <= max value.
+     * @param value
+     * @param maxValue
+     * @param name
+     */
+    public static void lessThan(short value, short maxValue, String name) {
+        if (value <= 0) {
+            throw new IllegalArgumentException(name + " should be > 0, current value " + value);
+        }
+        if (value > maxValue) {
+            throw new IllegalArgumentException(name + " should be <= " + maxValue + ", current value " + value);
+        }
+    }
 }

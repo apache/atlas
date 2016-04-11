@@ -46,9 +46,6 @@ public abstract class AtlasHook {
 
     private static final Logger LOG = LoggerFactory.getLogger(AtlasHook.class);
 
-    /**
-     * Hadoop Cluster name for this instance, typically used for namespace.
-     */
     protected static Configuration atlasProperties;
 
     protected static NotificationInterface notifInterface;

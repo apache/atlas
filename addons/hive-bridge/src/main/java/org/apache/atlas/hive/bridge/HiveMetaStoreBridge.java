@@ -18,7 +18,6 @@
 
 package org.apache.atlas.hive.bridge;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
@@ -33,7 +32,6 @@ import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.commons.configuration.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
@@ -66,32 +64,19 @@ public class HiveMetaStoreBridge {
     public static final String TABLE_TYPE_ATTR = "tableType";
     public static final String SEARCH_ENTRY_GUID_ATTR = "__guid";
     public static final String LAST_ACCESS_TIME_ATTR = "lastAccessTime";
-
     private final String clusterName;
 
     public static final String ATLAS_ENDPOINT = "atlas.rest.address";
 
-    private final String doAsUser;
-    private final UserGroupInformation ugi;
-
     private static final Logger LOG = LoggerFactory.getLogger(HiveMetaStoreBridge.class);
 
     public final Hive hiveClient;
-    private final AtlasClient atlasClient;
+    private AtlasClient atlasClient = null;
 
-    /**
-     * Construct a HiveMetaStoreBridge.
-     * @param hiveConf {@link HiveConf} for Hive component in the cluster
-     * @param atlasConf {@link Configuration} for Atlas component in the cluster
-     * @throws Exception
-     */
-    public HiveMetaStoreBridge(HiveConf hiveConf, Configuration atlasConf) throws Exception {
-        this(hiveConf, atlasConf, null, null);
-    }
-
-    @VisibleForTesting
     HiveMetaStoreBridge(String clusterName, Hive hiveClient, AtlasClient atlasClient) {
-        this(clusterName, hiveClient, atlasClient, null, null);
+        this.clusterName = clusterName;
+        this.hiveClient = hiveClient;
+        this.atlasClient = atlasClient;
     }
 
     public String getClusterName() {
@@ -101,26 +86,20 @@ public class HiveMetaStoreBridge {
     /**
      * Construct a HiveMetaStoreBridge.
      * @param hiveConf {@link HiveConf} for Hive component in the cluster
-     * @param doAsUser The user accessing Atlas service
-     * @param ugi {@link UserGroupInformation} representing the Atlas service
      */
-    public HiveMetaStoreBridge(HiveConf hiveConf, Configuration atlasConf, String doAsUser,
-                               UserGroupInformation ugi) throws Exception {
-        this(hiveConf.get(HIVE_CLUSTER_NAME, DEFAULT_CLUSTER_NAME),
-                Hive.get(hiveConf),
-                new AtlasClient(atlasConf.getString(ATLAS_ENDPOINT, DEFAULT_DGI_URL), ugi, doAsUser), doAsUser, ugi);
+    public HiveMetaStoreBridge(HiveConf hiveConf) throws Exception {
+        this(hiveConf.get(HIVE_CLUSTER_NAME, DEFAULT_CLUSTER_NAME), Hive.get(hiveConf), null);
     }
 
-    @VisibleForTesting
-    HiveMetaStoreBridge(String clusterName, Hive hiveClient, AtlasClient atlasClient, String user, UserGroupInformation ugi) {
-        this.clusterName = clusterName;
-        this.hiveClient = hiveClient;
-        this.atlasClient = atlasClient;
-        this.doAsUser = user;
-        this.ugi = ugi;
+    /**
+     * Construct a HiveMetaStoreBridge.
+     * @param hiveConf {@link HiveConf} for Hive component in the cluster
+     */
+    public HiveMetaStoreBridge(HiveConf hiveConf, AtlasClient atlasClient) throws Exception {
+        this(hiveConf.get(HIVE_CLUSTER_NAME, DEFAULT_CLUSTER_NAME), Hive.get(hiveConf), atlasClient);
     }
 
-    private AtlasClient getAtlasClient() {
+    AtlasClient getAtlasClient() {
         return atlasClient;
     }
 
@@ -200,7 +179,7 @@ public class HiveMetaStoreBridge {
 
         String entityJSON = InstanceSerialization.toJson(referenceable, true);
         LOG.debug("Submitting new entity {} = {}", referenceable.getTypeName(), entityJSON);
-        JSONArray guids = atlasClient.createEntity(entityJSON);
+        JSONArray guids = getAtlasClient().createEntity(entityJSON);
         LOG.debug("created instance for type " + typeName + ", guid: " + guids);
 
         return new Referenceable(guids.getString(0), referenceable.getTypeName(), null);
@@ -539,7 +518,11 @@ public class HiveMetaStoreBridge {
 
     public static void main(String[] argv) throws Exception {
         Configuration atlasConf = ApplicationProperties.get();
-        HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(new HiveConf(), atlasConf);
+        String atlasEndpoint = atlasConf.getString(ATLAS_ENDPOINT, DEFAULT_DGI_URL);
+        UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
+        AtlasClient atlasClient = new AtlasClient(atlasEndpoint, ugi, ugi.getShortUserName());
+
+        HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(new HiveConf(), atlasClient);
         hiveMetaStoreBridge.registerHiveDataModel();
         hiveMetaStoreBridge.importHiveMetadata();
     }

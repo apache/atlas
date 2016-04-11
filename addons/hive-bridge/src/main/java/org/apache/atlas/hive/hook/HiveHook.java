@@ -46,7 +46,6 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Partition;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
-
 import org.apache.hadoop.security.UserGroupInformation;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -290,7 +289,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
         LOG.info("Entered Atlas hook for hook type {} operation {}", event.getHookType(), event.getOperation());
 
-        HiveMetaStoreBridge dgiBridge = new HiveMetaStoreBridge(hiveConf, atlasProperties, event.getUser(), event.getUgi());
+        HiveMetaStoreBridge dgiBridge = new HiveMetaStoreBridge(hiveConf);
 
         switch (event.getOperation()) {
         case CREATEDATABASE:

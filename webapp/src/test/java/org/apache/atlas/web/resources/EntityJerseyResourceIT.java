@@ -26,6 +26,7 @@ import com.sun.jersey.api.client.WebResource;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
+import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.notification.NotificationModule;
@@ -146,6 +147,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         db.set("description", randomString());
 
         final String dbid = serviceClient.createEntity(db).getString(0);
+        assertEntityAudit(dbid, EntityAuditEvent.EntityAuditAction.ENTITY_CREATE);
 
         waitForNotification(notificationConsumer, MAX_WAIT_TIME, new NotificationPredicate() {
             @Override
@@ -185,6 +187,17 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         serviceClient.createEntity(table);
         results = serviceClient.searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, dbName));
         assertEquals(results.length(), 1);
+    }
+
+    private void assertEntityAudit(String dbid, EntityAuditEvent.EntityAuditAction auditAction)
+            throws Exception {
+        List<EntityAuditEvent> events = serviceClient.getEntityAuditEvents(dbid, (short) 100);
+        for (EntityAuditEvent event : events) {
+            if (event.getAction() == auditAction) {
+                return;
+            }
+        }
+        fail("Expected audit event with action = " + auditAction);
     }
 
     @Test
@@ -478,6 +491,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         JSONObject response = new JSONObject(responseAsString);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
         Assert.assertNotNull(response.get(AtlasClient.GUID));
+
+        assertEntityAudit(guid, EntityAuditEvent.EntityAuditAction.TAG_ADD);
     }
 
     @Test(dependsOnMethods = "testAddTrait")
@@ -576,6 +591,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
         Assert.assertNotNull(response.get("GUID"));
         Assert.assertNotNull(response.get("traitName"));
+        assertEntityAudit(guid, EntityAuditEvent.EntityAuditAction.TAG_DELETE);
     }
 
     @Test

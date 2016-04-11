@@ -21,12 +21,13 @@ package org.apache.atlas.web.resources;
 import com.google.common.base.Preconditions;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.exception.EntityExistsException;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
-import org.apache.atlas.typesystem.exception.TypeNotFoundException;
 import org.apache.atlas.typesystem.exception.TraitNotFoundException;
+import org.apache.atlas.typesystem.exception.TypeNotFoundException;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.types.ValueConversionException;
 import org.apache.atlas.utils.ParamChecker;
@@ -43,6 +44,7 @@ import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -52,11 +54,13 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 
@@ -95,7 +99,7 @@ public class EntityResource {
      * unique attribute for the give type.
      */
     @POST
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response submit(@Context HttpServletRequest request) {
         try {
@@ -150,7 +154,7 @@ public class EntityResource {
      * @return response payload as json
      */
     @PUT
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response updateEntities(@Context HttpServletRequest request) {
         try {
@@ -195,7 +199,7 @@ public class EntityResource {
      */
     @POST
     @Path("qualifiedName")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response updateByUniqueAttribute(@QueryParam("type") String entityType,
                                             @QueryParam("property") String attribute,
@@ -242,7 +246,7 @@ public class EntityResource {
      */
     @POST
     @Path("{guid}")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response updateEntityByGuid(@PathParam("guid") String guid, @QueryParam("property") String attribute,
                                        @Context HttpServletRequest request) {
@@ -327,7 +331,6 @@ public class EntityResource {
      * @return response payload as json - including guids of entities(including composite references from that entity) that were deleted
      */
     @DELETE
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response deleteEntities(@QueryParam("guid") List<String> guids,
         @QueryParam("type") String entityType,
@@ -439,6 +442,7 @@ public class EntityResource {
     }
 
     @GET
+    @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getEntity(@QueryParam("type") String entityType,
                               @QueryParam("property") String attribute,
@@ -537,7 +541,7 @@ public class EntityResource {
      */
     @POST
     @Path("{guid}/traits")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response addTrait(@Context HttpServletRequest request, @PathParam("guid") String guid) {
         try {
@@ -573,7 +577,7 @@ public class EntityResource {
      */
     @DELETE
     @Path("{guid}/traits/{traitName}")
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response deleteTrait(@Context HttpServletRequest request, @PathParam("guid") String guid,
             @PathParam(TRAIT_NAME) String traitName) {
@@ -600,5 +604,46 @@ public class EntityResource {
             LOG.error("Unable to delete trait name={} for entity={}", traitName, guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
+    }
+
+    /**
+     * Returns the entity audit events for a given entity id. The events are returned in the decreasing order of timestamp.
+     * @param guid entity id
+     * @param startKey used for pagination. Startkey is inclusive, the returned results contain the event with the given startkey.
+     *                  First time getAuditEvents() is called for an entity, startKey should be null,
+     *                  with count = (number of events required + 1). Next time getAuditEvents() is called for the same entity,
+     *                  startKey should be equal to the entityKey of the last event returned in the previous call.
+     * @param count number of events required
+     * @return
+     */
+    @GET
+    @Path("{guid}/audit")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response getAuditEvents(@PathParam("guid") String guid, @QueryParam("startKey") String startKey,
+                                   @QueryParam("count") @DefaultValue("100") short count) {
+        LOG.debug("Audit events request for entity {}, start key {}, number of results required {}", guid, startKey,
+                count);
+        try {
+            List<EntityAuditEvent> events = metadataService.getAuditEvents(guid, startKey, count);
+
+            JSONObject response = new JSONObject();
+            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
+            response.put(AtlasClient.EVENTS, getJSONArray(events));
+            return Response.ok(response).build();
+        } catch (AtlasException | IllegalArgumentException e) {
+            LOG.error("Unable to get audit events for entity {}", guid, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (Throwable e) {
+            LOG.error("Unable to get audit events for entity {}", guid, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    private <T> JSONArray getJSONArray(Collection<T> elements) throws JSONException {
+        JSONArray jsonArray = new JSONArray();
+        for(T element : elements) {
+            jsonArray.put(new JSONObject(element.toString()));
+        }
+        return jsonArray;
     }
 }

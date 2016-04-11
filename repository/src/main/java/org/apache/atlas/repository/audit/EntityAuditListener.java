@@ -18,14 +18,15 @@
 
 package org.apache.atlas.repository.audit;
 
+import com.google.inject.Inject;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -43,51 +44,55 @@ public class EntityAuditListener implements EntityChangeListener {
 
     @Override
     public void onEntitiesAdded(Collection<ITypedReferenceableInstance> entities) throws AtlasException {
-        List<EntityAuditRepository.EntityAuditEvent> events = new ArrayList<>();
+        List<EntityAuditEvent> events = new ArrayList<>();
         long currentTime = System.currentTimeMillis();
         for (ITypedReferenceableInstance entity : entities) {
-            EntityAuditRepository.EntityAuditEvent event = createEvent(entity, currentTime,
-                    EntityAuditRepository.EntityAuditAction.ENTITY_CREATE,
+            EntityAuditEvent event = createEvent(entity, currentTime, EntityAuditEvent.EntityAuditAction.ENTITY_CREATE,
                     "Created: " + InstanceSerialization.toJson(entity, true));
             events.add(event);
         }
         auditRepository.putEvents(events);
     }
 
-    private EntityAuditRepository.EntityAuditEvent createEvent(ITypedReferenceableInstance entity, long ts,
-                                                               EntityAuditRepository.EntityAuditAction action,
-                                                               String details) {
-        return new EntityAuditRepository.EntityAuditEvent(entity.getId()._getId(), ts, RequestContext.get().getUser(),
-                action, details);
+    private EntityAuditEvent createEvent(ITypedReferenceableInstance entity, long ts,
+                                         EntityAuditEvent.EntityAuditAction action, String details) {
+        return new EntityAuditEvent(entity.getId()._getId(), ts, RequestContext.get().getUser(), action, details);
     }
 
     @Override
     public void onEntitiesUpdated(Collection<ITypedReferenceableInstance> entities) throws AtlasException {
-
+        List<EntityAuditEvent> events = new ArrayList<>();
+        long currentTime = System.currentTimeMillis();
+        for (ITypedReferenceableInstance entity : entities) {
+            EntityAuditEvent event = createEvent(entity, currentTime, EntityAuditEvent.EntityAuditAction.ENTITY_UPDATE,
+                    "Updated: " + InstanceSerialization.toJson(entity, true));
+            events.add(event);
+        }
+        auditRepository.putEvents(events);
     }
 
     @Override
     public void onTraitAdded(ITypedReferenceableInstance entity, IStruct trait) throws AtlasException {
-        EntityAuditRepository.EntityAuditEvent event = createEvent(entity, System.currentTimeMillis(),
-                EntityAuditRepository.EntityAuditAction.TAG_ADD,
+        EntityAuditEvent event = createEvent(entity, System.currentTimeMillis(),
+                EntityAuditEvent.EntityAuditAction.TAG_ADD,
                 "Added trait: " + InstanceSerialization.toJson(trait, true));
         auditRepository.putEvents(event);
     }
 
     @Override
     public void onTraitDeleted(ITypedReferenceableInstance entity, String traitName) throws AtlasException {
-        EntityAuditRepository.EntityAuditEvent event = createEvent(entity, System.currentTimeMillis(),
-                EntityAuditRepository.EntityAuditAction.TAG_DELETE, "Deleted trait: " + traitName);
+        EntityAuditEvent event = createEvent(entity, System.currentTimeMillis(),
+                EntityAuditEvent.EntityAuditAction.TAG_DELETE, "Deleted trait: " + traitName);
         auditRepository.putEvents(event);
     }
 
     @Override
     public void onEntitiesDeleted(Collection<ITypedReferenceableInstance> entities) throws AtlasException {
-        List<EntityAuditRepository.EntityAuditEvent> events = new ArrayList<>();
+        List<EntityAuditEvent> events = new ArrayList<>();
         long currentTime = System.currentTimeMillis();
         for (ITypedReferenceableInstance entity : entities) {
-            EntityAuditRepository.EntityAuditEvent event = createEvent(entity, currentTime,
-                    EntityAuditRepository.EntityAuditAction.ENTITY_DELETE, "Deleted entity");
+            EntityAuditEvent event = createEvent(entity, currentTime,
+                    EntityAuditEvent.EntityAuditAction.ENTITY_DELETE, "Deleted entity");
             events.add(event);
         }
         auditRepository.putEvents(events);

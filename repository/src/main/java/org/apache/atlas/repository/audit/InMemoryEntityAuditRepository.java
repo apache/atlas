@@ -19,6 +19,7 @@
 package org.apache.atlas.repository.audit;
 
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.EntityAuditEvent;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,17 +41,23 @@ public class InMemoryEntityAuditRepository implements EntityAuditRepository {
     @Override
     public synchronized void putEvents(List<EntityAuditEvent> events) throws AtlasException {
         for (EntityAuditEvent event : events) {
-            auditEvents.put(event.entityId + (Long.MAX_VALUE - event.timestamp), event);
+            String rowKey = event.getEntityId() + (Long.MAX_VALUE - event.getTimestamp());
+            event.setEventKey(rowKey);
+            auditEvents.put(rowKey, event);
         }
     }
 
     @Override
-    public List<EntityAuditEvent> listEvents(String entityId, Long ts, short maxResults)
+    public List<EntityAuditEvent> listEvents(String entityId, String startKey, short maxResults)
             throws AtlasException {
         List<EntityAuditEvent> events = new ArrayList<>();
-        SortedMap<String, EntityAuditEvent> subMap = auditEvents.tailMap(entityId + (Long.MAX_VALUE - ts));
+        String myStartKey = startKey;
+        if (myStartKey == null) {
+            myStartKey = entityId;
+        }
+        SortedMap<String, EntityAuditEvent> subMap = auditEvents.tailMap(myStartKey);
         for (EntityAuditEvent event : subMap.values()) {
-            if (events.size() < maxResults && event.entityId.equals(entityId)) {
+            if (events.size() < maxResults && event.getEntityId().equals(entityId)) {
                 events.add(event);
             }
         }

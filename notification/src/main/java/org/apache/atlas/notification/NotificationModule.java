@@ -19,15 +19,13 @@ package org.apache.atlas.notification;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Singleton;
-import com.google.inject.multibindings.Multibinder;
 import org.apache.atlas.kafka.KafkaNotification;
 import org.apache.atlas.kafka.KafkaNotificationProvider;
-import org.apache.atlas.listener.EntityChangeListener;
-import org.apache.atlas.notification.entity.NotificationEntityChangeListener;
-import org.apache.atlas.service.Service;
 
 /**
  * Notification module for Guice.
+ *
+ * NOTE: This module is loaded by hook clients like hive hook etc. Don't add any server specific bindings here.
  */
 public class NotificationModule extends AbstractModule {
 
@@ -35,14 +33,5 @@ public class NotificationModule extends AbstractModule {
     protected void configure() {
         bind(NotificationInterface.class).to(KafkaNotification.class).in(Singleton.class);
         bind(KafkaNotification.class).toProvider(KafkaNotificationProvider.class).in(Singleton.class);
-
-        Multibinder<Service> serviceBinder = Multibinder.newSetBinder(binder(), Service.class);
-        serviceBinder.addBinding().to(KafkaNotification.class);
-        serviceBinder.addBinding().to(NotificationHookConsumer.class);
-
-        //Add NotificationEntityChangeListener as EntityChangeListener
-        Multibinder<EntityChangeListener> entityChangeListenerBinder =
-                Multibinder.newSetBinder(binder(), EntityChangeListener.class);
-        entityChangeListenerBinder.addBinding().to(NotificationEntityChangeListener.class);
     }
 }

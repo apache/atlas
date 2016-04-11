@@ -28,7 +28,6 @@ import org.apache.atlas.sqoop.model.SqoopDataModelGenerator;
 import org.apache.atlas.sqoop.model.SqoopDataTypes;
 import org.apache.commons.configuration.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sqoop.SqoopJobDataPublisher;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
@@ -43,20 +42,19 @@ public class SqoopHookIT {
     private static final String CLUSTER_NAME = "primary";
     public static final String DEFAULT_DB = "default";
     private static final int MAX_WAIT_TIME = 2000;
-    private AtlasClient dgiCLient;
+    private AtlasClient atlasClient;
 
     @BeforeClass
     public void setUp() throws Exception {
         //Set-up sqoop session
         Configuration configuration = ApplicationProperties.get();
-        dgiCLient = new AtlasClient(configuration.getString("atlas.rest.address"));
-        registerDataModels(dgiCLient, configuration);
+        atlasClient = new AtlasClient(configuration.getString("atlas.rest.address"));
+        registerDataModels(atlasClient);
     }
 
-    private void registerDataModels(AtlasClient client, Configuration atlasConf) throws Exception {
+    private void registerDataModels(AtlasClient client) throws Exception {
         // Make sure hive model exists
-        HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(new HiveConf(), atlasConf,
-                UserGroupInformation.getCurrentUser().getShortUserName(), UserGroupInformation.getCurrentUser());
+        HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(new HiveConf(), atlasClient);
         hiveMetaStoreBridge.registerHiveDataModel();
         SqoopDataModelGenerator dataModelGenerator = new SqoopDataModelGenerator();
 
@@ -118,12 +116,12 @@ public class SqoopHookIT {
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
-                JSONArray results = dgiCLient.search(query);
+                JSONArray results = atlasClient.search(query);
                 return results.length() > 0;
             }
         });
 
-        JSONArray results = dgiCLient.search(query);
+        JSONArray results = atlasClient.search(query);
         JSONObject row = results.getJSONObject(0).getJSONObject("t");
 
         return row.getString("id");

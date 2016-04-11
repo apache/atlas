@@ -88,6 +88,7 @@
                                             src="${hbase.tar}"
                                             dest="${project.build.directory}/hbase.tar.gz"
                                             usetimestamp="true"
+                                            verbose="true" skipexisting="true"
                                         />
                                         <untar
                                             src="${project.build.directory}/hbase.tar.gz"
@@ -118,6 +119,7 @@
                                         <descriptor>src/main/assemblies/src-package.xml</descriptor>
                                     </descriptors>
                                     <finalName>apache-atlas-${project.version}</finalName>
+                                    <tarLongFileMode>gnu</tarLongFileMode>
                                 </configuration>
                             </execution>
                         </executions>

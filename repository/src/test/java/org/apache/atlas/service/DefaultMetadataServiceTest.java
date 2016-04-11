@@ -35,6 +35,7 @@ import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestUtils;
@@ -72,6 +73,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -211,7 +213,7 @@ public class DefaultMetadataServiceTest {
         //name is the unique attribute
         Referenceable entity = createDBEntity();
         String id = createInstance(entity);
-        assertAuditEvents(id, EntityAuditRepository.EntityAuditAction.ENTITY_CREATE);
+        assertAuditEvents(id, EntityAuditEvent.EntityAuditAction.ENTITY_CREATE);
 
         //using the same name should succeed, but not create another entity
         String newId = createInstance(entity);
@@ -228,34 +230,46 @@ public class DefaultMetadataServiceTest {
         //create entity
         Referenceable entity = createDBEntity();
         String id = createInstance(entity);
-        assertAuditEvents(id, EntityAuditRepository.EntityAuditAction.ENTITY_CREATE);
+        assertAuditEvents(id, EntityAuditEvent.EntityAuditAction.ENTITY_CREATE);
 
         Struct tag = new Struct(TestUtils.PII);
         metadataService.addTrait(id, InstanceSerialization.toJson(tag, true));
-        assertAuditEvents(id, EntityAuditRepository.EntityAuditAction.TAG_ADD);
+        assertAuditEvents(id, EntityAuditEvent.EntityAuditAction.TAG_ADD);
 
         metadataService.deleteTrait(id, TestUtils.PII);
-        assertAuditEvents(id, EntityAuditRepository.EntityAuditAction.TAG_DELETE);
+        assertAuditEvents(id, EntityAuditEvent.EntityAuditAction.TAG_DELETE);
+
+        metadataService.updateEntityAttributeByGuid(id, "description", "new description");
+        assertAuditEvents(id, EntityAuditEvent.EntityAuditAction.ENTITY_UPDATE);
 
         metadataService.deleteEntities(Arrays.asList(id));
-        assertAuditEvents(id, EntityAuditRepository.EntityAuditAction.ENTITY_DELETE);
+        assertAuditEvents(id, EntityAuditEvent.EntityAuditAction.ENTITY_DELETE);
     }
 
-    private void assertAuditEvents(String id, EntityAuditRepository.EntityAuditAction action) throws Exception {
-        List<EntityAuditRepository.EntityAuditEvent> events =
-                repository.listEvents(id, System.currentTimeMillis(), (short) 10);
-        for (EntityAuditRepository.EntityAuditEvent event : events) {
-            if (event.getAction() == action) {
+    private void assertAuditEvents(String id, EntityAuditEvent.EntityAuditAction expectedAction) throws Exception {
+        List<EntityAuditEvent> events = repository.listEvents(id, null, (short) 10);
+        for (EntityAuditEvent event : events) {
+            if (event.getAction() == expectedAction) {
                 return;
             }
         }
-        fail("Didn't find " + action + " in audit events");
+        fail("Expected audit action " + expectedAction);
+    }
+
+    private void assertAuditEvents(String entityId, int numEvents) throws Exception {
+        List<EntityAuditEvent> events = repository.listEvents(entityId, null, (short)numEvents);
+        assertNotNull(events);
+        assertEquals(events.size(), numEvents);
     }
 
     @Test
     public void testCreateEntityWithUniqueAttributeWithReference() throws Exception {
         Referenceable db = createDBEntity();
         String dbId = createInstance(db);
+
+        //Assert that there is just 1 audit events and thats for entity create
+        assertAuditEvents(dbId, 1);
+        assertAuditEvents(dbId, EntityAuditEvent.EntityAuditAction.ENTITY_CREATE);
 
         Referenceable table = new Referenceable(TestUtils.TABLE_TYPE);
         table.set(NAME, TestUtils.randomString());
@@ -272,6 +286,9 @@ public class DefaultMetadataServiceTest {
         Referenceable tableDefinition = InstanceSerialization.fromJsonReferenceable(tableDefinitionJson, true);
         Referenceable actualDb = (Referenceable) tableDefinition.get("databaseComposite");
         Assert.assertEquals(actualDb.getId().id, dbId);
+
+        //Assert that as part table create, db is not created and audit event is not added to db
+        assertAuditEvents(dbId, 1);
     }
 
     @Test
@@ -280,7 +297,8 @@ public class DefaultMetadataServiceTest {
         Referenceable tableUpdated = new Referenceable(TestUtils.TABLE_TYPE, new HashMap<String, Object>() {{
             put("columnNames", colNameList);
         }});
-        metadataService.updateEntityByUniqueAttribute(table.getTypeName(), NAME, (String) table.get(NAME), tableUpdated);
+        metadataService.updateEntityByUniqueAttribute(table.getTypeName(), NAME, (String) table.get(NAME),
+                tableUpdated);
 
         String tableDefinitionJson =
             metadataService.getEntityDefinition(TestUtils.TABLE_TYPE, NAME, (String) table.get(NAME));
@@ -291,7 +309,6 @@ public class DefaultMetadataServiceTest {
 
     @Test
     public void testUpdateEntityWithMap() throws Exception {
-
         final Map<String, Struct> partsMap = new HashMap<>();
         partsMap.put("part0", new Struct(TestUtils.PARTITION_STRUCT_TYPE,
             new HashMap<String, Object>() {{
@@ -599,8 +616,8 @@ public class DefaultMetadataServiceTest {
         //ATLAS-383 Test
         Referenceable sdReferenceable = new Referenceable(TestUtils.STORAGE_DESC_TYPE);
         sdReferenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, TestUtils.randomString());
-        sdReferenceable.set("compressed", "false");
-        sdReferenceable.set("location", "hdfs://tmp/hive-user");
+            sdReferenceable.set("compressed", "false");
+            sdReferenceable.set("location", "hdfs://tmp/hive-user");
         String sdGuid = createInstance(sdReferenceable);
 
         Referenceable sdRef2 = new Referenceable(sdGuid, TestUtils.STORAGE_DESC_TYPE, null);
@@ -631,7 +648,7 @@ public class DefaultMetadataServiceTest {
             metadataService.getEntityDefinition(tableId._getId());
         Referenceable tableDefinition = InstanceSerialization.fromJsonReferenceable(tableDefinitionJson, true);
 
-        Assert.assertEquals(dbId, (((Id)tableDefinition.get("database"))._getId()));
+        Assert.assertEquals(dbId, (((Id) tableDefinition.get("database"))._getId()));
 
         /* Update with referenceable - TODO - Fails . Need to fix this */
         /*final String dbName = TestUtils.randomString();
@@ -786,7 +803,7 @@ public class DefaultMetadataServiceTest {
         //Update optional Attribute
         Assert.assertNotNull(tableDefinition.get("created"));
         //Update optional attribute
-        table.setNull("created");
+            table.setNull("created");
 
         String newtableId = updateInstance(table);
         Assert.assertEquals(newtableId, tableId._getId());
@@ -798,7 +815,7 @@ public class DefaultMetadataServiceTest {
     }
 
     @Test
-    public void testCreateEntityWithEnum() throws Exception {
+    public void testCreateEntityWithEnum ()throws Exception {
         String tableDefinitionJson =
                 metadataService.getEntityDefinition(TestUtils.TABLE_TYPE, NAME, (String) table.get(NAME));
         Referenceable tableDefinition = InstanceSerialization.fromJsonReferenceable(tableDefinitionJson, true);
@@ -1004,6 +1021,57 @@ public class DefaultMetadataServiceTest {
         }
         String typeDefinition = metadataService.getTypeDefinition(typeName);
         Assert.assertNotNull(typeDefinition);
+    }
+
+    @Test
+    public void testAuditEventsInvalidParams() throws Exception {
+        //entity id can't be null
+        try {
+            metadataService.getAuditEvents(null, "key", (short) 10);
+            fail("expected IllegalArgumentException");
+        } catch(IllegalArgumentException e) {
+            //expected IllegalArgumentException
+            assertEquals(e.getMessage(), "entity id cannot be null");
+        }
+
+        //entity id can't be empty
+            try {
+            metadataService.getAuditEvents("", "key", (short) 10);
+            fail("expected IllegalArgumentException");
+        } catch(IllegalArgumentException e) {
+            //expected IllegalArgumentException
+            assertEquals(e.getMessage(), "entity id cannot be empty");
+        }
+
+        //start key can be null
+        metadataService.getAuditEvents("id", null, (short) 10);
+
+        //start key can't be emoty
+        try {
+            metadataService.getAuditEvents("id", "", (short) 10);
+            fail("expected IllegalArgumentException");
+        } catch(IllegalArgumentException e) {
+            //expected IllegalArgumentException
+            assertEquals(e.getMessage(), "start key cannot be empty");
+        }
+
+        //number of results can't be > max value
+        try {
+            metadataService.getAuditEvents("id", "key", (short) 10000);
+            fail("expected IllegalArgumentException");
+        } catch(IllegalArgumentException e) {
+            //expected IllegalArgumentException
+            assertEquals(e.getMessage(), "count should be <= 1000, current value 10000");
+        }
+
+        //number of results can't be <= 0
+        try {
+            metadataService.getAuditEvents("id", "key", (short) -1);
+            fail("expected IllegalArgumentException");
+        } catch(IllegalArgumentException e) {
+            //expected IllegalArgumentException
+            assertEquals(e.getMessage(), "count should be > 0, current value -1");
+        }
     }
 
     private static class DeleteEntitiesChangeListener implements EntityChangeListener {
