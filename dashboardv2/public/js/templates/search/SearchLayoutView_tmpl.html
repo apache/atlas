@@ -1,0 +1,33 @@
+<!--
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+<div class="row row-margin-bottom">
+    <div class="col-sm-12">
+        <div class="switch" style="float: left;">
+            <input type="radio" class="switch-input" name="queryType" value="fulltext" id="fulltext_toggle" checked="">
+            <label for="fulltext_toggle" class="switch-label switch-label-off">Text</label>
+            <input type="radio" class="switch-input" name="queryType" value="dsl" id="dsl_toggle">
+            <label for="dsl_toggle" class="switch-label switch-label-on">DSL</label>
+            <span class="switch-selection"></span>
+        </div>
+        <div class="input-group">
+            <input style="padding-left: 132px;" type="text" class="form-control" data-id="searchInput" placeholder="Search using a query string: e.g. sales_fact">
+            <span class="input-group-btn">
+                <button class="btn btn-success" data-id="searchButton" type="button"><i class="fa fa-search"></i></button>
+            </span>
+        </div>
+    </div>
+</div>

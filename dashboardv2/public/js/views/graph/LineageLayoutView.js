@@ -1,0 +1,285 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+define(['require',
+    'backbone',
+    'hbs!tmpl/graph/LineageLayoutView_tmpl',
+    'collection/VLineageList',
+    'models/VEntity',
+    'dagreD3',
+    'd3-tip'
+], function(require, Backbone, LineageLayoutViewtmpl, VLineageList, VEntity, dagreD3, d3Tip) {
+    'use strict';
+
+    var LineageLayoutView = Backbone.Marionette.LayoutView.extend(
+        /** @lends LineageLayoutView */
+        {
+            _viewName: 'LineageLayoutView',
+
+            template: LineageLayoutViewtmpl,
+
+            /** Layout sub regions */
+            regions: {},
+
+            /** ui selector cache */
+            ui: {
+                graph: ".graph"
+            },
+
+            /** ui events hash */
+            events: function() {
+                var events = {};
+                return events;
+            },
+
+            /**
+             * intialize a new LineageLayoutView Layout
+             * @constructs
+             */
+            initialize: function(options) {
+                _.extend(this, _.pick(options, 'globalVent', 'assetName', 'guid'));
+                this.inputCollection = new VLineageList();
+                this.outputCollection = new VLineageList();
+                this.entityModel = new VEntity();
+                this.inputCollection.url = "/api/atlas/lineage/hive/table/" + this.assetName + "/inputs/graph";
+                this.outputCollection.url = "/api/atlas/lineage/hive/table/" + this.assetName + "/outputs/graph";
+                this.bindEvents();
+                this.fetchGraphData();
+                this.data = {};
+                this.fetchList = 0
+            },
+            bindEvents: function() {
+                this.listenTo(this.inputCollection, 'reset', function() {
+                    $('.lineageLayout').show();
+                    this.generateData(this.inputCollection, 'input');
+                    this.outputCollection.fetch({ reset: true });
+                }, this);
+                this.listenTo(this.outputCollection, 'reset', function() {
+                    $('.lineageLayout').show();
+                    this.generateData(this.outputCollection, 'output');
+                    this.outputState = true;
+                }, this);
+                this.listenTo(this.outputCollection, 'error', function() {
+                    this.$('.fontLoader').hide();
+                    $('.lineageLayout').hide();
+
+                }, this);
+                this.listenTo(this.inputCollection, 'error', function() {
+                    this.$('.fontLoader').hide();
+                    this.$('.lineageLayout').hide();
+                }, this);
+            },
+            onRender: function() {
+                this.$('.fontLoader').show();
+                this.g = new dagreD3.graphlib.Graph()
+                    .setGraph({})
+                    .setDefaultEdgeLabel(function() {
+                        return {};
+                    });
+            },
+            fetchGraphData: function() {
+                this.inputCollection.fetch({ reset: true });
+            },
+            generateData: function(collection, type) {
+                var that = this;
+
+                function addValueInObject(data) {
+                    var obj = {};
+                    if (data && data.definition && data.definition.values) {
+                        var values = data.definition.values;
+                        obj['label'] = values.name
+                        obj['id'] = data.GUID;
+                        if (values.queryText) {
+                            obj['queryText'] = values.queryText;
+                        }
+                    } else {
+                        obj['label'] = vertices[val].values.name;
+                    }
+                    obj['class'] = "type-TOP";
+                    that.g.setNode(data.GUID, obj);
+                    --that.fetchList;
+                    if (that.fetchList <= 0) {
+                        if (that.edgesAndvertices) {
+                            that.createGraph(that.edgesAndvertices, that.startingPoint);
+                        } else if (this.outputState && !that.edgesAndvertices) {
+                            that.$('svg').height('100');
+                            that.$('svg').html('<text x="' + (that.$('svg').width() - 150) / 2 + '" y="' + that.$('svg').height() / 2 + '" fill="black">No lineage data found</text>');
+                            that.$('.fontLoader').hide();
+                        }
+                    }
+                }
+
+                function fetchLoadProcess(id) {
+                    ++that.fetchList
+                    that.entityModel.getEntity(id, {
+                        beforeSend: function() {},
+                        success: function(data) {
+                            addValueInObject(data);
+                        },
+                        error: function(error, data, status) {},
+                        complete: function() {}
+                    });
+                }
+
+                function makeNode(c) {
+
+                    var edges = c.edges,
+                        vertices = c.vertices,
+                        allKeys = [];
+                    _.each(c.edges, function(val, key, obj) {
+                        allKeys.push(key)
+                        _.each(val, function(val1, key1, obj1) {
+                            allKeys.push(val1)
+                        });
+                    });
+                    var uniquNode = _.uniq(allKeys);
+                    _.each(uniquNode, function(val, key) {
+                        var obj = {}
+                        if (vertices[val] && vertices[val].values) {
+                            obj['label'] = vertices[val].values.name;
+                            obj['id'] = val;
+                            obj['class'] = "type-TOP";
+                            obj['typeName'] = vertices[val].values.vertexId.values.typeName;
+                            that.g.setNode(val, obj);
+                        } else {
+                            fetchLoadProcess(val);
+                        }
+
+                    });
+                }
+                _.each(collection.models, function(values) {
+                    var valuObj = values.get('values');
+                    that.startingPoint = [];
+                    if (!_.isEmpty(valuObj.edges)) {
+                        if (type == "input") {
+                            that.edgesAndvertices = {
+                                edges: {},
+                                vertices: valuObj.vertices
+                            }
+                            _.each(valuObj.edges, function(val, key, obj) {
+                                _.each(val, function(val1, key1, obj1) {
+                                    var chiledParent = {};
+                                    if (!obj[val1]) {
+                                        that.startingPoint.push(val1)
+                                    }
+                                    that.edgesAndvertices.edges[val1] = [key];
+                                });
+                            });
+                        } else {
+                            that.edgesAndvertices = valuObj;
+                            that.startingPoint = [that.guid];
+                        }
+                        makeNode(that.edgesAndvertices);
+                    } else {
+                        if (type == 'output') {
+                            that.outputState = true;
+                        }
+                    }
+                });
+                if (this.fetchList <= 0) {
+                    if (this.edgesAndvertices) {
+                        this.createGraph(that.edgesAndvertices, this.startingPoint);
+                    } else if (this.outputState && !this.edgesAndvertices) {
+                        this.$('.fontLoader').hide();
+                        that.$('svg').height('100');
+                        that.$('svg').html('<text x="' + (that.$('svg').width() - 150) / 2 + '" y="' + that.$('svg').height() / 2 + '" fill="black">No lineage data found</text>');
+                    }
+                }
+            },
+            createGraph: function(edgesAndvertices, startingPoint) {
+                var that = this;
+
+                this.g.nodes().forEach(function(v) {
+                    var node = that.g.node(v);
+                    // Round the corners of the nodes
+                    node.rx = node.ry = 5;
+                });
+
+                // Set up edges, no special attributes.
+                // For input
+                var lastVal = "";
+                _.each(startingPoint, function(val, key, obj) {
+                    that.g.setEdge(val, edgesAndvertices.edges[val][0]);
+                    lastVal = edgesAndvertices.edges[val][0];
+                });
+                createRemaningEdge(edgesAndvertices.edges, lastVal);
+
+                function createRemaningEdge(obj, starting) {
+                    if (obj[starting] && obj[starting].length) {
+                        that.g.setEdge(starting, obj[starting]);
+                        createRemaningEdge(obj, obj[starting]);
+                    }
+                }
+
+                if (this.outputState) {
+                    // Create the renderer
+                    var render = new dagreD3.render();
+                    // Set up an SVG group so that we can translate the final graph.
+                    var svg = d3.select(this.$("svg")[0]),
+                        svgGroup = svg.append("g");
+                    var zoom = d3.behavior.zoom().on("zoom", function() {
+                        svgGroup.attr("transform", "translate(" + d3.event.translate + ")" +
+                            "scale(" + d3.event.scale + ")");
+                    });
+                    var tooltip = d3Tip()
+                        .attr('class', 'd3-tip')
+                        .html(function(d) {
+                            var value = that.g.node(d)
+                            var htmlStr = "<h5>Name: <span style='color:#359f89'>" + value.label + "</span></h5> ";
+                            if (value.queryText) {
+                                htmlStr += "<h5>Query: <span style='color:#359f89'>" + value.queryText + "</span></h5> "
+                            }
+                            return htmlStr;
+                        });
+                    svg.call(zoom)
+                        .call(tooltip);
+
+
+                    this.$('.fontLoader').hide();
+                    // Run the renderer. This is what draws the final graph.
+                    this.g.graph().rankDir = 'LR';
+                    //render(d3.select(this.$("svg g")[0]), this.g);
+                    render(svgGroup, this.g);
+                    svg.on("dblclick.zoom", function() {
+                        return null;
+                    })
+                    svgGroup.selectAll("g.nodes g.node")
+                        .on('mouseover', function(d) {
+                            tooltip.show(d);
+                        })
+                        .on('dblclick', function(d) {
+                            tooltip.hide(d);
+                            Backbone.history.navigate("#!/dashboard/detailPage/" + d, { trigger: true });
+                        })
+                        .on('mouseout', function(d) {
+                            tooltip.hide(d);
+                        });
+                    // Center the graph
+                    var initialScale = 1.5;
+                    zoom.translate([(this.$('svg').width() - this.g.graph().width * initialScale) / 2, (this.$('svg').height() - this.g.graph().height * initialScale) / 2])
+                        .scale(initialScale)
+                        .event(svg);
+                    //svg.attr('height', this.g.graph().height * initialScale + 40);
+
+                }
+
+            }
+        });
+    return LineageLayoutView;
+
+});

@@ -1,0 +1,64 @@
+{
+  "name": "atlas-metadata",
+  "description": "Apache Atlas",
+  "version": "0.5.0-incubating",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://git-wip-us.apache.org/repos/asf/incubator-atlas.git"
+  },
+  "engines": {
+    "node": "4.4.x",
+    "npm": "3.8.x"
+  },
+  "keywords": [
+    "Apache",
+    "Atlas",
+    "HortonWorks"
+  ],
+  "dependencies": {
+    "backbone": "1.2.3",
+    "backbone.babysitter": "git+https://github.com/marionettejs/backbone.babysitter.git",
+    "backbone.marionette": "2.3.2",
+    "backbone.paginator": "^2.0.0",
+    "backbone.wreqr": "^1.3.2",
+    "backgrid": "^0.3.7",
+    "backgrid-filter": "^0.3.7",
+    "backgrid-orderable-columns": "^0.1.2",
+    "backgrid-paginator": "^0.3.7",
+    "backgrid-sizeable-columns": "^0.1.1",
+    "bootstrap": "^3.3.5",
+    "d3": "^3.5.16",
+    "d3-tip": "^0.6.7",
+    "dagre-d3": "^0.4.17",
+    "jquery": "^2.2.2",
+    "jquery-asBreadcrumbs": "git+https://github.com/amazingSurge/jquery-asBreadcrumbs.git",
+    "jquery-ui": "^1.10.4",
+    "noty": "^2.3.8",
+    "requirejs": "^2.1.16",
+    "requirejs-text": "^2.0.12",
+    "underscore": "^1.8.3"
+  },
+  "devDependencies": {
+    "connect-livereload": "^0.5.4",
+    "git-rev": "^0.2.1",
+    "grunt": "~0.4.2",
+    "grunt-cli": "~0.1.11",
+    "grunt-concurrent": "^1.0.0",
+    "grunt-connect-proxy": "^0.2.0",
+    "grunt-contrib-clean": "~0.6.0",
+    "grunt-contrib-compress": "^0.13.0",
+    "grunt-contrib-connect": "^1.0.0",
+    "grunt-contrib-copy": "~0.8.0",
+    "grunt-contrib-jshint": "^0.11.0",
+    "grunt-contrib-watch": "^0.6.1",
+    "grunt-dev-update": "^1.0.2",
+    "grunt-jsbeautifier": "^0.2.6",
+    "grunt-nginx": "~0.2.2",
+    "grunt-nodemon": "^0.4.0",
+    "grunt-npmcopy": "^0.1.0",
+    "grunt-shell": "^1.1.1",
+    "load-grunt-tasks": "^3.1.0",
+    "proxit": "~0.6.4"
+  }
+}

@@ -1,0 +1,174 @@
+/*!
+ * Start Bootstrap - Simple Sidebar HTML Template (http://startbootstrap.com)
+ * Code licensed under the Apache License v2.0.
+ * For details, see http://www.apache.org/licenses/LICENSE-2.0.
+ */
+
+/* Toggle Styles */
+
+#wrapper {
+    padding-left: 0;
+    -webkit-transition: all 0.5s ease;
+    -moz-transition: all 0.5s ease;
+    -o-transition: all 0.5s ease;
+    transition: all 0.5s ease;
+}
+
+#wrapper.toggled {
+    padding-left: 300px;
+}
+
+#sidebar-wrapper {
+    z-index: 1000;
+    position: fixed;
+    left: 300px;
+    width: 0;
+    height: 100%;
+    margin-left: -300px;
+    overflow-y: auto;
+    background: #323544;
+    -webkit-transition: all 0.5s ease;
+    -moz-transition: all 0.5s ease;
+    -o-transition: all 0.5s ease;
+    transition: all 0.5s ease;
+}
+
+#wrapper.toggled #sidebar-wrapper {
+    width: 300px;}
+
+#page-content-wrapper {
+    width: 100%;
+    position: absolute;
+}
+
+#wrapper.toggled #page-content-wrapper {
+    position: absolute;
+    margin-right: -300px;
+}
+
+/* Sidebar Styles */
+
+.sidebar-nav, .sidebar-components {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.sidebar-nav li {
+    line-height: 50px;
+    padding: 0 20px;
+    border-bottom: 1px #1c1e2a solid;
+}
+.sidebar-components li {
+    line-height: 40px;
+    padding: 0 20px;
+}
+.sidebar-components li:hover {
+    background-color: #1d1f2b;
+}
+
+.sidebar-nav li a ,
+.sidebar-components li a {
+    display: block;
+    text-decoration: none;
+    color: #fff;
+}
+
+.sidebar-nav li a:hover {
+    text-decoration: none;
+    color: #fff;
+}
+
+.sidebar-nav li a:active,
+.sidebar-nav li a:focus {
+    text-decoration: none;
+}
+
+.sidebar-nav > .sidebar-brand {
+    font-size: 18px;
+    line-height: 35px;
+    padding: 10px;
+}
+
+.sidebar-nav > .sidebar-brand a {
+    color: #ddd;
+    letter-spacing: 1px;
+}
+
+.sidebar-nav > .sidebar-brand a:hover {
+    color: #fff;
+    background: none;
+}
+
+/* Extended Eleemnts */
+.sidebar-actions a {
+    display: inline-block !important;
+    margin-right: 20px;
+    color: #359f89 !important;
+}
+.sidebar-actions a i {
+    color: #fff;
+}
+.sidebar-actions a:hover {
+    background-color: transparent;
+}
+.sidebar-input .input-group {
+    margin: 10px 0px;
+}
+.sidebar-input .form-control,
+.sidebar-input .input-group-addon {
+    background-color: transparent;
+    border-radius: 0px;
+}
+.sidebar-input .form-control {
+    border-right: none;
+    color: #eee;
+}
+.sidebar-input .input-group-addon {
+    border-left: none;
+    color: #ccc;
+}
+.sidebar-input .form-control:focus + .input-group-addon {
+    border-color: #66afe9;
+}
+.sidebar-item:hover,
+.sidebar-item.active {
+    background-color: #1d1f2b;
+}
+.component-badge {
+    float: right;
+    margin-top: 8px;
+    padding: 0px 10px 2px 10px;
+    background-color: #4990e2;
+    color: #fff;
+    font-size: 12px;
+    line-height: 22px;
+    border-radius: 12px;
+}
+
+@media(min-width:768px) {
+    #wrapper {
+        padding-left: 300px;
+    }
+
+    #wrapper.toggled {
+        padding-left: 0;
+    }
+
+    #sidebar-wrapper {
+        width: 300px;    }
+
+    #wrapper.toggled #sidebar-wrapper {
+        width: 0;
+        padding: 0;
+    }
+
+    #page-content-wrapper {
+        position: relative;
+    }
+
+    #wrapper.toggled #page-content-wrapper {
+        position: relative;
+        margin-right: 0;
+    }
+}

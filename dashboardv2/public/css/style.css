@@ -1,0 +1,726 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+html {
+    min-height: 100%;
+    position: relative;
+}
+
+body {
+    font-family: 'PT Sans', sans-serif;
+    background-color: #e8ebf1;
+    -webkit-font-smoothing: antialiased;
+}
+
+.initialLoading {
+    display: block;
+    margin: auto;
+    margin-top: 18%;
+    height: 60px;
+}
+
+
+/* Bootstrap Extended */
+
+.row-margin-bottom {
+    margin-bottom: 15px;
+}
+
+.navbar-brand {
+    /* font-family: 'Yeseva One', cursive;*/
+    font-size: 30px;
+    height: auto;
+}
+
+.navbar-toggle .icon-bar {
+    background-color: #fff;
+}
+
+.navbar-fixed-top + .wrapper {
+    margin-top: 90px;
+    padding-bottom: 90px;
+}
+
+.navbar-form {
+    width: 30%;
+    padding: 0;
+}
+
+.navbar-form .form-control {
+    width: 100%;
+    padding: 6px 0px;
+    background-color: transparent;
+    color: #fff;
+    border: none;
+    box-shadow: 0px 2px #fff;
+}
+
+.form-control {
+    border-radius: 0px;
+}
+
+.form-control:focus {
+    border-color: #8FA5B1;
+    outline: 0;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 2px rgb(143, 165, 177);
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 2px rgb(143, 165, 177);
+}
+
+.input-group-btn .glyphicon {
+    top: 2px;
+}
+
+.panel {
+    border-radius: 0px;
+}
+
+.panel-primary {
+    border-color: #698797;
+}
+
+.panel-primary>.panel-heading {
+    color: #fff;
+    background-color: #698797;
+    border-color: #698797;
+    border-radius: 0px;
+}
+
+.list-group-item:first-child,
+.list-group-item:last-child {
+    border-radius: 0px;
+}
+
+.pagination>.active>a,
+.pagination>.active>a:focus,
+.pagination>.active>a:hover,
+.pagination>.active>span,
+.pagination>.active>span:focus,
+.pagination>.active>span:hover {
+    background-color: #1BA9E2;
+    border-color: #1BA9E2;
+}
+
+
+/* Bootstrap Buttons */
+
+.btn {
+    border-radius: 0px;
+}
+
+.btn-primary {
+    color: #fff;
+    background-color: #44697d;
+    border-color: #44697d
+}
+
+.btn-primary:hover {
+    color: #fff;
+    background-color: #334f5e;
+    border-color: #334f5e;
+}
+
+.btn-success {
+    color: #fff;
+    background-color: #359F89;
+    border-color: #359F89;
+}
+
+.btn-success:hover {
+    color: #fff;
+    background-color: #359F89;
+    border-color: #359F89
+}
+
+.btn-info {
+    color: #fff;
+    background-color: #3cb5e6;
+    border-color: #3cb5e6
+}
+
+.btn-info:hover {
+    color: #fff;
+    background-color: #339cc7;
+    border-color: #339cc7
+}
+
+.btn-warning {
+    color: #fff;
+    background-color: #f5a700;
+    border-color: #f5a700
+}
+
+.btn-warning:hover {
+    color: #fff;
+    background-color: #de9800;
+    border-color: #de9800
+}
+
+.btn-danger {
+    color: #fff;
+    background-color: #e14f00;
+    border-color: #e14f00
+}
+
+.btn-danger:hover {
+    color: #fff;
+    background-color: #c74600;
+    border-color: #c74600
+}
+
+.tabs {
+    position: relative;
+    height: 42px;
+    background-color: #FFF;
+    width: 100%;
+    white-space: nowrap;
+    padding: 0px;
+    border-bottom: 1px solid #e9ecf2;
+}
+
+.tabs li.tab {
+    display: block;
+    float: left;
+    text-align: center;
+    background-color: #fff;
+    line-height: 42px;
+    height: 42px;
+    padding: 0 20px;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    border-bottom: 1px solid #e9ecf2;
+}
+
+.tabs li.tab a {
+    color: #ee6e73;
+    display: block;
+    text-decoration: none;
+    width: 100%;
+    height: 100%;
+    -webkit-transition: color 0.28s ease;
+    -moz-transition: color 0.28s ease;
+    -o-transition: color 0.28s ease;
+    -ms-transition: color 0.28s ease;
+    transition: color 0.28s ease;
+    color: #9398a0;
+}
+
+.tabs li.tab a:hover {
+    color: #26530c;
+}
+
+.tabs li.tab a.active {
+    color: #1BA9E2;
+}
+
+.tabs .indicator {
+    position: absolute;
+    bottom: 0;
+    height: 2px;
+    background-color: #1BA9E2;
+    will-change: left, right;
+}
+
+ul.tabs li.tab {
+    padding: 0;
+}
+
+
+/* Atlas Specific */
+
+.navbar-atlas {
+    background-color: #323544;
+    box-shadow: inset 0 0 0 rgba(0, 0, 0, 0.1), 0 1px 10px rgba(0, 0, 0, 0.1);
+    -webkit-box-shadow: inset 0 0 0 rgba(0, 0, 0, 0.1), 0 1px 10px rgba(0, 0, 0, 0.1);
+    -moz-box-shadow: inset 0 0 0 rgba(0, 0, 0, 0.1), 0 1px 10px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-atlas .navbar-brand {
+    color: #fff;
+}
+
+.navbar-atlas .nav>li>a {
+    color: #fff;
+    padding-top: 18px;
+    padding-bottom: 18px;
+    font-size: 100%;
+}
+
+.navbar-atlas .nav>li>a:focus,
+.navbar-atlas .nav>li>a:hover {
+    background-color: transparent;
+}
+
+.graph-bg svg {
+    background-image: linear-gradient(to right, #000 -10px, rgba(0, 0, 0, 0) 1px), linear-gradient(#000 -10px, #ECECEC 1px);
+    background-size: 10px 10px;
+    position: relative;
+}
+
+.card {
+    background: #FFF none repeat scroll 0% 0%;
+    box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.3);
+    margin-bottom: 30px;
+}
+
+
+/*create tags*/
+
+.h160 {
+    height: 160px !important;
+}
+
+.inputs button.addAttr {
+    background-color: #ff8e00;
+}
+
+.inputs button.addAttr,
+.inputs button.saveAttr {
+    height: 40px;
+    border-radius: 4px;
+    border: 1px solid #FFFFFF;
+    color: #fff;
+    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+    font-weight: bold;
+}
+
+.inputs input {
+    height: 50px;
+    border-radius: 0px;
+    border: 1px solid #e3e3e3;
+    color: #414141;
+    box-shadow: none;
+}
+
+.inputs button.remove {
+    position: absolute;
+    right: 28px;
+    bottom: 12px;
+    color: #FFFFFF;
+    border: 0;
+    border-radius: 4px;
+    background-color: #a94442;
+}
+
+.inputs .control-label {
+    padding: 15px;
+    padding-top: 15px !important;
+    color: #333;
+}
+
+
+/*About Atlas*/
+
+.subContent {
+    width: 580px;
+}
+
+
+/*add tag model*/
+
+.input-spacing {
+    padding-bottom: 10px!important;
+}
+
+.modalHeight {
+    height: 50px;
+}
+
+.fa-spin-custom,
+.glyphicon-spin {
+    -webkit-animation: spin 1000ms infinite linear;
+    animation: spin 1000ms infinite linear;
+}
+
+@-webkit-keyframes spin {
+    0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    100% {
+        -webkit-transform: rotate(359deg);
+        transform: rotate(359deg);
+    }
+}
+
+@keyframes spin {
+    0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    100% {
+        -webkit-transform: rotate(359deg);
+        transform: rotate(359deg);
+    }
+}
+
+.loader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    text-align: center;
+    z-index: 9;
+    background: rgba(255, 255, 255, 0.8) url('../img/loading.gif') no-repeat center center;
+}
+
+.fontLoader {
+    text-align: center;
+    display: none;
+}
+
+.headerDroupDown {
+    border-left: 1px solid #FFF;
+    font-size: 11px;
+    padding-left: 15px;
+    margin-left: 15px;
+}
+
+.circle {
+    position: absolute;
+    top: -3px;
+    right: -2px;
+    width: 12px;
+    height: 12px;
+    background: #4A90E2;
+    border: 2px solid #323544;
+    border-radius: 16px;
+}
+
+.switch {
+    float: left;
+    margin-top: 4px;
+    position: absolute;
+    z-index: 99;
+    top: 0;
+    left: 20px;
+    height: 26px;
+    width: 120px;
+    background: #DADADA;
+    border-radius: 3px;
+    -webkit-box-shadow: inset 0 1px 3px #545454, 0 1px #FFF;
+    box-shadow: inset 0 1px 3px #545454, 0 1px #FFF;
+    /* -webkit-box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px rgba(255, 255, 255, 0.1);*/
+}
+
+.switch-label {
+    position: relative;
+    z-index: 2;
+    float: left;
+    width: 58px;
+    line-height: 26px;
+    font-size: 11px;
+    /*color: rgba(255, 255, 255, 0.35);*/
+    text-align: center;
+    /*text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);*/
+    cursor: pointer;
+}
+
+.switch-label:active {
+    font-weight: bold;
+}
+
+.switch-label-off {
+    padding-left: 2px;
+}
+
+.switch-label-on {
+    padding-right: 2px;
+}
+
+.switch-input {
+    display: none;
+}
+
+.switch-input:checked + .switch-label {
+    font-weight: bold;
+    color: rgba(0, 0, 0, 0.65);
+    text-shadow: 0 1px rgba(255, 255, 255, 0.25);
+    -webkit-transition: 0.15s ease-out;
+    -moz-transition: 0.15s ease-out;
+    -o-transition: 0.15s ease-out;
+    transition: 0.15s ease-out;
+}
+
+.switch-input:checked + .switch-label-on ~ .switch-selection {
+    /* Note: left: 50% doesn't transition in WebKit */
+    left: 60px;
+}
+
+.switch-selection {
+    display: block;
+    position: absolute;
+    z-index: 1;
+    top: 2px;
+    left: 2px;
+    width: 58px;
+    height: 22px;
+    background: #65bd63;
+    border-radius: 3px;
+    background-image: linear-gradient(to bottom, #A7CEC6, #359F89);
+    background-image: -moz-linear-gradient(top, #A7CEC6, #359F89);
+    background-image: -o-linear-gradient(top, #A7CEC6, #359F89);
+    background-image: linear-gradient(to bottom, #A7CEC6, #359F89);
+    /*   background-image: -webkit-linear-gradient(top, #9dd993, #65bd63);
+    background-image: -moz-linear-gradient(top, #9dd993, #65bd63);
+    background-image: -o-linear-gradient(top, #9dd993, #65bd63);
+    background-image: linear-gradient(to bottom, #9dd993, #65bd63);*/
+    -webkit-box-shadow: inset 0 1px rgba(255, 255, 255, 0.5), 0 0 2px rgba(0, 0, 0, 0.2);
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.5), 0 0 2px rgba(0, 0, 0, 0.2);
+    -webkit-transition: left 0.15s ease-out;
+    -moz-transition: left 0.15s ease-out;
+    -o-transition: left 0.15s ease-out;
+    transition: left 0.15s ease-out;
+}
+
+.switch-blue .switch-selection {
+    background: #3aa2d0;
+    background-image: -webkit-linear-gradient(top, #4fc9ee, #3aa2d0);
+    background-image: -moz-linear-gradient(top, #4fc9ee, #3aa2d0);
+    background-image: -o-linear-gradient(top, #4fc9ee, #3aa2d0);
+    background-image: linear-gradient(to bottom, #4fc9ee, #3aa2d0);
+}
+
+.switch-yellow .switch-selection {
+    background: #c4bb61;
+    background-image: -webkit-linear-gradient(top, #e0dd94, #c4bb61);
+    background-image: -moz-linear-gradient(top, #e0dd94, #c4bb61);
+    background-image: -o-linear-gradient(top, #e0dd94, #c4bb61);
+    background-image: linear-gradient(to bottom, #e0dd94, #c4bb61);
+}
+
+.scrollTagList {
+    height: 330px;
+    overflow-y: auto;
+    margin-bottom: 0px;
+}
+
+.scrollTagList i.fa {
+    margin-right: 5px;
+}
+
+.tagsList .atlast-tabbable {
+    margin: 0px 0px;
+}
+
+.tagsList .atlast-tabbable .tab-content {
+    padding: 10px 22px;
+}
+
+.tagsList .atlast-tabbable .nav-tabs>li>a {
+    padding: 10px 20px;
+}
+
+.appForm .panel-body {
+    padding-bottom: 0;
+}
+
+.appForm .panel-footer {
+    margin-bottom: 0;
+}
+
+#new > * {
+    color: #686868;
+}
+
+.branchListParent .parentActive {
+    background: none;
+}
+
+ul[data-id=branchList] .fa,
+.branchListParent .fa {
+    line-height: 40px;
+}
+
+ul[data-id=branchList] li {
+    padding-left: 50px;
+}
+
+.node {
+    cursor: pointer;
+}
+
+.overlay {
+    /* background-color: #EEE;*/
+}
+
+.node circle {
+    fill: #fff;
+    stroke: steelblue;
+    stroke-width: 1.5px;
+}
+
+.node text {
+    font-size: 10px;
+    font-family: sans-serif;
+}
+
+.link {
+    fill: none;
+    stroke: #ccc;
+    stroke-width: 1.5px;
+}
+
+.templink {
+    fill: none;
+    stroke: red;
+    stroke-width: 3px;
+}
+
+.ghostCircle.show {
+    display: block;
+}
+
+.ghostCircle,
+.activeDrag .ghostCircle {
+    display: none;
+}
+
+.d3-tip {
+    line-height: 1;
+    font-weight: bold;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    border-radius: 2px;
+}
+
+
+/* Creates a small triangle extender for the tooltip */
+
+.d3-tip:after {
+    box-sizing: border-box;
+    display: inline;
+    font-size: 10px;
+    width: 100%;
+    line-height: 1;
+    color: rgba(0, 0, 0, 0.8);
+    content: "\25BC";
+    position: absolute;
+    text-align: center;
+}
+
+
+/* Style northward tooltips differently */
+
+.d3-tip.n:after {
+    margin: -1px 0 0 0;
+    top: 100%;
+    left: 0;
+}
+
+.noTags {
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.addTag-dropdown {
+    display: inline-block;
+}
+
+.addTagBase {
+    border-radius: 4px;
+    padding: 4px 8px;
+    border: solid 1px #4a90e2;
+    cursor: pointer
+}
+
+.addTagText {
+    font-size: 12px;
+    font-weight: 600;
+    color: #4a90e2;
+}
+
+.addTagPlus {
+    font-size: 12px;
+    font-weight: 600;
+    color: #4a90e2;
+}
+
+.menuItem {
+    padding: 10px;
+    color: #4a90e2;
+    cursor: pointer;
+}
+
+.input-tag {
+    display: inline-block;
+    padding: 6px 12px;
+    background-color: #4a90e2;
+    color: #fff;
+    font-size: 12px;
+    text-transform: uppercase;
+    border-radius: 4px;
+    margin-right: 3px;
+    margin-bottom: 3px;
+}
+
+.tagging {
+    display: inline-block;
+}
+
+.input-tag i.fa {
+    position: relative;
+    right: -5px;
+    cursor: pointer;
+}
+
+.crossClearText {
+    line-height: 20px !important;
+}
+
+.inputSearchTag {
+    max-width: 140px;
+}
+
+.appndList {
+    max-height: 200px;
+    overflow: auto;
+    max-width: 140px;
+    overflow-x: hidden;
+}
+
+.dropdown .fa-ellipsis-h {
+    position: relative;
+    top: 4px;
+}
+
+g.type-TK > rect {
+    fill: #00ffd0;
+}
+
+text {
+    font-weight: 300;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serf;
+    font-size: 14px;
+}
+
+.node rect {
+    stroke: #999;
+    fill: #fff;
+    stroke-width: 1.5px;
+}
+
+.edgePath path {
+    stroke: #333;
+    stroke-width: 1.5px;
+}
+

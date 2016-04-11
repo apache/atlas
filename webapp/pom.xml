@@ -235,6 +235,12 @@
             <artifactId>atlas-dashboard</artifactId>
             <type>war</type>
         </dependency>
+
+       <!-- <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-dashboardv2</artifactId>
+            <type>war</type>
+        </dependency> -->
     </dependencies>
 
     <build>
@@ -249,6 +255,10 @@
                             <groupId>org.apache.atlas</groupId>
                             <artifactId>atlas-dashboard</artifactId>
                         </overlay>
+                        <!-- <overlay>
+                            <groupId>org.apache.atlas</groupId>
+                            <artifactId>atlas-dashboardv2</artifactId>
+                        </overlay> -->
 		        <overlay>
 		             <!-- empty groupId/artifactId represents the current build -->
             		</overlay>

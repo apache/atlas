@@ -14,6 +14,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-582 Move Atlas UI to use backboneJS (kevalbhatt18 via shwethags)
 ATLAS-540 API to retrieve entity version events (shwethags)
 ATLAS-529 support drop database (sumasai)
 ATLAS-528 Support drop table,view (sumasai)

@@ -1,0 +1,48 @@
+<!--
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+<div class="col-sm-12">
+    <ol class="breadcrumb">
+        <li><a href="#!/dashboard/assetPage">Home</a></li>
+        <li class="active breadcrumbName"></li>
+    </ol>
+    <div class="panel panel-default lineageLayout" style="display:none">
+        <div id="r_lineageLayoutView"></div>
+    </div>
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <p class="name"></p>
+            <p class="description"></p>
+            <hr>
+            <ul class="nav nav-tabs" role="tablist">
+                <li role="presentation" class="tab active"><a href="#tab-details" aria-controls="tab-details" role="tab" data-toggle="tab">Details</a></li>
+                <li role="presentation" class="tab schemaTable" style="display:none"><a href="#tab-schema" aria-controls="tab-schema" role="tab" data-toggle="tab">Schema</a></li>
+                <li role="presentation" class="tab "><a href="#tab-tags" aria-controls="tab-tags" role="tab" data-toggle="tab">Tags</a></li>
+            </ul>
+            <div class="tab-content">
+                <div id="tab-details" role="tabpanel" class="tab-pane active">
+                    <div id="r_entityDetailTableLayoutView"></div>
+                </div>
+                <div id="tab-schema" class="tab-pane">
+                    <div id="r_schemaTableLayoutView"></div>
+                </div>
+                <div id="tab-tags" class="tab-pane">
+                    <div id="r_tagTableLayoutView"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,40 @@
+<!--
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+<div class="tagsList">
+    <div class="atlast-tabbable">
+        <ul class="nav nav-tabs" role="tablist">
+            <li role="presentation" class="tab active"><a href="#tab-tags" role="tab" data-toggle="tab">Tags</a></li>
+            <li role="presentation" class="tab"><a href="#tab-types" role="tab" data-toggle="tab">Type</a></li>
+            <div class="pull-right" data-id="referesh"><a href="javascript:void(0)"><i class="fa fa-refresh"></i></a></div>
+            <div class="indicator" style="right: 116px; left: 0px;"></div>
+        </ul>
+        <div class="tab-content">
+            <div id="tab-tags" role="tabpanel" class="tab-pane active">
+                <div class="row-margin-bottom">
+                    <input data-id="searchTag" data-type="listTag" placeholder="Search for Tags…" class="form-control">
+                </div>
+                <div class="list-group scrollTagList" data-id="listTag"> </div>
+            </div>
+            <div id="tab-types" role="tabpanel" class="tab-pane">
+                <div class="row-margin-bottom ">
+                    <input data-id="searchTag" data-type="listType" placeholder="Search for Types…" class="form-control">
+                </div>
+                <div class="list-group scrollTagList" data-id="listType"> </div>
+            </div>
+        </div>
+    </div>
+</div>

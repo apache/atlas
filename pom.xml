@@ -334,6 +334,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <node.version>v0.10.30</node.version>
+        <node-for-v2.version>v4.4.2</node-for-v2.version>
         <slf4j.version>1.7.7</slf4j.version>
         <jetty.version>9.2.12.v20150709</jetty.version>
         <jersey.version>1.19</jersey.version>
@@ -432,6 +433,7 @@
         <module>titan</module>
         <module>repository</module>
         <module>dashboard</module>
+        <!-- <module>dashboardv2</module> -->
         <module>webapp</module>
         <module>docs</module>
         <module>addons/hdfs-model</module>
@@ -1012,6 +1014,13 @@
             <dependency>
                 <groupId>org.apache.atlas</groupId>
                 <artifactId>atlas-dashboard</artifactId>
+                <version>${project.version}</version>
+                <type>war</type>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-dashboardv2</artifactId>
                 <version>${project.version}</version>
                 <type>war</type>
             </dependency>
@@ -1617,6 +1626,15 @@
                         <exclude>*.json</exclude>
                         <exclude>**/overlays/**</exclude>
                         <exclude>dev-support/**</exclude>
+			<exclude>**/public/css/animate.min.css</exclude>
+			<exclude>**/public/css/fonts/**</exclude>
+			<exclude>**/public/css/font-awesome.min.css</exclude>
+			<exclude>**/public/js/require-handlebars-plugin/**</exclude>
+			<exclude>**/node_modules/**</exclude>
+			<!-- All the npm plugins are copied here, so exclude it -->
+			<exclude>**/public/js/libs/**</exclude>
+  
+
                     </excludes>
                 </configuration>
                 <executions>
