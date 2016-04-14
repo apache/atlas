@@ -406,10 +406,9 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         for (WriteEntity writeEntity : event.getOutputs()) {
             if (writeEntity.getType() == Entity.Type.TABLE) {
                 Table newTable = writeEntity.getTable();
-                if (newTable.getDbName().equals(oldTable.getDbName()) && !newTable.getTableName()
-                    .equals(oldTable.getTableName())) {
-
-                    //Create/update old table entity - create new entity and replace id
+                //Hive sends with both old and new table names in the outputs which is weird. So skipping that with the below check
+                if (!newTable.getDbName().equals(oldTable.getDbName()) || !newTable.getTableName().equals(oldTable.getTableName())) {
+                    //Create/update old table entity - create new entity with oldQFNme and tableName
                     Referenceable tableEntity = createOrUpdateEntities(dgiBridge, event.getUser(), writeEntity);
                     String oldQualifiedName = dgiBridge.getTableQualifiedName(dgiBridge.getClusterName(),
                         oldTable.getDbName(), oldTable.getTableName());
@@ -419,6 +418,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                     String newQualifiedName = dgiBridge.getTableQualifiedName(dgiBridge.getClusterName(),
                         newTable.getDbName(), newTable.getTableName());
 
+                    //Replace entity with new name
                     Referenceable newEntity = new Referenceable(HiveDataTypes.HIVE_TABLE.getName());
                     newEntity.set(HiveDataModelGenerator.NAME, newQualifiedName);
                     newEntity.set(HiveDataModelGenerator.TABLE_NAME, newTable.getTableName().toLowerCase());

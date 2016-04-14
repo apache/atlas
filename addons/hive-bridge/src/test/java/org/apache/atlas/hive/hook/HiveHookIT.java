@@ -557,11 +557,15 @@ public class HiveHookIT {
     @Test
     public void testAlterTableRename() throws Exception {
         String tableName = createTable();
-        String newName = tableName();
-        String query = "alter table " + tableName + " rename to " + newName;
+        final String newDBName = createDatabase();
+        assertTableIsRegistered(DEFAULT_DB, tableName);
+        assertDatabaseIsRegistered(newDBName);
+
+        String newTableName = tableName();
+        String query = String.format("alter table %s rename to %s", DEFAULT_DB + "." + tableName, newDBName + "." + newTableName);
         runCommand(query);
 
-        assertTableIsRegistered(DEFAULT_DB, newName);
+        assertTableIsRegistered(newDBName, newTableName);
         assertTableIsNotRegistered(DEFAULT_DB, tableName);
     }
 
