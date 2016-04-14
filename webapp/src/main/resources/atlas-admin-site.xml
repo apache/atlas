@@ -1,0 +1,129 @@
+<!-- Licensed under the Apache License, Version 2.0 (the "License"); you 
+    may not use this file except in compliance with the License. You may obtain 
+    a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 Unless 
+    required by applicable law or agreed to in writing, software distributed 
+    under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES 
+    OR CONDITIONS OF ANY KIND, either express or implied. See the License for 
+    the specific language governing permissions and limitations under the License. 
+    See accompanying LICENSE file. -->
+
+
+<configuration>
+    <!-- # Ldap info start -->
+
+        <property>
+                <name>atlas.ldap.url</name>
+                <display-name>LDAP URL</display-name>
+                <value>ldap://172.22.98.129:389</value>
+                <description>LDAP Server URL, only used if
+                        Authentication method
+                        is LDAP
+                </description>
+        </property>
+        <property>
+                <name>atlas.ldap.user.dnpattern</name>
+                <value>uid={0},ou=People,dc=example,dc=com</value>
+                <description></description>
+        </property>
+        <property>
+                <name>atlas.ldap.group.searchbase</name>
+                <display-name>Group Search Base</display-name>
+                <value>dc=example,dc=com</value>
+                <description></description>
+        </property>
+        <property>
+                <name>atlas.ldap.group.searchfilter</name>
+                <display-name>Group Search Filter</display-name>
+                <value>(member=uid={0},ou=People,dc=example,dc=com)
+                </value>
+                <description></description>
+        </property>
+        <property>
+                <name>atlas.ldap.group.roleattribute</name>
+                <value>cn</value>
+                <description></description>
+        </property>
+
+        <property>
+                <name>atlas.ldap.base.dn</name>
+                <value>dc=example,dc=com</value>
+                <description>LDAP base dn or search base</description>
+        </property>
+        <property>
+                <name>atlas.ldap.bind.dn</name>
+                <display-name>Bind User</display-name>
+                <value>cn=Manager,dc=example,dc=com</value>
+                <description>LDAP bind dn or manager dn</description>
+        </property>
+        <property>
+                <name>atlas.ldap.bind.password</name>
+                <display-name>​Bind User Password</display-name>
+                <value>p@ssword</value>
+                <property-type>PASSWORD</property-type>
+                <description>Password for the account that can search
+                        for users
+                </description>
+                <value-attributes>
+                        <type>password</type>
+                        <overridable>false</overridable>
+                </value-attributes>
+        </property>
+        <property>
+                <name>atlas.ldap.user.searchfilter</name>
+                <display-name>User Search Filter</display-name>
+                <value>(uid={0})</value>
+                <description></description>
+        </property>
+
+        <property>
+                <name>atlas.ldap.default.role</name>
+                <value>ROLE_USER</value>
+        </property>
+        <property>
+                <name>atlas.ldap.referral</name>
+                <value>ignore</value>
+                <description>follow or ignore</description>
+        </property>
+
+
+    <!-- # Ldap Info end -->
+
+    <!-- #AD info start -->
+        <property>
+                <name>atlas.ad.url</name>
+                <value>ldap://172.25.16.111:389</value>
+                <description></description>
+        </property>
+
+        <property>
+                <name>atlas.ad.bind.dn</name>
+                <value>CN=team,CN=Users,DC=SME,DC=support,DC=com</value>
+                <description>AD bind dn or manager dn</description>
+        </property>
+        <property>
+                <name>atlas.ad.bind.password</name>
+                <value>Abcd1234!!</value>
+                <description>AD bind password</description>
+        </property>
+        <property>
+                <name>atlas.ad.user.searchfilter</name>
+                <display-name>User Search Filter</display-name>
+                <value>(sAMAccountName={0})</value>
+                <description></description>
+        </property>
+        <property>
+                <name>atlas.ad.base.dn</name>
+                <value>DC=SME,DC=support,DC=com</value>
+                <description>AD base dn or search base</description>
+        </property>
+        <property>
+                <name>atlas.ad.referral</name>
+                <value>ignore</value>
+                <description>follow or ignore</description>
+        </property>
+        <property>
+                <name>atlas.ad.default.role</name>
+                <value>ROLE_USER</value>
+        </property>
+    <!-- AD info end -->
+</configuration>
