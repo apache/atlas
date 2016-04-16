@@ -70,6 +70,11 @@ public class DownCastStructInstance implements IStruct {
         }
         return m;
     }
+
+    @Override
+    public String toShortString() {
+        return toString();
+    }
 }
 
 

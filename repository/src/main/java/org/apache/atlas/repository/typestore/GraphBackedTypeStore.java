@@ -206,9 +206,10 @@ public class GraphBackedTypeStore implements ITypeStore {
     }
 
     private void addEdge(Vertex fromVertex, Vertex toVertex, String label) {
-        Iterable<Edge> edges = GraphHelper.getOutGoingEdgesByLabel(fromVertex, label);
+        Iterator<Edge> edges = GraphHelper.getOutGoingEdgesByLabel(fromVertex, label);
         // ATLAS-474: Check if this type system edge already exists, to avoid duplicates.
-        for (Edge edge : edges) {
+        while (edges.hasNext()) {
+            Edge edge = edges.next();
             if (edge.getVertex(Direction.IN).equals(toVertex)) {
                 LOG.debug("Edge from {} to {} with label {} already exists", 
                     toString(fromVertex), toString(toVertex), label);

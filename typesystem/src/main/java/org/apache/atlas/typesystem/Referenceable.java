@@ -166,6 +166,11 @@ public class Referenceable extends Struct implements IReferenceableInstance {
             '}';
     }
 
+    @Override
+    public String toShortString() {
+        return String.format("entity[type=%s guid=%s]", typeName, id._getId());
+    }
+
     public void replaceWithNewId(Id id) {
         this.id = id;
     }

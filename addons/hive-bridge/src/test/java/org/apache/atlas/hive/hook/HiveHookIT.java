@@ -20,8 +20,10 @@ package org.apache.atlas.hive.hook;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.fs.model.FSDataTypes;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
@@ -32,7 +34,6 @@ import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.RandomStringUtils;
-import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -41,7 +42,6 @@ import org.apache.hadoop.hive.ql.Driver;
 import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.processors.CommandProcessorResponse;
 import org.apache.hadoop.hive.ql.session.SessionState;
-import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.testng.Assert;
@@ -53,25 +53,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.atlas.hive.hook.HiveHook.normalize;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.fail;
 
 public class HiveHookIT {
-    public static final Logger LOG = org.slf4j.LoggerFactory.getLogger(HiveHookIT.class);
+    private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(HiveHookIT.class);
 
     private static final String DGI_URL = "http://localhost:21000/";
     private static final String CLUSTER_NAME = "test";
     public static final String DEFAULT_DB = "default";
     private Driver driver;
-    private AtlasClient dgiCLient;
+    private AtlasClient atlasClient;
     private SessionState ss;
     
     private static final String INPUTS = AtlasClient.PROCESS_ATTRIBUTE_INPUTS;
     private static final String OUTPUTS = AtlasClient.PROCESS_ATTRIBUTE_OUTPUTS;
-
-    private enum QUERY_TYPE {
-        GREMLIN,
-        DSL
-    }
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -87,9 +85,9 @@ public class HiveHookIT {
         SessionState.setCurrentSessionState(ss);
 
         Configuration configuration = ApplicationProperties.get();
-        dgiCLient = new AtlasClient(configuration.getString(HiveMetaStoreBridge.ATLAS_ENDPOINT, DGI_URL));
+        atlasClient = new AtlasClient(configuration.getString(HiveMetaStoreBridge.ATLAS_ENDPOINT, DGI_URL));
 
-        HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(conf, dgiCLient);
+        HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(conf, atlasClient);
         hiveMetaStoreBridge.registerHiveDataModel();
 
     }
@@ -107,7 +105,7 @@ public class HiveHookIT {
         runCommand("create database " + dbName + " WITH DBPROPERTIES ('p1'='v1', 'p2'='v2')");
         String dbId = assertDatabaseIsRegistered(dbName);
 
-        Referenceable definition = dgiCLient.getEntity(dbId);
+        Referenceable definition = atlasClient.getEntity(dbId);
         Map params = (Map) definition.get(HiveDataModelGenerator.PARAMETERS);
         Assert.assertNotNull(params);
         Assert.assertEquals(params.size(), 2);
@@ -115,11 +113,13 @@ public class HiveHookIT {
 
         //There should be just one entity per dbname
         runCommand("drop database " + dbName);
+        assertDBIsNotRegistered(dbName);
+
         runCommand("create database " + dbName);
         String dbid = assertDatabaseIsRegistered(dbName);
 
         //assert on qualified name
-        Referenceable dbEntity = dgiCLient.getEntity(dbid);
+        Referenceable dbEntity = atlasClient.getEntity(dbid);
         Assert.assertEquals(dbEntity.get("qualifiedName"), dbName.toLowerCase() + "@" + CLUSTER_NAME);
 
     }
@@ -149,7 +149,7 @@ public class HiveHookIT {
     private String createTable(boolean isPartitioned) throws Exception {
         String tableName = tableName();
         runCommand("create table " + tableName + "(id int, name string) comment 'table comment' " + (isPartitioned ?
-            " partitioned by(dt string)" : ""));
+                " partitioned by(dt string)" : ""));
         return tableName;
     }
 
@@ -174,14 +174,15 @@ public class HiveHookIT {
         assertTableIsRegistered(dbName, tableName);
 
         //there is only one instance of column registered
-        String colId = assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableName), colName));
-        Referenceable colEntity = dgiCLient.getEntity(colId);
+        String colId = assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(
+                HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableName), colName));
+        Referenceable colEntity = atlasClient.getEntity(colId);
         Assert.assertEquals(colEntity.get("qualifiedName"), String.format("%s.%s.%s@%s", dbName.toLowerCase(),
                 tableName.toLowerCase(), colName.toLowerCase(), CLUSTER_NAME));
 
         tableName = createTable();
         String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
-        Referenceable tableRef = dgiCLient.getEntity(tableId);
+        Referenceable tableRef = atlasClient.getEntity(tableId);
         Assert.assertEquals(tableRef.get("tableType"), TableType.MANAGED_TABLE.name());
         Assert.assertEquals(tableRef.get(HiveDataModelGenerator.COMMENT), "table comment");
         String entityName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName);
@@ -227,17 +228,19 @@ public class HiveHookIT {
     }
 
     private String assertColumnIsRegistered(String colName) throws Exception {
-        LOG.debug("Searching for column {}", colName.toLowerCase());
-        String query =
-                String.format("%s where qualifiedName = '%s'", HiveDataTypes.HIVE_COLUMN.getName(), colName.toLowerCase());
-        return assertEntityIsRegistered(query);
+        return assertColumnIsRegistered(colName, null);
+    }
+
+    private String assertColumnIsRegistered(String colName, AssertPredicate assertPredicate) throws Exception {
+        LOG.debug("Searching for column {}", colName);
+        return assertEntityIsRegistered(HiveDataTypes.HIVE_COLUMN.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+                colName, assertPredicate);
     }
 
     private void assertColumnIsNotRegistered(String colName) throws Exception {
         LOG.debug("Searching for column {}", colName);
-        String query =
-            String.format("%s where qualifiedName = '%s'", HiveDataTypes.HIVE_COLUMN.getName(), colName.toLowerCase());
-        assertEntityIsNotRegistered(QUERY_TYPE.DSL, query);
+        assertEntityIsNotRegistered(HiveDataTypes.HIVE_COLUMN.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+                colName);
     }
 
     @Test
@@ -277,7 +280,7 @@ public class HiveHookIT {
 
         //Check lineage which includes table1
         String datasetName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, viewName);
-        JSONObject response = dgiCLient.getInputGraph(datasetName);
+        JSONObject response = atlasClient.getInputGraph(datasetName);
         JSONObject vertices = response.getJSONObject("values").getJSONObject("vertices");
         Assert.assertTrue(vertices.has(viewId));
         Assert.assertTrue(vertices.has(table1Id));
@@ -293,7 +296,7 @@ public class HiveHookIT {
         Assert.assertEquals(assertTableIsRegistered(DEFAULT_DB, viewName), viewId);
 
         datasetName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, viewName);
-        response = dgiCLient.getInputGraph(datasetName);
+        response = atlasClient.getInputGraph(datasetName);
         vertices = response.getJSONObject("values").getJSONObject("vertices");
         Assert.assertTrue(vertices.has(viewId));
 
@@ -304,7 +307,7 @@ public class HiveHookIT {
         Assert.assertTrue(vertices.has(table1Id));
 
         //Outputs dont exist
-        response = dgiCLient.getOutputGraph(datasetName);
+        response = atlasClient.getOutputGraph(datasetName);
         vertices = response.getJSONObject("values").getJSONObject("vertices");
         Assert.assertEquals(vertices.length(), 0);
     }
@@ -358,7 +361,7 @@ public class HiveHookIT {
 
     private Referenceable validateProcess(String query, int numInputs, int numOutputs) throws Exception {
         String processId = assertProcessIsRegistered(query);
-        Referenceable process = dgiCLient.getEntity(processId);
+        Referenceable process = atlasClient.getEntity(processId);
         if (numInputs == 0) {
             Assert.assertNull(process.get(INPUTS));
         } else {
@@ -376,7 +379,7 @@ public class HiveHookIT {
 
     private Referenceable validateProcess(String query, String[] inputs, String[] outputs) throws Exception {
         String processId = assertProcessIsRegistered(query);
-        Referenceable process = dgiCLient.getEntity(processId);
+        Referenceable process = atlasClient.getEntity(processId);
         if (inputs == null) {
             Assert.assertNull(process.get(INPUTS));
         } else {
@@ -406,7 +409,7 @@ public class HiveHookIT {
         String inputTableId = assertTableIsRegistered(DEFAULT_DB, tableName);
         String opTableId = assertTableIsRegistered(DEFAULT_DB, insertTableName);
 
-        validateProcess(query, new String[] {inputTableId}, new String[] {opTableId});
+        validateProcess(query, new String[]{inputTableId}, new String[]{opTableId});
     }
 
     @Test
@@ -450,7 +453,7 @@ public class HiveHookIT {
 
         String ipTableId = assertTableIsRegistered(DEFAULT_DB, tableName);
         String opTableId = assertTableIsRegistered(DEFAULT_DB, insertTableName);
-        validateProcess(query, new String[] {ipTableId}, new String[] {opTableId});
+        validateProcess(query, new String[]{ipTableId}, new String[]{opTableId});
     }
 
     @Test
@@ -465,7 +468,7 @@ public class HiveHookIT {
 
         String ipTableId = assertTableIsRegistered(DEFAULT_DB, tableName);
         String opTableId = assertTableIsRegistered(DEFAULT_DB, insertTableName);
-        validateProcess(query, new String[] {ipTableId}, new String[] {opTableId});
+        validateProcess(query, new String[]{ipTableId}, new String[]{opTableId});
     }
 
     private String random() {
@@ -571,7 +574,7 @@ public class HiveHookIT {
 
     private List<Referenceable> getColumns(String dbName, String tableName) throws Exception {
         String tableId = assertTableIsRegistered(dbName, tableName);
-        Referenceable tableRef = dgiCLient.getEntity(tableId);
+        Referenceable tableRef = atlasClient.getEntity(tableId);
         return ((List<Referenceable>)tableRef.get(HiveDataModelGenerator.COLUMNS));
     }
 
@@ -582,7 +585,9 @@ public class HiveHookIT {
         String query = "alter table " + tableName + " add columns (" + column + " string)";
         runCommand(query);
 
-        assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), column));
+        assertColumnIsRegistered(HiveMetaStoreBridge
+                .getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName),
+                        column));
 
         //Verify the number of columns present in the table
         final List<Referenceable> columns = getColumns(DEFAULT_DB, tableName);
@@ -595,13 +600,21 @@ public class HiveHookIT {
         final String colDropped = "id";
         String query = "alter table " + tableName + " replace columns (name string)";
         runCommand(query);
-        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), colDropped));
+
+        assertColumnIsNotRegistered(HiveMetaStoreBridge
+                .getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName),
+                        colDropped));
 
         //Verify the number of columns present in the table
-        final List<Referenceable> columns = getColumns(DEFAULT_DB, tableName);
-        Assert.assertEquals(columns.size(), 1);
+        assertTableIsRegistered(DEFAULT_DB, tableName, new AssertPredicate() {
+            @Override
+            public void assertOnEntity(Referenceable tableRef) throws Exception {
+                List<Referenceable> columns = (List<Referenceable>) tableRef.get(HiveDataModelGenerator.COLUMNS);
+                Assert.assertEquals(columns.size(), 1);
+                Assert.assertEquals(columns.get(0).get(HiveDataModelGenerator.NAME), "name");
 
-        Assert.assertEquals(columns.get(0).get(HiveDataModelGenerator.NAME), "name");
+            }
+        });
     }
 
     @Test
@@ -612,12 +625,15 @@ public class HiveHookIT {
         String tableName = createTable();
         String query = String.format("alter table %s change %s %s string", tableName, oldColName, newColName);
         runCommand(query);
-        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), oldColName));
-        assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), newColName));
+        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(
+                HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), oldColName));
+        assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(
+                HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), newColName));
 
         //Verify the number of columns present in the table
         List<Referenceable> columns = getColumns(DEFAULT_DB, tableName);
         Assert.assertEquals(columns.size(), 2);
+
         //Change column type
         oldColName = "name1";
         newColName = "name2";
@@ -627,46 +643,70 @@ public class HiveHookIT {
 
         columns = getColumns(DEFAULT_DB, tableName);
         Assert.assertEquals(columns.size(), 2);
-        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), oldColName));
+        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(
+                HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), oldColName));
 
-        String newColQualifiedName = HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), newColName);
-        assertColumnIsRegistered(newColQualifiedName);
-
-        Assert.assertEquals(columns.get(1).get("type"), "int");
+        String newColQualifiedName = HiveMetaStoreBridge.getColumnQualifiedName(
+                HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), newColName);
+        assertColumnIsRegistered(newColQualifiedName, new AssertPredicate() {
+            @Override
+            public void assertOnEntity(Referenceable entity) throws Exception {
+                assertEquals(entity.get("type"), "int");
+            }
+        });
 
         //Change name and add comment
         oldColName = "name2";
         newColName = "name3";
         final String comment = "added comment";
-        query = String.format("alter table %s change column %s %s %s COMMENT '%s' after id", tableName, oldColName, newColName, newColType, comment);
+        query = String.format("alter table %s change column %s %s %s COMMENT '%s' after id", tableName, oldColName,
+                newColName, newColType, comment);
         runCommand(query);
 
         columns = getColumns(DEFAULT_DB, tableName);
         Assert.assertEquals(columns.size(), 2);
 
-        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), oldColName));
-        newColQualifiedName = HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), newColName);
-        assertColumnIsRegistered(newColQualifiedName);
+        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(
+                HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), oldColName));
+        newColQualifiedName = HiveMetaStoreBridge.getColumnQualifiedName(
+                HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), newColName);
 
-        Assert.assertEquals(columns.get(1).get(HiveDataModelGenerator.COMMENT), comment);
+        assertColumnIsRegistered(newColQualifiedName, new AssertPredicate() {
+            @Override
+            public void assertOnEntity(Referenceable entity) throws Exception {
+                assertEquals(entity.get(HiveDataModelGenerator.COMMENT), comment);
+            }
+        });
 
         //Change column position
         oldColName = "name3";
         newColName = "name4";
-        query = String.format("alter table %s change column %s %s %s first", tableName, oldColName, newColName, newColType);
+        query = String.format("alter table %s change column %s %s %s first", tableName, oldColName, newColName,
+                newColType);
         runCommand(query);
 
         columns = getColumns(DEFAULT_DB, tableName);
         Assert.assertEquals(columns.size(), 2);
 
-        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), oldColName));
-        newColQualifiedName = HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), newColName);
+        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(
+                HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), oldColName));
+
+        newColQualifiedName = HiveMetaStoreBridge.getColumnQualifiedName(
+                HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), newColName);
         assertColumnIsRegistered(newColQualifiedName);
 
-        //Change col position again
-        Assert.assertEquals(columns.get(0).get(HiveDataModelGenerator.NAME), newColName);
-        Assert.assertEquals(columns.get(1).get(HiveDataModelGenerator.NAME), "id");
+        final String finalNewColName = newColName;
+        assertTableIsRegistered(DEFAULT_DB, tableName, new AssertPredicate() {
+                    @Override
+                    public void assertOnEntity(Referenceable entity) throws Exception {
+                        List<Referenceable> columns = (List<Referenceable>) entity.get(HiveDataModelGenerator.COLUMNS);
+                        assertEquals(columns.get(0).get(HiveDataModelGenerator.NAME), finalNewColName);
+                        assertEquals(columns.get(1).get(HiveDataModelGenerator.NAME), "id");
+                    }
+                }
+        );
 
+        //Change col position again
         oldColName = "name4";
         newColName = "name5";
         query = String.format("alter table %s change column %s %s %s after id", tableName, oldColName, newColName, newColType);
@@ -675,16 +715,27 @@ public class HiveHookIT {
         columns = getColumns(DEFAULT_DB, tableName);
         Assert.assertEquals(columns.size(), 2);
 
-        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), oldColName));
-        newColQualifiedName = HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), newColName);
+        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(
+                HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), oldColName));
+
+        newColQualifiedName = HiveMetaStoreBridge.getColumnQualifiedName(
+                HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), newColName);
         assertColumnIsRegistered(newColQualifiedName);
 
         //Check col position
-        Assert.assertEquals(columns.get(1).get(HiveDataModelGenerator.NAME), newColName);
-        Assert.assertEquals(columns.get(0).get(HiveDataModelGenerator.NAME), "id");
+        final String finalNewColName2 = newColName;
+        assertTableIsRegistered(DEFAULT_DB, tableName, new AssertPredicate() {
+                    @Override
+                    public void assertOnEntity(Referenceable entity) throws Exception {
+                        List<Referenceable> columns = (List<Referenceable>) entity.get(HiveDataModelGenerator.COLUMNS);
+                        assertEquals(columns.get(1).get(HiveDataModelGenerator.NAME), finalNewColName2);
+                        assertEquals(columns.get(0).get(HiveDataModelGenerator.NAME), "id");
+                    }
+                }
+        );
     }
 
-    @Test()
+    @Test
     public void testTruncateTable() throws Exception {
         String tableName = createTable(false);
         String query = String.format("truncate table %s", tableName);
@@ -695,7 +746,7 @@ public class HiveHookIT {
 
         //Check lineage
         String datasetName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName);
-        JSONObject response = dgiCLient.getInputGraph(datasetName);
+        JSONObject response = atlasClient.getInputGraph(datasetName);
         JSONObject vertices = response.getJSONObject("values").getJSONObject("vertices");
         //Below should be assertTrue - Fix https://issues.apache.org/jira/browse/ATLAS-653
         Assert.assertFalse(vertices.has(tableId));
@@ -708,15 +759,24 @@ public class HiveHookIT {
         String query = String.format("ALTER TABLE %s PARTITION COLUMN (dt %s)", tableName, newType);
         runCommand(query);
 
-        final String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
-        final String dtColId = assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), "dt"));
-        Referenceable table = dgiCLient.getEntity(tableId);
-        Referenceable column = dgiCLient.getEntity(dtColId);
-        Assert.assertEquals(column.get("type"), newType);
+        String colQualifiedName = HiveMetaStoreBridge.getColumnQualifiedName(
+                HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), "dt");
+        final String dtColId = assertColumnIsRegistered(colQualifiedName, new AssertPredicate() {
+            @Override
+            public void assertOnEntity(Referenceable column) throws Exception {
+                Assert.assertEquals(column.get("type"), newType);
+            }
+        });
 
-        final List<Referenceable> partitionKeys = (List<Referenceable>) table.get("partitionKeys");
-        Assert.assertEquals(partitionKeys.size(), 1);
-        Assert.assertEquals(partitionKeys.get(0).getId()._getId(), dtColId);
+        assertTableIsRegistered(DEFAULT_DB, tableName, new AssertPredicate() {
+            @Override
+            public void assertOnEntity(Referenceable table) throws Exception {
+                final List<Referenceable> partitionKeys = (List<Referenceable>) table.get("partitionKeys");
+                Assert.assertEquals(partitionKeys.size(), 1);
+                Assert.assertEquals(partitionKeys.get(0).getId()._getId(), dtColId);
+
+            }
+        });
     }
 
     @Test
@@ -742,17 +802,18 @@ public class HiveHookIT {
         String query = "alter table " + tableName + " set location '" + testPath + "'";
         runCommand(query);
 
-        String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
-        //Verify the number of columns present in the table
-        Referenceable tableRef = dgiCLient.getEntity(tableId);
-        Referenceable sdRef = (Referenceable)tableRef.get(HiveDataModelGenerator.STORAGE_DESC);
-        Assert.assertEquals(sdRef.get("location"), testPath);
+        String tableId = assertTableIsRegistered(DEFAULT_DB, tableName, new AssertPredicate() {
+            @Override
+            public void assertOnEntity(Referenceable tableRef) throws Exception {
+                Referenceable sdRef = (Referenceable) tableRef.get(HiveDataModelGenerator.STORAGE_DESC);
+                Assert.assertEquals(sdRef.get("location"), testPath);
+            }
+        });
 
         Referenceable processReference = validateProcess(query, 1, 1);
         validateHDFSPaths(processReference, testPath, INPUTS);
 
         validateOutputTables(processReference, tableId);
-
     }
 
     private String validateHDFSPaths(Referenceable processReference, String testPath, String attributeName) throws Exception {
@@ -762,7 +823,7 @@ public class HiveHookIT {
         String hdfsPathId = assertHDFSPathIsRegistered(testPathNormed);
         Assert.assertEquals(hdfsPathRefs.get(0)._getId(), hdfsPathId);
 
-        Referenceable hdfsPathRef = dgiCLient.getEntity(hdfsPathId);
+        Referenceable hdfsPathRef = atlasClient.getEntity(hdfsPathId);
         Assert.assertEquals(hdfsPathRef.get("path"), testPathNormed);
         Assert.assertEquals(hdfsPathRef.get("name"), testPathNormed);
 //        Assert.assertEquals(hdfsPathRef.get("name"), new Path(testPath).getName());
@@ -771,14 +832,9 @@ public class HiveHookIT {
         return hdfsPathRef.getId()._getId();
     }
 
-
     private String assertHDFSPathIsRegistered(String path) throws Exception {
-        final String typeName = FSDataTypes.HDFS_PATH().toString();
-        final String parentTypeName = FSDataTypes.FS_PATH().toString();
-        String gremlinQuery =
-            String.format("g.V.has('__typeName', '%s').has('%s.path', \"%s\").toList()", typeName, parentTypeName,
-                normalize(path));
-        return assertEntityIsRegistered(gremlinQuery);
+        LOG.debug("Searching for hdfs path {}", path);
+        return assertEntityIsRegistered(FSDataTypes.HDFS_PATH().toString(), "name", path, null);
     }
 
     @Test
@@ -788,18 +844,25 @@ public class HiveHookIT {
         String query = "alter table " + tableName + " set FILEFORMAT " + testFormat;
         runCommand(query);
 
-        String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
+        assertTableIsRegistered(DEFAULT_DB, tableName, new AssertPredicate() {
+            @Override
+            public void assertOnEntity(Referenceable tableRef) throws Exception {
+                Referenceable sdRef = (Referenceable) tableRef.get(HiveDataModelGenerator.STORAGE_DESC);
+                Assert.assertEquals(sdRef.get(HiveDataModelGenerator.STORAGE_DESC_INPUT_FMT),
+                        "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat");
+                Assert.assertEquals(sdRef.get(HiveDataModelGenerator.STORAGE_DESC_OUTPUT_FMT),
+                        "org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat");
+                Assert.assertNotNull(sdRef.get("serdeInfo"));
 
-        Referenceable tableRef = dgiCLient.getEntity(tableId);
-        Referenceable sdRef = (Referenceable)tableRef.get(HiveDataModelGenerator.STORAGE_DESC);
-        Assert.assertEquals(sdRef.get(HiveDataModelGenerator.STORAGE_DESC_INPUT_FMT), "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat");
-        Assert.assertEquals(sdRef.get(HiveDataModelGenerator.STORAGE_DESC_OUTPUT_FMT), "org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat");
-        Assert.assertNotNull(sdRef.get("serdeInfo"));
-
-        Struct serdeInfo = (Struct) sdRef.get("serdeInfo");
-        Assert.assertEquals(serdeInfo.get("serializationLib"), "org.apache.hadoop.hive.ql.io.orc.OrcSerde");
-        Assert.assertNotNull(serdeInfo.get(HiveDataModelGenerator.PARAMETERS));
-        Assert.assertEquals(((Map<String, String>)serdeInfo.get(HiveDataModelGenerator.PARAMETERS)).get("serialization.format"), "1");
+                Struct serdeInfo = (Struct) sdRef.get("serdeInfo");
+                Assert.assertEquals(serdeInfo.get("serializationLib"), "org.apache.hadoop.hive.ql.io.orc.OrcSerde");
+                Assert.assertNotNull(serdeInfo.get(HiveDataModelGenerator.PARAMETERS));
+                Assert.assertEquals(
+                        ((Map<String, String>) serdeInfo.get(HiveDataModelGenerator.PARAMETERS))
+                                .get("serialization.format"),
+                        "1");
+            }
+        });
 
 
         /**
@@ -807,7 +870,7 @@ public class HiveHookIT {
          * query = "alter table " + tableName + " STORED AS " + testFormat.toUpperCase();
          * runCommand(query);
 
-         * tableRef = dgiCLient.getEntity(tableId);
+         * tableRef = atlasClient.getEntity(tableId);
          * sdRef = (Referenceable)tableRef.get(HiveDataModelGenerator.STORAGE_DESC);
          * Assert.assertEquals(sdRef.get(HiveDataModelGenerator.STORAGE_DESC_INPUT_FMT), "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat");
          * Assert.assertEquals(sdRef.get(HiveDataModelGenerator.STORAGE_DESC_OUTPUT_FMT), "org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat");
@@ -818,31 +881,37 @@ public class HiveHookIT {
     @Test
     public void testAlterTableBucketingClusterSort() throws Exception {
         String tableName = createTable();
-        ImmutableList<String> cols = ImmutableList.<String>of("id");
+        ImmutableList<String> cols = ImmutableList.of("id");
         runBucketSortQuery(tableName, 5, cols, cols);
 
-        cols = ImmutableList.<String>of("id", "name");
+        cols = ImmutableList.of("id", "name");
         runBucketSortQuery(tableName, 2, cols, cols);
     }
 
-    private void runBucketSortQuery(String tableName, int numBuckets,  ImmutableList<String> bucketCols,ImmutableList<String> sortCols) throws Exception {
+    private void runBucketSortQuery(String tableName, final int numBuckets,  final ImmutableList<String> bucketCols,
+                                    final ImmutableList<String> sortCols) throws Exception {
         final String fmtQuery = "alter table %s CLUSTERED BY (%s) SORTED BY (%s) INTO %s BUCKETS";
-        String query = String.format(fmtQuery, tableName, stripListBrackets(bucketCols.toString()), stripListBrackets(sortCols.toString()), numBuckets);
+        String query = String.format(fmtQuery, tableName, stripListBrackets(bucketCols.toString()),
+                stripListBrackets(sortCols.toString()), numBuckets);
         runCommand(query);
-        verifyBucketSortingProperties(tableName, numBuckets, bucketCols, sortCols);
+        assertTableIsRegistered(DEFAULT_DB, tableName, new AssertPredicate() {
+            @Override
+            public void assertOnEntity(Referenceable entity) throws Exception {
+                verifyBucketSortingProperties(entity, numBuckets, bucketCols, sortCols);
+            }
+        });
     }
 
     private String stripListBrackets(String listElements) {
         return StringUtils.strip(StringUtils.strip(listElements, "["), "]");
     }
 
-    private void verifyBucketSortingProperties(String tableName, int numBuckets, ImmutableList<String> bucketColNames, ImmutableList<String>  sortcolNames) throws Exception {
-
-        String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
-
-        Referenceable tableRef = dgiCLient.getEntity(tableId);
-        Referenceable sdRef = (Referenceable)tableRef.get(HiveDataModelGenerator.STORAGE_DESC);
-        Assert.assertEquals(((scala.math.BigInt) sdRef.get(HiveDataModelGenerator.STORAGE_NUM_BUCKETS)).intValue(), numBuckets);
+    private void verifyBucketSortingProperties(Referenceable tableRef, int numBuckets,
+                                               ImmutableList<String> bucketColNames,
+                                               ImmutableList<String>  sortcolNames) throws Exception {
+        Referenceable sdRef = (Referenceable) tableRef.get(HiveDataModelGenerator.STORAGE_DESC);
+        Assert.assertEquals(((scala.math.BigInt) sdRef.get(HiveDataModelGenerator.STORAGE_NUM_BUCKETS)).intValue(),
+                numBuckets);
         Assert.assertEquals(sdRef.get("bucketCols"), bucketColNames);
 
         List<Struct> hiveOrderStructList = (List<Struct>) sdRef.get("sortCols");
@@ -851,7 +920,7 @@ public class HiveHookIT {
 
         for (int i = 0; i < sortcolNames.size(); i++) {
             Assert.assertEquals(hiveOrderStructList.get(i).get("col"), sortcolNames.get(i));
-            Assert.assertEquals(((scala.math.BigInt)hiveOrderStructList.get(i).get("order")).intValue(), 1);
+            Assert.assertEquals(((scala.math.BigInt) hiveOrderStructList.get(i).get("order")).intValue(), 1);
         }
     }
 
@@ -882,8 +951,12 @@ public class HiveHookIT {
 
         final String query = String.format("drop table %s ", tableName);
         runCommand(query);
-        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), "id"));
-        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), "name"));
+        assertColumnIsNotRegistered(HiveMetaStoreBridge
+                .getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName),
+                        "id"));
+        assertColumnIsNotRegistered(HiveMetaStoreBridge
+                .getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName),
+                        "name"));
         assertTableIsNotRegistered(DEFAULT_DB, tableName);
     }
 
@@ -903,8 +976,11 @@ public class HiveHookIT {
         runCommand(query);
 
         //Verify columns are not registered for one of the tables
-        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableNames[0]), "id"));
-        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableNames[0]), "name"));
+        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(
+                HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableNames[0]), "id"));
+        assertColumnIsNotRegistered(HiveMetaStoreBridge
+                .getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableNames[0]),
+                        "name"));
 
         for(int i = 0; i < numTables; i++) {
             assertTableIsNotRegistered(dbName, tableNames[i]);
@@ -974,8 +1050,12 @@ public class HiveHookIT {
         query = String.format("drop view %s ", viewName);
 
         runCommand(query);
-        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, viewName), "id"));
-        assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, viewName), "name"));
+        assertColumnIsNotRegistered(HiveMetaStoreBridge
+                .getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, viewName),
+                        "id"));
+        assertColumnIsNotRegistered(HiveMetaStoreBridge
+                .getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, viewName),
+                        "name"));
         assertTableIsNotRegistered(DEFAULT_DB, viewName);
     }
 
@@ -1006,16 +1086,20 @@ public class HiveHookIT {
     @Test
     public void testAlterDBOwner() throws Exception {
         String dbName = createDatabase();
+        assertDatabaseIsRegistered(dbName);
+
         final String owner = "testOwner";
-        String dbId = assertDatabaseIsRegistered(dbName);
         final String fmtQuery = "alter database %s set OWNER %s %s";
         String query = String.format(fmtQuery, dbName, "USER", owner);
 
         runCommand(query);
 
-        assertDatabaseIsRegistered(dbName);
-        Referenceable entity = dgiCLient.getEntity(dbId);
-        Assert.assertEquals(entity.get(HiveDataModelGenerator.OWNER), owner);
+        assertDatabaseIsRegistered(dbName, new AssertPredicate() {
+            @Override
+            public void assertOnEntity(Referenceable entity) {
+                assertEquals(entity.get(HiveDataModelGenerator.OWNER), owner);
+            }
+        });
     }
 
     @Test
@@ -1073,30 +1157,38 @@ public class HiveHookIT {
         testAlterProperties(Entity.Type.TABLE, viewName, fmtQuery);
     }
 
-    private void verifyEntityProperties(Entity.Type type, String entityName, Map<String, String> expectedProps, boolean checkIfNotExists) throws Exception {
-
-        String entityId = null;
-
+    private void verifyEntityProperties(Entity.Type type, String entityName, final Map<String, String> expectedProps,
+                                        final boolean checkIfNotExists) throws Exception {
         switch(type) {
         case TABLE:
-            entityId = assertTableIsRegistered(DEFAULT_DB, entityName);
+            assertTableIsRegistered(DEFAULT_DB, entityName, new AssertPredicate() {
+                @Override
+                public void assertOnEntity(Referenceable entity) throws Exception {
+                    verifyProperties(entity, expectedProps, checkIfNotExists);
+                }
+            });
             break;
         case DATABASE:
-            entityId = assertDatabaseIsRegistered(entityName);
+            assertDatabaseIsRegistered(entityName, new AssertPredicate() {
+                @Override
+                public void assertOnEntity(Referenceable entity) throws Exception {
+                    verifyProperties(entity, expectedProps, checkIfNotExists);
+                }
+            });
             break;
         }
-
-        Referenceable ref = dgiCLient.getEntity(entityId);
-        verifyProperties(ref, expectedProps, checkIfNotExists);
     }
 
-    private void verifyTableSdProperties(String tableName, String serdeLib, Map<String, String> expectedProps) throws Exception {
-        String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
-        Referenceable tableRef = dgiCLient.getEntity(tableId);
-        Referenceable sdRef = (Referenceable) tableRef.get(HiveDataModelGenerator.STORAGE_DESC);
-        Struct serdeInfo = (Struct) sdRef.get("serdeInfo");
-        Assert.assertEquals(serdeInfo.get("serializationLib"), serdeLib);
-        verifyProperties(serdeInfo, expectedProps, false);
+    private void verifyTableSdProperties(String tableName, final String serdeLib, final Map<String, String> expectedProps) throws Exception {
+        assertTableIsRegistered(DEFAULT_DB, tableName, new AssertPredicate() {
+            @Override
+            public void assertOnEntity(Referenceable tableRef) throws Exception {
+                Referenceable sdRef = (Referenceable) tableRef.get(HiveDataModelGenerator.STORAGE_DESC);
+                Struct serdeInfo = (Struct) sdRef.get("serdeInfo");
+                Assert.assertEquals(serdeInfo.get("serializationLib"), serdeLib);
+                verifyProperties(serdeInfo, expectedProps, false);
+            }
+        });
     }
 
     private void verifyProperties(Struct referenceable, Map<String, String> expectedProps, boolean checkIfNotExists) {
@@ -1119,108 +1211,80 @@ public class HiveHookIT {
     }
 
     private String assertProcessIsRegistered(String queryStr) throws Exception {
-        //        String dslQuery = String.format("%s where queryText = \"%s\"", HiveDataTypes.HIVE_PROCESS.getName(),
-        //                normalize(queryStr));
-        //        assertEntityIsRegistered(dslQuery, true);
-        //todo replace with DSL
-        String typeName = HiveDataTypes.HIVE_PROCESS.getName();
-        String gremlinQuery =
-                String.format("g.V.has('__typeName', '%s').has('%s.queryText', \"%s\").toList()", typeName, typeName,
-                        normalize(queryStr));
-        return assertEntityIsRegistered(gremlinQuery);
+        LOG.debug("Searching for process with query {}", queryStr);
+        return assertEntityIsRegistered(HiveDataTypes.HIVE_PROCESS.getName(), AtlasClient.NAME, normalize(queryStr), null);
     }
 
     private void assertProcessIsNotRegistered(String queryStr) throws Exception {
-        //        String dslQuery = String.format("%s where queryText = \"%s\"", HiveDataTypes.HIVE_PROCESS.getName(),
-        //                normalize(queryStr));
-        //        assertEntityIsRegistered(dslQuery, true);
-        //todo replace with DSL
-        String typeName = HiveDataTypes.HIVE_PROCESS.getName();
-        String gremlinQuery =
-            String.format("g.V.has('__typeName', '%s').has('%s.queryText', \"%s\").toList()", typeName, typeName,
-                normalize(queryStr));
-        assertEntityIsNotRegistered(QUERY_TYPE.GREMLIN, gremlinQuery);
-    }
-
-    private String normalize(String str) {
-        if (StringUtils.isEmpty(str)) {
-            return null;
-        }
-        return StringEscapeUtils.escapeJava(str.toLowerCase());
+        LOG.debug("Searching for process with query {}", queryStr);
+        assertEntityIsNotRegistered(HiveDataTypes.HIVE_PROCESS.getName(), AtlasClient.NAME, normalize(queryStr));
     }
 
     private void assertTableIsNotRegistered(String dbName, String tableName) throws Exception {
         LOG.debug("Searching for table {}.{}", dbName, tableName);
-        String query = String.format(
-                "%s as t where tableName = '%s', db where name = '%s' and clusterName = '%s'" + " select t",
-                HiveDataTypes.HIVE_TABLE.getName(), tableName.toLowerCase(), dbName.toLowerCase(), CLUSTER_NAME);
-        assertEntityIsNotRegistered(QUERY_TYPE.DSL, query);
+        String tableQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableName);
+        assertEntityIsNotRegistered(HiveDataTypes.HIVE_TABLE.getName(), AtlasClient.NAME, tableQualifiedName);
     }
 
     private void assertDBIsNotRegistered(String dbName) throws Exception {
-        LOG.debug("Searching for database {}.{}", dbName);
-        String query = String.format(
-            "%s as d where name = '%s' and clusterName = '%s'" + " select d",
-            HiveDataTypes.HIVE_DB.getName(), dbName.toLowerCase(), CLUSTER_NAME);
-        assertEntityIsNotRegistered(QUERY_TYPE.DSL, query);
+        LOG.debug("Searching for database {}", dbName);
+        String dbQualifiedName = HiveMetaStoreBridge.getDBQualifiedName(CLUSTER_NAME, dbName);
+        assertEntityIsNotRegistered(HiveDataTypes.HIVE_DB.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbQualifiedName);
     }
 
     private String assertTableIsRegistered(String dbName, String tableName) throws Exception {
-        LOG.debug("Searching for table {}.{}", dbName, tableName);
-        String query = String.format(
-                "%s as t where tableName = '%s', db where name = '%s' and clusterName = '%s'" + " select t",
-                HiveDataTypes.HIVE_TABLE.getName(), tableName.toLowerCase(), dbName.toLowerCase(), CLUSTER_NAME);
-        return assertEntityIsRegistered(query, "t");
+        return assertTableIsRegistered(dbName, tableName, null);
     }
 
-    private String getTableEntity(String dbName, String tableName) throws Exception {
+    private String assertTableIsRegistered(String dbName, String tableName, AssertPredicate assertPredicate) throws Exception {
         LOG.debug("Searching for table {}.{}", dbName, tableName);
-        String query = String.format(
-            "%s as t where tableName = '%s', db where name = '%s' and clusterName = '%s'" + " select t",
-            HiveDataTypes.HIVE_TABLE.getName(), tableName.toLowerCase(), dbName.toLowerCase(), CLUSTER_NAME);
-        return assertEntityIsRegistered(query, "t");
+        String tableQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableName);
+        return assertEntityIsRegistered(HiveDataTypes.HIVE_TABLE.getName(), AtlasClient.NAME, tableQualifiedName,
+                assertPredicate);
     }
 
     private String assertDatabaseIsRegistered(String dbName) throws Exception {
-        LOG.debug("Searching for database {}", dbName);
-        String query = String.format("%s where name = '%s' and clusterName = '%s'", HiveDataTypes.HIVE_DB.getName(),
-                dbName.toLowerCase(), CLUSTER_NAME);
-        return assertEntityIsRegistered(query);
+        return assertDatabaseIsRegistered(dbName, null);
     }
 
-    private String assertEntityIsRegistered(final String query, String... arg) throws Exception {
-        waitFor(60000, new Predicate() {
+    private String assertDatabaseIsRegistered(String dbName, AssertPredicate assertPredicate) throws Exception {
+        LOG.debug("Searching for database {}", dbName);
+        String dbQualifiedName = HiveMetaStoreBridge.getDBQualifiedName(CLUSTER_NAME, dbName);
+        return assertEntityIsRegistered(HiveDataTypes.HIVE_DB.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+                dbQualifiedName, assertPredicate);
+    }
+
+    private String assertEntityIsRegistered(final String typeName, final String property, final String value,
+                                            final AssertPredicate assertPredicate) throws Exception {
+        waitFor(80000, new Predicate() {
             @Override
-            public boolean evaluate() throws Exception {
-                JSONArray results = dgiCLient.search(query);
-                return results.length() == 1;
+            public void evaluate() throws Exception {
+                Referenceable entity = atlasClient.getEntity(typeName, property, value);
+                assertNotNull(entity);
+                if(assertPredicate != null) {
+                    assertPredicate.assertOnEntity(entity);
+                }
             }
         });
-
-        String column = (arg.length > 0) ? arg[0] : "_col_0";
-
-        JSONArray results = dgiCLient.search(query);
-        JSONObject row = results.getJSONObject(0);
-        if (row.has("__guid")) {
-            return row.getString("__guid");
-        } else if (row.has("$id$")) {
-            return row.getJSONObject("$id$").getString("id");
-        } else {
-            return row.getJSONObject(column).getString("id");
-        }
+        Referenceable entity = atlasClient.getEntity(typeName, property, value);
+        return entity.getId()._getId();
     }
 
-    private void assertEntityIsNotRegistered(QUERY_TYPE queryType, String query) throws Exception {
-        JSONArray results = null;
-        switch(queryType) {
-        case DSL :
-            results = dgiCLient.searchByDSL(query);
-            break;
-        case GREMLIN :
-            results = dgiCLient.searchByGremlin(query);
-            break;
-        }
-        Assert.assertEquals(results.length(), 0);
+    private void assertEntityIsNotRegistered(final String typeName, final String property, final String value) throws Exception {
+        waitFor(80000, new Predicate() {
+            @Override
+            public void evaluate() throws Exception {
+                try {
+                    atlasClient.getEntity(typeName, property, value);
+                } catch (AtlasServiceException e) {
+                    if(e.getStatus() == ClientResponse.Status.NOT_FOUND) {
+                        return;
+                    }
+                }
+                fail(String.format("Entity was not supposed to exist for typeName = %s, attributeName = %s, "
+                        + "attributeValue = %s", typeName, property, value));
+            }
+        });
     }
 
     @Test
@@ -1236,13 +1300,13 @@ public class HiveHookIT {
         String table2Id = assertTableIsRegistered(db2, table2);
 
         String datasetName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, db2, table2);
-        JSONObject response = dgiCLient.getInputGraph(datasetName);
+        JSONObject response = atlasClient.getInputGraph(datasetName);
         JSONObject vertices = response.getJSONObject("values").getJSONObject("vertices");
         Assert.assertTrue(vertices.has(table1Id));
         Assert.assertTrue(vertices.has(table2Id));
 
         datasetName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, table1);
-        response = dgiCLient.getOutputGraph(datasetName);
+        response = atlasClient.getOutputGraph(datasetName);
         vertices = response.getJSONObject("values").getJSONObject("vertices");
         Assert.assertTrue(vertices.has(table1Id));
         Assert.assertTrue(vertices.has(table2Id));
@@ -1255,15 +1319,18 @@ public class HiveHookIT {
         runCommand("show transactions");
     }
 
-    public interface Predicate {
+    public interface AssertPredicate {
+        void assertOnEntity(Referenceable entity) throws Exception;
+    }
 
+    public interface Predicate {
         /**
          * Perform a predicate evaluation.
          *
          * @return the boolean result of the evaluation.
          * @throws Exception thrown if the predicate evaluation could not evaluate.
          */
-        boolean evaluate() throws Exception;
+        void evaluate() throws Exception;
     }
 
     /**
@@ -1276,13 +1343,17 @@ public class HiveHookIT {
         ParamChecker.notNull(predicate, "predicate");
         long mustEnd = System.currentTimeMillis() + timeout;
 
-        boolean eval;
-        while (!(eval = predicate.evaluate()) && System.currentTimeMillis() < mustEnd) {
-            LOG.info("Waiting up to {} msec", mustEnd - System.currentTimeMillis());
-            Thread.sleep(100);
-        }
-        if (!eval) {
-            throw new Exception("Waiting timed out after " + timeout + " msec");
+        while (true) {
+            try {
+                predicate.evaluate();
+                return;
+            } catch(Error | Exception e) {
+                if (System.currentTimeMillis() >= mustEnd) {
+                    fail("Assertions failed. Failing after waiting for timeout " + timeout + " msecs", e);
+                }
+                LOG.debug("Waiting up to " + (mustEnd - System.currentTimeMillis()) + " msec as assertion failed", e);
+                Thread.sleep(300);
+            }
         }
     }
 }

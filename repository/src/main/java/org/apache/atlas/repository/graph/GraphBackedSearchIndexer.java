@@ -100,7 +100,11 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             management.buildIndex(Constants.EDGE_INDEX, Edge.class).buildMixedIndex(Constants.BACKING_INDEX);
 
             // create a composite index for guid as its unique
-            createCompositeAndMixedIndex(management, Constants.GUID_PROPERTY_KEY, String.class, true, Cardinality.SINGLE, true);
+            createCompositeAndMixedIndex(management, Constants.GUID_PROPERTY_KEY, String.class, true,
+                    Cardinality.SINGLE, true);
+
+            // create a composite index for entity state
+            createCompositeAndMixedIndex(management, Constants.STATE_PROPERTY_KEY, String.class, false, Cardinality.SINGLE, true);
 
             // create a composite and mixed index for type since it can be combined with other keys
             createCompositeAndMixedIndex(management, Constants.ENTITY_TYPE_PROPERTY_KEY, String.class, false, Cardinality.SINGLE,
@@ -223,13 +227,13 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         switch (field.dataType().getTypeCategory()) {
         case PRIMITIVE:
             Cardinality cardinality = getCardinality(field.multiplicity);
-            createCompositeAndMixedIndex(management, propertyName, getPrimitiveClass(field.dataType()), field.isUnique,
+            createCompositeAndMixedIndex(management, propertyName, getPrimitiveClass(field.dataType()), false,
                     cardinality, false);
             break;
 
         case ENUM:
             cardinality = getCardinality(field.multiplicity);
-            createCompositeAndMixedIndex(management, propertyName, String.class, field.isUnique, cardinality, false);
+            createCompositeAndMixedIndex(management, propertyName, String.class, false, cardinality, false);
             break;
 
         case ARRAY:

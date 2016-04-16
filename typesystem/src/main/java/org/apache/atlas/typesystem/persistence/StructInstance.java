@@ -764,4 +764,9 @@ public class StructInstance implements ITypedStruct {
         byte[] digest = digester.digest();
         return MD5Utils.toString(digest);
     }
+
+    @Override
+    public String toShortString() {
+        return String.format("struct[type=%s]", dataTypeName);
+    }
 }

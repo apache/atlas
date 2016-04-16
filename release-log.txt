@@ -3,6 +3,7 @@ Apache Atlas Release Notes
 
 --trunk - unreleased
 INCOMPATIBLE CHANGES:
+ATLAS-622 Introduce soft delete (shwethags)
 ATLAS-494 UI Authentication (nixonrodrigues via shwethags)
 ATLAS-621 Introduce entity state in Id object (shwethags)
 ATLAS-474 Server does not start if the type is updated with same super type class information (dkantor via shwethags)

@@ -57,6 +57,7 @@ import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
  */
 public class AtlasClient {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasClient.class);
+
     public static final String NAME = "name";
     public static final String GUID = "GUID";
     public static final String TYPE = "type";
@@ -403,6 +404,7 @@ public class AtlasClient {
      * @throws AtlasServiceException
      */
     public List<String> createType(String typeAsJson) throws AtlasServiceException {
+        LOG.debug("Creating type definition: {}", typeAsJson);
         JSONObject response = callAPI(API.CREATE_TYPE, typeAsJson);
         return extractResults(response, AtlasClient.TYPES, new ExtractOperation<String, JSONObject>() {
             @Override
@@ -429,6 +431,7 @@ public class AtlasClient {
      * @throws AtlasServiceException
      */
     public List<String> updateType(String typeAsJson) throws AtlasServiceException {
+        LOG.debug("Updating tyep definition: {}", typeAsJson);
         JSONObject response = callAPI(API.UPDATE_TYPE, typeAsJson);
         return extractResults(response, AtlasClient.TYPES, new ExtractOperation<String, JSONObject>() {
             @Override
@@ -474,6 +477,7 @@ public class AtlasClient {
      * @throws AtlasServiceException
      */
     public JSONArray createEntity(JSONArray entities) throws AtlasServiceException {
+        LOG.debug("Creating entities: {}", entities);
         JSONObject response = callAPI(API.CREATE_ENTITY, entities.toString());
         try {
             return response.getJSONArray(GUID);
@@ -522,6 +526,7 @@ public class AtlasClient {
 
     public JSONArray updateEntities(Collection<Referenceable> entities) throws AtlasServiceException {
         JSONArray entitiesArray = getEntitiesArray(entities);
+        LOG.debug("Updating entities: {}", entitiesArray);
         JSONObject response = callAPI(API.UPDATE_ENTITY, entitiesArray.toString());
         try {
             return response.getJSONArray(GUID);
@@ -538,6 +543,7 @@ public class AtlasClient {
      * @param value     property value
      */
     public void updateEntityAttribute(final String guid, final String attribute, String value) throws AtlasServiceException {
+        LOG.debug("Updating entity id: {}, attribute name: {}, attribute value: {}", guid, attribute, value);
         callAPIWithRetries(API.UPDATE_ENTITY_PARTIAL, value, new ResourceCreator() {
             @Override
             public WebResource createResource() {
@@ -555,7 +561,7 @@ public class AtlasClient {
         for (int i = 0; i < getNumberOfRetries(); i++) {
             WebResource resource = resourceCreator.createResource();
             try {
-                LOG.info("using resource {} for {} times", resource.getURI(), i);
+                LOG.debug("Using resource {} for {} times", resource.getURI(), i);
                 JSONObject result = callAPIWithResource(api, resource, requestObject);
                 return result;
             } catch (ClientHandlerException che) {
@@ -578,6 +584,7 @@ public class AtlasClient {
      */
     public void updateEntity(String guid, Referenceable entity) throws AtlasServiceException {
         String entityJson = InstanceSerialization.toJson(entity, true);
+        LOG.debug("Updating entity id {} with {}", guid, entityJson);
         callAPI(API.UPDATE_ENTITY_PARTIAL, entityJson, guid);
     }
 
@@ -904,6 +911,7 @@ public class AtlasClient {
             clientResponse = resource.accept(JSON_MEDIA_TYPE).type(JSON_MEDIA_TYPE)
                 .method(api.getMethod(), ClientResponse.class, requestObject);
 
+            LOG.debug("API {} returned status {}", resource.getURI(), clientResponse.getStatus());
             if (clientResponse.getStatus() == api.getExpectedStatus().getStatusCode()) {
                 String responseAsString = clientResponse.getEntity(String.class);
                 try {

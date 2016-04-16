@@ -69,6 +69,7 @@ public class BaseHiveRepositoryTest {
     protected void setUp() throws Exception {
         setUpTypes();
         new GraphBackedSearchIndexer(graphProvider);
+        RequestContext.createContext();
         setupInstances();
         TestUtils.dumpGraph(graphProvider.get());
     }

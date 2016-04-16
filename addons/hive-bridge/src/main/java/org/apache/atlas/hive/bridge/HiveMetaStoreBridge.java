@@ -459,7 +459,7 @@ public class HiveMetaStoreBridge {
         final String[] parts = tableQualifiedName.split("@");
         final String tableName = parts[0];
         final String clusterName = parts[1];
-        return String.format("%s.%s@%s", tableName, colName, clusterName);
+        return String.format("%s.%s@%s", tableName, colName.toLowerCase(), clusterName);
     }
 
     public List<Referenceable> getColumns(List<FieldSchema> schemaList, String tableQualifiedName) throws Exception {

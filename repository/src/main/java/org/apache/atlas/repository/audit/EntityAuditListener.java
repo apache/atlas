@@ -45,7 +45,7 @@ public class EntityAuditListener implements EntityChangeListener {
     @Override
     public void onEntitiesAdded(Collection<ITypedReferenceableInstance> entities) throws AtlasException {
         List<EntityAuditEvent> events = new ArrayList<>();
-        long currentTime = System.currentTimeMillis();
+        long currentTime = RequestContext.get().getRequestTime();
         for (ITypedReferenceableInstance entity : entities) {
             EntityAuditEvent event = createEvent(entity, currentTime, EntityAuditEvent.EntityAuditAction.ENTITY_CREATE,
                     "Created: " + InstanceSerialization.toJson(entity, true));
@@ -62,7 +62,7 @@ public class EntityAuditListener implements EntityChangeListener {
     @Override
     public void onEntitiesUpdated(Collection<ITypedReferenceableInstance> entities) throws AtlasException {
         List<EntityAuditEvent> events = new ArrayList<>();
-        long currentTime = System.currentTimeMillis();
+        long currentTime = RequestContext.get().getRequestTime();
         for (ITypedReferenceableInstance entity : entities) {
             EntityAuditEvent event = createEvent(entity, currentTime, EntityAuditEvent.EntityAuditAction.ENTITY_UPDATE,
                     "Updated: " + InstanceSerialization.toJson(entity, true));
@@ -73,7 +73,7 @@ public class EntityAuditListener implements EntityChangeListener {
 
     @Override
     public void onTraitAdded(ITypedReferenceableInstance entity, IStruct trait) throws AtlasException {
-        EntityAuditEvent event = createEvent(entity, System.currentTimeMillis(),
+        EntityAuditEvent event = createEvent(entity, RequestContext.get().getRequestTime(),
                 EntityAuditEvent.EntityAuditAction.TAG_ADD,
                 "Added trait: " + InstanceSerialization.toJson(trait, true));
         auditRepository.putEvents(event);
@@ -81,7 +81,7 @@ public class EntityAuditListener implements EntityChangeListener {
 
     @Override
     public void onTraitDeleted(ITypedReferenceableInstance entity, String traitName) throws AtlasException {
-        EntityAuditEvent event = createEvent(entity, System.currentTimeMillis(),
+        EntityAuditEvent event = createEvent(entity, RequestContext.get().getRequestTime(),
                 EntityAuditEvent.EntityAuditAction.TAG_DELETE, "Deleted trait: " + traitName);
         auditRepository.putEvents(event);
     }
@@ -89,7 +89,7 @@ public class EntityAuditListener implements EntityChangeListener {
     @Override
     public void onEntitiesDeleted(Collection<ITypedReferenceableInstance> entities) throws AtlasException {
         List<EntityAuditEvent> events = new ArrayList<>();
-        long currentTime = System.currentTimeMillis();
+        long currentTime = RequestContext.get().getRequestTime();
         for (ITypedReferenceableInstance entity : entities) {
             EntityAuditEvent event = createEvent(entity, currentTime,
                     EntityAuditEvent.EntityAuditAction.ENTITY_DELETE, "Deleted entity");

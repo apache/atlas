@@ -24,22 +24,15 @@ import com.google.inject.Inject;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.repository.audit.EntityAuditRepository;
-import org.apache.atlas.repository.audit.HBaseBasedAuditRepository;
-import org.apache.atlas.repository.audit.HBaseTestUtils;
-import org.apache.atlas.typesystem.exception.TypeNotFoundException;
-import org.apache.atlas.typesystem.exception.EntityNotFoundException;
-import org.apache.atlas.typesystem.types.ClassType;
-import org.apache.atlas.typesystem.types.DataTypes;
-import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
-import org.apache.atlas.typesystem.types.utils.TypesUtil;
-import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.listener.EntityChangeListener;
+import org.apache.atlas.repository.audit.EntityAuditRepository;
+import org.apache.atlas.repository.audit.HBaseBasedAuditRepository;
+import org.apache.atlas.repository.audit.HBaseTestUtils;
 import org.apache.atlas.repository.graph.GraphProvider;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.typesystem.IReferenceableInstance;
@@ -48,12 +41,19 @@ import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.TypesDef;
+import org.apache.atlas.typesystem.exception.EntityNotFoundException;
+import org.apache.atlas.typesystem.exception.TypeNotFoundException;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.typesystem.persistence.Id;
+import org.apache.atlas.typesystem.types.ClassType;
+import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.EnumValue;
+import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.ValueConversionException;
+import org.apache.atlas.typesystem.types.utils.TypesUtil;
+import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.lang.RandomStringUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -67,15 +67,19 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.atlas.TestUtils.COLUMNS_ATTR_NAME;
+import static org.apache.atlas.TestUtils.COLUMN_TYPE;
+import static org.apache.atlas.TestUtils.TABLE_TYPE;
+import static org.apache.atlas.TestUtils.createColumnEntity;
+import static org.apache.atlas.TestUtils.createDBEntity;
+import static org.apache.atlas.TestUtils.createTableEntity;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 @Guice(modules = RepositoryMetadataModule.class)
@@ -87,25 +91,22 @@ public class DefaultMetadataServiceTest {
     private GraphProvider<TitanGraph> graphProvider;
 
     @Inject
-    private EntityAuditRepository repository;
+    private EntityAuditRepository auditRepository;
 
     private Referenceable db = createDBEntity();
-
-    private Id dbId;
 
     private Referenceable table;
 
     private Id tableId;
     
     private final String NAME = "name";
-    private final String COLUMNS_ATTR_NAME = "columns";
 
 
     @BeforeTest
     public void setUp() throws Exception {
-        if (repository instanceof HBaseBasedAuditRepository) {
+        if (auditRepository instanceof HBaseBasedAuditRepository) {
             HBaseTestUtils.startCluster();
-            ((HBaseBasedAuditRepository) repository).start();
+            ((HBaseBasedAuditRepository) auditRepository).start();
         }
         RequestContext.createContext();
         RequestContext.get().setUser("testuser");
@@ -118,9 +119,7 @@ public class DefaultMetadataServiceTest {
         }
 
         String dbGUid = createInstance(db);
-        dbId = new Id(dbGUid, 0, TestUtils.DATABASE_TYPE);
-
-        table = createTableEntity(dbId);
+        table = createTableEntity(dbGUid);
         String tableGuid = createInstance(table);
         String tableDefinitionJson =
                 metadataService.getEntityDefinition(TestUtils.TABLE_TYPE, NAME, (String) table.get(NAME));
@@ -143,25 +142,28 @@ public class DefaultMetadataServiceTest {
             e.printStackTrace();
         }
 
-        if (repository instanceof HBaseBasedAuditRepository) {
-            ((HBaseBasedAuditRepository) repository).stop();
+        if (auditRepository instanceof HBaseBasedAuditRepository) {
+            ((HBaseBasedAuditRepository) auditRepository).stop();
             HBaseTestUtils.stopCluster();
         }
     }
 
     private String createInstance(Referenceable entity) throws Exception {
+        RequestContext.createContext();
+
         String entityjson = InstanceSerialization.toJson(entity, true);
         JSONArray entitiesJson = new JSONArray();
         entitiesJson.put(entityjson);
         String response = metadataService.createEntities(entitiesJson.toString());
         JSONArray guids = new JSONArray(response);
         if (guids != null && guids.length() > 0) {
-            return guids.getString(0);
+            return guids.getString(guids.length() - 1);
         }
         return null;
     }
 
     private String updateInstance(Referenceable entity) throws Exception {
+        RequestContext.createContext();
         ParamChecker.notNull(entity, "Entity");
         ParamChecker.notNull(entity.getId(), "Entity");
         String entityjson = InstanceSerialization.toJson(entity, true);
@@ -169,33 +171,6 @@ public class DefaultMetadataServiceTest {
         entitiesJson.put(entityjson);
         String response = metadataService.updateEntities(entitiesJson.toString());
         return new JSONArray(response).getString(0);
-    }
-
-    private Referenceable createDBEntity() {
-        Referenceable entity = new Referenceable(TestUtils.DATABASE_TYPE);
-        String dbName = RandomStringUtils.randomAlphanumeric(10);
-        entity.set(NAME, dbName);
-        entity.set("description", "us db");
-        return entity;
-    }
-
-    private Referenceable createTableEntity(Id dbId) {
-        Referenceable entity = new Referenceable(TestUtils.TABLE_TYPE);
-        String tableName = RandomStringUtils.randomAlphanumeric(10);
-        entity.set(NAME, tableName);
-        entity.set("description", "random table");
-        entity.set("type", "type");
-        entity.set("tableType", "MANAGED");
-        entity.set("database", dbId);
-        entity.set("created", new Date());
-        return entity;
-    }
-
-    private Referenceable createColumnEntity() {
-        Referenceable entity = new Referenceable(TestUtils.COLUMN_TYPE);
-        entity.set(NAME, RandomStringUtils.randomAlphanumeric(10));
-        entity.set("type", "VARCHAR(32)");
-        return entity;
     }
 
     @Test(expectedExceptions = TypeNotFoundException.class)
@@ -246,8 +221,14 @@ public class DefaultMetadataServiceTest {
         assertAuditEvents(id, EntityAuditEvent.EntityAuditAction.ENTITY_DELETE);
     }
 
+    private List<String> deleteEntities(String... guids) throws AtlasException {
+        RequestContext.createContext();
+        return metadataService.deleteEntities(Arrays.asList(guids));
+    }
+
     private void assertAuditEvents(String id, EntityAuditEvent.EntityAuditAction expectedAction) throws Exception {
-        List<EntityAuditEvent> events = repository.listEvents(id, null, (short) 10);
+        List<EntityAuditEvent> events =
+                auditRepository.listEvents(id, null, (short) 10);
         for (EntityAuditEvent event : events) {
             if (event.getAction() == expectedAction) {
                 return;
@@ -257,7 +238,7 @@ public class DefaultMetadataServiceTest {
     }
 
     private void assertAuditEvents(String entityId, int numEvents) throws Exception {
-        List<EntityAuditEvent> events = repository.listEvents(entityId, null, (short)numEvents);
+        List<EntityAuditEvent> events = metadataService.getAuditEvents(entityId, null, (short) numEvents);
         assertNotNull(events);
         assertEquals(events.size(), numEvents);
     }
@@ -357,7 +338,7 @@ public class DefaultMetadataServiceTest {
         Assert.assertTrue(partsMap.get("part2").equalsContents(((Map<String, Struct>)tableDefinition.get("partitionsMap")).get("part2")));
 
         //update struct value for existing map key
-        Struct partition2 = (Struct)partsMap.get("part2");
+        Struct partition2 = partsMap.get("part2");
         partition2.set(NAME, "test2Updated");
         updateInstance(table);
         tableDefinitionJson =
@@ -457,6 +438,11 @@ public class DefaultMetadataServiceTest {
         Assert.assertEquals(actualColumns, updatedColNameList);
     }
 
+    private void updateEntityPartial(String guid, Referenceable entity) throws AtlasException {
+        RequestContext.createContext();
+        metadataService.updateEntityPartialByGuid(guid, entity);
+    }
+
     @Test
     public void testUpdateEntityArrayOfClass() throws Exception {
         
@@ -470,7 +456,7 @@ public class DefaultMetadataServiceTest {
         Referenceable tableUpdated = new Referenceable(TestUtils.TABLE_TYPE, new HashMap<String, Object>() {{
             put(COLUMNS_ATTR_NAME, columns);
         }});
-        metadataService.updateEntityPartialByGuid(tableId._getId(), tableUpdated);
+        updateEntityPartial(tableId._getId(), tableUpdated);
 
         verifyArrayUpdates(TestUtils.TABLE_TYPE, NAME, (String) table.get(NAME), columns, COLUMNS_ATTR_NAME);
 
@@ -488,7 +474,7 @@ public class DefaultMetadataServiceTest {
         tableUpdated = new Referenceable(TestUtils.TABLE_TYPE, new HashMap<String, Object>() {{
             put(COLUMNS_ATTR_NAME, updateColumns);
         }});
-        metadataService.updateEntityPartialByGuid(tableId._getId(), tableUpdated);
+        updateEntityPartial(tableId._getId(), tableUpdated);
 
         verifyArrayUpdates(TestUtils.TABLE_TYPE, NAME, (String) table.get(NAME), updateColumns, COLUMNS_ATTR_NAME);
 
@@ -564,15 +550,6 @@ public class DefaultMetadataServiceTest {
                 Assert.assertTrue(((List<Referenceable>) entityDefinition.get(arrAttrName)).get(index).equalsContents(expectedArray.get(index)));
             }
         }
-    }
-
-    private void assertReferenceables(Referenceable r1, Referenceable r2) {
-        assertEquals(r1.getTypeName(), r2.getTypeName());
-        assertTrue(r1.getTraits().equals(r2.getTraits()));
-        for (String attr : r1.getValuesMap().keySet()) {
-            assertTrue(r1.getValuesMap().get(attr).equals(r2.getValuesMap().get(attr)));
-        }
-        //TODO assert trait instances and complex attributes
     }
 
     @Test
@@ -853,76 +830,48 @@ public class DefaultMetadataServiceTest {
             //expected
         }
     }
-    
+
     @Test
     public void testDeleteEntities() throws Exception {
-        // Create 2 table entities, each with 3 composite column entities
+        // Create a table entity, with 3 composite column entities
         Referenceable dbEntity = createDBEntity();
         String dbGuid = createInstance(dbEntity);
-        Id dbId = new Id(dbGuid, 0, TestUtils.DATABASE_TYPE);
-        Referenceable table1Entity = createTableEntity(dbId);
-        Referenceable table2Entity = createTableEntity(dbId);
+        Referenceable table1Entity = createTableEntity(dbGuid);
         Referenceable col1 = createColumnEntity();
         Referenceable col2 = createColumnEntity();
         Referenceable col3 = createColumnEntity();
         table1Entity.set(COLUMNS_ATTR_NAME, ImmutableList.of(col1, col2, col3));
-        table2Entity.set(COLUMNS_ATTR_NAME, ImmutableList.of(col1, col2, col3));
         createInstance(table1Entity);
-        createInstance(table2Entity);
-        
+
         // Retrieve the table entities from the repository,
         // to get their guids and the composite column guids.
-        String entityJson = metadataService.getEntityDefinition(TestUtils.TABLE_TYPE, 
-            NAME, (String)table1Entity.get(NAME));
+        String entityJson = metadataService.getEntityDefinition(TestUtils.TABLE_TYPE,
+                NAME, (String)table1Entity.get(NAME));
         Assert.assertNotNull(entityJson);
         table1Entity = InstanceSerialization.fromJsonReferenceable(entityJson, true);
-        Object val = table1Entity.get(COLUMNS_ATTR_NAME);
-        Assert.assertTrue(val instanceof List);
-        List<IReferenceableInstance> table1Columns = (List<IReferenceableInstance>) val;
-        entityJson = metadataService.getEntityDefinition(TestUtils.TABLE_TYPE, 
-            NAME, (String)table2Entity.get(NAME));
-        Assert.assertNotNull(entityJson);
-        table2Entity = InstanceSerialization.fromJsonReferenceable(entityJson, true);
-        val = table2Entity.get(COLUMNS_ATTR_NAME);
-        Assert.assertTrue(val instanceof List);
-        List<IReferenceableInstance> table2Columns = (List<IReferenceableInstance>) val;
+        List<IReferenceableInstance> table1Columns = (List<IReferenceableInstance>) table1Entity.get(COLUMNS_ATTR_NAME);
 
         // Register an EntityChangeListener to verify the notification mechanism
         // is working for deleteEntities().
         DeleteEntitiesChangeListener listener = new DeleteEntitiesChangeListener();
         metadataService.registerListener(listener);
-        
+
         // Delete the table entities.  The deletion should cascade
         // to their composite columns.
-        JSONArray deleteCandidateGuids = new JSONArray();
-        deleteCandidateGuids.put(table1Entity.getId()._getId());
-        deleteCandidateGuids.put(table2Entity.getId()._getId());
-        List<String> deletedGuids = metadataService.deleteEntities(
-            Arrays.asList(table1Entity.getId()._getId(), table2Entity.getId()._getId()));
+        List<String> deletedGuids = deleteEntities(table1Entity.getId()._getId());
 
-        // Verify that deleteEntities() response has guids for tables and their composite columns. 
+        // Verify that deleteEntities() response has guids for tables and their composite columns.
         Assert.assertTrue(deletedGuids.contains(table1Entity.getId()._getId()));
-        Assert.assertTrue(deletedGuids.contains(table2Entity.getId()._getId()));
         for (IReferenceableInstance column : table1Columns) {
             Assert.assertTrue(deletedGuids.contains(column.getId()._getId()));
         }
-        for (IReferenceableInstance column : table2Columns) {
-            Assert.assertTrue(deletedGuids.contains(column.getId()._getId()));
-        }
-        
+
         // Verify that tables and their composite columns have been deleted from the repository.
-        for (String guid : deletedGuids) {
-            try {
-                metadataService.getEntityDefinition(guid);
-                Assert.fail(EntityNotFoundException.class.getSimpleName() + 
-                    " expected but not thrown.  The entity with guid " + guid + 
-                    " still exists in the repository after being deleted." );
-            }
-            catch(EntityNotFoundException e) {
-                // The entity does not exist in the repository, so deletion was successful.
-            }
-        }
-        
+        assertEntityDeleted(TABLE_TYPE, NAME, table1Entity.get(NAME));
+        assertEntityDeleted(COLUMN_TYPE, NAME, col1.get(NAME));
+        assertEntityDeleted(COLUMN_TYPE, NAME, col2.get(NAME));
+        assertEntityDeleted(COLUMN_TYPE, NAME, col3.get(NAME));
+
         // Verify that the listener was notified about the deleted entities.
         Collection<ITypedReferenceableInstance> deletedEntitiesFromListener = listener.getDeletedEntities();
         Assert.assertNotNull(deletedEntitiesFromListener);
@@ -935,13 +884,22 @@ public class DefaultMetadataServiceTest {
         Assert.assertTrue(deletedGuidsFromListener.containsAll(deletedGuids));
     }
 
+    private void assertEntityDeleted(String typeName, String attributeName, Object attributeValue)
+            throws AtlasException {
+        try {
+            metadataService.getEntityDefinition(typeName, attributeName, (String) attributeValue);
+            fail("Expected EntityNotFoundException");
+        } catch(EntityNotFoundException e) {
+            //expected
+        }
+    }
+
     @Test
     public void testDeleteEntityByUniqueAttribute() throws Exception {
-        // Create 2 table entities, each with 3 composite column entities
+        // Create a table entity, with 3 composite column entities
         Referenceable dbEntity = createDBEntity();
         String dbGuid = createInstance(dbEntity);
-        Id dbId = new Id(dbGuid, 0, TestUtils.DATABASE_TYPE);
-        Referenceable table1Entity = createTableEntity(dbId);
+        Referenceable table1Entity = createTableEntity(dbGuid);
         Referenceable col1 = createColumnEntity();
         Referenceable col2 = createColumnEntity();
         Referenceable col3 = createColumnEntity();
@@ -950,12 +908,10 @@ public class DefaultMetadataServiceTest {
 
         // to get their guids and the composite column guids.
         String entityJson = metadataService.getEntityDefinition(TestUtils.TABLE_TYPE,
-            NAME, (String)table1Entity.get(NAME));
+                NAME, (String) table1Entity.get(NAME));
         Assert.assertNotNull(entityJson);
         table1Entity = InstanceSerialization.fromJsonReferenceable(entityJson, true);
-        Object val = table1Entity.get(COLUMNS_ATTR_NAME);
-        Assert.assertTrue(val instanceof List);
-        List<IReferenceableInstance> table1Columns = (List<IReferenceableInstance>) val;
+        List<IReferenceableInstance> table1Columns = (List<IReferenceableInstance>) table1Entity.get(COLUMNS_ATTR_NAME);
 
         // Register an EntityChangeListener to verify the notification mechanism
         // is working for deleteEntityByUniqueAttribute().
@@ -973,17 +929,11 @@ public class DefaultMetadataServiceTest {
         }
 
         // Verify that tables and their composite columns have been deleted from the repository.
-        for (String guid : deletedGuids) {
-            try {
-                metadataService.getEntityDefinition(guid);
-                Assert.fail(EntityNotFoundException.class.getSimpleName() +
-                    " expected but not thrown.  The entity with guid " + guid +
-                    " still exists in the repository after being deleted." );
-            }
-            catch(EntityNotFoundException e) {
-                // The entity does not exist in the repository, so deletion was successful.
-            }
-        }
+        // Verify that tables and their composite columns have been deleted from the repository.
+        assertEntityDeleted(TABLE_TYPE, NAME, table1Entity.get(NAME));
+        assertEntityDeleted(COLUMN_TYPE, NAME, col1.get(NAME));
+        assertEntityDeleted(COLUMN_TYPE, NAME, col2.get(NAME));
+        assertEntityDeleted(COLUMN_TYPE, NAME, col3.get(NAME));
 
         // Verify that the listener was notified about the deleted entities.
         Collection<ITypedReferenceableInstance> deletedEntitiesFromListener = listener.getDeletedEntities();

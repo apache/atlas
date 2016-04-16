@@ -21,6 +21,7 @@ package org.apache.atlas.notification;
 import com.google.inject.Inject;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.web.resources.BaseResourceIT;
 import org.codehaus.jettison.json.JSONArray;
 import org.testng.annotations.AfterClass;
@@ -127,20 +128,19 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
 
     @Test
     public void testDeleteByQualifiedName() throws Exception {
-        final Referenceable entity = new Referenceable(DATABASE_TYPE);
+        Referenceable entity = new Referenceable(DATABASE_TYPE);
         final String dbName = "db" + randomString();
         entity.set("name", dbName);
         entity.set("description", randomString());
-        serviceClient.createEntity(entity);
+        final String dbId = serviceClient.createEntity(entity).getString(0);
 
         sendHookMessage(
             new HookNotification.EntityDeleteRequest(TEST_USER, DATABASE_TYPE, "name", dbName));
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
-                JSONArray results = serviceClient.searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE,
-                    dbName));
-                return results.length() == 0;
+                Referenceable getEntity = serviceClient.getEntity(dbId);
+                return getEntity.getId().getState() == Id.EntityState.DELETED;
             }
         });
     }

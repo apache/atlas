@@ -98,6 +98,19 @@ public class ReferenceableInstance extends StructInstance implements ITypedRefer
     }
 
     @Override
+    public String toShortString() {
+        String name = null;
+        if (fieldMapping().fields.containsKey("name")) {
+            try {
+                name = getString("name");
+            } catch (AtlasException e) {
+                //ignore if there is no field name
+            }
+        }
+        return String.format("entity[type=%s guid=%s name=%s]", getTypeName(), getId()._getId(), name);
+    }
+
+    @Override
     public String getSignatureHash(MessageDigest digester) throws AtlasException {
         ClassType classType = TypeSystem.getInstance().getDataType(ClassType.class, getTypeName());
         classType.updateSignatureHash(digester, this);

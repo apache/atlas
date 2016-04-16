@@ -481,7 +481,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         return entitiesCreatedOrUpdated;
     }
 
-    private String normalize(String str) {
+    public static String normalize(String str) {
         if (StringUtils.isEmpty(str)) {
             return null;
         }

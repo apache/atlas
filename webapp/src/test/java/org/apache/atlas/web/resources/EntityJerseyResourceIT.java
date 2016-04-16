@@ -810,15 +810,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         // Verify entities were deleted from the repository.
         for (String guid : deletedGuidsList) {
-            try {
-                serviceClient.getEntity(guid);
-                Assert.fail(AtlasServiceException.class.getSimpleName() + 
-                    " was expected but not thrown.  The entity with guid " + guid + 
-                    " still exists in the repository after being deleted.");
-            }
-            catch (AtlasServiceException e) {
-                Assert.assertTrue(e.getMessage().contains(Integer.toString(Response.Status.NOT_FOUND.getStatusCode())));
-            }
+            Referenceable entity = serviceClient.getEntity(guid);
+            assertEquals(entity.getId().getState(), Id.EntityState.DELETED);
         }
     }
     
@@ -844,15 +837,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         
         // Verify entities were deleted from the repository.
         for (String guid : deletedGuidsList) {
-            try {
-                serviceClient.getEntity(guid);
-                Assert.fail(AtlasServiceException.class.getSimpleName() + 
-                    " was expected but not thrown.  The entity with guid " + guid + 
-                    " still exists in the repository after being deleted.");
-            }
-            catch (AtlasServiceException e) {
-                Assert.assertTrue(e.getMessage().contains(Integer.toString(Response.Status.NOT_FOUND.getStatusCode())));
-            }
+            Referenceable entity = serviceClient.getEntity(guid);
+            assertEquals(entity.getId().getState(), Id.EntityState.DELETED);
         }
     }
 
@@ -874,15 +860,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         // Verify entities were deleted from the repository.
         for (String guid : deletedGuidsList) {
-            try {
-                serviceClient.getEntity(guid);
-                Assert.fail(AtlasServiceException.class.getSimpleName() +
-                    " was expected but not thrown.  The entity with guid " + guid +
-                    " still exists in the repository after being deleted.");
-            }
-            catch (AtlasServiceException e) {
-                Assert.assertTrue(e.getMessage().contains(Integer.toString(Response.Status.NOT_FOUND.getStatusCode())));
-            }
+            Referenceable entity = serviceClient.getEntity(guid);
+            assertEquals(entity.getId().getState(), Id.EntityState.DELETED);
         }
     }
 

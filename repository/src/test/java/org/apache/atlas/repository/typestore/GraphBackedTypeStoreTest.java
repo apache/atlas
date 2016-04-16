@@ -178,7 +178,7 @@ public class GraphBackedTypeStoreTest {
 
         HierarchicalTypeDefinition<ClassType> deptTypeDef = createClassTypeDef("Department", "Department"+_description,
             ImmutableSet.of(superTypeDef.typeName), createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                new AttributeDefinition("employees", String.format("array<%s>", "Person"), Multiplicity.COLLECTION,
+                new AttributeDefinition("employees", String.format("array<%s>", "Person"), Multiplicity.OPTIONAL,
                         true, "department"));
         TypesDef typesDef = TypesUtil.getTypesDef(ImmutableList.of(orgLevelEnum), ImmutableList.of(addressDetails),
                 ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
@@ -227,7 +227,7 @@ public class GraphBackedTypeStoreTest {
                 createOptionalAttrDef("name", DataTypes.STRING_TYPE));
         HierarchicalTypeDefinition<ClassType> deptTypeDef = createClassTypeDef("Department",
             ImmutableSet.of("Division", superTypeDef2.typeName), createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-            new AttributeDefinition("employees", String.format("array<%s>", "Person"), Multiplicity.COLLECTION,
+            new AttributeDefinition("employees", String.format("array<%s>", "Person"), Multiplicity.OPTIONAL,
                     true, "department"));
         TypesDef typesDef = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
             ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
@@ -269,9 +269,9 @@ public class GraphBackedTypeStoreTest {
     
     private int countOutgoingEdges(Vertex typeVertex, String edgeLabel) {
 
-        Iterable<Edge> outGoingEdgesByLabel = GraphHelper.getOutGoingEdgesByLabel(typeVertex, edgeLabel);
+        Iterator<Edge> outGoingEdgesByLabel = GraphHelper.getOutGoingEdgesByLabel(typeVertex, edgeLabel);
         int edgeCount = 0;
-        for (Iterator<Edge> iterator = outGoingEdgesByLabel.iterator(); iterator.hasNext();) {
+        for (Iterator<Edge> iterator = outGoingEdgesByLabel; iterator.hasNext();) {
             iterator.next();
             edgeCount++;
         }

@@ -58,20 +58,20 @@ public class Id implements ITypedReferenceableInstance {
         }
     }
 
-    public Id(String id, int version, String className) {
-        this(id, version, className, null);
+    public Id(String id, int version, String typeName) {
+        this(id, version, typeName, null);
     }
 
-    public Id(long id, int version, String className) {
-        this("" + id, version, className);
+    public Id(long id, int version, String typeName) {
+        this("" + id, version, typeName);
     }
 
-    public Id(long id, int version, String className, String state) {
-        this("" + id, version, className, state);
+    public Id(long id, int version, String typeName, String state) {
+        this("" + id, version, typeName, state);
     }
 
-    public Id(String className) {
-        this("" + (-System.nanoTime()), 0, className);
+    public Id(String typeName) {
+        this("" + (-System.nanoTime()), 0, typeName);
     }
 
     public boolean isUnassigned() {
@@ -93,8 +93,14 @@ public class Id implements ITypedReferenceableInstance {
         return true;
     }
 
+    @Override
     public String toString() {
         return String.format("(type: %s, id: %s)", typeName, isUnassigned() ? "<unassigned>" : "" + id);
+    }
+
+    @Override
+    public String toShortString() {
+        return String.format("id[type=%s guid=%s state=%s]", typeName, id, state);
     }
 
     public String getClassName() {

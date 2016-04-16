@@ -164,7 +164,7 @@ object QueryTestsUtils extends GraphUtils {
         val bindings: Bindings = engine.createBindings
         bindings.put("g", g)
 
-        val hiveGraphFile = FileUtils.getTempDirectory().getPath.toString + File.separator + System.nanoTime() + ".gson"
+        val hiveGraphFile = FileUtils.getTempDirectory().getPath + File.separator + System.nanoTime() + ".gson"
         HiveTitanSample.writeGson(hiveGraphFile)
         bindings.put("hiveGraphFile", hiveGraphFile)
 

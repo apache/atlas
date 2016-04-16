@@ -78,6 +78,11 @@ public class Struct implements IStruct {
     }
 
     @Override
+    public String toShortString() {
+        return String.format("struct[type=%s]", typeName);
+    }
+
+    @Override
     public int hashCode() {
         int result = typeName.hashCode();
         result = 31 * result + values.hashCode();

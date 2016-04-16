@@ -31,9 +31,6 @@ public class AtlasEdgeLabel {
     private final String qualifiedAttributeName_;
     
     public AtlasEdgeLabel(String edgeLabel) {
-        if (!edgeLabel.startsWith(GraphHelper.EDGE_LABEL_PREFIX)) {
-            throw new IllegalArgumentException("Invalid edge label " + edgeLabel + ": missing required prefix " + GraphHelper.EDGE_LABEL_PREFIX);
-        }
         String labelWithoutPrefix = edgeLabel.substring(GraphHelper.EDGE_LABEL_PREFIX.length());
         String[] fields = labelWithoutPrefix.split("\\.", 3);
         if (fields.length < 2 || fields.length > 3) {

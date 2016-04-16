@@ -18,15 +18,33 @@
 
 package org.apache.atlas;
 
+import org.apache.atlas.typesystem.ITypedReferenceableInstance;
+import org.apache.atlas.typesystem.persistence.Id;
+import org.apache.atlas.typesystem.types.ClassType;
+import org.apache.atlas.typesystem.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 public class RequestContext {
     private static final Logger LOG = LoggerFactory.getLogger(RequestContext.class);
 
     private static final ThreadLocal<RequestContext> CURRENT_CONTEXT = new ThreadLocal<>();
 
+    private Set<String> createdEntityIds = new LinkedHashSet<>();
+    private Set<String> updatedEntityIds = new LinkedHashSet<>();
+    private Set<String> deletedEntityIds = new LinkedHashSet<>();
+    private List<ITypedReferenceableInstance> deletedEntities = new ArrayList<>();
+
     private String user;
+    private long requestTime;
+
+    TypeSystem typeSystem = TypeSystem.getInstance();
 
     private RequestContext() {
     }
@@ -37,6 +55,7 @@ public class RequestContext {
 
     public static RequestContext createContext() {
         RequestContext context = new RequestContext();
+        context.requestTime = System.currentTimeMillis();
         CURRENT_CONTEXT.set(context);
         return context;
     }
@@ -51,5 +70,41 @@ public class RequestContext {
 
     public void setUser(String user) {
         this.user = user;
+    }
+
+    public void recordCreatedEntities(Collection<String> createdEntityIds) {
+        this.createdEntityIds.addAll(createdEntityIds);
+    }
+
+    public void recordUpdatedEntities(Collection<String> updatedEntityIds) {
+        this.updatedEntityIds.addAll(updatedEntityIds);
+    }
+
+    public void recordDeletedEntity(String entityId, String typeName) throws AtlasException {
+        ClassType type = typeSystem.getDataType(ClassType.class, typeName);
+        ITypedReferenceableInstance entity = type.createInstance(new Id(entityId, 0, typeName));
+        if (deletedEntityIds.add(entityId)) {
+            deletedEntities.add(entity);
+        }
+    }
+
+    public List<String> getCreatedEntityIds() {
+        return new ArrayList<>(createdEntityIds);
+    }
+
+    public List<String> getUpdatedEntityIds() {
+        return new ArrayList<>(updatedEntityIds);
+    }
+
+    public List<String> getDeletedEntityIds() {
+        return new ArrayList<>(deletedEntityIds);
+    }
+
+    public List<ITypedReferenceableInstance> getDeletedEntities() {
+        return deletedEntities;
+    }
+
+    public long getRequestTime() {
+        return requestTime;
     }
 }

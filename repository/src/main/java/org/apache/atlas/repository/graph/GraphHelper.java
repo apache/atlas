@@ -23,11 +23,12 @@ import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
-
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedInstance;
@@ -40,7 +41,6 @@ import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.HierarchicalType;
 import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.TypeSystem;
-import org.apache.atlas.typesystem.types.TypeUtils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,16 +77,13 @@ public final class GraphHelper {
         final String guid = UUID.randomUUID().toString();
 
         final Vertex vertexWithIdentity = createVertexWithoutIdentity(typedInstance.getTypeName(),
-                new Id(guid, 0 , typedInstance.getTypeName()), superTypeNames);
+                new Id(guid, 0, typedInstance.getTypeName()), superTypeNames);
 
         // add identity
         setProperty(vertexWithIdentity, Constants.GUID_PROPERTY_KEY, guid);
 
         // add version information
         setProperty(vertexWithIdentity, Constants.VERSION_PROPERTY_KEY, typedInstance.getId().version);
-
-        // add state information
-        setProperty(vertexWithIdentity, Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
 
         return vertexWithIdentity;
     }
@@ -99,41 +96,120 @@ public final class GraphHelper {
         // add type information
         setProperty(vertexWithoutIdentity, Constants.ENTITY_TYPE_PROPERTY_KEY, typeName);
 
+
         // add super types
         for (String superTypeName : superTypeNames) {
             addProperty(vertexWithoutIdentity, Constants.SUPER_TYPES_PROPERTY_KEY, superTypeName);
         }
 
+        // add state information
+        setProperty(vertexWithoutIdentity, Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
+
         // add timestamp information
-        setProperty(vertexWithoutIdentity, Constants.TIMESTAMP_PROPERTY_KEY, System.currentTimeMillis());
+        setProperty(vertexWithoutIdentity, Constants.TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
 
         return vertexWithoutIdentity;
     }
 
     public Edge addEdge(Vertex fromVertex, Vertex toVertex, String edgeLabel) {
-        LOG.debug("Adding edge for {} -> label {} -> {}", fromVertex, edgeLabel, toVertex);
+        LOG.debug("Adding edge for {} -> label {} -> {}", string(fromVertex), edgeLabel, string(toVertex));
         Edge edge = titanGraph.addEdge(null, fromVertex, toVertex, edgeLabel);
-        LOG.debug("Added edge for {} -> label {}, id {} -> {}", fromVertex, edgeLabel, edge.getId(), toVertex);
+
+        setProperty(edge, Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
+        setProperty(edge, Constants.TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
+        setProperty(edge, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
+
+        LOG.debug("Added {}", string(edge));
         return edge;
     }
 
-    public Vertex findVertex(String propertyKey, Object value) {
-        LOG.debug("Finding vertex for {}={}", propertyKey, value);
-
-        GraphQuery query = titanGraph.query().has(propertyKey, value);
-        Iterator<Vertex> results = query.vertices().iterator();
-        // returning one since entityType, qualifiedName should be unique
-        return results.hasNext() ? results.next() : null;
+    public Edge getOrCreateEdge(Vertex outVertex, Vertex inVertex, String edgeLabel) {
+        Iterable<Edge> edges = inVertex.getEdges(Direction.IN, edgeLabel);
+        for (Edge edge : edges) {
+            if (edge.getVertex(Direction.OUT).getId().toString().equals(outVertex.getId().toString())) {
+                return edge;
+            }
+        }
+        return addEdge(outVertex, inVertex, edgeLabel);
     }
 
-    public static Iterable<Edge> getOutGoingEdgesByLabel(Vertex instanceVertex, String edgeLabel) {
+    /**
+     * Args of the format prop1, key1, prop2, key2...
+     * Searches for a vertex with prop1=key1 && prop2=key2
+     * @param args
+     * @return vertex with the given property keys
+     * @throws EntityNotFoundException
+     */
+    private Vertex findVertex(Object... args) throws EntityNotFoundException {
+        StringBuilder condition = new StringBuilder();
+        GraphQuery query = titanGraph.query();
+        for (int i = 0 ; i < args.length; i+=2) {
+            query = query.has((String) args[i], args[i+1]);
+            condition.append(args[i]).append(" = ").append(args[i+1]).append(", ");
+        }
+        String conditionStr = condition.toString();
+        LOG.debug("Finding vertex with {}", conditionStr);
+
+        Iterator<Vertex> results = query.vertices().iterator();
+        // returning one since entityType, qualifiedName should be unique
+        Vertex vertex = results.hasNext() ? results.next() : null;
+
+        if (vertex == null) {
+            LOG.debug("Could not find a vertex with {}", condition.toString());
+            throw new EntityNotFoundException("Could not find an entity in the repository with " + conditionStr);
+        } else {
+            LOG.debug("Found a vertex {} with {}", string(vertex), conditionStr);
+        }
+
+        return vertex;
+    }
+
+    public static Iterator<Edge> getOutGoingEdgesByLabel(Vertex instanceVertex, String edgeLabel) {
+        LOG.debug("Finding edges for {} with label {}", string(instanceVertex), edgeLabel);
         if(instanceVertex != null && edgeLabel != null) {
-            return instanceVertex.getEdges(Direction.OUT, edgeLabel);
+            return instanceVertex.getEdges(Direction.OUT, edgeLabel).iterator();
         }
         return null;
     }
 
-    public Edge getOutGoingEdgeById(String edgeId) {
+    /**
+     * Returns the active edge for the given edge label.
+     * If the vertex is deleted and there is no active edge, it returns the latest deleted edge
+     * @param vertex
+     * @param edgeLabel
+     * @return
+     */
+    public static Edge getEdgeForLabel(Vertex vertex, String edgeLabel) {
+        String vertexState = vertex.getProperty(Constants.STATE_PROPERTY_KEY);
+
+        Iterator<Edge> iterator = GraphHelper.getOutGoingEdgesByLabel(vertex, edgeLabel);
+        Edge latestDeletedEdge = null;
+        long latestDeletedEdgeTime = Long.MIN_VALUE;
+        while (iterator != null && iterator.hasNext()) {
+            Edge edge = iterator.next();
+            String edgeState = edge.getProperty(Constants.STATE_PROPERTY_KEY);
+            if (edgeState == null || Id.EntityState.ACTIVE.name().equals(edgeState)) {
+                LOG.debug("Found {}", string(edge));
+                return edge;
+            } else {
+                Long modificationTime = edge.getProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY);
+                if (modificationTime != null && modificationTime >= latestDeletedEdgeTime) {
+                    latestDeletedEdgeTime = modificationTime;
+                    latestDeletedEdge = edge;
+                }
+            }
+        }
+
+        //If the vertex is deleted, return latest deleted edge
+        if (Id.EntityState.DELETED.equals(vertexState)) {
+            LOG.debug("Found {}", string(latestDeletedEdge));
+            return latestDeletedEdge;
+        }
+
+        return null;
+    }
+
+    public Edge getEdgeById(String edgeId) {
         if(edgeId != null) {
             return titanGraph.getEdge(edgeId);
         }
@@ -154,60 +230,47 @@ public final class GraphHelper {
                 + edge.getVertex(Direction.IN) + "]";
     }
 
-    public static void setProperty(Vertex vertex, String propertyName, Object value) {
-        LOG.debug("Setting property {} = \"{}\" to vertex {}", propertyName, value, vertex);
-        Object existValue = vertex.getProperty(propertyName);
+    public static <T extends Element> void setProperty(T element, String propertyName, Object value) {
+        String elementStr = string(element);
+        LOG.debug("Setting property {} = \"{}\" to {}", propertyName, value, elementStr);
+        Object existValue = element.getProperty(propertyName);
         if(value == null || (value instanceof Collection && ((Collection) value).isEmpty())) {
             if(existValue != null) {
-                LOG.info("Removing property - {} value from vertex {}", propertyName, vertex);
-                vertex.removeProperty(propertyName);
+                LOG.info("Removing property - {} value from {}", propertyName, elementStr);
+                element.removeProperty(propertyName);
             }
         } else {
             if (!value.equals(existValue)) {
-                vertex.setProperty(propertyName, value);
-                LOG.debug("Set property {} = \"{}\" to vertex {}", propertyName, value, vertex);
+                element.setProperty(propertyName, value);
+                LOG.debug("Set property {} = \"{}\" to {}", propertyName, value, elementStr);
             }
         }
     }
 
+    private static <T extends Element> String string(T element) {
+        if (element instanceof Vertex) {
+            return string((Vertex) element);
+        } else if (element instanceof Edge) {
+            return string((Edge)element);
+        }
+        return element.toString();
+    }
+
     public static void addProperty(Vertex vertex, String propertyName, Object value) {
-        LOG.debug("Setting property {} = \"{}\" to vertex {}", propertyName, value, vertex);
+        LOG.debug("Adding property {} = \"{}\" to vertex {}", propertyName, value, string(vertex));
         ((TitanVertex)vertex).addProperty(propertyName, value);
     }
 
-    public Edge removeRelation(String edgeId, boolean cascade) {
-        LOG.debug("Removing edge with id {}", edgeId);
-        final Edge edge = titanGraph.getEdge(edgeId);
-        titanGraph.removeEdge(edge);
-        LOG.info("Removed edge {}", edge);
-        if (cascade) {
-           Vertex referredVertex = edge.getVertex(Direction.IN);
-           removeVertex(referredVertex);
-        }
-        return edge;
-    }
-    
     /**
      * Remove the specified edge from the graph.
      * 
      * @param edge
      */
     public void removeEdge(Edge edge) {
-        LOG.debug("Removing edge {}", edge);
+        String edgeString = string(edge);
+        LOG.debug("Removing {}", edgeString);
         titanGraph.removeEdge(edge);
-        LOG.info("Removed edge {}", edge);
-    }
-    
-    /**
-     * Return the edge and target vertex for the specified edge ID.
-     * 
-     * @param edgeId
-     * @return edge and target vertex
-     */
-    public Pair<Edge, Vertex> getEdgeAndTargetVertex(String edgeId) {
-        final Edge edge = titanGraph.getEdge(edgeId);
-        Vertex referredVertex = edge.getVertex(Direction.IN);
-        return Pair.of(edge, referredVertex);
+        LOG.info("Removed {}", edgeString);
     }
     
     /**
@@ -216,27 +279,22 @@ public final class GraphHelper {
      * @param vertex
      */
     public void removeVertex(Vertex vertex) {
-        LOG.debug("Removing vertex {}", vertex);
+        String vertexString = string(vertex);
+        LOG.debug("Removing {}", vertexString);
         titanGraph.removeVertex(vertex);
-        LOG.info("Removed vertex {}", vertex);
+        LOG.info("Removed {}", vertexString);
     }
 
     public Vertex getVertexForGUID(String guid) throws EntityNotFoundException {
-        return getVertexForProperty(Constants.GUID_PROPERTY_KEY, guid);
+        return findVertex(Constants.GUID_PROPERTY_KEY, guid);
     }
 
-
     public Vertex getVertexForProperty(String propertyKey, Object value) throws EntityNotFoundException {
-        Vertex instanceVertex = findVertex(propertyKey, value);
-        if (instanceVertex == null) {
-            LOG.debug("Could not find a vertex with {}={}", propertyKey, value);
-            throw new EntityNotFoundException("Could not find an entity in the repository with " + propertyKey + "="
-                + value);
-        } else {
-            LOG.debug("Found a vertex {} with {}={}", instanceVertex, propertyKey, value);
-        }
+        return findVertex(propertyKey, value, Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
+    }
 
-        return instanceVertex;
+    public static String getQualifiedNameForMapKey(String prefix, String key) {
+        return prefix + "." + key;
     }
 
     public static String getQualifiedFieldName(ITypedInstance typedInstance, AttributeInfo attributeInfo) throws AtlasException {
@@ -277,6 +335,10 @@ public final class GraphHelper {
             vertex.<Integer>getProperty(Constants.VERSION_PROPERTY_KEY), dataTypeName);
     }
 
+    public static String getIdFromVertex(Vertex vertex) {
+        return vertex.<String>getProperty(Constants.GUID_PROPERTY_KEY);
+    }
+
     public static String getTypeName(Vertex instanceVertex) {
         return instanceVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY);
     }
@@ -292,7 +354,7 @@ public final class GraphHelper {
      */
     public Vertex getVertexForInstanceByUniqueAttribute(ClassType classType, IReferenceableInstance instance)
         throws AtlasException {
-        LOG.debug("Checking if there is an instance with the same unique attributes for instance {}", instance);
+        LOG.debug("Checking if there is an instance with the same unique attributes for instance {}", instance.toShortString());
         Vertex result = null;
         for (AttributeInfo attributeInfo : classType.fieldMapping().fields.values()) {
             if (attributeInfo.isUnique) {
@@ -321,5 +383,19 @@ public final class GraphHelper {
             LOG.debug(edgeString(edge));
         }
         LOG.debug("*******************Graph Dump****************************");
+    }
+
+    public static String string(ITypedReferenceableInstance instance) {
+        return String.format("entity[type=%s guid=%]", instance.getTypeName(), instance.getId()._getId());
+    }
+
+    public static String string(Vertex vertex) {
+        return String.format("vertex[id=%s type=%s guid=%s]", vertex.getId().toString(), getTypeName(vertex),
+                getIdFromVertex(vertex));
+    }
+
+    public static String string(Edge edge) {
+        return String.format("edge[id=%s label=%s from %s -> to %s]", edge.getId().toString(), edge.getLabel(),
+                string(edge.getVertex(Direction.OUT)), string(edge.getVertex(Direction.IN)));
     }
 }

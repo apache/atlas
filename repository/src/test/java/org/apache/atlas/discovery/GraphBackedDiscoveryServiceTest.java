@@ -21,6 +21,7 @@ package org.apache.atlas.discovery;
 import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.BaseHiveRepositoryTest;
 import org.apache.atlas.RepositoryMetadataModule;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.atlas.repository.Constants;
@@ -38,6 +39,7 @@ import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
@@ -67,11 +69,8 @@ public class GraphBackedDiscoveryServiceTest extends BaseHiveRepositoryTest {
         TypeSystem typeSystem = TypeSystem.getInstance();
         TestUtils.defineDeptEmployeeTypes(typeSystem);
 
-        Referenceable hrDept = TestUtils.createDeptEg1(typeSystem);
-        ClassType deptType = typeSystem.getDataType(ClassType.class, "Department");
-        ITypedReferenceableInstance hrDept2 = deptType.convert(hrDept, Multiplicity.REQUIRED);
-
-        repositoryService.createEntities(hrDept2);
+        ITypedReferenceableInstance hrDept = TestUtils.createDeptEg1(typeSystem);
+        repositoryService.createEntities(hrDept);
         
         ITypedReferenceableInstance jane = repositoryService.getEntityDefinition("Person", "name", "Jane");
         Id janeGuid = jane.getId();
@@ -79,6 +78,11 @@ public class GraphBackedDiscoveryServiceTest extends BaseHiveRepositoryTest {
         ITypedReferenceableInstance instance = personType.createInstance(janeGuid);
         instance.set("orgLevel", "L1");
         repositoryService.updateEntities(instance);
+    }
+
+    @BeforeMethod
+    public void setupContext() {
+        RequestContext.createContext();
     }
 
     @AfterClass

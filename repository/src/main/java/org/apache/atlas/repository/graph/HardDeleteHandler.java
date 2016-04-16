@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,26 +16,30 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.typesystem;
+package org.apache.atlas.repository.graph;
 
+import com.google.inject.Inject;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Vertex;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.typesystem.types.TypeSystem;
 
-import java.util.Map;
+public class HardDeleteHandler extends DeleteHandler {
 
-/**
- * Represents a Struct or Trait or Object.
- */
-public interface IInstance {
+    private static final GraphHelper graphHelper = GraphHelper.getInstance();
 
-    String getTypeName();
+    @Inject
+    public HardDeleteHandler(TypeSystem typeSystem) {
+        super(typeSystem, true);
+    }
 
-    Object get(String attrName) throws AtlasException;
+    @Override
+    protected void _deleteVertex(Vertex instanceVertex) {
+        graphHelper.removeVertex(instanceVertex);
+    }
 
-    void set(String attrName, Object val) throws AtlasException;
-
-    void setNull(String attrName) throws AtlasException;
-
-    Map<String, Object> getValuesMap() throws AtlasException;
-
-    String toShortString();
+    @Override
+    protected void deleteEdge(Edge edge) throws AtlasException {
+        graphHelper.removeEdge(edge);
+    }
 }

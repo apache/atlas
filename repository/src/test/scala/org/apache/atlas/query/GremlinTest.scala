@@ -37,7 +37,7 @@ class GremlinTest extends BaseGremlinTest {
     TypeSystem.getInstance().reset()
     QueryTestsUtils.setupTypes
     gProvider = new TitanGraphProvider()
-    gp = new DefaultGraphPersistenceStrategy(new GraphBackedMetadataRepository(gProvider))
+    gp = new DefaultGraphPersistenceStrategy(new GraphBackedMetadataRepository(gProvider, null))
     g = QueryTestsUtils.setupTestGraph(gProvider)
   }
 

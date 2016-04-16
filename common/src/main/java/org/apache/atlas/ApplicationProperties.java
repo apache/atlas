@@ -91,4 +91,14 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static Configuration getSubsetConfiguration(Configuration inConf, String prefix) {
         return inConf.subset(prefix);
     }
+
+    public static Class getClass(String propertyName, String defaultValue) {
+        try {
+            Configuration configuration = get();
+            String propertyValue = configuration.getString(propertyName, defaultValue);
+            return Class.forName(propertyValue);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

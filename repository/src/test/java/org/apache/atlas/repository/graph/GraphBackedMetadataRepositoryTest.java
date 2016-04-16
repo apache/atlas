@@ -28,6 +28,7 @@ import com.tinkerpop.blueprints.Vertex;
 
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RepositoryMetadataModule;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.atlas.repository.Constants;
@@ -53,6 +54,7 @@ import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
@@ -99,6 +101,10 @@ public class GraphBackedMetadataRepositoryTest {
         TestUtils.createHiveTypes(typeSystem);
     }
 
+    @BeforeMethod
+    public void setupContext() {
+        RequestContext.createContext();
+    }
 
     @AfterClass
     public void tearDown() throws Exception {
@@ -116,14 +122,11 @@ public class GraphBackedMetadataRepositoryTest {
         }
     }
 
-
     @Test
     public void testSubmitEntity() throws Exception {
-        Referenceable hrDept = TestUtils.createDeptEg1(typeSystem);
-        ClassType deptType = typeSystem.getDataType(ClassType.class, "Department");
-        ITypedReferenceableInstance hrDept2 = deptType.convert(hrDept, Multiplicity.REQUIRED);
+        ITypedReferenceableInstance hrDept = TestUtils.createDeptEg1(typeSystem);
 
-        List<String> guids = repositoryService.createEntities(hrDept2);
+        List<String> guids = repositoryService.createEntities(hrDept);
         Assert.assertNotNull(guids);
         Assert.assertEquals(guids.size(), 5);
         guid = guids.get(4);
@@ -147,7 +150,7 @@ public class GraphBackedMetadataRepositoryTest {
 
     @Test(dependsOnMethods = "testSubmitEntity")
     public void testGetEntityList() throws Exception {
-        List<String> entityList = repositoryService.getEntityList(TestUtils.ENTITY_TYPE);
+        List<String> entityList = repositoryService.getEntityList(TestUtils.DEPARTMENT_TYPE);
         System.out.println("entityList = " + entityList);
         Assert.assertNotNull(entityList);
         Assert.assertTrue(entityList.contains(guid));
@@ -247,7 +250,7 @@ public class GraphBackedMetadataRepositoryTest {
         final String aGUID = getGUID();
         Vertex vertex = GraphHelper.getInstance().getVertexForGUID(aGUID);
         Long modificationTimestampPreUpdate = vertex.getProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY);
-        Assert.assertNull(modificationTimestampPreUpdate);
+        Assert.assertNotNull(modificationTimestampPreUpdate);
 
         List<String> traitNames = repositoryService.getTraitNames(aGUID);
         System.out.println("traitNames = " + traitNames);
@@ -498,85 +501,6 @@ public class GraphBackedMetadataRepositoryTest {
         Assert.assertEquals(results.length(), 1);
         row = (JSONObject) results.get(0);
         Assert.assertEquals(row.get("typeName"), "Person");
-    }
-    
-    @Test(dependsOnMethods = "testSubmitEntity")
-    public void testUpdateEntity_MultiplicityOneNonCompositeReference() throws Exception {
-        ITypedReferenceableInstance john = repositoryService.getEntityDefinition("Person", "name", "John");
-        Id johnGuid = john.getId();
-
-        ITypedReferenceableInstance max = repositoryService.getEntityDefinition("Person", "name", "Max");
-        String maxGuid = max.getId()._getId();
-        Vertex vertex = GraphHelper.getInstance().getVertexForGUID(maxGuid);
-        Long creationTimestamp = vertex.getProperty(Constants.TIMESTAMP_PROPERTY_KEY);
-        Assert.assertNotNull(creationTimestamp);
-
-        Long modificationTimestampPreUpdate = vertex.getProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY);
-        Assert.assertNull(modificationTimestampPreUpdate);
-
-        ITypedReferenceableInstance jane = repositoryService.getEntityDefinition("Person", "name", "Jane");
-        Id janeGuid = jane.getId();
-        
-        // Update max's mentor reference to john.
-        ClassType personType = typeSystem.getDataType(ClassType.class, "Person");
-        ITypedReferenceableInstance instance = personType.createInstance(max.getId());
-        instance.set("mentor", johnGuid);
-        repositoryService.updatePartial(instance);
-        
-        // Verify the update was applied correctly - john should now be max's mentor.
-        max = repositoryService.getEntityDefinition(maxGuid);
-        Object object = max.get("mentor");
-        Assert.assertTrue(object instanceof ITypedReferenceableInstance);
-        ITypedReferenceableInstance refTarget = (ITypedReferenceableInstance) object;
-        Assert.assertEquals(refTarget.getId()._getId(), johnGuid._getId());
-
-
-        // Verify modification timestamp was updated.
-        vertex = GraphHelper.getInstance().getVertexForGUID(maxGuid);
-        Long modificationTimestampPostUpdate = vertex.getProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY);
-        Assert.assertNotNull(modificationTimestampPostUpdate);
-        Assert.assertTrue(creationTimestamp < modificationTimestampPostUpdate);
-
-        // Update max's mentor reference to jane.
-        instance.set("mentor", janeGuid);
-        repositoryService.updatePartial(instance);
-
-        // Verify the update was applied correctly - jane should now be max's mentor.
-        max = repositoryService.getEntityDefinition(maxGuid);
-        object = max.get("mentor");
-        Assert.assertTrue(object instanceof ITypedReferenceableInstance);
-        refTarget = (ITypedReferenceableInstance) object;
-        Assert.assertEquals(refTarget.getId()._getId(), janeGuid._getId());
-        
-        // Verify modification timestamp was updated.
-        vertex = GraphHelper.getInstance().getVertexForGUID(maxGuid);
-        Long modificationTimestampPost2ndUpdate = vertex.getProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY);
-        Assert.assertNotNull(modificationTimestampPost2ndUpdate);
-        Assert.assertTrue(modificationTimestampPostUpdate < modificationTimestampPost2ndUpdate);
-        
-        ITypedReferenceableInstance julius = repositoryService.getEntityDefinition("Person", "name", "Julius");
-        Id juliusGuid = julius.getId();
-        instance = personType.createInstance(max.getId());
-        instance.set("manager", juliusGuid);
-        repositoryService.updatePartial(instance);
-
-        // Verify the update was applied correctly - julius should now be max's manager.
-        max = repositoryService.getEntityDefinition(maxGuid);
-        object = max.get("manager");
-        Assert.assertTrue(object instanceof ITypedReferenceableInstance);
-        refTarget = (ITypedReferenceableInstance) object;
-        Assert.assertEquals(refTarget.getId()._getId(), juliusGuid._getId());
-        
-        // Verify that max is no longer a subordinate of jane.
-        jane = repositoryService.getEntityDefinition(janeGuid._getId());
-        Object refValue = jane.get("subordinates");
-        Assert.assertTrue(refValue instanceof List);
-        List<Object> subordinates = (List<Object>)refValue;
-        Assert.assertEquals(subordinates.size(), 1);
-        Object listValue = subordinates.get(0);
-        Assert.assertTrue(listValue instanceof ITypedReferenceableInstance);
-        ITypedReferenceableInstance subordinate = (ITypedReferenceableInstance) listValue;
-        Assert.assertNotEquals(subordinate.getId()._getId(), maxGuid);
     }
 
     private ITypedReferenceableInstance createHiveTableInstance(Referenceable databaseInstance) throws Exception {
