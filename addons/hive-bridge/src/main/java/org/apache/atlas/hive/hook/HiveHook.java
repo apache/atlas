@@ -53,6 +53,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -619,12 +620,12 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         }
         processReferenceable.set("name", queryStr);
         processReferenceable.set("operationType", hiveEvent.getOperation().getOperationName());
-        processReferenceable.set("startTime", hiveEvent.getQueryStartTime());
+        processReferenceable.set("startTime", new Date(hiveEvent.getQueryStartTime()));
         processReferenceable.set("userName", hiveEvent.getUser());
         processReferenceable.set("queryText", queryStr);
         processReferenceable.set("queryId", hiveEvent.getQueryId());
         processReferenceable.set("queryPlan", hiveEvent.getJsonPlan());
-        processReferenceable.set("endTime", System.currentTimeMillis());
+        processReferenceable.set("endTime", new Date(System.currentTimeMillis()));
         //TODO set queryGraph
         return processReferenceable;
     }

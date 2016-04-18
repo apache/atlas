@@ -78,6 +78,9 @@ public class HiveDataModelGenerator {
     public static final String STORAGE_DESC_OUTPUT_FMT = "outputFormat";
     public static final String OWNER = "owner";
 
+    public static final String CREATE_TIME = "createTime";
+    public static final String LAST_ACCESS_TIME = "lastAccessTime";
+
     public HiveDataModelGenerator() {
         classTypeDefinitions = new HashMap<>();
         enumTypeDefinitionMap = new HashMap<>();
@@ -233,9 +236,9 @@ public class HiveDataModelGenerator {
                         null),
                 new AttributeDefinition(DB, HiveDataTypes.HIVE_DB.getName(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition(OWNER, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition("createTime", DataTypes.LONG_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                new AttributeDefinition(CREATE_TIME, DataTypes.DATE_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
-                new AttributeDefinition("lastAccessTime", DataTypes.LONG_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                new AttributeDefinition(LAST_ACCESS_TIME, DataTypes.DATE_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
                 new AttributeDefinition(COMMENT, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("retention", DataTypes.INT_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
@@ -263,8 +266,8 @@ public class HiveDataModelGenerator {
 
     private void createProcessClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition("startTime", DataTypes.LONG_TYPE.getName(), Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition("endTime", DataTypes.LONG_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("startTime", DataTypes.DATE_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("endTime", DataTypes.DATE_TYPE.getName(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("userName", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
                         null),
                 new AttributeDefinition("operationType", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,

@@ -50,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -63,8 +64,9 @@ public class HiveMetaStoreBridge {
     public static final String DESCRIPTION_ATTR = "description";
     public static final String TABLE_TYPE_ATTR = "tableType";
     public static final String SEARCH_ENTRY_GUID_ATTR = "__guid";
-    public static final String LAST_ACCESS_TIME_ATTR = "lastAccessTime";
+
     private final String clusterName;
+    public static final int MILLIS_CONVERT_FACTOR = 1000;
 
     public static final String ATLAS_ENDPOINT = "atlas.rest.address";
 
@@ -303,8 +305,21 @@ public class HiveMetaStoreBridge {
         tableReference.set(HiveDataModelGenerator.TABLE_NAME, hiveTable.getTableName().toLowerCase());
         tableReference.set("owner", hiveTable.getOwner());
 
-        tableReference.set("createTime", hiveTable.getMetadata().getProperty(hive_metastoreConstants.DDL_TIME));
-        tableReference.set("lastAccessTime", hiveTable.getLastAccessTime());
+        Date createDate = new Date();
+        if (hiveTable.getMetadata().getProperty(hive_metastoreConstants.DDL_TIME) != null){
+            try {
+                createDate = new Date(Long.parseLong(hiveTable.getMetadata().getProperty(hive_metastoreConstants.DDL_TIME)) * MILLIS_CONVERT_FACTOR);
+                tableReference.set(HiveDataModelGenerator.CREATE_TIME, createDate);
+            } catch(NumberFormatException ne) {
+                LOG.error("Error while updating createTime for the table {} ", hiveTable.getCompleteName(), ne);
+            }
+        }
+
+        Date lastAccessTime = createDate;
+        if ( hiveTable.getLastAccessTime() > 0) {
+            lastAccessTime = new Date(hiveTable.getLastAccessTime() * MILLIS_CONVERT_FACTOR);
+        }
+        tableReference.set(HiveDataModelGenerator.LAST_ACCESS_TIME, lastAccessTime);
         tableReference.set("retention", hiveTable.getRetention());
 
         tableReference.set(HiveDataModelGenerator.COMMENT, hiveTable.getParameters().get(HiveDataModelGenerator.COMMENT));
