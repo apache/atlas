@@ -204,3 +204,10 @@ atlas.client.ha.retries=4
 # Specify interval between retries for a client.
 atlas.client.ha.sleep.interval.ms=5000
 </verbatim>
+
+---++ Server Properties
+
+<verbatim>
+# Set the following property to true, to enable the setup steps to run on each server start. Default = false.
+atlas.server.run.setup.on.start=false
+</verbatim>

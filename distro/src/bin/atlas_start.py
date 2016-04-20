@@ -21,12 +21,14 @@ import traceback
 
 import atlas_config as mc
 
-ATLAS_LOG_OPTS="-Datlas.log.dir=%s -Datlas.log.file=application.log"
+ATLAS_LOG_OPTS="-Datlas.log.dir=%s -Datlas.log.file=%s.log"
 ATLAS_COMMAND_OPTS="-Datlas.home=%s"
 ATLAS_CONFIG_OPTS="-Datlas.conf=%s"
 DEFAULT_JVM_OPTS="-Xmx1024m -XX:MaxPermSize=512m -Dlog4j.configuration=atlas-log4j.xml -Djava.net.preferIPv4Stack=true"
 
 def main():
+
+    is_setup = (len(sys.argv)>1) and sys.argv[1] is not None and sys.argv[1] == '-setup'
 
     atlas_home = mc.atlasDir()
     confdir = mc.dirMustExist(mc.confDir(atlas_home))
@@ -43,7 +45,10 @@ def main():
         jvm_logdir = logdir
 
     #create sys property for conf dirs
-    jvm_opts_list = (ATLAS_LOG_OPTS % jvm_logdir).split()
+    if not is_setup:
+        jvm_opts_list = (ATLAS_LOG_OPTS % (jvm_logdir, "application")).split()
+    else:
+        jvm_opts_list = (ATLAS_LOG_OPTS % (jvm_logdir, "atlas_setup")).split()
 
     cmd_opts = (ATLAS_COMMAND_OPTS % jvm_atlas_home)
     jvm_opts_list.extend(cmd_opts.split())
@@ -93,6 +98,8 @@ def main():
        pf.close() 
 
        if mc.exist_pid((int)(pid)):
+           if is_setup:
+               print "Cannot run setup when server is running."
            mc.server_already_running(pid)
        else:
            mc.server_pid_not_running(pid)
@@ -100,13 +107,20 @@ def main():
     web_app_path = os.path.join(web_app_dir, "atlas")
     if (mc.isCygwin()):
         web_app_path = mc.convertCygwinPath(web_app_path)
+    if not is_setup:
+        start_atlas_server(atlas_classpath, atlas_pid_file, jvm_logdir, jvm_opts_list, web_app_path)
+    else:
+        process = mc.java("org.apache.atlas.web.setup.AtlasSetup", [], atlas_classpath, jvm_opts_list, jvm_logdir)
+        return process.wait()
+
+
+def start_atlas_server(atlas_classpath, atlas_pid_file, jvm_logdir, jvm_opts_list, web_app_path):
     args = ["-app", web_app_path]
     args.extend(sys.argv[1:])
-
     process = mc.java("org.apache.atlas.Atlas", args, atlas_classpath, jvm_opts_list, jvm_logdir)
     mc.writePid(atlas_pid_file, process)
-
     print "Apache Atlas Server started!!!\n"
+
 
 if __name__ == '__main__':
     try:

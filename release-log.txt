@@ -17,6 +17,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-628 Starting two Atlas instances at the same time causes exceptions in HA mode (yhemanth via sumasai)
 ATLAS-594 alter table rename doesnt work across databases (sumasai via shwethags)
 ATLAS-586 While updating the multiple attributes, Atlas returns the response with escape characters (dkantor via shwethags)
 ATLAS-582 Move Atlas UI to use backboneJS (kevalbhatt18 via shwethags)

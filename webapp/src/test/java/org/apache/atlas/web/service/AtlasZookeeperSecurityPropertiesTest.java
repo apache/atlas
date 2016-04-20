@@ -62,4 +62,10 @@ public class AtlasZookeeperSecurityPropertiesTest {
         assertEquals(authInfo.getScheme(), "digest");
         assertEquals(authInfo.getAuth(), "user:password".getBytes(Charsets.UTF_8));
     }
+
+    @Test
+    public void shouldReturnDefaultAclIfNullOrEmpty() {
+        ACL acl = AtlasZookeeperSecurityProperties.parseAcl(null, ZooDefs.Ids.OPEN_ACL_UNSAFE.get(0));
+        assertEquals(acl, ZooDefs.Ids.OPEN_ACL_UNSAFE.get(0));
+    }
 }

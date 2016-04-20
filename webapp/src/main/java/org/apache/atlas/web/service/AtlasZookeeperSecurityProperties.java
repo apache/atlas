@@ -31,6 +31,13 @@ import org.apache.zookeeper.data.Id;
  */
 public class AtlasZookeeperSecurityProperties {
 
+    public static ACL parseAcl(String aclString, ACL defaultAcl) {
+        if (StringUtils.isEmpty(aclString)) {
+            return defaultAcl;
+        }
+        return parseAcl(aclString);
+    }
+
     /**
      * Get an {@link ACL} by parsing input string.
      * @param aclString A string of the form scheme:id

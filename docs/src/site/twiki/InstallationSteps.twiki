@@ -69,14 +69,14 @@ graph persistence for a different HBase instance, please see "Graph persistence 
 
 ---+++ Installing & Running Atlas
 
-*Installing Atlas*
+---++++ Installing Atlas
 <verbatim>
 tar -xzvf apache-atlas-${project.version}-bin.tar.gz
 
 cd atlas-${project.version}
 </verbatim>
 
-*Configuring Atlas*
+---++++ Configuring Atlas
 
 By default config directory used by Atlas is {package dir}/conf. To override this set environment
 variable ATLAS_CONF to the path of the conf dir.
@@ -196,7 +196,25 @@ Pre-requisites for running Solr in cloud mode
   * !SolrCloud has support for replication and sharding. It is highly recommended to use !SolrCloud with at least two Solr nodes running on different servers with replication enabled.
     If using !SolrCloud, then you also need !ZooKeeper installed and configured with 3 or 5 !ZooKeeper nodes
 
-*Starting Atlas Server*
+---++++ Setting up Atlas
+
+There are a few steps that setup dependencies of Atlas. One such example is setting up the Titan schema
+in the storage backend of choice. In a simple single server setup, these are automatically setup with default
+configuration when the server first accesses these dependencies.
+
+However, there are scenarios when we may want to run setup steps explicitly as one time operations. For example, in a
+multiple server scenario using [[HighAvailability][High Availability]], it is preferable to run setup steps from one
+of the server instances the first time, and then start the services.
+
+To run these steps one time, execute the command =bin/atlas_start.py -setup= from a single Atlas server instance.
+
+However, the Atlas server does take care of parallel executions of the setup steps. Also, running the setup steps multiple
+times is idempotent. Therefore, if one chooses to run the setup steps as part of server startup, for convenience,
+then they should enable the configuration option =atlas.server.run.setup.on.start= by defining it with the value =true=
+in the =atlas-application.properties= file.
+
+---++++ Starting Atlas Server
+
 <verbatim>
 bin/atlas_start.py [-port <port>]
 </verbatim>
@@ -205,7 +223,8 @@ By default,
    * To change the port, use -port option.
    * atlas server starts with conf from {package dir}/conf. To override this (to use the same conf with multiple atlas upgrades), set environment variable ATLAS_CONF to the path of conf dir
 
-*Using Atlas*
+---+++ Using Atlas
+
    * Quick start model - sample model and data
 <verbatim>
   bin/quick_start.py [<atlas endpoint>]
@@ -242,7 +261,21 @@ By default,
 Once atlas is started, you can view the status of atlas entities using the Web-based dashboard. You can open your browser at the corresponding port to use the web UI.
 
 
-*Stopping Atlas Server*
+---+++ Stopping Atlas Server
+
 <verbatim>
 bin/atlas_stop.py
 </verbatim>
+
+---+++ Known Issues
+
+---++++ Setup
+
+If the setup of Atlas service fails due to any reason, the next run of setup (either by an explicit invocation of
+=atlas_start.py -setup= or by enabling the configuration option =atlas.server.run.setup.on.start=) will fail with
+a message such as =A previous setup run may not have completed cleanly.=. In such cases, you would need to manually
+ensure the setup can run and delete the Zookeeper node at =/apache_atlas/setup_in_progress= before attempting to
+run setup again.
+
+If the setup failed due to HBase Titan schema setup errors, it may be necessary to repair the HBase schema. If no
+data has been stored, one can also disable and drop the 'titan' schema in HBase to let setup run again.

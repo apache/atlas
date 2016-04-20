@@ -24,19 +24,16 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.framework.recipes.locks.InterProcessReadWriteLock;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
-import org.apache.zookeeper.data.Id;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.actors.threadpool.Arrays;
 
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -89,25 +86,22 @@ public class ActiveInstanceState {
         String atlasServerAddress = HAConfiguration.getBoundAddressForId(configuration, serverId);
         HAConfiguration.ZookeeperProperties zookeeperProperties =
                 HAConfiguration.getZookeeperProperties(configuration);
-        List<ACL> acls = ZooDefs.Ids.OPEN_ACL_UNSAFE;
-        if (zookeeperProperties.hasAcl()) {
-            acls = Arrays.asList(new ACL[]{AtlasZookeeperSecurityProperties.parseAcl(zookeeperProperties.getAcl())});
-        }
-        Stat serverInfo = client.checkExists().forPath(getZnodePath());
+        List<ACL> acls = Arrays.asList(
+                new ACL[]{AtlasZookeeperSecurityProperties.parseAcl(zookeeperProperties.getAcl(),
+                    ZooDefs.Ids.OPEN_ACL_UNSAFE.get(0))});
+        Stat serverInfo = client.checkExists().forPath(getZnodePath(zookeeperProperties));
         if (serverInfo == null) {
             client.create().
                     withMode(CreateMode.EPHEMERAL).
                     withACL(acls).
-                    forPath(getZnodePath());
+                    forPath(getZnodePath(zookeeperProperties));
         }
-        client.setData().forPath(getZnodePath(),
+        client.setData().forPath(getZnodePath(zookeeperProperties),
                 atlasServerAddress.getBytes(Charset.forName("UTF-8")));
     }
 
-    private String getZnodePath() {
-        String zkRoot = configuration.getString(HAConfiguration.ATLAS_SERVER_HA_ZK_ROOT_KEY,
-                HAConfiguration.ATLAS_SERVER_ZK_ROOT_DEFAULT);
-        return zkRoot+APACHE_ATLAS_ACTIVE_SERVER_INFO;
+    private String getZnodePath(HAConfiguration.ZookeeperProperties zookeeperProperties) {
+        return zookeeperProperties.getZkRoot()+APACHE_ATLAS_ACTIVE_SERVER_INFO;
     }
 
     /**
@@ -120,7 +114,9 @@ public class ActiveInstanceState {
         CuratorFramework client = curatorFactory.clientInstance();
         String serverAddress = null;
         try {
-            byte[] bytes = client.getData().forPath(getZnodePath());
+            HAConfiguration.ZookeeperProperties zookeeperProperties =
+                    HAConfiguration.getZookeeperProperties(configuration);
+            byte[] bytes = client.getData().forPath(getZnodePath(zookeeperProperties));
             serverAddress = new String(bytes, Charset.forName("UTF-8"));
         } catch (Exception e) {
             LOG.error("Error getting active server address", e);

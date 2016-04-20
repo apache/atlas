@@ -30,10 +30,10 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.zookeeper.data.ACL;
-import org.apache.zookeeper.data.Id;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +58,7 @@ public class CuratorFactory {
     public static final String AUTH_SCHEME = "auth";
     public static final String DIGEST_SCHEME = "digest";
     public static final String IP_SCHEME = "ip";
+    public static final String SETUP_LOCK = "/setup_lock";
 
     private final Configuration configuration;
     private CuratorFramework curatorFramework;
@@ -191,5 +192,9 @@ public class CuratorFactory {
      */
     public LeaderLatch leaderLatchInstance(String serverId, String zkRoot) {
         return new LeaderLatch(curatorFramework, zkRoot+APACHE_ATLAS_LEADER_ELECTOR_PATH, serverId);
+    }
+
+    public InterProcessMutex lockInstance(String zkRoot) {
+        return new InterProcessMutex(curatorFramework, zkRoot+ SETUP_LOCK);
     }
 }
