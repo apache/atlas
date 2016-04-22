@@ -19,6 +19,7 @@
 package org.apache.atlas;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableSet;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
@@ -27,9 +28,15 @@ import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.client.urlconnection.URLConnectionClientHandler;
 import org.apache.atlas.security.SecureClientUtils;
 import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.json.TypesSerialization;
+import org.apache.atlas.typesystem.json.TypesSerialization$;
+import org.apache.atlas.typesystem.types.AttributeDefinition;
+import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.atlas.typesystem.types.TraitType;
+import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -84,6 +91,7 @@ public class AtlasClient {
     public static final String URI_ENTITY_AUDIT = "audit";
     public static final String URI_SEARCH = "discovery/search";
     public static final String URI_LINEAGE = "lineage/hive/table";
+    public static final String URI_TRAITS = "traits";
 
     public static final String QUERY = "query";
     public static final String QUERY_TYPE = "queryType";
@@ -294,6 +302,10 @@ public class AtlasClient {
         }
     }
 
+    public WebResource getResource() {
+        return service;
+    }
+
     /**
      * Return status of the service instance the client is pointing to.
      *
@@ -422,6 +434,33 @@ public class AtlasClient {
      */
     public List<String> createType(TypesDef typeDef) throws AtlasServiceException {
         return createType(TypesSerialization.toJson(typeDef));
+    }
+
+    /**
+     * Creates trait type with specifiedName, superTraits and attributes
+     * @param traitName the name of the trait type
+     * @param superTraits the list of super traits from which this trait type inherits attributes
+     * @param attributeDefinitions the list of attributes of the trait type
+     * @return the list of types created
+     * @throws AtlasServiceException
+     */
+    public List<String> createTraitType(String traitName, ImmutableSet<String> superTraits, AttributeDefinition... attributeDefinitions) throws AtlasServiceException {
+        HierarchicalTypeDefinition<TraitType> piiTrait =
+            TypesUtil.createTraitTypeDef(traitName, superTraits, attributeDefinitions);
+
+        String traitDefinitionAsJSON = TypesSerialization.toJson(piiTrait, true);
+        LOG.debug("Creating trait type {} {}" , traitName, traitDefinitionAsJSON);
+        return createType(traitDefinitionAsJSON);
+    }
+
+    /**
+     * Creates simple trait type with specifiedName with no superTraits or attributes
+     * @param traitName the name of the trait type
+     * @return the list of types created
+     * @throws AtlasServiceException
+     */
+    public List<String> createTraitType(String traitName) throws AtlasServiceException {
+        return createTraitType(traitName, null);
     }
 
     /**
@@ -589,6 +628,18 @@ public class AtlasClient {
     }
 
     /**
+     * Associate trait to an entity
+     *
+     * @param guid      guid
+     * @param traitDefinition trait definition
+     */
+    public void addTrait(String guid, Struct traitDefinition) throws AtlasServiceException {
+        String traitJson = InstanceSerialization.toJson(traitDefinition, true);
+        LOG.debug("Adding trait to entity with id {} {}", guid, traitJson);
+        callAPI(API.ADD_TRAITS, traitJson, guid, URI_TRAITS);
+    }
+
+    /**
      * Supports Partial updates
      * Updates properties set in the definition for the entity corresponding to guid
      * @param entityType Type of the entity being updated
@@ -724,6 +775,17 @@ public class AtlasClient {
                 return resource;
             }
         });
+        return extractResults(jsonResponse, AtlasClient.RESULTS, new ExtractOperation<String, String>());
+    }
+
+    /**
+     * List traits for a given entity identified by its GUID
+     * @param guid GUID of the entity
+     * @return List<String> - traitnames associated with entity
+     * @throws AtlasServiceException
+     */
+    public List<String> listTraits(final String guid) throws AtlasServiceException {
+        JSONObject jsonResponse = callAPI(API.LIST_TRAITS, null, guid, URI_TRAITS);
         return extractResults(jsonResponse, AtlasClient.RESULTS, new ExtractOperation<String, String>());
     }
 

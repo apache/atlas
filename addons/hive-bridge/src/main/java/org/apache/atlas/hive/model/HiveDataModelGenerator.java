@@ -64,6 +64,7 @@ public class HiveDataModelGenerator {
     public static final String COMMENT = "comment";
     public static final String PARAMETERS = "parameters";
     public static final String COLUMNS = "columns";
+    public static final String PART_COLS = "partitionKeys";
 
     public static final String STORAGE_NUM_BUCKETS = "numBuckets";
     public static final String STORAGE_IS_STORED_AS_SUB_DIRS = "storedAsSubDirectories";
@@ -244,7 +245,7 @@ public class HiveDataModelGenerator {
                 new AttributeDefinition("retention", DataTypes.INT_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition(STORAGE_DESC, HiveDataTypes.HIVE_STORAGEDESC.getName(), Multiplicity.OPTIONAL, true,
                         null),
-                new AttributeDefinition("partitionKeys", DataTypes.arrayTypeName(HiveDataTypes.HIVE_COLUMN.getName()),
+                new AttributeDefinition(PART_COLS, DataTypes.arrayTypeName(HiveDataTypes.HIVE_COLUMN.getName()),
                         Multiplicity.OPTIONAL, true, null),
                 new AttributeDefinition("columns", DataTypes.arrayTypeName(HiveDataTypes.HIVE_COLUMN.getName()),
                         Multiplicity.OPTIONAL, true, null),

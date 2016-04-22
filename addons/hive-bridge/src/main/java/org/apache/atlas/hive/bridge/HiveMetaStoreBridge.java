@@ -353,7 +353,7 @@ public class HiveMetaStoreBridge {
         return tableReference;
     }
 
-    private String getStorageDescQFName(String entityQualifiedName) {
+    public static String getStorageDescQFName(String entityQualifiedName) {
         return entityQualifiedName + "_storage";
     }
 

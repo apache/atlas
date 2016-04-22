@@ -33,6 +33,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.Database;
+import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.ql.QueryPlan;
 import org.apache.hadoop.hive.ql.exec.ExplainTask;
 import org.apache.hadoop.hive.ql.exec.Task;
@@ -299,7 +300,9 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
         case CREATETABLE:
             List<Pair<? extends Entity, Referenceable>> tablesCreated = handleEventOutputs(dgiBridge, event, Type.TABLE);
-            handleExternalTables(dgiBridge, event, tablesCreated.get(0).getLeft(), tablesCreated.get(0).getRight());
+            if (tablesCreated.size() > 0) {
+                handleExternalTables(dgiBridge, event, tablesCreated.get(0).getLeft(), tablesCreated.get(0).getRight());
+            }
             break;
 
         case CREATETABLE_AS_SELECT:
@@ -409,26 +412,85 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                 Table newTable = writeEntity.getTable();
                 //Hive sends with both old and new table names in the outputs which is weird. So skipping that with the below check
                 if (!newTable.getDbName().equals(oldTable.getDbName()) || !newTable.getTableName().equals(oldTable.getTableName())) {
-                    //Create/update old table entity - create new entity with oldQFNme and tableName
-                    Referenceable tableEntity = createOrUpdateEntities(dgiBridge, event.getUser(), writeEntity);
-                    String oldQualifiedName = dgiBridge.getTableQualifiedName(dgiBridge.getClusterName(),
+                    final String oldQualifiedName = dgiBridge.getTableQualifiedName(dgiBridge.getClusterName(),
                         oldTable.getDbName(), oldTable.getTableName());
-                    tableEntity.set(HiveDataModelGenerator.NAME, oldQualifiedName);
-                    tableEntity.set(HiveDataModelGenerator.TABLE_NAME, oldTable.getTableName().toLowerCase());
-
-                    String newQualifiedName = dgiBridge.getTableQualifiedName(dgiBridge.getClusterName(),
+                    final String newQualifiedName = dgiBridge.getTableQualifiedName(dgiBridge.getClusterName(),
                         newTable.getDbName(), newTable.getTableName());
 
-                    //Replace entity with new name
-                    Referenceable newEntity = new Referenceable(HiveDataTypes.HIVE_TABLE.getName());
-                    newEntity.set(HiveDataModelGenerator.NAME, newQualifiedName);
-                    newEntity.set(HiveDataModelGenerator.TABLE_NAME, newTable.getTableName().toLowerCase());
-                    messages.add(new HookNotification.EntityPartialUpdateRequest(event.getUser(),
-                        HiveDataTypes.HIVE_TABLE.getName(), HiveDataModelGenerator.NAME,
-                        oldQualifiedName, newEntity));
+                    //Create/update old table entity - create entity with oldQFNme and old tableName if it doesnt exist. If exists, will update
+                    //We always use the new entity while creating the table since some flags, attributes of the table are not set in inputEntity and Hive.getTable(oldTableName) also fails since the table doesnt exist in hive anymore
+                    final Referenceable tableEntity = createOrUpdateEntities(dgiBridge, event.getUser(), writeEntity);
+
+                    //Reset regular column QF Name to old Name and create a new partial notification request to replace old column QFName to newName to retain any existing traits
+                    replaceColumnQFName(event, (List<Referenceable>) tableEntity.get(HiveDataModelGenerator.COLUMNS), oldQualifiedName, newQualifiedName);
+
+                    //Reset partition key column QF Name to old Name and create a new partial notification request to replace old column QFName to newName to retain any existing traits
+                    replaceColumnQFName(event, (List<Referenceable>) tableEntity.get(HiveDataModelGenerator.PART_COLS), oldQualifiedName, newQualifiedName);
+
+                    //Reset SD QF Name to old Name and create a new partial notification request to replace old SD QFName to newName to retain any existing traits
+                    replaceSDQFName(event, tableEntity, oldQualifiedName, newQualifiedName);
+
+                    //Reset Table QF Name to old Name and create a new partial notification request to replace old Table QFName to newName
+                    replaceTableQFName(dgiBridge, event, oldTable, newTable, tableEntity, oldQualifiedName, newQualifiedName);
                 }
             }
         }
+    }
+
+    private Referenceable replaceTableQFName(HiveMetaStoreBridge dgiBridge, HiveEventContext event, Table oldTable, Table newTable, final Referenceable tableEntity, final String oldTableQFName, final String newTableQFName) throws HiveException {
+        tableEntity.set(HiveDataModelGenerator.NAME, oldTableQFName);
+        tableEntity.set(HiveDataModelGenerator.TABLE_NAME, oldTable.getTableName().toLowerCase());
+        final Referenceable newDbInstance = (Referenceable) tableEntity.get(HiveDataModelGenerator.DB);
+        tableEntity.set(HiveDataModelGenerator.DB, dgiBridge.createDBInstance(dgiBridge.hiveClient.getDatabase(oldTable.getDbName())));
+
+        //Replace table entity with new name
+        final Referenceable newEntity = new Referenceable(HiveDataTypes.HIVE_TABLE.getName());
+        newEntity.set(HiveDataModelGenerator.NAME, newTableQFName);
+        newEntity.set(HiveDataModelGenerator.TABLE_NAME, newTable.getTableName().toLowerCase());
+        newEntity.set(HiveDataModelGenerator.DB, newDbInstance);
+
+        messages.add(new HookNotification.EntityPartialUpdateRequest(event.getUser(),
+            HiveDataTypes.HIVE_TABLE.getName(), HiveDataModelGenerator.NAME,
+            oldTableQFName, newEntity));
+
+        return newEntity;
+    }
+
+    private List<Referenceable> replaceColumnQFName(final HiveEventContext event, final List<Referenceable> cols, final String oldTableQFName, final String newTableQFName) {
+        List<Referenceable> newColEntities = new ArrayList<>();
+        for (Referenceable col : cols) {
+            final String colName = (String) col.get(HiveDataModelGenerator.NAME);
+            String oldColumnQFName = HiveMetaStoreBridge.getColumnQualifiedName(oldTableQFName, colName);
+            String newColumnQFName = HiveMetaStoreBridge.getColumnQualifiedName(newTableQFName, colName);
+            col.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, oldColumnQFName);
+
+            Referenceable newColEntity = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
+            ///Only QF Name changes
+            newColEntity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, newColumnQFName);
+            messages.add(new HookNotification.EntityPartialUpdateRequest(event.getUser(),
+                HiveDataTypes.HIVE_COLUMN.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+                oldColumnQFName, newColEntity));
+            newColEntities.add(newColEntity);
+        }
+        return newColEntities;
+    }
+
+    private Referenceable replaceSDQFName(final HiveEventContext event, Referenceable tableEntity, final String oldTblQFName, final String newTblQFName) {
+        //Reset storage desc QF Name to old Name
+        final Referenceable sdRef = ((Referenceable) tableEntity.get(HiveDataModelGenerator.STORAGE_DESC));
+        sdRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, HiveMetaStoreBridge.getStorageDescQFName(oldTblQFName));
+
+        //Replace SD QF name first to retain tags
+        final String oldSDQFName = HiveMetaStoreBridge.getStorageDescQFName(oldTblQFName);
+        final String newSDQFName = HiveMetaStoreBridge.getStorageDescQFName(newTblQFName);
+
+        final Referenceable newSDEntity = new Referenceable(HiveDataTypes.HIVE_STORAGEDESC.getName());
+        newSDEntity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, newSDQFName);
+        messages.add(new HookNotification.EntityPartialUpdateRequest(event.getUser(),
+            HiveDataTypes.HIVE_STORAGEDESC.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+            oldSDQFName, newSDEntity));
+
+        return newSDEntity;
     }
 
     private Referenceable createOrUpdateEntities(HiveMetaStoreBridge dgiBridge, String user, Entity entity) throws Exception {
@@ -459,6 +521,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         entities.add(dbEntity);
 
         Referenceable tableEntity = null;
+
         if (table != null) {
             table = dgiBridge.hiveClient.getTable(table.getDbName(), table.getTableName());
             tableEntity = dgiBridge.createTableInstance(dbEntity, table);
@@ -508,7 +571,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
         boolean isSelectQuery = isSelectQuery(event);
 
-        // Also filter out select queries which do not modify data
+        // filter out select queries which do not modify data
         if (!isSelectQuery) {
             for (ReadEntity readEntity : event.getInputs()) {
                 processHiveEntity(dgiBridge, event, readEntity, source);
