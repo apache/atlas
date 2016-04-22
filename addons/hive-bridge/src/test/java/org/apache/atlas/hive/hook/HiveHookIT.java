@@ -137,7 +137,7 @@ public class HiveHookIT {
 
         //assert on qualified name
         Referenceable dbEntity = atlasClient.getEntity(dbid);
-        Assert.assertEquals(dbEntity.get("qualifiedName"), dbName.toLowerCase() + "@" + CLUSTER_NAME);
+        Assert.assertEquals(dbEntity.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME), dbName.toLowerCase() + "@" + CLUSTER_NAME);
 
     }
 
@@ -188,19 +188,21 @@ public class HiveHookIT {
         String dbName = createDatabase();
         String colName = columnName();
         runCommand("create table " + dbName + "." + tableName + "(" + colName + " int, name string)");
-        assertTableIsRegistered(dbName, tableName);
+        String tableId = assertTableIsRegistered(dbName, tableName);
 
         //there is only one instance of column registered
         String colId = assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(
                 HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableName), colName));
         Referenceable colEntity = atlasClient.getEntity(colId);
-        Assert.assertEquals(colEntity.get("qualifiedName"), String.format("%s.%s.%s@%s", dbName.toLowerCase(),
+        Assert.assertEquals(colEntity.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME), String.format("%s.%s.%s@%s", dbName.toLowerCase(),
                 tableName.toLowerCase(), colName.toLowerCase(), CLUSTER_NAME));
+        Assert.assertNotNull(colEntity.get(HiveDataModelGenerator.TABLE));
+        Assert.assertEquals(((Id) colEntity.get(HiveDataModelGenerator.TABLE))._getId(), tableId);
 
         tableName = createTable();
-        String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
+        tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
         Referenceable tableRef = atlasClient.getEntity(tableId);
-        Assert.assertEquals(tableRef.get("tableType"), TableType.MANAGED_TABLE.name());
+        Assert.assertEquals(tableRef.get(HiveDataModelGenerator.TABLE_TYPE_ATTR), TableType.MANAGED_TABLE.name());
         Assert.assertEquals(tableRef.get(HiveDataModelGenerator.COMMENT), "table comment");
         String entityName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName);
         Assert.assertEquals(tableRef.get(HiveDataModelGenerator.NAME), entityName);
@@ -212,8 +214,10 @@ public class HiveHookIT {
         verifyTimestamps(tableRef, HiveDataModelGenerator.CREATE_TIME, createTime);
         verifyTimestamps(tableRef, HiveDataModelGenerator.LAST_ACCESS_TIME, createTime);
 
-        final Referenceable sdRef = (Referenceable) tableRef.get("sd");
+        final Referenceable sdRef = (Referenceable) tableRef.get(HiveDataModelGenerator.STORAGE_DESC);
         Assert.assertEquals(sdRef.get(HiveDataModelGenerator.STORAGE_IS_STORED_AS_SUB_DIRS), false);
+        Assert.assertNotNull(sdRef.get(HiveDataModelGenerator.TABLE));
+        Assert.assertEquals(((Id) sdRef.get(HiveDataModelGenerator.TABLE))._getId(), tableId);
 
         //Create table where database doesn't exist, will create database instance as well
         assertDatabaseIsRegistered(DEFAULT_DB);

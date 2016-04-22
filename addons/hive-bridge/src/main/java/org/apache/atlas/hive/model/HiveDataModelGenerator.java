@@ -79,6 +79,8 @@ public class HiveDataModelGenerator {
     public static final String STORAGE_DESC_OUTPUT_FMT = "outputFormat";
     public static final String OWNER = "owner";
 
+    public static final String TABLE_TYPE_ATTR = "tableType";
+
     public static final String CREATE_TIME = "createTime";
     public static final String LAST_ACCESS_TIME = "lastAccessTime";
 
@@ -166,6 +168,9 @@ public class HiveDataModelGenerator {
 
     private void createStorageDescClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
+                //Optional to keep it backward-compatible
+                new AttributeDefinition(TABLE, HiveDataTypes.HIVE_TABLE.getName(), Multiplicity.OPTIONAL, false,
+                        STORAGE_DESC),
                 new AttributeDefinition("location", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
                 new AttributeDefinition("inputFormat", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
@@ -223,7 +228,11 @@ public class HiveDataModelGenerator {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition(NAME, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("type", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition(COMMENT, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),};
+                new AttributeDefinition(COMMENT, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
+                //Making this optional since this is an incompatible change
+                //Reverse attribute to 'columns' in Table
+                new AttributeDefinition(TABLE, HiveDataTypes.HIVE_TABLE.getName(), Multiplicity.OPTIONAL, false, COLUMNS),};
+
         HierarchicalTypeDefinition<ClassType> definition =
                 new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_COLUMN.getName(), null,
                     ImmutableSet.of(AtlasClient.REFERENCEABLE_SUPER_TYPE), attributeDefinitions);
@@ -254,7 +263,7 @@ public class HiveDataModelGenerator {
                         false, null),
                 new AttributeDefinition("viewExpandedText", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL,
                         false, null),
-                new AttributeDefinition("tableType", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                new AttributeDefinition(HiveDataModelGenerator.TABLE_TYPE_ATTR, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
                 new AttributeDefinition("temporary", DataTypes.BOOLEAN_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),};

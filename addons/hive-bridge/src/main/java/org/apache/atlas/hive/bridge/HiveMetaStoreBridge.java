@@ -31,6 +31,7 @@ import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.json.TypesSerialization;
+import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.commons.configuration.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.api.Database;
@@ -62,7 +63,6 @@ public class HiveMetaStoreBridge {
     public static final String HIVE_CLUSTER_NAME = "atlas.cluster.name";
     public static final String DEFAULT_CLUSTER_NAME = "primary";
     public static final String DESCRIPTION_ATTR = "description";
-    public static final String TABLE_TYPE_ATTR = "tableType";
     public static final String SEARCH_ENTRY_GUID_ATTR = "__guid";
 
     private final String clusterName;
@@ -303,7 +303,7 @@ public class HiveMetaStoreBridge {
         String tableQualifiedName = getTableQualifiedName(clusterName, hiveTable.getDbName(), hiveTable.getTableName());
         tableReference.set(HiveDataModelGenerator.NAME, tableQualifiedName);
         tableReference.set(HiveDataModelGenerator.TABLE_NAME, hiveTable.getTableName().toLowerCase());
-        tableReference.set("owner", hiveTable.getOwner());
+        tableReference.set(HiveDataModelGenerator.OWNER, hiveTable.getOwner());
 
         Date createDate = new Date();
         if (hiveTable.getMetadata().getProperty(hive_metastoreConstants.DDL_TIME) != null){
@@ -327,15 +327,9 @@ public class HiveMetaStoreBridge {
         // add reference to the database
         tableReference.set(HiveDataModelGenerator.DB, dbReference);
 
-        tableReference.set(HiveDataModelGenerator.COLUMNS, getColumns(hiveTable.getCols(), tableQualifiedName));
-
         // add reference to the StorageDescriptor
-        Referenceable sdReferenceable = fillStorageDesc(hiveTable.getSd(), tableQualifiedName, getStorageDescQFName(tableQualifiedName));
-        tableReference.set("sd", sdReferenceable);
-
-        // add reference to the Partition Keys
-        List<Referenceable> partKeys = getColumns(hiveTable.getPartitionKeys(), tableQualifiedName);
-        tableReference.set("partitionKeys", partKeys);
+        Referenceable sdReferenceable = fillStorageDesc(hiveTable.getSd(), tableQualifiedName, getStorageDescQFName(tableQualifiedName), tableReference.getId());
+        tableReference.set(HiveDataModelGenerator.STORAGE_DESC, sdReferenceable);
 
         tableReference.set(HiveDataModelGenerator.PARAMETERS, hiveTable.getParameters());
 
@@ -347,8 +341,14 @@ public class HiveMetaStoreBridge {
             tableReference.set("viewExpandedText", hiveTable.getViewExpandedText());
         }
 
-        tableReference.set(TABLE_TYPE_ATTR, hiveTable.getTableType().name());
+        tableReference.set(HiveDataModelGenerator.TABLE_TYPE_ATTR, hiveTable.getTableType().name());
         tableReference.set("temporary", hiveTable.isTemporary());
+
+        // add reference to the Partition Keys
+        List<Referenceable> partKeys = getColumns(hiveTable.getPartitionKeys(), tableQualifiedName, tableReference.getId());
+        tableReference.set("partitionKeys", partKeys);
+
+        tableReference.set(HiveDataModelGenerator.COLUMNS, getColumns(hiveTable.getCols(), tableQualifiedName, tableReference.getId()));
 
         return tableReference;
     }
@@ -384,7 +384,6 @@ public class HiveMetaStoreBridge {
         atlasClient.updateEntity(referenceable.getId().id, referenceable);
     }
 
-
     private Referenceable getEntityReferenceFromGremlin(String typeName, String gremlinQuery)
     throws AtlasServiceException, JSONException {
         AtlasClient client = getAtlasClient();
@@ -404,12 +403,12 @@ public class HiveMetaStoreBridge {
 
         AtlasClient dgiClient = getAtlasClient();
         Referenceable tableInstance = dgiClient.getEntity(tableRef.getId().id);
-        Referenceable sd = (Referenceable) tableInstance.get("sd");
+        Referenceable sd = (Referenceable) tableInstance.get(HiveDataModelGenerator.STORAGE_DESC);
         return new Referenceable(sd.getId().id, sd.getTypeName(), null);
     }
 
     public Referenceable fillStorageDesc(StorageDescriptor storageDesc, String tableQualifiedName,
-        String sdQualifiedName) throws Exception {
+        String sdQualifiedName, Id tableId) throws Exception {
         LOG.debug("Filling storage descriptor information for " + storageDesc);
 
         Referenceable sdReferenceable = new Referenceable(HiveDataTypes.HIVE_STORAGEDESC.getName());
@@ -455,6 +454,7 @@ public class HiveMetaStoreBridge {
 
         sdReferenceable.set(HiveDataModelGenerator.PARAMETERS, storageDesc.getParameters());
         sdReferenceable.set("storedAsSubDirectories", storageDesc.isStoredAsSubDirectories());
+        sdReferenceable.set(HiveDataModelGenerator.TABLE, tableId);
 
         return sdReferenceable;
     }
@@ -465,7 +465,7 @@ public class HiveMetaStoreBridge {
 //        Path path = new Path(pathUri);
 //        ref.set("name", path.getName());
         //TODO - Fix after ATLAS-542 to shorter Name
-        ref.set("name", pathUri);
+        ref.set(HiveDataModelGenerator.NAME, pathUri);
         ref.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, pathUri);
         return ref;
     }
@@ -477,8 +477,9 @@ public class HiveMetaStoreBridge {
         return String.format("%s.%s@%s", tableName, colName.toLowerCase(), clusterName);
     }
 
-    public List<Referenceable> getColumns(List<FieldSchema> schemaList, String tableQualifiedName) throws Exception {
+    public List<Referenceable> getColumns(List<FieldSchema> schemaList, String tableQualifiedName, Id tableReference) throws Exception {
         List<Referenceable> colList = new ArrayList<>();
+
         for (FieldSchema fs : schemaList) {
             LOG.debug("Processing field " + fs);
             Referenceable colReferenceable = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
@@ -487,6 +488,7 @@ public class HiveMetaStoreBridge {
             colReferenceable.set(HiveDataModelGenerator.NAME, fs.getName());
             colReferenceable.set("type", fs.getType());
             colReferenceable.set(HiveDataModelGenerator.COMMENT, fs.getComment());
+            colReferenceable.set(HiveDataModelGenerator.TABLE, tableReference);
 
             colList.add(colReferenceable);
         }

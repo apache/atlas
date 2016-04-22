@@ -20,6 +20,7 @@ package org.apache.atlas.hive.bridge;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
+import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.hadoop.hive.metastore.TableType;
@@ -104,7 +105,7 @@ public class HiveMetaStoreBridgeTest {
 
         // verify update is called on table
         verify(atlasClient).updateEntity(eq("82e06b34-9151-4023-aa9d-b82103a50e77"),
-                (Referenceable) argThat(new MatchesReferenceableProperty(HiveMetaStoreBridge.TABLE_TYPE_ATTR,
+                (Referenceable) argThat(new MatchesReferenceableProperty(HiveDataModelGenerator.TABLE_TYPE_ATTR,
                         TableType.EXTERNAL_TABLE.name())));
     }
 
@@ -163,7 +164,7 @@ public class HiveMetaStoreBridgeTest {
     private Referenceable createTableReference() {
         Referenceable tableReference = new Referenceable(HiveDataTypes.HIVE_TABLE.getName());
         Referenceable sdReference = new Referenceable(HiveDataTypes.HIVE_STORAGEDESC.getName());
-        tableReference.set("sd", sdReference);
+        tableReference.set(HiveDataModelGenerator.STORAGE_DESC, sdReference);
         return tableReference;
     }
 
