@@ -110,7 +110,7 @@
                 <role>committer</role>
                 <role>PPMC</role>
             </roles>
-            <organization>Hortonworks Inc.</organization>
+            <organization></organization>
             <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
         </developer>
         <developer>
@@ -132,6 +132,7 @@
             <timezone>-5</timezone>
             <roles>
                 <role>committer</role>
+                <role>PPMC</role>
             </roles>
             <organization>Hortonworks Inc.</organization>
             <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
@@ -143,6 +144,7 @@
             <timezone>-8</timezone>
             <roles>
                 <role>committer</role>
+                <role>PPMC</role>
             </roles>
             <organization>Hortonworks Inc.</organization>
             <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
@@ -154,6 +156,7 @@
             <timezone>+1</timezone>
             <roles>
                 <role>committer</role>
+                <role>PPMC</role>
             </roles>
             <organization>Merck &amp; Co Inc.</organization>
             <!--<organizationUrl>http://www.merck.com</organizationUrl>-->
@@ -165,6 +168,7 @@
             <timezone>+1</timezone>
             <roles>
                 <role>committer</role>
+                <role>PPMC</role>
             </roles>
             <organization>Merck &amp; Co Inc.</organization>
             <!--<organizationUrl>http://www.merck.com</organizationUrl>-->
@@ -176,6 +180,7 @@
             <timezone>-5</timezone>
             <roles>
                 <role>committer</role>
+                <role>PPMC</role>
             </roles>
             <organization>Aetna Inc.</organization>
             <!--<organizationUrl>http://www.aetna.com</organizationUrl>-->
@@ -187,6 +192,7 @@
             <timezone>-5</timezone>
             <roles>
                 <role>committer</role>
+                <role>PPMC</role>
             </roles>
             <organization>Aetna Inc.</organization>
             <!--<organizationUrl>http://www.aetna.com</organizationUrl>-->
@@ -198,7 +204,7 @@
             <timezone>-5</timezone>
             <roles>
                 <role>committer</role>
-
+                <role>PPMC</role>
             </roles>
             <organization>Aetna Inc.</organization>
             <!--<organizationUrl>http://www.aetna.com</organizationUrl>-->
@@ -210,6 +216,7 @@
             <timezone>-5</timezone>
             <roles>
                 <role>committer</role>
+                <role>PPMC</role>
             </roles>
             <organization>Aetna Inc.</organization>
             <!--<organizationUrl>http://www.aetna.com</organizationUrl>-->
@@ -221,6 +228,7 @@
             <timezone>-6</timezone>
             <roles>
                 <role>committer</role>
+                <role>PPMC</role>
             </roles>
             <organization>Target Inc.</organization>
             <!--<organizationUrl>http://www.target.com</organizationUrl>-->
@@ -232,6 +240,7 @@
             <timezone>-6</timezone>
             <roles>
                 <role>committer</role>
+                <role>PPMC</role>
             </roles>
             <organization>Target Inc.</organization>
             <!--<organizationUrl>http://www.target.com</organizationUrl>-->
@@ -243,6 +252,7 @@
             <timezone>-5</timezone>
             <roles>
                 <role>committer</role>
+                <role>PPMC</role>
             </roles>
             <organization>JPMC</organization>
             <!--<organizationUrl>http://</organizationUrl>-->
@@ -254,6 +264,7 @@
             <timezone>-6</timezone>
             <roles>
                 <role>committer</role>
+                <role>PPMC</role>
             </roles>
             <organization>Schlumberger Inc.</organization>
             <!--<organizationUrl>http://www.slb.com</organizationUrl>-->
@@ -265,6 +276,7 @@
             <timezone>-6</timezone>
             <roles>
                 <role>committer</role>
+                <role>PPMC</role>
             </roles>
             <organization>Schlumberger Inc.</organization>
             <!--<organizationUrl>http://www.slb.com</organizationUrl>-->
@@ -276,6 +288,7 @@
             <timezone>-8</timezone>
             <roles>
                 <role>committer</role>
+                <role>PPMC</role>
             </roles>
             <organization>SAP Inc.</organization>
             <!--<organizationUrl>http://www.sap.com</organizationUrl>-->
@@ -299,6 +312,7 @@
             <timezone>-8</timezone>
             <roles>
                 <role>committer</role>
+                <role>PPMC</role>
             </roles>
             <organization>Hortonworks Inc.</organization>
             <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
@@ -306,10 +320,11 @@
         <developer>
             <id>vranganathan</id>
             <name>Venkat Ranganathan</name>
-            <email>vranganathan@apache.org</email>
+            <email>venkatrangan@apache.org</email>
             <timezone>-8</timezone>
             <roles>
                 <role>committer</role>
+                <role>PPMC</role>
             </roles>
             <organization>Hortonworks Inc.</organization>
             <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
@@ -321,7 +336,17 @@
             <timezone>-8</timezone>
             <roles>
                 <role>committer</role>
-                <role>PPMC</role>
+            </roles>
+            <organization>Hortonworks Inc.</organization>
+            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>yhemanth</id>
+            <name>Hemanth Yamijala</name>
+            <email>yhemanth@apache.org</email>
+            <timezone>+05:30</timezone>
+            <roles>
+                <role>committer</role>
             </roles>
             <organization>Hortonworks Inc.</organization>
             <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
