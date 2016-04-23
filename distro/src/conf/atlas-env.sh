@@ -30,8 +30,16 @@
 # any additional opts you want to set for atlas service.
 #export ATLAS_SERVER_OPTS=
 
+# indicative values for large number of metadata entities (equal or more than 10,000s)
+#export ATLAS_SERVER_OPTS="-server -XX:SoftRefLRUPolicyMSPerMB=0 -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC -XX:+CMSParallelRemarkEnabled -XX:+PrintTenuringDistribution -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=dumps/atlas_server.hprof -Xloggc:logs/gc-worker.log -verbose:gc -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=1m -XX:+PrintGCDetails -XX:+PrintHeapAtGC -XX:+PrintGCTimeStamps"
+
 # java heap size we want to set for the atlas server. Default is 1024MB
 #export ATLAS_SERVER_HEAP=
+
+# indicative values for large number of metadata entities (equal or more than 10,000s) for JDK 7
+#export ATLAS_SERVER_HEAP="-Xms15360m -Xmx15360m -XX:MaxNewSize=3072m -XX:PermSize=100M -XX:MaxPermSize=512m"
+# indicative values for large number of metadata entities (equal or more than 10,000s) for JDK 8
+#export ATLAS_SERVER_HEAP="-Xms15360m -Xmx15360m -XX:MaxNewSize=5120m -XX:MetaspaceSize=100M -XX:MaxMetaspaceSize=512m"
 
 # What is is considered as atlas home dir. Default is the base locaion of the installed software
 #export ATLAS_HOME_DIR=

@@ -24,7 +24,8 @@ import atlas_config as mc
 ATLAS_LOG_OPTS="-Datlas.log.dir=%s -Datlas.log.file=%s.log"
 ATLAS_COMMAND_OPTS="-Datlas.home=%s"
 ATLAS_CONFIG_OPTS="-Datlas.conf=%s"
-DEFAULT_JVM_OPTS="-Xmx1024m -XX:MaxPermSize=512m -Dlog4j.configuration=atlas-log4j.xml -Djava.net.preferIPv4Stack=true"
+DEFAULT_JVM_HEAP_OPTS="-Xmx1024m -XX:MaxPermSize=512m"
+DEFAULT_JVM_OPTS="-Dlog4j.configuration=atlas-log4j.xml -Djava.net.preferIPv4Stack=true"
 
 def main():
 
@@ -56,8 +57,14 @@ def main():
     config_opts = (ATLAS_CONFIG_OPTS % jvm_confdir)
     jvm_opts_list.extend(config_opts.split())
 
-    default_jvm_opts = DEFAULT_JVM_OPTS
-    atlas_jvm_opts = os.environ.get(mc.ATLAS_OPTS, default_jvm_opts)
+    atlas_server_heap_opts = os.environ.get(mc.ATLAS_SERVER_HEAP, DEFAULT_JVM_HEAP_OPTS)
+    jvm_opts_list.extend(atlas_server_heap_opts.split())
+
+    atlas_server_jvm_opts = os.environ.get(mc.ATLAS_SERVER_OPTS)
+    if atlas_server_jvm_opts:
+        jvm_opts_list.extend(atlas_server_jvm_opts.split())
+
+    atlas_jvm_opts = os.environ.get(mc.ATLAS_OPTS, DEFAULT_JVM_OPTS)
     jvm_opts_list.extend(atlas_jvm_opts.split())
 
     #expand web app dir

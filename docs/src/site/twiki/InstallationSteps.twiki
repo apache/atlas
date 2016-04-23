@@ -121,6 +121,28 @@ executed. The following environment variables are available to set.
 #export ATLAS_EXPANDED_WEBAPP_DIR=
 </verbatim>
 
+*Settings to support large number of metadata objects*
+
+If you plan to store several tens of thousands of metadata objects, it is recommended that you use values
+tuned for better GC performance of the JVM.
+
+The following values are common server side options:
+<verbatim>
+export ATLAS_SERVER_OPTS="-server -XX:SoftRefLRUPolicyMSPerMB=0 -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC -XX:+CMSParallelRemarkEnabled -XX:+PrintTenuringDistribution -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=dumps/atlas_server.hprof -Xloggc:logs/gc-worker.log -verbose:gc -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=1m -XX:+PrintGCDetails -XX:+PrintHeapAtGC -XX:+PrintGCTimeStamps"
+</verbatim>
+
+The =-XX:SoftRefLRUPolicyMSPerMB= option was found to be particularly helpful to regulate GC performance for
+query heavy workloads with many concurrent users.
+
+The following values are recommended for JDK 7:
+<verbatim>
+export ATLAS_SERVER_HEAP="-Xms15360m -Xmx15360m -XX:MaxNewSize=3072m -XX:PermSize=100M -XX:MaxPermSize=512m"
+</verbatim>
+
+The following values are recommended for JDK 8:
+<verbatim>
+export ATLAS_SERVER_HEAP="-Xms15360m -Xmx15360m -XX:MaxNewSize=5120m -XX:MetaspaceSize=100M -XX:MaxMetaspaceSize=512m"
+</verbatim>
 
 *NOTE for Mac OS users*
 If you are using a Mac OS, you will need to configure the ATLAS_SERVER_OPTS (explained above).
