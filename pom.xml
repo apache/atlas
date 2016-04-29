@@ -152,7 +152,7 @@
         <developer>
             <id>dkaspar</id>
             <name>David Kaspar</name>
-            <email>dkaspar@merk.com</email>
+            <email>dkaspar@merck.com</email>
             <timezone>+1</timezone>
             <roles>
                 <role>committer</role>
@@ -284,7 +284,7 @@
         <developer>
             <id>bstortz</id>
             <name>Barbara Stortz</name>
-            <email>bstortz@sap</email>
+            <email>bstortz@sap.com</email>
             <timezone>-8</timezone>
             <roles>
                 <role>committer</role>
@@ -347,6 +347,7 @@
             <timezone>+05:30</timezone>
             <roles>
                 <role>committer</role>
+                <role>PPMC</role>
             </roles>
             <organization>Hortonworks Inc.</organization>
             <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
