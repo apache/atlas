@@ -19,7 +19,7 @@
 package org.apache.atlas.query
 
 import javax.script.{Bindings, ScriptEngine, ScriptEngineManager}
-
+import org.apache.atlas.query.Expressions._
 import com.thinkaurelius.titan.core.TitanGraph
 import com.tinkerpop.pipes.util.structures.Row
 import org.apache.atlas.query.TypeUtils.ResultWithPathStruct
@@ -27,8 +27,8 @@ import org.apache.atlas.typesystem.json._
 import org.apache.atlas.typesystem.types._
 import org.json4s._
 import org.json4s.native.Serialization._
-
 import scala.language.existentials
+import org.apache.atlas.query.Expressions._
 
 case class GremlinQueryResult(query: String,
                               resultDataType: IDataType[_],
@@ -82,7 +82,6 @@ class GremlinEvaluator(qry: GremlinQuery, persistenceStrategy: GraphPersistenceS
         val rType = qry.expr.dataType
         val oType = if (qry.isPathExpresion) qry.expr.children(0).dataType else rType
         val rawRes = engine.eval(qry.queryStr, bindings)
-
         if (!qry.hasSelectList) {
             val rows = rawRes.asInstanceOf[java.util.List[AnyRef]].map { v =>
                 val iV = instanceObject(v)
@@ -95,14 +94,16 @@ class GremlinEvaluator(qry: GremlinQuery, persistenceStrategy: GraphPersistenceS
             val rows = rawRes.asInstanceOf[java.util.List[AnyRef]].map { r =>
               val rV = instanceObject(r).asInstanceOf[Row[java.util.List[AnyRef]]]
                 val sInstance = sType.createInstance()
-                val selExpr =
-                  (if (qry.isPathExpresion) qry.expr.children(0) else qry.expr).
-                    asInstanceOf[Expressions.SelectExpression]
-                selExpr.selectListWithAlias.foreach { aE =>
-                    val cName = aE.alias
-                    val (src, idx) = qry.resultMaping(cName)
-                    val v = rV.getColumn(src).get(idx)
-                    sInstance.set(cName, persistenceStrategy.constructInstance(aE.dataType, v))
+                val selObj = SelectExpressionHelper.extractSelectExpression(qry.expr)
+                if (selObj.isDefined)
+                {
+                    val selExpr = selObj.get.asInstanceOf[Expressions.SelectExpression]
+                        selExpr.selectListWithAlias.foreach { aE =>
+                        val cName = aE.alias
+                        val (src, idx) = qry.resultMaping(cName)
+                        val v = rV.getColumn(src).get(idx)
+                        sInstance.set(cName, persistenceStrategy.constructInstance(aE.dataType, v))
+                    }
                 }
               addPathStruct(r, sInstance)
             }

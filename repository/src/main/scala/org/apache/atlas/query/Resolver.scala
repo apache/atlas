@@ -90,6 +90,14 @@ class Resolver(srcExpr: Option[Expression] = None, aliases: Map[String, Expressi
         case l@LoopExpression(inputExpr, loopExpr, t) if inputExpr.resolved => {
             val r = new Resolver(Some(inputExpr), inputExpr.namedExpressions, true)
             return new LoopExpression(inputExpr, loopExpr.transformUp(r), t)
+            }
+        case lmt@LimitExpression(child, limit, offset) => {
+            val r = new Resolver(Some(child), child.namedExpressions)
+            return new LimitExpression(child.transformUp(r), limit, offset)
+        }
+        case order@OrderExpression(child, odr, asc) => {
+            val r = new Resolver(Some(child), child.namedExpressions)
+            return new OrderExpression(child.transformUp(r), odr, asc)
         }
         case x => x
     }

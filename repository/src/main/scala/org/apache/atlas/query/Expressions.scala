@@ -330,6 +330,10 @@ object Expressions {
         def instance() = new InstanceExpression(this)
 
         def path() = new PathExpression(this)
+        
+        def limit(lmt: Literal[Integer], offset : Literal[Integer]) = new LimitExpression(this, lmt, offset)
+        
+        def order(odr: String, asc: Boolean) = new OrderExpression(this, odr, asc)
     }
 
     trait BinaryNode {
@@ -765,5 +769,31 @@ object Expressions {
     }
 
     override def toString = s"$child withPath"
+  }
+
+  case class LimitExpression(child: Expression, limit: Literal[Integer], offset: Literal[Integer]) extends Expression with UnaryNode { 
+
+    override def toString = s"$child  limit $limit offset $offset "
+
+    lazy val dataType = {
+            if (!resolved) {
+                throw new UnresolvedException(this,
+                    s"datatype. Can not resolve due to unresolved children")
+            }
+            child.dataType
+    }
+  }
+  
+  case class OrderExpression(child: Expression, odr: String, asc: Boolean) extends Expression with UnaryNode { 
+
+    override def toString = s"$child  order $odr asc $asc"
+
+    lazy val dataType = {
+            if (!resolved) {
+                throw new UnresolvedException(this,
+                    s"datatype. Can not resolve due to unresolved children")
+            }
+            child.dataType
+    }
   }
 }
