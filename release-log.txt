@@ -3,6 +3,7 @@ Apache Atlas Release Notes
 
 --trunk - unreleased
 INCOMPATIBLE CHANGES:
+ATLAS-672 UI: Make dashboard v2 the default UI implementation (bergenholtz via yhemanth)
 ATLAS-532 Change Data types of all timestamps in Hive model(currently long)(sumasai via yhemanth)
 ATLAS-622 Introduce soft delete (shwethags)
 ATLAS-494 UI Authentication (nixonrodrigues via shwethags)
