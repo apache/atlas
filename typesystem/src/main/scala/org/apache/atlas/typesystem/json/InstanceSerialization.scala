@@ -104,9 +104,9 @@ object InstanceSerialization {
         refClass <- idClass
         typNm <- typeName
         i <- id
-        s <- state
+        s <- Some (state)
         v <- version
-      } yield _Id(i, v, typNm, Some(s))
+      } yield _Id(i, v, typNm, s)
     }
 
     /**

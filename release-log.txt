@@ -18,6 +18,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-723 JSON deserialization regression (guptaneeru via shwethags)
 ATLAS-728 Fix few typos in committer email IDs (yhemanth)
 ATLAS-435 Add ORDER BY and Limit to search DSL (neerugupta via sumasai)
 ATLAS-543 Entity Instance requests should not require ID element for new Entities (harishjp via shwethags)
