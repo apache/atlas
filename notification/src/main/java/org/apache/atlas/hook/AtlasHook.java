@@ -103,6 +103,7 @@ public abstract class AtlasHook {
                 } else {
                     LOG.error("Failed to notify atlas for entity {} after {} retries. Quitting",
                             message, maxRetries, e);
+                    return;
                 }
             }
         }
