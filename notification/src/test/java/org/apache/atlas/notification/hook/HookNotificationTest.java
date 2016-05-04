@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.notification.hook;
 
-import org.apache.atlas.notification.AbstractNotificationConsumer;
+import org.apache.atlas.notification.AbstractNotification;
 import org.apache.atlas.typesystem.Referenceable;
 import org.testng.annotations.Test;
 
@@ -25,6 +25,9 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
 public class HookNotificationTest {
+
+    public static final HookMessageDeserializer HOOK_MESSAGE_DESERIALIZER = new HookMessageDeserializer();
+
     @Test
     public void testNewMessageSerDe() throws Exception {
         Referenceable entity1 = new Referenceable("sometype");
@@ -34,9 +37,10 @@ public class HookNotificationTest {
         String user = "user";
         HookNotification.EntityCreateRequest request = new HookNotification.EntityCreateRequest(user, entity1, entity2);
 
-        String notificationJson = AbstractNotificationConsumer.GSON.toJson(request);
-        HookNotification.HookNotificationMessage actualNotification = AbstractNotificationConsumer.GSON.fromJson(
-                notificationJson, HookNotification.HookNotificationMessage.class);
+        String notificationJson = AbstractNotification.GSON.toJson(request);
+        HookNotification.HookNotificationMessage actualNotification =
+            HOOK_MESSAGE_DESERIALIZER.deserialize(notificationJson);
+
         assertEquals(actualNotification.getType(), HookNotification.HookNotificationType.ENTITY_CREATE);
         assertEquals(actualNotification.getUser(), user);
 
@@ -56,7 +60,7 @@ public class HookNotificationTest {
         entity.set("attr", "value");
         HookNotification.EntityCreateRequest request = new HookNotification.EntityCreateRequest(null, entity);
 
-        String notificationJsonFromCode = AbstractNotificationConsumer.GSON.toJson(request);
+        String notificationJsonFromCode = AbstractNotification.GSON.toJson(request);
         System.out.println(notificationJsonFromCode);
 
         //Json without user and assert that the string can be deserialised
@@ -82,8 +86,10 @@ public class HookNotificationTest {
                 + "  \"type\": \"ENTITY_CREATE\"\n"
                 + "}";
 
-        HookNotification.HookNotificationMessage actualNotification = AbstractNotificationConsumer.GSON.fromJson(
-                notificationJson, HookNotification.HookNotificationMessage.class);
+
+        HookNotification.HookNotificationMessage actualNotification =
+            HOOK_MESSAGE_DESERIALIZER.deserialize(notificationJson);
+
         assertEquals(actualNotification.getType(), HookNotification.HookNotificationType.ENTITY_CREATE);
         assertNull(actualNotification.user);
         assertEquals(actualNotification.getUser(), HookNotification.HookNotificationMessage.UNKNOW_USER);

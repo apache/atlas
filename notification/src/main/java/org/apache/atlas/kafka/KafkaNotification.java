@@ -28,6 +28,7 @@ import kafka.utils.Time;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.notification.AbstractNotification;
+import org.apache.atlas.notification.MessageDeserializer;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.service.Service;
@@ -172,12 +173,31 @@ public class KafkaNotification extends AbstractNotification implements Service {
         List<NotificationConsumer<T>> consumers = new ArrayList<>(numConsumers);
         int consumerId = 0;
         for (KafkaStream stream : kafkaConsumers) {
-            consumers.add(createKafkaConsumer(notificationType.getClassType(), stream, consumerId++));
+            KafkaConsumer<T> kafkaConsumer =
+                createKafkaConsumer(notificationType.getClassType(), notificationType.getDeserializer(),
+                    stream, consumerId++);
+            consumers.add(kafkaConsumer);
         }
         consumerConnectors.add(consumerConnector);
 
         return consumers;
     }
+
+    @Override
+    public void close() {
+        if (producer != null) {
+            producer.close();
+            producer = null;
+        }
+
+        for (ConsumerConnector consumerConnector : consumerConnectors) {
+            consumerConnector.shutdown();
+        }
+        consumerConnectors.clear();
+    }
+
+
+    // ----- AbstractNotification --------------------------------------------
 
     @Override
     public void sendInternal(NotificationType type, String... messages) throws NotificationException {
@@ -197,26 +217,12 @@ public class KafkaNotification extends AbstractNotification implements Service {
             try {
                 RecordMetadata response = future.get();
                 LOG.debug("Sent message for topic - {}, partition - {}, offset - {}", response.topic(),
-                        response.partition(), response.offset());
+                    response.partition(), response.offset());
             } catch (Exception e) {
                 throw new NotificationException(e);
             }
         }
     }
-
-    @Override
-    public void close() {
-        if (producer != null) {
-            producer.close();
-            producer = null;
-        }
-
-        for (ConsumerConnector consumerConnector : consumerConnectors) {
-            consumerConnector.shutdown();
-        }
-        consumerConnectors.clear();
-    }
-
 
     // ----- helper methods --------------------------------------------------
 
@@ -234,14 +240,17 @@ public class KafkaNotification extends AbstractNotification implements Service {
     /**
      * Create a Kafka consumer from the given Kafka stream.
      *
-     * @param stream      the Kafka stream
-     * @param consumerId  the id for the new consumer
+     * @param type          the notification type to be returned by the consumer
+     * @param deserializer  the deserializer for the created consumers
+     * @param stream        the Kafka stream
+     * @param consumerId    the id for the new consumer
      *
      * @return a new Kafka consumer
      */
-    protected <T> org.apache.atlas.kafka.KafkaConsumer<T> createKafkaConsumer(Class<T> type, KafkaStream stream,
-                                                                              int consumerId) {
-        return new org.apache.atlas.kafka.KafkaConsumer<T>(type, stream, consumerId);
+    protected <T> org.apache.atlas.kafka.KafkaConsumer<T> createKafkaConsumer(Class<T> type,
+            MessageDeserializer<T> deserializer, KafkaStream stream,
+            int consumerId) {
+        return new org.apache.atlas.kafka.KafkaConsumer<T>(type, deserializer, stream, consumerId);
     }
 
     // Get properties for consumer request

@@ -22,6 +22,7 @@ import kafka.consumer.KafkaStream;
 import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.serializer.StringDecoder;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.notification.MessageDeserializer;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.notification.NotificationModule;
@@ -130,10 +131,12 @@ public class KafkaNotificationTest {
         }
 
         @Override
-        protected <T> org.apache.atlas.kafka.KafkaConsumer<T> createKafkaConsumer(Class<T> type, KafkaStream stream,
+        protected <T> org.apache.atlas.kafka.KafkaConsumer<T> createKafkaConsumer(Class<T> type,
+                                                                                  MessageDeserializer<T> deserializer,
+                                                                                  KafkaStream stream,
                                                                                   int consumerId) {
             kafkaStreams.add(stream);
-            return super.createKafkaConsumer(type, stream, consumerId);
+            return super.createKafkaConsumer(type, deserializer, stream, consumerId);
         }
     }
 }

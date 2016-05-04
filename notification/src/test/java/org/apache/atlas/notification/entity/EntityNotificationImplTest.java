@@ -131,7 +131,7 @@ public class EntityNotificationImplTest {
         assertTrue(entityNotification2.equals(entityNotification));
     }
 
-    private Referenceable getEntity(String id, IStruct... traits) {
+    public static Referenceable getEntity(String id, IStruct... traits) {
         String typeName = "typeName";
         Map<String, Object> values = new HashMap<>();
 

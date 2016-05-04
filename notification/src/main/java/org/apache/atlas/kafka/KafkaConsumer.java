@@ -21,6 +21,7 @@ import kafka.consumer.ConsumerIterator;
 import kafka.consumer.KafkaStream;
 import kafka.message.MessageAndMetadata;
 import org.apache.atlas.notification.AbstractNotificationConsumer;
+import org.apache.atlas.notification.MessageDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,13 +42,16 @@ public class KafkaConsumer<T> extends AbstractNotificationConsumer<T> {
     /**
      * Create a Kafka consumer.
      *
-     * @param type        the notification type returned by this consumer
-     * @param stream      the underlying Kafka stream
-     * @param consumerId  an id value for this consumer
+     * @param type          the notification type returned by this consumer
+     * @param deserializer  the message deserializer used for this consumer
+     * @param stream        the underlying Kafka stream
+     * @param consumerId    an id value for this consumer
      */
-    public KafkaConsumer(Class<T> type, KafkaStream<String, String> stream, int consumerId) {
-        super(type);
-        this.iterator = stream.iterator();
+    public KafkaConsumer(Class<T> type,
+                         MessageDeserializer<T> deserializer, KafkaStream<String, String> stream, int consumerId) {
+        super(deserializer);
+
+        this.iterator   = stream.iterator();
         this.consumerId = consumerId;
     }
 

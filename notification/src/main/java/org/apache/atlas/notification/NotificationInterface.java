@@ -17,9 +17,13 @@
  */
 package org.apache.atlas.notification;
 
+import org.apache.atlas.notification.entity.EntityMessageDeserializer;
 import org.apache.atlas.notification.entity.EntityNotification;
+import org.apache.atlas.notification.hook.HookMessageDeserializer;
 import org.apache.atlas.notification.hook.HookNotification;
+import com.google.gson.reflect.TypeToken;
 
+import java.lang.reflect.Type;
 import java.util.List;
 
 /**
@@ -37,24 +41,58 @@ public interface NotificationInterface {
     String PROPERTY_PREFIX = "atlas.notification";
 
     /**
+     * Notification message class types.
+     */
+    Class<HookNotification.HookNotificationMessage> HOOK_NOTIFICATION_CLASS =
+        HookNotification.HookNotificationMessage.class;
+
+    Class<EntityNotification> ENTITY_NOTIFICATION_CLASS = EntityNotification.class;
+
+    /**
+     * Versioned notification message class types.
+     */
+    Type HOOK_VERSIONED_MESSAGE_TYPE =
+        new TypeToken<VersionedMessage<HookNotification.HookNotificationMessage>>(){}.getType();
+
+    Type ENTITY_VERSIONED_MESSAGE_TYPE = new TypeToken<VersionedMessage<EntityNotification>>(){}.getType();
+
+    /**
      * Atlas notification types.
      */
     enum NotificationType {
 
-        HOOK(HookNotification.HookNotificationMessage.class), // notifications from the Atlas integration hook producers
-        ENTITIES(EntityNotification.class);                   // notifications to entity change consumers
+        // Notifications from the Atlas integration hooks.
+        HOOK(HOOK_NOTIFICATION_CLASS, new HookMessageDeserializer()),
+
+        // Notifications to entity change consumers.
+        ENTITIES(ENTITY_NOTIFICATION_CLASS, new EntityMessageDeserializer());
+
 
         /**
          * The notification class associated with this type.
          */
         private final Class classType;
 
-        NotificationType(Class classType) {
+        /**
+         * The message deserializer for this type.
+         */
+        private final MessageDeserializer deserializer;
+
+
+        NotificationType(Class classType, MessageDeserializer<?> deserializer) {
             this.classType = classType;
+            this.deserializer = deserializer;
         }
+
+
+        // ----- accessors ---------------------------------------------------
 
         public Class getClassType() {
             return classType;
+        }
+
+        public MessageDeserializer getDeserializer() {
+            return deserializer;
         }
     }
 
