@@ -18,6 +18,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-732 Dashboard v2 build fails on Windows (vmadugun via yhemanth)
 ATLAS-602 Hooks stuck in case of failure (svimal2106 via shwethags)
 ATLAS-631 Introduce Versioning to Atlas Notification Payload (tbeerbower via shwethags)
 ATLAS-723 JSON deserialization regression (guptaneeru via shwethags)
