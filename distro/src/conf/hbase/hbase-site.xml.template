@@ -19,7 +19,7 @@
 <configuration>
   <property>
     <name>hbase.rootdir</name>
-    <value>file://${hbase_home}/root</value>
+    <value>${url_prefix}${hbase_home}/root</value>
   </property>
   <property>
     <name>hbase.zookeeper.property.dataDir</name>

@@ -53,7 +53,10 @@ class TestMetadata(unittest.TestCase):
 
     atlas.main()
     self.assertTrue(configure_hbase_mock.called)
-    runProcess_mock.assert_called_with(['atlas_home/hbase/bin/hbase-daemon.sh', '--config', 'atlas_home/hbase/conf', 'start', 'master'], 'atlas_home/logs', False, True)
+    if IS_WINDOWS:
+      runProcess_mock.assert_called_with(['atlas_home\\hbase\\bin\\start-hbase.cmd', '--config', 'atlas_home\\hbase\\conf'], 'atlas_home\\logs', False, True)
+    else:
+      runProcess_mock.assert_called_with(['atlas_home/hbase/bin/hbase-daemon.sh', '--config', 'atlas_home/hbase/conf', 'start', 'master'], 'atlas_home/logs', False, True)
     self.assertTrue(java_mock.called)
     if IS_WINDOWS:
       

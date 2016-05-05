@@ -56,7 +56,7 @@ def main():
 
     # stop hbase
     if mc.is_hbase_local(confdir):
-        mc.run_hbase(mc.hbaseBinDir(atlas_home), "stop", None, None, True)
+        mc.run_hbase_action(mc.hbaseBinDir(atlas_home), "stop", None, None, True)
 
 if __name__ == '__main__':
     try:

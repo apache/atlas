@@ -326,13 +326,14 @@ def exist_pid(pid):
     elif IS_WINDOWS:
         #The os.kill approach does not work on Windows with python 2.7
         #the output from tasklist command is searched for the process id
-        command='tasklist /fi  "pid eq '+ pid + '"'
+        pidStr = str(pid)
+        command='tasklist /fi  "pid eq %s"' % pidStr
         sub_process=subprocess.Popen(command, stdout = subprocess.PIPE, shell=False)
         sub_process.communicate()
         output = subprocess.check_output(command)
         output=split(" *",output)
         for line in output:
-            if pid in line:
+            if pidStr in line:
                 return True
         return False
     #os other than nt or posix - not supported - need to delete the file to restart server if pid no longer exist
@@ -359,11 +360,23 @@ def is_hbase_local(confdir):
     confdir = os.path.join(confdir, CONF_FILE)
     return grep(confdir, HBASE_STORAGE_CONF_ENTRY) is not None and grep(confdir, HBASE_STORAGE_LOCAL_CONF_ENTRY) is not None
 
-def run_hbase(dir, action, hbase_conf_dir = None, logdir = None, wait=True):
-    if hbase_conf_dir is not None:
-        cmd = [os.path.join(dir, "hbase-daemon.sh"), '--config', hbase_conf_dir, action, 'master']
+def run_hbase_action(dir, action, hbase_conf_dir = None, logdir = None, wait=True):
+    if IS_WINDOWS:
+        if action == 'start':
+            hbaseScript = 'start-hbase.cmd'
+        else:
+            hbaseScript = 'stop-hbase.cmd'
+        if hbase_conf_dir is not None:
+            cmd = [os.path.join(dir, hbaseScript), '--config', hbase_conf_dir]
+        else:
+            cmd = [os.path.join(dir, hbaseScript)]
     else:
-        cmd = [os.path.join(dir, "hbase-daemon.sh"), action, 'master']
+        hbaseScript = 'hbase-daemon.sh'
+        if hbase_conf_dir is not None:
+            cmd = [os.path.join(dir, hbaseScript), '--config', hbase_conf_dir, action, 'master']
+        else:
+            cmd = [os.path.join(dir, hbaseScript), action, 'master']
+
 
     return runProcess(cmd, logdir, False, wait)
 
@@ -376,6 +389,11 @@ def configure_hbase(dir):
         hbase_conf_file = "hbase-site.xml"
 
         tmpl_file = os.path.join(tmpl_dir, hbase_conf_file + ".template")
+        if IS_WINDOWS:
+             url_prefix="file:///"
+        else:
+             url_prefix="file://"
+
         conf_file = os.path.join(conf_dir, hbase_conf_file)
         if os.path.exists(tmpl_file):
 
@@ -385,6 +403,7 @@ def configure_hbase(dir):
             f.close()
 
             config = template.replace("${hbase_home}", dir)
+            config = config.replace("${url_prefix}", url_prefix)
 
             f = open(conf_file,'w')
             f.write(config)

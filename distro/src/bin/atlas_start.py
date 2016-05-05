@@ -74,12 +74,6 @@ def main():
     #add hbase-site.xml to classpath
     hbase_conf_dir = mc.hbaseConfDir(atlas_home)
 
-    if mc.is_hbase_local(confdir):
-        print "configured for local hbase."
-        mc.configure_hbase(atlas_home)
-        mc.run_hbase(mc.hbaseBinDir(atlas_home), "start", hbase_conf_dir, logdir)
-        print "hbase started."
-
     p = os.pathsep
     atlas_classpath = confdir + p \
                        + os.path.join(web_app_dir, "atlas", "WEB-INF", "classes" ) + p \
@@ -110,6 +104,12 @@ def main():
            mc.server_already_running(pid)
        else:
            mc.server_pid_not_running(pid)
+
+    if mc.is_hbase_local(confdir):
+        print "configured for local hbase."
+        mc.configure_hbase(atlas_home)
+        mc.run_hbase_action(mc.hbaseBinDir(atlas_home), "start", hbase_conf_dir, logdir)
+        print "hbase started."
 
     web_app_path = os.path.join(web_app_dir, "atlas")
     if (mc.isCygwin()):
