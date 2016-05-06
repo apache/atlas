@@ -27,26 +27,41 @@ import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.EnumValue;
 import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class FullTextMapper {
+
+    private static final Logger LOG = LoggerFactory.getLogger(FullTextMapper.class);
 
     private final GraphToTypedInstanceMapper graphToTypedInstanceMapper;
 
     private static final GraphHelper graphHelper = GraphHelper.getInstance();
 
     private static final String FULL_TEXT_DELIMITER = " ";
+    private final Map<String, ITypedReferenceableInstance> instanceCache;
 
     FullTextMapper(GraphToTypedInstanceMapper graphToTypedInstanceMapper) {
         this.graphToTypedInstanceMapper = graphToTypedInstanceMapper;
+        instanceCache = new HashMap<>();
     }
 
     public String mapRecursive(Vertex instanceVertex, boolean followReferences) throws AtlasException {
         String guid = instanceVertex.getProperty(Constants.GUID_PROPERTY_KEY);
-        ITypedReferenceableInstance typedReference =
-            graphToTypedInstanceMapper.mapGraphToTypedInstance(guid, instanceVertex);
+        ITypedReferenceableInstance typedReference;
+        if (instanceCache.containsKey(guid)) {
+            typedReference = instanceCache.get(guid);
+            LOG.debug("Cache hit: guid = {}, entityId = {}", guid, typedReference.getId()._getId());
+        } else {
+            typedReference =
+                    graphToTypedInstanceMapper.mapGraphToTypedInstance(guid, instanceVertex);
+            instanceCache.put(guid, typedReference);
+            LOG.debug("Cache miss: guid = {}, entityId = {}", guid, typedReference.getId().getId());
+        }
         String fullText = forInstance(typedReference, followReferences);
         StringBuilder fullTextBuilder =
             new StringBuilder(typedReference.getTypeName()).append(FULL_TEXT_DELIMITER).append(fullText);

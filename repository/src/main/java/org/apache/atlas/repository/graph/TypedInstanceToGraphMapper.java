@@ -96,11 +96,11 @@ public final class TypedInstanceToGraphMapper {
                     createVerticesAndDiscoverInstances(newInstances);
             List<ITypedReferenceableInstance> entitiesToCreate = instancesPair.left;
             List<ITypedReferenceableInstance> entitiesToUpdate = instancesPair.right;
-
+            FullTextMapper fulltextMapper = new FullTextMapper(graphToTypedInstanceMapper);
             switch (operation) {
             case CREATE:
                 List<String> ids = addOrUpdateAttributesAndTraits(operation, entitiesToCreate);
-                addFullTextProperty(entitiesToCreate);
+                addFullTextProperty(entitiesToCreate, fulltextMapper);
                 requestContext.recordCreatedEntities(ids);
                 break;
 
@@ -111,8 +111,8 @@ public final class TypedInstanceToGraphMapper {
                 ids = addOrUpdateAttributesAndTraits(operation, entitiesToUpdate);
                 requestContext.recordUpdatedEntities(ids);
 
-                addFullTextProperty(entitiesToCreate);
-                addFullTextProperty(entitiesToUpdate);
+                addFullTextProperty(entitiesToCreate, fulltextMapper);
+                addFullTextProperty(entitiesToUpdate, fulltextMapper);
                 break;
 
             default:
@@ -289,8 +289,7 @@ public final class TypedInstanceToGraphMapper {
         return TypeUtils.Pair.of(instancesToCreate, instancesToUpdate);
     }
 
-    private void addFullTextProperty(List<ITypedReferenceableInstance> instances) throws AtlasException {
-        FullTextMapper fulltextMapper = new FullTextMapper(graphToTypedInstanceMapper);
+    private void addFullTextProperty(List<ITypedReferenceableInstance> instances, FullTextMapper fulltextMapper) throws AtlasException {
         for (ITypedReferenceableInstance typedInstance : instances) { // Traverse
             Vertex instanceVertex = getClassVertex(typedInstance);
             String fullText = fulltextMapper.mapRecursive(instanceVertex, true);

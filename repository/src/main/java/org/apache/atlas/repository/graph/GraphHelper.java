@@ -390,12 +390,20 @@ public final class GraphHelper {
     }
 
     public static String string(Vertex vertex) {
-        return String.format("vertex[id=%s type=%s guid=%s]", vertex.getId().toString(), getTypeName(vertex),
-                getIdFromVertex(vertex));
+        if (LOG.isDebugEnabled()) {
+            return String.format("vertex[id=%s type=%s guid=%s]", vertex.getId().toString(), getTypeName(vertex),
+                    getIdFromVertex(vertex));
+        } else {
+            return String.format("vertex[id=%s]", vertex.getId().toString());
+        }
     }
 
     public static String string(Edge edge) {
-        return String.format("edge[id=%s label=%s from %s -> to %s]", edge.getId().toString(), edge.getLabel(),
-                string(edge.getVertex(Direction.OUT)), string(edge.getVertex(Direction.IN)));
+        if (LOG.isDebugEnabled()) {
+            return String.format("edge[id=%s label=%s from %s -> to %s]", edge.getId().toString(), edge.getLabel(),
+                    string(edge.getVertex(Direction.OUT)), string(edge.getVertex(Direction.IN)));
+        } else {
+            return String.format("edge[id=%s]", edge.getId().toString());
+        }
     }
 }
