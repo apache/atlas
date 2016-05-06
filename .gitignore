@@ -45,3 +45,6 @@ test-output
 # other files
 .DS_Store
 *.swp
+
+#hbase package downloaded
+distro/hbase/*.tar.gz

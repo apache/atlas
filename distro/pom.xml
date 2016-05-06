@@ -84,14 +84,15 @@
                                 <configuration>
                                     <target name="Download HBase">
                                         <mkdir dir="${hbase.dir}"/>
+                                        <mkdir dir="${project.basedir}/hbase"/>
                                         <get
                                             src="${hbase.tar}"
-                                            dest="${project.build.directory}/hbase.tar.gz"
+                                            dest="${project.basedir}/hbase/${hbase.folder}.tar.gz"
                                             usetimestamp="true"
                                             verbose="true" skipexisting="true"
                                         />
                                         <untar
-                                            src="${project.build.directory}/hbase.tar.gz"
+                                            src="${project.basedir}/hbase/${hbase.folder}.tar.gz"
                                             dest="${project.build.directory}/hbase.temp"
                                             compression="gzip"
                                         />
