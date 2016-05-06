@@ -19,6 +19,7 @@
 package org.apache.atlas.web.resources;
 
 import com.google.inject.Inject;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.configuration.ConfigurationException;
@@ -113,7 +114,7 @@ public class AdminResource {
     public Response getStatus() {
         JSONObject responseData = new JSONObject();
         try {
-            responseData.put("Status", serviceState.getState().toString());
+            responseData.put(AtlasClient.STATUS, serviceState.getState().toString());
             Response response = Response.ok(responseData).build();
             return response;
         } catch (JSONException e) {

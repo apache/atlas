@@ -99,7 +99,7 @@ public class AuditFilter implements Filter {
         return userFromRequest == null ? "UNKNOWN" : userFromRequest;
     }
 
-    private void audit(String who, String fromAddress, String whatRequest, String fromHost, String whatURL, String whatAddrs,
+    public static void audit(String who, String fromAddress, String whatRequest, String fromHost, String whatURL, String whatAddrs,
             String whenISO9601) {
         AUDIT_LOG.info("Audit: {}/{}-{} performed request {} {} ({}) at time {}", who, fromAddress, fromHost, whatRequest, whatURL,
                 whatAddrs, whenISO9601);

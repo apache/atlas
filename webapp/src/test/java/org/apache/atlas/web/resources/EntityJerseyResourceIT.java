@@ -25,7 +25,6 @@ import com.google.gson.JsonSyntaxException;
 import com.google.inject.Inject;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.EntityAuditEvent;
@@ -51,6 +50,7 @@ import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -64,7 +64,6 @@ import org.testng.annotations.Test;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.Response;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -122,6 +121,22 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     }
 
     @Test
+    public void testRequestUser() throws Exception {
+        Referenceable entity = new Referenceable(DATABASE_TYPE);
+        entity.set("name", randomString());
+        entity.set("description", randomString());
+
+        String user = "testuser";
+        UserGroupInformation ugi = UserGroupInformation.createRemoteUser(user);
+        AtlasClient localClient = new AtlasClient(ugi, null, baseUrl);
+        String entityId = localClient.createEntity(entity).get(0);
+
+        List<EntityAuditEvent> events = serviceClient.getEntityAuditEvents(entityId, (short) 10);
+        assertEquals(events.size(), 1);
+        assertEquals(events.get(0).getUser(), user);
+    }
+
+    @Test
     //API should accept single entity (or jsonarray of entities)
     public void testSubmitSingleEntity() throws Exception {
         Referenceable databaseInstance = new Referenceable(DATABASE_TYPE);
@@ -149,7 +164,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         db.set("name", dbName);
         db.set("description", randomString());
 
-        final String dbid = serviceClient.createEntity(db).getString(0);
+        final String dbid = serviceClient.createEntity(db).get(0);
         assertEntityAudit(dbid, EntityAuditEvent.EntityAuditAction.ENTITY_CREATE);
 
         waitForNotification(notificationConsumer, MAX_WAIT_TIME, new NotificationPredicate() {
@@ -164,8 +179,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         assertEquals(results.length(), 1);
 
         //create entity again shouldn't create another instance with same unique attribute value
-        results = serviceClient.createEntity(db);
-        assertEquals(results.length(), 0);
+        List<String> entityResults = serviceClient.createEntity(db);
+        assertEquals(entityResults.size(), 0);
         try {
             waitForNotification(notificationConsumer, MAX_WAIT_TIME, new NotificationPredicate() {
                 @Override
@@ -214,7 +229,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         //create entity for the type
         Referenceable instance = new Referenceable(typeDefinition.typeName);
         instance.set("name", randomString());
-        String guid = serviceClient.createEntity(instance).getString(0);
+        String guid = serviceClient.createEntity(instance).get(0);
 
         //update type - add attribute
         typeDefinition = TypesUtil.createClassTypeDef(typeDefinition.typeName, ImmutableSet.<String>of(),

@@ -58,7 +58,6 @@ public class GuiceServletConfig extends GuiceServletContextListener {
     private static final Logger LOG = LoggerFactory.getLogger(GuiceServletConfig.class);
 
     private static final String GUICE_CTX_PARAM = "guice.packages";
-    static final String HTTP_AUTHENTICATION_ENABLED = "atlas.http.authentication.enabled";
     protected volatile Injector injector;
 
     @Override
@@ -126,7 +125,7 @@ public class GuiceServletConfig extends GuiceServletContextListener {
                             if (configuration == null) {
                                 throw new ConfigurationException("Could not load application configuration");
                             }
-                            if (Boolean.valueOf(configuration.getString(HTTP_AUTHENTICATION_ENABLED))) {
+                            if (Boolean.valueOf(configuration.getString(AtlasClient.HTTP_AUTHENTICATION_ENABLED))) {
                                 LOG.info("Enabling AuthenticationFilter");
                                 filter("/*").through(AtlasAuthenticationFilter.class);
                             }

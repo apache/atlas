@@ -30,14 +30,12 @@ import org.testng.annotations.Test;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
-
 import java.net.ConnectException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -326,6 +324,7 @@ public class AtlasClientTest {
                 thenReturn(response);
 
         when(resourceCreator.createResource()).thenReturn(resourceObject);
+        when(configuration.getString("atlas.http.authentication.type", "simple")).thenReturn("simple");
 
         AtlasClient atlasClient = getClientForTest("http://localhost:31000");
 

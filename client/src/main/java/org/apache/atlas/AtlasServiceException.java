@@ -19,6 +19,10 @@
 package org.apache.atlas;
 
 import com.sun.jersey.api.client.ClientResponse;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+
+import javax.ws.rs.WebApplicationException;
 
 public class AtlasServiceException extends Exception {
     private ClientResponse.Status status;
@@ -27,12 +31,19 @@ public class AtlasServiceException extends Exception {
         super("Metadata service API " + api + " failed", e);
     }
 
+    public AtlasServiceException(AtlasClient.API api, WebApplicationException e) throws JSONException {
+        this(api, ClientResponse.Status.fromStatusCode(e.getResponse().getStatus()),
+                ((JSONObject) e.getResponse().getEntity()).getString("stackTrace"));
+    }
+
+    private AtlasServiceException(AtlasClient.API api, ClientResponse.Status status, String response) {
+        super("Metadata service API " + api + " failed with status " + status.getStatusCode() + "(" +
+                status.getReasonPhrase() + ") Response Body (" + response + ")");
+        this.status = status;
+    }
+
     public AtlasServiceException(AtlasClient.API api, ClientResponse response) {
-        super("Metadata service API " + api + " failed with status " +
-                response.getClientResponseStatus().getStatusCode() + "(" +
-                response.getClientResponseStatus().getReasonPhrase() + ") Response Body (" +
-                response.getEntity(String.class) + ")");
-        this.status = response.getClientResponseStatus();
+        this(api, ClientResponse.Status.fromStatusCode(response.getStatus()), response.getEntity(String.class));
     }
 
     public AtlasServiceException(Exception e) {

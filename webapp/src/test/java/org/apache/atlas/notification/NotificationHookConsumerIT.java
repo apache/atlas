@@ -19,6 +19,7 @@
 package org.apache.atlas.notification;
 
 import com.google.inject.Inject;
+import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.persistence.Id;
@@ -28,6 +29,8 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
+
+import java.util.List;
 
 import static org.testng.Assert.assertEquals;
 
@@ -55,6 +58,28 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
     }
 
     @Test
+    public void testMessageHandleFailureConsumerContinues() throws Exception {
+        //send invalid message - update with invalid type
+        sendHookMessage(new HookNotification.EntityPartialUpdateRequest(TEST_USER, randomString(), null, null,
+                new Referenceable(randomString())));
+
+        //send valid message
+        final Referenceable entity = new Referenceable(DATABASE_TYPE);
+        entity.set("name", "db" + randomString());
+        entity.set("description", randomString());
+        sendHookMessage(new HookNotification.EntityCreateRequest(TEST_USER, entity));
+
+        waitFor(MAX_WAIT_TIME, new Predicate() {
+            @Override
+            public boolean evaluate() throws Exception {
+                JSONArray results = serviceClient.searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE,
+                        entity.get("name")));
+                return results.length() == 1;
+            }
+        });
+    }
+
+    @Test
     public void testCreateEntity() throws Exception {
         final Referenceable entity = new Referenceable(DATABASE_TYPE);
         entity.set("name", "db" + randomString());
@@ -70,6 +95,13 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
                 return results.length() == 1;
             }
         });
+
+        //Assert that user passed in hook message is used in audit
+        Referenceable instance = serviceClient.getEntity(DATABASE_TYPE, "name", (String) entity.get("name"));
+        List<EntityAuditEvent> events =
+                serviceClient.getEntityAuditEvents(instance.getId()._getId(), (short) 1);
+        assertEquals(events.size(), 1);
+        assertEquals(events.get(0).getUser(), TEST_USER);
     }
 
     @Test
@@ -132,7 +164,7 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         final String dbName = "db" + randomString();
         entity.set("name", dbName);
         entity.set("description", randomString());
-        final String dbId = serviceClient.createEntity(entity).getString(0);
+        final String dbId = serviceClient.createEntity(entity).get(0);
 
         sendHookMessage(
             new HookNotification.EntityDeleteRequest(TEST_USER, DATABASE_TYPE, "name", dbName));

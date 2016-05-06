@@ -17,18 +17,18 @@
  */
 package org.apache.atlas.notification;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import kafka.consumer.ConsumerTimeoutException;
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.LocalAtlasClient;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.service.Service;
 import org.apache.commons.configuration.Configuration;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,20 +45,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Singleton
 public class NotificationHookConsumer implements Service, ActiveStateChangeHandler {
     private static final Logger LOG = LoggerFactory.getLogger(NotificationHookConsumer.class);
+    private static final String THREADNAME_PREFIX = NotificationHookConsumer.class.getSimpleName();
 
     public static final String CONSUMER_THREADS_PROPERTY = "atlas.notification.hook.numthreads";
-    public static final String ATLAS_ENDPOINT_PROPERTY = "atlas.rest.address";
     public static final int SERVER_READY_WAIT_TIME_MS = 1000;
+    private final LocalAtlasClient atlasClient;
 
     private NotificationInterface notificationInterface;
     private ExecutorService executors;
-    private String atlasEndpoint;
     private Configuration applicationProperties;
     private List<HookConsumer> consumers;
 
     @Inject
-    public NotificationHookConsumer(NotificationInterface notificationInterface) {
+    public NotificationHookConsumer(NotificationInterface notificationInterface, LocalAtlasClient atlasClient) {
         this.notificationInterface = notificationInterface;
+        this.atlasClient = atlasClient;
     }
 
     @Override
@@ -70,7 +71,6 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     void startInternal(Configuration configuration,
                        ExecutorService executorService) {
         this.applicationProperties = configuration;
-        this.atlasEndpoint = applicationProperties.getString(ATLAS_ENDPOINT_PROPERTY, "http://localhost:21000");
         if (consumers == null) {
             consumers = new ArrayList<>();
         }
@@ -88,7 +88,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         List<NotificationConsumer<HookNotification.HookNotificationMessage>> notificationConsumers =
                 notificationInterface.createConsumers(NotificationInterface.NotificationType.HOOK, numThreads);
         if (executorService == null) {
-            executorService = Executors.newFixedThreadPool(notificationConsumers.size());
+            executorService = Executors.newFixedThreadPool(notificationConsumers.size(),
+                    new ThreadFactoryBuilder().setNameFormat(THREADNAME_PREFIX + " thread-%d").build());
         }
         executors = executorService;
         for (final NotificationConsumer<HookNotification.HookNotificationMessage> consumer : notificationConsumers) {
@@ -183,9 +184,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                 try {
                     if (hasNext()) {
                         HookNotification.HookNotificationMessage message = consumer.next();
-                        UserGroupInformation ugi = UserGroupInformation.createRemoteUser(message.getUser());
-                        AtlasClient atlasClient = getAtlasClient(ugi);
-
+                        atlasClient.setUser(message.getUser());
                         try {
                             switch (message.getType()) {
                             case ENTITY_CREATE:
@@ -230,13 +229,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             }
         }
 
-        protected AtlasClient getAtlasClient(UserGroupInformation ugi) {
-            return new AtlasClient(atlasEndpoint, ugi, ugi.getShortUserName());
-        }
-
         boolean serverAvailable(Timer timer) {
             try {
-                AtlasClient atlasClient = getAtlasClient(UserGroupInformation.getCurrentUser());
                 while (!atlasClient.isServerReady()) {
                     try {
                         LOG.info("Atlas Server is not ready. Waiting for {} milliseconds to retry...",

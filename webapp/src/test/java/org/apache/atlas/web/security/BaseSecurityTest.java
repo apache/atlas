@@ -140,10 +140,6 @@ public class BaseSecurityTest {
     }
 
     public static String writeConfiguration(final PropertiesConfiguration configuration) throws Exception {
-        String persistDir = TestUtils.getTempDirectory();
-        TestUtils.writeConfiguration(configuration, persistDir + File.separator +
-                ApplicationProperties.APPLICATION_PROPERTIES);
-
         String confLocation = System.getProperty("atlas.conf");
         URL url;
         if (confLocation == null) {
@@ -153,6 +149,10 @@ public class BaseSecurityTest {
         }
         PropertiesConfiguration configuredProperties = new PropertiesConfiguration();
         configuredProperties.load(url);
+
+        configuredProperties.copy(configuration);
+
+        String persistDir = TestUtils.getTempDirectory();
         TestUtils.writeConfiguration(configuredProperties, persistDir + File.separator +
                 ApplicationProperties.APPLICATION_PROPERTIES);
         ApplicationProperties.forceReload();

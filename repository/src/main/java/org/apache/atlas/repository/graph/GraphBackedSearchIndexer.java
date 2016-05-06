@@ -106,6 +106,12 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             // create a composite index for entity state
             createCompositeAndMixedIndex(management, Constants.STATE_PROPERTY_KEY, String.class, false, Cardinality.SINGLE, true);
 
+            // create a composite index for entity state
+            createCompositeAndMixedIndex(management, Constants.TIMESTAMP_PROPERTY_KEY, Long.class, false, Cardinality.SINGLE, true);
+
+            // create a composite index for entity state
+            createCompositeAndMixedIndex(management, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class, false, Cardinality.SINGLE, true);
+
             // create a composite and mixed index for type since it can be combined with other keys
             createCompositeAndMixedIndex(management, Constants.ENTITY_TYPE_PROPERTY_KEY, String.class, false, Cardinality.SINGLE,
                     true);

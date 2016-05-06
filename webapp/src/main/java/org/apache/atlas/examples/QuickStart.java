@@ -21,7 +21,6 @@ package org.apache.atlas.examples;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
@@ -112,9 +111,9 @@ public class QuickStart {
 
     private final AtlasClient metadataServiceClient;
 
-    QuickStart(String baseUrl) {
+    QuickStart(String baseUrl) throws AtlasException {
         String[] urls = baseUrl.split(",");
-        metadataServiceClient = new AtlasClient(null, null, urls);
+        metadataServiceClient = new AtlasClient(urls);
     }
 
     void createTypes() throws Exception {
@@ -292,11 +291,11 @@ public class QuickStart {
 
         String entityJSON = InstanceSerialization.toJson(referenceable, true);
         System.out.println("Submitting new entity= " + entityJSON);
-        JSONArray guids = metadataServiceClient.createEntity(entityJSON);
+        List<String> guids = metadataServiceClient.createEntity(entityJSON);
         System.out.println("created instance for type " + typeName + ", guid: " + guids);
 
         // return the Id for created instance with guid
-        return new Id(guids.getString(guids.length()-1), referenceable.getId().getVersion(),
+        return new Id(guids.get(guids.size() - 1), referenceable.getId().getVersion(),
                 referenceable.getTypeName());
     }
 

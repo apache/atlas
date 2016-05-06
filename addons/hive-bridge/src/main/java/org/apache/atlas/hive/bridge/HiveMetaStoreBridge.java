@@ -43,7 +43,6 @@ import org.apache.hadoop.hive.metastore.api.hive_metastoreConstants;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Table;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -181,10 +180,10 @@ public class HiveMetaStoreBridge {
 
         String entityJSON = InstanceSerialization.toJson(referenceable, true);
         LOG.debug("Submitting new entity {} = {}", referenceable.getTypeName(), entityJSON);
-        JSONArray guids = getAtlasClient().createEntity(entityJSON);
+        List<String> guids = getAtlasClient().createEntity(entityJSON);
         LOG.debug("created instance for type " + typeName + ", guid: " + guids);
 
-        return new Referenceable(guids.getString(0), referenceable.getTypeName(), null);
+        return new Referenceable(guids.get(0), referenceable.getTypeName(), null);
     }
 
     /**
@@ -536,8 +535,7 @@ public class HiveMetaStoreBridge {
     public static void main(String[] argv) throws Exception {
         Configuration atlasConf = ApplicationProperties.get();
         String atlasEndpoint = atlasConf.getString(ATLAS_ENDPOINT, DEFAULT_DGI_URL);
-        UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
-        AtlasClient atlasClient = new AtlasClient(atlasEndpoint, ugi, ugi.getShortUserName());
+        AtlasClient atlasClient = new AtlasClient(atlasEndpoint);
 
         HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(new HiveConf(), atlasClient);
         hiveMetaStoreBridge.registerHiveDataModel();

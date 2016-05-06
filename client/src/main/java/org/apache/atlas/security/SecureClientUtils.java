@@ -20,6 +20,7 @@ import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.client.urlconnection.HttpURLConnectionFactory;
 import com.sun.jersey.client.urlconnection.URLConnectionClientHandler;
 import org.apache.atlas.AtlasException;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.alias.CredentialProviderFactory;
@@ -60,7 +61,7 @@ public class SecureClientUtils {
 
 
     public static URLConnectionClientHandler getClientConnectionHandler(DefaultClientConfig config,
-            org.apache.commons.configuration.Configuration clientConfig, final String doAsUser,
+            org.apache.commons.configuration.Configuration clientConfig, String doAsUser,
             final UserGroupInformation ugi) {
         config.getProperties().put(URLConnectionClientHandler.PROPERTY_HTTP_URL_CONNECTION_SET_METHOD_WORKAROUND, true);
         Configuration conf = new Configuration();
@@ -80,17 +81,16 @@ public class SecureClientUtils {
         final DelegationTokenAuthenticatedURL.Token token = new DelegationTokenAuthenticatedURL.Token();
         HttpURLConnectionFactory httpURLConnectionFactory = null;
         try {
-            UserGroupInformation ugiToUse = ugi != null ?
-                ugi : UserGroupInformation.getCurrentUser();
+            UserGroupInformation ugiToUse = ugi != null ? ugi : UserGroupInformation.getCurrentUser();
             final UserGroupInformation actualUgi =
-                (ugiToUse.getAuthenticationMethod() ==
-                 UserGroupInformation.AuthenticationMethod.PROXY)
-                    ? ugiToUse.getRealUser()
-                    : ugiToUse;
-            LOG.info("Real User: {}, is from ticket cache? {}",
-                     actualUgi,
-                     actualUgi.isLoginTicketBased());
+                    (ugiToUse.getAuthenticationMethod() == UserGroupInformation.AuthenticationMethod.PROXY)
+                    ? ugiToUse.getRealUser() : ugiToUse;
+            LOG.info("Real User: {}, is from ticket cache? {}", actualUgi, actualUgi.isLoginTicketBased());
+            if (StringUtils.isEmpty(doAsUser)) {
+                doAsUser = actualUgi.getShortUserName();
+            }
             LOG.info("doAsUser: {}", doAsUser);
+            final String finalDoAsUser = doAsUser;
             httpURLConnectionFactory = new HttpURLConnectionFactory() {
                 @Override
                 public HttpURLConnection getHttpURLConnection(final URL url) throws IOException {
@@ -99,9 +99,8 @@ public class SecureClientUtils {
                             @Override
                             public HttpURLConnection run() throws Exception {
                                 try {
-                                    return new DelegationTokenAuthenticatedURL(
-                                        finalAuthenticator, connConfigurator)
-                                        .openConnection(url, token, doAsUser);
+                                    return new DelegationTokenAuthenticatedURL(finalAuthenticator, connConfigurator)
+                                        .openConnection(url, token, finalDoAsUser);
                                 } catch (Exception e) {
                                     throw new IOException(e);
                                 }

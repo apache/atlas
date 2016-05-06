@@ -46,5 +46,9 @@ test-output
 .DS_Store
 *.swp
 
+#atlas data directory creates when tests are run from IDE
+**/atlas.data/**
+**/${sys:atlas.data}/**
+
 #hbase package downloaded
 distro/hbase/*.tar.gz

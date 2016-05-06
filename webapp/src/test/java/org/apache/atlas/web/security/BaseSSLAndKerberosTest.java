@@ -33,6 +33,7 @@ import java.io.IOException;
  *
  */
 public class BaseSSLAndKerberosTest extends BaseSecurityTest {
+    public static final String TEST_USER_JAAS_SECTION = "TestUser";
     public static final String TESTUSER = "testuser";
     public static final String TESTPASS = "testpass";
     protected static final String DGI_URL = "https://localhost:21443/";
@@ -104,7 +105,7 @@ public class BaseSSLAndKerberosTest extends BaseSecurityTest {
         kdc.createPrincipal(TESTUSER, TESTPASS);
 
         StringBuilder jaas = new StringBuilder(1024);
-        jaas.append("TestUser {\n" +
+        jaas.append(TEST_USER_JAAS_SECTION + " {\n" +
                 "    com.sun.security.auth.module.Krb5LoginModule required\nuseTicketCache=true;\n" +
                 "};\n");
         jaas.append(createJAASEntry("Client", "dgi", userKeytabFile));

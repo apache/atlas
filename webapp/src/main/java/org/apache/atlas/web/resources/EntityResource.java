@@ -330,7 +330,6 @@ public class EntityResource {
      * @param entityType the entity type
      * @param attribute the unique attribute used to identify the entity
      * @param value the unique attribute value used to identify the entity
-     * @param request - Ignored
      * @return response payload as json - including guids of entities(including composite references from that entity) that were deleted
      */
     @DELETE
@@ -338,8 +337,7 @@ public class EntityResource {
     public Response deleteEntities(@QueryParam("guid") List<String> guids,
         @QueryParam("type") String entityType,
         @QueryParam("property") String attribute,
-        @QueryParam("value") String value,
-        @Context HttpServletRequest request) {
+        @QueryParam("value") String value) {
         
         try {
             List<String> deletedGuids = new ArrayList<>();

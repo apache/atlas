@@ -19,21 +19,21 @@ package org.apache.atlas.web.filters;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.web.security.BaseSecurityTest;
 import org.apache.atlas.web.service.EmbeddedServer;
-import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.testng.annotations.Test;
 
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Properties;
 
 import static org.testng.Assert.assertEquals;
 
 /**
  *
  */
-public class AtlasAuthenticationSimpleFilterIT extends BaseSecurityTest {
+public class AtlasAuthenticationSimpleFilterTest extends BaseSecurityTest {
     public static final String TESTUSER = "testuser";
 
     class TestEmbeddedServer extends EmbeddedServer {
@@ -61,19 +61,14 @@ public class AtlasAuthenticationSimpleFilterIT extends BaseSecurityTest {
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.connect();
-
-            try {
-                assertEquals(connection.getResponseCode(), 403);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            assertEquals(connection.getResponseCode(), Response.Status.BAD_REQUEST.getStatusCode());
 
             url = new URL("http://localhost:23001/?user.name=testuser");
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.connect();
 
-            assertEquals(connection.getResponseCode(), 200);
+            assertEquals(connection.getResponseCode(), Response.Status.OK.getStatusCode());
             assertEquals(RequestContext.get().getUser(), TESTUSER);
         } finally {
             server.getServer().stop();
@@ -83,16 +78,12 @@ public class AtlasAuthenticationSimpleFilterIT extends BaseSecurityTest {
                 System.clearProperty("atlas.conf");
             }
         }
-
-
     }
 
-    protected void generateSimpleLoginConfiguration() throws IOException, ConfigurationException {
-        Properties config = new Properties();
+    protected String generateSimpleLoginConfiguration() throws Exception {
+        PropertiesConfiguration config = new PropertiesConfiguration();
         config.setProperty("atlas.http.authentication.enabled", "true");
         config.setProperty("atlas.http.authentication.type", "simple");
-
-        generateTestProperties(config);
+        return writeConfiguration(config);
     }
-
 }

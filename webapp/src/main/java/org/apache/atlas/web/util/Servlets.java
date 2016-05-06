@@ -19,10 +19,13 @@
 package org.apache.atlas.web.util;
 
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.LocalServletRequest;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
@@ -34,6 +37,8 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.charset.Charset;
+import java.util.List;
 
 /**
  * Utility functions for dealing with servlets.
@@ -70,6 +75,28 @@ public final class Servlets {
             return user;
         }
 
+        user = getDoAsUser(httpRequest);
+        if (!StringUtils.isEmpty(user)) {
+            return user;
+        }
+
+        return null;
+    }
+
+    private static final Charset UTF8_CHARSET = Charset.forName("UTF-8");
+    private static final String DO_AS = "doAs";
+
+    public static String getDoAsUser(HttpServletRequest request) {
+        if (StringUtils.isNoneEmpty(request.getQueryString())) {
+            List<NameValuePair> list = URLEncodedUtils.parse(request.getQueryString(), UTF8_CHARSET);
+            if (list != null) {
+                for (NameValuePair nv : list) {
+                    if (DO_AS.equals(nv.getName())) {
+                        return nv.getValue();
+                    }
+                }
+            }
+        }
         return null;
     }
 
@@ -134,6 +161,11 @@ public final class Servlets {
     }
 
     public static String getRequestPayload(HttpServletRequest request) throws IOException {
+        //request is an instance of LocalServletRequest for calls from LocalAtlasClient
+        if (request instanceof LocalServletRequest) {
+            return ((LocalServletRequest) request).getPayload();
+        }
+
         StringWriter writer = new StringWriter();
         IOUtils.copy(request.getInputStream(), writer);
         return writer.toString();

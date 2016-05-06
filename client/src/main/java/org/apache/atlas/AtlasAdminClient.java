@@ -60,7 +60,7 @@ public class AtlasAdminClient {
         Configuration configuration = ApplicationProperties.get();
         String atlasServerUri = configuration.getString(
                 AtlasConstants.ATLAS_REST_ADDRESS_KEY, AtlasConstants.DEFAULT_ATLAS_REST_ADDRESS);
-        AtlasClient atlasClient = new AtlasClient(atlasServerUri, null, null);
+        AtlasClient atlasClient = new AtlasClient(atlasServerUri);
         return handleCommand(commandLine, atlasServerUri, atlasClient);
     }
 

@@ -25,7 +25,6 @@ import org.apache.atlas.security.SecurityProperties;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.authentication.server.AuthenticationFilter;
 import org.apache.hadoop.security.authentication.server.KerberosAuthenticationHandler;
@@ -57,10 +56,6 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthenticationFilter.class);
     static final String PREFIX = "atlas.http.authentication";
 
-    /**
-     * An options servlet is used to authenticate users. OPTIONS method is used for triggering authentication
-     * before invoking the actual resource.
-     */
     private HttpServlet optionsServlet;
 
     /**
@@ -128,47 +123,45 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
     @Override
     public void doFilter(final ServletRequest request, final ServletResponse response,
                          final FilterChain filterChain) throws IOException, ServletException {
-
         FilterChain filterChainWrapper = new FilterChain() {
-
             @Override
             public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse)
                     throws IOException, ServletException {
-                HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
+                final HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
 
-                if (httpRequest.getMethod().equals("OPTIONS")) { // option request meant only for authentication
+                if (httpRequest.getMethod().equals("OPTIONS")) {
                     optionsServlet.service(request, response);
-                } else {
-                    final String user = Servlets.getUserFromRequest(httpRequest);
-                    if (StringUtils.isEmpty(user)) {
-                        ((HttpServletResponse) response).sendError(Response.Status.BAD_REQUEST.getStatusCode(),
-                                "Param user.name can't be empty");
-                    } else {
-                        try {
-                            NDC.push(user + ":" + httpRequest.getMethod() + httpRequest.getRequestURI());
-                            RequestContext requestContext = RequestContext.get();
-                            requestContext.setUser(user);
-                            LOG.info("Request from authenticated user: {}, URL={}", user,
-                                    Servlets.getRequestURI(httpRequest));
 
-                            filterChain.doFilter(servletRequest, servletResponse);
-                        } finally {
-                            NDC.pop();
-                        }
+                } else {
+                    try {
+                        String requestUser = httpRequest.getRemoteUser();
+                        NDC.push(requestUser + ":" + httpRequest.getMethod() + httpRequest.getRequestURI());
+                        RequestContext requestContext = RequestContext.get();
+                        requestContext.setUser(requestUser);
+                        LOG.info("Request from authenticated user: {}, URL={}", requestUser,
+                                Servlets.getRequestURI(httpRequest));
+
+                        filterChain.doFilter(servletRequest, servletResponse);
+                    } finally {
+                        NDC.pop();
                     }
                 }
             }
         };
 
-        super.doFilter(request, response, filterChainWrapper);
+        try {
+            super.doFilter(request, response, filterChainWrapper);
+        } catch (NullPointerException e) {
+            //PseudoAuthenticationHandler.getUserName() from hadoop-auth throws NPE if user name is not specified
+            ((HttpServletResponse) response).sendError(Response.Status.BAD_REQUEST.getStatusCode(),
+                    "Authentication is enabled and user is not specified. Specify user.name parameter");
+        }
     }
+
 
     @Override
     public void destroy() {
-        if (optionsServlet != null) {
-            optionsServlet.destroy();
-        }
-
+        optionsServlet.destroy();
         super.destroy();
     }
 }

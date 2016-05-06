@@ -19,7 +19,6 @@
 package org.apache.atlas.web.security;
 
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.web.service.SecureEmbeddedServer;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.conf.Configuration;
@@ -42,7 +41,7 @@ import static org.apache.atlas.security.SecurityProperties.SERVER_CERT_PASSWORD_
 import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_PASSWORD_KEY;
 
 public class SSLTest extends BaseSSLAndKerberosTest {
-    private AtlasClient dgiCLient;
+    private AtlasClient atlasClient;
     private Path jksPath;
     private String providerUrl;
     private TestSecureEmbeddedServer secureEmbeddedServer;
@@ -76,7 +75,7 @@ public class SSLTest extends BaseSSLAndKerberosTest {
         final PropertiesConfiguration configuration = getSSLConfiguration(providerUrl);
         String persistDir = writeConfiguration(configuration);
 
-        dgiCLient = new AtlasClient(DGI_URL) {
+        atlasClient = new AtlasClient(DGI_URL) {
             @Override
             protected PropertiesConfiguration getClientProperties() {
                 return configuration;
@@ -139,6 +138,6 @@ public class SSLTest extends BaseSSLAndKerberosTest {
 
     @Test
     public void testService() throws Exception {
-        dgiCLient.listTypes();
+        atlasClient.listTypes();
    }
 }

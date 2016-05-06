@@ -19,7 +19,7 @@ package org.apache.atlas.web.filters;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.web.security.BaseSecurityTest;
 import org.apache.atlas.web.service.EmbeddedServer;
-import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.hdfs.web.URLConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -39,14 +39,13 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.security.PrivilegedExceptionAction;
-import java.util.Properties;
 
 import static org.testng.Assert.assertEquals;
 
 /**
  *
  */
-public class AtlasAuthenticationKerberosFilterIT extends BaseSecurityTest {
+public class AtlasAuthenticationKerberosFilterTest extends BaseSecurityTest {
     public static final String TEST_USER_JAAS_SECTION = "TestUser";
     public static final String TESTUSER = "testuser";
     public static final String TESTPASS = "testpass";
@@ -75,14 +74,14 @@ public class AtlasAuthenticationKerberosFilterIT extends BaseSecurityTest {
     @Test(enabled = false)
     public void testKerberosBasedLogin() throws Exception {
         String originalConf = System.getProperty("atlas.conf");
-        System.setProperty("atlas.conf", System.getProperty("user.dir"));
 
         setupKDCAndPrincipals();
         TestEmbeddedServer server = null;
 
         try {
             // setup the atlas-application.properties file
-            generateKerberosTestProperties();
+            String confDirectory = generateKerberosTestProperties();
+            System.setProperty("atlas.conf", confDirectory);
 
             // need to create the web application programmatically in order to control the injection of the test
             // application properties
@@ -127,8 +126,6 @@ public class AtlasAuthenticationKerberosFilterIT extends BaseSecurityTest {
             }
 
         }
-
-
     }
 
     protected Subject loginTestUser() throws LoginException, IOException {
@@ -153,8 +150,8 @@ public class AtlasAuthenticationKerberosFilterIT extends BaseSecurityTest {
         return lc.getSubject();
     }
 
-    protected void generateKerberosTestProperties() throws IOException, ConfigurationException {
-        Properties props = new Properties();
+    protected String generateKerberosTestProperties() throws Exception {
+        PropertiesConfiguration props = new PropertiesConfiguration();
         props.setProperty("atlas.http.authentication.enabled", "true");
         props.setProperty("atlas.http.authentication.type", "kerberos");
         props.setProperty("atlas.http.authentication.kerberos.principal", "HTTP/localhost@" + kdc.getRealm());
@@ -162,7 +159,7 @@ public class AtlasAuthenticationKerberosFilterIT extends BaseSecurityTest {
         props.setProperty("atlas.http.authentication.kerberos.name.rules",
                 "RULE:[1:$1@$0](.*@EXAMPLE.COM)s/@.*//\nDEFAULT");
 
-        generateTestProperties(props);
+        return writeConfiguration(props);
     }
 
     public void setupKDCAndPrincipals() throws Exception {
