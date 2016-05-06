@@ -33,7 +33,7 @@ public class HBaseTestUtils {
     public static void startCluster() throws Exception {
         Configuration hbaseConf =
                 HBaseBasedAuditRepository.getHBaseConfiguration(ApplicationProperties.get());
-        hbaseTestUtility = new HBaseTestingUtility(hbaseConf);
+        hbaseTestUtility = HBaseTestingUtility.createLocalHTU(hbaseConf);
         int zkPort = hbaseConf.getInt("hbase.zookeeper.property.clientPort", 19026);
         hbaseTestUtility.startMiniZKCluster(1, zkPort);
 
