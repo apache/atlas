@@ -96,7 +96,7 @@ public class HiveMetaStoreBridgeTest {
 
         // return existing table
         when(atlasClient.searchByDSL(HiveMetaStoreBridge.getTableDSLQuery(CLUSTER_NAME, TEST_DB_NAME, TEST_TABLE_NAME,
-                HiveDataTypes.HIVE_TABLE.getName()))).thenReturn(
+                HiveDataTypes.HIVE_TABLE.getName(), false))).thenReturn(
                 getEntityReference("82e06b34-9151-4023-aa9d-b82103a50e77"));
         when(atlasClient.getEntity("82e06b34-9151-4023-aa9d-b82103a50e77")).thenReturn(createTableReference());
 
@@ -138,7 +138,7 @@ public class HiveMetaStoreBridgeTest {
 
         when(atlasClient.searchByDSL(HiveMetaStoreBridge.getTableDSLQuery(CLUSTER_NAME, TEST_DB_NAME,
             TEST_TABLE_NAME,
-            HiveDataTypes.HIVE_TABLE.getName()))).thenReturn(
+            HiveDataTypes.HIVE_TABLE.getName(), false))).thenReturn(
             getEntityReference("82e06b34-9151-4023-aa9d-b82103a50e77"));
         when(atlasClient.getEntity("82e06b34-9151-4023-aa9d-b82103a50e77")).thenReturn(createTableReference());
 

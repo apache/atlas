@@ -34,6 +34,7 @@ import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
@@ -44,6 +45,7 @@ import org.apache.hadoop.hive.metastore.api.hive_metastoreConstants;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Table;
+import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -64,6 +66,8 @@ public class HiveMetaStoreBridge {
     public static final String DEFAULT_CLUSTER_NAME = "primary";
     public static final String DESCRIPTION_ATTR = "description";
     public static final String SEARCH_ENTRY_GUID_ATTR = "__guid";
+
+    public static final String TEMP_TABLE_PREFIX = "_temp-";
 
     private final String clusterName;
     public static final int MILLIS_CONVERT_FACTOR = 1000;
@@ -252,21 +256,20 @@ public class HiveMetaStoreBridge {
     /**
      * Gets reference for the table
      *
-     * @param dbName database name
-     * @param tableName table name
+     * @param hiveTable
      * @return table reference if exists, else null
      * @throws Exception
      */
-    private Referenceable getTableReference(String dbName, String tableName) throws Exception {
-        LOG.debug("Getting reference for table {}.{}", dbName, tableName);
+    private Referenceable getTableReference(Table hiveTable)  throws Exception {
+        LOG.debug("Getting reference for table {}.{}", hiveTable.getDbName(), hiveTable.getTableName());
 
         String typeName = HiveDataTypes.HIVE_TABLE.getName();
-        String dslQuery = getTableDSLQuery(getClusterName(), dbName, tableName, typeName);
+        String dslQuery = getTableDSLQuery(getClusterName(), hiveTable.getDbName(), hiveTable.getTableName(), typeName, hiveTable.isTemporary());
         return getEntityReferenceFromDSL(typeName, dslQuery);
     }
 
-    static String getTableDSLQuery(String clusterName, String dbName, String tableName, String typeName) {
-        String entityName = getTableQualifiedName(clusterName, dbName, tableName);
+    static String getTableDSLQuery(String clusterName, String dbName, String tableName, String typeName, boolean isTemporary) {
+        String entityName = getTableQualifiedName(clusterName, dbName, tableName, isTemporary);
         return String.format("%s as t where name = '%s'", typeName, entityName);
     }
 
@@ -277,8 +280,39 @@ public class HiveMetaStoreBridge {
      * @param tableName Name of the Hive table
      * @return Unique qualified name to identify the Table instance in Atlas.
      */
+    public static String getTableQualifiedName(String clusterName, String dbName, String tableName, boolean isTemporaryTable) {
+        String tableTempName = tableName;
+        if (isTemporaryTable) {
+            if (SessionState.get().getSessionId() != null) {
+                tableTempName = tableName + TEMP_TABLE_PREFIX + SessionState.get().getSessionId();
+            } else {
+                tableTempName = tableName + TEMP_TABLE_PREFIX + RandomStringUtils.random(10);
+            }
+        }
+        return String.format("%s.%s@%s", dbName.toLowerCase(), tableTempName.toLowerCase(), clusterName);
+    }
+
+
+
+    /**
+     * Construct the qualified name used to uniquely identify a Table instance in Atlas.
+     * @param clusterName Name of the cluster to which the Hive component belongs
+     * @param table hive table for which the qualified name is needed
+     * @return Unique qualified name to identify the Table instance in Atlas.
+     */
+    public static String getTableQualifiedName(String clusterName, Table table) {
+        return getTableQualifiedName(clusterName, table.getDbName(), table.getTableName(), table.isTemporary());
+    }
+
+    /**
+     * Construct the qualified name used to uniquely identify a Table instance in Atlas.
+     * @param clusterName Name of the cluster to which the Hive component belongs
+     * @param dbName Name of the Hive database to which the Table belongs
+     * @param tableName Name of the Hive table
+     * @return Unique qualified name to identify the Table instance in Atlas.
+     */
     public static String getTableQualifiedName(String clusterName, String dbName, String tableName) {
-        return String.format("%s.%s@%s", dbName.toLowerCase(), tableName.toLowerCase(), clusterName);
+         return getTableQualifiedName(clusterName, dbName, tableName, false);
     }
 
     /**
@@ -300,7 +334,8 @@ public class HiveMetaStoreBridge {
         if (tableReference == null) {
             tableReference = new Referenceable(HiveDataTypes.HIVE_TABLE.getName());
         }
-        String tableQualifiedName = getTableQualifiedName(clusterName, hiveTable.getDbName(), hiveTable.getTableName());
+
+        String tableQualifiedName = getTableQualifiedName(clusterName, hiveTable);
         tableReference.set(HiveDataModelGenerator.NAME, tableQualifiedName);
         tableReference.set(HiveDataModelGenerator.TABLE_NAME, hiveTable.getTableName().toLowerCase());
         tableReference.set(HiveDataModelGenerator.OWNER, hiveTable.getOwner());
@@ -361,7 +396,7 @@ public class HiveMetaStoreBridge {
         String dbName = table.getDbName();
         String tableName = table.getTableName();
         LOG.info("Attempting to register table [" + tableName + "]");
-        Referenceable tableReference = getTableReference(dbName, tableName);
+        Referenceable tableReference = getTableReference(table);
         if (tableReference == null) {
             tableReference = createTableInstance(dbReference, table);
             tableReference = registerInstance(tableReference);
@@ -393,18 +428,6 @@ public class HiveMetaStoreBridge {
         }
         String guid = results.getJSONObject(0).getString(SEARCH_ENTRY_GUID_ATTR);
         return new Referenceable(guid, typeName, null);
-    }
-
-    private Referenceable getSDForTable(String dbName, String tableName) throws Exception {
-        Referenceable tableRef = getTableReference(dbName, tableName);
-        if (tableRef == null) {
-            throw new IllegalArgumentException("Table " + dbName + "." + tableName + " doesn't exist");
-        }
-
-        AtlasClient dgiClient = getAtlasClient();
-        Referenceable tableInstance = dgiClient.getEntity(tableRef.getId().id);
-        Referenceable sd = (Referenceable) tableInstance.get(HiveDataModelGenerator.STORAGE_DESC);
-        return new Referenceable(sd.getId().id, sd.getTypeName(), null);
     }
 
     public Referenceable fillStorageDesc(StorageDescriptor storageDesc, String tableQualifiedName,

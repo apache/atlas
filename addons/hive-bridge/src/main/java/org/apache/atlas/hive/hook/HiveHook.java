@@ -370,7 +370,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     }
 
     private void deleteTable(HiveMetaStoreBridge dgiBridge, HiveEventContext event, WriteEntity output) {
-        final String tblQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(dgiBridge.getClusterName(), output.getTable().getDbName(), output.getTable().getTableName());
+        final String tblQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(dgiBridge.getClusterName(), output.getTable());
         LOG.info("Deleting table {} ", tblQualifiedName);
         messages.add(
             new HookNotification.EntityDeleteRequest(event.getUser(),
@@ -413,13 +413,13 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                 //Hive sends with both old and new table names in the outputs which is weird. So skipping that with the below check
                 if (!newTable.getDbName().equals(oldTable.getDbName()) || !newTable.getTableName().equals(oldTable.getTableName())) {
                     final String oldQualifiedName = dgiBridge.getTableQualifiedName(dgiBridge.getClusterName(),
-                        oldTable.getDbName(), oldTable.getTableName());
+                        oldTable);
                     final String newQualifiedName = dgiBridge.getTableQualifiedName(dgiBridge.getClusterName(),
-                        newTable.getDbName(), newTable.getTableName());
+                        newTable);
 
                     //Create/update old table entity - create entity with oldQFNme and old tableName if it doesnt exist. If exists, will update
                     //We always use the new entity while creating the table since some flags, attributes of the table are not set in inputEntity and Hive.getTable(oldTableName) also fails since the table doesnt exist in hive anymore
-                    final Referenceable tableEntity = createOrUpdateEntities(dgiBridge, event.getUser(), writeEntity);
+                    final Referenceable tableEntity = createOrUpdateEntities(dgiBridge, event.getUser(), writeEntity, true);
 
                     //Reset regular column QF Name to old Name and create a new partial notification request to replace old column QFName to newName to retain any existing traits
                     replaceColumnQFName(event, (List<Referenceable>) tableEntity.get(HiveDataModelGenerator.COLUMNS), oldQualifiedName, newQualifiedName);
@@ -493,7 +493,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         return newSDEntity;
     }
 
-    private Referenceable createOrUpdateEntities(HiveMetaStoreBridge dgiBridge, String user, Entity entity) throws Exception {
+    private Referenceable createOrUpdateEntities(HiveMetaStoreBridge dgiBridge, String user, Entity entity, boolean skipTempTables) throws Exception {
         Database db = null;
         Table table = null;
         Partition partition = null;
@@ -524,8 +524,18 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
         if (table != null) {
             table = dgiBridge.hiveClient.getTable(table.getDbName(), table.getTableName());
-            tableEntity = dgiBridge.createTableInstance(dbEntity, table);
-            entities.add(tableEntity);
+            //If its an external table, even though the temp table skip flag is on,
+            // we create the table since we need the HDFS path to temp table lineage.
+            if (skipTempTables &&
+                table.isTemporary() &&
+                !TableType.EXTERNAL_TABLE.equals(table.getTableType())) {
+
+               LOG.debug("Skipping temporary table registration {} since it is not an external table {} ", table.getTableName(), table.getTableType().name());
+
+            } else {
+                tableEntity = dgiBridge.createTableInstance(dbEntity, table);
+                entities.add(tableEntity);
+            }
         }
 
         messages.add(new HookNotification.EntityUpdateRequest(user, entities));
@@ -536,7 +546,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         List<Pair<? extends Entity, Referenceable>> entitiesCreatedOrUpdated = new ArrayList<>();
         for (Entity entity : event.getOutputs()) {
             if (entity.getType() == entityType) {
-                Referenceable entityCreatedOrUpdated = createOrUpdateEntities(dgiBridge, event.getUser(), entity);
+                Referenceable entityCreatedOrUpdated = createOrUpdateEntities(dgiBridge, event.getUser(), entity, true);
                 if (entitiesCreatedOrUpdated != null) {
                     entitiesCreatedOrUpdated.add(Pair.of(entity, entityCreatedOrUpdated));
                 }
@@ -600,9 +610,9 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
     private void processHiveEntity(HiveMetaStoreBridge dgiBridge, HiveEventContext event, Entity entity, Map<String, Referenceable> dataSets) throws Exception {
         if (entity.getType() == Type.TABLE || entity.getType() == Type.PARTITION) {
-            final String tblQFName = dgiBridge.getTableQualifiedName(dgiBridge.getClusterName(), entity.getTable().getDbName(), entity.getTable().getTableName());
+            final String tblQFName = dgiBridge.getTableQualifiedName(dgiBridge.getClusterName(), entity.getTable());
             if (!dataSets.containsKey(tblQFName)) {
-                Referenceable inTable = createOrUpdateEntities(dgiBridge, event.getUser(), entity);
+                Referenceable inTable = createOrUpdateEntities(dgiBridge, event.getUser(), entity, false);
                 dataSets.put(tblQFName, inTable);
             }
         } else if (entity.getType() == Type.DFS_DIR) {

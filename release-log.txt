@@ -20,6 +20,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-626 Hive temporary table metadata is captured in atlas (sumasai)
 ATLAS-747 Hive CTAS entity registration fails because userName is null (shwethags)
 ATLAS-759 HiveHookIT.testAlterTableChangeColumn is consistently failing on master (yhemanth)
 ATLAS-690 Read timed out exceptions when tables are imported into Atlas (yhemanth via shwethags)
@@ -37,7 +38,7 @@ ATLAS-543 Entity Instance requests should not require ID element for new Entitie
 ATLAS-681 update committer/ppmc members in the pom.xml (sneethiraj via shwethags)
 ATLAS-616 Resolve OOM - Zookeeper throws exceptions when trying to fire DSL queries at Atlas at large scale. (yhemanth via sumasai)
 ATLAS-530 Add table information to column class (sumasai)
-ATLAS-538 Rename table should retain traits/tags assigned to columns/storage descriptors (sumasai)
+ATLAS-583 Rename table should retain traits/tags assigned to columns/storage descriptors (sumasai)
 ATLAS-628 Starting two Atlas instances at the same time causes exceptions in HA mode (yhemanth via sumasai)
 ATLAS-594 alter table rename doesnt work across databases (sumasai via shwethags)
 ATLAS-586 While updating the multiple attributes, Atlas returns the response with escape characters (dkantor via shwethags)

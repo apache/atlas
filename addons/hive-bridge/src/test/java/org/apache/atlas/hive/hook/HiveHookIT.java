@@ -168,6 +168,7 @@ public class HiveHookIT {
         }
         runCommand("create " + (isExternal ? " EXTERNAL " : "") + (isTemporary ? "TEMPORARY " : "") + "table " + tableName + "(id int, name string) comment 'table comment' " + (isPartitioned ?
             " partitioned by(dt string)" : "") + location);
+
         return tableName;
     }
 
@@ -234,9 +235,9 @@ public class HiveHookIT {
         String colName = columnName();
 
         String pFile = createTestDFSPath("parentPath");
-        final String query = String.format("create EXTERNAL table %s.%s( %s, %s) location '%s'", dbName , tableName , colName + " int", "name string",  pFile);
+        final String query = String.format("create TEMPORARY EXTERNAL table %s.%s( %s, %s) location '%s'", dbName , tableName , colName + " int", "name string",  pFile);
         runCommand(query);
-        String tableId = assertTableIsRegistered(dbName, tableName);
+        String tableId = assertTableIsRegistered(dbName, tableName, null, true);
 
         Referenceable processReference = validateProcess(query, 1, 1);
         assertEquals(processReference.get("userName"), UserGroupInformation.getCurrentUser().getShortUserName());
@@ -270,7 +271,7 @@ public class HiveHookIT {
     private String assertColumnIsRegistered(String colName, AssertPredicate assertPredicate) throws Exception {
         LOG.debug("Searching for column {}", colName);
         return assertEntityIsRegistered(HiveDataTypes.HIVE_COLUMN.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
-                colName, assertPredicate);
+            colName, assertPredicate);
     }
 
     private String assertSDIsRegistered(String sdQFName, AssertPredicate assertPredicate) throws Exception {
@@ -282,7 +283,7 @@ public class HiveHookIT {
     private void assertColumnIsNotRegistered(String colName) throws Exception {
         LOG.debug("Searching for column {}", colName);
         assertEntityIsNotRegistered(HiveDataTypes.HIVE_COLUMN.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
-                colName);
+            colName);
     }
 
     @Test
@@ -487,6 +488,8 @@ public class HiveHookIT {
     public void testInsertIntoTempTable() throws Exception {
         String tableName = createTable();
         String insertTableName = createTable(false, false, true);
+        assertTableIsRegistered(DEFAULT_DB, tableName);
+        assertTableIsNotRegistered(DEFAULT_DB, insertTableName, true);
 
         String query =
             "insert into " + insertTableName + " select id, name from " + tableName;
@@ -495,8 +498,8 @@ public class HiveHookIT {
         validateProcess(query, 1, 1);
 
         String ipTableId = assertTableIsRegistered(DEFAULT_DB, tableName);
-        String opTableId = assertTableIsRegistered(DEFAULT_DB, insertTableName);
-        validateProcess(query, new String[]{ipTableId}, new String[]{opTableId});
+        String opTableId = assertTableIsRegistered(DEFAULT_DB, insertTableName, null, true);
+        validateProcess(query, new String[] {ipTableId}, new String[] {opTableId});
     }
 
     @Test
@@ -1315,9 +1318,15 @@ public class HiveHookIT {
         assertEntityIsNotRegistered(HiveDataTypes.HIVE_PROCESS.getName(), AtlasClient.NAME, normalize(queryStr));
     }
 
+    private void assertTableIsNotRegistered(String dbName, String tableName, boolean isTemporaryTable) throws Exception {
+        LOG.debug("Searching for table {}.{}", dbName, tableName);
+        String tableQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableName, isTemporaryTable);
+        assertEntityIsNotRegistered(HiveDataTypes.HIVE_TABLE.getName(), AtlasClient.NAME, tableQualifiedName);
+    }
+
     private void assertTableIsNotRegistered(String dbName, String tableName) throws Exception {
         LOG.debug("Searching for table {}.{}", dbName, tableName);
-        String tableQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableName);
+        String tableQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableName, false);
         assertEntityIsNotRegistered(HiveDataTypes.HIVE_TABLE.getName(), AtlasClient.NAME, tableQualifiedName);
     }
 
@@ -1328,14 +1337,22 @@ public class HiveHookIT {
     }
 
     private String assertTableIsRegistered(String dbName, String tableName) throws Exception {
-        return assertTableIsRegistered(dbName, tableName, null);
+        return assertTableIsRegistered(dbName, tableName, null, false);
+    }
+
+    private String assertTableIsRegistered(String dbName, String tableName, boolean isTemporary) throws Exception {
+        return assertTableIsRegistered(dbName, tableName, null, isTemporary);
+    }
+
+    private String assertTableIsRegistered(String dbName, String tableName, AssertPredicate assertPredicate, boolean isTemporary) throws Exception {
+        LOG.debug("Searching for table {}.{}", dbName, tableName);
+        String tableQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableName, isTemporary);
+        return assertEntityIsRegistered(HiveDataTypes.HIVE_TABLE.getName(), AtlasClient.NAME, tableQualifiedName,
+                assertPredicate);
     }
 
     private String assertTableIsRegistered(String dbName, String tableName, AssertPredicate assertPredicate) throws Exception {
-        LOG.debug("Searching for table {}.{}", dbName, tableName);
-        String tableQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableName);
-        return assertEntityIsRegistered(HiveDataTypes.HIVE_TABLE.getName(), AtlasClient.NAME, tableQualifiedName,
-                assertPredicate);
+        return assertTableIsRegistered(dbName, tableName, assertPredicate, false);
     }
 
     private String assertDatabaseIsRegistered(String dbName) throws Exception {
