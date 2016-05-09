@@ -104,7 +104,7 @@ object InstanceSerialization {
         refClass <- idClass
         typNm <- typeName
         i <- id
-        s <- Some (state)
+        s <- Some(state)
         v <- version
       } yield _Id(i, v, typNm, s)
     }
@@ -219,7 +219,6 @@ object InstanceSerialization {
      * A Map is an Reference if:
      * - it has the correct [[format.typeHintFieldName]]
      * - it has a 'typeName'
-     * - it has an _Id
      * - it has a 'values' attribute
      * - it has 'traitNames' attribute
      * - it has 'traits' attribute
@@ -229,11 +228,11 @@ object InstanceSerialization {
       for {
         refClass <- referenceClass
         typNm <- typeName
-        i <- idObject
+        i <- Some(idObject)
         values <- valuesMap
         traitNms <- traitNames
         ts <- traits
-      } yield _Reference(Some(i), typNm, values, traitNms.toList, ts)
+      } yield _Reference(i, typNm, values, traitNms.toList, ts)
     }
 
     /**
