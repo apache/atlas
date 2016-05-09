@@ -33,7 +33,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.Database;
-import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.ql.QueryPlan;
 import org.apache.hadoop.hive.ql.exec.ExplainTask;
 import org.apache.hadoop.hive.ql.exec.Task;
@@ -262,7 +261,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         event.setJsonPlan(getQueryPlan(hookContext.getConf(), hookContext.getQueryPlan()));
         event.setHookType(hookContext.getHookType());
         event.setUgi(hookContext.getUgi());
-        event.setUser(hookContext.getUserName());
+        event.setUser(getUser(hookContext.getUserName()));
         event.setOperation(OPERATION_MAP.get(hookContext.getOperationName()));
         event.setQueryId(hookContext.getQueryPlan().getQueryId());
         event.setQueryStr(hookContext.getQueryPlan().getQueryStr());
@@ -306,6 +305,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             break;
 
         case CREATETABLE_AS_SELECT:
+
         case CREATEVIEW:
         case ALTERVIEW_AS:
         case LOAD:
@@ -619,7 +619,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             explain.initialize(hiveConf, queryPlan, null);
             List<Task<?>> rootTasks = queryPlan.getRootTasks();
             return explain.getJSONPlan(null, null, rootTasks, queryPlan.getFetchTask(), true, false, false);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             LOG.info("Failed to get queryplan", e);
             return new JSONObject();
         }
@@ -627,8 +627,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
     private boolean isSelectQuery(HiveEventContext event) {
         if (event.getOperation() == HiveOperation.QUERY) {
-            Set<WriteEntity> outputs = event.getOutputs();
-
             //Select query has only one output
             if (event.getOutputs().size() == 1) {
                 WriteEntity output = event.getOutputs().iterator().next();

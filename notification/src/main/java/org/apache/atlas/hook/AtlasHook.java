@@ -130,6 +130,10 @@ public abstract class AtlasHook {
         return getUser(null, null);
     }
 
+    public static String getUser(String userName) {
+        return getUser(userName, null);
+    }
+
     /**
      * Returns the user. Order of preference:
      * 1. Given userName

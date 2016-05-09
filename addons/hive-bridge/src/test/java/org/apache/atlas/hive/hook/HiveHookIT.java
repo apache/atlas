@@ -46,6 +46,7 @@ import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.processors.CommandProcessorResponse;
 import org.apache.hadoop.hive.ql.session.SessionState;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
@@ -88,7 +89,7 @@ public class HiveHookIT {
         conf.set("fs.default.name", "file:///'");
         conf.setClassLoader(Thread.currentThread().getContextClassLoader());
         driver = new Driver(conf);
-        ss = new SessionState(conf, System.getProperty("user.name"));
+        ss = new SessionState(conf);
         ss = SessionState.start(ss);
         SessionState.setCurrentSessionState(ss);
 
@@ -238,6 +239,7 @@ public class HiveHookIT {
         String tableId = assertTableIsRegistered(dbName, tableName);
 
         Referenceable processReference = validateProcess(query, 1, 1);
+        assertEquals(processReference.get("userName"), UserGroupInformation.getCurrentUser().getShortUserName());
 
         verifyTimestamps(processReference, "startTime");
         verifyTimestamps(processReference, "endTime");
