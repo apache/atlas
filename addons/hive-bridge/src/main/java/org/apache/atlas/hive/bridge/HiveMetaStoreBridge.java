@@ -32,6 +32,7 @@ import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.typesystem.persistence.Id;
+import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.api.Database;
@@ -43,12 +44,12 @@ import org.apache.hadoop.hive.metastore.api.hive_metastoreConstants;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Table;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -533,9 +534,18 @@ public class HiveMetaStoreBridge {
     }
 
     public static void main(String[] argv) throws Exception {
+
         Configuration atlasConf = ApplicationProperties.get();
         String atlasEndpoint = atlasConf.getString(ATLAS_ENDPOINT, DEFAULT_DGI_URL);
-        AtlasClient atlasClient = new AtlasClient(atlasEndpoint);
+        AtlasClient atlasClient;
+
+        if (!AuthenticationUtil.isKerberosAuthicationEnabled()) {
+            String[] basicAuthUsernamePassword = AuthenticationUtil.getBasicAuthenticationInput();
+            atlasClient = new AtlasClient(new String[]{atlasEndpoint}, basicAuthUsernamePassword);
+        } else {
+            UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
+            atlasClient = new AtlasClient(ugi, ugi.getShortUserName(), atlasEndpoint);
+        }
 
         HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(new HiveConf(), atlasClient);
         hiveMetaStoreBridge.registerHiveDataModel();

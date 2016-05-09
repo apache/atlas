@@ -18,6 +18,7 @@ package org.apache.atlas.web.security;
 
 import java.util.Collection;
 
+import org.apache.atlas.web.dao.UserDao;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -28,6 +29,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
+ 
 
 @Component
 public class AtlasFileAuthenticationProvider extends AtlasAbstractAuthenticationProvider {
@@ -46,6 +48,7 @@ public class AtlasFileAuthenticationProvider extends AtlasAbstractAuthentication
             throw new BadCredentialsException(
                     "Username can't be null or empty.");
         }
+
         if (password == null || password.isEmpty()) {
             logger.error("Password can't be null or empty.");
             throw new BadCredentialsException(
@@ -53,15 +56,15 @@ public class AtlasFileAuthenticationProvider extends AtlasAbstractAuthentication
         }
 
         UserDetails user = userDetailsService.loadUserByUsername(username);
-
-        if (!password.equals(user.getPassword())) {
+        
+        String encodedPassword = UserDao.getSha256Hash(password);
+        
+        if (!encodedPassword.equals(user.getPassword())) {
             logger.error("Wrong password " + username);
             throw new BadCredentialsException("Wrong password");
         }
-        Collection<? extends GrantedAuthority> authorities = getAuthorities(username);
+        Collection<? extends GrantedAuthority> authorities = user.getAuthorities();
         authentication = new UsernamePasswordAuthenticationToken(username, password, authorities);
-
-        authentication = getAuthenticationWithGrantedAuthority(authentication);
 
         return authentication;
     }

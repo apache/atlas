@@ -49,6 +49,7 @@ import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeUtils;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
+import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.configuration.Configuration;
@@ -87,7 +88,12 @@ public abstract class BaseResourceIT {
         client.resource(UriBuilder.fromUri(baseUrl).build());
 
         service = client.resource(UriBuilder.fromUri(baseUrl).build());
-        serviceClient = new AtlasClient(baseUrl);
+
+        if (!AuthenticationUtil.isKerberosAuthicationEnabled()) {
+            serviceClient = new AtlasClient(new String[]{baseUrl}, new String[]{"admin", "admin"});
+        } else {
+            serviceClient = new AtlasClient(baseUrl);
+        }
     }
 
     protected void createType(TypesDef typesDef) throws Exception {

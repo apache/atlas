@@ -74,31 +74,12 @@
         });
     };
     Utils.defaultErrorHandler = function(model, error) {
-        /*
-                require(['views/common/ErrorView', 'App'], function(vError, App) {
-                    if (error.status == 404) {
-                        App.rContent.show(new vError({
-                            status: error.status
-                        }));
-                    } else if (error.status == 401) {
-                        App.rContent.show(new vError({
-                            status: error.status
-                        }));
-                    } else if (error.status == 419) {
-                        window.location = 'login.jsp'
-                    } else if (error.status == "0") {
-                        var diffTime = (new Date().getTime() - prevNetworkErrorTime);
-                        if (diffTime > 3000) {
-                            prevNetworkErrorTime = new Date().getTime();
-                            Utils.notifyError({
-                                content: "Network Connection Failure : " +
-                                    "It seems you are not connected to the internet. Please check your internet connection and try again"
-                            })
+        if (error.status == 401) {
+             window.location = '/login.jsp'
+        } else if (error.status == 419) {
+             window.location = '/login.jsp'
+        }
 
-                        }
-                    }
-                });
-            */
     };
 
     Utils.localStorage = {

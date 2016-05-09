@@ -18,6 +18,7 @@
 package org.apache.atlas.web.security;
 
 import javax.annotation.PostConstruct;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,12 +71,20 @@ public class AtlasAuthenticationProvider extends
                     .authenticate(authentication);
         } else if (atlasAuthenticationMethod.equalsIgnoreCase(AUTH_METHOD.LDAP
                 .name())) {
-            authentication = ldapAuthenticationProvider
-                    .authenticate(authentication);
+            try {
+                authentication = ldapAuthenticationProvider
+                        .authenticate(authentication);
+            } catch (Exception ex) {
+                LOG.error("Error while LDAP authentication", ex);
+            }
         } else if (atlasAuthenticationMethod.equalsIgnoreCase(AUTH_METHOD.AD
                 .name())) {
-            authentication = adAuthenticationProvider
-                    .authenticate(authentication);
+            try {
+                authentication = adAuthenticationProvider
+                        .authenticate(authentication);
+            } catch (Exception ex) {
+                LOG.error("Error while AD authentication", ex);
+            }
         } else {
             LOG.error("Invalid authentication method :"
                     + atlasAuthenticationMethod);
@@ -84,10 +93,20 @@ public class AtlasAuthenticationProvider extends
         if (authentication != null && authentication.isAuthenticated()) {
             return authentication;
         } else {
-            LOG.error("Authentication failed.");
-            throw new AtlasAuthenticationException("Authentication failed.");
+            // If the LDAP/AD authentication fails try the local file login method
+            if (atlasAuthenticationMethod.equalsIgnoreCase(AUTH_METHOD.AD
+                    .name()) || atlasAuthenticationMethod.equalsIgnoreCase(AUTH_METHOD.LDAP
+                    .name())) {
+                authentication = fileAuthenticationProvider
+                        .authenticate(authentication);
+            }
+            if (authentication != null && authentication.isAuthenticated()) {
+                return authentication;
+            } else {
+                LOG.error("Authentication failed.");
+                throw new AtlasAuthenticationException("Authentication failed.");
+            }
         }
     }
 
-  
 }

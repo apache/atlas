@@ -67,7 +67,7 @@ public abstract class AtlasAbstractAuthenticationProvider implements
      */
     protected List<GrantedAuthority> getAuthorities(String username) {
         final List<GrantedAuthority> grantedAuths = new ArrayList<GrantedAuthority>();
-        grantedAuths.add(new SimpleGrantedAuthority("ROLE_USER"));
+        grantedAuths.add(new SimpleGrantedAuthority("DATA_SCIENTIST"));
         return grantedAuths;
     }
 

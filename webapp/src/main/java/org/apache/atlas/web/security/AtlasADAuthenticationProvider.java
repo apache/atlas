@@ -25,16 +25,12 @@ import javax.annotation.PostConstruct;
 import org.apache.atlas.util.PropertiesUtil;
 import org.apache.atlas.web.model.User;
 import org.apache.log4j.Logger;
-import org.springframework.ldap.core.support.LdapContextSource;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.ldap.DefaultSpringSecurityContextSource;
-import org.springframework.security.ldap.authentication.BindAuthenticator;
-import org.springframework.security.ldap.authentication.LdapAuthenticationProvider;
-import org.springframework.security.ldap.search.FilterBasedLdapUserSearch;
+import org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAuthenticationProvider;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -44,6 +40,7 @@ public class AtlasADAuthenticationProvider extends
             .getLogger(AtlasADAuthenticationProvider.class);
 
     private String adURL;
+    private String adDomain;
     private String adBindDN;
     private String adBindPassword;
     private String adUserSearchFilter;
@@ -74,17 +71,10 @@ public class AtlasADAuthenticationProvider extends
             if (authentication.getCredentials() != null) {
                 userPassword = authentication.getCredentials().toString();
             }
-            LdapContextSource ldapContextSource = getLdapContextSource();
 
-            if (adUserSearchFilter == null
-                    || adUserSearchFilter.trim().isEmpty()) {
-                adUserSearchFilter = "(sAMAccountName={0})";
-            }
+            ActiveDirectoryLdapAuthenticationProvider adAuthenticationProvider =
+                    new ActiveDirectoryLdapAuthenticationProvider(adDomain, adURL);
 
-            BindAuthenticator bindAuthenticator = getBindAuthenticator(ldapContextSource);
-
-            LdapAuthenticationProvider ldapAuthenticationProvider = new LdapAuthenticationProvider(
-                    bindAuthenticator);
             if (userName != null && userPassword != null
                     && !userName.trim().isEmpty()
                     && !userPassword.trim().isEmpty()) {
@@ -93,9 +83,7 @@ public class AtlasADAuthenticationProvider extends
                         grantedAuths);
                 final Authentication finalAuthentication = new UsernamePasswordAuthenticationToken(
                         principal, userPassword, grantedAuths);
-                authentication = ldapAuthenticationProvider
-                        .authenticate(finalAuthentication);
-                authentication = getAuthenticationWithGrantedAuthority(authentication);
+                authentication = adAuthenticationProvider.authenticate(finalAuthentication);
                 return authentication;
             } else {
                 throw new AtlasAuthenticationException(
@@ -109,6 +97,7 @@ public class AtlasADAuthenticationProvider extends
     }
 
     private void setADProperties() {
+        adDomain = PropertiesUtil.getProperty("atlas.ad.domain", adDomain);
         adURL = PropertiesUtil.getProperty("atlas.ad.url", adURL);
         adBindDN = PropertiesUtil.getProperty("atlas.ad.bind.dn", adBindDN);
         adBindPassword = PropertiesUtil.getProperty("atlas.ad.bind.password",
@@ -120,34 +109,6 @@ public class AtlasADAuthenticationProvider extends
                 .getProperty("atlas.ad.referral", adReferral);
         adDefaultRole = PropertiesUtil.getProperty("atlas.ad.default.role",
                 adDefaultRole);
-    }
-
-    private LdapContextSource getLdapContextSource() throws Exception {
-
-        LdapContextSource ldapContextSource = new DefaultSpringSecurityContextSource(
-                adURL);
-        ldapContextSource.setUserDn(adBindDN);
-        ldapContextSource.setPassword(adBindPassword);
-        ldapContextSource.setReferral(adReferral);
-        ldapContextSource.setCacheEnvironmentProperties(true);
-        ldapContextSource.setAnonymousReadOnly(false);
-        ldapContextSource.setPooled(true);
-        ldapContextSource.afterPropertiesSet();
-
-        return ldapContextSource;
-
-    }
-
-    private BindAuthenticator getBindAuthenticator(
-            LdapContextSource ldapContextSource) throws Exception {
-        FilterBasedLdapUserSearch userSearch = new FilterBasedLdapUserSearch(
-                adBase, adUserSearchFilter, ldapContextSource);
-        userSearch.setSearchSubtree(true);
-        BindAuthenticator bindAuthenticator = new BindAuthenticator(
-                ldapContextSource);
-        bindAuthenticator.setUserSearch(userSearch);
-        bindAuthenticator.afterPropertiesSet();
-        return bindAuthenticator;
     }
 
 }

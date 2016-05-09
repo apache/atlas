@@ -34,7 +34,7 @@
         <property>
                 <name>atlas.ldap.group.searchfilter</name>
                 <display-name>Group Search Filter</display-name>
-                <value>(member=uid={0},ou=People,dc=example,dc=com)
+                <value>(member=uid={0},ou=Users,dc=example,dc=com)
                 </value>
                 <description></description>
         </property>
@@ -91,18 +91,22 @@
     <!-- #AD info start -->
         <property>
                 <name>atlas.ad.url</name>
-                <value>ldap://172.25.16.111:389</value>
+                <value>ldap://13.76.128.185:389</value>
                 <description></description>
         </property>
-
+        <property>
+                <name>atlas.ad.domain</name>
+                <value>example.com</value>
+                <description>Ad Domain</description>
+        </property>
         <property>
                 <name>atlas.ad.bind.dn</name>
-                <value>CN=team,CN=Users,DC=SME,DC=support,DC=com</value>
+                <value>CN=adadmin admin,CN=Users,DC=example,DC=com</value>
                 <description>AD bind dn or manager dn</description>
         </property>
         <property>
                 <name>atlas.ad.bind.password</name>
-                <value>Abcd1234!!</value>
+                <value>p@ssword</value>
                 <description>AD bind password</description>
         </property>
         <property>
@@ -113,7 +117,7 @@
         </property>
         <property>
                 <name>atlas.ad.base.dn</name>
-                <value>DC=SME,DC=support,DC=com</value>
+                <value>dc=example,dc=com</value>
                 <description>AD base dn or search base</description>
         </property>
         <property>

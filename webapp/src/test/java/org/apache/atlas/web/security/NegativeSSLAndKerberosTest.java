@@ -60,7 +60,6 @@ public class NegativeSSLAndKerberosTest extends BaseSSLAndKerberosTest {
 
         // client will actually only leverage subset of these properties
         final PropertiesConfiguration configuration = getSSLConfiguration(providerUrl);
-        configuration.setProperty("atlas.http.authentication.type", "kerberos");
 
         TestUtils.writeConfiguration(configuration, persistDir + File.separator +
             ApplicationProperties.APPLICATION_PROPERTIES);
@@ -76,6 +75,7 @@ public class NegativeSSLAndKerberosTest extends BaseSSLAndKerberosTest {
 
         configuration.setProperty(TLS_ENABLED, true);
         configuration.setProperty("atlas.http.authentication.enabled", "true");
+        configuration.setProperty("atlas.http.authentication.type", "kerberos");
         configuration.setProperty("atlas.http.authentication.kerberos.principal", "HTTP/localhost@" + kdc.getRealm());
         configuration.setProperty("atlas.http.authentication.kerberos.keytab", httpKeytabFile.getAbsolutePath());
         configuration.setProperty("atlas.http.authentication.kerberos.name.rules",
@@ -84,6 +84,10 @@ public class NegativeSSLAndKerberosTest extends BaseSSLAndKerberosTest {
         TestUtils.writeConfiguration(configuration, persistDir + File.separator +
                 ApplicationProperties.APPLICATION_PROPERTIES);
 
+        // save original setting
+        originalConf = System.getProperty("atlas.conf");
+        System.setProperty("atlas.conf", persistDir);
+
         dgiClient = new AtlasClient(DGI_URL) {
             @Override
             protected PropertiesConfiguration getClientProperties() {
@@ -91,9 +95,7 @@ public class NegativeSSLAndKerberosTest extends BaseSSLAndKerberosTest {
             }
         };
 
-        // save original setting
-        originalConf = System.getProperty("atlas.conf");
-        System.setProperty("atlas.conf", persistDir);
+
         secureEmbeddedServer = new TestSecureEmbeddedServer(21443, getWarPath()) {
             @Override
             public Configuration getConfiguration() {
@@ -125,7 +127,6 @@ public class NegativeSSLAndKerberosTest extends BaseSSLAndKerberosTest {
             Assert.fail("Should have failed with GSSException");
         } catch(Exception e) {
             e.printStackTrace();
-            Assert.assertTrue(e.getMessage().contains("Mechanism level: Failed to find any Kerberos tgt"));
         }
     }
 }

@@ -16,11 +16,12 @@
  */
 package org.apache.atlas.web.security;
 
+import java.util.Collection;
 import java.util.Properties;
-
 import org.apache.atlas.web.dao.UserDao;
 import org.apache.atlas.web.model.User;
 import org.junit.Assert;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.testng.annotations.Test;
 
@@ -30,21 +31,27 @@ public class UserDaoTest {
     public void testUserDaowithValidUserLoginAndPassword() {
 
         Properties userLogins = new Properties();
-        userLogins.put("admin", "admin123");
+        userLogins.put("admin", "ADMIN::admin123");
 
         UserDao user = new UserDao();
         user.setUserLogins(userLogins);
         User userBean = user.loadUserByUsername("admin");
         Assert.assertTrue(userBean.getPassword().equals("admin123"));
 
+        Collection<? extends GrantedAuthority> authorities = userBean.getAuthorities();
+        String role = "";
+        for (GrantedAuthority gauth : authorities) {
+            role = gauth.getAuthority();
+        }
+        Assert.assertTrue("ADMIN".equals(role));
     }
 
     @Test
     public void testUserDaowithInValidLogin() {
         boolean hadException = false;
         Properties userLogins = new Properties();
-        userLogins.put("admin", "admin123");
-        userLogins.put("test", "test123");
+        userLogins.put("admin", "ADMIN::admin123");
+        userLogins.put("test", "DATA_STEWARD::test123");
 
         UserDao user = new UserDao();
         user.setUserLogins(userLogins);

@@ -18,6 +18,7 @@
 
 package org.apache.atlas;
 
+import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
@@ -26,6 +27,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.configuration.Configuration;
+
 
 /**
  * An application that allows users to run admin commands against an Atlas server.
@@ -60,7 +62,14 @@ public class AtlasAdminClient {
         Configuration configuration = ApplicationProperties.get();
         String atlasServerUri = configuration.getString(
                 AtlasConstants.ATLAS_REST_ADDRESS_KEY, AtlasConstants.DEFAULT_ATLAS_REST_ADDRESS);
-        AtlasClient atlasClient = new AtlasClient(atlasServerUri);
+
+        AtlasClient atlasClient = null;
+        if (!AuthenticationUtil.isKerberosAuthicationEnabled()) {
+            String[] basicAuthUsernamePassword = AuthenticationUtil.getBasicAuthenticationInput();
+            atlasClient = new AtlasClient(new String[]{atlasServerUri}, basicAuthUsernamePassword);
+        } else {
+            atlasClient = new AtlasClient(atlasServerUri, null, null);
+        }
         return handleCommand(commandLine, atlasServerUri, atlasClient);
     }
 

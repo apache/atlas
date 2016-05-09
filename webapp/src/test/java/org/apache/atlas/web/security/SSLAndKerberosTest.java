@@ -69,7 +69,7 @@ public class SSLAndKerberosTest extends BaseSSLAndKerberosTest {
 
         // client will actually only leverage subset of these properties
         final PropertiesConfiguration configuration = getSSLConfiguration(providerUrl);
-        configuration.setProperty("atlas.http.authentication.type", "kerberos");
+
         TestUtils.writeConfiguration(configuration, persistDir + File.separator +
             ApplicationProperties.APPLICATION_PROPERTIES);
 
@@ -83,6 +83,7 @@ public class SSLAndKerberosTest extends BaseSSLAndKerberosTest {
         configuration.load(url);
         configuration.setProperty(TLS_ENABLED, true);
         configuration.setProperty("atlas.http.authentication.enabled", "true");
+        configuration.setProperty("atlas.http.authentication.type", "kerberos");
         configuration.setProperty("atlas.http.authentication.kerberos.principal", "HTTP/localhost@" + kdc.getRealm());
         configuration.setProperty("atlas.http.authentication.kerberos.keytab", httpKeytabFile.getAbsolutePath());
         configuration.setProperty("atlas.http.authentication.kerberos.name.rules",

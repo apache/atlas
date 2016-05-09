@@ -19,9 +19,7 @@
 package org.apache.atlas.web.security;
 
 import java.util.List;
-
 import javax.annotation.PostConstruct;
-
 import org.apache.atlas.util.PropertiesUtil;
 import org.apache.atlas.web.model.User;
 import org.apache.log4j.Logger;
@@ -107,9 +105,7 @@ public class AtlasLdapAuthenticationProvider extends
                         grantedAuths);
                 final Authentication finalAuthentication = new UsernamePasswordAuthenticationToken(
                         principal, userPassword, grantedAuths);
-                authentication = ldapAuthenticationProvider
-                        .authenticate(finalAuthentication);
-                authentication = getAuthenticationWithGrantedAuthority(authentication);
+                authentication = ldapAuthenticationProvider.authenticate(finalAuthentication);
                 return authentication;
             } else {
                 throw new AtlasAuthenticationException(
@@ -168,7 +164,6 @@ public class AtlasLdapAuthenticationProvider extends
         defaultLdapAuthoritiesPopulator
                 .setGroupSearchFilter(ldapGroupSearchFilter);
         defaultLdapAuthoritiesPopulator.setIgnorePartialResultException(true);
-
         return defaultLdapAuthoritiesPopulator;
     }
 

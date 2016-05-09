@@ -39,7 +39,8 @@ public class QuickStartIT extends BaseResourceIT {
     @BeforeClass
     public void runQuickStart() throws Exception {
         super.setUp();
-        QuickStart.main(new String[]{});
+
+        QuickStart.runQuickstart(new String[]{}, new String[]{"admin", "admin"});
     }
 
     @Test

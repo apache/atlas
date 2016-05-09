@@ -21,8 +21,6 @@ import java.io.IOException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.apache.atlas.Atlas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.AuthenticationException;
@@ -31,15 +29,23 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
 @SuppressWarnings("deprecation")
 class AtlasAuthenticationEntryPoint extends LoginUrlAuthenticationEntryPoint {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Atlas.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthenticationEntryPoint.class);
 
     private String loginPath = "/login.jsp";
 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException)
             throws IOException, ServletException {
-        LOG.debug("redirecting to login page loginPath" + loginPath);
 
-        response.sendRedirect(loginPath);
+
+        String ajaxRequestHeader = request.getHeader("X-Requested-With");
+        response.setHeader("X-Frame-Options", "DENY");
+
+        if ("XMLHttpRequest".equals(ajaxRequestHeader)) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        } else {
+            LOG.debug("redirecting to login page loginPath" + loginPath);
+            response.sendRedirect(loginPath);
+        }
     }
 }

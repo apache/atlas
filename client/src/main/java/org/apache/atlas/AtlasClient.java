@@ -36,6 +36,7 @@ import org.apache.atlas.typesystem.types.AttributeDefinition;
 import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
+import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -44,7 +45,6 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -55,7 +55,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-
+import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
 import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
 
 /**
@@ -125,6 +125,16 @@ public class AtlasClient {
     private WebResource service;
     private AtlasClientContext atlasClientContext;
     private Configuration configuration;
+    private String basicAuthUser;
+    private String basicAuthPassword;
+
+
+    // New constuctor for Basic auth
+    public AtlasClient(String[] baseUrl, String[] basicAuthUserNamepassword) {
+        this.basicAuthUser = basicAuthUserNamepassword[0];
+        this.basicAuthPassword = basicAuthUserNamepassword[1];
+        initializeState(baseUrl, null, null);
+    }
 
     /**
      * Create a new Atlas client.
@@ -170,6 +180,12 @@ public class AtlasClient {
     private void initializeState(String[] baseUrls, UserGroupInformation ugi, String doAsUser) {
         configuration = getClientProperties();
         Client client = getClient(configuration, ugi, doAsUser);
+
+        if ((!AuthenticationUtil.isKerberosAuthicationEnabled()) && basicAuthUser!=null && basicAuthPassword!=null) {
+            final HTTPBasicAuthFilter authFilter = new HTTPBasicAuthFilter(basicAuthUser, basicAuthPassword);
+            client.addFilter(authFilter);
+        }
+
         String activeServiceUrl = determineActiveServiceURL(baseUrls, client);
         atlasClientContext = new AtlasClientContext(baseUrls, client, ugi, doAsUser);
         service = client.resource(UriBuilder.fromUri(activeServiceUrl).build());
@@ -195,9 +211,14 @@ public class AtlasClient {
             LOG.info("Error processing client configuration.", e);
         }
 
-        URLConnectionClientHandler handler =
-            SecureClientUtils.getClientConnectionHandler(config, clientConfig, doAsUser, ugi);
+        URLConnectionClientHandler handler = null;
 
+        if ((!AuthenticationUtil.isKerberosAuthicationEnabled()) && basicAuthUser!=null && basicAuthPassword!=null) {
+            handler = new URLConnectionClientHandler();
+        } else {
+            handler =
+                    SecureClientUtils.getClientConnectionHandler(config, clientConfig, doAsUser, ugi);
+        }
         Client client = new Client(handler, config);
         client.setReadTimeout(readTimeout);
         client.setConnectTimeout(connectTimeout);
@@ -1049,6 +1070,8 @@ public class AtlasClient {
         public AtlasClientContext(String[] baseUrls, Client client, UserGroupInformation ugi, String doAsUser) {
             this.baseUrls = baseUrls;
             this.client = client;
+            this.ugi = ugi;
+            this.doAsUser = doAsUser;
         }
 
         public Client getClient() {
@@ -1067,5 +1090,6 @@ public class AtlasClient {
             return ugi;
         }
     }
+
 
 }
