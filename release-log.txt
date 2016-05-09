@@ -18,6 +18,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-759 HiveHookIT.testAlterTableChangeColumn is consistently failing on master (yhemanth)
 ATLAS-690 Read timed out exceptions when tables are imported into Atlas (yhemanth via shwethags)
 ATLAS-585 NotificationHookConsumer creates new AtlasClient for every message (shwethags)
 ATLAS-682 Set HBase root dir to be relative to test target directory for HBaseBasedAuditRepositoryTest (shwethags via yhemanth)
