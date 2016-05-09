@@ -49,6 +49,7 @@
         <security:logout logout-success-url="/login.jsp" delete-cookies="JSESSIONID"
                          logout-url="/logout.html" />
         <http-basic />
+        <security:custom-filter position="LAST" ref="atlasAuthorizationFilter"/>        
     </security:http>
 
     <beans:bean id="formAuthenticationEntryPoint"
@@ -86,4 +87,6 @@
             pre-post-annotations="enabled" />
 
     <context:component-scan base-package="org.apache.atlas.web" />
+    
+    <beans:bean id = "atlasAuthorizationFilter" class="org.apache.atlas.web.filters.AtlasAuthorizationFilter"/>
 </beans:beans>

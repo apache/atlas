@@ -60,7 +60,7 @@ public class FileAuthenticationTest {
     public void setup() throws Exception {
 
         String persistDir = TestUtils.getTempDirectory();
-
+        setUpPolicyStore(persistDir);
         setupUserCredential(persistDir);
 
         setUpAltasApplicationProperties(persistDir);
@@ -75,15 +75,15 @@ public class FileAuthenticationTest {
 
     }
 
-    private void setUpAltasApplicationProperties(String persistDir) throws Exception{
+    private void setUpAltasApplicationProperties(String persistDir) throws Exception {
         final PropertiesConfiguration configuration = new PropertiesConfiguration();
         configuration.setProperty("atlas.login.method", "FILE");
         configuration.setProperty("atlas.login.credentials.file", persistDir
                 + "/users-credentials");
-
+        configuration.setProperty("atlas.auth.policy.file",persistDir
+                + "/policy-store.txt" );
         TestUtils.writeConfiguration(configuration, persistDir + File.separator
                 + ApplicationProperties.APPLICATION_PROPERTIES);
-        
     }
     
     private void setupUserCredential(String tmpDir) throws Exception {
@@ -97,6 +97,15 @@ public class FileAuthenticationTest {
         File credentialFile = new File(tmpDir, "users-credentials");
         FileUtils.write(credentialFile, credentialFileStr.toString());
     }
+
+    private void setUpPolicyStore(String tmpDir) throws Exception {
+        StringBuilder policyStr = new StringBuilder(1024);
+        policyStr.append("adminPolicy;;admin:rwud;;ROLE_ADMIN:rwud;;type:*,entity:*,operation:*");
+        File policyFile = new File(tmpDir, "policy-store.txt");
+        FileUtils.write(policyFile, policyStr.toString());
+    }
+
+
 
     @Test
     public void testValidUserLogin() {
