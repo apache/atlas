@@ -16,6 +16,9 @@
 
 # Maven
 target
+dependency-reduced-pom.xml
+core*.dmp
+
 
 # IntelliJ
 *.iml
@@ -27,6 +30,7 @@ target
 .cache
 .classpath
 .project
+
 .settings
 .externalToolBuilders
 maven-eclipse.xml
@@ -52,3 +56,8 @@ test-output
 
 #hbase package downloaded
 distro/hbase/*.tar.gz
+.cache-main
+
+# emacs files
+*#
+*~

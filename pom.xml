@@ -460,6 +460,7 @@
         <module>server-api</module>
         <module>notification</module>
         <module>client</module>
+        <module>graphdb</module>
         <module>titan</module>
         <module>repository</module>
         <!-- <module>dashboard</module> -->
