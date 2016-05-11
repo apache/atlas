@@ -18,8 +18,6 @@
 
 package org.apache.atlas.storm.hook;
 
-import backtype.storm.ILocalCluster;
-import backtype.storm.generated.StormTopology;
 import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
@@ -33,6 +31,8 @@ import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.commons.configuration.Configuration;
+import org.apache.storm.ILocalCluster;
+import org.apache.storm.generated.StormTopology;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;

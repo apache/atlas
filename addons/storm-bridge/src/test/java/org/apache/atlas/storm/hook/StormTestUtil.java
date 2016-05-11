@@ -18,15 +18,15 @@
 
 package org.apache.atlas.storm.hook;
 
-import backtype.storm.Config;
-import backtype.storm.ILocalCluster;
-import backtype.storm.Testing;
-import backtype.storm.generated.StormTopology;
-import backtype.storm.testing.TestGlobalCount;
-import backtype.storm.testing.TestWordCounter;
-import backtype.storm.testing.TestWordSpout;
-import backtype.storm.topology.TopologyBuilder;
-import backtype.storm.utils.Utils;
+import org.apache.storm.Config;
+import org.apache.storm.ILocalCluster;
+import org.apache.storm.Testing;
+import org.apache.storm.generated.StormTopology;
+import org.apache.storm.testing.TestGlobalCount;
+import org.apache.storm.testing.TestWordCounter;
+import org.apache.storm.testing.TestWordSpout;
+import org.apache.storm.topology.TopologyBuilder;
+import org.apache.storm.utils.Utils;
 
 import java.util.HashMap;
 
@@ -58,6 +58,7 @@ final class StormTestUtil {
                                         StormTopology stormTopology) throws Exception {
         Config stormConf = new Config();
         stormConf.putAll(Utils.readDefaultConfig());
+        stormConf.put("storm.cluster.mode", "local");
         stormConf.setDebug(true);
         stormConf.setMaxTaskParallelism(3);
         stormConf.put(Config.STORM_TOPOLOGY_SUBMISSION_NOTIFIER_PLUGIN,

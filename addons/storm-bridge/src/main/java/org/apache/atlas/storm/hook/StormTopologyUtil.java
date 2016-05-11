@@ -18,10 +18,10 @@
 
 package org.apache.atlas.storm.hook;
 
-import backtype.storm.generated.Bolt;
-import backtype.storm.generated.GlobalStreamId;
-import backtype.storm.generated.Grouping;
-import backtype.storm.generated.StormTopology;
+import org.apache.storm.generated.Bolt;
+import org.apache.storm.generated.GlobalStreamId;
+import org.apache.storm.generated.Grouping;
+import org.apache.storm.generated.StormTopology;
 import com.google.common.base.Joiner;
 import org.slf4j.Logger;
 
