@@ -18,6 +18,10 @@
 
 package org.apache.atlas.repository;
 
+import org.apache.atlas.typesystem.types.AttributeInfo;
+import org.apache.atlas.typesystem.types.DataTypes;
+import org.apache.atlas.typesystem.types.utils.TypesUtil;
+
 public final class Constants {
 
     /**
@@ -62,6 +66,18 @@ public final class Constants {
     public static final String TIMESTAMP_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "timestamp";
     public static final String MODIFICATION_TIMESTAMP_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "modificationTimestamp";
 
+    public static AttributeInfo getAttributeInfoForSystemAttributes(String field) {
+        switch (field) {
+        case STATE_PROPERTY_KEY:
+        case GUID_PROPERTY_KEY:
+            return TypesUtil.newAttributeInfo(field, DataTypes.STRING_TYPE);
+
+        case TIMESTAMP_PROPERTY_KEY:
+        case MODIFICATION_TIMESTAMP_PROPERTY_KEY:
+            return TypesUtil.newAttributeInfo(field, DataTypes.LONG_TYPE);
+        }
+        return null;
+    }
 
     /**
      * search backing index name.

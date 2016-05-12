@@ -21,8 +21,10 @@ package org.apache.atlas.typesystem.types.utils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.types.AttributeDefinition;
+import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.EnumTypeDefinition;
 import org.apache.atlas.typesystem.types.EnumValue;
@@ -32,6 +34,7 @@ import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
 
+import org.apache.atlas.typesystem.types.TypeSystem;
 import scala.collection.JavaConversions;
 
 /**
@@ -99,5 +102,16 @@ public class TypesUtil {
                                        ImmutableList<HierarchicalTypeDefinition<ClassType>> classes) {
         return new TypesDef(JavaConversions.asScalaBuffer(enums), JavaConversions.asScalaBuffer(structs),
                 JavaConversions.asScalaBuffer(traits), JavaConversions.asScalaBuffer(classes));
+    }
+
+    private static final TypeSystem ts = TypeSystem.getInstance();
+
+    public static AttributeInfo newAttributeInfo(String attribute, IDataType type) {
+        try {
+            return new AttributeInfo(ts, new AttributeDefinition(attribute, type.getName(), Multiplicity.REQUIRED,
+                    false, null), null);
+        } catch (AtlasException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

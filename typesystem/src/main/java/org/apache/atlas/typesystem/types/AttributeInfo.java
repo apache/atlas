@@ -38,7 +38,7 @@ public class AttributeInfo {
     public final String reverseAttributeName;
     private IDataType dataType;
 
-    AttributeInfo(TypeSystem t, AttributeDefinition def, Map<String, IDataType> tempTypes) throws AtlasException {
+    public AttributeInfo(TypeSystem t, AttributeDefinition def, Map<String, IDataType> tempTypes) throws AtlasException {
         this.name = def.name;
         this.dataType =
                 (tempTypes != null && tempTypes.containsKey(def.dataTypeName)) ? tempTypes.get(def.dataTypeName) :

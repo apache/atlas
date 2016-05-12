@@ -56,6 +56,8 @@ import java.util.Map;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 
 @Guice(modules = RepositoryMetadataModule.class)
 public class GraphBackedDiscoveryServiceTest extends BaseHiveRepositoryTest {
@@ -94,32 +96,62 @@ public class GraphBackedDiscoveryServiceTest extends BaseHiveRepositoryTest {
     }
 
     @Test
+    public void testSearchBySystemProperties() throws Exception {
+        //system property in select
+        String dslQuery = "from Department select __guid";
+
+        String jsonResults = discoveryService.searchByDSL(dslQuery);
+        assertNotNull(jsonResults);
+
+        JSONObject results = new JSONObject(jsonResults);
+        assertEquals(results.length(), 3);
+
+        JSONArray rows = results.getJSONArray("rows");
+        assertNotNull(rows);
+        assertEquals(rows.length(), 1);
+        assertNotNull(rows.getJSONObject(0).getString("__guid"));
+
+        //system property in where clause
+        String guid = rows.getJSONObject(0).getString("__guid");
+        dslQuery = "Department where __guid = '" + guid + "' and __state = 'ACTIVE'";
+        jsonResults = discoveryService.searchByDSL(dslQuery);
+        assertNotNull(jsonResults);
+
+        results = new JSONObject(jsonResults);
+        assertEquals(results.length(), 3);
+
+        rows = results.getJSONArray("rows");
+        assertNotNull(rows);
+        assertEquals(rows.length(), 1);
+    }
+
+    @Test
     public void testSearchByDSLReturnsEntity() throws Exception {
         String dslQuery = "from Department";
 
         String jsonResults = discoveryService.searchByDSL(dslQuery);
-        Assert.assertNotNull(jsonResults);
+        assertNotNull(jsonResults);
 
         JSONObject results = new JSONObject(jsonResults);
-        Assert.assertEquals(results.length(), 3);
+        assertEquals(results.length(), 3);
         System.out.println("results = " + results);
 
         Object query = results.get("query");
-        Assert.assertNotNull(query);
+        assertNotNull(query);
 
         JSONObject dataType = results.getJSONObject("dataType");
-        Assert.assertNotNull(dataType);
+        assertNotNull(dataType);
         String typeName = dataType.getString("typeName");
-        Assert.assertNotNull(typeName);
-        Assert.assertEquals(typeName, "Department");
+        assertNotNull(typeName);
+        assertEquals(typeName, "Department");
 
         JSONArray rows = results.getJSONArray("rows");
-        Assert.assertNotNull(rows);
-        Assert.assertEquals(rows.length(), 1);
+        assertNotNull(rows);
+        assertEquals(rows.length(), 1);
 
         //Assert that entity state is set in the result entities
         String entityState = rows.getJSONObject(0).getJSONObject("$id$").getString("state");
-        Assert.assertEquals(entityState, Id.EntityState.ACTIVE.name());
+        assertEquals(entityState, Id.EntityState.ACTIVE.name());
     }
 
     @Test(expectedExceptions = Throwable.class)
@@ -167,11 +199,11 @@ public class GraphBackedDiscoveryServiceTest extends BaseHiveRepositoryTest {
         Assert.assertTrue(resultList.size() > 0);
         for (Map<String, Object> vertexProps : resultList) {
             Object object = vertexProps.get(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY);
-            Assert.assertNotNull(object);
+            assertNotNull(object);
             Long timestampAsLong = Long.valueOf((String)object);
             Assert.assertTrue(timestampAsLong > 1420070400000L);
             object = vertexProps.get(Constants.TIMESTAMP_PROPERTY_KEY);
-            Assert.assertNotNull(object);
+            assertNotNull(object);
         }
     }
 
@@ -490,23 +522,23 @@ public class GraphBackedDiscoveryServiceTest extends BaseHiveRepositoryTest {
     public void  testSearchByDSLQueriesWithOrderBy(String dslQuery, Integer expectedNumRows, String orderBy, boolean ascending) throws Exception {
         System.out.println("Executing dslQuery = " + dslQuery);
         String jsonResults = discoveryService.searchByDSL(dslQuery);
-        Assert.assertNotNull(jsonResults);
+        assertNotNull(jsonResults);
 
         JSONObject results = new JSONObject(jsonResults);
-        Assert.assertEquals(results.length(), 3);
+        assertEquals(results.length(), 3);
 
         Object query = results.get("query");
-        Assert.assertNotNull(query);
+        assertNotNull(query);
 
         JSONObject dataType = results.getJSONObject("dataType");
-        Assert.assertNotNull(dataType);
+        assertNotNull(dataType);
         String typeName = dataType.getString("typeName");
-        Assert.assertNotNull(typeName);
+        assertNotNull(typeName);
 
         JSONArray rows = results.getJSONArray("rows");
        
-        Assert.assertNotNull(rows);
-        Assert.assertEquals(rows.length(), expectedNumRows.intValue()); // some queries may not have any results
+        assertNotNull(rows);
+        assertEquals(rows.length(), expectedNumRows.intValue()); // some queries may not have any results
         List<String> returnedList = new ArrayList<String> ();
         for (int i = 0; i < rows.length(); i++) {
             JSONObject row = rows.getJSONObject(i);
@@ -546,23 +578,23 @@ public class GraphBackedDiscoveryServiceTest extends BaseHiveRepositoryTest {
     public void  testSearchByDSLQueries(String dslQuery, Integer expectedNumRows) throws Exception {
         System.out.println("Executing dslQuery = " + dslQuery);
         String jsonResults = discoveryService.searchByDSL(dslQuery);
-        Assert.assertNotNull(jsonResults);
+        assertNotNull(jsonResults);
 
         JSONObject results = new JSONObject(jsonResults);
-        Assert.assertEquals(results.length(), 3);
+        assertEquals(results.length(), 3);
         System.out.println("results = " + results);
 
         Object query = results.get("query");
-        Assert.assertNotNull(query);
+        assertNotNull(query);
 
         JSONObject dataType = results.getJSONObject("dataType");
-        Assert.assertNotNull(dataType);
+        assertNotNull(dataType);
         String typeName = dataType.getString("typeName");
-        Assert.assertNotNull(typeName);
+        assertNotNull(typeName);
 
         JSONArray rows = results.getJSONArray("rows");
-        Assert.assertNotNull(rows);
-        Assert.assertEquals(rows.length(), expectedNumRows.intValue()); // some queries may not have any results
+        assertNotNull(rows);
+        assertEquals(rows.length(), expectedNumRows.intValue()); // some queries may not have any results
         System.out.println("query [" + dslQuery + "] returned [" + rows.length() + "] rows");
     }
 
@@ -570,23 +602,23 @@ public class GraphBackedDiscoveryServiceTest extends BaseHiveRepositoryTest {
     public void  testSearchByDSLQueriesWithLimit(String dslQuery, Integer expectedNumRows) throws Exception {
         System.out.println("Executing dslQuery = " + dslQuery);
         String jsonResults = discoveryService.searchByDSL(dslQuery);
-        Assert.assertNotNull(jsonResults);
+        assertNotNull(jsonResults);
 
         JSONObject results = new JSONObject(jsonResults);
-        Assert.assertEquals(results.length(), 3);
+        assertEquals(results.length(), 3);
         System.out.println("results = " + results);
 
         Object query = results.get("query");
-        Assert.assertNotNull(query);
+        assertNotNull(query);
 
         JSONObject dataType = results.getJSONObject("dataType");
-        Assert.assertNotNull(dataType);
+        assertNotNull(dataType);
         String typeName = dataType.getString("typeName");
-        Assert.assertNotNull(typeName);
+        assertNotNull(typeName);
 
         JSONArray rows = results.getJSONArray("rows");
-        Assert.assertNotNull(rows);
-        Assert.assertEquals(rows.length(), expectedNumRows.intValue()); // some queries may not have any results
+        assertNotNull(rows);
+        assertEquals(rows.length(), expectedNumRows.intValue()); // some queries may not have any results
         System.out.println("query [" + dslQuery + "] returned [" + rows.length() + "] rows");
     }
     
@@ -609,7 +641,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseHiveRepositoryTest {
 
         String dslQuery = "from D where a = 1";
         String jsonResults = discoveryService.searchByDSL(dslQuery);
-        Assert.assertNotNull(jsonResults);
+        assertNotNull(jsonResults);
 
         JSONObject results = new JSONObject(jsonResults);
         System.out.println("results = " + results);

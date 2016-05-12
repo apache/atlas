@@ -20,6 +20,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-738 Add query ability on system properties like guid, state, createdtime etc (shwethags)
 ATLAS-692 Create abstraction layer for graph databases (jnhagelb via yhemanth)
 ATLAS-689 Migrate Atlas-Storm integration to use Storm 1.0 dependencies. (svimal2106 via yhemanth)
 ATLAS-754 InstanceSerialization does not serialize Reference in the values array of Reference.(harishjp via sumasai)

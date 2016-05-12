@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import org.apache.atlas.AtlasException
 import org.apache.atlas.query.Expressions.{PathExpression, SelectExpression}
+import org.apache.atlas.repository.Constants
 import org.apache.atlas.typesystem.types.DataTypes.{ArrayType, PrimitiveType, TypeCategory}
 import org.apache.atlas.typesystem.types._
 
@@ -201,6 +202,11 @@ object TypeUtils {
 
             if (fMap.get.fields.containsKey(id)) {
                 return Some(FieldInfo(typ,fMap.get.fields.get(id)))
+            }
+
+            val systemField = Constants.getAttributeInfoForSystemAttributes(id)
+            if (systemField != null) {
+              return Some(FieldInfo(systemField.dataType(), systemField))
             }
 
             try {
