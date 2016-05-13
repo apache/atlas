@@ -35,6 +35,7 @@ def main():
     confdir = mc.dirMustExist(mc.confDir(atlas_home))
     mc.executeEnvSh(confdir)
     logdir = mc.dirMustExist(mc.logDir(atlas_home))
+    mc.dirMustExist(mc.dataDir(atlas_home))
     if mc.isCygwin():
         # Pathnames that are passed to JVM must be converted to Windows format.
         jvm_atlas_home = mc.convertCygwinPath(atlas_home)
@@ -86,7 +87,7 @@ def main():
     else: 
        if mc.is_hbase(confdir):
            raise Exception("Could not find hbase-site.xml in %s. Please set env var HBASE_CONF_DIR to the hbase client conf dir", hbase_conf_dir)
-    
+
     if mc.isCygwin():
         atlas_classpath = mc.convertCygwinPath(atlas_classpath, True)
 
@@ -110,6 +111,19 @@ def main():
         mc.configure_hbase(atlas_home)
         mc.run_hbase_action(mc.hbaseBinDir(atlas_home), "start", hbase_conf_dir, logdir)
         print "hbase started."
+
+    #solr setup
+    if mc.is_solr_local(confdir):
+        print "configured for local solr."
+        mc.run_solr(mc.solrBinDir(atlas_home), "start", mc.get_solr_zk_url(confdir), mc.solrPort(), logdir)
+        print "solr started."
+
+    #solr indexes
+    if mc.is_solr(confdir):
+        print "setting up solr collections..."
+        mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), "vertex_index", logdir)
+        mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), "edge_index", logdir)
+        mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), "fulltext_index", logdir)
 
     web_app_path = os.path.join(web_app_dir, "atlas")
     if (mc.isCygwin()):

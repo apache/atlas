@@ -54,6 +54,10 @@ def main():
     if os.path.exists(atlas_pid_file):
         os.remove(atlas_pid_file)
 
+    # stop solr
+    if mc.is_solr_local(confdir):
+        mc.run_solr(mc.solrBinDir(atlas_home), "stop", None, mc.solrPort(), None, True)
+
     # stop hbase
     if mc.is_hbase_local(confdir):
         mc.run_hbase_action(mc.hbaseBinDir(atlas_home), "stop", None, None, True)

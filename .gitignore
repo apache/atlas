@@ -56,6 +56,10 @@ test-output
 
 #hbase package downloaded
 distro/hbase/*.tar.gz
+
+#solr package downloaded
+distro/solr/*.tgz
+
 .cache-main
 
 # emacs files

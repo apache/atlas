@@ -53,6 +53,9 @@ Tar is structured as follows
 |- server
    |- webapp
       |- atlas.war
+|- solr
+   |- bin
+   ...
 |- README
 |- NOTICE.txt
 |- LICENSE.txt
@@ -66,6 +69,10 @@ storage backend for the graph repository.  During Atlas installation the conf/hb
 expanded and moved to hbase/conf/hbase-site.xml for the initial standalone HBase configuration.  To configure ATLAS
 graph persistence for a different HBase instance, please see "Graph persistence engine - HBase" in the
 [[Configuration][Configuration]] section.
+
+Also note that Solr is included in the distribution so that a standalone instance of Solr can be started as the default
+search indexing backend.  To configure ATLAS search indexing for a different Solr instance, please see
+"Graph Search Index - Solr" in the [[Configuration][Configuration]] section.
 
 ---+++ Installing & Running Atlas
 
@@ -184,14 +191,14 @@ For configuring Titan to work with Solr, please follow the instructions below
       $SOLR_HOME/bin/solr start -c -z <zookeeper_host:port> -p 8983
       </verbatim>
 
-   * Run the following commands from SOLR_HOME directory to create collections in Solr corresponding to the indexes that Atlas uses. In the case that the ATLAS and SOLR instance are on 2 different hosts,
+   * Run the following commands from SOLR_BIN (e.g. $SOLR_HOME/bin) directory to create collections in Solr corresponding to the indexes that Atlas uses. In the case that the ATLAS and SOLR instance are on 2 different hosts,
   first copy the required configuration files from ATLAS_HOME/conf/solr on the ATLAS instance host to the Solr instance host. SOLR_CONF in the below mentioned commands refer to the directory where the solr configuration files
   have been copied to on Solr host:
 
 <verbatim>
-  bin/solr create -c vertex_index -d SOLR_CONF -shards #numShards -replicationFactor #replicationFactor
-  bin/solr create -c edge_index -d SOLR_CONF -shards #numShards -replicationFactor #replicationFactor
-  bin/solr create -c fulltext_index -d SOLR_CONF -shards #numShards -replicationFactor #replicationFactor
+  $SOLR_BIN/solr create -c vertex_index -d SOLR_CONF -shards #numShards -replicationFactor #replicationFactor
+  $SOLR_BIN/solr create -c edge_index -d SOLR_CONF -shards #numShards -replicationFactor #replicationFactor
+  $SOLR_BIN/solr create -c fulltext_index -d SOLR_CONF -shards #numShards -replicationFactor #replicationFactor
 </verbatim>
 
   Note: If numShards and replicationFactor are not specified, they default to 1 which suffices if you are trying out solr with ATLAS on a single node instance.
@@ -199,6 +206,9 @@ For configuring Titan to work with Solr, please follow the instructions below
   The number of shards cannot exceed the total number of Solr nodes in your !SolrCloud cluster.
 
   The number of replicas (replicationFactor) can be set according to the redundancy required.
+
+  Also note that solr will automatically be called to create the indexes when the Atlas server is started if the
+  SOLR_BIN and SOLR_CONF environment variables are set and the search indexing backend is set to 'solr5'.
 
    * Change ATLAS configuration to point to the Solr instance setup. Please make sure the following configurations are set to the below values in ATLAS_HOME/conf/atlas-application.properties
 <verbatim>

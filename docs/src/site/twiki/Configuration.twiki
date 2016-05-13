@@ -54,7 +54,10 @@ Without Ranger, HBase shell can be used to set the permissions.
 </verbatim>
 
 Note that HBase is included in the distribution so that a standalone instance of HBase can be started as the default
-storage backend for the graph repository.
+storage backend for the graph repository.  By default, the standalone HBase instance will be started and stopped along
+with the Atlas server when the configuraton 'atlas.graph.storage.backend' is set to 'hbase' and
+'atlas.graph.storage.hostname' is set to 'localhost'.  Set the MANAGE_LOCAL_HBASE environment variable to 'False' to
+override this behavior.
 
 ---+++ Graph Search Index
 This section sets up the graph db - titan - to use an search indexing system. The example
@@ -76,6 +79,12 @@ Please note that Solr installation in Cloud mode is a prerequisite before config
  atlas.graph.index.search.solr.mode=cloud
  atlas.graph.index.search.solr.zookeeper-url=<the ZK quorum setup for solr as comma separated value> eg: 10.1.6.4:2181,10.1.6.5:2181
 </verbatim>
+
+Also note that Solr is included in the distribution so that a standalone instance of Solr can be started as the default
+search indexing backend. By default, the standalone Solr instance will be started and stopped along
+with the Atlas server when the configuraton 'atlas.graph.index.search.backend' is set to 'solr5' and
+'atlas.graph.index.search.solr.zookeeper-url' is set to 'localhost'.  Set the MANAGE_LOCAL_SOLR environment variable to
+'False' to override this behavior.
 
 ---+++ Choosing between Persistence and Indexing Backends
 

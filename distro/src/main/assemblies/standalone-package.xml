@@ -62,6 +62,13 @@
         </fileSet>
 
         <fileSet>
+            <directory>target/solr</directory>
+            <outputDirectory>solr</outputDirectory>
+            <fileMode>0755</fileMode>
+            <directoryMode>0755</directoryMode>
+        </fileSet>
+
+        <fileSet>
             <directory>../logs</directory>
             <outputDirectory>logs</outputDirectory>
             <directoryMode>0777</directoryMode>

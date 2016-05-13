@@ -19,11 +19,11 @@
 <configuration>
   <property>
     <name>hbase.rootdir</name>
-    <value>${url_prefix}${hbase_home}/root</value>
+    <value>${url_prefix}${atlas_data}/hbase-root</value>
   </property>
   <property>
     <name>hbase.zookeeper.property.dataDir</name>
-    <value>${hbase_home}/zookeeper-data</value>
+    <value>${atlas_data}/hbase-zookeeper-data</value>
   </property>
   <property>
     <name>hbase.master.info.port</name>

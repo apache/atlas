@@ -31,8 +31,12 @@
 
     <properties>
         <hbase.dir>${project.build.directory}/hbase</hbase.dir>
-        <hbase.tar>http://apache.mirrors.pair.com/hbase/stable/hbase-1.1.4-bin.tar.gz</hbase.tar>
-        <hbase.folder>hbase-1.1.4</hbase.folder>
+        <hbase.tar>http://archive.apache.org/dist/hbase/${hbase.version}/hbase-${hbase.version}-bin.tar.gz</hbase.tar>
+        <hbase.folder>hbase-${hbase.version}</hbase.folder>
+
+        <solr.dir>${project.build.directory}/solr</solr.dir>
+        <solr.tar>http://archive.apache.org/dist/lucene/solr/${solr.version}/solr-${solr.version}.tgz</solr.tar>
+        <solr.folder>solr-${solr.version}</solr.folder>
     </properties>
 
     <profiles>
@@ -77,6 +81,7 @@
                         <version>1.7</version>
                         <executions>
                             <execution>
+                                <id>hbase</id>
                                 <phase>generate-resources</phase>
                                 <goals>
                                     <goal>run</goal>
@@ -98,6 +103,35 @@
                                         />
                                         <copy todir="${hbase.dir}">
                                             <fileset dir="${project.build.directory}/hbase.temp/${hbase.folder}">
+                                                <include name="**/*"/>
+                                            </fileset>
+                                        </copy>
+                                    </target>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>solr</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target name="Download SOLR">
+                                        <mkdir dir="${solr.dir}"/>
+                                        <mkdir dir="${project.basedir}/solr"/>
+                                        <get
+                                            src="${solr.tar}"
+                                            dest="${project.basedir}/solr/${solr.folder}.tgz"
+                                            usetimestamp="true"
+                                            verbose="true" skipexisting="true"
+                                        />
+                                        <untar
+                                            src="${project.basedir}/solr/${solr.folder}.tgz"
+                                            dest="${project.build.directory}/solr.temp"
+                                            compression="gzip"
+                                        />
+                                        <copy todir="${solr.dir}">
+                                            <fileset dir="${project.build.directory}/solr.temp/${solr.folder}">
                                                 <include name="**/*"/>
                                             </fileset>
                                         </copy>

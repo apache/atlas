@@ -31,6 +31,7 @@ LIB = "lib"
 CONF = "conf"
 LOG = "logs"
 WEBAPP = "server" + os.sep + "webapp"
+CONFIG_SETS_CONF = "server" + os.sep + "solr" + os.sep + "configsets" + os.sep + "basic_configs" + os.sep + "conf"
 DATA = "data"
 ATLAS_CONF = "ATLAS_CONF"
 ATLAS_LOG = "ATLAS_LOG_DIR"
@@ -42,13 +43,28 @@ ATLAS_SERVER_HEAP = "ATLAS_SERVER_HEAP"
 ATLAS_DATA = "ATLAS_DATA_DIR"
 ATLAS_HOME = "ATLAS_HOME_DIR"
 HBASE_CONF_DIR = "HBASE_CONF_DIR"
+MANAGE_LOCAL_HBASE = "MANAGE_LOCAL_HBASE"
+MANAGE_LOCAL_SOLR = "MANAGE_LOCAL_SOLR"
+SOLR_BIN = "SOLR_BIN"
+SOLR_CONF = "SOLR_CONF"
+SOLR_PORT = "SOLR_PORT"
+DEFAULT_SOLR_PORT = "9838"
+SOLR_SHARDS = "SOLR_SHARDS"
+DEFAULT_SOLR_SHARDS = "1"
+SOLR_REPLICATION_FACTOR = "SOLR_REPLICATION_FACTOR"
+DEFAULT_SOLR_REPLICATION_FACTOR = "1"
+
 ENV_KEYS = ["JAVA_HOME", ATLAS_OPTS, ATLAS_SERVER_OPTS, ATLAS_SERVER_HEAP, ATLAS_LOG, ATLAS_PID, ATLAS_CONF,
-            "ATLASCPPATH", ATLAS_DATA, ATLAS_HOME, ATLAS_WEBAPP, HBASE_CONF_DIR]
+            "ATLASCPPATH", ATLAS_DATA, ATLAS_HOME, ATLAS_WEBAPP, HBASE_CONF_DIR, SOLR_PORT]
 IS_WINDOWS = platform.system() == "Windows"
 ON_POSIX = 'posix' in sys.builtin_module_names
 CONF_FILE="atlas-application.properties"
 HBASE_STORAGE_CONF_ENTRY="atlas.graph.storage.backend\s*=\s*hbase"
 HBASE_STORAGE_LOCAL_CONF_ENTRY="atlas.graph.storage.hostname\s*=\s*localhost"
+SOLR_INDEX_CONF_ENTRY="atlas.graph.index.search.backend\s*=\s*solr5"
+SOLR_INDEX_LOCAL_CONF_ENTRY="atlas.graph.index.search.solr.zookeeper-url\s*=\s*localhost"
+SOLR_INDEX_ZK_URL="atlas.graph.index.search.solr.zookeeper-url"
+
 DEBUG = False
 
 def scriptDir():
@@ -73,6 +89,21 @@ def hbaseBinDir(dir):
 
 def hbaseConfDir(dir):
     return os.environ.get(HBASE_CONF_DIR, os.path.join(dir, "hbase", CONF))
+
+def solrBinDir(dir):
+    return os.environ.get(SOLR_BIN, os.path.join(dir, "solr", BIN))
+
+def solrConfDir(dir):
+    return os.environ.get(SOLR_CONF, os.path.join(dir, "solr", CONFIG_SETS_CONF))
+
+def solrPort():
+    return os.environ.get(SOLR_PORT, DEFAULT_SOLR_PORT)
+
+def solrShards():
+    return os.environ.get(SOLR_SHARDS, DEFAULT_SOLR_SHARDS)
+
+def solrReplicationFactor():
+    return os.environ.get(SOLR_REPLICATION_FACTOR, DEFAULT_SOLR_REPLICATION_FACTOR)
 
 def logDir(dir):
     localLog = os.path.join(dir, LOG)
@@ -357,6 +388,9 @@ def is_hbase(confdir):
     return grep(confdir, HBASE_STORAGE_CONF_ENTRY) is not None
 
 def is_hbase_local(confdir):
+    if os.environ.get(MANAGE_LOCAL_HBASE, "True").lower() == 'false':
+        return False
+
     confdir = os.path.join(confdir, CONF_FILE)
     return grep(confdir, HBASE_STORAGE_CONF_ENTRY) is not None and grep(confdir, HBASE_STORAGE_LOCAL_CONF_ENTRY) is not None
 
@@ -380,10 +414,56 @@ def run_hbase_action(dir, action, hbase_conf_dir = None, logdir = None, wait=Tru
 
     return runProcess(cmd, logdir, False, wait)
 
+def is_solr(confdir):
+    confdir = os.path.join(confdir, CONF_FILE)
+    return grep(confdir, SOLR_INDEX_CONF_ENTRY) is not None
+
+def is_solr_local(confdir):
+    if os.environ.get(MANAGE_LOCAL_SOLR, "True").lower() == 'false':
+        return False
+
+    confdir = os.path.join(confdir, CONF_FILE)
+    return grep(confdir, SOLR_INDEX_CONF_ENTRY) is not None and grep(confdir, SOLR_INDEX_LOCAL_CONF_ENTRY) is not None
+
+def get_solr_zk_url(confdir):
+    confdir = os.path.join(confdir, CONF_FILE)
+    return getConfig(confdir, SOLR_INDEX_ZK_URL)
+
+def run_solr(dir, action, zk_url = None, port = None, logdir = None, wait=True):
+
+    solrScript = "solr"
+
+    if IS_WINDOWS:
+        solrScript = "solr.cmd"
+
+    if zk_url is None:
+        if port is None:
+            cmd = [os.path.join(dir, solrScript), action]
+        else:
+            cmd = [os.path.join(dir, solrScript), action, '-p', str(port)]
+    else:
+        if port is None:
+            cmd = [os.path.join(dir, solrScript), action, '-z', zk_url]
+        else:
+            cmd = [os.path.join(dir, solrScript), action, '-z', zk_url, '-p', port]
+
+    return runProcess(cmd, logdir, False, wait)
+
+def create_solr_collection(dir, confdir, index, logdir = None, wait=True):
+    solrScript = "solr"
+
+    if IS_WINDOWS:
+        solrScript = "solr.cmd"
+
+    cmd = [os.path.join(dir, solrScript), 'create', '-c', index, '-d', confdir,  '-shards',  solrShards(),  '-replicationFactor', solrReplicationFactor()]
+
+    return runProcess(cmd, logdir, False, wait)
+
 def configure_hbase(dir):
     env_conf_dir = os.environ.get(HBASE_CONF_DIR)
     conf_dir = os.path.join(dir, "hbase", CONF)
     tmpl_dir = os.path.join(dir, CONF, "hbase")
+    data_dir = dataDir(atlasDir())
 
     if env_conf_dir is None or env_conf_dir == conf_dir:
         hbase_conf_file = "hbase-site.xml"
@@ -403,6 +483,7 @@ def configure_hbase(dir):
             f.close()
 
             config = template.replace("${hbase_home}", dir)
+            config = config.replace("${atlas_data}", data_dir)
             config = config.replace("${url_prefix}", url_prefix)
 
             f = open(conf_file,'w')
@@ -421,6 +502,13 @@ def grep(file, value):
     for line in open(file).readlines():
         if re.match(value, line):	
            return line
+    return None
+
+def getConfig(file, key):
+    key = key + "\s*="
+    for line in open(file).readlines():
+        if re.match(key, line):
+            return line.split('=')[1].strip()
     return None
 
 def isCygwin():
