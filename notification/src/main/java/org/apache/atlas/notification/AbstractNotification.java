@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.notification;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -46,7 +47,7 @@ public abstract class AbstractNotification implements NotificationInterface {
      */
     public static final MessageVersion CURRENT_MESSAGE_VERSION = new MessageVersion("1.0.0");
 
-    private static final String PROPERTY_EMBEDDED = PROPERTY_PREFIX + ".embedded";
+    public static final String PROPERTY_EMBEDDED = PROPERTY_PREFIX + ".embedded";
     private final boolean embedded;
     private final boolean isHAEnabled;
 
@@ -59,7 +60,6 @@ public abstract class AbstractNotification implements NotificationInterface {
         registerTypeAdapter(JSONArray.class, new JSONArraySerializer()).
         create();
 
-
     // ----- Constructors ----------------------------------------------------
 
     public AbstractNotification(Configuration applicationProperties) throws AtlasException {
@@ -67,6 +67,11 @@ public abstract class AbstractNotification implements NotificationInterface {
         this.isHAEnabled = HAConfiguration.isHAEnabled(applicationProperties);
     }
 
+    @VisibleForTesting
+    protected AbstractNotification() {
+        embedded = false;
+        isHAEnabled = false;
+    }
 
     // ----- NotificationInterface -------------------------------------------
 

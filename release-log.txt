@@ -20,6 +20,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-629 Kafka messages in ATLAS_HOOK might be lost in HA mode at the instant of failover. (yhemanth)
 ATLAS-758 hdfs location of hive table is pointing to old location even after rename ( sumasai )
 ATLAS-667 Entity delete should check for required reverse references ( dkantor via sumasai )
 ATLAS-738 Add query ability on system properties like guid, state, createdtime etc (shwethags)

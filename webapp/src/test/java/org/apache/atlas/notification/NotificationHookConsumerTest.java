@@ -21,6 +21,7 @@ import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.LocalAtlasClient;
 import org.apache.atlas.ha.HAConfiguration;
+import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.commons.configuration.Configuration;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -34,6 +35,7 @@ import java.util.concurrent.ExecutorService;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -84,6 +86,40 @@ public class NotificationHookConsumerTest {
         assertTrue(hookConsumer.serverAvailable(timer));
 
         verify(timer, times(3)).sleep(NotificationHookConsumer.SERVER_READY_WAIT_TIME_MS);
+    }
+
+    @Test
+    public void testCommitIsCalledWhenMessageIsProcessed() throws AtlasServiceException {
+        NotificationHookConsumer notificationHookConsumer =
+                new NotificationHookConsumer(notificationInterface, atlasClient);
+        NotificationConsumer consumer = mock(NotificationConsumer.class);
+        NotificationHookConsumer.HookConsumer hookConsumer =
+                notificationHookConsumer.new HookConsumer(consumer);
+        HookNotification.EntityCreateRequest message = mock(HookNotification.EntityCreateRequest.class);
+        when(message.getUser()).thenReturn("user");
+        when(message.getType()).thenReturn(HookNotification.HookNotificationType.ENTITY_CREATE);
+
+        hookConsumer.handleMessage(message);
+
+        verify(consumer).commit();
+    }
+
+    @Test
+    public void testCommitIsCalledEvenWhenMessageProcessingFails() throws AtlasServiceException {
+        NotificationHookConsumer notificationHookConsumer =
+                new NotificationHookConsumer(notificationInterface, atlasClient);
+        NotificationConsumer consumer = mock(NotificationConsumer.class);
+        NotificationHookConsumer.HookConsumer hookConsumer =
+                notificationHookConsumer.new HookConsumer(consumer);
+        HookNotification.EntityCreateRequest message = mock(HookNotification.EntityCreateRequest.class);
+        when(message.getUser()).thenReturn("user");
+        when(message.getType()).thenReturn(HookNotification.HookNotificationType.ENTITY_CREATE);
+        when(atlasClient.createEntity(any(List.class))).
+                thenThrow(new RuntimeException("Simulating exception in processing message"));
+
+        hookConsumer.handleMessage(message);
+
+        verify(consumer).commit();
     }
 
     @Test

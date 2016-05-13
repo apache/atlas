@@ -20,6 +20,7 @@ package org.apache.atlas.kafka;
 
 import kafka.consumer.ConsumerIterator;
 import kafka.consumer.KafkaStream;
+import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.message.MessageAndMetadata;
 import org.apache.atlas.notification.AbstractNotification;
 import org.apache.atlas.notification.MessageVersion;
@@ -33,6 +34,9 @@ import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.codehaus.jettison.json.JSONException;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
@@ -41,6 +45,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.*;
 
@@ -50,6 +56,14 @@ import static org.testng.Assert.*;
 public class KafkaConsumerTest {
 
     private static final String TRAIT_NAME = "MyTrait";
+
+    @Mock
+    private ConsumerConnector consumerConnector;
+
+    @BeforeMethod
+    public void setup() {
+        MockitoAnnotations.initMocks(this);
+    }
 
     @Test
     public void testNext() throws Exception {
@@ -70,8 +84,9 @@ public class KafkaConsumerTest {
         when(messageAndMetadata.message()).thenReturn(json);
 
         NotificationConsumer<HookNotification.HookNotificationMessage> consumer =
-            new KafkaConsumer<>(NotificationInterface.NotificationType.HOOK.getClassType(),
-                NotificationInterface.NotificationType.HOOK.getDeserializer(), stream, 99);
+            new KafkaConsumer<>(
+                    NotificationInterface.NotificationType.HOOK.getDeserializer(), stream, 99,
+                    consumerConnector, false);
 
         assertTrue(consumer.hasNext());
 
@@ -101,8 +116,9 @@ public class KafkaConsumerTest {
         when(messageAndMetadata.message()).thenReturn(json);
 
         NotificationConsumer<HookNotification.HookNotificationMessage> consumer =
-            new KafkaConsumer<>(NotificationInterface.NotificationType.HOOK.getClassType(),
-                NotificationInterface.NotificationType.HOOK.getDeserializer(), stream, 99);
+            new KafkaConsumer<>(
+                    NotificationInterface.NotificationType.HOOK.getDeserializer(), stream, 99,
+                    consumerConnector, false);
 
         assertTrue(consumer.hasNext());
 
@@ -135,8 +151,9 @@ public class KafkaConsumerTest {
         when(messageAndMetadata.message()).thenReturn(json);
 
         NotificationConsumer<HookNotification.HookNotificationMessage> consumer =
-            new KafkaConsumer<>(NotificationInterface.NotificationType.HOOK.getClassType(),
-                NotificationInterface.NotificationType.HOOK.getDeserializer(), stream, 99);
+            new KafkaConsumer<>(
+                    NotificationInterface.NotificationType.HOOK.getDeserializer(), stream, 99,
+                    consumerConnector, false);
 
         assertTrue(consumer.hasNext());
 
@@ -145,6 +162,32 @@ public class KafkaConsumerTest {
         assertMessagesEqual(message, consumedMessage, entity);
 
         assertTrue(consumer.hasNext());
+    }
+
+    @Test
+    public void testCommitIsCalledIfAutoCommitDisabled() {
+        KafkaStream<String, String> stream = mock(KafkaStream.class);
+        NotificationConsumer<HookNotification.HookNotificationMessage> consumer =
+                new KafkaConsumer<>(
+                        NotificationInterface.NotificationType.HOOK.getDeserializer(), stream, 99,
+                        consumerConnector, false);
+
+        consumer.commit();
+
+        verify(consumerConnector).commitOffsets();
+    }
+
+    @Test
+    public void testCommitIsNotCalledIfAutoCommitEnabled() {
+        KafkaStream<String, String> stream = mock(KafkaStream.class);
+        NotificationConsumer<HookNotification.HookNotificationMessage> consumer =
+                new KafkaConsumer<>(
+                        NotificationInterface.NotificationType.HOOK.getDeserializer(), stream, 99,
+                        consumerConnector, true);
+
+        consumer.commit();
+
+        verify(consumerConnector, never()).commitOffsets();
     }
 
     private Referenceable getEntity(String traitName) {

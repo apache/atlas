@@ -19,6 +19,7 @@ package org.apache.atlas.kafka;
 
 import kafka.consumer.ConsumerIterator;
 import kafka.consumer.KafkaStream;
+import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.message.MessageAndMetadata;
 import org.apache.atlas.notification.AbstractNotificationConsumer;
 import org.apache.atlas.notification.MessageDeserializer;
@@ -35,24 +36,29 @@ public class KafkaConsumer<T> extends AbstractNotificationConsumer<T> {
 
     private final int consumerId;
     private final ConsumerIterator iterator;
+    private final ConsumerConnector consumerConnector;
+    private final boolean autoCommitEnabled;
+    private long lastSeenOffset;
 
 
     // ----- Constructors ----------------------------------------------------
 
     /**
      * Create a Kafka consumer.
-     *
-     * @param type          the notification type returned by this consumer
      * @param deserializer  the message deserializer used for this consumer
      * @param stream        the underlying Kafka stream
      * @param consumerId    an id value for this consumer
+     * @param consumerConnector the {@link ConsumerConnector} which created the underlying Kafka stream
+     * @param autoCommitEnabled true if consumer does not need to commit offsets explicitly, false otherwise.
      */
-    public KafkaConsumer(Class<T> type,
-                         MessageDeserializer<T> deserializer, KafkaStream<String, String> stream, int consumerId) {
+    public KafkaConsumer(MessageDeserializer<T> deserializer, KafkaStream<String, String> stream, int consumerId,
+                         ConsumerConnector consumerConnector, boolean autoCommitEnabled) {
         super(deserializer);
-
+        this.consumerConnector = consumerConnector;
+        this.lastSeenOffset = 0;
         this.iterator   = stream.iterator();
         this.consumerId = consumerId;
+        this.autoCommitEnabled = autoCommitEnabled;
     }
 
 
@@ -71,6 +77,7 @@ public class KafkaConsumer<T> extends AbstractNotificationConsumer<T> {
         MessageAndMetadata message = iterator.next();
         LOG.debug("Read message: conumerId: {}, topic - {}, partition - {}, offset - {}, message - {}",
                 consumerId, message.topic(), message.partition(), message.offset(), message.message());
+        lastSeenOffset = message.offset();
         return (String) message.message();
     }
 
@@ -78,5 +85,15 @@ public class KafkaConsumer<T> extends AbstractNotificationConsumer<T> {
     protected String peekMessage() {
         MessageAndMetadata message = (MessageAndMetadata) iterator.peek();
         return (String) message.message();
+    }
+
+    @Override
+    public void commit() {
+        if (autoCommitEnabled) {
+            LOG.debug("Auto commit is disabled, not committing.");
+        } else {
+            consumerConnector.commitOffsets();
+            LOG.debug("Committed offset: {}", lastSeenOffset);
+        }
     }
 }

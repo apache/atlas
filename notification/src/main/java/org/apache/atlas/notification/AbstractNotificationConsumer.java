@@ -68,4 +68,6 @@ public abstract class AbstractNotificationConsumer<T> implements NotificationCon
     public T peek() {
         return deserializer.deserialize(peekMessage());
     }
+
+    public abstract void commit();
 }

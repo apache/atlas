@@ -253,6 +253,11 @@ public class AbstractNotificationConsumerTest {
         public boolean hasNext() {
             return index < messageList.size();
         }
+
+        @Override
+        public void commit() {
+            // do nothing.
+        }
     }
 
     private static final class TestDeserializer<T> extends VersionedMessageDeserializer<T> {

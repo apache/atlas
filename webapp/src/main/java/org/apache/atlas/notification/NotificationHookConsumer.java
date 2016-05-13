@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.notification;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -183,50 +184,55 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             while (shouldRun.get()) {
                 try {
                     if (hasNext()) {
-                        HookNotification.HookNotificationMessage message = consumer.next();
-                        atlasClient.setUser(message.getUser());
-                        try {
-                            switch (message.getType()) {
-                            case ENTITY_CREATE:
-                                HookNotification.EntityCreateRequest createRequest =
-                                        (HookNotification.EntityCreateRequest) message;
-                                atlasClient.createEntity(createRequest.getEntities());
-                                break;
-
-                            case ENTITY_PARTIAL_UPDATE:
-                                HookNotification.EntityPartialUpdateRequest partialUpdateRequest =
-                                        (HookNotification.EntityPartialUpdateRequest) message;
-                                atlasClient.updateEntity(partialUpdateRequest.getTypeName(),
-                                        partialUpdateRequest.getAttribute(),
-                                        partialUpdateRequest.getAttributeValue(), partialUpdateRequest.getEntity());
-                                break;
-
-                            case ENTITY_DELETE:
-                                HookNotification.EntityDeleteRequest deleteRequest =
-                                    (HookNotification.EntityDeleteRequest) message;
-                                atlasClient.deleteEntity(deleteRequest.getTypeName(),
-                                    deleteRequest.getAttribute(),
-                                    deleteRequest.getAttributeValue());
-                                break;
-
-                            case ENTITY_FULL_UPDATE:
-                                HookNotification.EntityUpdateRequest updateRequest =
-                                        (HookNotification.EntityUpdateRequest) message;
-                                atlasClient.updateEntities(updateRequest.getEntities());
-                                break;
-
-                            default:
-                                throw new IllegalStateException("Unhandled exception!");
-                            }
-                        } catch (Exception e) {
-                            //todo handle failures
-                            LOG.warn("Error handling message {}", message, e);
-                        }
+                        handleMessage(consumer.next());
                     }
                 } catch (Throwable t) {
                     LOG.warn("Failure in NotificationHookConsumer", t);
                 }
             }
+        }
+
+        @VisibleForTesting
+        void handleMessage(HookNotification.HookNotificationMessage message) {
+            atlasClient.setUser(message.getUser());
+            try {
+                switch (message.getType()) {
+                case ENTITY_CREATE:
+                    HookNotification.EntityCreateRequest createRequest =
+                            (HookNotification.EntityCreateRequest) message;
+                    atlasClient.createEntity(createRequest.getEntities());
+                    break;
+
+                case ENTITY_PARTIAL_UPDATE:
+                    HookNotification.EntityPartialUpdateRequest partialUpdateRequest =
+                            (HookNotification.EntityPartialUpdateRequest) message;
+                    atlasClient.updateEntity(partialUpdateRequest.getTypeName(),
+                            partialUpdateRequest.getAttribute(),
+                            partialUpdateRequest.getAttributeValue(), partialUpdateRequest.getEntity());
+                    break;
+
+                case ENTITY_DELETE:
+                    HookNotification.EntityDeleteRequest deleteRequest =
+                        (HookNotification.EntityDeleteRequest) message;
+                    atlasClient.deleteEntity(deleteRequest.getTypeName(),
+                        deleteRequest.getAttribute(),
+                        deleteRequest.getAttributeValue());
+                    break;
+
+                case ENTITY_FULL_UPDATE:
+                    HookNotification.EntityUpdateRequest updateRequest =
+                            (HookNotification.EntityUpdateRequest) message;
+                    atlasClient.updateEntities(updateRequest.getEntities());
+                    break;
+
+                default:
+                    throw new IllegalStateException("Unhandled exception!");
+                }
+            } catch (Exception e) {
+                //todo handle failures
+                LOG.warn("Error handling message {}", message, e);
+            }
+            consumer.commit();
         }
 
         boolean serverAvailable(Timer timer) {
