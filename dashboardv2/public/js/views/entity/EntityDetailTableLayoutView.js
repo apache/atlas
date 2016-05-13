@@ -65,26 +65,51 @@ define(['require',
                     if (_.isArray(keyValue)) {
                         var subLink = "";
                         for (var i = 0; i < keyValue.length; i++) {
-                            var inputOutputField = keyValue[i];
+                            var inputOutputField = keyValue[i],
+                                id = undefined;
                             if (_.isObject(inputOutputField.id)) {
                                 id = inputOutputField.id.id;
                             } else {
                                 id = inputOutputField.id;
                             }
-                            that.fetchInputOutputValue(id);
-                            //var coma = (i = 0) ? ('') : (',');
-                            subLink += '<div data-id="' + id + '"></div>';
+                            if (id) {
+                                that.fetchInputOutputValue(id);
+                                subLink += '<div data-id="' + id + '"></div>';
+                            } else {
+                                subLink += '<div></div>';
+                            }
                         }
                         table += '<tr><td>' + key + '</td><td>' + subLink + '</td></tr>';
                     } else if (_.isObject(keyValue)) {
-                        var id = "";
+                        var id = undefined;
                         if (_.isObject(keyValue.id)) {
                             id = keyValue.id.id;
                         } else {
                             id = keyValue.id;
                         }
-                        that.fetchInputOutputValue(id);
-                        table += '<tr><td>' + key + '</td><td><div data-id="' + id + '"></div></td></tr>';
+                        if (id) {
+                            that.fetchInputOutputValue(id);
+                            table += '<tr><td>' + key + '</td><td><div data-id="' + id + '"></div></td></tr>';
+                        } else {
+                            var stringArr = [];
+                            _.each(keyValue, function(val, key) {
+                                var value = "";
+                                if (_.isObject(val)) {
+                                    value = JSON.stringify(val);
+                                } else {
+                                    value = val;
+                                }
+                                var attrName = "<span>" + key + " : " + value + "</span>";
+                                stringArr.push(attrName);
+                            });
+                            var jointValues = stringArr.join(", ");
+                            if (jointValues.length) {
+                                table += '<tr><td>' + key + '</td><td><div>' + jointValues + '</div></td></tr>';
+                            } else {
+                                table += '<tr><td>' + key + '</td><td></td></tr>';
+                            }
+                        }
+
                     } else {
                         if (key == "createTime" || key == "lastAccessTime" || key == "retention") {
                             table += '<tr><td>' + key + '</td><td>' + new Date(valueObject[key]) + '</td></tr>';
