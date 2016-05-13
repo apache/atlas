@@ -623,7 +623,7 @@ public class HiveHookIT {
         //Add trait to part col keys
         String partColTraitDetails = createTrait(partColumnGuid);
 
-        String newTableName = tableName();
+        final String newTableName = tableName();
         String query = String.format("alter table %s rename to %s", DEFAULT_DB + "." + tableName, newDBName + "." + newTableName);
         runCommand(query);
 
@@ -640,7 +640,15 @@ public class HiveHookIT {
         assertTrait(partColumnGuid, partColTraitDetails);
 
         assertTableIsNotRegistered(DEFAULT_DB, tableName);
-        assertTableIsRegistered(newDBName, newTableName);
+
+        assertTableIsRegistered(newDBName, newTableName, new AssertPredicate() {
+            @Override
+            public void assertOnEntity(final Referenceable entity) throws Exception {
+                Referenceable sd = ((Referenceable) entity.get(HiveDataModelGenerator.STORAGE_DESC));
+                String location = (String) sd.get(HiveDataModelGenerator.LOCATION);
+                Assert.assertTrue(location.contains(newTableName));
+            }
+        });
     }
 
     private List<Referenceable> getColumns(String dbName, String tableName) throws Exception {
@@ -673,8 +681,8 @@ public class HiveHookIT {
         runCommand(query);
 
         assertColumnIsRegistered(HiveMetaStoreBridge
-                .getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName),
-                    column));
+            .getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName),
+                column));
 
         //Verify the number of columns present in the table
         final List<Referenceable> columns = getColumns(DEFAULT_DB, tableName);
@@ -904,7 +912,7 @@ public class HiveHookIT {
             @Override
             public void assertOnEntity(Referenceable tableRef) throws Exception {
                 Referenceable sdRef = (Referenceable) tableRef.get(HiveDataModelGenerator.STORAGE_DESC);
-                Assert.assertEquals(new Path((String)sdRef.get("location")).toString(), new Path(testPath).toString());
+                Assert.assertEquals(new Path((String)sdRef.get(HiveDataModelGenerator.LOCATION)).toString(), new Path(testPath).toString());
             }
         });
 
@@ -1009,7 +1017,7 @@ public class HiveHookIT {
                                                ImmutableList<String>  sortcolNames) throws Exception {
         Referenceable sdRef = (Referenceable) tableRef.get(HiveDataModelGenerator.STORAGE_DESC);
         Assert.assertEquals(((scala.math.BigInt) sdRef.get(HiveDataModelGenerator.STORAGE_NUM_BUCKETS)).intValue(),
-                numBuckets);
+            numBuckets);
         Assert.assertEquals(sdRef.get("bucketCols"), bucketColNames);
 
         List<Struct> hiveOrderStructList = (List<Struct>) sdRef.get("sortCols");
@@ -1050,11 +1058,11 @@ public class HiveHookIT {
         final String query = String.format("drop table %s ", tableName);
         runCommand(query);
         assertColumnIsNotRegistered(HiveMetaStoreBridge
-                .getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName),
-                    "id"));
+            .getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName),
+                "id"));
         assertColumnIsNotRegistered(HiveMetaStoreBridge
-                .getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName),
-                    HiveDataModelGenerator.NAME));
+            .getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName),
+                HiveDataModelGenerator.NAME));
         assertTableIsNotRegistered(DEFAULT_DB, tableName);
     }
 
@@ -1077,8 +1085,8 @@ public class HiveHookIT {
         assertColumnIsNotRegistered(HiveMetaStoreBridge.getColumnQualifiedName(
                 HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableNames[0]), "id"));
         assertColumnIsNotRegistered(HiveMetaStoreBridge
-                .getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableNames[0]),
-                    HiveDataModelGenerator.NAME));
+            .getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableNames[0]),
+                HiveDataModelGenerator.NAME));
 
         for(int i = 0; i < numTables; i++) {
             assertTableIsNotRegistered(dbName, tableNames[i]);
@@ -1152,8 +1160,8 @@ public class HiveHookIT {
                 .getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, viewName),
                     "id"));
         assertColumnIsNotRegistered(HiveMetaStoreBridge
-                .getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, viewName),
-                    HiveDataModelGenerator.NAME));
+            .getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, viewName),
+                HiveDataModelGenerator.NAME));
         assertTableIsNotRegistered(DEFAULT_DB, viewName);
     }
 
@@ -1348,7 +1356,7 @@ public class HiveHookIT {
         LOG.debug("Searching for table {}.{}", dbName, tableName);
         String tableQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableName, isTemporary);
         return assertEntityIsRegistered(HiveDataTypes.HIVE_TABLE.getName(), AtlasClient.NAME, tableQualifiedName,
-                assertPredicate);
+            assertPredicate);
     }
 
     private String assertTableIsRegistered(String dbName, String tableName, AssertPredicate assertPredicate) throws Exception {
@@ -1373,7 +1381,7 @@ public class HiveHookIT {
             public void evaluate() throws Exception {
                 Referenceable entity = atlasClient.getEntity(typeName, property, value);
                 assertNotNull(entity);
-                if(assertPredicate != null) {
+                if (assertPredicate != null) {
                     assertPredicate.assertOnEntity(entity);
                 }
             }

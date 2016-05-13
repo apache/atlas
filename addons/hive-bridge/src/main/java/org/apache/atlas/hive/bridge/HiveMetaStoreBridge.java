@@ -164,7 +164,7 @@ public class HiveMetaStoreBridge {
         dbRef.set(HiveDataModelGenerator.NAME, dbName);
         dbRef.set(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, clusterName);
         dbRef.set(DESCRIPTION_ATTR, hiveDB.getDescription());
-        dbRef.set("locationUri", hiveDB.getLocationUri());
+        dbRef.set(HiveDataModelGenerator.LOCATION, hiveDB.getLocationUri());
         dbRef.set(HiveDataModelGenerator.PARAMETERS, hiveDB.getParameters());
         dbRef.set(HiveDataModelGenerator.OWNER, hiveDB.getOwnerName());
         if (hiveDB.getOwnerType() != null) {
@@ -466,7 +466,7 @@ public class HiveMetaStoreBridge {
             sdReferenceable.set("sortCols", sortColsStruct);
         }
 
-        sdReferenceable.set("location", storageDesc.getLocation());
+        sdReferenceable.set(HiveDataModelGenerator.LOCATION, storageDesc.getLocation());
         sdReferenceable.set("inputFormat", storageDesc.getInputFormat());
         sdReferenceable.set("outputFormat", storageDesc.getOutputFormat());
         sdReferenceable.set("compressed", storageDesc.isCompressed());

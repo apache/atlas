@@ -78,6 +78,7 @@ public class HiveDataModelGenerator {
     public static final String STORAGE_DESC_INPUT_FMT = "inputFormat";
     public static final String STORAGE_DESC_OUTPUT_FMT = "outputFormat";
     public static final String OWNER = "owner";
+    public static final String LOCATION = "location";
 
     public static final String TABLE_TYPE_ATTR = "tableType";
 
@@ -171,7 +172,7 @@ public class HiveDataModelGenerator {
                 //Optional to keep it backward-compatible
                 new AttributeDefinition(TABLE, HiveDataTypes.HIVE_TABLE.getName(), Multiplicity.OPTIONAL, false,
                         STORAGE_DESC),
-                new AttributeDefinition("location", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                new AttributeDefinition(LOCATION, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
                 new AttributeDefinition("inputFormat", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
@@ -209,7 +210,7 @@ public class HiveDataModelGenerator {
                         null),
                 new AttributeDefinition("description", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
-                new AttributeDefinition("locationUri", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
+                new AttributeDefinition(LOCATION, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
                 new AttributeDefinition(HiveDataModelGenerator.PARAMETERS, STRING_MAP_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition(OWNER, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,

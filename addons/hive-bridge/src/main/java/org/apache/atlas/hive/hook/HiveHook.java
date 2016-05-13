@@ -440,14 +440,11 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private Referenceable replaceTableQFName(HiveMetaStoreBridge dgiBridge, HiveEventContext event, Table oldTable, Table newTable, final Referenceable tableEntity, final String oldTableQFName, final String newTableQFName) throws HiveException {
         tableEntity.set(HiveDataModelGenerator.NAME, oldTableQFName);
         tableEntity.set(HiveDataModelGenerator.TABLE_NAME, oldTable.getTableName().toLowerCase());
-        final Referenceable newDbInstance = (Referenceable) tableEntity.get(HiveDataModelGenerator.DB);
-        tableEntity.set(HiveDataModelGenerator.DB, dgiBridge.createDBInstance(dgiBridge.hiveClient.getDatabase(oldTable.getDbName())));
 
         //Replace table entity with new name
         final Referenceable newEntity = new Referenceable(HiveDataTypes.HIVE_TABLE.getName());
         newEntity.set(HiveDataModelGenerator.NAME, newTableQFName);
         newEntity.set(HiveDataModelGenerator.TABLE_NAME, newTable.getTableName().toLowerCase());
-        newEntity.set(HiveDataModelGenerator.DB, newDbInstance);
 
         messages.add(new HookNotification.EntityPartialUpdateRequest(event.getUser(),
             HiveDataTypes.HIVE_TABLE.getName(), HiveDataModelGenerator.NAME,
