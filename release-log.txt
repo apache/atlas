@@ -3,6 +3,7 @@ Apache Atlas Release Notes
 
 --trunk - unreleased
 INCOMPATIBLE CHANGES:
+ATLAS-619 Canonicalize hive queries (sumasai)
 ATLAS-497 Simple Authorization (saqeeb.s via yhemanth)
 ATLAS-661 REST API Authentication (nixonrodrigues via yhemanth)
 ATLAS-672 UI: Make dashboard v2 the default UI implementation (bergenholtz via yhemanth)

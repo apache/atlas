@@ -211,10 +211,10 @@ public class FalconHook extends AtlasHook implements FalconEventPublisher {
 
                 if (!inputs.isEmpty() || !outputs.isEmpty()) {
                     Referenceable processEntity = new Referenceable(FalconDataTypes.FALCON_PROCESS_ENTITY.getName());
-                    processEntity.set(FalconDataModelGenerator.NAME, String.format("%s@%s", process.getName(),
+                    processEntity.set(FalconDataModelGenerator.NAME, String.format("%s", process.getName(),
                             cluster.getName()));
-                    processEntity.set(FalconDataModelGenerator.PROCESS_NAME, process.getName());
-
+                    processEntity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, String.format("%s@%s", process.getName(),
+                        cluster.getName()));
                     processEntity.set(FalconDataModelGenerator.TIMESTAMP, timestamp);
                     if (!inputs.isEmpty()) {
                         processEntity.set(FalconDataModelGenerator.INPUTS, inputs);

@@ -184,7 +184,8 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
                 table("sales_fact_daily_mv" + randomString(), "sales fact daily materialized view", reportingDB,
                         "Joe BI", "MANAGED", salesFactColumns, "Metric");
 
-        loadProcess("loadSalesDaily" + randomString(), "John ETL", ImmutableList.of(salesFact, timeDim),
+        String procName = "loadSalesDaily" + randomString();
+        loadProcess(procName, "John ETL", ImmutableList.of(salesFact, timeDim),
                 ImmutableList.of(salesFactDaily), "create table as select ", "plan", "id", "graph", "ETL");
 
         salesMonthlyTable = "sales_fact_monthly_mv" + randomString();
@@ -237,7 +238,8 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
     Id loadProcess(String name, String user, List<Id> inputTables, List<Id> outputTables, String queryText,
             String queryPlan, String queryId, String queryGraph, String... traitNames) throws Exception {
         Referenceable referenceable = new Referenceable(HIVE_PROCESS_TYPE, traitNames);
-        referenceable.set("name", name);
+        referenceable.set(AtlasClient.NAME, name);
+        referenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
         referenceable.set("user", user);
         referenceable.set("startTime", System.currentTimeMillis());
         referenceable.set("endTime", System.currentTimeMillis() + 10000);

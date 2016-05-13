@@ -182,20 +182,21 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
                         DESCRIPTION_ATTRIBUTE);
         createType(datasetType);
 
-        HierarchicalTypeDefinition<ClassType> processType = TypesUtil
-                .createClassTypeDef(AtlasClient.PROCESS_SUPER_TYPE, ImmutableSet.<String>of(), NAME_ATTRIBUTE,
-                        DESCRIPTION_ATTRIBUTE,
-                        new AttributeDefinition("inputs", DataTypes.arrayTypeName(AtlasClient.DATA_SET_SUPER_TYPE),
-                                Multiplicity.OPTIONAL, false, null),
-                        new AttributeDefinition("outputs", DataTypes.arrayTypeName(AtlasClient.DATA_SET_SUPER_TYPE),
-                                Multiplicity.OPTIONAL, false, null));
-        createType(processType);
-
         HierarchicalTypeDefinition<ClassType> referenceableType = TypesUtil
                 .createClassTypeDef(AtlasClient.REFERENCEABLE_SUPER_TYPE, ImmutableSet.<String>of(),
                         TypesUtil.createUniqueRequiredAttrDef(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                                 DataTypes.STRING_TYPE));
         createType(referenceableType);
+
+        HierarchicalTypeDefinition<ClassType> processType = TypesUtil
+            .createClassTypeDef(AtlasClient.PROCESS_SUPER_TYPE, ImmutableSet.<String>of(AtlasClient.REFERENCEABLE_SUPER_TYPE),
+                TypesUtil.createRequiredAttrDef(AtlasClient.NAME, DataTypes.STRING_TYPE),
+                DESCRIPTION_ATTRIBUTE,
+                new AttributeDefinition("inputs", DataTypes.arrayTypeName(AtlasClient.DATA_SET_SUPER_TYPE),
+                    Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition("outputs", DataTypes.arrayTypeName(AtlasClient.DATA_SET_SUPER_TYPE),
+                    Multiplicity.OPTIONAL, false, null));
+        createType(processType);
     }
 
     private void createType(HierarchicalTypeDefinition<ClassType> type) throws AtlasException {

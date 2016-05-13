@@ -19,11 +19,14 @@
 package org.apache.atlas.hive.hook;
 
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
+import org.apache.atlas.hive.rewrite.HiveASTRewriter;
 import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.typesystem.Referenceable;
@@ -91,110 +94,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private static final int maxThreadsDefault = 5;
     private static final long keepAliveTimeDefault = 10;
     private static final int queueSizeDefault = 10000;
-
-    static class HiveEventContext {
-        private Set<ReadEntity> inputs;
-        private Set<WriteEntity> outputs;
-
-        private String user;
-        private UserGroupInformation ugi;
-        private HiveOperation operation;
-        private HookContext.HookType hookType;
-        private org.json.JSONObject jsonPlan;
-        private String queryId;
-        private String queryStr;
-        private Long queryStartTime;
-
-        private String queryType;
-
-        public void setInputs(Set<ReadEntity> inputs) {
-            this.inputs = inputs;
-        }
-
-        public void setOutputs(Set<WriteEntity> outputs) {
-            this.outputs = outputs;
-        }
-
-        public void setUser(String user) {
-            this.user = user;
-        }
-
-        public void setUgi(UserGroupInformation ugi) {
-            this.ugi = ugi;
-        }
-
-        public void setOperation(HiveOperation operation) {
-            this.operation = operation;
-        }
-
-        public void setHookType(HookContext.HookType hookType) {
-            this.hookType = hookType;
-        }
-
-        public void setJsonPlan(JSONObject jsonPlan) {
-            this.jsonPlan = jsonPlan;
-        }
-
-        public void setQueryId(String queryId) {
-            this.queryId = queryId;
-        }
-
-        public void setQueryStr(String queryStr) {
-            this.queryStr = queryStr;
-        }
-
-        public void setQueryStartTime(Long queryStartTime) {
-            this.queryStartTime = queryStartTime;
-        }
-
-        public void setQueryType(String queryType) {
-            this.queryType = queryType;
-        }
-
-        public Set<ReadEntity> getInputs() {
-            return inputs;
-        }
-
-        public Set<WriteEntity> getOutputs() {
-            return outputs;
-        }
-
-        public String getUser() {
-            return user;
-        }
-
-        public UserGroupInformation getUgi() {
-            return ugi;
-        }
-
-        public HiveOperation getOperation() {
-            return operation;
-        }
-
-        public HookContext.HookType getHookType() {
-            return hookType;
-        }
-
-        public org.json.JSONObject getJsonPlan() {
-            return jsonPlan;
-        }
-
-        public String getQueryId() {
-            return queryId;
-        }
-
-        public String getQueryStr() {
-            return queryStr;
-        }
-
-        public Long getQueryStartTime() {
-            return queryStartTime;
-        }
-
-        public String getQueryType() {
-            return queryType;
-        }
-    }
 
     private List<HookNotification.HookNotificationMessage> messages = new ArrayList<>();
 
@@ -362,7 +261,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     }
 
     private void deleteTable(HiveMetaStoreBridge dgiBridge, HiveEventContext event) {
-        for (WriteEntity output : event.outputs) {
+        for (WriteEntity output : event.getOutputs()) {
             if (Type.TABLE.equals(output.getType())) {
                 deleteTable(dgiBridge, event, output);
             }
@@ -380,11 +279,11 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     }
 
     private void deleteDatabase(HiveMetaStoreBridge dgiBridge, HiveEventContext event) {
-        if (event.outputs.size() > 1) {
-            LOG.info("Starting deletion of tables and databases with cascade {} " , event.queryStr);
+        if (event.getOutputs().size() > 1) {
+            LOG.info("Starting deletion of tables and databases with cascade {} " , event.getQueryStr());
         }
 
-        for (WriteEntity output : event.outputs) {
+        for (WriteEntity output : event.getOutputs()) {
             if (Type.TABLE.equals(output.getType())) {
                 deleteTable(dgiBridge, event, output);
             } else if (Type.DATABASE.equals(output.getType())) {
@@ -552,11 +451,26 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         return entitiesCreatedOrUpdated;
     }
 
-    public static String normalize(String str) {
+    public static String lower(String str) {
         if (StringUtils.isEmpty(str)) {
             return null;
         }
         return str.toLowerCase().trim();
+    }
+
+    public static String normalize(String queryStr) {
+        String result = null;
+        if (queryStr != null) {
+            try {
+                HiveASTRewriter rewriter = new HiveASTRewriter(hiveConf);
+                result = rewriter.rewrite(queryStr);
+            } catch (Exception e) {
+                LOG.warn("Could not rewrite query due to error. Proceeding with original query {}", queryStr, e);
+            }
+        }
+
+        result = lower(result);
+        return result;
     }
 
     private void registerProcess(HiveMetaStoreBridge dgiBridge, HiveEventContext event) throws Exception {
@@ -589,7 +503,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             }
 
             if (source.size() > 0 || target.size() > 0) {
-                Referenceable processReferenceable = getProcessReferenceable(event,
+                Referenceable processReferenceable = getProcessReferenceable(dgiBridge, event,
                     new ArrayList<Referenceable>() {{
                         addAll(source.values());
                     }},
@@ -613,7 +527,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                 dataSets.put(tblQFName, inTable);
             }
         } else if (entity.getType() == Type.DFS_DIR) {
-            final String pathUri = normalize(new Path(entity.getLocation()).toString());
+            final String pathUri = lower(new Path(entity.getLocation()).toString());
             LOG.info("Registering DFS Path {} ", pathUri);
             Referenceable hdfsPath = dgiBridge.fillHDFSDataSet(pathUri);
             dataSets.put(pathUri, hdfsPath);
@@ -657,7 +571,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         //Refresh to get the correct location
         hiveTable = dgiBridge.hiveClient.getTable(hiveTable.getDbName(), hiveTable.getTableName());
 
-        final String location = normalize(hiveTable.getDataLocation().toString());
+        final String location = lower(hiveTable.getDataLocation().toString());
         if (hiveTable != null && TableType.EXTERNAL_TABLE.equals(hiveTable.getTableType())) {
             LOG.info("Registering external table process {} ", event.getQueryStr());
             List<Referenceable> inputs = new ArrayList<Referenceable>() {{
@@ -668,15 +582,33 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                 add(tblRef);
             }};
 
-            Referenceable processReferenceable = getProcessReferenceable(event, inputs, outputs);
+            Referenceable processReferenceable = getProcessReferenceable(dgiBridge, event, inputs, outputs);
             messages.add(new HookNotification.EntityCreateRequest(event.getUser(), processReferenceable));
         }
     }
 
-    private Referenceable getProcessReferenceable(HiveEventContext hiveEvent, List<Referenceable> sourceList, List<Referenceable> targetList) {
+    private boolean isCreateOp(HiveEventContext hiveEvent) {
+        if (HiveOperation.CREATETABLE.equals(hiveEvent.getOperation())
+            || HiveOperation.CREATEVIEW.equals(hiveEvent.getOperation())
+            || HiveOperation.ALTERVIEW_AS.equals(hiveEvent.getOperation())
+            || HiveOperation.CREATETABLE_AS_SELECT.equals(hiveEvent.getOperation())) {
+            return true;
+        }
+        return false;
+    }
+
+    private Referenceable getProcessReferenceable(HiveMetaStoreBridge dgiBridge, HiveEventContext hiveEvent, List<Referenceable> sourceList, List<Referenceable> targetList) {
         Referenceable processReferenceable = new Referenceable(HiveDataTypes.HIVE_PROCESS.getName());
 
-        String queryStr = normalize(hiveEvent.getQueryStr());
+        String queryStr = hiveEvent.getQueryStr();
+        if (!isCreateOp(hiveEvent)) {
+            queryStr = normalize(queryStr);
+            processReferenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, getProcessQualifiedName(queryStr, sourceList, targetList));
+        } else {
+            queryStr = lower(queryStr);
+            processReferenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, queryStr);
+        }
+
         LOG.debug("Registering query: {}", queryStr);
 
         //The serialization code expected a list
@@ -686,15 +618,145 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         if (targetList != null || !targetList.isEmpty()) {
             processReferenceable.set("outputs", targetList);
         }
-        processReferenceable.set("name", queryStr);
+        processReferenceable.set(AtlasClient.NAME, queryStr);
+
         processReferenceable.set("operationType", hiveEvent.getOperation().getOperationName());
         processReferenceable.set("startTime", new Date(hiveEvent.getQueryStartTime()));
         processReferenceable.set("userName", hiveEvent.getUser());
         processReferenceable.set("queryText", queryStr);
         processReferenceable.set("queryId", hiveEvent.getQueryId());
         processReferenceable.set("queryPlan", hiveEvent.getJsonPlan());
+        processReferenceable.set(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, dgiBridge.getClusterName());
+
+        List<String> recentQueries = new ArrayList<>(1);
+        recentQueries.add(hiveEvent.getQueryStr());
+        processReferenceable.set("recentQueries", recentQueries);
         processReferenceable.set("endTime", new Date(System.currentTimeMillis()));
         //TODO set queryGraph
         return processReferenceable;
+    }
+
+    @VisibleForTesting
+    static String getProcessQualifiedName(String normalizedQuery, List<Referenceable> inputs, List<Referenceable> outputs) {
+        StringBuilder buffer = new StringBuilder(normalizedQuery);
+        addDatasets(buffer, inputs);
+        addDatasets(buffer, outputs);
+        return buffer.toString();
+    }
+
+    private static void addDatasets(StringBuilder buffer, List<Referenceable> refs) {
+        if (refs != null) {
+            for (Referenceable input : refs) {
+                //TODO - Change to qualifiedName later
+                buffer.append(":");
+                String dataSetQlfdName = (String) input.get(AtlasClient.NAME);
+                buffer.append(dataSetQlfdName.toLowerCase().replaceAll("/", ""));
+            }
+        }
+    }
+
+    public static class HiveEventContext {
+        private Set<ReadEntity> inputs;
+        private Set<WriteEntity> outputs;
+
+        private String user;
+        private UserGroupInformation ugi;
+        private HiveOperation operation;
+        private HookContext.HookType hookType;
+        private JSONObject jsonPlan;
+        private String queryId;
+        private String queryStr;
+        private Long queryStartTime;
+
+        private String queryType;
+
+        public void setInputs(Set<ReadEntity> inputs) {
+            this.inputs = inputs;
+        }
+
+        public void setOutputs(Set<WriteEntity> outputs) {
+            this.outputs = outputs;
+        }
+
+        public void setUser(String user) {
+            this.user = user;
+        }
+
+        public void setUgi(UserGroupInformation ugi) {
+            this.ugi = ugi;
+        }
+
+        public void setOperation(HiveOperation operation) {
+            this.operation = operation;
+        }
+
+        public void setHookType(HookContext.HookType hookType) {
+            this.hookType = hookType;
+        }
+
+        public void setJsonPlan(JSONObject jsonPlan) {
+            this.jsonPlan = jsonPlan;
+        }
+
+        public void setQueryId(String queryId) {
+            this.queryId = queryId;
+        }
+
+        public void setQueryStr(String queryStr) {
+            this.queryStr = queryStr;
+        }
+
+        public void setQueryStartTime(Long queryStartTime) {
+            this.queryStartTime = queryStartTime;
+        }
+
+        public void setQueryType(String queryType) {
+            this.queryType = queryType;
+        }
+
+        public Set<ReadEntity> getInputs() {
+            return inputs;
+        }
+
+        public Set<WriteEntity> getOutputs() {
+            return outputs;
+        }
+
+        public String getUser() {
+            return user;
+        }
+
+        public UserGroupInformation getUgi() {
+            return ugi;
+        }
+
+        public HiveOperation getOperation() {
+            return operation;
+        }
+
+        public HookContext.HookType getHookType() {
+            return hookType;
+        }
+
+        public JSONObject getJsonPlan() {
+            return jsonPlan;
+        }
+
+        public String getQueryId() {
+            return queryId;
+        }
+
+        public String getQueryStr() {
+            return queryStr;
+        }
+
+        public Long getQueryStartTime() {
+            return queryStartTime;
+        }
+
+        public String getQueryType() {
+            return queryType;
+        }
+
     }
 }

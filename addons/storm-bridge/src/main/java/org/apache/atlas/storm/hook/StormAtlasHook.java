@@ -110,7 +110,8 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
         Referenceable topologyReferenceable = new Referenceable(
                 StormDataTypes.STORM_TOPOLOGY.getName());
         topologyReferenceable.set("id", topologyInfo.get_id());
-        topologyReferenceable.set("name", topologyInfo.get_name());
+        topologyReferenceable.set(AtlasClient.NAME, topologyInfo.get_name());
+        topologyReferenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, topologyInfo.get_name());
         String owner = topologyInfo.get_owner();
         if (StringUtils.isEmpty(owner)) {
             owner = ANONYMOUS_OWNER;

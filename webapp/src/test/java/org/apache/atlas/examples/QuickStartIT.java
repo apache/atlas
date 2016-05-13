@@ -18,6 +18,8 @@
 
 package org.apache.atlas.examples;
 
+import org.apache.atlas.Atlas;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.persistence.Id;
@@ -94,10 +96,10 @@ public class QuickStartIT extends BaseResourceIT {
 
     @Test
     public void testProcessIsAdded() throws AtlasServiceException, JSONException {
-        Referenceable loadProcess = serviceClient.getEntity(QuickStart.LOAD_PROCESS_TYPE, "name",
+        Referenceable loadProcess = serviceClient.getEntity(QuickStart.LOAD_PROCESS_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 QuickStart.LOAD_SALES_DAILY_PROCESS);
 
-        assertEquals(QuickStart.LOAD_SALES_DAILY_PROCESS, loadProcess.get("name"));
+        assertEquals(QuickStart.LOAD_SALES_DAILY_PROCESS, loadProcess.get(AtlasClient.NAME));
         assertEquals(QuickStart.LOAD_SALES_DAILY_PROCESS_DESCRIPTION, loadProcess.get("description"));
 
         List<Id> inputs = (List<Id>)loadProcess.get(QuickStart.INPUTS_ATTRIBUTE);
@@ -141,12 +143,12 @@ public class QuickStartIT extends BaseResourceIT {
     @Test
     public void testViewIsAdded() throws AtlasServiceException, JSONException {
 
-        Referenceable view = serviceClient.getEntity(QuickStart.VIEW_TYPE, "name", QuickStart.PRODUCT_DIM_VIEW);
+        Referenceable view = serviceClient.getEntity(QuickStart.VIEW_TYPE, AtlasClient.NAME, QuickStart.PRODUCT_DIM_VIEW);
 
-        assertEquals(QuickStart.PRODUCT_DIM_VIEW, view.get("name"));
+        assertEquals(QuickStart.PRODUCT_DIM_VIEW, view.get(AtlasClient.NAME));
 
         Id productDimId = getTable(QuickStart.PRODUCT_DIM_TABLE).getId();
-        Id inputTableId = ((List<Id>)view.get(QuickStart.INPUT_TABLES_ATTRIBUTE)).get(0);
+        Id inputTableId = ((List<Id>) view.get(QuickStart.INPUT_TABLES_ATTRIBUTE)).get(0);
         assertEquals(productDimId, inputTableId);
     }
 }

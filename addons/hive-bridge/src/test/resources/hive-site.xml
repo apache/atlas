@@ -17,6 +17,16 @@
 
 <configuration>
     <property>
+        <name>mapreduce.framework.name</name>
+        <value>local</value>
+    </property>
+
+    <property>
+        <name>fs.default.name</name>
+        <value>file:///</value>
+    </property>
+
+    <property>
         <name>hive.exec.post.hooks</name>
         <value>org.apache.atlas.hive.hook.HiveHook</value>
     </property>

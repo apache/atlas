@@ -107,8 +107,8 @@ public class SqoopHookIT {
     private String assertSqoopProcessIsRegistered(String processName) throws Exception {
         LOG.debug("Searching for sqoop process {}",  processName);
         String query = String.format(
-                "%s as t where name = '%s' select t",
-                SqoopDataTypes.SQOOP_PROCESS.getName(), processName);
+                "%s as t where %s = '%s' select t",
+                SqoopDataTypes.SQOOP_PROCESS.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, processName);
         return assertEntityIsRegistered(query);
     }
 

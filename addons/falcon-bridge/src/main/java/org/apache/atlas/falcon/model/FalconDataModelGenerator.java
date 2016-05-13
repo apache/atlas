@@ -57,7 +57,6 @@ public class FalconDataModelGenerator {
     private final Map<String, StructTypeDefinition> structTypeDefinitionMap;
 
     public static final String NAME = "name";
-    public static final String PROCESS_NAME = "processName";
     public static final String TIMESTAMP = "timestamp";
     public static final String USER = "owned-by";
     public static final String TAGS = "tag-classification";
@@ -107,8 +106,6 @@ public class FalconDataModelGenerator {
 
     private void createProcessEntityClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition(PROCESS_NAME, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
-                        null),
                 new AttributeDefinition(TIMESTAMP, DataTypes.LONG_TYPE.getName(), Multiplicity.REQUIRED, false,
                         null),
                 new AttributeDefinition(USER, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,

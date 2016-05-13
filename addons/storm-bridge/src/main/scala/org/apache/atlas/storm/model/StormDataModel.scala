@@ -18,6 +18,7 @@
 
 package org.apache.atlas.storm.model
 
+import org.apache.atlas.AtlasClient
 import org.apache.atlas.typesystem.TypesDef
 import org.apache.atlas.typesystem.builders.TypesBuilder
 import org.apache.atlas.typesystem.json.TypesSerialization
@@ -42,7 +43,7 @@ object StormDataModel extends App {
          * Also, Topology contains the Graph of Nodes
          * Topology => Node(s) -> Spouts/Bolts
          */
-        _class(StormDataTypes.STORM_TOPOLOGY.getName, List("Process")) {
+        _class(StormDataTypes.STORM_TOPOLOGY.getName, List(AtlasClient.PROCESS_SUPER_TYPE)) {
             "id" ~ (string, required, indexed, unique)
             "description" ~ (string, optional, indexed)
             "owner" ~ (string, required, indexed)

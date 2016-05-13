@@ -331,7 +331,8 @@ public class BaseHiveRepositoryTest {
         String queryText, String queryPlan, String queryId, String queryGraph, String... traitNames)
         throws Exception {
         Referenceable referenceable = new Referenceable(HIVE_PROCESS_TYPE, traitNames);
-        referenceable.set("name", name);
+        referenceable.set(AtlasClient.NAME, name);
+        referenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
         referenceable.set("description", description);
         referenceable.set("user", user);
         referenceable.set("startTime", System.currentTimeMillis());
