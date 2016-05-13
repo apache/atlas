@@ -20,7 +20,9 @@ package org.apache.atlas.typesystem.persistence;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
@@ -33,6 +35,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.util.Date;
+import java.util.HashSet;
 
 /*
  * @todo handle names prefixed by traitName.
@@ -89,7 +92,7 @@ public class ReferenceableInstance extends StructInstance implements ITypedRefer
             StringBuilder buf = new StringBuilder();
             String prefix = "";
 
-            fieldMapping.output(this, buf, prefix);
+            fieldMapping.output(this, buf, prefix, new HashSet<IReferenceableInstance>());
             return buf.toString();
 
         } catch (AtlasException me) {

@@ -23,7 +23,9 @@ import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.persistence.Id;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class FieldMapping {
 
@@ -70,7 +72,7 @@ public class FieldMapping {
         this.numReferenceables = numReferenceables;
     }
 
-    protected void outputFields(IStruct s, Appendable buf, String fieldPrefix) throws AtlasException {
+    protected void outputFields(IStruct s, Appendable buf, String fieldPrefix, Set<? extends IStruct> inProcess) throws AtlasException {
         for (Map.Entry<String, AttributeInfo> e : fields.entrySet()) {
             String attrName = e.getKey();
             AttributeInfo i = e.getValue();
@@ -79,52 +81,82 @@ public class FieldMapping {
             if (aVal != null && aVal instanceof Id) {
                 TypeUtils.outputVal(aVal.toString(), buf, "");
             } else {
-                i.dataType().output(aVal, buf, fieldPrefix);
+                i.dataType().output(aVal, buf, fieldPrefix, inProcess);
             }
             TypeUtils.outputVal("\n", buf, "");
         }
     }
 
-    public void output(IStruct s, Appendable buf, String prefix) throws AtlasException {
+    public void output(IStruct s, Appendable buf, String prefix, Set<IStruct> inProcess) throws AtlasException {
         if (s == null) {
             TypeUtils.outputVal("<null>\n", buf, "");
             return;
         }
-        TypeUtils.outputVal("{", buf, prefix);
 
-        TypeUtils.outputVal("\n", buf, "");
-        String fieldPrefix = prefix + "\t";
+        if (inProcess == null) {
+            inProcess = new HashSet<>();
+        }
+        else if (inProcess.contains(s)) {
+            // Avoid infinite recursion when structs reference each other.
+            return;
+        }
+        inProcess.add(s);
 
-        outputFields(s, buf, fieldPrefix);
+        try {
+            TypeUtils.outputVal("{", buf, prefix);
 
-        TypeUtils.outputVal("}", buf, prefix);
+            TypeUtils.outputVal("\n", buf, "");
+            String fieldPrefix = prefix + "\t";
+
+            outputFields(s, buf, fieldPrefix, inProcess);
+
+            TypeUtils.outputVal("}", buf, prefix);
+        }
+        finally {
+            inProcess.remove(s);
+        }
     }
 
-    public void output(IReferenceableInstance s, Appendable buf, String prefix) throws AtlasException {
+    public void output(IReferenceableInstance s, Appendable buf, String prefix, Set<IReferenceableInstance> inProcess) throws AtlasException {
         if (s == null) {
             TypeUtils.outputVal("<null>\n", buf, "");
             return;
         }
-        TypeUtils.outputVal("{", buf, prefix);
 
-        TypeUtils.outputVal("\n", buf, "");
-        String fieldPrefix = prefix + "\t";
-
-        TypeUtils.outputVal("id : ", buf, fieldPrefix);
-        TypeUtils.outputVal(s.getId().toString(), buf, "");
-        TypeUtils.outputVal("\n", buf, "");
-
-        outputFields(s, buf, fieldPrefix);
-
-        TypeSystem ts = TypeSystem.getInstance();
-
-        for (String sT : s.getTraits()) {
-            TraitType tt = ts.getDataType(TraitType.class, sT);
-            TypeUtils.outputVal(sT + " : ", buf, fieldPrefix);
-            tt.output(s.getTrait(sT), buf, fieldPrefix);
+        if (inProcess == null) {
+            inProcess = new HashSet<>();
         }
+        else if (inProcess.contains(s)) {
+            // Avoid infinite recursion when structs reference each other.
+            return;
+        }
+        inProcess.add(s);
 
-        TypeUtils.outputVal("}", buf, prefix);
+        try {
+            TypeUtils.outputVal("{", buf, prefix);
+
+            TypeUtils.outputVal("\n", buf, "");
+            String fieldPrefix = prefix + "\t";
+
+            TypeUtils.outputVal("id : ", buf, fieldPrefix);
+            TypeUtils.outputVal(s.getId().toString(), buf, "");
+            TypeUtils.outputVal("\n", buf, "");
+
+            outputFields(s, buf, fieldPrefix, inProcess);
+
+            TypeSystem ts = TypeSystem.getInstance();
+
+            for (String sT : s.getTraits()) {
+                TraitType tt = ts.getDataType(TraitType.class, sT);
+                TypeUtils.outputVal(sT + " : ", buf, fieldPrefix);
+                tt.output(s.getTrait(sT), buf, fieldPrefix, null);
+            }
+
+            TypeUtils.outputVal("}", buf, prefix);
+        }
+        finally {
+            inProcess.remove(s);
+        }
     }
 
 }

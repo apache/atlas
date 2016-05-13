@@ -79,8 +79,7 @@ public final class Multiplicity {
 
     @Override
     public String toString() {
-        return "Multiplicity{" +
-                "lower=" + lower +
+        return "{lower=" + lower +
                 ", upper=" + upper +
                 ", isUnique=" + isUnique +
                 '}';

@@ -21,12 +21,14 @@ package org.apache.atlas.typesystem.types;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.UnmodifiableIterator;
 
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.persistence.DownCastStructInstance;
 import org.apache.atlas.typesystem.types.TypeUtils.Pair;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -367,9 +369,58 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
 
     @Override
     public String toString() {
+        StringBuilder buf = new StringBuilder();
+        try {
+            output(buf, new HashSet<String>());
+        }
+        catch (AtlasException e) {
+            throw new RuntimeException(e);
+        }
+        return buf.toString();
+    }
 
-        return "[name=" + name + ", description=" + description + 
-            ", superTypes=" + superTypes + ", immediateAttrs=" + immediateAttrs + "]";
+    @Override
+    public void output(Appendable buf, Set<String> typesInProcess) throws AtlasException {
+
+        if (typesInProcess == null) {
+            typesInProcess = new HashSet<>();
+        }
+        else if (typesInProcess.contains(name)) {
+            // Avoid infinite recursion on bi-directional reference attributes.
+            try {
+                buf.append(name);
+            } catch (IOException e) {
+                throw new AtlasException(e);
+            }
+            return;
+        }
+
+        typesInProcess.add(name);
+        try {
+            buf.append(getClass().getSimpleName()).append('{');
+            buf.append("name=").append(name);
+            buf.append(", description=").append(description);
+            buf.append(", superTypes=").append(superTypes.toString());
+            buf.append(", immediateAttrs=[");
+            UnmodifiableIterator<AttributeInfo> it = immediateAttrs.iterator();
+            while (it.hasNext()) {
+                AttributeInfo attrInfo = it.next();
+                attrInfo.output(buf, typesInProcess);
+                if (it.hasNext()) {
+                    buf.append(", ");
+                }
+                else {
+                    buf.append(']');
+                }
+            }
+            buf.append("}");
+        }
+        catch(IOException e) {
+            throw new AtlasException(e);
+        }
+        finally {
+            typesInProcess.remove(name);
+        }
     }
 
     public Set<String> getAllSuperTypeNames() {

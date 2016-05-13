@@ -20,8 +20,8 @@ package org.apache.atlas.typesystem.persistence;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.ClassType;
@@ -31,7 +31,6 @@ import org.apache.atlas.typesystem.types.EnumValue;
 import org.apache.atlas.typesystem.types.FieldMapping;
 import org.apache.atlas.typesystem.types.StructType;
 import org.apache.atlas.typesystem.types.TypeSystem;
-import org.apache.atlas.typesystem.types.TypeUtils;
 import org.apache.atlas.typesystem.types.ValueConversionException;
 import org.apache.atlas.utils.MD5Utils;
 
@@ -724,32 +723,13 @@ public class StructInstance implements ITypedStruct {
         strings[pos] = val;
     }
 
-    public void output(IStruct s, Appendable buf, String prefix) throws AtlasException {
-        TypeUtils.outputVal("{", buf, prefix);
-        if (s == null) {
-            TypeUtils.outputVal("<null>\n", buf, "");
-            return;
-        }
-        TypeUtils.outputVal("\n", buf, "");
-        String fieldPrefix = prefix + "\t";
-        for (Map.Entry<String, AttributeInfo> e : fieldMapping.fields.entrySet()) {
-            String attrName = e.getKey();
-            AttributeInfo i = e.getValue();
-            Object aVal = s.get(attrName);
-            TypeUtils.outputVal(attrName + " : ", buf, fieldPrefix);
-            i.dataType().output(aVal, buf, "");
-            TypeUtils.outputVal("\n", buf, "");
-        }
-        TypeUtils.outputVal("\n}\n", buf, "");
-    }
-
     @Override
     public String toString() {
         try {
             StringBuilder buf = new StringBuilder();
             String prefix = "";
 
-            fieldMapping.output(this, buf, prefix);
+            fieldMapping.output(this, buf, prefix, null);
             return buf.toString();
 
         } catch (AtlasException me) {

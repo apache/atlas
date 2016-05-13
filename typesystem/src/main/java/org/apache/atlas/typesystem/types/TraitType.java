@@ -28,6 +28,7 @@ import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class TraitType extends HierarchicalType<TraitType, IStruct>
         implements IConstructableType<IStruct, ITypedStruct> {
@@ -63,8 +64,8 @@ public class TraitType extends HierarchicalType<TraitType, IStruct>
     }
 
     @Override
-    public void output(IStruct s, Appendable buf, String prefix) throws AtlasException {
-        handler.output(s, buf, prefix);
+    public void output(IStruct s, Appendable buf, String prefix, Set<IStruct> inProcess) throws AtlasException {
+        handler.output(s, buf, prefix, inProcess);
     }
 
     @Override

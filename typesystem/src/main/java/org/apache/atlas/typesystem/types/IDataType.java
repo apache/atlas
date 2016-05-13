@@ -21,6 +21,7 @@ package org.apache.atlas.typesystem.types;
 import org.apache.atlas.AtlasException;
 
 import java.security.MessageDigest;
+import java.util.Set;
 
 public interface IDataType<T> {
     String getName();
@@ -29,7 +30,25 @@ public interface IDataType<T> {
 
     DataTypes.TypeCategory getTypeCategory();
 
-    void output(T val, Appendable buf, String prefix) throws AtlasException;
+    /**
+     * Output a string representation of a value instance of this type.
+     *
+     * @param val
+     * @param buf
+     * @param prefix
+     * @param inProcess
+     * @throws AtlasException
+     */
+    void output(T val, Appendable buf, String prefix, Set<T> inProcess) throws AtlasException;
+
+    /**
+     * Output a string representation of this type.
+     *
+     * @param buf
+     * @param typesInProcess
+     * @throws AtlasException
+     */
+    void output(Appendable buf, Set<String> typesInProcess) throws AtlasException;
 
     void validateUpdate(IDataType newType) throws TypeUpdateException;
 

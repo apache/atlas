@@ -20,6 +20,7 @@ package org.apache.atlas.typesystem.types;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedStruct;
@@ -32,6 +33,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
 import java.util.Map;
+import java.util.Set;
 
 public class TypedStructHandler {
 
@@ -104,8 +106,8 @@ public class TypedStructHandler {
                 fieldMapping.numReferenceables == 0 ? null : new Id[fieldMapping.numReferenceables]);
     }
 
-    public void output(IStruct s, Appendable buf, String prefix) throws AtlasException {
-        fieldMapping.output(s, buf, prefix);
+    public void output(IStruct s, Appendable buf, String prefix, Set<IStruct> inProcess) throws AtlasException {
+        fieldMapping.output(s, buf, prefix, inProcess);
     }
 
 }

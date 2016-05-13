@@ -41,6 +41,7 @@ import java.security.MessageDigest;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class ClassType extends HierarchicalType<ClassType, IReferenceableInstance>
         implements IConstructableType<IReferenceableInstance, ITypedReferenceableInstance> {
@@ -207,8 +208,8 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
     }
 
     @Override
-    public void output(IReferenceableInstance s, Appendable buf, String prefix) throws AtlasException {
-        fieldMapping.output(s, buf, prefix);
+    public void output(IReferenceableInstance s, Appendable buf, String prefix, Set<IReferenceableInstance> inProcess) throws AtlasException {
+        fieldMapping.output(s, buf, prefix, inProcess);
     }
 
     @Override

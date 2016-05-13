@@ -22,7 +22,10 @@ import org.apache.atlas.AtlasException;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
+import java.io.IOException;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class AttributeInfo {
     public final String name;
@@ -60,15 +63,30 @@ public class AttributeInfo {
 
     @Override
     public String toString() {
-        return "AttributeInfo{" +
-                "name='" + name + '\'' +
-                ", dataType=" + dataType +
-                ", multiplicity=" + multiplicity +
-                ", isComposite=" + isComposite +
-                ", isUnique=" + isUnique +
-                ", isIndexable=" + isIndexable +
-                ", reverseAttributeName='" + reverseAttributeName + '\'' +
-                '}';
+        StringBuilder buf = new StringBuilder();
+        try {
+            output(buf, new HashSet<String>());
+        } catch (AtlasException e) {
+            throw new RuntimeException(e);
+        }
+        return buf.toString();
+    }
+
+    public void output(Appendable buf, Set<String> typesInProcess) throws AtlasException {
+        try {
+            buf.append("{name=").append(name);
+            buf.append(", dataType=");
+            dataType.output(buf, typesInProcess);
+            buf.append(", multiplicity=").append(multiplicity.toString());
+            buf.append(", isComposite=").append(Boolean.toString(isComposite));
+            buf.append(", isUnique=").append(Boolean.toString(isUnique));
+            buf.append(", isIndexable=").append(Boolean.toString(isIndexable));
+            buf.append(", reverseAttributeName=").append(reverseAttributeName);
+            buf.append('}');
+        }
+        catch(IOException e) {
+            throw new AtlasException(e);
+        }
     }
 
     @Override

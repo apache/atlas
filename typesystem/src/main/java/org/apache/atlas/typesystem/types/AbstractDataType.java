@@ -22,7 +22,9 @@ import com.google.common.collect.ImmutableSortedMap;
 
 import org.apache.atlas.AtlasException;
 
+import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 
 abstract class AbstractDataType<T> implements IDataType<T> {
 
@@ -44,13 +46,31 @@ abstract class AbstractDataType<T> implements IDataType<T> {
     }
 
     @Override
-    public void output(T val, Appendable buf, String prefix) throws AtlasException {
+    public void output(T val, Appendable buf, String prefix, Set<T> inProcess) throws AtlasException {
         if (val instanceof Map) {
             ImmutableSortedMap immutableSortedMap = ImmutableSortedMap.copyOf((Map) val);
             TypeUtils.outputVal(val == null ? "<null>" : immutableSortedMap.toString(), buf, prefix);
         } else {
             TypeUtils.outputVal(val == null ? "<null>" : val.toString(), buf, prefix);
         }
+    }
+
+    @Override
+    public void output(Appendable buf, Set<String> typesInProcess) throws AtlasException {
+
+        try {
+            buf.append(toString());
+        } catch (IOException e) {
+            throw new AtlasException(e);
+        }
+    }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString() {
+        return "{name=" + name + ", description=" + description + "}";
     }
 
     /**

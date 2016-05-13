@@ -20,6 +20,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-645 FieldMapping.output() results in stack overflow when instances reference each other (dkantor via shwethags)
 ATLAS-733 UI: "undefined" XHR request is made for every entity GET page request. (kevalbhatt18 via yhemanth)
 ATLAS-663,ATLAS-673 Install Setup: SOLR (tbeerbower via sumasai)
 ATLAS-629 Kafka messages in ATLAS_HOOK might be lost in HA mode at the instant of failover. (yhemanth)

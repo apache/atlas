@@ -18,12 +18,16 @@
 
 package org.apache.atlas.typesystem.types;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IStruct;
@@ -182,8 +186,63 @@ public class StructType extends AbstractDataType<IStruct> implements IConstructa
     }
 
     @Override
-    public void output(IStruct s, Appendable buf, String prefix) throws AtlasException {
-        handler.output(s, buf, prefix);
+    public void output(IStruct s, Appendable buf, String prefix, Set<IStruct> inProcess) throws AtlasException {
+        handler.output(s, buf, prefix, inProcess);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder buf = new StringBuilder();
+        try {
+            output(buf, new HashSet<String>());
+        }
+        catch (AtlasException e) {
+            throw new RuntimeException(e);
+        }
+        return buf.toString();
+    }
+
+    @Override
+    public void output(Appendable buf, Set<String> typesInProcess) throws AtlasException {
+
+        if (typesInProcess == null) {
+            typesInProcess = new HashSet<>();
+        }
+        else if (typesInProcess.contains(name)) {
+            // Avoid infinite recursion on bi-directional reference attributes.
+            try {
+                buf.append(name);
+            } catch (IOException e) {
+                throw new AtlasException(e);
+            }
+            return;
+        }
+
+        typesInProcess.add(name);
+        try {
+            buf.append(getClass().getSimpleName());
+            buf.append("{name=").append(name);
+            buf.append(", description=").append(description);
+            buf.append(", fieldMapping.fields=[");
+            Iterator<AttributeInfo> it = fieldMapping.fields.values().iterator();
+            while (it.hasNext()) {
+                AttributeInfo attrInfo = it.next();
+                attrInfo.output(buf, typesInProcess);
+                if (it.hasNext()) {
+                    buf.append(", ");
+                }
+                else {
+                    buf.append(']');
+                }
+            }
+            buf.append("}");
+        }
+        catch(IOException e) {
+            throw new AtlasException(e);
+        }
+        finally {
+            typesInProcess.remove(name);
+        }
     }
 
     @Override

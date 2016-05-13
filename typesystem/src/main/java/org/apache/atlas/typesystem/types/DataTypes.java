@@ -38,6 +38,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class DataTypes {
 
@@ -425,7 +426,7 @@ public class DataTypes {
         }
 
         @Override
-        public void output(Date val, Appendable buf, String prefix) throws AtlasException {
+        public void output(Date val, Appendable buf, String prefix, Set<Date> inProcess) throws AtlasException {
             TypeUtils.outputVal(val == null ? "<null>" : TypeSystem.getInstance().getDateFormat().format(val), buf,
                     prefix);
         }
