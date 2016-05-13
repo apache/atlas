@@ -107,4 +107,8 @@ public class RequestContext {
     public long getRequestTime() {
         return requestTime;
     }
+    
+    public boolean isDeletedEntity(String entityGuid) {
+        return deletedEntityIds.contains(entityGuid);
+    }
 }

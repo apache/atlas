@@ -21,9 +21,11 @@ package org.apache.atlas.repository.graph;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.typesystem.exception.NullRequiredAttributeException;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.DataTypes;
@@ -243,7 +245,7 @@ public abstract class DeleteHandler {
                 attributeName);
         String typeName = GraphHelper.getTypeName(outVertex);
         String outId = GraphHelper.getIdFromVertex(outVertex);
-        if (outId != null && RequestContext.get().getDeletedEntityIds().contains(outId)) {
+        if (outId != null && RequestContext.get().isDeletedEntity(outId)) {
             //If the reference vertex is marked for deletion, skip updating the reference
             return;
         }
@@ -257,11 +259,14 @@ public abstract class DeleteHandler {
         switch (attributeInfo.dataType().getTypeCategory()) {
         case CLASS:
             //If its class attribute, its the only edge between two vertices
-            //TODO need to enable this
-            //            if (refAttributeInfo.multiplicity == Multiplicity.REQUIRED) {
-            //                throw new AtlasException("Can't set attribute " + refAttributeName + " to null as its required attribute");
-            //            }
-            edge = GraphHelper.getEdgeForLabel(outVertex, edgeLabel);
+            if (attributeInfo.multiplicity.nullAllowed()) {
+                edge = GraphHelper.getEdgeForLabel(outVertex, edgeLabel);
+            }
+            else {
+                // Cannot unset a required attribute.
+                throw new NullRequiredAttributeException("Cannot unset required attribute " + GraphHelper.getQualifiedFieldName(type, attributeName) +
+                    " on " + string(outVertex) + " edge = " + edgeLabel);
+            }
             break;
 
         case ARRAY:
@@ -277,8 +282,15 @@ public abstract class DeleteHandler {
 
                     Vertex elementVertex = elementEdge.getVertex(Direction.IN);
                     if (elementVertex.getId().toString().equals(inVertex.getId().toString())) {
-                        edge = elementEdge;
-
+                        if (attributeInfo.multiplicity.nullAllowed() || elements.size() > attributeInfo.multiplicity.lower) {
+                            edge = elementEdge;
+                        }
+                        else {
+                            // Deleting this edge would violate the attribute's lower bound.
+                            throw new NullRequiredAttributeException(
+                                "Cannot remove array element from required attribute " +
+                                    GraphHelper.getQualifiedFieldName(type, attributeName) + " on " + string(outVertex) + " " + string(elementEdge));
+                        }
                         if (shouldUpdateReverseAttribute || attributeInfo.isComposite) {
                             //if composite attribute, remove the reference as well. else, just remove the edge
                             //for example, when table is deleted, process still references the table
@@ -305,7 +317,15 @@ public abstract class DeleteHandler {
                     Edge mapEdge = graphHelper.getEdgeById(mapEdgeId);
                     Vertex mapVertex = mapEdge.getVertex(Direction.IN);
                     if (mapVertex.getId().toString().equals(inVertex.getId().toString())) {
-                        edge = mapEdge;
+                        if (attributeInfo.multiplicity.nullAllowed() || keys.size() > attributeInfo.multiplicity.lower) {
+                            edge = mapEdge;
+                        }
+                        else {
+                            // Deleting this entry would violate the attribute's lower bound.
+                            throw new NullRequiredAttributeException(
+                                "Cannot remove map entry " + keyPropertyName + " from required attribute " +
+                                    GraphHelper.getQualifiedFieldName(type, attributeName) + " on " + string(outVertex) + " " + string(mapEdge));
+                        }
 
                         if (shouldUpdateReverseAttribute || attributeInfo.isComposite) {
                             //remove this key

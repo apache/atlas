@@ -19,6 +19,7 @@
 package org.apache.atlas.repository.graph;
 
 import com.tinkerpop.blueprints.Vertex;
+
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.Constants;
@@ -26,6 +27,7 @@ import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
+import org.apache.atlas.typesystem.exception.NullRequiredAttributeException;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.testng.Assert;
 
@@ -75,18 +77,18 @@ public class GraphBackedRepositoryHardDeleteTest extends GraphBackedMetadataRepo
     }
 
     @Override
-    protected void assertTestUpdateEntity_MultiplicityOneNonCompositeReference() throws Exception {
+    protected void assertTestUpdateEntity_MultiplicityOneNonCompositeReference(String janeGuid) throws Exception {
         // Verify that max is no longer a subordinate of jane.
-        ITypedReferenceableInstance jane = repositoryService.getEntityDefinition("Manager", "name", "Jane");
+        ITypedReferenceableInstance jane = repositoryService.getEntityDefinition(janeGuid);
         List<ITypedReferenceableInstance> subordinates = (List<ITypedReferenceableInstance>) jane.get("subordinates");
         Assert.assertEquals(subordinates.size(), 1);
     }
 
     @Override
-    protected void assertTestDisconnectBidirectionalReferences() throws Exception {
+    protected void assertTestDisconnectBidirectionalReferences(String janeGuid) throws Exception {
         // Verify that the Manager.subordinates reference to the deleted employee
         // Max was disconnected.
-        ITypedReferenceableInstance jane = repositoryService.getEntityDefinition("Manager", "name", "Jane");
+        ITypedReferenceableInstance jane = repositoryService.getEntityDefinition(janeGuid);
         List<ITypedReferenceableInstance> subordinates = (List<ITypedReferenceableInstance>) jane.get("subordinates");
         assertEquals(subordinates.size(), 1);
     }
@@ -117,5 +119,12 @@ public class GraphBackedRepositoryHardDeleteTest extends GraphBackedMetadataRepo
         assertNull(object);
         object = mapOwnerVertex.getProperty("MapOwner.biMap.value1");
         assertNull(object);
+    }
+
+    @Override
+    protected void assertTestDeleteTargetOfMultiplicityRequiredReference() throws Exception {
+
+        Assert.fail("Lower bound on attribute Manager.subordinates was not enforced - " +
+            NullRequiredAttributeException.class.getSimpleName() + " was expected but none thrown");
     }
 }

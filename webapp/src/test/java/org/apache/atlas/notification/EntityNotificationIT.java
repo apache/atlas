@@ -107,7 +107,8 @@ public class EntityNotificationIT extends BaseResourceIT {
     @Test
     public void testDeleteEntity() throws Exception {
         final String tableName = "table-" + randomString();
-        Referenceable tableInstance = createHiveTableInstance(DATABASE_NAME, tableName);
+        final String dbName = "db-" + randomString();
+        Referenceable tableInstance = createHiveTableInstance(dbName, tableName);
         final Id tableId = createInstance(tableInstance);
         final String guid = tableId._getId();
 

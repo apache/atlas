@@ -19,6 +19,7 @@
 package org.apache.atlas.repository.graph;
 
 import com.tinkerpop.blueprints.Vertex;
+
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.Constants;
@@ -76,17 +77,17 @@ public class GraphBackedRepositorySoftDeleteTest extends GraphBackedMetadataRepo
     }
 
     @Override
-    protected void assertTestUpdateEntity_MultiplicityOneNonCompositeReference() throws Exception {
-        // Verify that max is no longer a subordinate of jane.
-        ITypedReferenceableInstance jane = repositoryService.getEntityDefinition("Manager", "name", "Jane");
+    protected void assertTestUpdateEntity_MultiplicityOneNonCompositeReference(String janeGuid) throws Exception {
+        // Verify Jane's subordinates reference cardinality is still 2.
+        ITypedReferenceableInstance jane = repositoryService.getEntityDefinition(janeGuid);
         List<ITypedReferenceableInstance> subordinates = (List<ITypedReferenceableInstance>) jane.get("subordinates");
         Assert.assertEquals(subordinates.size(), 2);
     }
 
     @Override
-    protected void assertTestDisconnectBidirectionalReferences() throws Exception {
+    protected void assertTestDisconnectBidirectionalReferences(String janeGuid) throws Exception {
         // Verify that the Manager.subordinates still references deleted employee
-        ITypedReferenceableInstance jane = repositoryService.getEntityDefinition("Manager", "name", "Jane");
+        ITypedReferenceableInstance jane = repositoryService.getEntityDefinition(janeGuid);
         List<ITypedReferenceableInstance> subordinates = (List<ITypedReferenceableInstance>) jane.get("subordinates");
         assertEquals(subordinates.size(), 2);
     }
@@ -95,7 +96,7 @@ public class GraphBackedRepositorySoftDeleteTest extends GraphBackedMetadataRepo
     protected void assertTestDisconnectUnidirectionalArrayReferenceFromStructAndTraitTypes(String structContainerGuid)
             throws Exception {
         // Verify that the unidirectional references from the struct and trait instances
-        // to the deleted entities were disconnected.
+        // to the deleted entities were not disconnected.
         ITypedReferenceableInstance structContainerConvertedEntity =
                 repositoryService.getEntityDefinition(structContainerGuid);
         ITypedStruct struct = (ITypedStruct) structContainerConvertedEntity.get("struct");
@@ -117,5 +118,11 @@ public class GraphBackedRepositorySoftDeleteTest extends GraphBackedMetadataRepo
                 (Map<String, ITypedReferenceableInstance>) mapOwnerInstance.get("biMap");
         assertNotNull(biMap);
         assertEquals(biMap.size(), 1);
+    }
+
+    @Override
+    protected void assertTestDeleteTargetOfMultiplicityRequiredReference() throws Exception {
+
+        // No-op - it's ok that no exception was thrown if soft deletes are enabled.
     }
 }
