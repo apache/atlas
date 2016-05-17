@@ -23,7 +23,8 @@ define(['require',
     'models/VEntity',
     'utils/Utils',
     'utils/Globals',
-], function(require, Backbone, AssetPageLayoutViewTmpl, Modal, VEntity, Utils, Globals) {
+    'utils/CommonViewFunction'
+], function(require, Backbone, AssetPageLayoutViewTmpl, Modal, VEntity, Utils, Globals, CommonViewFunction) {
     'use strict';
 
     var AssetPageLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -188,12 +189,15 @@ define(['require',
                         columns: columns,
                         includeOrderAbleColumns: true
                     })));
-                    if (that.fetchList <= 0) {
-                        that.$('.fontLoader').hide();
-                        that.$('.entityTable').show();
-                    }
+
                 });
 
+            },
+            checkTableFetch: function() {
+                if (this.fetchList <= 0) {
+                    this.$('.fontLoader').hide();
+                    this.$('.entityTable').show();
+                }
             },
             getEntityTableColumns: function() {
                 var that = this,
@@ -206,8 +210,8 @@ define(['require',
                         } else {
                             var modelJSON = this.searchCollection.toJSON()[0];
                             _.keys(modelJSON).map(function(key) {
-                                if (key.indexOf("$") == -1 && typeof modelJSON[key] != "object") {
-                                    if (typeof modelJSON[key] == "string" || typeof modelJSON[key] == "number") {
+                                if (key.indexOf("$") == -1 && (typeof modelJSON[key] != "object" || modelJSON[key] === null)) {
+                                    if (typeof modelJSON[key] == "string" || typeof modelJSON[key] == "number" || modelJSON[key] === null) {
                                         if (typeof modelJSON[key] == "number" && key != "createTime") {
                                             return;
                                         }
@@ -218,6 +222,9 @@ define(['require',
                                             orderable: true,
                                             formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                                 fromRaw: function(rawValue, model) {
+                                                    if (rawValue == null) {
+                                                        return null;
+                                                    }
                                                     if (model.get('createTime') == rawValue) {
                                                         return new Date(rawValue);
                                                     }
@@ -249,27 +256,11 @@ define(['require',
                                         _.keys(model.get('$traits$')).map(function(key) {
                                             atags += '<a data-id="tagClick">' + traits[key].$typeName$ + '<i class="fa fa-times" data-id="delete" data-name="' + traits[key].$typeName$ + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
                                         });
-                                        return '<div class="tagList">' + atags + '</div>';
+                                        return '<div class="tagList">' + atags + '<a data-id="addTag" data-guid="' + model.get('$id$').id + '"><i class="fa fa-plus"></i></a></div>';
                                     }
                                 })
                             };
-                            col['addTag'] = {
-                                label: "Tools",
-                                cell: "Html",
-                                editable: false,
-                                sortable: false,
-                                orderable: true,
-                                formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                                    fromRaw: function(rawValue, model) {
-                                        if (model.get('$id$')) {
-                                            return '<a href="javascript:void(0)" data-id="addTag" class="addTagGuid" data-guid="' + model.get('$id$').id + '" ><i class="fa fa-tag"></i></a>';
-                                        } else {
-                                            return '<a href="javascript:void(0)" data-id="addTag"><i class="fa fa-tag"></i></a>';
-
-                                        }
-                                    }
-                                })
-                            };
+                            that.checkTableFetch();
                             return this.searchCollection.constructor.getTableCols(col, this.searchCollection);
                         }
                     } else {
@@ -311,11 +302,7 @@ define(['require',
                                         beforeSend: function() {},
                                         success: function(data) {
                                             --that.fetchList
-                                            if (that.fetchList <= 0) {
-                                                that.$('.fontLoader').hide();
-                                                that.$('.entityTable').show();
-
-                                            }
+                                            that.checkTableFetch();
                                             if (data.definition && data.definition.values && data.definition.values.name) {
                                                 return that.$('td a[data-id="' + guid + '"]').html(data.definition.values.name);
                                             } else {
@@ -336,10 +323,7 @@ define(['require',
                                         beforeSend: function() {},
                                         success: function(data) {
                                             --that.fetchList
-                                            if (that.fetchList <= 0) {
-                                                that.$('.fontLoader').hide();
-                                                that.$('.entityTable').show();
-                                            }
+                                            that.checkTableFetch();
                                             if (data.definition && data.definition.values && data.definition.values.name) {
                                                 return that.$('td a[data-id="' + guid + '"]').html(data.definition.values.name);
                                             } else {
@@ -367,47 +351,28 @@ define(['require',
                         guid: that.$(e.currentTarget).data("guid"),
                         modalCollection: that.searchCollection
                     });
-                    // view.saveTagData = function() {
-                    //override saveTagData function 
-                    // }
                 });
             },
             onClickTagCross: function(e) {
-                var tagName = $(e.target).data("name");
-                var that = this;
-                require([
-                    'modules/Modal'
-                ], function(Modal) {
-                    var modal = new Modal({
-                        title: 'Are you sure you want to delete ?',
-                        okText: 'Delete',
-                        htmlContent: "<b>Tag: " + tagName + "</b>",
-                        cancelText: "Cancel",
-                        allowCancel: true,
-                        okCloses: true,
-                        showFooter: true,
-                    }).open();
-                    modal.on('ok', function() {
-                        that.deleteTagData(e);
-                    });
-                    modal.on('closeModal', function() {
-                        modal.trigger('cancel');
-                    });
+                var tagName = $(e.target).data("name"),
+                    that = this,
+                    modal = CommonViewFunction.deleteTagModel(tagName);
+                modal.on('ok', function() {
+                    that.deleteTagData(e);
+                });
+                modal.on('closeModal', function() {
+                    modal.trigger('cancel');
                 });
             },
             deleteTagData: function(e) {
                 var that = this,
-                    tagName = $(e.target).data("name");
-                var guid = $(e.target).data("guid");
-                require(['models/VTag'], function(VTag) {
-                    var tagModel = new VTag();
-                    tagModel.deleteTag(guid, tagName, {
-                        beforeSend: function() {},
-                        success: function(data) {
-                            that.searchCollection.fetch({ reset: true });
-                        },
-                        error: function(error, data, status) {},
-                        complete: function() {}
+                    tagName = $(e.target).data("name"),
+                    guid = $(e.target).data("guid");
+                require(['utils/CommonViewFunction'], function(CommonViewFunction) {
+                    CommonViewFunction.deleteTag({
+                        'tagName': tagName,
+                        'guid': guid,
+                        'collection': that.searchCollection
                     });
                 });
             }

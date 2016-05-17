@@ -21,7 +21,8 @@ define(['require',
     'hbs!tmpl/schema/SchemaTableLayoutView_tmpl',
     'collection/VSchemaList',
     'utils/Utils',
-], function(require, Backbone, SchemaTableLayoutViewTmpl, VSchemaList, Utils) {
+    'utils/CommonViewFunction'
+], function(require, Backbone, SchemaTableLayoutViewTmpl, VSchemaList, Utils, CommonViewFunction) {
     'use strict';
 
     var SchemaTableLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -115,7 +116,6 @@ define(['require',
                 });
             },
             getSchemaTableColumns: function() {
-                var that = this;
                 return this.schemaCollection.constructor.getTableCols({
                     name: {
                         label: "Name",
@@ -152,18 +152,7 @@ define(['require',
                                 _.keys(model.get('$traits$')).map(function(key) {
                                     atags += '<a data-id="tagClick">' + traits[key].$typeName$ + '<i class="fa fa-times" data-id="delete" data-name="' + traits[key].$typeName$ + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
                                 });
-                                return '<div class="tagList">' + atags + '</div>';
-                            }
-                        })
-                    },
-                    addTag: {
-                        label: "Tools",
-                        cell: "Html",
-                        editable: false,
-                        sortable: false,
-                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                            fromRaw: function(rawValue, model) {
-                                return '<a href="javascript:void(0);" data-id="addTag" data-guid="' + model.get('$id$').id + '"><i class="fa fa-tag"></i></a>';
+                                return '<div class="tagList">' + atags + '<a data-id="addTag" data-guid="' + model.get('$id$').id + '"><i class="fa fa-plus"></i></a></div>';
                             }
                         })
                     }
@@ -177,47 +166,28 @@ define(['require',
                         guid: that.$(e.currentTarget).data("guid"),
                         modalCollection: that.schemaCollection
                     });
-                    // view.saveTagData = function() {
-                    //override saveTagData function 
-                    // }
                 });
             },
             onClickTagCross: function(e) {
                 var tagName = $(e.target).data("name");
                 var that = this;
-                require([
-                    'modules/Modal'
-                ], function(Modal) {
-                    var modal = new Modal({
-                        title: 'Are you sure you want to delete ?',
-                        okText: 'Delete',
-                        htmlContent: "<b>Tag: " + tagName + "</b>",
-                        cancelText: "Cancel",
-                        allowCancel: true,
-                        okCloses: true,
-                        showFooter: true,
-                    }).open();
-                    modal.on('ok', function() {
-                        that.deleteTagData(e);
-                    });
-                    modal.on('closeModal', function() {
-                        modal.trigger('cancel');
-                    });
+                var modal = CommonViewFunction.deleteTagModel(tagName);
+                modal.on('ok', function() {
+                    that.deleteTagData(e);
+                });
+                modal.on('closeModal', function() {
+                    modal.trigger('cancel');
                 });
             },
             deleteTagData: function(e) {
                 var that = this,
                     tagName = $(e.target).data("name");
                 var guid = $(e.target).data("guid");
-                require(['models/VTag'], function(VTag) {
-                    var tagModel = new VTag();
-                    tagModel.deleteTag(guid, tagName, {
-                        beforeSend: function() {},
-                        success: function(data) {
-                            that.schemaCollection.fetch({ reset: true });
-                        },
-                        error: function(error, data, status) {},
-                        complete: function() {}
+                require(['utils/CommonViewFunction'], function(CommonViewFunction) {
+                    CommonViewFunction.deleteTag({
+                        'tagName': tagName,
+                        'guid': guid,
+                        'collection': that.schemaCollection
                     });
                 });
             }

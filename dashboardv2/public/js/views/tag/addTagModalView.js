@@ -132,16 +132,18 @@ define(['require',
                 success: function(data) {
                     that.modalCollection.fetch({ reset: true });
                     Utils.notifySuccess({
-                        content: "Tag " + tagName + " has been added to entity"
+                        content: "Tag " + tagName + " has been added successfully"
                     });
                 },
                 error: function(error, data, status) {
+                    var message = "Tag " + tagName + " could not be added";
                     if (error && error.responseText) {
                         var data = JSON.parse(error.responseText);
-                        Utils.notifyError({
-                            content: data.error
-                        });
+                        message = data.error;
                     }
+                    Utils.notifyError({
+                        content: message
+                    });
                 },
                 complete: function() {}
             });

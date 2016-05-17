@@ -33,8 +33,9 @@ define(['require',
         initialize: function(options) {
             var url = window.location.href.split("/");
             this.urlType = url[url.length - 1];
+            var urlText = this.urlType.split("?")[0];
             /*if we us only old ui then uncomment this condition*/
-            if (this.urlType == "") {
+            if (urlText == "" || urlText == "index.html" || urlText == "assetPage") {
                 this.urlType = "assetPage";
             }
         },

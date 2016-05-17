@@ -66,10 +66,18 @@
     padding: 3px 6px;
     margin: 0px 3px 3px 0px;
     cursor: pointer;
+    float: left;
 }
-#old .tagList a i.fa {
+
+#old .tagList a i.fa[data-id="delete"] {
     margin-left: 5px;
 }
+
+#old .scrollTagList .list-group-item {
+    word-break: break-all;
+}
+
+
 /*
 #old .tagList a {
     max-width: 100px;
@@ -190,7 +198,7 @@
     color: #fff !important;
     float: right;
 }
-.breadcrumb-dropdown .popover.bottom
-{
+
+.breadcrumb-dropdown .popover.bottom {
     margin-top: 35px;
 }
