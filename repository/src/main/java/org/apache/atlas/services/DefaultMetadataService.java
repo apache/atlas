@@ -313,10 +313,14 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
 
         ITypedReferenceableInstance[] typedInstances = deserializeClassInstances(entityInstanceDefinition);
 
-        final List<String> guids = repository.createEntities(typedInstances);
-
-        onEntitiesAdded(guids);
+        List<String> guids = createEntities(typedInstances);
         return new JSONArray(guids).toString();
+    }
+
+    public List<String> createEntities(ITypedReferenceableInstance[] typedInstances) throws AtlasException {
+        final List<String> guids = repository.createEntities(typedInstances);
+        onEntitiesAdded(guids);
+        return guids;
     }
 
     private ITypedReferenceableInstance[] deserializeClassInstances(String entityInstanceDefinition)
@@ -327,18 +331,7 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
             for (int index = 0; index < referableInstances.length(); index++) {
                 Referenceable entityInstance =
                         InstanceSerialization.fromJsonReferenceable(referableInstances.getString(index), true);
-                final String entityTypeName = entityInstance.getTypeName();
-                ParamChecker.notEmpty(entityTypeName, "Entity type cannot be null");
-
-                ClassType entityType = typeSystem.getDataType(ClassType.class, entityTypeName);
-
-                //Both assigned id and values are required for full update
-                //classtype.convert() will remove values if id is assigned. So, set temp id, convert and
-                // then replace with original id
-                Id origId = entityInstance.getId();
-                entityInstance.replaceWithNewId(new Id(entityInstance.getTypeName()));
-                ITypedReferenceableInstance typedInstrance = entityType.convert(entityInstance, Multiplicity.REQUIRED);
-                ((ReferenceableInstance)typedInstrance).replaceWithNewId(origId);
+                ITypedReferenceableInstance typedInstrance = getTypedReferenceableInstance(entityInstance);
                 instances[index] = typedInstrance;
             }
             return instances;
@@ -348,6 +341,23 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
             LOG.error("Unable to deserialize json={}", entityInstanceDefinition, e);
             throw new IllegalArgumentException("Unable to deserialize json", e);
         }
+    }
+
+    @Override
+    public ITypedReferenceableInstance getTypedReferenceableInstance(Referenceable entityInstance) throws AtlasException {
+        final String entityTypeName = entityInstance.getTypeName();
+        ParamChecker.notEmpty(entityTypeName, "Entity type cannot be null");
+
+        ClassType entityType = typeSystem.getDataType(ClassType.class, entityTypeName);
+
+        //Both assigned id and values are required for full update
+        //classtype.convert() will remove values if id is assigned. So, set temp id, convert and
+        // then replace with original id
+        Id origId = entityInstance.getId();
+        entityInstance.replaceWithNewId(new Id(entityInstance.getTypeName()));
+        ITypedReferenceableInstance typedInstrance = entityType.convert(entityInstance, Multiplicity.REQUIRED);
+        ((ReferenceableInstance)typedInstrance).replaceWithNewId(origId);
+        return typedInstrance;
     }
 
     /**
@@ -579,6 +589,10 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
         ParamChecker.notEmpty(traitInstanceDefinition, "trait instance definition");
 
         ITypedStruct traitInstance = deserializeTraitInstance(traitInstanceDefinition);
+        addTrait(guid, traitInstance);
+    }
+
+    public void addTrait(String guid, ITypedStruct traitInstance) throws AtlasException {
         final String traitName = traitInstance.getTypeName();
 
         // ensure trait type is already registered with the TS
@@ -591,7 +605,7 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
         // ensure trait is not already defined
         Preconditions
             .checkArgument(!getTraitNames(guid).contains(traitName), "trait=%s is already defined for entity=%s",
-                traitName, guid);
+                    traitName, guid);
 
         repository.addTrait(guid, traitInstance);
 
@@ -601,8 +615,12 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
     private ITypedStruct deserializeTraitInstance(String traitInstanceDefinition)
     throws AtlasException {
 
+        return createTraitInstance(InstanceSerialization.fromJsonStruct(traitInstanceDefinition, true));
+    }
+
+    @Override
+    public ITypedStruct createTraitInstance(Struct traitInstance) throws AtlasException {
         try {
-            Struct traitInstance = InstanceSerialization.fromJsonStruct(traitInstanceDefinition, true);
             final String entityTypeName = traitInstance.getTypeName();
             ParamChecker.notEmpty(entityTypeName, "entity type");
 

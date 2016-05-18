@@ -19,8 +19,6 @@
 package org.apache.atlas.authorize;
 
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -55,9 +53,13 @@ public class AtlasAuthorizationUtils {
         }
         if (u.startsWith(BASE_URL)) {
             u = parse(u, BASE_URL);
+        } else {
+            // strip of leading '/'
+            u = u.substring(1);
         }
         String[] split = u.split("/");
-        return split[0];
+        String api = split[0];
+        return (! api.equals("v1")) ? api : String.format("v1/%s", split[1]);
     }
 
     public static AtlasActionTypes getAtlasAction(String method) {
@@ -99,7 +101,7 @@ public class AtlasAuthorizationUtils {
 
         if (api.startsWith("types")) {
             resourceTypes.add(AtlasResourceTypes.TYPE);
-        } else if ((api.startsWith("discovery") && api.contains("gremlin")) || api.startsWith("admin")
+        } else if ((api.startsWith("discovery") && contextPath.contains("gremlin")) || api.startsWith("admin")
             || api.startsWith("graph")) {
             resourceTypes.add(AtlasResourceTypes.OPERATION);
         } else if ((api.startsWith("entities") && contextPath.contains("traits")) || api.startsWith("discovery")) {
@@ -107,6 +109,21 @@ public class AtlasAuthorizationUtils {
             resourceTypes.add(AtlasResourceTypes.TYPE);
         } else if (api.startsWith("entities") || api.startsWith("lineage")) {
             resourceTypes.add(AtlasResourceTypes.ENTITY);
+        } else if (api.startsWith("v1/taxonomies")) {
+            resourceTypes.add(AtlasResourceTypes.TAXONOMY);
+            // taxonomies are modeled as entities
+            resourceTypes.add(AtlasResourceTypes.ENTITY);
+            if (contextPath.contains("terms")) {
+                resourceTypes.add(AtlasResourceTypes.TERM);
+                // terms are modeled as traits
+                resourceTypes.add(AtlasResourceTypes.TYPE);
+            }
+        } else if (api.startsWith("v1/entities")) {
+            resourceTypes.add(AtlasResourceTypes.ENTITY);
+            if (contextPath.contains("tags")) {
+                // tags are modeled as traits
+                resourceTypes.add(AtlasResourceTypes.TYPE);
+            }
         } else {
             LOG.error("Unable to find Atlas Resource corresponding to : " + api);
             throw new ServletException("Unable to find Atlas Resource corresponding to : " + api);

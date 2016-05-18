@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,8 +16,31 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.authorize;
+package org.apache.atlas.catalog.query;
 
-public enum AtlasResourceTypes {
-    ENTITY, TYPE, OPERATION, TAXONOMY, TERM;
+import com.tinkerpop.pipes.Pipe;
+import org.apache.atlas.catalog.VertexWrapper;
+
+/**
+ * Query expression which always returns true.
+ */
+public class AlwaysQueryExpression extends BaseQueryExpression {
+    protected AlwaysQueryExpression() {
+        super(null, null, null);
+    }
+
+    @Override
+    public Pipe asPipe() {
+        return null;
+    }
+
+    @Override
+    public boolean evaluate(VertexWrapper vWrapper) {
+        return ! negate;
+    }
+
+    @Override
+    public boolean evaluate(Object value) {
+        return true;
+    }
 }

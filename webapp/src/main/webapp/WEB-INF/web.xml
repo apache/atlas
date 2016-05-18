@@ -30,6 +30,11 @@
             org.apache.atlas.web.resources,org.apache.atlas.web.params
         </param-value>
     </context-param>
+  
+    <context-param>
+        <param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
+        <param-value>true</param-value>
+    </context-param>
 
     <!--
         More information can be found here:

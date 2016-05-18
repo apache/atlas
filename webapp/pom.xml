@@ -108,6 +108,11 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-hdfs</artifactId>
         </dependency>
+   
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-catalog</artifactId>
+        </dependency>
 
         <!-- supports simple auth handler -->
         <dependency>

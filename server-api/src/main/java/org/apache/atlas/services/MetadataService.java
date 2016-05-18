@@ -21,7 +21,10 @@ package org.apache.atlas.services;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.listener.EntityChangeListener;
+import org.apache.atlas.typesystem.ITypedReferenceableInstance;
+import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.codehaus.jettison.json.JSONObject;
 
@@ -78,6 +81,26 @@ public interface MetadataService {
      * @return json array of guids of entities created
      */
     String createEntities(String entityDefinition) throws AtlasException;
+
+    /**
+     * Get a typed entity instance.
+     *
+     * @param entity entity
+     * @return typed entity instance
+     *
+     * @throws AtlasException if any failure occurs
+     */
+    ITypedReferenceableInstance getTypedReferenceableInstance(Referenceable entity) throws AtlasException;
+
+    /**
+     * Create entity instances.
+     *
+     * @param typedInstances  instance to create
+     * @return collection of guids for created entities
+     *
+     * @throws AtlasException if unable to create the entities
+     */
+    List<String> createEntities(ITypedReferenceableInstance[] typedInstances) throws AtlasException;
 
     /**
      * Return the definition for the given guid.
@@ -165,6 +188,11 @@ public interface MetadataService {
      * @throws AtlasException
      */
     void addTrait(String guid, String traitInstanceDefinition) throws AtlasException;
+
+    //todo:
+    void addTrait(String guid, ITypedStruct traitInstance) throws AtlasException;
+    ITypedStruct createTraitInstance(Struct traitInstance) throws AtlasException;
+
 
     /**
      * Deletes a given trait from an existing entity represented by a guid.
