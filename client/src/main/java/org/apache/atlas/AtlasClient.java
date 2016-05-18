@@ -90,7 +90,8 @@ public class AtlasClient {
     public static final String URI_ENTITY = "entities";
     public static final String URI_ENTITY_AUDIT = "audit";
     public static final String URI_SEARCH = "discovery/search";
-    public static final String URI_LINEAGE = "lineage/hive/table";
+    public static final String URI_NAME_LINEAGE = "lineage/hive/table";
+    public static final String URI_LINEAGE = "lineage/";
     public static final String URI_TRAITS = "traits";
 
     public static final String QUERY = "query";
@@ -416,7 +417,12 @@ public class AtlasClient {
         SEARCH_GREMLIN(BASE_URI + URI_SEARCH + "/gremlin", HttpMethod.GET, Response.Status.OK),
         SEARCH_FULL_TEXT(BASE_URI + URI_SEARCH + "/fulltext", HttpMethod.GET, Response.Status.OK),
 
-        //Lineage operations
+        //Lineage operations based on dataset name
+        NAME_LINEAGE_INPUTS_GRAPH(BASE_URI + URI_NAME_LINEAGE, HttpMethod.GET, Response.Status.OK),
+        NAME_LINEAGE_OUTPUTS_GRAPH(BASE_URI + URI_NAME_LINEAGE, HttpMethod.GET, Response.Status.OK),
+        NAME_LINEAGE_SCHEMA(BASE_URI + URI_NAME_LINEAGE, HttpMethod.GET, Response.Status.OK),
+
+        //Lineage operations based on entity id of the dataset
         LINEAGE_INPUTS_GRAPH(BASE_URI + URI_LINEAGE, HttpMethod.GET, Response.Status.OK),
         LINEAGE_OUTPUTS_GRAPH(BASE_URI + URI_LINEAGE, HttpMethod.GET, Response.Status.OK),
         LINEAGE_SCHEMA(BASE_URI + URI_LINEAGE, HttpMethod.GET, Response.Status.OK);
@@ -988,7 +994,7 @@ public class AtlasClient {
     }
 
     public JSONObject getInputGraph(String datasetName) throws AtlasServiceException {
-        JSONObject response = callAPI(API.LINEAGE_INPUTS_GRAPH, null, datasetName, "/inputs/graph");
+        JSONObject response = callAPI(API.NAME_LINEAGE_INPUTS_GRAPH, null, datasetName, "/inputs/graph");
         try {
             return response.getJSONObject(AtlasClient.RESULTS);
         } catch (JSONException e) {
@@ -997,7 +1003,34 @@ public class AtlasClient {
     }
 
     public JSONObject getOutputGraph(String datasetName) throws AtlasServiceException {
-        JSONObject response = callAPI(API.LINEAGE_OUTPUTS_GRAPH, null, datasetName, "/outputs/graph");
+        JSONObject response = callAPI(API.NAME_LINEAGE_OUTPUTS_GRAPH, null, datasetName, "/outputs/graph");
+        try {
+            return response.getJSONObject(AtlasClient.RESULTS);
+        } catch (JSONException e) {
+            throw new AtlasServiceException(e);
+        }
+    }
+
+    public JSONObject getInputGraphForEntity(String entityId) throws AtlasServiceException {
+        JSONObject response = callAPI(API.LINEAGE_INPUTS_GRAPH, null, entityId, "/inputs/graph");
+        try {
+            return response.getJSONObject(AtlasClient.RESULTS);
+        } catch (JSONException e) {
+            throw new AtlasServiceException(e);
+        }
+    }
+
+    public JSONObject getOutputGraphForEntity(String datasetId) throws AtlasServiceException {
+        JSONObject response = callAPI(API.LINEAGE_OUTPUTS_GRAPH, null, datasetId, "/outputs/graph");
+        try {
+            return response.getJSONObject(AtlasClient.RESULTS);
+        } catch (JSONException e) {
+            throw new AtlasServiceException(e);
+        }
+    }
+
+    public JSONObject getSchemaForEntity(String datasetId) throws AtlasServiceException {
+        JSONObject response = callAPI(API.LINEAGE_OUTPUTS_GRAPH, null, datasetId, "/schema");
         try {
             return response.getJSONObject(AtlasClient.RESULTS);
         } catch (JSONException e) {

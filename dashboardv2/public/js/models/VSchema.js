@@ -22,7 +22,7 @@ define(['require',
 ], function(require, Globals, VBaseModel) {
     'use strict';
     var VSchema = VBaseModel.extend({
-        urlRoot: Globals.baseURL + '/api/atlas/lineage/hive/table/log_fact_daily_mv/schema',
+        urlRoot: Globals.baseURL + '/api/atlas/lineage/log_fact_daily_mv/schema',
 
         defaults: {},
 
@@ -35,7 +35,7 @@ define(['require',
             this.bindErrorEvents();
         },
         toString: function() {
-            return this.get('name');
+            return this.get('id');
         },
     }, {});
     return VSchema;

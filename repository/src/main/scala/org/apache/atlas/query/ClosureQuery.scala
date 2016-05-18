@@ -256,21 +256,21 @@ trait SingleInstanceClosureQuery[T] extends ClosureQuery {
  * @param persistenceStrategy as needed to evaluate the Closure Query.
  * @param g as needed to evaluate the Closure Query.
  */
-case class HiveLineageQuery(tableTypeName : String,
-                           tableName : String,
-                        ctasTypeName : String,
-                      ctasInputTableAttribute : String,
-                      ctasOutputTableAttribute : String,
-                      depth : Option[Int],
-                      selectAttributes : Option[List[String]],
-                      withPath : Boolean,
-                        persistenceStrategy: GraphPersistenceStrategies,
-                        g: TitanGraph
+case class InputLineageClosureQuery(tableTypeName : String,
+                                    attributeToSelectInstance : String,
+                                    tableName : String,
+                                    ctasTypeName : String,
+                                    ctasInputTableAttribute : String,
+                                    ctasOutputTableAttribute : String,
+                                    depth : Option[Int],
+                                    selectAttributes : Option[List[String]],
+                                    withPath : Boolean,
+                                    persistenceStrategy: GraphPersistenceStrategies,
+                                    g: TitanGraph
                         ) extends SingleInstanceClosureQuery[String] {
 
   val closureType : String = tableTypeName
 
-  val attributeToSelectInstance = "name"
   val attributeTyp = DataTypes.STRING_TYPE
 
   val instanceValue = tableName
@@ -296,21 +296,21 @@ case class HiveLineageQuery(tableTypeName : String,
  * @param persistenceStrategy as needed to evaluate the Closure Query.
  * @param g as needed to evaluate the Closure Query.
  */
-case class HiveWhereUsedQuery(tableTypeName : String,
-                              tableName : String,
-                            ctasTypeName : String,
-                            ctasInputTableAttribute : String,
-                            ctasOutputTableAttribute : String,
-                            depth : Option[Int],
-                            selectAttributes : Option[List[String]],
-                            withPath : Boolean,
-                            persistenceStrategy: GraphPersistenceStrategies,
-                            g: TitanGraph
+case class OutputLineageClosureQuery(tableTypeName : String,
+                                     attributeToSelectInstance : String,
+                                     tableName : String,
+                                     ctasTypeName : String,
+                                     ctasInputTableAttribute : String,
+                                     ctasOutputTableAttribute : String,
+                                     depth : Option[Int],
+                                     selectAttributes : Option[List[String]],
+                                     withPath : Boolean,
+                                     persistenceStrategy: GraphPersistenceStrategies,
+                                     g: TitanGraph
                              ) extends SingleInstanceClosureQuery[String] {
 
   val closureType : String = tableTypeName
 
-  val attributeToSelectInstance = "name"
   val attributeTyp = DataTypes.STRING_TYPE
 
   val instanceValue = tableName

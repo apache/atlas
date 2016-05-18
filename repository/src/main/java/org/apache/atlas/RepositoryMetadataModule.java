@@ -26,7 +26,7 @@ import com.google.inject.throwingproviders.ThrowingProviderBinder;
 import com.thinkaurelius.titan.core.TitanGraph;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.apache.atlas.discovery.DiscoveryService;
-import org.apache.atlas.discovery.HiveLineageService;
+import org.apache.atlas.discovery.DataSetLineageService;
 import org.apache.atlas.discovery.LineageService;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.atlas.listener.EntityChangeListener;
@@ -83,7 +83,7 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
         // bind the DiscoveryService interface to an implementation
         bind(DiscoveryService.class).to(GraphBackedDiscoveryService.class).asEagerSingleton();
 
-        bind(LineageService.class).to(HiveLineageService.class).asEagerSingleton();
+        bind(LineageService.class).to(DataSetLineageService.class).asEagerSingleton();
 
         bindAuditRepository(binder());
 

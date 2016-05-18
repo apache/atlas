@@ -73,7 +73,7 @@ define(['require',
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'globalVent', 'name', 'vent'));
                 this.schemaCollection = new VSchemaList([], {});
-                this.schemaCollection.url = "/api/atlas/lineage/hive/table/" + this.name + "/schema";
+                this.schemaCollection.url = "/api/atlas/lineage/" + this.name + "/schema";
                 this.commonTableOptions = {
                     collection: this.schemaCollection,
                     includeFilter: false,

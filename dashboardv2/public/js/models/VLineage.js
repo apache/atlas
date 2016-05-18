@@ -23,7 +23,7 @@ define(['require',
     'use strict';
     var VLineage = VBaseModel.extend({
 
-        urlRoot: Globals.baseURL + 'api/atlas/lineage/hive/table/assetName/outputs/graph',
+        urlRoot: Globals.baseURL + 'api/atlas/lineage/assetName/outputs/graph',
 
         defaults: {},
 
@@ -36,7 +36,7 @@ define(['require',
             this.bindErrorEvents();
         },
         toString: function() {
-            return this.get('name');
+            return this.get('id');
         },
     }, {});
     return VLineage;

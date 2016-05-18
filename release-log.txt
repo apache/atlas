@@ -21,6 +21,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-713 Entity lineage based on entity id (shwethags)
 ATLAS-736 UI - BUG :: displaying timestamp values for hive_db description (kevalbhatt18 via yhemanth)
 ATLAS-784 Configure config.store.uri for Falcon hook IT (yhemanth)
 ATLAS-645 FieldMapping.output() results in stack overflow when instances reference each other (dkantor via shwethags)

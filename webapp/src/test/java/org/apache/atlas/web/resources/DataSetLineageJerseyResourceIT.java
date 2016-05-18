@@ -38,7 +38,7 @@ import java.util.List;
 /**
  * Hive Lineage Integration Tests.
  */
-public class HiveLineageJerseyResourceIT extends BaseResourceIT {
+public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     private static final String BASE_URI = "api/atlas/lineage/hive/table/";
     private String salesFactTable;
@@ -81,6 +81,22 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
     }
 
     @Test
+    public void testInputsGraphForEntity() throws Exception {
+        String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE, "name", salesMonthlyTable).getId()._getId();
+        JSONObject results = serviceClient.getInputGraphForEntity(tableId);
+        Assert.assertNotNull(results);
+
+        JSONObject values = results.getJSONObject("values");
+        Assert.assertNotNull(values);
+
+        final JSONObject vertices = values.getJSONObject("vertices");
+        Assert.assertEquals(vertices.length(), 4);
+
+        final JSONObject edges = values.getJSONObject("edges");
+        Assert.assertEquals(edges.length(), 4);
+    }
+
+    @Test
     public void testOutputsGraph() throws Exception {
         WebResource resource = service.path(BASE_URI).path(salesFactTable).path("outputs").path("graph");
 
@@ -109,6 +125,22 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
     }
 
     @Test
+    public void testOutputsGraphForEntity() throws Exception {
+        String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE, "name", salesFactTable).getId()._getId();
+        JSONObject results = serviceClient.getOutputGraphForEntity(tableId);
+        Assert.assertNotNull(results);
+
+        JSONObject values = results.getJSONObject("values");
+        Assert.assertNotNull(values);
+
+        final JSONObject vertices = values.getJSONObject("vertices");
+        Assert.assertEquals(vertices.length(), 3);
+
+        final JSONObject edges = values.getJSONObject("edges");
+        Assert.assertEquals(edges.length(), 4);
+    }
+
+    @Test
     public void testSchema() throws Exception {
         WebResource resource = service.path(BASE_URI).path(salesFactTable).path("schema");
 
@@ -124,6 +156,24 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
         JSONObject results = response.getJSONObject(AtlasClient.RESULTS);
+        Assert.assertNotNull(results);
+
+        JSONArray rows = results.getJSONArray("rows");
+        Assert.assertEquals(rows.length(), 4);
+
+        for (int index = 0; index < rows.length(); index++) {
+            final JSONObject row = rows.getJSONObject(index);
+            Assert.assertNotNull(row.getString("name"));
+            Assert.assertNotNull(row.getString("comment"));
+            Assert.assertNotNull(row.getString("dataType"));
+            Assert.assertEquals(row.getString("$typeName$"), "hive_column");
+        }
+    }
+
+    @Test
+    public void testSchemaForEntity() throws Exception {
+        String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE, "name", salesFactTable).getId()._getId();
+        JSONObject results = serviceClient.getSchemaForEntity(tableId);
         Assert.assertNotNull(results);
 
         JSONArray rows = results.getJSONArray("rows");
@@ -184,8 +234,7 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
                 table("sales_fact_daily_mv" + randomString(), "sales fact daily materialized view", reportingDB,
                         "Joe BI", "MANAGED", salesFactColumns, "Metric");
 
-        String procName = "loadSalesDaily" + randomString();
-        loadProcess(procName, "John ETL", ImmutableList.of(salesFact, timeDim),
+        loadProcess("loadSalesDaily" + randomString(), "John ETL", ImmutableList.of(salesFact, timeDim),
                 ImmutableList.of(salesFactDaily), "create table as select ", "plan", "id", "graph", "ETL");
 
         salesMonthlyTable = "sales_fact_monthly_mv" + randomString();
@@ -238,8 +287,8 @@ public class HiveLineageJerseyResourceIT extends BaseResourceIT {
     Id loadProcess(String name, String user, List<Id> inputTables, List<Id> outputTables, String queryText,
             String queryPlan, String queryId, String queryGraph, String... traitNames) throws Exception {
         Referenceable referenceable = new Referenceable(HIVE_PROCESS_TYPE, traitNames);
-        referenceable.set(AtlasClient.NAME, name);
-        referenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
+        referenceable.set("name", name);
+        referenceable.set("qualifiedName", name);
         referenceable.set("user", user);
         referenceable.set("startTime", System.currentTimeMillis());
         referenceable.set("endTime", System.currentTimeMillis() + 10000);

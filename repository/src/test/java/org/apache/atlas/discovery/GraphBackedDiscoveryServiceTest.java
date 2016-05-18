@@ -20,7 +20,7 @@ package org.apache.atlas.discovery;
 
 import com.google.common.collect.ImmutableSet;
 
-import org.apache.atlas.BaseHiveRepositoryTest;
+import org.apache.atlas.BaseRepositoryTest;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestUtils;
@@ -60,7 +60,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
 @Guice(modules = RepositoryMetadataModule.class)
-public class GraphBackedDiscoveryServiceTest extends BaseHiveRepositoryTest {
+public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
 
     @Inject
     private MetadataRepository repositoryService;

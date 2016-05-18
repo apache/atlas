@@ -26,42 +26,50 @@ import org.apache.atlas.AtlasException;
 public interface LineageService {
 
     /**
-     * Return the lineage outputs for the given tableName.
+     * Return the lineage outputs graph for the given datasetName.
      *
-     * @param tableName tableName
-     * @return Outputs as JSON
-     */
-    String getOutputs(String tableName) throws AtlasException;
-
-    /**
-     * Return the lineage outputs graph for the given tableName.
-     *
-     * @param tableName tableName
+     * @param datasetName datasetName
      * @return Outputs Graph as JSON
      */
-    String getOutputsGraph(String tableName) throws AtlasException;
+    String getOutputsGraph(String datasetName) throws AtlasException;
 
     /**
-     * Return the lineage inputs for the given tableName.
+     * Return the lineage inputs graph for the given datasetName.
      *
-     * @param tableName tableName
-     * @return Inputs as JSON
-     */
-    String getInputs(String tableName) throws AtlasException;
-
-    /**
-     * Return the lineage inputs graph for the given tableName.
-     *
-     * @param tableName tableName
+     * @param datasetName datasetName
      * @return Inputs Graph as JSON
      */
-    String getInputsGraph(String tableName) throws AtlasException;
+    String getInputsGraph(String datasetName) throws AtlasException;
 
     /**
-     * Return the schema for the given tableName.
+     * Return the lineage inputs graph for the given entity id.
      *
-     * @param tableName tableName
+     * @param guid entity id
+     * @return Inputs Graph as JSON
+     */
+    String getInputsGraphForEntity(String guid) throws AtlasException;
+
+    /**
+     * Return the lineage inputs graph for the given entity id.
+     *
+     * @param guid entity id
+     * @return Inputs Graph as JSON
+     */
+    String getOutputsGraphForEntity(String guid) throws AtlasException;
+
+    /**
+     * Return the schema for the given datasetName.
+     *
+     * @param datasetName datasetName
      * @return Schema as JSON
      */
-    String getSchema(String tableName) throws AtlasException;
+    String getSchema(String datasetName) throws AtlasException;
+
+    /**
+     * Return the schema for the given entity id.
+     *
+     * @param guid tableName
+     * @return Schema as JSON
+     */
+    String getSchemaForEntity(String guid) throws AtlasException;
 }

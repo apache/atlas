@@ -55,7 +55,7 @@ import java.util.List;
  *  Base Class to set up hive types and instances for tests
  */
 @Guice(modules = RepositoryMetadataModule.class)
-public class BaseHiveRepositoryTest {
+public class BaseRepositoryTest {
 
     @Inject
     protected MetadataService metadataService;
@@ -94,8 +94,8 @@ public class BaseHiveRepositoryTest {
         metadataService.createType(typesAsJSON);
     }
 
-    private static final String DATABASE_TYPE = "hive_db";
-    private static final String HIVE_TABLE_TYPE = "hive_table";
+    protected static final String DATABASE_TYPE = "hive_db";
+    protected static final String HIVE_TABLE_TYPE = "hive_table";
     private static final String COLUMN_TYPE = "hive_column";
     private static final String HIVE_PROCESS_TYPE = "hive_process";
     private static final String STORAGE_DESC_TYPE = "StorageDesc";
@@ -104,7 +104,8 @@ public class BaseHiveRepositoryTest {
 
     TypesDef createTypeDefinitions() {
         HierarchicalTypeDefinition<ClassType> dbClsDef = TypesUtil
-            .createClassTypeDef(DATABASE_TYPE, null, attrDef("name", DataTypes.STRING_TYPE),
+            .createClassTypeDef(DATABASE_TYPE, null,
+                TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                 attrDef("description", DataTypes.STRING_TYPE), attrDef("locationUri", DataTypes.STRING_TYPE),
                 attrDef("owner", DataTypes.STRING_TYPE), attrDef("createTime", DataTypes.LONG_TYPE));
 
@@ -127,8 +128,7 @@ public class BaseHiveRepositoryTest {
                 attrDef("temporary", DataTypes.BOOLEAN_TYPE),
                 new AttributeDefinition("db", DATABASE_TYPE, Multiplicity.REQUIRED, false, null),
                 // todo - uncomment this, something is broken
-                new AttributeDefinition("sd", STORAGE_DESC_TYPE,
-                                                Multiplicity.REQUIRED, true, null),
+                new AttributeDefinition("sd", STORAGE_DESC_TYPE, Multiplicity.REQUIRED, true, null),
                 new AttributeDefinition("columns", DataTypes.arrayTypeName(COLUMN_TYPE),
                     Multiplicity.COLLECTION, true, null));
 
@@ -285,7 +285,7 @@ public class BaseHiveRepositoryTest {
         return createInstance(referenceable, clsType);
     }
 
-    Referenceable storageDescriptor(String location, String inputFormat, String outputFormat, boolean compressed, List<Referenceable> columns)
+    protected Referenceable storageDescriptor(String location, String inputFormat, String outputFormat, boolean compressed, List<Referenceable> columns)
         throws Exception {
         Referenceable referenceable = new Referenceable(STORAGE_DESC_TYPE);
         referenceable.set("location", location);
@@ -297,7 +297,7 @@ public class BaseHiveRepositoryTest {
         return referenceable;
     }
 
-    Referenceable column(String name, String dataType, String comment, String... traitNames) throws Exception {
+    protected Referenceable column(String name, String dataType, String comment, String... traitNames) throws Exception {
         Referenceable referenceable = new Referenceable(COLUMN_TYPE, traitNames);
         referenceable.set("name", name);
         referenceable.set("dataType", dataType);
@@ -306,7 +306,7 @@ public class BaseHiveRepositoryTest {
         return referenceable;
     }
 
-    Id table(String name, String description, Id dbId, Referenceable sd, String owner, String tableType,
+    protected Id table(String name, String description, Id dbId, Referenceable sd, String owner, String tableType,
         List<Referenceable> columns, String... traitNames) throws Exception {
         Referenceable referenceable = new Referenceable(HIVE_TABLE_TYPE, traitNames);
         referenceable.set("name", name);
@@ -327,12 +327,12 @@ public class BaseHiveRepositoryTest {
         return createInstance(referenceable, clsType);
     }
 
-    Id loadProcess(String name, String description, String user, List<Id> inputTables, List<Id> outputTables,
+    protected Id loadProcess(String name, String description, String user, List<Id> inputTables, List<Id> outputTables,
         String queryText, String queryPlan, String queryId, String queryGraph, String... traitNames)
         throws Exception {
         Referenceable referenceable = new Referenceable(HIVE_PROCESS_TYPE, traitNames);
-        referenceable.set(AtlasClient.NAME, name);
-        referenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
+        referenceable.set("name", name);
+        referenceable.set("qualifiedName", name);
         referenceable.set("description", description);
         referenceable.set("user", user);
         referenceable.set("startTime", System.currentTimeMillis());

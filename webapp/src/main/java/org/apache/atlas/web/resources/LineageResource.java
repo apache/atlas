@@ -19,10 +19,9 @@
 package org.apache.atlas.web.resources;
 
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.typesystem.exception.EntityNotFoundException;
-import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.discovery.DiscoveryException;
 import org.apache.atlas.discovery.LineageService;
+import org.apache.atlas.typesystem.exception.EntityNotFoundException;
 import org.apache.atlas.web.util.Servlets;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
@@ -30,24 +29,18 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
-/**
- * Jersey Resource for Hive Table Lineage.
- */
-@Path("lineage/hive")
+@Path("lineage")
 @Singleton
-public class HiveLineageResource {
-
-    private static final Logger LOG = LoggerFactory.getLogger(HiveLineageResource.class);
+public class LineageResource {
+    private static final Logger LOG = LoggerFactory.getLogger(DataSetLineageResource.class);
 
     private final LineageService lineageService;
 
@@ -58,108 +51,102 @@ public class HiveLineageResource {
      * @param lineageService lineage service handle
      */
     @Inject
-    public HiveLineageResource(LineageService lineageService) {
+    public LineageResource(LineageService lineageService) {
         this.lineageService = lineageService;
     }
 
     /**
-     * Returns the inputs graph for a given entity.
-     *
-     * @param tableName table name
+     * Returns input lineage graph for the given entity id.
+     * @param guid dataset entity id
+     * @return
      */
     @GET
-    @Path("table/{tableName}/inputs/graph")
+    @Path("{guid}/inputs/graph")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response inputsGraph(@Context HttpServletRequest request, @PathParam("tableName") String tableName) {
-        LOG.info("Fetching lineage inputs graph for tableName={}", tableName);
+    public Response inputsGraph(@PathParam("guid") String guid) {
+        LOG.info("Fetching lineage inputs graph for guid={}", guid);
 
         try {
-            ParamChecker.notEmpty(tableName, "table name cannot be null");
-            final String jsonResult = lineageService.getInputsGraph(tableName);
+            final String jsonResult = lineageService.getInputsGraphForEntity(guid);
 
             JSONObject response = new JSONObject();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
-            response.put("tableName", tableName);
             response.put(AtlasClient.RESULTS, new JSONObject(jsonResult));
 
             return Response.ok(response).build();
         } catch (EntityNotFoundException e) {
-            LOG.error("table entity not found for {}", tableName, e);
+            LOG.error("entity not found for guid={}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (DiscoveryException | IllegalArgumentException e) {
-            LOG.error("Unable to get lineage inputs graph for table {}", tableName, e);
+            LOG.error("Unable to get lineage inputs graph for entity  guid={}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
-            LOG.error("Unable to get lineage inputs graph for table {}", tableName, e);
+            LOG.error("Unable to get lineage inputs graph for entity guid={}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
 
     /**
-     * Returns the outputs graph for a given entity.
+     * Returns the outputs graph for a given entity id.
      *
-     * @param tableName table name
+     * @param guid dataset entity id
      */
     @GET
-    @Path("table/{tableName}/outputs/graph")
+    @Path("{guid}/outputs/graph")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response outputsGraph(@Context HttpServletRequest request, @PathParam("tableName") String tableName) {
-        LOG.info("Fetching lineage outputs graph for tableName={}", tableName);
+    public Response outputsGraph(@PathParam("guid") String guid) {
+        LOG.info("Fetching lineage outputs graph for entity guid={}", guid);
 
         try {
-            ParamChecker.notEmpty(tableName, "table name cannot be null");
-            final String jsonResult = lineageService.getOutputsGraph(tableName);
+            final String jsonResult = lineageService.getOutputsGraphForEntity(guid);
 
             JSONObject response = new JSONObject();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
-            response.put("tableName", tableName);
             response.put(AtlasClient.RESULTS, new JSONObject(jsonResult));
 
             return Response.ok(response).build();
         } catch (EntityNotFoundException e) {
-            LOG.error("table entity not found for {}", tableName, e);
+            LOG.error("table entity not found for {}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (DiscoveryException | IllegalArgumentException e) {
-            LOG.error("Unable to get lineage outputs graph for table {}", tableName, e);
+            LOG.error("Unable to get lineage outputs graph for entity guid={}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
-            LOG.error("Unable to get lineage outputs graph for table {}", tableName, e);
+            LOG.error("Unable to get lineage outputs graph for entity guid={}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
 
     /**
-     * Return the schema for the given tableName.
+     * Returns the schema for the given dataset id.
      *
-     * @param tableName table name
+     * @param guid dataset entity id
      */
     @GET
-    @Path("table/{tableName}/schema")
+    @Path("{guid}/schema")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response schema(@Context HttpServletRequest request, @PathParam("tableName") String tableName) {
-        LOG.info("Fetching schema for tableName={}", tableName);
+    public Response schema(@PathParam("guid") String guid) {
+        LOG.info("Fetching schema for entity guid={}", guid);
 
         try {
-            ParamChecker.notEmpty(tableName, "table name cannot be null");
-            final String jsonResult = lineageService.getSchema(tableName);
+            final String jsonResult = lineageService.getSchemaForEntity(guid);
 
             JSONObject response = new JSONObject();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
-            response.put("tableName", tableName);
             response.put(AtlasClient.RESULTS, new JSONObject(jsonResult));
 
             return Response.ok(response).build();
         } catch (EntityNotFoundException e) {
-            LOG.error("table entity not found for {}", tableName, e);
+            LOG.error("table entity not found for {}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (DiscoveryException | IllegalArgumentException e) {
-            LOG.error("Unable to get schema for table {}", tableName, e);
+            LOG.error("Unable to get schema for entity guid={}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
-            LOG.error("Unable to get schema for table {}", tableName, e);
+            LOG.error("Unable to get schema for entity={}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }

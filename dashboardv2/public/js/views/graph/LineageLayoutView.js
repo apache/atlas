@@ -56,8 +56,8 @@ define(['require',
                 this.inputCollection = new VLineageList();
                 this.outputCollection = new VLineageList();
                 this.entityModel = new VEntity();
-                this.inputCollection.url = "/api/atlas/lineage/hive/table/" + this.assetName + "/inputs/graph";
-                this.outputCollection.url = "/api/atlas/lineage/hive/table/" + this.assetName + "/outputs/graph";
+                this.inputCollection.url = "/api/atlas/lineage/" + this.assetName + "/inputs/graph";
+                this.outputCollection.url = "/api/atlas/lineage/" + this.assetName + "/outputs/graph";
                 this.bindEvents();
                 this.fetchGraphData();
                 this.data = {};
