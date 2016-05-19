@@ -81,10 +81,10 @@ define(['require',
             tagsAndTypeGenerator: function(collection, element, searchString) {
                 if (element == "listType") {
                     var searchType = "dsl";
-                    var icon = "fa fa-cogs"
+                    var icon = "fa fa-cogs";
                 } else {
                     var searchType = "fulltext";
-                    var icon = "fa fa-tags"
+                    var icon = "fa fa-tags";
                 }
                 var str = '';
                 _.each(this[collection].fullCollection.models, function(model) {

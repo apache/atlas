@@ -15,32 +15,27 @@
  * limitations under the License.
 -->
 <div class="modal-dialog {{mainClass}}" role="document">
-	<div class="modal-content">
-		{{#if title}}
-		     <div class="modal-header">
-		        <a class="close">&times;</a>
-				<h4 class="modal-title">
+    <div class="modal-content">
+        {{#if title}}
+        <div class="modal-header">
+            <a class="close">&times;</a>
+            <h4 class="modal-title">
 					{{#if titleHtml}}
 					    {{{tt title}}}
 					  {{else}}
 					    {{tt title}}
 					  {{/if}}
 				</h4>
-		     </div>
-		{{/if}}
-		{{#if contentWithFooter}}
-		{{else}}
-			<div class="modal-body">{{content}}</div>
-			{{#if showFooter}}
-				 <div class="modal-footer" >
-				   <a href="#" class="btn ok btn-success">{{tt okText}}</a>
-				   {{#if allowCancel}}
-				     {{#if cancelText}}
-				       <a href="#" class="btn btn-default cancel">{{tt cancelText}}</a>
-				     {{/if}}
-				   {{/if}}
-				 </div>
-			{{/if}}
-		{{/if}}
-	</div>
+        </div>
+        {{/if}} {{#if contentWithFooter}} {{else}}
+        <div class="modal-body">{{content}}</div>
+        {{#if showFooter}}
+        <div class="modal-footer">
+            <button class="btn ok btn-success">{{tt okText}}</button>
+            {{#if allowCancel}} {{#if cancelText}}
+            <button class="btn btn-default cancel">{{tt cancelText}}</button>
+            {{/if}} {{/if}}
+        </div>
+        {{/if}} {{/if}}
+    </div>
 </div>

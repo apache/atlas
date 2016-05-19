@@ -45,6 +45,5 @@ define(['require',
             tableCols: {}
         }
     );
-
     return VCommonList;
 });

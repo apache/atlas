@@ -39,8 +39,8 @@ define(['require',
                     }
                     var arr = [];
                     resp[this.modelAttrName].rows.forEach(function(d) {
-                        arr.push(d)
-                    })
+                        arr.push(d);
+                    });
                     return arr;
                 } catch (e) {
                     console.log(e);

@@ -41,8 +41,8 @@ define(['require',
                     resp[this.modelAttrName].forEach(function(d) {
                         arr.push({
                             tags: d
-                        })
-                    })
+                        });
+                    });
                     return arr;
                 } catch (e) {
                     console.log(e);

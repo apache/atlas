@@ -138,7 +138,6 @@ define(['require',
                         content: that.name + "  has been created"
                     });
                     that.collection.reset();
-
                 },
                 error: function(model, response) {
                     if (response.responseJSON && response.responseJSON.error) {

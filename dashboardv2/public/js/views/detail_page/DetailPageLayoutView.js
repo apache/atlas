@@ -37,10 +37,15 @@ define(['require',
                 RLineageLayoutView: "#r_lineageLayoutView",
             },
             /** ui selector cache */
-            ui: {},
+            ui: {
+                backButton: "[data-id='backButton']"
+            },
             /** ui events hash */
             events: function() {
                 var events = {};
+                events['click ' + this.ui.backButton] = function() {
+                    Backbone.history.history.back();
+                };
                 return events;
             },
             /**

@@ -55,7 +55,7 @@ define(['require',
 
     Handlebars.registerHelper('toHumanDate', function(val) {
         if (!val) return "";
-        return val //localization.formatDate(val, 'f');
+        return val;//localization.formatDate(val, 'f');
     });
     Handlebars.registerHelper('tt', function(str) {
         //return localization.tt(str);

@@ -34,9 +34,10 @@ define(['require',
             addTagOptions: "[data-id='addTagOptions']",
             tagAttribute: "[data-id='tagAttribute']"
         },
-        events: {
-            'change #addTagID': 'onChangeTagDefination'
-
+        events: function() {
+            var events = {};
+            events["change " + this.ui.addTagOptions] = 'onChangeTagDefination';
+            return events;
         },
         /**
          * intialize a new AddTagModel Layout
@@ -47,19 +48,20 @@ define(['require',
             _.extend(this, _.pick(options, 'vent', 'modalCollection', 'guid'));
             this.collection = new VTagList();
             this.commonCollection = new VCommonList();
-            var modal = new Modal({
+            this.modal = new Modal({
                 title: 'Add Tag',
                 content: this,
                 okText: 'Save',
                 cancelText: "Cancel",
                 allowCancel: true,
             }).open();
-
+            var saveBtn = this.modal.$el.find('.btn-success');
+            saveBtn[0].setAttribute('disabled', true);
             this.on('ok', function() {
                 that.saveTagData();
             });
             this.on('closeModal', function() {
-                modal.trigger('cancel');
+                this.modal.trigger('cancel');
             });
             this.bindEvents();
         },
@@ -77,14 +79,17 @@ define(['require',
             }, this);
         },
         tagsCollection: function() {
+            var str = '<option selected="true" style="display:none;"></option>';
             for (var i = 0; i < this.collection.fullCollection.models.length; i++) {
                 var tags = this.collection.fullCollection.models[i].get("tags");
-                var str = '<option>' + tags + '</option>';
-                this.ui.addTagOptions.append(str);
+                str += '<option>' + tags + '</option>';
+                this.ui.addTagOptions.html(str);
             }
         },
         onChangeTagDefination: function() {
             this.ui.tagAttribute.empty();
+            var saveBtn = this.modal.$el.find('.btn-success');
+            saveBtn.prop("disabled", false);
             var tagname = this.ui.addTagOptions.val();
             this.fetchTagSubData(tagname);
         },

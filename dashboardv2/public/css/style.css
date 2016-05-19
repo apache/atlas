@@ -691,7 +691,7 @@ ul[data-id=branchList] li {
     max-width: 140px;
 }
 
-.appndList {
+.appendList {
     max-height: 200px;
     overflow: auto;
     max-width: 140px;
@@ -720,7 +720,54 @@ text {
 }
 
 .edgePath path {
-    stroke: #333;
-    stroke-width: 1.5px;
+    stroke: #000;
+    /* stroke-width: 1.5px;*/
 }
 
+.node .label {
+    fill: #868686;
+}
+
+.branchChildDiv {
+    padding-left: 15px;
+}
+
+.branchListParentInput .form-control {
+    border-right: none;
+    box-shadow: none;
+    border-radius: 4px;
+}
+
+.branchListParentInput .input-group-addon {
+    background-color: #fff;
+}
+
+.branchListParentInput {
+    padding-bottom: 18px;
+    display: list-item;
+}
+
+.backButton {
+    display: block;
+    width: 35px;
+    height: 35px;
+    line-height: 46px;
+    text-align: center;
+    background-color: #323544;
+    color: #fff;
+    position: fixed;
+    left: 5px;
+    top: 90px;
+    font-size: 11px;
+}
+
+.backButton:hover,
+.backButton:active {
+    color: #fff;
+}
+
+.zoomButtonGroup {
+    position: absolute;
+    top: 4px;
+    right: 5px;
+}

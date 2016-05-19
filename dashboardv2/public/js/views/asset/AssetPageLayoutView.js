@@ -79,7 +79,7 @@ define(['require',
                 _.extend(this, _.pick(options, 'globalVent', 'collection', 'vent'));
                 this.entityModel = new VEntity();
                 this.searchCollection = this.collection;
-                this.fetchList = 0
+                this.fetchList = 0;
                 this.commonTableOptions = {
                     collection: this.searchCollection,
                     includeFilter: false,
@@ -297,11 +297,11 @@ define(['require',
                                 var modelObject = model.toJSON();
                                 if (modelObject.$typeName$ && modelObject.instanceInfo) {
                                     var guid = model.toJSON().instanceInfo.guid;
-                                    ++that.fetchList
+                                    ++that.fetchList;
                                     model.getEntity(guid, {
                                         beforeSend: function() {},
                                         success: function(data) {
-                                            --that.fetchList
+                                            --that.fetchList;
                                             that.checkTableFetch();
                                             if (data.definition && data.definition.values && data.definition.values.name) {
                                                 return that.$('td a[data-id="' + guid + '"]').html(data.definition.values.name);
@@ -318,11 +318,11 @@ define(['require',
                                     return '<a href="#!/dashboard/detailPage/' + guid + '" data-id="' + guid + '"></a>';
                                 } else if (!modelObject.$typeName$) {
                                     var guid = model.toJSON().guid;
-                                    ++that.fetchList
+                                    ++that.fetchList;
                                     model.getEntity(guid, {
                                         beforeSend: function() {},
                                         success: function(data) {
-                                            --that.fetchList
+                                            --that.fetchList;
                                             that.checkTableFetch();
                                             if (data.definition && data.definition.values && data.definition.values.name) {
                                                 return that.$('td a[data-id="' + guid + '"]').html(data.definition.values.name);

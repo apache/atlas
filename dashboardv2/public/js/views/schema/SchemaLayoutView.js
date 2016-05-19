@@ -39,7 +39,6 @@ define(['require',
             /** ui selector cache */
             ui: {
                 tagClick: '[data-id="tagClick"]',
-                DetailValue: "[data-id='detailValue']",
                 addTag: "[data-id='addTag']",
             },
             /** ui events hash */

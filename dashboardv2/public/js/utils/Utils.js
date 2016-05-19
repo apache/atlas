@@ -96,20 +96,20 @@
             return { found: false, 'value': value };
         },
         getLocalStorage: function(key, value) {
-            var keyValue = localStorage.getItem(key)
+            var keyValue = localStorage.getItem(key);
             if (!keyValue || keyValue == "undefined") {
                 return this.setLocalStorage(key, value);
             } else {
                 return { found: true, 'value': keyValue };
             }
         }
-    }
+    };
     Utils.cookie = {
         setCookie: function(cname, cvalue) {
             //var d = new Date();
             //d.setTime(d.getTime() + (exdays*24*60*60*1000));
             //var expires = "expires=" + d.toGMTString();
-            document.cookie = cname + "=" + cvalue + "; "
+            document.cookie = cname + "=" + cvalue + "; ";
             return { found: false, 'value': cvalue };
         },
         getCookie: function(findString) {
@@ -132,7 +132,7 @@
                 return setCookie(key, value);
             }
         }
-    }
+    };
     Utils.getQueryParams = function(qs) {
         qs = qs.split('+').join(' ');
         var params = {},
@@ -142,7 +142,7 @@
             params[decodeURIComponent(tokens[1])] = decodeURIComponent(tokens[2]);
         }
         return params;
-    }
+    };
 
     Utils.setUrl = function(options) {
         if (options) {
@@ -150,11 +150,11 @@
                 var hashUrl = window.location.hash.split("?");
                 if (hashUrl.length > 1) {
                     var param = Utils.getQueryParams(hashUrl[1]);
-                    options.urlParams = _.extend(param, options.urlParams)
+                    options.urlParams = _.extend(param, options.urlParams);
                 }
             }
             if (options.urlParams) {
-                var urlParams = "?"
+                var urlParams = "?";
                 _.each(options.urlParams, function(value, key, obj) {
                     urlParams += key + "=" + value + "&";
                 });
@@ -163,6 +163,6 @@
             }
             Backbone.history.navigate(options.url, { trigger: options.trigger != undefined ? options.trigger : true });
         }
-    }
+    };
     return Utils;
 });
