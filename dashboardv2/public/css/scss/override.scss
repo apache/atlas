@@ -1,0 +1,72 @@
+/* override.scss */
+
+.tabs li.tab.active {
+    border-bottom: 2px solid $color_keppel_approx;
+    a {
+        color: $color_keppel_approx;
+    }
+}
+
+.modal-header {
+    padding: 8px 15px;
+    border-bottom: 1px solid #DEDEDE;
+}
+
+.modal-title {
+    font-weight: 600;
+    -webkit-font-smoothing: antialiased;
+}
+
+.modal-footer {
+    padding: 15px;
+    text-align: right;
+    border: none;
+}
+
+.modal-body {
+    position: relative;
+    padding: 15px;
+}
+
+.cancel {
+    float: left;
+}
+
+.switch.pull-left {
+    margin-right: 8px;
+}
+
+.modal-content {
+    border-radius: 10px;
+}
+
+.table-quickMenu {
+    border: 1px #ddd solid;
+    overflow: visible !important;
+}
+
+.table-quickMenu>thead>tr>th {
+    border-bottom-width: 0px;
+    padding: 24px 8px;
+    background-color: transparent;
+    text-align: left;
+}
+
+.backgrid-paginator ul > li > a:hover,
+.backgrid-paginator ul > .active > a,
+.backgrid-paginator ul > .active > span {
+    background-color: #2EBC9A !important;
+    color: #fff !important;
+    &:hover {
+        background-color: none;
+    }
+}
+
+.backgrid-paginator ul {
+    display: inline-block;
+    padding-left: 0;
+    margin: 20px 0;
+    border-radius: 4px;
+    border: 1px #DDDDDD solid;
+}
+

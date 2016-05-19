@@ -1,0 +1,76 @@
+/* graph.scss */
+/* .graph-bg svg {
+    background-image: linear-gradient(to right, $black -10px, rgba(0, 0, 0, 0) 1px), linear-gradient($black -10px, $color_cararra_approx 1px);
+    background-size: 10px 10px;
+    position: relative;
+} */
+
+.node {
+    cursor: pointer;
+    circle {
+        fill: $white;
+        stroke: $steel_blue;
+        stroke-width: 1.5px;
+    }
+    text {
+        font-size: 10px;
+        font-family: $font_1;
+    }
+    rect {
+        stroke: $color_mountain_mist_approx;
+        fill: $white;
+        stroke-width: 1.5px;
+    }
+    .label {
+        fill: $color_suva_gray_approx;
+    }
+}
+
+.overlay {}
+
+.link {
+    fill: none;
+    stroke: $color_celeste_approx;
+    stroke-width: 1.5px;
+}
+
+.d3-tip {
+    line-height: 1;
+    font-weight: bold;
+    padding: 12px;
+    background: $black_80;
+    color: $white;
+    //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+    border-radius: 2px;
+    &:after {
+        //Instead of the line below you could use @include box-sizing($bs)
+        box-sizing: border-box;
+        display: inline;
+        font-size: 10px;
+        width: 100%;
+        line-height: 1;
+        color: $black_80;
+        content: "\25BC";
+        position: absolute;
+        text-align: center;
+    }
+    &.n:after {
+        margin: -1px 0 0;
+        top: 100%;
+        left: 0;
+    }
+}
+
+g.type-TK > rect {
+    fill: $color_bright_turquoise_approx;
+}
+
+.edgePath path {
+    stroke: $black;
+}
+
+.zoomButtonGroup {
+    position: absolute;
+    top: 4px;
+    right: 5px;
+}

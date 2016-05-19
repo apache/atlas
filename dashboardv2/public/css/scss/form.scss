@@ -1,0 +1,186 @@
+/* form.scss */
+
+.form-control {
+    //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+    background-color: $color_white_lilac_approx;
+    border: 1px $color_mystic_approx solid;
+    &:focus {
+        border-color: $color_bali_hai_approx;
+        outline: 0;
+        //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
+        box-shadow: inset 0 1px 1px $black_7_5, 0 0 2px $color_bali_hai_approx;
+    }
+}
+
+.sidebar-wrapper .form-control {
+    background-color: $white;
+    border: 1px $white solid;
+}
+
+.well {
+    background-color: $color_whisper_approx;
+    border: 1px solid $color_mystic_approx;
+}
+
+textarea {
+    resize: none;
+    &:focus {
+        outline: none !important;
+    }
+}
+
+button:focus {
+    outline: none !important;
+}
+
+.btn {
+    //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+    border-radius: 0;
+}
+
+.btn-primary {
+    color: $white;
+    background-color: $color_blue_bayoux_approx;
+    border-color: $color_blue_bayoux_approx;
+    &:hover {
+        color: $white;
+        background-color: $color_pickled_bluewood_approx;
+        border-color: $color_pickled_bluewood_approx;
+    }
+}
+
+.btn-success {
+    color: $white;
+    background-color: $color_jungle_green_approx;
+    border-color: $color_jungle_green_approx;
+    &:hover {
+        color: $white;
+        background-color: $color_jungle_green_approx;
+        border-color: $color_jungle_green_approx;
+    }
+}
+
+.btn-info {
+    color: $white;
+    background-color: $color_picton_blue_approx;
+    border-color: $color_picton_blue_approx;
+    &:hover {
+        color: $white;
+        background-color: $color_curious_blue_approx;
+        border-color: $color_curious_blue_approx;
+    }
+}
+
+.btn-warning {
+    color: $white;
+    background-color: $color_yellow_sea_approx;
+    border-color: $color_yellow_sea_approx;
+    &:hover {
+        color: $white;
+        background-color: $color_gamboge_approx;
+        border-color: $color_gamboge_approx;
+    }
+}
+
+.btn-danger {
+    color: $white;
+    background-color: $color_trinidad_approx;
+    border-color: $color_trinidad_approx;
+    &:hover {
+        color: $white;
+        background-color: $color_grenadier_approx;
+        border-color: $color_grenadier_approx;
+    }
+}
+
+.btn-atlas {
+    padding: 10px 20px;
+    background-color: $color_keppel_approx;
+    color: $white;
+    border: 1px $color_keppel_approx solid;
+    //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+    border-radius: 4px;
+    //Instead of the line below you could use @include transition($transition-1, $transition-2, $transition-3, $transition-4, $transition-5, $transition-6, $transition-7, $transition-8, $transition-9, $transition-10)
+    transition: all .3s ease;
+    margin:2px;
+    &.cancel {
+        background-color: $transparent;
+        color: $color_keppel_approx;
+        &:hover {
+            color: $color_keppel_approx;
+            background-color: $transparent;
+        }
+        &:focus {
+            background-color: $transparent;
+            color: $color_keppel_approx;
+        }
+    }
+    &:focus {
+        background-color: $color_keppel_approx;
+        color: $white;
+    }
+    &:hover {
+        color: $white;
+    }
+}
+
+.btn-tag {
+    color: $color_havelock_blue_approx;
+    border: 1px $color_havelock_blue_approx solid;
+    background-color: $white;
+    //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+    border-radius: 4px;
+    //Instead of the line below you could use @include transition($transition-1, $transition-2, $transition-3, $transition-4, $transition-5, $transition-6, $transition-7, $transition-8, $transition-9, $transition-10)
+    transition: all .3s ease;
+    &:hover {
+        color: $white;
+        background-color: $color_havelock_blue_approx;
+    }
+}
+
+.btn-taxanomyBack {
+    background-color: $transparent;
+    color: $color_keppel_approx;
+    margin-bottom: 10px;
+    &:hover {
+        color: $color_keppel_approx;
+    }
+    &:focus {
+        background-color: $transparent;
+        color: $color_keppel_approx;
+    }
+}
+
+.input-spacing {
+    padding-bottom: 10px!important;
+}
+.input-group-btn .glyphicon {
+    top: 2px;
+}
+.pagination > .active {
+    > a {
+        background-color: $color_curious_blue_approx;
+        border-color: $color_curious_blue_approx;
+        &:focus {
+            background-color: $color_curious_blue_approx;
+            border-color: $color_curious_blue_approx;
+        }
+        &:hover {
+            background-color: $color_curious_blue_approx;
+            border-color: $color_curious_blue_approx;
+        }
+    }
+    
+    > span {
+        background-color: $color_curious_blue_approx;
+        border-color: $color_curious_blue_approx;
+        &:focus {
+            background-color: $color_curious_blue_approx;
+            border-color: $color_curious_blue_approx;
+        }
+        &:hover {
+            background-color: $color_curious_blue_approx;
+            border-color: $color_curious_blue_approx;
+        }
+    }
+}

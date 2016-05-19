@@ -18,7 +18,6 @@
 
 define(['require', 'backgrid', 'asBreadcrumbs'], function(require) {
     'use strict';
-
     $.asBreadcrumbs.prototype.generateChildrenInfo = function() {
         var self = this;
         this.$children.each(function() {

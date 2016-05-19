@@ -23,11 +23,11 @@ define(['require',
     'modules/Modal',
     'models/VEntity',
     'utils/Utils'
-], function(require, addTagModalViewTmpl, VTagList, VCommonList, Modal, VEntity, Utils) {
+], function(require, AddTagModalViewTmpl, VTagList, VCommonList, Modal, VEntity, Utils) {
     'use strict';
 
     var AddTagModel = Marionette.LayoutView.extend({
-        template: addTagModalViewTmpl,
+        template: AddTagModalViewTmpl,
 
         regions: {},
         ui: {
@@ -55,8 +55,8 @@ define(['require',
                 cancelText: "Cancel",
                 allowCancel: true,
             }).open();
-            var saveBtn = this.modal.$el.find('.btn-success');
-            saveBtn[0].setAttribute('disabled', true);
+            // var saveBtn = this.modal.$el.find('.btn-atlas');
+            // saveBtn[0].setAttribute('disabled', true);
             this.on('ok', function() {
                 that.saveTagData();
             });
@@ -107,11 +107,11 @@ define(['require',
                         '<div class="col-sm-8 input-spacing">' +
                         '<input type="text" class="form-control attributeInputVal attrName" data-key="' + attribute[i].name + '" ></input></div>';
                     this.ui.tagAttribute.append(this.strAttribute);
-                    if (this.commonCollection.models[0].attributes.traitTypes[0].superTypes.length > 0) {
-                        for (var j = 0; j < this.commonCollection.models[0].attributes.traitTypes[0].superTypes.length; j++) {
-                            var superTypeAttr = this.commonCollection.models[0].attributes.traitTypes[0].superTypes[j];
-                            this.fetchTagSubData(superTypeAttr);
-                        }
+                }
+                if (this.commonCollection.models[0].attributes.traitTypes[0].superTypes.length > 0) {
+                    for (var j = 0; j < this.commonCollection.models[0].attributes.traitTypes[0].superTypes.length; j++) {
+                        var superTypeAttr = this.commonCollection.models[0].attributes.traitTypes[0].superTypes[j];
+                        this.fetchTagSubData(superTypeAttr);
                     }
                 }
             }
@@ -137,18 +137,16 @@ define(['require',
                 success: function(data) {
                     that.modalCollection.fetch({ reset: true });
                     Utils.notifySuccess({
-                        content: "Tag " + tagName + " has been added successfully"
+                        content: "Tag " + tagName + " has been added to entity"
                     });
                 },
                 error: function(error, data, status) {
-                    var message = "Tag " + tagName + " could not be added";
                     if (error && error.responseText) {
                         var data = JSON.parse(error.responseText);
-                        message = data.error;
+                        Utils.notifyError({
+                            content: data.error
+                        });
                     }
-                    Utils.notifyError({
-                        content: message
-                    });
                 },
                 complete: function() {}
             });

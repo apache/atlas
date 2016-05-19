@@ -22,7 +22,7 @@ define(['require',
 ], function(require, Globals, VBaseModel) {
     'use strict';
     var VSchema = VBaseModel.extend({
-        urlRoot: Globals.baseURL + '/api/atlas/lineage/log_fact_daily_mv/schema',
+        urlRoot: Globals.baseURL,
 
         defaults: {},
 

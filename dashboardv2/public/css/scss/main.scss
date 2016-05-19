@@ -1,0 +1,147 @@
+/* main.scss */
+
+//common color 
+$white: #fff;
+$action_gray:#ccc;
+$color_keppel_approx: #37bb9b;
+$color_gallery_approx: #eee;
+$gray: #808080;
+$color_tuna_approx: #323544;
+$color_celeste_approx: #ccc;
+$color_cornflower_blue_approx: #66afe9;
+$color_mystic_approx: #e8e9ee;
+$color_jungle_green_approx: #38BB9B;
+$color_froly_approx: #ee6e73;
+$color_manatee_approx: #9398a0;
+$black: #000;
+$color_havelock_blue_approx: #4a90e2;
+$color_ironside_gray_approx: #686868;
+$color_mercury_approx: #e6e6e6;
+$color_whisper_approx: #f6f7fa;
+$color_bombay_approx: #b5b9bc;
+$red: red;
+//theme color
+//colors
+$color_white_lilac_approx: #f6f7fb;
+$color_puerto_rico_approx: #3dd4af;
+$color_star_dust_approx: #9a9a9a;
+$color_mirage_approx: #1c1e2a;
+$concrete: #f2f2f2;
+//fonts
+$font_0: Raleway;
+$font_1: sans-serif;
+$font_2: FontAwesome;
+//fonts
+
+/* $font_0: PT Sans;
+$font_1: sans-serif;
+$font_2: Helvetica Neue; */
+
+$font_3: Helvetica;
+$font_4: Arial;
+$font_5: sans-serf;
+//old - style color
+$color_bali_hai_approx: #8fa5b1;
+$transparent:transparent;
+$black_7_5: rgba(0, 0, 0, .075);
+$color_hoki_approx: #698797;
+$color_curious_blue_approx: #1ba9e2;
+$color_blue_bayoux_approx: #44697d;
+$color_pickled_bluewood_approx: #334f5e;
+$color_picton_blue_approx: #3cb5e6;
+$color_yellow_sea_approx: #f5a700;
+$color_gamboge_approx: #de9800;
+$color_trinidad_approx: #e14f00;
+$color_grenadier_approx: #c74600;
+$color_athens_gray_approx: #e9ecf2;
+$color_green_house_approx: #26530c;
+$color_dark_grey_approx:#333;
+$black_10: rgba(0, 0, 0, 0.1);
+$color_cararra_approx: #ececec;
+$black_30: rgba(0, 0, 0, 0.3);
+$color_pizazz_approx: #ff8e00;
+$black_25: rgba(0, 0, 0, 0.25);
+$color_cape_cod_approx: #414141;
+$color_apple_blossom_approx: #a94442;
+$color_mine_shaft_approx: #333;
+$white_80: rgba(255, 255, 255, 0.8);
+$color_alto_approx: #dadada;
+$color_fuscous_gray_approx: #545454;
+$black_65: rgba(0, 0, 0, 0.65);
+$white_25: rgba(255, 255, 255, 0.25);
+$color_fern_approx: #65bd63;
+$color_opal_approx: #a7cec6;
+$white_50: rgba(255, 255, 255, 0.5);
+$black_20: rgba(0, 0, 0, 0.2);
+$color_pelorous_approx: #3aa2d0;
+$color_laser_approx: #c4bb61;
+$color_zombie_approx: #e0dd94;
+$steel_blue: steelblue;
+$black_80: rgba(0, 0, 0, 0.8);
+$color_bright_turquoise_approx: #00ffd0;
+$color_mountain_mist_approx: #999;
+$color_suva_gray_approx: #868686;
+// $tag_color:#9599a0;
+$tag_color:#4A90E2;
+//urls
+$url_0: url(../img/loading.gif);
+.card {
+    background: $white none repeat scroll 0 0;
+    //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
+    box-shadow: 0 1px 3px $black_30;
+    margin-bottom: 30px;
+}
+
+body {
+    font-family: $font_0, $font_1;
+    color: $color_ironside_gray_approx;
+}
+
+.gray-bg {
+    background-color: $color_white_lilac_approx;
+}
+
+header {
+    background-color: $white;
+    border-bottom: 1px $color_mystic_approx solid;
+}
+
+a {
+    color: $color_jungle_green_approx;
+    &:focus {
+        color: $color_puerto_rico_approx;
+        text-decoration: none;
+        outline: none;
+    }
+    &:hover {
+        color: $color_puerto_rico_approx;
+        text-decoration: none;
+    }
+}
+
+hr {
+    border-top: 1px solid #1c1e2a
+}
+
+ul {
+    list-style: none;
+}
+
+.close {
+    font-size: 2em;
+}
+
+#sideNav-wrapper {
+    color: $white;
+}
+
+.contentLoading {
+    position: absolute;
+    background: rgba(247, 247, 247, 0.24);
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 99;
+    bottom: 0;
+    display: none;
+}

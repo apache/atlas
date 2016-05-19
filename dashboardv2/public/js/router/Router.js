@@ -27,11 +27,18 @@ define([
     var AppRouter = Backbone.Router.extend({
         routes: {
             // Define some URL routes
-            '': 'assetPageLoad',
-            '!/': 'assetPageLoad',
-            "!/dashboard/assetPage": 'assetPageLoad',
-            '!/dashboard/detailPage/:id': 'detailPageLoad',
-            '!/dashboard/createTags': 'tagPageLoad',
+            '': 'commonAction',
+            '!/': 'tagAttributePageLoad',
+            '!/tag/tagAttribute/(*name)': 'tagAttributePageLoad',
+            '!/taxonomy/detailCatalog/(*url)': 'detailCatalog',
+            '!/search/searchResult': 'searchResult',
+            '!/detailPage/:id': 'detailPage',
+            '!/detailPage/:id': 'detailPage',
+            '!/detailPage/:id': 'detailPage',
+
+            '!/tag': 'commonAction',
+            '!/taxonomy': 'commonAction',
+            '!/search': 'commonAction',
             // Default
             '*actions': 'defaultAction'
         },
@@ -62,10 +69,11 @@ define([
                 });
                 var view = new aboutAtlas();
                 var modal = new Modal({
-                    title: 'About',
+                    title: 'Apache Atlas',
                     content: view,
                     okCloses: true,
                     showFooter: true,
+                    allowCancel: false,
                 }).open();
 
                 view.on('closeModal', function() {
@@ -95,75 +103,148 @@ define([
             // console.log("Post-Route Change Operations can be performed here !!");
             // console.log("Route changed: ", name);
         },
-        /**
-         * Define route handlers here
-         */
-        assetPageLoad: function() {
+        detailCatalog: function(url) {
             var that = this;
-            $('#old').show();
-            $('#new').hide();
             require([
-                'views/asset/AssetPageLayoutView',
-                'collection/VSearchList',
-                'views/site/Header',
-                /*'views/site/footer',*/
-            ], function(AssetPageLayoutView, VSearchList, HeaderView /*, FooterView*/ ) {
-                that.searchCollection = new VSearchList([], {
-                    state: {
-                        firstPage: 0,
-                        pageSize: 10
+                'views/business_catalog/BusinessCatalogHeader',
+                'views/business_catalog/BusinessCatalogDetailLayoutView',
+                'views/business_catalog/SideNavLayoutView',
+                'collection/VCatalogList'
+            ], function(BusinessCatalogHeader, BusinessCatalogDetailLayoutView, SideNavLayoutView, VCatalogList) {
+                this.collection = new VCatalogList();
+                this.collection.url = url;
+                App.rNHeader.show(new BusinessCatalogHeader({ 'globalVent': that.globalVent, 'url': url, 'collection': this.collection }));
+                // App.rSideNav.show(new SideNavLayoutView({ 'globalVent': that.globalVent, 'url': url }));
+                if (!App.rSideNav.currentView) {
+                    App.rSideNav.show(new SideNavLayoutView({ 'globalVent': that.globalVent, 'url': url }));
+                } else {
+                    var view = App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView;
+                    if (view.dblClick == false && view.singleClick == false && !Globals.saveApplicationState.tabState.stateChanged) {
+                        App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender(url,true);
+                        view.dblClick == false;
+
+                    }/* else if (view.firstManualClick) {
+                        view.firstManualClick = false;
+                        App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender(url);
+                    }*/ else if (view.singleClick) {
+                        view.singleClick = false;
                     }
-                });
-                App.rHeader.show(new HeaderView({ 'globalVent': that.globalVent }));
-                App.rContent.show(new AssetPageLayoutView({
+                    App.rSideNav.currentView.selectTab();
+                }
+                if (Globals.saveApplicationState.tabState.stateChanged) {
+                    Globals.saveApplicationState.tabState.stateChanged = false;
+                }
+                App.rNContent.show(new BusinessCatalogDetailLayoutView({
                     'globalVent': that.globalVent,
-                    'collection': that.searchCollection,
-                    'vent': that.tagVent
+                    'url': url,
+                    'collection': this.collection
                 }));
+                this.collection.fetch({ reset: true });
             });
         },
-        detailPageLoad: function(id) {
+        detailPage: function(id) {
             var that = this;
-            $('#old').show();
-            $('#new').hide();
             if (id) {
                 require([
-                    'views/detail_page/DetailPageLayoutView',
-                    'collection/VEntityList',
                     'views/site/Header',
-                ], function(DetailPageLayoutView, VEntityList, HeaderView) {
+                    'views/detail_page/DetailPageLayoutView',
+                    'views/business_catalog/SideNavLayoutView',
+                    'collection/VEntityList'
+                ], function(Header, DetailPageLayoutView, SideNavLayoutView, VEntityList) {
                     this.entityCollection = new VEntityList([], {});
-                    App.rHeader.show(new HeaderView({ 'globalVent': that.globalVent }));
-                    App.rContent.show(new DetailPageLayoutView({
+                    App.rNHeader.show(new Header({ 'globalVent': that.globalVent }));
+                    if (!App.rSideNav.currentView) {
+                        App.rSideNav.show(new SideNavLayoutView({ 'globalVent': that.globalVent }));
+                    } else {
+                        App.rSideNav.currentView.selectTab();
+                    }
+
+                    App.rNContent.show(new DetailPageLayoutView({
                         'globalVent': that.globalVent,
-                        'collection': entityCollection,
+                        'collection': this.entityCollection,
                         'id': id,
-                        'vent': that.tagVent
                     }));
-                    entityCollection.url = "/api/atlas/entities/" + id;
-                    entityCollection.fetch({ reset: true });
+                    this.entityCollection.url = "/api/atlas/entities/" + id;
+                    this.entityCollection.fetch({ reset: true });
                 });
             }
         },
-        tagPageLoad: function() {
+        tagAttributePageLoad: function(tagName) {
             var that = this;
-            $('#old').show();
-            $('#new').hide();
             require([
-                'views/tag/createTagsLayoutView',
-                'collection/VTagList',
                 'views/site/Header',
-            ], function(CreateTagsLayoutView, VTagList, HeaderView) {
-                this.tagsCollection = new VTagList([], {});
-                App.rHeader.show(new HeaderView({ 'globalVent': that.globalVent }));
-                App.rContent.show(new CreateTagsLayoutView({
-                    'globalVent': that.globalVent,
-                    'tagsCollection': tagsCollection,
-                }));
+                'views/business_catalog/BusinessCatalogLayoutView',
+                'views/business_catalog/SideNavLayoutView',
+                'views/tag/TagDetailLayoutView',
+            ], function(Header, BusinessCatalogLayoutView, SideNavLayoutView, TagDetailLayoutView) {
+                App.rNHeader.show(new Header({ 'globalVent': that.globalVent, 'vent': that.catalogVent }));
+                if (!App.rSideNav.currentView) {
+                    App.rSideNav.show(new SideNavLayoutView({
+                        'globalVent': that.globalVent,
+                        'tag': tagName
+                    }));
+                } else {
+                    App.rSideNav.currentView.RTagLayoutView.currentView.manualRender(tagName);
+                    App.rSideNav.currentView.selectTab();
+                }
 
+                if (tagName) {
+                    App.rNContent.show(new TagDetailLayoutView({
+                        'globalVent': that.globalVent,
+                        'tag': tagName
+                    }));
+                }
             });
         },
-
+        commonAction: function() {
+            var that = this;
+            require([
+                'views/site/Header',
+                'views/business_catalog/BusinessCatalogLayoutView',
+                'views/business_catalog/SideNavLayoutView',
+            ], function(Header, BusinessCatalogLayoutView, SideNavLayoutView) {
+                App.rNHeader.show(new Header({ 'globalVent': that.globalVent }));
+                if (!App.rSideNav.currentView) {
+                    App.rSideNav.show(new SideNavLayoutView({
+                        'globalVent': that.globalVent
+                    }));
+                } else {
+                    App.rSideNav.currentView.selectTab();
+                    if (Utils.getUrlState.isTagTab()) {
+                        App.rSideNav.currentView.RTagLayoutView.currentView.manualRender();
+                    } else if (Utils.getUrlState.isTaxonomyTab()) {
+                        App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender(undefined,true);
+                    }
+                }
+                App.rNContent.$el.html('');
+                App.rNContent.destroy();
+            });
+        },
+        searchResult: function() {
+            var that = this;
+            require([
+                'views/site/Header',
+                'views/business_catalog/BusinessCatalogLayoutView',
+                'views/business_catalog/SideNavLayoutView',
+                'views/search/SearchDetailLayoutView'
+            ], function(Header, BusinessCatalogLayoutView, SideNavLayoutView, SearchDetailLayoutView) {
+                var paramObj = Utils.getUrlState.getQueryParams();
+                App.rNHeader.show(new Header({ 'globalVent': that.globalVent, 'vent': that.catalogVent }));
+                if (!App.rSideNav.currentView) {
+                    App.rSideNav.show(new SideNavLayoutView({
+                        'globalVent': that.globalVent,
+                        'value': paramObj
+                    }));
+                } else {
+                    App.rSideNav.currentView.RSearchLayoutView.currentView.manualRender(paramObj);
+                }
+                App.rSideNav.currentView.selectTab();
+                App.rNContent.show(new SearchDetailLayoutView({
+                    'globalVent': that.globalVent,
+                    'value': paramObj
+                }));
+            });
+        },
         defaultAction: function(actions) {
             // We have no matching route, lets just log what the URL was
             console.log('No route:', actions);

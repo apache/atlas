@@ -1,0 +1,25 @@
+/* panel.scss */
+.panel {
+    //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+    border-radius: 0;
+}
+
+.panel-primary {
+    border-color: $color_hoki_approx;
+    > .panel-heading {
+        color: $white;
+        background-color: $color_hoki_approx;
+        border-color: $color_hoki_approx;
+        //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+        border-radius: 0;
+    }
+}
+
+.appForm {
+    .panel-body {
+        padding-bottom: 0;
+    }
+    .panel-footer {
+        margin-bottom: 0;
+    }
+}

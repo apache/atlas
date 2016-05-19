@@ -21,9 +21,10 @@ define(['require',
     'hbs!tmpl/graph/LineageLayoutView_tmpl',
     'collection/VLineageList',
     'models/VEntity',
+    'utils/Utils',
     'dagreD3',
     'd3-tip'
-], function(require, Backbone, LineageLayoutViewtmpl, VLineageList, VEntity, dagreD3, d3Tip) {
+], function(require, Backbone, LineageLayoutViewtmpl, VLineageList, VEntity, Utils, dagreD3, d3Tip) {
     'use strict';
 
     var LineageLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -52,12 +53,12 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'assetName', 'guid'));
+                _.extend(this, _.pick(options, 'globalVent', 'guid'));
                 this.inputCollection = new VLineageList();
                 this.outputCollection = new VLineageList();
                 this.entityModel = new VEntity();
-                this.inputCollection.url = "/api/atlas/lineage/" + this.assetName + "/inputs/graph";
-                this.outputCollection.url = "/api/atlas/lineage/" + this.assetName + "/outputs/graph";
+                this.inputCollection.url = "/api/atlas/lineage/" + this.guid + "/inputs/graph";
+                this.outputCollection.url = "/api/atlas/lineage/" + this.guid + "/outputs/graph";
                 this.bindEvents();
                 this.fetchGraphData();
                 this.data = {};
@@ -280,7 +281,7 @@ define(['require',
                         svgGroup = svg.append("g");
                     var zoom = d3.behavior.zoom()
                         .scaleExtent([0.5, 6])
-                        .on("zoom", zoomed)
+                        .on("zoom", zoomed);
 
                     function zoomed() {
                         svgGroup.attr("transform",
@@ -359,13 +360,19 @@ define(['require',
                         })
                         .on('dblclick', function(d) {
                             tooltip.hide(d);
-                            Backbone.history.navigate("#!/dashboard/detailPage/" + d, { trigger: true });
+                            //var urlForTab = window.location.hash.split('/')[1];
+
+                            Utils.setUrl({
+                                url: '#!/detailPage/' + d,
+                                mergeBrowserUrl: false,
+                                trigger: true
+                            });
                         })
                         .on('mouseout', function(d) {
                             tooltip.hide(d);
                         });
                     // Center the graph
-                    var initialScale = 1.5;
+                    var initialScale = 1.2;
                     zoom.translate([(this.$('svg').width() - this.g.graph().width * initialScale) / 2, (this.$('svg').height() - this.g.graph().height * initialScale) / 2])
                         .scale(initialScale)
                         .event(svg);

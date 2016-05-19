@@ -1,0 +1,205 @@
+//tag.scss
+
+/* Tree View */
+
+.tag-tree {
+    padding: 0;
+    overflow: auto;
+    li {
+        list-style: none;
+        cursor: pointer;
+        &.parent-node {
+            position: relative;
+            margin-top: 10px;
+            /* margin-bottom: 5px; */
+            border-radius: 4px;
+            &:hover {
+                background-color: $color_star_dust_approx;
+            }
+            &.active {
+                background-color: $color_jungle_green_approx;
+                border: none;
+                .tools {
+                    display: block
+                }
+            }
+            > ul > li {
+                line-height: 30px;
+                margin-left: -20px;
+                text-indent: 20px;
+                &:hover {
+                    background-color: $color_keppel_approx;
+                }
+                &.selected {
+                    background-color: $color_keppel_approx;
+                }
+            }
+            .tools {
+                display: none;
+                position: absolute;
+                right: 0;
+                padding: 5px 10px;
+            }
+        }
+        a {
+            display: block;
+            color: #f2f2f2;
+            white-space: nowrap;
+            padding: 5px 10px;
+            text-overflow: ellipsis;
+            max-width: 91%;
+            overflow: hidden;
+        }
+    }
+    ul {
+        padding-left: 20px;
+        li {}
+    }
+    .tagAsset {
+        display: none;
+    }
+}
+
+.input-group.attributes .form-control {
+    height: 40px;
+    box-shadow: none;
+    border-right: none;
+}
+
+.input-group.attributes .input-group-addon {
+    background-color: $color_white_lilac_approx;
+    border: 1px $color_mystic_approx solid;
+    border-radius: 0px;
+    border-left: none;
+}
+
+.input-group.attributes .input-group-addon i.fa {
+    cursor: pointer;
+}
+
+.input-group.attributes .form-control:focus + .input-group-addon {
+    border-color: $color_bali_hai_approx;
+}
+
+.tagList {
+    margin-top: 10px;
+}
+
+.select2-container {
+    width: 100% !important;
+    /*margin:15px 0px;*/
+}
+
+.tagListSelect {
+    margin: 15px 0px;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #fff;
+    color: #9599a0;
+}
+
+.select2-container--default .select2-search--inline .select2-search__field {
+    color: #555;
+}
+
+.inputTag {
+    display: inline-block;
+    padding: 5px 10px;
+    border: 1px $tag_color solid;
+    color: $tag_color;
+    font-size: 12px;
+    text-transform: uppercase;
+    border-radius: 4px;
+    margin-right: 3px;
+    margin-bottom: 3px;
+    float: left;
+    cursor: pointer;
+    background-color: $white;
+    i.fa {
+        position: relative;
+        right: -5px;
+        cursor: pointer;
+    }
+    &:hover {
+        color: $white;
+        background-color: $tag_color;
+    }
+}
+
+.addTagBase {
+    padding: 4px 8px;
+    border: 1px solid $action_gray;
+    color: $action_gray;
+    border-radius: 4px;
+    cursor: pointer;
+    &:hover {
+        color: $color_dark_grey_approx;
+        background-color: $color_mercury_approx;
+    }
+}
+
+.noTags {
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.addTag-dropdown {
+    display: inline-block;
+    float: left;
+}
+
+.addTagText {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.addTagPlus {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.inputSearchTag {
+    max-width: 200px;
+}
+
+.appendList {
+    max-height: 200px;
+    overflow: auto;
+    max-width: 200px;
+    overflow-x: hidden;
+    div {
+        padding: 3px;
+    }
+}
+
+.editbutton {
+    padding: 4px 8px;
+    border: 1px solid $color_celeste_approx;
+    color: $action_gray;
+    border-radius: 4px;
+}
+.inputAttribute {
+    display: inline-block;
+    padding: 5px 10px;
+    border: 1px $action_gray solid;
+    color: $action_gray;
+    font-size: 12px;
+    text-transform: uppercase;
+    border-radius: 4px;
+    margin-right: 3px;
+    margin-bottom: 3px;
+    float: left;
+    cursor: pointer;
+    background-color: $white;
+    i.fa {
+        position: relative;
+        right: -5px;
+        cursor: pointer;
+    }
+    &:hover {
+        color: $white;
+        background-color: $action_gray;
+    }
+}

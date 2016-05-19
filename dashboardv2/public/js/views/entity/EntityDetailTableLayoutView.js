@@ -109,7 +109,6 @@ define(['require',
                                 table += '<tr><td>' + key + '</td><td></td></tr>';
                             }
                         }
-
                     } else {
                         if (key == "createTime" || key == "lastAccessTime" || key == "retention") {
                             table += '<tr><td>' + key + '</td><td>' + new Date(valueObject[key]) + '</td></tr>';
@@ -133,7 +132,7 @@ define(['require',
                             value = data.GUID;
                         }
 
-                        that.$('td div[data-id="' + data.GUID + '"]').html('<a href="#!/dashboard/detailPage/' + data.GUID + '">' + value + '</a>');
+                        that.$('td div[data-id="' + data.GUID + '"]').html('<a href="#!/detailPage/' + data.GUID + '">' + value + '</a>');
                     },
                     error: function(error, data, status) {},
                     complete: function() {}

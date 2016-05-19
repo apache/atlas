@@ -1,0 +1,75 @@
+<!--
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+<div class="fontLoader">
+    <i class="fa fa-refresh fa-spin-custom"></i>
+</div>
+<div class="hide">
+    <div class="page-title clearfix">
+        <h1><span data-id="title"></span><!-- <button style="display:none" data-id="editButton" class="btn btn-default pull-right editbutton" id="editText"><i class="fa fa-pencil"></i></button> --></h1>
+        <p class="sub-title" data-id="description">Description</p>
+        <div data-id="editBox" style="margin-bottom:10px;">
+            <textarea class="well well-sm col-sm-12" data-id="descriptionTextArea"></textarea>
+            <div class="clearfix" align="right">
+                <button class="btn-atlas" data-id="cancelButton">Cancel</button>
+                <button class="btn-atlas" data-id="publishButton">Publish</button>
+            </div>
+        </div>
+    </div>
+    <div class="container-fluid gray-bg">
+        <div class="row">
+            <div class="col-sm-10 col-sm-offset-1">
+                <div class="atlast-tabbable">
+                    <ul class="nav nav-tabs" role="tablist">
+                        <li role="presentation" class="tab active"><a href="#tab-details" aria-controls="tab-details" role="tab" data-toggle="tab">Properties</a></li>
+                        <!--  <li role="presentation"><a href="#profile" aria-controls="profile" role="tab" data-toggle="tab">Acceptable Use</a></li> -->
+                    </ul>
+                    <div class="tab-content">
+                        <div id="tab-details" role="tabpanel" class="tab-pane active">
+                            <p data-id="createDate"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-10 col-sm-offset-1">
+                <div class="atlast-tabbable">
+                    <div class="panel panel-default lineageLayout" style="display:none">
+                        <div id="r_lineageLayoutView"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- <div class="row">
+    <div class="col-sm-10 col-sm-offset-1">
+        <h2>Comments</h2>
+        <textarea class="form-control comment-input" rows="5" placeholder="Add a Comment"></textarea>
+        <button class="btn-atlas">Comment</button>
+        <div class="comment-box">
+            <p class="comment">There are many variations of passages of Lorem Ipsum available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don't look even slightly believable.</p>
+            <p class="author">Micheal Surmac</p>
+            <p class="date">December 16, 2016 11:03:23 AM</p>
+        </div>
+        <div class="comment-box">
+            <p class="comment">Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 2000 years old.</p>
+            <p class="author">Paula Schmidt</p>
+            <p class="date">May 3, 2015 9:16:12 AM</p>
+        </div>
+    </div>
+</div> -->
+</div>

@@ -18,8 +18,12 @@
 
 define(['require',
     'backbone',
-    'hbs!tmpl/detail_page/DetailPageLayoutView_tmpl'
-], function(require, Backbone, DetailPageLayoutViewTmpl) {
+    'hbs!tmpl/detail_page/DetailPageLayoutView_tmpl',
+    'utils/Utils',
+    'collection/VTagList',
+    'models/VEntity',
+    'utils/CommonViewFunction'
+], function(require, Backbone, DetailPageLayoutViewTmpl, Utils, VTagList, VEntity, CommonViewFunction) {
     'use strict';
 
     var DetailPageLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -38,11 +42,55 @@ define(['require',
             },
             /** ui selector cache */
             ui: {
+                tagClick: '[data-id="tagClick"]',
+                title: '[data-id="title"]',
+                editButton: '[data-id="editButton"]',
+                cancelButton: '[data-id="cancelButton"]',
+                publishButton: '[data-id="publishButton"]',
+                description: '[data-id="description"]',
+                descriptionTextArea: '[data-id="descriptionTextArea"]',
+                editBox: '[data-id="editBox"]',
+                createDate: '[data-id="createDate"]',
+                updateDate: '[data-id="updateDate"]',
+                createdUser: '[data-id="createdUser"]',
+                addTagBtn: '[data-id="addTagBtn"]',
+                appendList: '[data-id="appendList"]',
+                inputTagging: '[data-id="inputTagging"]',
+                deleteTag: '[data-id="deleteTag"]',
+                addTagtext: '[data-id="addTagtext"]',
+                addTagPlus: '[data-id="addTagPlus"]',
+                searchTag: '[data-id="searchTag"] input',
+                addTagListBtn: '[data-id="addTagListBtn"]',
                 backButton: "[data-id='backButton']"
             },
             /** ui events hash */
             events: function() {
                 var events = {};
+                events["click " + this.ui.editButton] = function() {
+                    this.ui.editButton.hide();
+                    this.ui.description.hide();
+                    this.ui.editBox.show();
+                    this.ui.descriptionTextArea.focus();
+                    if (this.descriptionPresent) {
+                        this.ui.descriptionTextArea.val(this.ui.description.text());
+                    }
+                };
+                events["click " + this.ui.tagClick] = function(e) {
+                    if (!e.target.nodeName.toLocaleLowerCase() == "i") {
+                        Utils.setUrl({
+                            url: '#!/tag/tagAttribute/' + e.currentTarget.textContent,
+                            mergeBrowserUrl: false,
+                            trigger: true
+                        });
+                    }
+                };
+                // events["click " + this.ui.publishButton] = 'onPublishButtonClick';
+                events["click " + this.ui.cancelButton] = 'onCancelButtonClick';
+                events["click " + this.ui.deleteTag] = 'onClickTagCross';
+                // events["keyup " + this.ui.searchTag] = function(e) {
+                //    // this.offlineSearchTag(e);
+                // };
+                events["click " + this.ui.addTagListBtn] = 'onClickAddTagBtn';
                 events['click ' + this.ui.backButton] = function() {
                     Backbone.history.history.back();
                 };
@@ -53,7 +101,9 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'collection', 'vent'));
+                _.extend(this, _.pick(options, 'globalVent', 'collection', 'vent', 'id'));
+                this.key = 'branchDetail';
+                //this.updateValue();
                 this.bindEvents();
                 this.commonTableOptions = {
                     collection: this.collection,
@@ -70,6 +120,7 @@ define(['require',
                 };
             },
             bindEvents: function() {
+                var that = this;
                 this.listenTo(this.collection, 'reset', function() {
                     var collectionJSON = this.collection.toJSON();
                     if (collectionJSON[0].id && collectionJSON[0].id.id) {
@@ -80,27 +131,118 @@ define(['require',
                             this.name = collectionJSON[0].values.name;
                             this.description = collectionJSON[0].values.description;
                             if (this.name) {
-                                this.$('.breadcrumbName').text(this.name);
-                                this.$('.name').show();
-                                this.$('.name').html('<strong>Name: </strong><span>' + this.name + '</span>');
+                                this.ui.title.show();
+                                this.ui.title.html('<span>' + this.name + '</span>');
                             } else {
-                                this.$('.name').hide();
+                                this.ui.title.hide();
                             }
                             if (this.description) {
-                                this.$('.description').show();
-                                this.$('.description').html('<strong>Description: </strong><span>' + this.description + '</span>');
+                                this.ui.description.show();
+                                this.ui.description.html('<span>' + this.description + '</span>');
                             } else {
-                                this.$('.description').hide();
+                                this.ui.description.hide();
                             }
                         }
+                        if (collectionJSON[0].traits) {
+                            this.tagElement = _.keys(collectionJSON[0].traits);
+                            this.ui.addTagtext.hide();
+                            this.ui.addTagPlus.show();
+                            this.ui.inputTagging.find('.inputTag').remove();
+                            this.addTagToTerms(this.tagElement);
+                        }
                     }
+
                     this.renderEntityDetailTableLayoutView();
                     this.renderTagTableLayoutView(tagGuid);
                     this.renderLineageLayoutView(tagGuid);
                     this.renderSchemaLayoutView(tagGuid);
                 }, this);
             },
-            onRender: function() {},
+            onRender: function() {
+                var that = this;
+                this.ui.editBox.hide();
+                this.fetchCollection();
+                this.ui.appendList.on('click', 'div', function(e) {
+                    if (e.target.nodeName == "INPUT") {
+                        return false;
+                    }
+                    that.ui.addTagtext.hide();
+                    that.ui.addTagPlus.show();
+                    // that.addTagToTerms([$(this).text()]);
+                    that.saveTagFromList($(this));
+                });
+            },
+            fetchCollection: function() {
+                this.collection.fetch({ reset: true });
+            },
+            onCancelButtonClick: function() {
+                this.ui.description.show();
+                this.ui.editButton.show();
+                this.ui.editBox.hide();
+            },
+            onClickTagCross: function(e) {
+                var tagName = $(e.currentTarget).parent().text(),
+                    that = this,
+                    modal = CommonViewFunction.deleteTagModel(tagName);
+                modal.on('ok', function() {
+                    that.deleteTagData(e);
+                });
+                modal.on('closeModal', function() {
+                    modal.trigger('cancel');
+                });
+            },
+            deleteTagData: function(e) {
+                var that = this,
+                    tagName = $(e.currentTarget).text();
+                CommonViewFunction.deleteTag({
+                    'tagName': tagName,
+                    'guid': that.id,
+                    'collection': that.collection
+                });
+            },
+            addTagToTerms: function(tagObject) {
+                var tagData = "";
+                _.each(tagObject, function(val) {
+                    tagData += '<span class="inputTag" data-id="tagClick">' + val + '<i class="fa fa-close" data-id="deleteTag"></i></span>';
+                });
+                this.$('.addTag-dropdown').before(tagData);
+            },
+            saveTagFromList: function(ref) {
+                var that = this;
+                this.entityModel = new VEntity();
+                var tagName = ref.text();
+                var json = {
+                    "jsonClass": "org.apache.atlas.typesystem.json.InstanceSerialization$_Struct",
+                    "typeName": tagName,
+                    "values": {}
+                };
+                this.entityModel.saveEntity(this.id, {
+                    data: JSON.stringify(json),
+                    beforeSend: function() {},
+                    success: function(data) {
+                        that.fetchCollection();
+                    },
+                    error: function(error, data, status) {
+                        if (error && error.responseText) {
+                            var data = JSON.parse(error.responseText);
+                        }
+                    },
+                    complete: function() {}
+                });
+            },
+            onClickAddTagBtn: function(e) {
+                var that = this;
+                require(['views/tag/addTagModalView'], function(AddTagModalView) {
+                    var view = new AddTagModalView({
+                        vent: that.vent,
+                        guid: that.id,
+                        modalCollection: that.collection
+                    });
+                    /*view.saveTagData = function() {
+                    override saveTagData function 
+                    }*/
+                });
+            },
             renderEntityDetailTableLayoutView: function() {
                 var that = this;
                 require(['views/entity/EntityDetailTableLayoutView'], function(EntityDetailTableLayoutView) {
@@ -125,7 +267,6 @@ define(['require',
                 require(['views/graph/LineageLayoutView'], function(LineageLayoutView) {
                     that.RLineageLayoutView.show(new LineageLayoutView({
                         globalVent: that.globalVent,
-                        assetName: tagGuid,
                         guid: tagGuid
                     }));
                 });
@@ -135,65 +276,9 @@ define(['require',
                 require(['views/schema/SchemaLayoutView'], function(SchemaLayoutView) {
                     that.RSchemaTableLayoutView.show(new SchemaLayoutView({
                         globalVent: that.globalVent,
-                        name: tagGuid,
-                        vent: that.vent
+                        guid: tagGuid
                     }));
                 });
-            },
-            getTagTableColumns: function() {
-                var that = this;
-                return this.collection.constructor.getTableCols({
-                    tag: {
-                        label: "Tag",
-                        cell: "html",
-                        editable: false,
-                        sortable: false,
-                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                            fromRaw: function(rawValue, model) {
-                                var modelObject = model.toJSON();
-                                if (modelObject.$typeName$ && modelObject.instanceInfo) {
-                                    return '<a href="#!/dashboard/detailPage/' + modelObject.instanceInfo.guid + '">' + modelObject.instanceInfo.typeName + '</a>';
-                                } else if (!modelObject.$typeName$) {
-                                    return '<a href="#!/dashboard/detailPage/' + modelObject.guid + '">' + modelObject.typeName + '</a>';
-                                }
-                            }
-                        })
-                    },
-                    attributes: {
-                        label: "Attributes",
-                        cell: "html",
-                        editable: false,
-                        sortable: false,
-                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                            fromRaw: function(rawValue, model) {
-                                var modelObject = model.toJSON();
-                                if (modelObject.$typeName$ && modelObject.instanceInfo) {
-                                    var guid = model.toJSON().instanceInfo.guid;
-                                    model.getEntity(guid, {
-                                        beforeSend: function() {},
-                                        success: function(data) {
-                                            return that.$('td a[data-id="' + guid + '"]').html(data.definition.values.name);
-                                        },
-                                        error: function(error, data, status) {},
-                                        complete: function() {}
-                                    });
-                                    return '<a href="#!/dashboard/detailPage/' + guid + '" data-id="' + guid + '"></a>';
-                                } else if (!modelObject.$typeName$) {
-                                    var guid = model.toJSON().guid;
-                                    model.getEntity(guid, {
-                                        beforeSend: function() {},
-                                        success: function(data) {
-                                            return that.$('td a[data-id="' + guid + '"]').html(data.definition.values.name);
-                                        },
-                                        error: function(error, data, status) {},
-                                        complete: function() {}
-                                    });
-                                    return '<a href="#!/dashboard/detailPage/' + guid + '" data-id="' + guid + '"></a>';
-                                }
-                            }
-                        })
-                    }
-                }, this.collection);
             }
         });
     return DetailPageLayoutView;

@@ -14,32 +14,81 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<div class="col-sm-12">
-    <a href="javascript:void(0);" class="backButton" data-id="backButton" title="Back To Result"><i class="fa fa-chevron-left fa-2x"></i></a>
-    <div class="panel panel-default lineageLayout" style="display:none">
-        <div id="r_lineageLayoutView"></div>
+<div class="page-title clearfix">
+    <div class="row">
+        <a href="javascript:void(0);" class="backButton" data-id="backButton"><i class="fa fa-chevron-left"> Back To Result</i></a>
     </div>
-    <div class="panel panel-default">
-        <div class="panel-body">
-            <p class="name"></p>
-            <p class="description"></p>
-            <hr>
-            <ul class="nav nav-tabs" role="tablist">
-                <li role="presentation" class="tab active"><a href="#tab-details" aria-controls="tab-details" role="tab" data-toggle="tab">Details</a></li>
-                <li role="presentation" class="tab schemaTable" style="display:none"><a href="#tab-schema" aria-controls="tab-schema" role="tab" data-toggle="tab">Schema</a></li>
-                <li role="presentation" class="tab "><a href="#tab-tags" aria-controls="tab-tags" role="tab" data-toggle="tab">Tags</a></li>
-            </ul>
-            <div class="tab-content">
-                <div id="tab-details" role="tabpanel" class="tab-pane active">
-                    <div id="r_entityDetailTableLayoutView"></div>
+    <h1><span  data-id="title"></span><!-- <small>Bookmark</small> <button data-id="editButton" class="btn btn-default pull-right editbutton" id="editText"><i class="fa fa-pencil"></i></button> --></h1>
+    <div data-id="editBox" style="margin-bottom:10px;">
+        <textarea class="well well-sm col-sm-12" data-id="descriptionTextArea"></textarea>
+        <div class="clearfix" align="right">
+            <button class="btn-atlas" data-id="cancelButton">Cancel</button>
+            <button class="btn-atlas" data-id="publishButton">Publish</button>
+        </div>
+    </div>
+    <div data-id="inputTagging">
+        <div class="dropdown addTag-dropdown" data-id="addTagListBtn">
+            <div class=" addTagBase dropdown-toggle" data-id="addTagBtn" data-toggle="dropdown">
+                <div class="addTagText" data-id="addTagtext" style="display: block">ADD TAG &nbsp; <i class="fa fa-plus"></i></div>
+                <div class="addTagPlus" data-id="addTagPlus" style="display: none"><i class="fa fa-plus"></i></div>
+            </div>
+            <!-- <div class="dropdown-menu menuItem" data-id="addTagCollection">
+                <div data-id="searchTag" class="searchTag row-margin-bottom">
+                    <input placeholder="Search" type=search class="inputSearchTag form-control"></input>
                 </div>
-                <div id="tab-schema" class="tab-pane">
-                    <div id="r_schemaTableLayoutView"></div>
-                </div>
-                <div id="tab-tags" class="tab-pane">
-                    <div id="r_tagTableLayoutView"></div>
+                <div class="appendList" data-id="appendList"></div>
+            </div> -->
+        </div>
+    </div>
+</div>
+<div class="container-fluid gray-bg">
+    <div class="row">
+        <div class="col-sm-10 col-sm-offset-1">
+            <div class="atlast-tabbable">
+                <div class="panel panel-default lineageLayout" style="display:none">
+                    <div id="r_lineageLayoutView"></div>
                 </div>
             </div>
         </div>
     </div>
+    <div class="row">
+        <div class="col-sm-10 col-sm-offset-1">
+            <div class="atlast-tabbable">
+                <ul class="nav nav-tabs" role="tablist">
+                    <li role="presentation" class="tab active"><a href="#tab-details" aria-controls="tab-details" role="tab" data-toggle="tab">Properties</a></li>
+                    <!--  <li role="presentation"><a href="#profile" aria-controls="profile" role="tab" data-toggle="tab">Acceptable Use</a></li> -->
+                    <li role="presentation"><a href="#tab-tagTable" aria-controls="tab-tagTable" role="tab" data-toggle="tab">Tag Attribute</a></li>
+                    <li role="presentation" class="tab schemaTable" style="display:none"><a href="#tab-schema" aria-controls="tab-schema" role="tab" data-toggle="tab">Schema</a></li>
+                </ul>
+                <div class="tab-content">
+                    <div id="tab-details" role="tabpanel" class="tab-pane active">
+                        <div id="r_entityDetailTableLayoutView"></div>
+                    </div>
+                    <div id="tab-tagTable" role="tabpanel" class="tab-pane">
+                        <div id="r_tagTableLayoutView"></div>
+                    </div>
+                    <div id="tab-schema" role="tabpanel" class="tab-pane">
+                        <div id="r_schemaTableLayoutView"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div>
+    <!-- div class="col-sm-10 col-sm-offset-1">
+        <h2>Comments</h2>
+        <textarea class="form-control comment-input" rows="5" placeholder="Add a Comment"></textarea>
+        <button class="btn-atlas">Comment</button>
+        <div class="comment-box">
+            <p class="comment">There are many variations of passages of Lorem Ipsum available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don't look even slightly believable.</p>
+            <p class="author">Micheal Surmac</p>
+            <p class="date">December 16, 2016 11:03:23 AM</p>
+        </div>
+        <div class="comment-box">
+            <p class="comment">Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 2000 years old.</p>
+            <p class="author">Paula Schmidt</p>
+            <p class="date">May 3, 2015 9:16:12 AM</p>
+        </div>
+</div> -->
 </div>

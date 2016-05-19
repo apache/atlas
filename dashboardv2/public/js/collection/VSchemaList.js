@@ -25,7 +25,7 @@ define(['require',
     var VSchemaList = BaseCollection.extend(
         //Prototypal attributes
         {
-            url: Globals.baseURL + '/api/atlas/lineage/hive/table/log_fact_daily_mv/schema',
+            url: Globals.baseURL,
             model: VSchema,
             initialize: function() {
                 this.modelName = 'VSchema';

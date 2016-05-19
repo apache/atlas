@@ -1,0 +1,57 @@
+/* loader.scss */
+
+.fa-spin-custom {
+    animation: spin 1000ms infinite linear;
+}
+
+.glyphicon-spin {
+    animation: spin 1000ms infinite linear;
+}
+
+@-webkit-keyframes spin {
+    0% {
+        //Instead of the line below you could use @include transform($scale, $rotate, $transx, $transy, $skewx, $skewy, $originx, $originy)
+        transform: rotate(0deg);
+    }
+    100% {
+        //Instead of the line below you could use @include transform($scale, $rotate, $transx, $transy, $skewx, $skewy, $originx, $originy)
+        transform: rotate(359deg);
+    }
+}
+
+@keyframes spin {
+    0% {
+        //Instead of the line below you could use @include transform($scale, $rotate, $transx, $transy, $skewx, $skewy, $originx, $originy)
+        transform: rotate(0deg);
+    }
+    100% {
+        //Instead of the line below you could use @include transform($scale, $rotate, $transx, $transy, $skewx, $skewy, $originx, $originy)
+        transform: rotate(359deg);
+    }
+}
+
+.loader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    text-align: center;
+    z-index: 9;
+    background: $white_80 $url_0 no-repeat center center;
+}
+
+.fontLoader {
+    top: 50%;
+    left: 50%;
+    position: absolute;
+    display: none;
+}
+
+.initialLoading {
+    display: block;
+    position: absolute;
+    margin-top: 30%;
+    right: 50%;
+    height: 60px;
+}

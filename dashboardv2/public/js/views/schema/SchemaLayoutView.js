@@ -54,10 +54,7 @@ define(['require',
                         } else {
                             var value = e.currentTarget.text;
                             Utils.setUrl({
-                                url: '#!/dashboard/assetPage',
-                                urlParams: {
-                                    query: value
-                                },
+                                url: '#!/tag/tagAttribute/' + value,
                                 mergeBrowserUrl: false,
                                 trigger: true
                             });
@@ -70,9 +67,9 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'name', 'vent'));
+                _.extend(this, _.pick(options, 'globalVent', 'guid', 'vent'));
                 this.schemaCollection = new VSchemaList([], {});
-                this.schemaCollection.url = "/api/atlas/lineage/" + this.name + "/schema";
+                this.schemaCollection.url = "/api/atlas/lineage/" + this.guid + "/schema";
                 this.commonTableOptions = {
                     collection: this.schemaCollection,
                     includeFilter: false,
@@ -115,6 +112,7 @@ define(['require',
                 });
             },
             getSchemaTableColumns: function() {
+                var that = this;
                 return this.schemaCollection.constructor.getTableCols({
                     name: {
                         label: "Name",
@@ -123,7 +121,7 @@ define(['require',
                         sortable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                return '<div><a href="#!/dashboard/detailPage/' + model.get('$id$').id + '">' + rawValue + '</a></div>';
+                                return '<div><a href="#!/detailPage/' + model.get('$id$').id + '">' + rawValue + '</a></div>';
                             }
                         })
                     },
@@ -133,7 +131,7 @@ define(['require',
                         editable: false,
                         sortable: false
                     },
-                    dataType: {
+                    type: {
                         label: "DataType",
                         cell: "html",
                         editable: false,
@@ -149,9 +147,9 @@ define(['require',
                                 var traits = model.get('$traits$');
                                 var atags = "";
                                 _.keys(model.get('$traits$')).map(function(key) {
-                                    atags += '<a data-id="tagClick">' + traits[key].$typeName$ + '<i class="fa fa-times" data-id="delete" data-name="' + traits[key].$typeName$ + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
+                                    atags += '<a class="inputTag" data-id="tagClick">' + traits[key].$typeName$ + '<i class="fa fa-times" data-id="delete" data-name="' + traits[key].$typeName$ + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
                                 });
-                                return '<div class="tagList">' + atags + '<a data-id="addTag" data-guid="' + model.get('$id$').id + '"><i class="fa fa-plus"></i></a></div>';
+                                return '<div class="tagList">' + atags + '<a href="javascript:void(0);" class="inputTag" data-id="addTag" data-guid="' + model.get('$id$').id + '"><i style="right:0" class="fa fa-plus"></i></a></div>';
                             }
                         })
                     }
@@ -159,18 +157,21 @@ define(['require',
             },
             onClickSchemaTag: function(e) {
                 var that = this;
-                require(['views/tag/addTagModalView'], function(addTagModalView) {
-                    var view = new addTagModalView({
+                require(['views/tag/addTagModalView'], function(AddTagModalView) {
+                    var view = new AddTagModalView({
                         vent: that.vent,
                         guid: that.$(e.currentTarget).data("guid"),
                         modalCollection: that.schemaCollection
                     });
+                    // view.saveTagData = function() {
+                    //override saveTagData function 
+                    // }
                 });
             },
             onClickTagCross: function(e) {
-                var tagName = $(e.target).data("name");
-                var that = this;
-                var modal = CommonViewFunction.deleteTagModel(tagName);
+                var tagName = $(e.target).data("name"),
+                    that = this,
+                    modal = CommonViewFunction.deleteTagModel(tagName);
                 modal.on('ok', function() {
                     that.deleteTagData(e);
                 });
@@ -180,14 +181,12 @@ define(['require',
             },
             deleteTagData: function(e) {
                 var that = this,
-                    tagName = $(e.target).data("name");
-                var guid = $(e.target).data("guid");
-                require(['utils/CommonViewFunction'], function(CommonViewFunction) {
-                    CommonViewFunction.deleteTag({
-                        'tagName': tagName,
-                        'guid': guid,
-                        'collection': that.schemaCollection
-                    });
+                    tagName = $(e.target).data("name"),
+                    guid = $(e.target).data("guid");
+                CommonViewFunction.deleteTag({
+                    'tagName': tagName,
+                    'guid': guid,
+                    'collection': that.tagCollection
                 });
             }
         });

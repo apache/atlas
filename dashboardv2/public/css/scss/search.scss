@@ -1,0 +1,75 @@
+//colors
+$color_celeste_approx: #1D1F2B;
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 22px;
+    margin-left: 8px;
+    input {
+        display: none;
+    }
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: $color_celeste_approx;
+    //Instead of the line below you could use @include transition($transition-1, $transition-2, $transition-3, $transition-4, $transition-5, $transition-6, $transition-7, $transition-8, $transition-9, $transition-10)
+    transition: .4s;
+    &:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 4px;
+        bottom: 3px;
+        background-color: $color_jungle_green_approx;
+        //Instead of the line below you could use @include transition($transition-1, $transition-2, $transition-3, $transition-4, $transition-5, $transition-6, $transition-7, $transition-8, $transition-9, $transition-10)
+        transition: .4s;
+    }
+    &.round {
+        //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+        border-radius: 34px;
+        &:before {
+            //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+            border-radius: 50%;
+        }
+    }
+}
+
+input {
+    &:checked + .slider {
+        background-color: $color_celeste_approx;
+        &:before {
+            //Instead of the line below you could use @include transform($scale, $rotate, $transx, $transy, $skewx, $skewy, $originx, $originy)
+            transform: translateX(26px);
+        }
+    }
+    &:focus + .slider {
+        //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
+        box-shadow: 0 0 1px $color_celeste_approx;
+    }
+}
+
+.advanceSearchBtn {
+    float: right;
+}
+
+.advanceSearchTagInput {
+    margin-bottom: 20px;
+}
+
+.advanceSearchTermInput {
+    margin-bottom: 20px;
+}
+.clearAdvanceSearch {
+    display: inline-block;
+    float: left;
+    margin-top: 10px;
+    cursor: pointer
+}

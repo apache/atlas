@@ -19,18 +19,13 @@
 'use strict';
 
 var git = require('git-rev');
-var LIVERELOAD_PORT = 3010;
-var lrSnippet = require('connect-livereload')({ port: LIVERELOAD_PORT });
-var mountFolder = function(connect, dir) {
-    return connect.static(require('path').resolve(dir));
-};
 module.exports = function(grunt) {
     var classPathSep = (process.platform === "win32") ? ';' : ':',
         gitHash = '',
         pkg = grunt.file.readJSON('package.json'),
         distPath = 'dist',
         publicPath = 'public',
-        libPath =  distPath + '/js/libs',
+        libPath = distPath + '/js/libs',
         isDashboardDirectory = grunt.file.isDir('public'),
         modulesPath = 'public/';
     if (!isDashboardDirectory) {
@@ -42,20 +37,17 @@ module.exports = function(grunt) {
 
     grunt.initConfig({
         watch: {
-            options: {
-                livereload: 35729
-            },
             js: {
                 files: ['public/**/*.js'],
-                tasks: ['shell']
+                tasks: ['copy:dist']
             },
             html: {
                 files: ['public/**/*.html'],
                 tasks: ['copy:dist']
             },
             css: {
-                files: ['public/**/*.css'],
-                tasks: ['copy:dist']
+                files: ['public/**/*.scss', 'public/**/*.css'],
+                tasks: ['sass', 'copy:dist']
             },
             image: {
                 files: ['public/**/*.{ico,gif,png}'],
@@ -66,10 +58,7 @@ module.exports = function(grunt) {
             server: {
                 options: {
                     port: 9999,
-                    base: 'public',
-                    keepalive: true,
-                    //logger: 'dev',
-                    //debug: true,
+                    base: distPath,
                     // change this to '0.0.0.0' to access the server from outside
                     hostname: '0.0.0.0',
                     middleware: function(connect, options, defaultMiddleware) {
@@ -93,55 +82,6 @@ module.exports = function(grunt) {
                     //xforward: false
                 }],
             },
-            livereload: {
-                options: {
-                    middleware: function(connect) {
-                        return [
-                            require('grunt-connect-proxy/lib/utils').proxyRequest,
-                            mountFolder(connect, 'public')
-                        ];
-                    }
-                }
-            },
-            dist: {
-                options: {
-                    middleware: function(connect) {
-                        return [
-                            mountFolder(connect, publicPath)
-                        ];
-                    }
-                }
-            }
-        },
-        concurrent: {
-            tasks: ['watch', 'connect'],
-            options: {
-                logConcurrentOutput: true
-            }
-        },
-        dist: distPath + '/js/app.min.js',
-        modules: grunt.file.expand(
-            modulesPath + 'js/app.js',
-            modulesPath + 'js/config.js',
-            modulesPath + 'js/routes.js',
-            modulesPath + 'js/init.js'
-        ).join(' '),
-        shell: {
-            min: {
-                command: ''
-                    /*command: 'java ' +
-                    '-cp ' + distPath + '/lib/closure-compiler/compiler.jar' + classPathSep +
-                    '' + distPath + '/lib/ng-closure-runner/ngcompiler.jar ' +
-                    'org.angularjs.closurerunner.NgClosureRunner ' +
-                    '--compilation_level SIMPLE_OPTIMIZATIONS ' +
-                    //'--formatting PRETTY_PRINT ' +
-                    '--language_in ECMASCRIPT5_STRICT ' +
-                    '--angular_pass ' +
-                    '--manage_closure_dependencies ' +
-                    '--js <%= modules %> ' +
-                    '--js_output_file <%= dist %>'
-        */
-            }
         },
         devUpdate: {
             main: {
@@ -186,7 +126,9 @@ module.exports = function(grunt) {
                     'd3': 'd3/d3.min.js',
                     'd3/': 'd3-tip/index.js',
                     'noty/js': 'noty/js/noty/packaged/jquery.noty.packaged.min.js',
-                    'dagre-d3': 'dagre-d3/dist/dagre-d3.min.js'
+                    'dagre-d3': 'dagre-d3/dist/dagre-d3.min.js',
+                    'jstree': 'jstree/dist/jstree.min.js',
+                    'select2': 'select2/dist/js/select2.min.js'
                 }
             },
             css: {
@@ -202,16 +144,23 @@ module.exports = function(grunt) {
                     'backgrid-paginator/css': 'backgrid-paginator/backgrid-paginator.css',
                     'backgrid-sizeable-columns/css': 'backgrid-sizeable-columns/backgrid-sizeable-columns.css',
                     'jquery-asBreadcrumbs/css': 'jquery-asBreadcrumbs/css/asBreadcrumbs.css',
-                    'noty/css': 'noty/js/noty/packaged/jquery.noty.packaged.min.js'
+                    'select2/css': 'select2/dist/css/select2.min.css'
                 }
 
+            }
+        },
+        sass: {
+            dist: {
+                files: {
+                    'dist/css/style.css': 'dist/css/scss/style.scss'
+                }
             }
         },
         copy: {
             dist: {
                 expand: true,
                 cwd: modulesPath,
-                src: ['**', 'js/**/*.js', '!modules/**/*.js'],
+                src: ['**', '!**/*.sass'],
                 dest: distPath
             }
         },
@@ -225,6 +174,7 @@ module.exports = function(grunt) {
 
     grunt.loadNpmTasks('grunt-connect-proxy');
     grunt.loadNpmTasks('grunt-contrib-connect');
+    grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks('grunt-npmcopy');
 
 
@@ -243,17 +193,19 @@ module.exports = function(grunt) {
         'npmcopy:js',
         'npmcopy:css',
         'copy:dist',
+        'sass',
         'configureProxies:server',
         'connect:server',
-        'concurrent',
+        /* 'concurrent',*/
         'watch',
-        'connect:livereload'
+        /*'connect:livereload'*/
     ]);
 
     grunt.registerTask('build', [
         'npmcopy:js',
         'npmcopy:css',
-        'copy:dist'
+        'copy:dist',
+        'sass'
     ]);
 
     grunt.registerTask('minify', 'Minify the all js', function() {

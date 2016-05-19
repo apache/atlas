@@ -20,21 +20,21 @@
         <div class="modal-header">
             <a class="close">&times;</a>
             <h4 class="modal-title">
-					{{#if titleHtml}}
-					    {{{tt title}}}
-					  {{else}}
-					    {{tt title}}
-					  {{/if}}
-				</h4>
+                    {{#if titleHtml}}
+                        {{{tt title}}}
+                      {{else}}
+                        {{tt title}}
+                      {{/if}}
+                </h4>
         </div>
         {{/if}} {{#if contentWithFooter}} {{else}}
         <div class="modal-body">{{content}}</div>
         {{#if showFooter}}
         <div class="modal-footer">
-            <button class="btn ok btn-success">{{tt okText}}</button>
             {{#if allowCancel}} {{#if cancelText}}
-            <button class="btn btn-default cancel">{{tt cancelText}}</button>
+            <button class="btn btn-atlas cancel">{{tt cancelText}}</button>
             {{/if}} {{/if}}
+            <button class="btn btn-atlas ok">{{tt okText}}</button>
         </div>
         {{/if}} {{/if}}
     </div>

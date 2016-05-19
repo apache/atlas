@@ -34,9 +34,11 @@
     "jquery": "^2.2.2",
     "jquery-asBreadcrumbs": "git+https://github.com/amazingSurge/jquery-asBreadcrumbs.git",
     "jquery-ui": "^1.10.4",
+    "jstree": "^3.3.0",
     "noty": "^2.3.8",
     "requirejs": "^2.1.16",
     "requirejs-text": "^2.0.12",
+    "select2": "^4.0.2",
     "underscore": "^1.8.3"
   },
   "devDependencies": {
@@ -57,6 +59,7 @@
     "grunt-nginx": "~0.2.2",
     "grunt-nodemon": "^0.4.0",
     "grunt-npmcopy": "^0.1.0",
+    "grunt-sass": "^1.1.0",
     "grunt-shell": "^1.1.1",
     "load-grunt-tasks": "^3.1.0",
     "proxit": "~0.6.4"

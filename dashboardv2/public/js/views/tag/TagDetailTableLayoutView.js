@@ -80,7 +80,8 @@ define(['require',
                                 var stringArr = [];
                                 tagValue = "";
                                 _.each(keyValue.values, function(val, key) {
-                                    var attrName = "<span>" + key + " : " + val + "</span>";
+
+                                    var attrName = "<span>" + key + ":" + val + "</span>";
                                     stringArr.push(attrName);
                                 });
                                 tagValue += stringArr.join(", ");
@@ -93,12 +94,15 @@ define(['require',
             },
             addModalView: function(e) {
                 var that = this;
-                require(['views/tag/addTagModalView'], function(addTagModalView) {
-                    var view = new addTagModalView({
+                require(['views/tag/addTagModalView'], function(AddTagModalView) {
+                    var view = new AddTagModalView({
                         vent: that.vent,
                         guid: that.guid,
                         modalCollection: that.collection
                     });
+                    // view.saveTagData = function() {
+                    //override saveTagData function
+                    // }
                 });
             },
             deleteTagDataModal: function(e) {

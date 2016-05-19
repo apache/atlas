@@ -26,6 +26,12 @@ define(['require'], function(require) {
     Globals.settings.PAGE_SIZE = 25;
     Globals.saveApplicationState = {
         mainPageState: {},
+        tabState: {
+            stateChanged: false,
+            tagUrl: "#!/tag",
+            taxonomyUrl: "#!/taxonomy",
+            searchUrl: "#!/search"
+        },
         detailPageState: {}
     };
 

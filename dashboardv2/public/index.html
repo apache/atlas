@@ -37,41 +37,28 @@
     <link rel="stylesheet" href="js/libs/backgrid-paginator/css/backgrid-paginator.css">
     <link rel="stylesheet" href="js/libs/backgrid-orderable-columns/css/backgrid-orderable-columns.css">
     <link rel="stylesheet" href="js/libs/backgrid-sizeable-columns/css/backgrid-sizeable-columns.css">
+    <link rel="stylesheet" href="js/libs/select2/css/select2.min.css">
     <link rel="stylesheet" href="js/libs/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="js/libs/jquery-asBreadcrumbs/css/asBreadcrumbs.css">
+    <link href='https://fonts.googleapis.com/css?family=Raleway:400,400italic,600,600italic,700,700italic' rel='stylesheet' type='text/css'>
     <link href="css/bootstrap-sidebar.css" rel="stylesheet">
     <link href="css/font-awesome.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
-    <link href="css/business-catlog.css" rel="stylesheet">
-    <link href="css/override.css" rel="stylesheet">
 </head>
 
 <body>
-    <div id="new">
-        <div id="wrapper">
-            <div id="sidebar-wrapper">
-                <div id="sideNav-wrapper"></div>
-            </div>
-            <div id="page-content-wrapper">
-                <header id="new-header" class="clearfix"></header>
-                <div id="new-page-wrapper"> </div>
-            </div>
+    <div id="wrapper">
+        <div id="sidebar-wrapper" class="sidebar-wrapper">
+            <div id="sideNav-wrapper"></div>
         </div>
-    </div>
-    <div id='old'>
-        <!--Header Begin-->
-        <header id="header" class="navbar-fixed-top navbar-top  navbar-atlas"> </header>
-        <!--Header End-->
-        <div class="container wrapper">
-            <div class="">
-                <div id="page-wrapper">
-                    <div>
-                        <img class="initialLoading" src="../img/ring.gif">
-                    </div>
+        <div id="page-content-wrapper" class="page-content-wrapper">
+            <header id="new-header" class="clearfix"></header>
+            <div id="new-page-wrapper">
+                <div>
+                    <img class="initialLoading" src="../img/ring.gif">
                 </div>
             </div>
         </div>
-        <div id="footer"></div>
     </div>
     <!-- build:js scripts/main.js -->
     <script data-main="js/main" src="js/libs/requirejs/require.js"></script>

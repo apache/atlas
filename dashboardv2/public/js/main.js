@@ -94,6 +94,9 @@ require.config({
         dagreD3: {
             deps: ['d3'],
             exports: 'dagreD3'
+        },
+        tree: {
+            deps: ['jquery']
         }
     },
 
@@ -121,7 +124,9 @@ require.config({
         'json2': 'require-handlebars-plugin/js/json2',
         'hbs': 'require-handlebars-plugin/js/hbs',
         'i18nprecompile': 'require-handlebars-plugin/js/i18nprecompile',
-        'dagreD3': 'libs/dagre-d3/dagre-d3.min'
+        'dagreD3': 'libs/dagre-d3/dagre-d3.min',
+        'tree': 'libs/jstree/jstree.min',
+        'select2': 'libs/select2/select2.min',
     },
 
     /**
@@ -137,7 +142,8 @@ require(['App',
     'router/Router',
     'utils/Overrides',
     'bootstrap',
-    'd3'
+    'd3',
+    'select2'
 ], function(App, Router) {
     App.appRouter = new Router();
     App.start();

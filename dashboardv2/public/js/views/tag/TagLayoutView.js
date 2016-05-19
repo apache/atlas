@@ -20,8 +20,9 @@ define(['require',
     'backbone',
     'hbs!tmpl/tag/TagLayoutView_tmpl',
     'collection/VTagList',
+    'collection/VEntityList',
     'utils/Utils',
-], function(require, Backbone, TagLayoutViewTmpl, VTagList, Utils) {
+], function(require, Backbone, TagLayoutViewTmpl, VTagList, VEntityList, Utils) {
     'use strict';
 
     var TagLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -36,18 +37,24 @@ define(['require',
 
             /** ui selector cache */
             ui: {
-                listTag: "[data-id='listTag']",
-                listType: "[data-id='listType']",
-                tagElement: "[data-id='tags']",
-                referesh: "[data-id='referesh']",
-                searchTag: "[data-id='searchTag']"
+                tagsParent: "[data-id='tagsParent']",
+                createTag: "[data-id='createTag']",
+                tags: "[data-id='tags']",
+                offLineSearchTag: "[data-id='offlineSearchTag']",
+                deleteTerm: "[data-id='deleteTerm']",
+
             },
             /** ui events hash */
             events: function() {
                 var events = {};
-                events["click " + this.ui.tagElement] = 'onTagClick';
-                events["click " + this.ui.referesh] = 'refereshClick';
-                events["keyup " + this.ui.searchTag] = 'offlineSearchTag';
+                events["click " + this.ui.createTag] = 'onClickCreateTag';
+                /* events["dblclick " + this.ui.tags] = function(e) {
+                     this.onTagList(e, true);
+                 }*/
+                events["click " + this.ui.tags] = 'onTagList';
+                    // events["click " + this.ui.referesh] = 'refereshClick';
+                events["keyup " + this.ui.offLineSearchTag] = 'offlineSearchTag';
+                events["click " + this.ui.deleteTerm] = 'onDeleteTerm';
                 return events;
             },
             /**
@@ -55,72 +62,218 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'vent'));
+                _.extend(this, _.pick(options, 'globalVent', 'tag'));
                 this.tagCollection = new VTagList();
-                $.extend(this.tagCollection.queryParams, { type: 'TRAIT' });
-                this.typeCollection = new VTagList();
-                $.extend(this.typeCollection.queryParams, { type: 'CLASS' });
-                this.bindEvents();
+                this.collection = new Backbone.Collection();
 
+                this.json = {
+                    "enumTypes": [],
+                    "traitTypes": [],
+                    "structTypes": [],
+                    "classTypes": []
+                };
             },
             bindEvents: function() {
-                this.listenTo(this.tagCollection, 'reset', function() {
-                    this.tagsAndTypeGenerator('tagCollection', 'listTag');
+                var that = this;
+                this.listenTo(this.tagCollection, "reset", function() {
+                    this.tagsAndTypeGenerator('tagCollection');
+                    this.createTagAction();
                 }, this);
-                this.listenTo(this.typeCollection, 'reset', function() {
-                    this.tagsAndTypeGenerator('typeCollection', 'listType');
-                }, this);
+                this.ui.tagsParent.on('click', 'li.parent-node a', function() {
+                    that.setUrl(this.getAttribute("href"));
+                });
             },
             onRender: function() {
+                var that = this;
+                this.bindEvents();
                 this.fetchCollections();
+                $('body').on("click", '.tagPopoverList li', function(e) {
+                    that[$(this).find("a").data('fn')](e);
+                });
+                $('body').click(function(e) {
+                    if ($('.tagPopoverList').length) {
+                        if ($(e.target).hasClass('tagPopover')) {
+                            return;
+                        }
+                        that.$('.tagPopover').popover('hide');
+                    }
+                });
             },
             fetchCollections: function() {
+                $.extend(this.tagCollection.queryParams, { type: 'TRAIT', });
                 this.tagCollection.fetch({ reset: true });
-                this.typeCollection.fetch({ reset: true });
             },
-            tagsAndTypeGenerator: function(collection, element, searchString) {
-                if (element == "listType") {
-                    var searchType = "dsl";
-                    var icon = "fa fa-cogs";
-                } else {
-                    var searchType = "fulltext";
-                    var icon = "fa fa-tags";
+            manualRender: function(tagName) {
+                this.setValues(tagName);
+            },
+            setValues: function(tagName) {
+                if (Utils.getUrlState.isTagTab() || Utils.getUrlState.isInitial()) {
+                    if (!this.tag && !tagName) {
+                        this.selectFirst = false;
+                        this.ui.tagsParent.find('li').first().addClass('active');
+                        Utils.setUrl({
+                            url: this.ui.tagsParent.find('li a').first().attr("href"),
+                            mergeBrowserUrl: false,
+                            trigger: true
+                        });
+                    } else {
+                        var tag = Utils.getUrlState.getLastValue();
+                        if (tagName) {
+                            tag = tagName;
+                        } else if (this.tag) {
+                            tag = this.tag;
+                        }
+                        this.ui.tagsParent.find('li').removeClass('active');
+                        this.ui.tagsParent.find('li').filter(function() {
+                            return $(this).text() === tag;
+                        }).addClass('active');
+                    }
                 }
-                var str = '';
+            },
+            tagsAndTypeGenerator: function(collection, searchString) {
+                var that = this,
+                    str = '';
                 _.each(this[collection].fullCollection.models, function(model) {
                     var tagName = model.get("tags");
                     if (searchString) {
                         if (tagName.search(new RegExp(searchString, "i")) != -1) {
-                            str += '<a href="javascript:void(0)" data-id="tags" data-type="' + searchType + '" class="list-group-item"><i class="' + icon + '"></i>' + tagName + '</a>';
+                            str = '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-trash-o" data-id="deleteTerm"></i></div><a href="#!/tag/tagAttribute/' + tagName + '">' + tagName + '</a></li>' + str;
                         } else {
                             return;
                         }
                     } else {
-                        str += '<a href="javascript:void(0)" data-id="tags" data-type="' + searchType + '" class="list-group-item"><i class="' + icon + '"></i>' + tagName + '</a>';
+                        //str = '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-trash-o" data-id="deleteTerm"></i></div><a href="#!/tag/tagAttribute/' + tagName + '">' + tagName + '</a></li>' + str;
+                        str = '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + tagName + '">' + tagName + '</a></li>' + str;
                     }
                 });
-                this.ui[element].empty().append(str);
+                this.ui.tagsParent.empty().html(str);
+                this.setValues();
+
             },
-            onTagClick: function(e) {
-                var data = $(e.currentTarget).data();
-                this.vent.trigger("tag:click", { 'query': e.currentTarget.text, 'searchType': data.type });
-                Utils.setUrl({
-                    url: '#!/dashboard/assetPage',
-                    urlParams: {
-                        query: e.currentTarget.text,
-                        searchType: data.type
-                    },
-                    mergeBrowserUrl: true,
-                    trigger: false
+
+            onClickCreateTag: function(e) {
+                var that = this;
+                $(e.currentTarget).blur();
+                require([
+                    'views/tag/CreateTagLayoutView',
+                    'modules/Modal'
+                ], function(CreateTagLayoutView, Modal) {
+                    var view = new CreateTagLayoutView({ 'tagCollection': that.tagCollection });
+                    var modal = new Modal({
+                        title: 'Create a new tag',
+                        content: view,
+                        cancelText: "Cancel",
+                        okText: 'Create',
+                        allowCancel: true,
+                    }).open();
+                    modal.$el.find('button.ok').attr("disabled", "true");
+                    view.ui.tagName.on('keyup', function(e) {
+                        modal.$el.find('button.ok').removeAttr("disabled");
+                    });
+                    view.ui.tagName.on('keyup', function(e) {
+                        if (e.keyCode == 8 && e.currentTarget.value == "") {
+                            modal.$el.find('button.ok').attr("disabled", "true");
+                        }
+                    });
+                    modal.on('ok', function() {
+                        that.onCreateButton(view);
+                    });
+                    modal.on('closeModal', function() {
+                        modal.trigger('cancel');
+                    });
                 });
             },
-            refereshClick: function() {
-                this.fetchCollections();
+            onCreateButton: function(ref) {
+                var that = this;
+                this.name = ref.ui.tagName.val();
+
+                if (ref.ui.parentTag.val().length <= 1 && ref.ui.parentTag.val()[0] == "") {
+                    var superTypes = [];
+                } else {
+                    var superTypes = ref.ui.parentTag.val();
+                }
+                this.json.traitTypes[0] = {
+                    attributeDefinitions: this.collection.toJSON(),
+                    typeName: this.name,
+                    typeDescription: null,
+                    superTypes: superTypes,
+                    hierarchicalMetaTypeName: "org.apache.atlas.typesystem.types.TraitType"
+                };
+                new this.tagCollection.model().set(this.json).save(null, {
+                    success: function(model, response) {
+                        that.fetchCollections();
+                        that.setUrl('#!/tag/tagAttribute/' + ref.ui.tagName.val());
+                        Utils.notifySuccess({
+                            content: that.name + "  has been created"
+                        });
+                        that.collection.reset([]);
+                    },
+                    error: function(model, response) {
+                        if (response.responseJSON && response.responseJSON.error) {
+                            Utils.notifyError({
+                                content: response.responseJSON.error
+                            });
+                        }
+                    }
+                });
+            },
+
+            setUrl: function(url) {
+                Utils.setUrl({
+                    url: url,
+                    mergeBrowserUrl: false,
+                    trigger: true,
+                    updateTabState: function() {
+                        return { tagUrl: this.url, stateChanged: true };
+                    }
+                });
+            },
+            onTagList: function(e, toggle) {
+                /*if (toggle) {
+                    var assetUl = $(e.currentTarget).siblings('.tagAsset')
+                    assetUl.slideToggle("slow");
+                }*/
+                this.ui.tagsParent.find('li').removeClass("active");
+                $(e.currentTarget).addClass("active");
             },
             offlineSearchTag: function(e) {
                 var type = $(e.currentTarget).data('type');
-                var collectionType = type == "listTag" ? "tagCollection" : "typeCollection";
-                this.tagsAndTypeGenerator(collectionType, type, $(e.currentTarget).val());
+                this.tagsAndTypeGenerator('tagCollection', $(e.currentTarget).val());
+            },
+            createTagAction: function() {
+                var that = this;
+                this.$('.tagPopover').popover({
+                    placement: 'bottom',
+                    html: true,
+                    trigger: 'manual',
+                    container: 'body',
+                    content: function() {
+                        return "<ul class='tagPopoverList'>" +
+                            "<li class='listTerm' ><i class='fa fa-search'></i> <a href='javascript:void(0)' data-fn='onSearchTerm'>Search Tag</a></li>" +
+                            "</ul>";
+                    }
+                });
+                this.$('.tagPopover').off('click').on('click', function(e) {
+                    // if any other popovers are visible, hide them
+                    e.preventDefault();
+                    that.$('.tagPopover').not(this).popover('hide');
+                    $(this).popover('toggle');
+                });
+            },
+            onSearchTerm: function() {
+                Utils.setUrl({
+                    url: '#!/search/searchResult',
+                    urlParams: {
+                        query:  this.ui.tagsParent.find('li.active').find("a").text(),
+                        searchType: "fulltext",
+                        dslChecked: false
+                    },
+                    updateTabState: function() {
+                        return { searchUrl: this.url, stateChanged: true };
+                    },
+                    mergeBrowserUrl: false,
+                    trigger: true
+                });
             }
         });
     return TagLayoutView;

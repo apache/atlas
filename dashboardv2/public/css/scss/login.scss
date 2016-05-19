@@ -1,0 +1,71 @@
+/* login.scss */
+
+//colors
+.errorBox {
+    position: absolute;
+    right: 36px;
+    display: none;
+    top: 26px;
+    width: 251px;
+    .alert {
+        //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
+        box-shadow: 4px 3px 8px -2px $gray;
+    }
+}
+.close {
+    padding: 6px;
+    font-size: 15px;
+}
+.login-pane {
+    margin-top: 50px;
+    margin-top: 35%;
+    background: $color_tuna_approx;
+    color: $color_gallery_approx;
+    padding: 15px;
+    //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+    border-radius: 5px;
+    h2 {
+        margin-bottom: 40px;
+    }
+    .input-group {
+        margin: 20px 0;
+    }
+    .form-control {
+        background-color: transparent;
+        //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+        border-radius: 0;
+        border-left: none;
+        color: $color_gallery_approx;
+        &:focus {
+            border-color: $color_celeste_approx;
+            + .input-group-addon {
+                border-color: $color_cornflower_blue_approx;
+            }
+        }
+    }
+    .input-group-addon {
+        background-color: transparent;
+        //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+        border-radius: 0;
+        border-right: none;
+        color: $color_celeste_approx;
+    }
+    .btn-atlas {
+        padding: 10px 20px;
+        background-color: $color_keppel_approx;
+        color: $white;
+        border: 1px $color_keppel_approx solid;
+        //Instead of the line below you could use @include border-radius($radius, $vertical-radius)
+        border-radius: 4px;
+        //Instead of the line below you could use @include transition($transition-1, $transition-2, $transition-3, $transition-4, $transition-5, $transition-6, $transition-7, $transition-8, $transition-9, $transition-10)
+        transition: all .3s ease;
+    }
+}
+button:focus {
+    outline: none !important;
+}
+.form-control:focus {
+    //Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
+    box-shadow: none;
+}
+ 

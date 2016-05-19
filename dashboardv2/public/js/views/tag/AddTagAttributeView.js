@@ -1,3 +1,4 @@
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -18,52 +19,37 @@
 
 define(['require',
     'backbone',
-    'hbs!tmpl/tag/addTagAttributeItemView_tmpl',
+    'hbs!tmpl/tag/AddTagAttributeView_tmpl',
 
-], function(require, Backbone, addTagAttributeItemViewTmpl) {
+], function(require, Backbone, AddTagAttributeView_tmpl) {
     'use strict';
 
-    return Backbone.Marionette.ItemView.extend(
+    return Backbone.Marionette.LayoutView.extend(
         /** @lends GlobalExclusionListView */
         {
 
-            template: addTagAttributeItemViewTmpl,
+            template: AddTagAttributeView_tmpl,
 
             /** Layout sub regions */
             regions: {},
 
             /** ui selector cache */
-            ui: {},
-            /** ui events hash */
-            events: {
-                'click #close': 'onCloseButton',
-                'change input': function(e) {
-                    this.saveBtn.removeAttr("disabled");
-                    this.model.set({ name: e.currentTarget.value });
-                },
-                'keypress #attributeId': function(e) {
-                    if (this.$(e.currentTarget).val() == "") {
-                        this.saveBtn.removeAttr("disabled");
-                    }
-                },
-                'keyup #attributeId': function(e) {
-                    if (e.keyCode == 8 && this.$(e.currentTarget).val() == "") {
-                        this.saveBtn.attr("disabled", "true");
-                    }
-                },
+            ui: {
+                close: "[data-id='close']",
+                attributeId: "[data-id='attributeId']"
+            },
+            events: function() {
+                var events = {};
+                return events;
             },
             /**
              * intialize a new GlobalExclusionComponentView Layout
              * @constructs
              */
             initialize: function(options) {
-                this.saveBtn = options.saveBtn;
+                this.parentView = options.parentView;
             },
             onRender: function() {},
-            bindEvents: function() {},
-            onCloseButton: function() {
-                this.model.destroy();
-                this.saveBtn.removeAttr("disabled");
-            }
+            bindEvents: function() {}
         });
 });

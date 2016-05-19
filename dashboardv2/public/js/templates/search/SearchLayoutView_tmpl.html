@@ -15,19 +15,32 @@
  * limitations under the License.
 -->
 <div class="row row-margin-bottom">
-    <div class="col-sm-12">
-        <div class="switch" style="float: left;">
-            <input type="radio" class="switch-input" name="queryType" value="fulltext" id="fulltext_toggle" checked="">
-            <label for="fulltext_toggle" class="switch-label switch-label-off">Text</label>
-            <input type="radio" class="switch-input" name="queryType" value="dsl" id="dsl_toggle">
-            <label for="dsl_toggle" class="switch-label switch-label-on">DSL</label>
-            <span class="switch-selection"></span>
-        </div>
-        <div class="input-group">
-            <input style="padding-left: 132px;" type="text" class="form-control" data-id="searchInput" placeholder="Search using a query string: e.g. sales_fact">
-            <span class="input-group-btn">
-                <button class="btn btn-success" data-id="searchButton" type="button"><i class="fa fa-search"></i></button>
-            </span>
+    <div class="col-sm-12" style="margin:15px 0px;">
+        <div class="row">
+            <div class="col-md-12">
+                <span class="pull-left">Text</span>
+                <label class="switch pull-left">
+                    <input type="checkbox" name="queryType" value="text">
+                    <div class="slider round"></div>
+                </label>
+                <span class="pull-left">DSL</span>
+            </div>
         </div>
     </div>
+    <div class="col-sm-12">
+        <div class="form-group">
+            <input type="text" class="form-control" data-id="searchInput" placeholder="Search using a query string: e.g. sales_fact">
+        </div>
+        <!--  <div data-id="advanceSearchContainer">
+            <div class="form-group">
+                <select type="text" class="col-md-12 form-control tagListSelect" data-id="tagListInput" multiple></select>
+            </div>
+          <div class="form-group">
+                <select type="text" class="col-md-12 form-control" data-id="termListInput" multiple></select>
+            </div>
+        </div> -->
+        <div class="clearAdvanceSearch" data-id="clearSearch">Clear</div>
+        <button class="btn btn-atlas advanceSearchBtn" data-id="searchBtn">Search</button>
+    </div>
 </div>
+<div id="searchResult"></div>

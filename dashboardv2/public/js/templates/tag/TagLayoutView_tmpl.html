@@ -14,27 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<div class="tagsList">
-    <div class="atlast-tabbable">
-        <ul class="nav nav-tabs" role="tablist">
-            <li role="presentation" class="tab active"><a href="#tab-tags" role="tab" data-toggle="tab">Tags</a></li>
-            <li role="presentation" class="tab"><a href="#tab-types" role="tab" data-toggle="tab">Type</a></li>
-            <div class="pull-right" data-id="referesh"><a href="javascript:void(0)"><i class="fa fa-refresh"></i></a></div>
-            <div class="indicator" style="right: 116px; left: 0px;"></div>
-        </ul>
-        <div class="tab-content">
-            <div id="tab-tags" role="tabpanel" class="tab-pane active">
-                <div class="row-margin-bottom">
-                    <input data-id="searchTag" data-type="listTag" placeholder="Search for Tags…" class="form-control">
-                </div>
-                <div class="list-group scrollTagList" data-id="listTag"> </div>
-            </div>
-            <div id="tab-types" role="tabpanel" class="tab-pane">
-                <div class="row-margin-bottom ">
-                    <input data-id="searchTag" data-type="listType" placeholder="Search for Types…" class="form-control">
-                </div>
-                <div class="list-group scrollTagList" data-id="listType"> </div>
-            </div>
-        </div>
-    </div>
-</div>
+<div class="clearfix"><a href="javascript:void(0)" data-id="createTag"><i class="fa fa-plus"></i> Create Tag</a></div>
+<hr>
+<input type="text" class="form-control" data-id="offlineSearchTag" placeholder="Search Tags...">
+<ul class="tag-tree" data-id="tagsParent">
+</ul>
