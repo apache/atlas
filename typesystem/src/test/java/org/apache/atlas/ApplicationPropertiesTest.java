@@ -19,6 +19,7 @@ package org.apache.atlas;
 
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.commons.configuration.Configuration;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
@@ -58,11 +59,20 @@ public class ApplicationPropertiesTest {
     @Test
     public void testGetClass() throws Exception {
         //read from atlas-application.properties
-        Class cls = ApplicationProperties.getClass("atlas.TypeSystem.impl", ApplicationProperties.class.getName());
+        Class cls = ApplicationProperties.getClass("atlas.TypeSystem.impl", ApplicationProperties.class.getName(), TypeSystem.class);
         assertEquals(cls.getName(), TypeSystem.class.getName());
 
         //default value
-        cls = ApplicationProperties.getClass("atlas.TypeSystem2.impl", TypeSystem.class.getName());
+        cls = ApplicationProperties.getClass("atlas.TypeSystem2.impl", TypeSystem.class.getName(), TypeSystem.class);
         assertEquals(cls.getName(), TypeSystem.class.getName());
+
+        //incompatible assignTo class, should throw AtlasException
+        try {
+            cls = ApplicationProperties.getClass("atlas.TypeSystem.impl", ApplicationProperties.class.getName(), ApplicationProperties.class);
+            Assert.fail(AtlasException.class.getSimpleName() + " was expected but none thrown.");
+        }
+        catch (AtlasException e) {
+            // good
+        }
     }
 }

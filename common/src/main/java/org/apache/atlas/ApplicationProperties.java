@@ -92,13 +92,22 @@ public final class ApplicationProperties extends PropertiesConfiguration {
         return inConf.subset(prefix);
     }
 
-    public static Class getClass(String propertyName, String defaultValue) {
+    public static Class getClass(String propertyName, String defaultValue, Class assignableClass)
+        throws AtlasException {
         try {
             Configuration configuration = get();
             String propertyValue = configuration.getString(propertyName, defaultValue);
-            return Class.forName(propertyValue);
+            Class<?> clazz = Class.forName(propertyValue);
+            if (assignableClass == null || assignableClass.isAssignableFrom(clazz)) {
+                return clazz;
+            } else {
+                String message = "Class " + clazz.getName() + " specified in property " + propertyName
+                        + " is not assignable to class " + assignableClass.getName();
+                LOG.error(message);
+                throw new AtlasException(message);
+            }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new AtlasException(e);
         }
     }
 }

@@ -209,7 +209,7 @@ public class TypeSystemTest extends BaseTest {
     }
 
     @Test
-    public void testTypeNamesAreNotDuplicated() {
+    public void testTypeNamesAreNotDuplicated() throws Exception {
         TypeSystem typeSystem = getTypeSystem();
         ImmutableList<String> traitNames = typeSystem.getTypeNamesByCategory(DataTypes.TypeCategory.TRAIT);
         int numTraits = traitNames.size();

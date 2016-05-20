@@ -60,7 +60,9 @@ distro/hbase/*.tar.gz
 #solr package downloaded
 distro/solr/*.tgz
 
+# Scala-IDE specific
 .cache-main
+.cache-tests
 
 # emacs files
 *#

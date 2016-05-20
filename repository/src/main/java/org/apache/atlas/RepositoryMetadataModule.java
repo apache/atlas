@@ -111,7 +111,11 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
     private static final String DELETE_HANDLER_IMPLEMENTATION_PROPERTY = "atlas.DeleteHandler.impl";
 
     private Class<? extends DeleteHandler> getDeleteHandler() {
-        return ApplicationProperties.getClass(DELETE_HANDLER_IMPLEMENTATION_PROPERTY,
-                SoftDeleteHandler.class.getName());
+        try {
+            return ApplicationProperties.getClass(DELETE_HANDLER_IMPLEMENTATION_PROPERTY,
+                    SoftDeleteHandler.class.getName(), DeleteHandler.class);
+        } catch (AtlasException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
