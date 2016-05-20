@@ -30,7 +30,9 @@
 
     <security:http pattern="/login.jsp" security="none" />
     <security:http pattern="/css/**" security="none" />
-    <security:http pattern="/lib/**" security="none" />
+    <security:http pattern="/libs/**" security="none" />
+    <security:http pattern="/js/**" security="none" />
+    <security:http pattern="/api/atlas/admin/status" security="none" />
 
     <security:http disable-url-rewriting="true"
                    use-expressions="true" create-session="always"
@@ -41,8 +43,8 @@
 
         <form-login
                 login-page="/login.jsp"
-                default-target-url="/index.html"
-                authentication-failure-url="/login.jsp?error=true"
+                authentication-success-handler-ref="atlasAuthenticationSuccessHandler"
+                authentication-failure-handler-ref="atlasAuthenticationFailureHandler"
                 username-parameter="j_username"
                 password-parameter="j_password" />
 
@@ -51,6 +53,12 @@
         <http-basic />
         <security:custom-filter position="LAST" ref="atlasAuthorizationFilter"/>        
     </security:http>
+
+    <beans:bean id="atlasAuthenticationSuccessHandler"
+                class="org.apache.atlas.web.security.AtlasAuthenticationSuccessHandler" />
+
+    <beans:bean id="atlasAuthenticationFailureHandler"
+                class="org.apache.atlas.web.security.AtlasAuthenticationFailureHandler" />
 
     <beans:bean id="formAuthenticationEntryPoint"
                 class="org.apache.atlas.web.filters.AtlasAuthenticationEntryPoint">

@@ -21,6 +21,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-774 Better error handling from login.jsp (nixonrodrigues via shwethags)
 ATLAS-683 Refactor local type-system cache with cache provider interface (vmadugun via shwethags)
 ATLAS-802 New look UI to show Business Catalog functionalities (kevalbhatt18 via yhemanth)
 ATLAS-658 Improve Lineage with Backbone porting (kevalbhatt18 via yhemanth)

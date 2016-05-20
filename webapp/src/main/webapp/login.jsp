@@ -14,77 +14,49 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<%@ page import="org.apache.atlas.ApplicationProperties,org.apache.commons.configuration.Configuration" %>
 <!DOCTYPE html>
-<html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<title>Atlas Login</title>
-		<meta name="description" content="description">
-		<meta name="keyword" content="keywords">
-		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
-		<link href="http://netdna.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.css" rel="stylesheet">
-		<link href='http://fonts.googleapis.com/css?family=Righteous' rel='stylesheet' type='text/css'>
-		<link href="/css/login.css" rel="stylesheet">
-		<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
-		<!--[if lt IE 9]>
-				<script src="http://getbootstrap.com/docs-assets/js/html5shiv.js"></script>
-				<script src="http://getbootstrap.com/docs-assets/js/respond.min.js"></script>
-		<![endif]-->
-		
-		<script   src="https://code.jquery.com/jquery-2.2.1.min.js"   integrity="sha256-gvQgAFzTH6trSrAWoH1iPo9Xc96QxSZ3feW6kem+O00="   crossorigin="anonymous"></script>
-		
-	</head>
-<body>
-<div class="errorBox">
-	<a href="javascript:void(0)" class="close" title="close"><i class="fa fa-times"></i></a>
-	<div class="alert alert-danger">
-	  	<strong>Error!</strong> Invalid User credentials.<br> Please try again.
-	</div>
-</div>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7"><![endif]-->
+<!--[if IE 7]><html class="no-js lt-ie9 lt-ie8"><![endif]-->
+<!--[if IE 8]><html class="no-js lt-ie9"><![endif]-->
+<!--[if gt IE 8]><!-->
+<html class="no-js">
+  <!--<![endif]-->
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Atlas Login</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width">
+    <link href="js/libs/bootstrap/css/bootstrap.min.css" media="all" rel="stylesheet" type="text/css" id="bootstrap-css">
+    <link href="css/login.css" media="all" rel="stylesheet" type="text/css" >
+    <script src="js/libs/jquery/js/jquery.min.js" ></script>
+    <script src="js/modules/atlasLogin.js" ></script>
+  </head>
+  <body class="login" style="">
 
 <div id="wrapper">
-	<div class="container-fluid">
+  <div class="container-fluid">
         <div class="row">
             <div class="col-sm-4 col-sm-offset-4">
-            <form name='f' action='/j_spring_security_check' method='POST'>
+            <form  action="" method="post" accept-charset="utf-8">
                 <div class="login-pane">
                     <h2 align="center">Apache <strong>Atlas</strong></h2>
                     <div class="input-group">
                         <span class="input-group-addon"><i class="glyphicon glyphicon-user"></i></span>
-                        <input type='text' class="form-control" name='j_username' placeholder="Username" required >
+                        <input type="text" class="form-control" id="username" name="username" placeholder="Username" tabindex="1" required="" autofocus>
                     </div>
                     <div class="input-group">
                         <span class="input-group-addon"><i class="glyphicon glyphicon-lock"></i></span>
-                        <input type='password' name='j_password' class="form-control" placeholder="Password" required >
-                        
+                        <input type="password" class="form-control" name="password" placeholder="Password" id="password" tabindex="2" autocomplete="off" required>    
                     </div>
-                    <input class="btn-atlas btn-block" name="submit" type="submit" value="Login"/>
-                    
+                              <span id="errorBox" class="col-md-12 help-inline" style="color:#FF1A40;display:none;text-align:center;padding-bottom: 10px;"><span class="errorMsg"></span></span>
+                    <input class="btn-atlas btn-block" name="submit" id="signIn" type="submit" value="Login">
                 </div>
                 </form>
             </div>
         </div>
-    </div>
+  </div>
 </div>
 
-<script type="text/javascript">
-$('body').ready(function(){
-        var query = window.location.search.substring(1);
-        var statusArr = query.split('=');
-        var status = -1;
-        if(statusArr.length > 0){
-                status = statusArr[1];
-        }
-        if(status=="true"){
-        	$('.errorBox').show();
-        }
-});
-$('.close').click(function(){
-	$('.errorBox').hide();
-})
-</script>
-
-</body>
+  </body>
 </html>
