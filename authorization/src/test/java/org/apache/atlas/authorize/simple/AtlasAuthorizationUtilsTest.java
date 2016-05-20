@@ -16,11 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.authorize;
+package org.apache.atlas.authorize.simple;
 
+import org.apache.atlas.authorize.AtlasResourceTypes;
 import org.testng.annotations.Test;
 
-import java.util.List;
+import java.util.Set;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -52,7 +53,7 @@ public class AtlasAuthorizationUtilsTest {
     @Test
     public void testGetAtlasResourceType() throws Exception {
         String contextPath = "/api/atlas/types";
-        List<AtlasResourceTypes> resourceTypes = AtlasAuthorizationUtils.getAtlasResourceType(contextPath);
+        Set<AtlasResourceTypes> resourceTypes = AtlasAuthorizationUtils.getAtlasResourceType(contextPath);
         assertEquals(resourceTypes.size(), 1);
         assertTrue(resourceTypes.contains(AtlasResourceTypes.TYPE));
 
@@ -73,15 +74,13 @@ public class AtlasAuthorizationUtilsTest {
 
         contextPath = "/api/atlas/entities/111/traits";
         resourceTypes = AtlasAuthorizationUtils.getAtlasResourceType(contextPath);
-        assertEquals(resourceTypes.size(), 2);
+        assertEquals(resourceTypes.size(), 1);
         assertTrue(resourceTypes.contains(AtlasResourceTypes.ENTITY));
-        assertTrue(resourceTypes.contains(AtlasResourceTypes.TYPE));
 
         contextPath = "/api/atlas/discovery/search";
         resourceTypes = AtlasAuthorizationUtils.getAtlasResourceType(contextPath);
-        assertEquals(resourceTypes.size(), 2);
+        assertEquals(resourceTypes.size(), 1);
         assertTrue(resourceTypes.contains(AtlasResourceTypes.ENTITY));
-        assertTrue(resourceTypes.contains(AtlasResourceTypes.TYPE));
 
         contextPath = "/api/atlas/entities?type=Column";
         resourceTypes = AtlasAuthorizationUtils.getAtlasResourceType(contextPath);
@@ -101,11 +100,10 @@ public class AtlasAuthorizationUtilsTest {
 
         contextPath = "/api/atlas/v1/taxonomies/taxonomy1/terms";
         resourceTypes = AtlasAuthorizationUtils.getAtlasResourceType(contextPath);
-        assertEquals(resourceTypes.size(), 4);
+        assertEquals(resourceTypes.size(), 3);
         assertTrue(resourceTypes.contains(AtlasResourceTypes.TAXONOMY));
         assertTrue(resourceTypes.contains(AtlasResourceTypes.ENTITY));
         assertTrue(resourceTypes.contains(AtlasResourceTypes.TERM));
-        assertTrue(resourceTypes.contains(AtlasResourceTypes.TYPE));
 
         contextPath = "/api/atlas/v1/entities/111";
         resourceTypes = AtlasAuthorizationUtils.getAtlasResourceType(contextPath);
@@ -114,8 +112,7 @@ public class AtlasAuthorizationUtilsTest {
 
         contextPath = "/api/atlas/v1/entities/111/tags/foo";
         resourceTypes = AtlasAuthorizationUtils.getAtlasResourceType(contextPath);
-        assertEquals(resourceTypes.size(), 2);
+        assertEquals(resourceTypes.size(), 1);
         assertTrue(resourceTypes.contains(AtlasResourceTypes.ENTITY));
-        assertTrue(resourceTypes.contains(AtlasResourceTypes.TYPE));
     }
 }

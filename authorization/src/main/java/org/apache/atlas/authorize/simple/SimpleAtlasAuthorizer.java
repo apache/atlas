@@ -16,17 +16,22 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.authorize;
+package org.apache.atlas.authorize.simple;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.util.FileReaderUtil;
-import org.apache.atlas.util.PropertiesUtil;
+import org.apache.atlas.authorize.AtlasAccessRequest;
+import org.apache.atlas.authorize.AtlasActionTypes;
+import org.apache.atlas.authorize.AtlasAuthorizationException;
+import org.apache.atlas.authorize.AtlasAuthorizer;
+import org.apache.atlas.authorize.AtlasResourceTypes;
+import org.apache.atlas.utils.PropertiesUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOCase;
@@ -37,9 +42,13 @@ import org.slf4j.LoggerFactory;
 import com.google.common.annotations.VisibleForTesting;
 
 public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
+
+	public enum AtlasAccessorTypes {
+        USER, GROUP;
+    }
+
     private static final Logger LOG = LoggerFactory.getLogger(SimpleAtlasAuthorizer.class);
     private boolean isDebugEnabled = LOG.isDebugEnabled();
-
     private final static String WILDCARD_ASTERISK = "*";
     private final static String WILDCARDS = "*?";
     private boolean optIgnoreCase = false;
@@ -52,19 +61,15 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
     private Map<String, Map<AtlasResourceTypes, List<String>>> groupWriteMap = null;
     private Map<String, Map<AtlasResourceTypes, List<String>>> groupUpdateMap = null;
     private Map<String, Map<AtlasResourceTypes, List<String>>> groupDeleteMap = null;
-    private static AtlasAuthorizer defaultAuthorizer = new SimpleAtlasAuthorizer();
 
-    private SimpleAtlasAuthorizer() {
+    public SimpleAtlasAuthorizer() {
     }
-
-    public static AtlasAuthorizer getInstance() {
-        return defaultAuthorizer;
-    }
+    
 
     @Override
     public void init() {
         if (isDebugEnabled) {
-            LOG.debug("<== SimpleAtlasAuthorizer init");
+            LOG.debug("==> SimpleAtlasAuthorizer init");
         }
         try {
 
@@ -77,7 +82,7 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
             }
 
             Configuration configuration = ApplicationProperties.get();
-            String policyStorePath = configuration.getString("atlas.auth.policy.file");
+            String policyStorePath = configuration.getString("atlas.auth.policy.file", System.getProperty("atlas.conf")+"/policy-store.txt");
 
             if (isDebugEnabled) {
                 LOG.debug("Loading Apache Atlas policies from : " + policyStorePath);
@@ -87,12 +92,12 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
             List<PolicyDef> policyDef = parser.parsePolicies(policies);
 
             userReadMap = util.createPermissionMap(policyDef, AtlasActionTypes.READ, AtlasAccessorTypes.USER);
-            userWriteMap = util.createPermissionMap(policyDef, AtlasActionTypes.WRITE, AtlasAccessorTypes.USER);
+            userWriteMap = util.createPermissionMap(policyDef, AtlasActionTypes.CREATE, AtlasAccessorTypes.USER);
             userUpdateMap = util.createPermissionMap(policyDef, AtlasActionTypes.UPDATE, AtlasAccessorTypes.USER);
             userDeleteMap = util.createPermissionMap(policyDef, AtlasActionTypes.DELETE, AtlasAccessorTypes.USER);
 
             groupReadMap = util.createPermissionMap(policyDef, AtlasActionTypes.READ, AtlasAccessorTypes.GROUP);
-            groupWriteMap = util.createPermissionMap(policyDef, AtlasActionTypes.WRITE, AtlasAccessorTypes.GROUP);
+            groupWriteMap = util.createPermissionMap(policyDef, AtlasActionTypes.CREATE, AtlasAccessorTypes.GROUP);
             groupUpdateMap = util.createPermissionMap(policyDef, AtlasActionTypes.UPDATE, AtlasAccessorTypes.GROUP);
             groupDeleteMap = util.createPermissionMap(policyDef, AtlasActionTypes.DELETE, AtlasAccessorTypes.GROUP);
 
@@ -113,14 +118,14 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
     @Override
     public boolean isAccessAllowed(AtlasAccessRequest request) throws AtlasAuthorizationException {
         if (isDebugEnabled) {
-            LOG.debug("<== SimpleAtlasAuthorizer isAccessAllowed");
+            LOG.debug("==> SimpleAtlasAuthorizer isAccessAllowed");
             LOG.debug("isAccessAllowd(" + request + ")");
         }
         String user = request.getUser();
-        List<String> groups = request.getUserGroups();
+        Set<String> groups = request.getUserGroups();
         AtlasActionTypes action = request.getAction();
         String resource = request.getResource();
-        List<AtlasResourceTypes> resourceTypes = request.getResourceTypes();
+        Set<AtlasResourceTypes> resourceTypes = request.getResourceTypes();
         if (isDebugEnabled)
             LOG.debug("Checking for :: \nUser :: " + user + "\nGroups :: " + groups + "\nAction :: " + action
                 + "\nResource :: " + resource);
@@ -145,7 +150,7 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
                         isAccessAllowed == false ? checkAccessForGroups(groups, resourceTypes, resource, groupReadMap)
                             : isAccessAllowed;
                     break;
-                case WRITE:
+                case CREATE:
                     isAccessAllowed = checkAccess(user, resourceTypes, resource, userWriteMap);
                     isAccessAllowed =
                         isAccessAllowed == false ? checkAccessForGroups(groups, resourceTypes, resource, groupWriteMap)
@@ -165,24 +170,23 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
                     break;
                 default:
                     if (isDebugEnabled) {
-                        LOG.debug("Invalid Action " + action);
-                        LOG.debug("Raising an exception!!!");
+                        LOG.debug("Invalid Action " + action+"\nRaising AtlasAuthorizationException!!!");
                     }
-                    throw new AtlasAuthorizationException("Invalid Exception :: " + action);
+                    throw new AtlasAuthorizationException("Invalid Action :: " + action);
             }
         }
 
         if (isDebugEnabled) {
-            LOG.debug("==> +SimpleAtlasAuthorizer isAccessAllowed = " + isAccessAllowed);
+            LOG.debug("<== SimpleAtlasAuthorizer isAccessAllowed = " + isAccessAllowed);
         }
 
         return isAccessAllowed;
     }
 
-    private boolean checkAccess(String accessor, List<AtlasResourceTypes> resourceTypes, String resource,
+    private boolean checkAccess(String accessor, Set<AtlasResourceTypes> resourceTypes, String resource,
         Map<String, Map<AtlasResourceTypes, List<String>>> map) {
         if (isDebugEnabled) {
-            LOG.debug("<== SimpleAtlasAuthorizer checkAccess");
+            LOG.debug("==> SimpleAtlasAuthorizer checkAccess");
             LOG.debug("Now checking access for accessor : " + accessor + "\nResource Types : " + resourceTypes
                 + "\nResource : " + resource + "\nMap : " + map);
         }
@@ -208,16 +212,16 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
 
         if (isDebugEnabled) {
             LOG.debug("Check for " + accessor + " :: " + result);
-            LOG.debug("==> SimpleAtlasAuthorizer checkAccess");
+            LOG.debug("<== SimpleAtlasAuthorizer checkAccess");
         }
         return result;
     }
 
-    private boolean checkAccessForGroups(List<String> groups, List<AtlasResourceTypes> resourceType, String resource,
+    private boolean checkAccessForGroups(Set<String> groups, Set<AtlasResourceTypes> resourceType, String resource,
         Map<String, Map<AtlasResourceTypes, List<String>>> map) {
         boolean isAccessAllowed = false;
         if (isDebugEnabled) {
-            LOG.debug("<== SimpleAtlasAuthorizer checkAccessForGroups");
+            LOG.debug("==> SimpleAtlasAuthorizer checkAccessForGroups");
         }
 
         for (String group : groups) {
@@ -228,7 +232,7 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
         }
 
         if (isDebugEnabled) {
-            LOG.debug("==> SimpleAtlasAuthorizer checkAccessForGroups");
+            LOG.debug("<== SimpleAtlasAuthorizer checkAccessForGroups");
         }
         return isAccessAllowed;
     }
@@ -236,7 +240,7 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
     private boolean resourceMatchHelper(List<String> policyResource) {
         boolean isMatchAny = false;
         if (isDebugEnabled) {
-            LOG.debug("<== SimpleAtlasAuthorizer resourceMatchHelper");
+            LOG.debug("==> SimpleAtlasAuthorizer resourceMatchHelper");
         }
 
         boolean optWildCard = true;
@@ -262,14 +266,14 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
         }
 
         if (isDebugEnabled) {
-            LOG.debug("==> SimpleAtlasAuthorizer resourceMatchHelper");
+            LOG.debug("<== SimpleAtlasAuthorizer resourceMatchHelper");
         }
         return isMatchAny;
     }
 
     private boolean isMatch(String resource, List<String> policyValues) {
         if (isDebugEnabled) {
-            LOG.debug("<== SimpleAtlasAuthorizer isMatch");
+            LOG.debug("==> SimpleAtlasAuthorizer isMatch");
         }
         boolean isMatchAny = resourceMatchHelper(policyValues);
         boolean isMatch = false;
@@ -312,7 +316,7 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
         }
 
         if (isDebugEnabled) {
-            LOG.debug("==> SimpleAtlasAuthorizer isMatch(" + resource + "): " + isMatch);
+            LOG.debug("<== SimpleAtlasAuthorizer isMatch(" + resource + "): " + isMatch);
         }
 
         return isMatch;
@@ -326,7 +330,7 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
     @Override
     public void cleanUp() {
         if (isDebugEnabled) {
-            LOG.debug("<== +SimpleAtlasAuthorizer cleanUp");
+            LOG.debug("==> +SimpleAtlasAuthorizer cleanUp");
         }
         userReadMap = null;
         userWriteMap = null;
@@ -337,7 +341,7 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
         groupUpdateMap = null;
         groupDeleteMap = null;
         if (isDebugEnabled) {
-            LOG.debug("==> +SimpleAtlasAuthorizer cleanUp");
+            LOG.debug("<== +SimpleAtlasAuthorizer cleanUp");
         }
     }
 
@@ -354,7 +358,7 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
                 this.groupReadMap = groupMap;
                 break;
 
-            case WRITE:
+            case CREATE:
 
                 this.userWriteMap = userMap;
                 this.groupWriteMap = groupMap;
@@ -377,4 +381,7 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
                 break;
         }
     }
+    
 }
+
+

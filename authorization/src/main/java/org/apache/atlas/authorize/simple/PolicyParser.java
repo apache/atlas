@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.authorize;
+package org.apache.atlas.authorize.simple;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,8 +23,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import org.apache.atlas.authorize.AtlasActionTypes;
+import org.apache.atlas.authorize.AtlasResourceTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import scala.tools.jline.internal.Log;
 
 public class PolicyParser {
 
@@ -46,7 +50,7 @@ public class PolicyParser {
 
     private List<AtlasActionTypes> getListOfAutorities(String auth) {
         if (isDebugEnabled) {
-            LOG.debug("<== PolicyParser getListOfAutorities");
+            LOG.debug("==> PolicyParser getListOfAutorities");
         }
         List<AtlasActionTypes> authorities = new ArrayList<AtlasActionTypes>();
 
@@ -57,7 +61,7 @@ public class PolicyParser {
                     authorities.add(AtlasActionTypes.READ);
                     break;
                 case 'w':
-                    authorities.add(AtlasActionTypes.WRITE);
+                    authorities.add(AtlasActionTypes.CREATE);
                     break;
                 case 'u':
                     authorities.add(AtlasActionTypes.UPDATE);
@@ -68,28 +72,30 @@ public class PolicyParser {
 
                 default:
                     if (LOG.isErrorEnabled()) {
-                        LOG.error("Invalid Action");
+                        LOG.error("Invalid action: '" + access + "'");
                     }
                     break;
             }
         }
         if (isDebugEnabled) {
-            LOG.debug("==> PolicyParser getListOfAutorities");
+            LOG.debug("<== PolicyParser getListOfAutorities");
         }
         return authorities;
     }
 
     public List<PolicyDef> parsePolicies(List<String> policies) {
         if (isDebugEnabled) {
-            LOG.debug("<== PolicyParser parsePolicies");
+            LOG.debug("==> PolicyParser parsePolicies");
         }
         List<PolicyDef> policyDefs = new ArrayList<PolicyDef>();
         for (String policy : policies) {
             PolicyDef policyDef = parsePolicy(policy);
-            policyDefs.add(policyDef);
+            if (policyDef != null) {
+                policyDefs.add(policyDef);
+            }
         }
         if (isDebugEnabled) {
-            LOG.debug("==> PolicyParser parsePolicies");
+            LOG.debug("<== PolicyParser parsePolicies");
             LOG.debug(policyDefs.toString());
         }
         return policyDefs;
@@ -97,36 +103,42 @@ public class PolicyParser {
 
     private PolicyDef parsePolicy(String data) {
         if (isDebugEnabled) {
-            LOG.debug("<== PolicyParser parsePolicy");
-        }
-        PolicyDef def = new PolicyDef();
-        String[] props = data.split(";;");
-        def.setPolicyName(props[POLICYNAME]);
-        parseUsers(props[USER_INDEX], def);
-        parseGroups(props[GROUP_INDEX], def);
-        parseResources(props[RESOURCE_INDEX], def);
-        if (isDebugEnabled) {
-            LOG.debug("policy successfully parsed!!!");
             LOG.debug("==> PolicyParser parsePolicy");
+        }
+        PolicyDef def = null;
+        String[] props = data.split(";;");
+
+        if (props.length < RESOURCE_INDEX) {
+            LOG.warn("skipping invalid policy line: " + data);
+        } else {
+            def = new PolicyDef();
+            def.setPolicyName(props[POLICYNAME]);
+            parseUsers(props[USER_INDEX], def);
+            parseGroups(props[GROUP_INDEX], def);
+            parseResources(props[RESOURCE_INDEX], def);
+            if (isDebugEnabled) {
+                LOG.debug("policy successfully parsed!!!");
+                LOG.debug("<== PolicyParser parsePolicy");
+            }
         }
         return def;
     }
 
     private boolean validateEntity(String entity) {
         if (isDebugEnabled) {
-            LOG.debug("<== PolicyParser validateEntity");
+            LOG.debug("==> PolicyParser validateEntity");
         }
         boolean isValidEntity = Pattern.matches("(.+:.+)+", entity);
         boolean isEmpty = entity.isEmpty();
         if (isValidEntity == false || isEmpty == true) {
             if (isDebugEnabled) {
                 LOG.debug("group/user/resource not properly define in Policy");
-                LOG.debug("==> PolicyParser validateEntity");
+                LOG.debug("<== PolicyParser validateEntity");
             }
             return false;
         } else {
             if (isDebugEnabled) {
-                LOG.debug("==> PolicyParser validateEntity");
+                LOG.debug("<== PolicyParser validateEntity");
             }
             return true;
         }
@@ -135,7 +147,7 @@ public class PolicyParser {
 
     private void parseUsers(String usersDef, PolicyDef def) {
         if (isDebugEnabled) {
-            LOG.debug("<== PolicyParser parseUsers");
+            LOG.debug("==> PolicyParser parseUsers");
         }
         String[] users = usersDef.split(",");
         String[] userAndRole = null;
@@ -163,13 +175,13 @@ public class PolicyParser {
             def.setUsers(usersMap);
         }
         if (isDebugEnabled) {
-            LOG.debug("==> PolicyParser parseUsers");
+            LOG.debug("<== PolicyParser parseUsers");
         }
     }
 
     private void parseGroups(String groupsDef, PolicyDef def) {
         if (isDebugEnabled) {
-            LOG.debug("<== PolicyParser parseGroups");
+            LOG.debug("==> PolicyParser parseGroups");
         }
         String[] groups = groupsDef.split("\\,");
         String[] groupAndRole = null;
@@ -196,14 +208,14 @@ public class PolicyParser {
             def.setGroups(groupsMap);
         }
         if (isDebugEnabled) {
-            LOG.debug("==> PolicyParser parseGroups");
+            LOG.debug("<== PolicyParser parseGroups");
         }
 
     }
 
     private void parseResources(String resourceDef, PolicyDef def) {
         if (isDebugEnabled) {
-            LOG.debug("<== PolicyParser parseResources");
+            LOG.debug("==> PolicyParser parseResources");
         }
         String[] resources = resourceDef.split(",");
         String[] resourceTypeAndName = null;
@@ -217,8 +229,23 @@ public class PolicyParser {
                 if (def.getResources() != null) {
                     resourcesMap = def.getResources();
                 }
-                AtlasResourceTypes resourceType =
-                    AtlasResourceTypes.valueOf(resourceTypeAndName[RESOURCE_TYPE].toUpperCase());
+                AtlasResourceTypes resourceType = null;
+                String type = resourceTypeAndName[RESOURCE_TYPE].toUpperCase();
+                if (type.equalsIgnoreCase("ENTITY")) {
+                    resourceType = AtlasResourceTypes.ENTITY;
+                } else if (type.equalsIgnoreCase("OPERATION")) {
+                    resourceType = AtlasResourceTypes.OPERATION;
+                } else if (type.equalsIgnoreCase("TYPE")) {
+                    resourceType = AtlasResourceTypes.TYPE;
+                } else if (type.equalsIgnoreCase("TAXONOMY")) {
+                    resourceType = AtlasResourceTypes.TAXONOMY;
+                } else if (type.equalsIgnoreCase("TERM")) {
+                    resourceType = AtlasResourceTypes.TERM;
+                } else {
+                    Log.warn(type + " is invalid resource please check PolicyStore file");
+                    continue;
+                }
+
                 List<String> resourceList = resourcesMap.get(resourceType);
                 if (resourceList == null) {
                     resourceList = new ArrayList<String>();
@@ -231,7 +258,7 @@ public class PolicyParser {
             def.setResources(resourcesMap);
         }
         if (isDebugEnabled) {
-            LOG.debug("==> PolicyParser parseResources");
+            LOG.debug("<== PolicyParser parseResources");
         }
     }
 

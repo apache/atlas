@@ -14,14 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.authorize;
+package org.apache.atlas.authorize.simple;
 
-import static org.junit.Assert.assertEquals;
+import static org.testng.AssertJUnit.assertEquals;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.atlas.authorize.AtlasActionTypes;
+import org.apache.atlas.authorize.AtlasResourceTypes;
+import org.apache.atlas.authorize.simple.PolicyDef;
+import org.apache.atlas.authorize.simple.PolicyParser;
 import org.testng.annotations.Test;
 
 public class PolicyParserTest {
@@ -34,7 +39,7 @@ public class PolicyParserTest {
         Map<String, List<AtlasActionTypes>> groupMap = new HashMap<String, List<AtlasActionTypes>>();
         List<AtlasActionTypes> accessList1 = new ArrayList<AtlasActionTypes>();
         accessList1.add(AtlasActionTypes.READ);
-        accessList1.add(AtlasActionTypes.WRITE);
+        accessList1.add(AtlasActionTypes.CREATE);
         accessList1.add(AtlasActionTypes.UPDATE);
 
         groupMap.put("grp1", accessList1);
@@ -50,7 +55,7 @@ public class PolicyParserTest {
 
         List<AtlasActionTypes> usr2AccessList = new ArrayList<AtlasActionTypes>();
         usr2AccessList.add(AtlasActionTypes.READ);
-        usr2AccessList.add(AtlasActionTypes.WRITE);
+        usr2AccessList.add(AtlasActionTypes.CREATE);
         usersMap.put("usr2", usr2AccessList);
 
         /* Creating resources data */
@@ -87,7 +92,7 @@ public class PolicyParserTest {
         Map<String, List<AtlasActionTypes>> groupMap = new HashMap<String, List<AtlasActionTypes>>();
         List<AtlasActionTypes> accessList1 = new ArrayList<AtlasActionTypes>();
         accessList1.add(AtlasActionTypes.READ);
-        accessList1.add(AtlasActionTypes.WRITE);
+        accessList1.add(AtlasActionTypes.CREATE);
         accessList1.add(AtlasActionTypes.UPDATE);
 
         groupMap.put("grp1", accessList1);
@@ -139,7 +144,7 @@ public class PolicyParserTest {
 
         List<AtlasActionTypes> usr2AccessList = new ArrayList<AtlasActionTypes>();
         usr2AccessList.add(AtlasActionTypes.READ);
-        usr2AccessList.add(AtlasActionTypes.WRITE);
+        usr2AccessList.add(AtlasActionTypes.CREATE);
         usersMap.put("usr2", usr2AccessList);
 
         // Creating resources data

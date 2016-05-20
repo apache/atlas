@@ -20,7 +20,7 @@ package org.apache.atlas.web.security;
 
 import java.util.List;
 import javax.annotation.PostConstruct;
-import org.apache.atlas.util.PropertiesUtil;
+import org.apache.atlas.utils.PropertiesUtil;
 import org.apache.atlas.web.model.User;
 import org.apache.log4j.Logger;
 import org.springframework.ldap.core.support.LdapContextSource;

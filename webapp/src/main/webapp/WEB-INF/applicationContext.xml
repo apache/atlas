@@ -24,9 +24,9 @@
 
 
         <import resource="classpath:/spring-security.xml" />
-        <bean id="xmlPropertyConfigurer" class="org.apache.atlas.util.XMLPropertiesUtil" />
+        <bean id="xmlPropertyConfigurer" class="org.apache.atlas.utils.XMLPropertiesUtil" />
 
-        <bean id="propertyConfigurer" class="org.apache.atlas.util.PropertiesUtil">
+        <bean id="propertyConfigurer" class="org.apache.atlas.utils.PropertiesUtil">
                 <property name="locations">
                         <list>
                                 <value>classpath:atlas-admin-site.xml

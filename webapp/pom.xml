@@ -89,6 +89,12 @@
             <artifactId>atlas-client</artifactId>
         </dependency>
 
+	    <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-authorization</artifactId>
+	    <version>${project.version}</version>	
+        </dependency>
+
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-notification</artifactId>

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.authorize;
+package org.apache.atlas.authorize.simple;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.atlas.authorize.AtlasActionTypes;
+import org.apache.atlas.authorize.AtlasResourceTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,77 +31,13 @@ public class PolicyUtil {
 
     private static Logger LOG = LoggerFactory.getLogger(PolicyUtil.class);
     private static boolean isDebugEnabled = LOG.isDebugEnabled();
-    private Map<String, Map<AtlasResourceTypes, List<String>>> userReadMap;
-    private Map<String, Map<AtlasResourceTypes, List<String>>> userWriteMap;
-    private Map<String, Map<AtlasResourceTypes, List<String>>> userUpdateMap;
-    private Map<String, Map<AtlasResourceTypes, List<String>>> userDeleteMap;
 
-    private Map<String, Map<AtlasResourceTypes, List<String>>> groupReadMap;
-    private Map<String, Map<AtlasResourceTypes, List<String>>> groupWriteMap;
-    private Map<String, Map<AtlasResourceTypes, List<String>>> groupUpdateMap;
-    private Map<String, Map<AtlasResourceTypes, List<String>>> groupDeleteMap;
-
-    /**
-     * @return the userReadMap
-     */
-    public Map<String, Map<AtlasResourceTypes, List<String>>> getUserReadMap() {
-        return userReadMap;
-    }
-
-    /**
-     * @return the userWriteMap
-     */
-    public Map<String, Map<AtlasResourceTypes, List<String>>> getUserWriteMap() {
-        return userWriteMap;
-    }
-
-    /**
-     * @return the userUpdateMap
-     */
-    public Map<String, Map<AtlasResourceTypes, List<String>>> getUserUpdateMap() {
-        return userUpdateMap;
-    }
-
-    /**
-     * @return the userDeleteMap
-     */
-    public Map<String, Map<AtlasResourceTypes, List<String>>> getUserDeleteMap() {
-        return userDeleteMap;
-    }
-
-    /**
-     * @return the groupReadMap
-     */
-    public Map<String, Map<AtlasResourceTypes, List<String>>> getGroupReadMap() {
-        return groupReadMap;
-    }
-
-    /**
-     * @return the groupWriteMap
-     */
-    public Map<String, Map<AtlasResourceTypes, List<String>>> getGroupWriteMap() {
-        return groupWriteMap;
-    }
-
-    /**
-     * @return the groupUpdateMap
-     */
-    public Map<String, Map<AtlasResourceTypes, List<String>>> getGroupUpdateMap() {
-        return groupUpdateMap;
-    }
-
-    /**
-     * @return the groupDeleteMap
-     */
-    public Map<String, Map<AtlasResourceTypes, List<String>>> getGroupDeleteMap() {
-        return groupDeleteMap;
-    }
 
     public Map<String, Map<AtlasResourceTypes, List<String>>> createPermissionMap(List<PolicyDef> policyDefList,
-        AtlasActionTypes permissionType, AtlasAccessorTypes principalType) {
+        AtlasActionTypes permissionType, SimpleAtlasAuthorizer.AtlasAccessorTypes principalType) {
         if (isDebugEnabled) {
-            LOG.debug("<== PolicyUtil createPermissionMap");
-            LOG.debug("Creating Permission Map for :: " + permissionType + " & " + principalType);
+            LOG.debug("==> PolicyUtil createPermissionMap" + "\nCreating Permission Map for :: " + permissionType
+                + " & " + principalType);
         }
         Map<String, Map<AtlasResourceTypes, List<String>>> userReadMap =
             new HashMap<String, Map<AtlasResourceTypes, List<String>>>();
@@ -108,7 +46,8 @@ public class PolicyUtil {
         for (PolicyDef policyDef : policyDefList) {
             LOG.info("Processing policy def : " + policyDef);
             Map<String, List<AtlasActionTypes>> principalMap =
-                principalType.equals(AtlasAccessorTypes.USER) ? policyDef.getUsers() : policyDef.getGroups();
+                principalType.equals(SimpleAtlasAuthorizer.AtlasAccessorTypes.USER) ? policyDef.getUsers() : policyDef
+                    .getGroups();
             // For every policy extract the resource list and populate the user map
             for (Entry<String, List<AtlasActionTypes>> e : principalMap.entrySet()) {
                 // Check if the user has passed permission type like READ
@@ -150,12 +89,12 @@ public class PolicyUtil {
                     userResourceList.put(type, resourceList);
                 }
                 userReadMap.put(username, userResourceList);
-                LOG.info("userReadMap=====>>>>>> " + userReadMap);
+                LOG.info("userReadMap " + userReadMap);
             }
         }
         if (isDebugEnabled) {
             LOG.debug("Returning Map for " + principalType + " :: " + userReadMap);
-            LOG.debug("==> PolicyUtil createPermissionMap");
+            LOG.debug("<== PolicyUtil createPermissionMap");
         }
         return userReadMap;
 

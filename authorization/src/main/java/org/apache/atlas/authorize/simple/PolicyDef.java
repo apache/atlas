@@ -14,10 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.authorize;
+package org.apache.atlas.authorize.simple;
 
 import java.util.List;
 import java.util.Map;
+
+import org.apache.atlas.authorize.AtlasActionTypes;
+import org.apache.atlas.authorize.AtlasResourceTypes;
 
 public class PolicyDef {
 

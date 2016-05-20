@@ -21,10 +21,6 @@ package org.apache.atlas.authorize;
 public class AtlasAuthorizationException extends Exception {
     private static final long serialVersionUID = 1L;
 
-    public AtlasAuthorizationException() {
-
-    }
-
     public AtlasAuthorizationException(String message) {
         super(message);
     }
@@ -36,5 +32,9 @@ public class AtlasAuthorizationException extends Exception {
     public AtlasAuthorizationException(String message, Throwable exception, boolean enableSuppression,
         boolean writableStackTrace) {
         super(message, exception, enableSuppression, writableStackTrace);
+    }
+
+    public AtlasAuthorizationException(AtlasAccessRequest request) {
+        super("Unauthorized Request : " + request);
     }
 }

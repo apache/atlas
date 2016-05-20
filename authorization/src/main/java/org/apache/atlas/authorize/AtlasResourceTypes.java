@@ -15,8 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.atlas.authorize;
 
-public enum AtlasAccessorTypes {
-    USER, GROUP;
+public enum AtlasResourceTypes {
+    UNKNOWN, ENTITY, TYPE, OPERATION, TAXONOMY, TERM;
 }

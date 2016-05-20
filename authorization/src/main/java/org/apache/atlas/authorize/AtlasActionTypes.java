@@ -15,9 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.atlas.authorize;
 
-public enum AtlasResourceTypes {
-    ENTITY, TYPE, OPERATION, TAXONOMY, TERM;
+public enum AtlasActionTypes {
+    READ, CREATE, UPDATE, DELETE;
 }

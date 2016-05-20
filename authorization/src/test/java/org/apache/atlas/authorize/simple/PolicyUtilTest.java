@@ -14,15 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.authorize;
+package org.apache.atlas.authorize.simple;
 
-import static org.junit.Assert.assertEquals;
+import static org.testng.AssertJUnit.assertEquals;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import org.apache.atlas.authorize.simple.SimpleAtlasAuthorizer;
+import org.apache.atlas.authorize.AtlasActionTypes;
+import org.apache.atlas.authorize.AtlasResourceTypes;
+import org.apache.atlas.authorize.simple.PolicyDef;
+import org.apache.atlas.authorize.simple.PolicyParser;
+import org.apache.atlas.authorize.simple.PolicyUtil;
 import org.testng.annotations.Test;
 
 public class PolicyUtilTest {
@@ -52,7 +57,7 @@ public class PolicyUtilTest {
         List<PolicyDef> policyDefList = new PolicyParser().parsePolicies(policies);
 
         Map<String, Map<AtlasResourceTypes, List<String>>> createdPermissionMap =
-            new PolicyUtil().createPermissionMap(policyDefList, AtlasActionTypes.READ, AtlasAccessorTypes.GROUP);
+            new PolicyUtil().createPermissionMap(policyDefList, AtlasActionTypes.READ, SimpleAtlasAuthorizer.AtlasAccessorTypes.GROUP);
 
         assertEquals(permissionMap, createdPermissionMap);
 
@@ -87,7 +92,7 @@ public class PolicyUtilTest {
         List<PolicyDef> policyDefList = new PolicyParser().parsePolicies(policies);
 
         Map<String, Map<AtlasResourceTypes, List<String>>> createdPermissionMap =
-            new PolicyUtil().createPermissionMap(policyDefList, AtlasActionTypes.READ, AtlasAccessorTypes.GROUP);
+            new PolicyUtil().createPermissionMap(policyDefList, AtlasActionTypes.READ, SimpleAtlasAuthorizer.AtlasAccessorTypes.GROUP);
 
         assertEquals(permissionMap, createdPermissionMap);
 

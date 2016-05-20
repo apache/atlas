@@ -18,8 +18,11 @@
 package org.apache.atlas.authorize;
 
 import java.util.Date;
-import java.util.List;
+import java.util.Set;
 
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.atlas.authorize.simple.AtlasAuthorizationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,18 +30,23 @@ public class AtlasAccessRequest {
 
     private static Logger LOG = LoggerFactory.getLogger(AtlasAccessRequest.class);
     private static boolean isDebugEnabled = LOG.isDebugEnabled();
-    private List<AtlasResourceTypes> resourceType = null;
+    private Set<AtlasResourceTypes> resourceType = null;
     private String resource = null;
     private AtlasActionTypes action = null;
     private String user = null;
-    private List<String> userGroups = null;
+    private Set<String> userGroups = null;
     private Date accessTime = null;
     private String clientIPAddress = null;
 
-    public AtlasAccessRequest(List<AtlasResourceTypes> resourceType, String resource, AtlasActionTypes action,
-        String user, List<String> userGroups) {
+    public AtlasAccessRequest(HttpServletRequest request, String user, Set<String> userGroups) {
+        this(AtlasAuthorizationUtils.getAtlasResourceType(request.getServletPath()), "*", AtlasAuthorizationUtils
+            .getAtlasAction(request.getMethod()), user, userGroups);
+    }
+
+    public AtlasAccessRequest(Set<AtlasResourceTypes> resourceType, String resource, AtlasActionTypes action,
+        String user, Set<String> userGroups) {
         if (isDebugEnabled) {
-            LOG.debug("<== AtlasAccessRequestImpl-- Initializing AtlasAccessRequest");
+            LOG.debug("==> AtlasAccessRequestImpl-- Initializing AtlasAccessRequest");
         }
         setResource(resource);
         setAction(action);
@@ -51,11 +59,11 @@ public class AtlasAccessRequest {
         setClientIPAddress(null);
     }
 
-    public List<AtlasResourceTypes> getResourceTypes() {
+    public Set<AtlasResourceTypes> getResourceTypes() {
         return resourceType;
     }
 
-    public void setResourceType(List<AtlasResourceTypes> resourceType) {
+    public void setResourceType(Set<AtlasResourceTypes> resourceType) {
         this.resourceType = resourceType;
     }
 
@@ -83,11 +91,11 @@ public class AtlasAccessRequest {
         this.user = user;
     }
 
-    public void setUserGroups(List<String> userGroups) {
+    public void setUserGroups(Set<String> userGroups) {
         this.userGroups = userGroups;
     }
 
-    public List<String> getUserGroups() {
+    public Set<String> getUserGroups() {
         return userGroups;
     }
 

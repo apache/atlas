@@ -16,11 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.util;
+package org.apache.atlas.authorize.simple;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -33,24 +34,23 @@ public class FileReaderUtil {
 
     public static List<String> readFile(String path) throws IOException {
         if (isDebugEnabled) {
-            LOG.debug("<== FileReaderUtil readFile");
+            LOG.debug("==> FileReaderUtil readFile");
         }
-        LOG.info("reading the file" + path);
-        BufferedReader br = new BufferedReader(new FileReader(path));
         List<String> list = new ArrayList<String>();
-        String line = null;
-        while ((line = br.readLine()) != null) {
-            if ((!line.startsWith("##")) && Pattern.matches(".+;;.*;;.*;;.+", line))
-                list.add(line);
+        LOG.info("reading the file" + path);
+        List<String> fileLines = Files.readAllLines(Paths.get(path), Charset.forName("UTF-8"));
+        if (fileLines != null) {
+            for (String line : fileLines) {
+                if ((!line.startsWith("##")) && Pattern.matches(".+;;.*;;.*;;.+", line))
+                    list.add(line);
+            }
         }
 
         if (isDebugEnabled) {
-            LOG.debug("==> FileReaderUtil readFile");
+            LOG.debug("<== FileReaderUtil readFile");
             LOG.debug("Policies read :: " + list);
         }
-        if (br != null) {
-            br.close();
-        }
+
         return list;
     }
 }
