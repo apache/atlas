@@ -30,7 +30,10 @@ import org.apache.atlas.catalog.projection.Projection;
 import org.apache.atlas.catalog.projection.ProjectionResult;
 import org.apache.atlas.repository.graph.TitanGraphProvider;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Base Query implementation.
@@ -50,7 +53,7 @@ public abstract class BaseQuery implements AtlasQuery {
         Collection<Map<String, Object>> resultMaps = new ArrayList<>();
 
         for (Vertex vertex : executeQuery()) {
-            resultMaps.add(processPropertyMap(new VertexWrapper(vertex, resourceDefinition)));
+            resultMaps.add(processPropertyMap(wrapVertex(vertex)));
         }
         return resultMaps;
     }
@@ -59,19 +62,29 @@ public abstract class BaseQuery implements AtlasQuery {
         GremlinPipeline pipeline = getInitialPipeline().as("root");
 
         Pipe adapterPipe = queryExpression.asPipe();
-        //todo: AlwaysQueryAdapter returns null for pipe
-        //todo: Is there a no-op pipe that I could add that wouldn't negatively affect performance
-        return adapterPipe == null ?
-                pipeline.toList() :
-                pipeline.add(adapterPipe).back("root").toList();
+        try {
+            // AlwaysQuery returns null for pipe
+            List<Vertex> vertices =  adapterPipe == null ? pipeline.toList() :
+                    pipeline.add(adapterPipe).back("root").toList();
+
+            // Even non-mutating queries can result in objects being created in
+            // the graph such as new fields or property keys. So, it is important
+            // to commit the implicit query after execution, otherwise the uncommitted
+            // transaction will still be associated with the thread when it is re-pooled.
+            getGraph().commit();
+            return vertices;
+        } catch (Throwable e) {
+            getGraph().rollback();
+            throw e;
+        }
     }
 
     protected abstract GremlinPipeline getInitialPipeline();
 
     // todo: consider getting
     protected Map<String, Object> processPropertyMap(VertexWrapper vertex) {
-        Map<String, Object> propertyMap = vertex.getPropertyMap();
-        resourceDefinition.filterProperties(request, propertyMap);
+        Map<String, Object> propertyMap = resourceDefinition.filterProperties(
+                request, vertex.getPropertyMap());
         addHref(propertyMap);
 
         return request.getCardinality() == Request.Cardinality.INSTANCE ?
@@ -117,5 +130,9 @@ public abstract class BaseQuery implements AtlasQuery {
     // Underlying method is synchronized and caches the graph in a static field
     protected TitanGraph getGraph() {
         return TitanGraphProvider.getGraphInstance();
+    }
+
+    protected VertexWrapper wrapVertex(Vertex v) {
+        return new VertexWrapper(v, resourceDefinition);
     }
 }
