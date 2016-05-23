@@ -46,7 +46,13 @@ define(['require', 'utils/Utils', 'modules/Modal'], function(require, Utils, Mod
                         Utils.notifySuccess({
                             content: "Tag " + options.tagName + " has been deleted successfully"
                         });
-                        options.collection.fetch({ reset: true });
+                        if (options.callback) {
+                            options.callback();
+                        }
+                        if (options.collection) {
+                            options.collection.fetch({ reset: true });
+                        }
+
                     },
                     error: function(error, data, status) {
                         var message = "Tag " + options.tagName + " could not be deleted";

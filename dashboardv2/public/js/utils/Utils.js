@@ -151,7 +151,7 @@ define(['require', 'utils/Globals'], function(require, Globals) {
             if (options.mergeBrowserUrl) {
                 var param = Utils.getUrlState.getQueryParams();
                 if (param) {
-                    options.urlParams = _.extend(param, options.urlParams);
+                    options.urlParams = $.extend(param, options.urlParams);
                 }
             }
             if (options.urlParams) {
@@ -163,7 +163,7 @@ define(['require', 'utils/Globals'], function(require, Globals) {
                 options.url += urlParams;
             }
             if (options.updateTabState) {
-                _.extend(Globals.saveApplicationState.tabState, options.updateTabState());
+                $.extend(Globals.saveApplicationState.tabState, options.updateTabState());
             }
             Backbone.history.navigate(options.url, { trigger: options.trigger != undefined ? options.trigger : true });
         }

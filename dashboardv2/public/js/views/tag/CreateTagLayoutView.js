@@ -36,7 +36,8 @@ define(['require',
             ui: {
 
                 tagName: "[data-id='tagName']",
-                parentTag: "[data-id='parentTag']"
+                parentTag: "[data-id='parentTag']",
+                description: "[data-id='description']"
             },
             /** ui events hash */
             events: function() {
@@ -63,12 +64,16 @@ define(['require',
 
             tagCollectionList: function() {
                 this.ui.parentTag.empty();
-                var str = '<option selected="true" style="display:none;"></option>';
+                var str = '';
                 for (var i = 0; i < this.tagCollection.fullCollection.models.length; i++) {
                     var tags = this.tagCollection.fullCollection.models[i].get("tags");
                     str += '<option>' + tags + '</option>';
                     this.ui.parentTag.html(str);
                 }
+                this.ui.parentTag.select2({
+                    placeholder: "Select parent Tag",
+                    allowClear: true
+                });
             },
             fetchCollection: function() {
                 $.extend(this.tagCollection.queryParams, { type: 'TRAIT' });

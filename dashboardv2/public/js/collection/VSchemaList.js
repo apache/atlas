@@ -37,6 +37,7 @@ define(['require',
                     if (!this.modelAttrName) {
                         throw new Error("this.modelAttrName not defined for " + this);
                     }
+                    this.keyList = resp[this.modelAttrName].dataType.attributeDefinitions;
                     var arr = [];
                     resp[this.modelAttrName].rows.forEach(function(d) {
                         arr.push(d);

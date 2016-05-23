@@ -44,6 +44,7 @@ define(['require',
                 addTagListBtn: '[data-id="addTagListBtn"]',
                 addTagtext: '[data-id="addTagtext"]',
                 addTagPlus: '[data-id="addTagPlus"]',
+                description: '[data-id="description"]',
             },
             /** ui events hash */
             events: function() {
@@ -70,6 +71,10 @@ define(['require',
                         attributeData = "";
                     _.each(this.tagCollection.models, function(attr) {
                         var traitTypes = attr.get("traitTypes");
+                        if (traitTypes[0].typeDescription != null) {
+                            var descriptionValue = traitTypes[0].typeDescription;
+                            that.ui.description.html(descriptionValue);
+                        }
                         _.each(traitTypes[0].attributeDefinitions, function(value, key) {
                             attributeData += '<span class="inputAttribute">' + value.name + '</span>';
                         });
@@ -79,6 +84,13 @@ define(['require',
                         that.ui.addTagPlus.show();
                     }
                     that.ui.showAttribute.html(attributeData);
+                }, this);
+                this.listenTo(this.tagCollection, 'error', function(error, response) {
+                    if (response.responseJSON && response.responseJSON.error) {
+                        Utils.notifyError({
+                            content: response.responseJSON.error
+                        });
+                    }
 
                 }, this);
             },

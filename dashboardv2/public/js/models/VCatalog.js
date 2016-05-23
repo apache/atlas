@@ -22,7 +22,7 @@ define(['require',
 ], function(require, Globals, VBaseModel) {
     'use strict';
     var VCatalog = VBaseModel.extend({
-        urlRoot: Globals.baseURL + '/api/atlas/v1/taxonomies/taxonomy1',
+        urlRoot: Globals.baseURL + '/api/atlas/v1/taxonomies',
 
         defaults: {},
 

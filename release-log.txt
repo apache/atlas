@@ -21,6 +21,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-817 Asset details page -- generate schema dynamically based on attributeDefinitions (kevalbhatt18 via yhemanth)
 ATLAS-495 Atlas Ranger Authorization Plugin (nixonrodrigues via shwethags)
 ATLAS-805 Quickstart is failing if run after queries to the business taxonomy API (jspeidel via shwethags)
 ATLAS-774 Better error handling from login.jsp (nixonrodrigues via shwethags)

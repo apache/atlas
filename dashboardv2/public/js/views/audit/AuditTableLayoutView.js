@@ -90,7 +90,7 @@ define(['require',
                         globalVent: that.globalVent,
                         columns: cols,
                         gridOpts: {
-                            className: "table table-bordered table-hover table-condensed backgrid table-quickMenu",
+                            className: "table table-quickMenu",
                         },
                     })));
                 });

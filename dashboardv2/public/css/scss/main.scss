@@ -28,7 +28,7 @@ $color_star_dust_approx: #9a9a9a;
 $color_mirage_approx: #1c1e2a;
 $concrete: #f2f2f2;
 //fonts
-$font_0: Raleway;
+$font_0: Source Sans Pro;
 $font_1: sans-serif;
 $font_2: FontAwesome;
 //fonts
@@ -123,8 +123,18 @@ hr {
     border-top: 1px solid #1c1e2a
 }
 
+th {
+    text-transform: capitalize;
+}
+
 ul {
     list-style: none;
+}
+
+.table {
+    .table {
+        width: auto;
+    }
 }
 
 .close {

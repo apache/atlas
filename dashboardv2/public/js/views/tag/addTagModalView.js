@@ -45,7 +45,7 @@ define(['require',
          */
         initialize: function(options) {
             var that = this;
-            _.extend(this, _.pick(options, 'vent', 'modalCollection', 'guid'));
+            _.extend(this, _.pick(options, 'vent', 'modalCollection', 'guid', 'callback'));
             this.collection = new VTagList();
             this.commonCollection = new VCommonList();
             this.modal = new Modal({
@@ -79,7 +79,7 @@ define(['require',
             }, this);
         },
         tagsCollection: function() {
-            var str = '<option selected="true" style="display:none;"></option>';
+            var str = '<option selected="selected" disabled="disabled">-- Select Tag --</option>';
             for (var i = 0; i < this.collection.fullCollection.models.length; i++) {
                 var tags = this.collection.fullCollection.models[i].get("tags");
                 str += '<option>' + tags + '</option>';
@@ -135,18 +135,25 @@ define(['require',
                 data: JSON.stringify(json),
                 beforeSend: function() {},
                 success: function(data) {
-                    that.modalCollection.fetch({ reset: true });
                     Utils.notifySuccess({
                         content: "Tag " + tagName + " has been added to entity"
                     });
+                    if (that.callback) {
+                        that.callback();
+                    }
+                    if (that.modalCollection) {
+                        that.modalCollection.fetch({ reset: true });
+                    }
                 },
                 error: function(error, data, status) {
+                    var message = "Tag " + tagName + " could not be added";
                     if (error && error.responseText) {
                         var data = JSON.parse(error.responseText);
-                        Utils.notifyError({
-                            content: data.error
-                        });
+                        message = data.error;
                     }
+                    Utils.notifyError({
+                        content: message
+                    });
                 },
                 complete: function() {}
             });

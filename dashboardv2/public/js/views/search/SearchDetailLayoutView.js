@@ -51,11 +51,15 @@ define(['require',
             },
             renderSearchResultLayoutView: function() {
                 var that = this;
+
                 require(['views/search/SearchResultLayoutView'], function(SearchResultLayoutView) {
-                    var value = {
-                        'query': that.value.query,
-                        'searchType': that.value.searchType
-                    };
+                    var value = {};
+                    if (that.value) {
+                        value = {
+                            'query': that.value.query,
+                            'searchType': that.value.searchType
+                        };
+                    }
                     that.RSearchResultLayoutView.show(new SearchResultLayoutView({
                         value: value,
                         tag: that.tag

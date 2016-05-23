@@ -76,7 +76,7 @@ define(['require',
                     }
                 };
                 events["click " + this.ui.tagClick] = function(e) {
-                    if (!e.target.nodeName.toLocaleLowerCase() == "i") {
+                    if (e.target.nodeName.toLocaleLowerCase() != "i") {
                         Utils.setUrl({
                             url: '#!/tag/tagAttribute/' + e.currentTarget.textContent,
                             mergeBrowserUrl: false,
@@ -161,7 +161,6 @@ define(['require',
             onRender: function() {
                 var that = this;
                 this.ui.editBox.hide();
-                this.fetchCollection();
                 this.ui.appendList.on('click', 'div', function(e) {
                     if (e.target.nodeName == "INPUT") {
                         return false;
@@ -197,7 +196,9 @@ define(['require',
                 CommonViewFunction.deleteTag({
                     'tagName': tagName,
                     'guid': that.id,
-                    'collection': that.collection
+                    callback: function() {
+                        that.fetchCollection();
+                    }
                 });
             },
             addTagToTerms: function(tagObject) {
@@ -236,7 +237,9 @@ define(['require',
                     var view = new AddTagModalView({
                         vent: that.vent,
                         guid: that.id,
-                        modalCollection: that.collection
+                        callback: function() {
+                            that.fetchCollection();
+                        }
                     });
                     /*view.saveTagData = function() {
                     override saveTagData function 

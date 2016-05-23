@@ -41,7 +41,7 @@ define(['require',
                 createTag: "[data-id='createTag']",
                 tags: "[data-id='tags']",
                 offLineSearchTag: "[data-id='offlineSearchTag']",
-                deleteTerm: "[data-id='deleteTerm']",
+                deleteTerm: "[data-id='deleteTerm']"
 
             },
             /** ui events hash */
@@ -52,7 +52,7 @@ define(['require',
                      this.onTagList(e, true);
                  }*/
                 events["click " + this.ui.tags] = 'onTagList';
-                    // events["click " + this.ui.referesh] = 'refereshClick';
+                // events["click " + this.ui.referesh] = 'refereshClick';
                 events["keyup " + this.ui.offLineSearchTag] = 'offlineSearchTag';
                 events["click " + this.ui.deleteTerm] = 'onDeleteTerm';
                 return events;
@@ -77,7 +77,6 @@ define(['require',
                 var that = this;
                 this.listenTo(this.tagCollection, "reset", function() {
                     this.tagsAndTypeGenerator('tagCollection');
-                    this.createTagAction();
                 }, this);
                 this.ui.tagsParent.on('click', 'li.parent-node a', function() {
                     that.setUrl(this.getAttribute("href"));
@@ -104,29 +103,45 @@ define(['require',
                 this.tagCollection.fetch({ reset: true });
             },
             manualRender: function(tagName) {
-                this.setValues(tagName);
+                this.tag = tagName;
+                if (!this.createTag) {
+                    this.setValues(true);
+                }
             },
-            setValues: function(tagName) {
+            setValues: function(manual) {
                 if (Utils.getUrlState.isTagTab() || Utils.getUrlState.isInitial()) {
-                    if (!this.tag && !tagName) {
+                    if (!this.tag) {
                         this.selectFirst = false;
                         this.ui.tagsParent.find('li').first().addClass('active');
                         Utils.setUrl({
                             url: this.ui.tagsParent.find('li a').first().attr("href"),
                             mergeBrowserUrl: false,
-                            trigger: true
+                            trigger: true,
+                            updateTabState: function() {
+                                return { tagUrl: this.url, stateChanged: true };
+                            }
                         });
                     } else {
+                        Utils.setUrl({
+                            url: Utils.getUrlState.getQueryUrl().hash,
+                            updateTabState: function() {
+                                return { tagUrl: this.url, stateChanged: true };
+                            }
+                        });
                         var tag = Utils.getUrlState.getLastValue();
-                        if (tagName) {
-                            tag = tagName;
-                        } else if (this.tag) {
+                        if (this.tag) {
                             tag = this.tag;
                         }
                         this.ui.tagsParent.find('li').removeClass('active');
-                        this.ui.tagsParent.find('li').filter(function() {
+                        var target = this.ui.tagsParent.find('li').filter(function() {
                             return $(this).text() === tag;
                         }).addClass('active');
+                        if (this.createTag || !manual) {
+                            $('#sidebar-wrapper').animate({
+                                scrollTop: target.offset().top - 100
+                            }, 500);
+                        }
+
                     }
                 }
             },
@@ -137,7 +152,7 @@ define(['require',
                     var tagName = model.get("tags");
                     if (searchString) {
                         if (tagName.search(new RegExp(searchString, "i")) != -1) {
-                            str = '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-trash-o" data-id="deleteTerm"></i></div><a href="#!/tag/tagAttribute/' + tagName + '">' + tagName + '</a></li>' + str;
+                            str = '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + tagName + '">' + tagName + '</a></li>' + str;
                         } else {
                             return;
                         }
@@ -148,6 +163,10 @@ define(['require',
                 });
                 this.ui.tagsParent.empty().html(str);
                 this.setValues();
+                this.createTagAction();
+                if (this.createTag) {
+                    this.createTag = false;
+                }
 
             },
 
@@ -186,23 +205,23 @@ define(['require',
             onCreateButton: function(ref) {
                 var that = this;
                 this.name = ref.ui.tagName.val();
-
-                if (ref.ui.parentTag.val().length <= 1 && ref.ui.parentTag.val()[0] == "") {
-                    var superTypes = [];
-                } else {
-                    var superTypes = ref.ui.parentTag.val();
+                this.description = ref.ui.description.val();
+                var superTypes = [];
+                if (ref.ui.parentTag.val() && ref.ui.parentTag.val()) {
+                    superTypes = ref.ui.parentTag.val();
                 }
                 this.json.traitTypes[0] = {
                     attributeDefinitions: this.collection.toJSON(),
                     typeName: this.name,
-                    typeDescription: null,
+                    typeDescription: this.description,
                     superTypes: superTypes,
                     hierarchicalMetaTypeName: "org.apache.atlas.typesystem.types.TraitType"
                 };
                 new this.tagCollection.model().set(this.json).save(null, {
                     success: function(model, response) {
+                        that.createTag = true;
                         that.fetchCollections();
-                        that.setUrl('#!/tag/tagAttribute/' + ref.ui.tagName.val());
+                        that.setUrl('#!/tag/tagAttribute/' + ref.ui.tagName.val(), true);
                         Utils.notifySuccess({
                             content: that.name + "  has been created"
                         });
@@ -218,7 +237,7 @@ define(['require',
                 });
             },
 
-            setUrl: function(url) {
+            setUrl: function(url, create) {
                 Utils.setUrl({
                     url: url,
                     mergeBrowserUrl: false,
@@ -264,7 +283,7 @@ define(['require',
                 Utils.setUrl({
                     url: '#!/search/searchResult',
                     urlParams: {
-                        query:  this.ui.tagsParent.find('li.active').find("a").text(),
+                        query: this.ui.tagsParent.find('li.active').find("a").text(),
                         searchType: "fulltext",
                         dslChecked: false
                     },

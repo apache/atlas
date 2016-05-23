@@ -122,7 +122,10 @@ define(['require',
                 CommonViewFunction.deleteTag({
                     'tagName': tagName,
                     'guid': that.guid,
-                    'collection': that.collection
+                    callback: function() {
+                        that.$('.fontLoader').show();
+                        that.collection.fetch({ reset: true });
+                    }
                 });
             }
         });

@@ -33,9 +33,6 @@ define([
             '!/taxonomy/detailCatalog/(*url)': 'detailCatalog',
             '!/search/searchResult': 'searchResult',
             '!/detailPage/:id': 'detailPage',
-            '!/detailPage/:id': 'detailPage',
-            '!/detailPage/:id': 'detailPage',
-
             '!/tag': 'commonAction',
             '!/taxonomy': 'commonAction',
             '!/search': 'commonAction',
@@ -120,13 +117,15 @@ define([
                 } else {
                     var view = App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView;
                     if (view.dblClick == false && view.singleClick == false && !Globals.saveApplicationState.tabState.stateChanged) {
-                        App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender(url,true);
+                        App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender(url, true);
                         view.dblClick == false;
 
-                    }/* else if (view.firstManualClick) {
-                        view.firstManualClick = false;
-                        App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender(url);
-                    }*/ else if (view.singleClick) {
+                    }
+                    /* else if (view.firstManualClick) {
+                                            view.firstManualClick = false;
+                                            App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender(url);
+                                        }*/
+                    else if (view.singleClick) {
                         view.singleClick = false;
                     }
                     App.rSideNav.currentView.selectTab();
@@ -184,6 +183,7 @@ define([
                         'tag': tagName
                     }));
                 } else {
+
                     App.rSideNav.currentView.RTagLayoutView.currentView.manualRender(tagName);
                     App.rSideNav.currentView.selectTab();
                 }
@@ -213,7 +213,7 @@ define([
                     if (Utils.getUrlState.isTagTab()) {
                         App.rSideNav.currentView.RTagLayoutView.currentView.manualRender();
                     } else if (Utils.getUrlState.isTaxonomyTab()) {
-                        App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender(undefined,true);
+                        App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender(undefined, true);
                     }
                 }
                 App.rNContent.$el.html('');

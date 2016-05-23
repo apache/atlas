@@ -187,7 +187,8 @@ define(['require',
                                 }
                             }
                         }
-                        parentLi = '<div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i><i class="fa fa-ellipsis-h termPopover"></i></div><a href="javascript:void(0)" data-href=' + hrefUrl + '>' + model.get('name') + '</a>';
+                        var name = model.get('name').split('.');
+                        parentLi = '<div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i><i class="fa fa-ellipsis-h termPopover"></i></div><a href="javascript:void(0)" data-href="' + hrefUrl + '">' + name[name.length - 1] + '</a>';
                     });
                     if (href) {
                         that.fetchCollection(href);
@@ -199,7 +200,8 @@ define(['require',
 
                 function createTerm() {
                     _.each(that.chiledCollection.fullCollection.models, function(model, key) {
-                        chiledLi += '<li class="children"><div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i><i class="fa fa-ellipsis-h termPopover" ></i></div><a href="javascript:void(0)" data-href=/api' + model.get('href').split("/api")[1] + '>' + model.get('name') + '</a></li>';
+                        var name = model.get('name').split('.');
+                        chiledLi += '<li class="children"><div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i><i class="fa fa-ellipsis-h termPopover" ></i></div><a href="javascript:void(0)" data-href="/api' + model.get('href').split("/api")[1] + '">' + name[name.length - 1] + '</a></li>';
                     });
                     that.ui.chiledList.html(chiledLi);
                 }

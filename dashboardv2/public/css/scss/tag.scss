@@ -81,10 +81,6 @@
     border-color: $color_bali_hai_approx;
 }
 
-.tagList {
-    margin-top: 10px;
-}
-
 .select2-container {
     width: 100% !important;
     /*margin:15px 0px;*/
@@ -108,7 +104,7 @@
     padding: 5px 10px;
     border: 1px $tag_color solid;
     color: $tag_color;
-    font-size: 12px;
+    font-size: 14px;
     text-transform: uppercase;
     border-radius: 4px;
     margin-right: 3px;
@@ -151,12 +147,12 @@
 }
 
 .addTagText {
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 600;
 }
 
 .addTagPlus {
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 600;
 }
 
@@ -180,12 +176,13 @@
     color: $action_gray;
     border-radius: 4px;
 }
+
 .inputAttribute {
     display: inline-block;
     padding: 5px 10px;
     border: 1px $action_gray solid;
     color: $action_gray;
-    font-size: 12px;
+    font-size: 14px;
     text-transform: uppercase;
     border-radius: 4px;
     margin-right: 3px;
@@ -203,3 +200,13 @@
         background-color: $action_gray;
     }
 }
+
+form-control .tagInpput {
+    margin-bottom: 15px;
+    margin-top: 15px;
+}
+
+// .select2-container--default .select2-selection--multiple {
+//     background-color: #f6f7fb;
+//     border: 1px #e8e9ee solid;
+// }
