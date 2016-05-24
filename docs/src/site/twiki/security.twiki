@@ -47,24 +47,76 @@ Note that when Atlas is configured with HBase as the storage backend in a secure
 
 ---+++ JAAS configuration
 
-When Atlas is configured with HBase as the storage backend in a secure cluster, a JAAS configuration file should be created and specified so that the HBase client can attempt to SASL-authenticate.
+In a secure cluster, some of the components (such as Kafka) that Atlas interacts with, require Atlas to authenticate itself to them using JAAS. The following properties are used to set up appropriate JAAS Configuration.
 
-   * Create Atlas JAAS configuration file (e.g. /etc/atlas/conf/atlas-jaas.conf).
+   * <code>atlas.jaas.<code>client-id<code>.loginModuleName<code> - the authentication method used by the component (for example, com.sun.security.auth.module.Krb5LoginModule)
+   * <code>atlas.jaas.<code>client-id<code>.loginModuleControlFlag<code> (required|requisite|sufficient|optional) [default: required]
+   * <code>atlas.jaas.<code>client-id<code>.option.useKeyTab<code> (true|false)
+   * <code>atlas.jaas.<code>client-id<code>.option.storeKey<code> (true | false)
+   * <code>atlas.jaas.<code>client-id<code>.option.serviceName<code> - service name of server component
+   * <code>atlas.jaas.<code>client-id<code>.option.keyTab<code> = <atlas keytab>
+   * <code>atlas.jaas.<code>client-id<code>.option.principal<code> = <atlas principal>
+
+For example, the following property settings in jaas-application.properties file
 
 <verbatim>
-	Client {
-	   com.sun.security.auth.module.Krb5LoginModule required
-	   useKeyTab=true
-	   useTicketCache=false
-	   storeKey=true
-	   doNotPrompt=false
-	   keyTab="<atlas keytab>"
-	   principal="<atlas principal>";
-	};
+
+atlas.jaas.KafkaClient.loginModuleName = com.sun.security.auth.module.Krb5LoginModule
+atlas.jaas.KafkaClient.loginModuleControlFlag = required
+atlas.jaas.KafkaClient.option.useKeyTab = true
+atlas.jaas.KafkaClient.option.storeKey = true
+atlas.jaas.KafkaClient.option.serviceName = kafka
+atlas.jaas.KafkaClient.option.keyTab = /etc/security/keytabs/kafka_client.keytab
+atlas.jaas.KafkaClient.option.principal = kafka-client-1@EXAMPLE.COM
+
+atlas.jaas.MyClient.0.loginModuleName = com.sun.security.auth.module.Krb5LoginModule
+atlas.jaas.MyClient.0.loginModuleControlFlag = required
+atlas.jaas.MyClient.0.option.useKeyTab = true
+atlas.jaas.MyClient.0.option.storeKey = true
+atlas.jaas.MyClient.0.option.serviceName = kafka
+atlas.jaas.MyClient.0.option.keyTab = /etc/security/keytabs/kafka_client.keytab
+atlas.jaas.MyClient.0.option.principal = kafka-client-1@EXAMPLE.COM
+
+atlas.jaas.MyClient.1.loginModuleName = com.sun.security.auth.module.Krb5LoginModule
+atlas.jaas.MyClient.1.loginModuleControlFlag = optional
+atlas.jaas.MyClient.1.option.useKeyTab = true
+atlas.jaas.MyClient.1.option.storeKey = true
+atlas.jaas.MyClient.1.option.serviceName = kafka
+atlas.jaas.MyClient.1.option.keyTab = /etc/security/keytabs/kafka_client.keytab
+atlas.jaas.MyClient.1.option.principal = kafka-client-1@EXAMPLE.COM
+
 </verbatim>
 
-   * Update Atlas ATLAS_OPTS to include ‘java.security.auth.login.config’ set to the above Atlas JAAS configuration file.
-      * For example, <code>-Djava.security.auth.login.config=/etc/atlas/conf/atlas-jaas.conf</code>
+will set the JAAS configuration that is equivalent to the following jaas.conf file entries.
+
+<verbatim>
+
+KafkaClient {
+	com.sun.security.auth.module.Krb5LoginModule required
+	useKeyTab=true
+	storeKey=true
+	serviceName=kafka
+	keyTab="/etc/security/keytabs/kafka_client.keytab"
+	principal="kafka-client-1@EXAMPLE.COM";
+};
+MyClient {
+	com.sun.security.auth.module.Krb5LoginModule required
+	useKeyTab=true
+	storeKey=true
+	serviceName=kafka keyTab="/etc/security/keytabs/kafka_client.keytab"
+	principal="kafka-client-1@EXAMPLE.COM";
+};
+MyClient {
+	com.sun.security.auth.module.Krb5LoginModule optional
+	useKeyTab=true
+	storeKey=true
+	serviceName=kafka
+	keyTab="/etc/security/keytabs/kafka_client.keytab"
+	principal="kafka-client-1@EXAMPLE.COM";
+};
+
+</verbatim>
+
 
 ---+++ SPNEGO-based HTTP Authentication
 
