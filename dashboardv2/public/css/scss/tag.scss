@@ -93,6 +93,7 @@
 .select2-container--default .select2-selection--multiple .select2-selection__choice {
     background-color: #fff;
     color: #9599a0;
+    border: 1px solid $tag_color;
 }
 
 .select2-container--default .select2-search--inline .select2-search__field {
@@ -206,7 +207,17 @@ form-control .tagInpput {
     margin-top: 15px;
 }
 
-// .select2-container--default .select2-selection--multiple {
-//     background-color: #f6f7fb;
-//     border: 1px #e8e9ee solid;
-// }
+.attributeText {
+    color: $color_star_dust_approx;
+}
+
+.termTagLine {
+    border-top: 1px solid $action_gray;
+}
+
+.tagTerm {
+    margin-top: 10px;
+    div {
+        display: inline-block;
+    }
+}

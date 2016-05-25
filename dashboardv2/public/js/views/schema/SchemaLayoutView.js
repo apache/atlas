@@ -40,26 +40,27 @@ define(['require',
             ui: {
                 tagClick: '[data-id="tagClick"]',
                 addTag: "[data-id='addTag']",
+                addTerm: '[data-id="addTerm"]'
+
             },
             /** ui events hash */
             events: function() {
                 var events = {};
 
-                events["click " + this.ui.addTag] = function(e) {
-                        this.onClickSchemaTag(e);
-                    },
-                    events["click " + this.ui.tagClick] = function(e) {
-                        if (e.target.nodeName.toLocaleLowerCase() == "i") {
-                            this.onClickTagCross(e);
-                        } else {
-                            var value = e.currentTarget.text;
-                            Utils.setUrl({
-                                url: '#!/tag/tagAttribute/' + value,
-                                mergeBrowserUrl: false,
-                                trigger: true
-                            });
-                        }
-                    };
+                events["click " + this.ui.addTag] = 'addTagModalView';
+                events["click " + this.ui.addTerm] = 'addTermModalView';
+                events["click " + this.ui.tagClick] = function(e) {
+                    if (e.target.nodeName.toLocaleLowerCase() == "i") {
+                        this.onClickTagCross(e);
+                    } else {
+                        var value = e.currentTarget.text;
+                        Utils.setUrl({
+                            url: '#!/tag/tagAttribute/' + value,
+                            mergeBrowserUrl: false,
+                            trigger: true
+                        });
+                    }
+                };
                 return events;
             },
             /**
@@ -170,9 +171,32 @@ define(['require',
                                 var traits = model.get('$traits$');
                                 var atags = "";
                                 _.keys(model.get('$traits$')).map(function(key) {
-                                    atags += '<a class="inputTag" data-id="tagClick">' + traits[key].$typeName$ + '<i class="fa fa-times" data-id="delete" data-name="' + traits[key].$typeName$ + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
+                                    var tagName = Utils.checkTagOrTerm(traits[key].$typeName$);
+                                    if (!tagName.term) {
+                                        atags += '<a class="inputTag" data-id="tagClick">' + traits[key].$typeName$ + '<i class="fa fa-times" data-id="delete" data-name="' + traits[key].$typeName$ + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
+                                    }
                                 });
                                 return '<div class="tagList">' + atags + '<a href="javascript:void(0);" class="inputTag" data-id="addTag" data-guid="' + model.get('$id$').id + '"><i style="right:0" class="fa fa-plus"></i></a></div>';
+                            }
+                        })
+                    };
+                    col['terms'] = {
+                        label: "Terms",
+                        cell: "Html",
+                        editable: false,
+                        sortable: false,
+                        orderable: true,
+                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                            fromRaw: function(rawValue, model) {
+                                var traits = model.get('$traits$');
+                                var aterms = "";
+                                _.keys(model.get('$traits$')).map(function(key) {
+                                    var tagName = Utils.checkTagOrTerm(traits[key].$typeName$);
+                                    if (tagName.term) {
+                                        aterms += '<a class="inputTag" data-id="tagClick">' + traits[key].$typeName$ + '<i class="fa fa-times" data-id="delete" data-name="' + traits[key].$typeName$ + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
+                                    }
+                                });
+                                return '<div class="tagList">' + aterms + '<a href="javascript:void(0);" class="inputTag" data-id="addTerm" data-guid="' + model.get('$id$').id + '"><i style="right:0" class="fa fa-plus"></i></a></div>';
                             }
                         })
                     };
@@ -181,7 +205,10 @@ define(['require',
 
                 return this.schemaCollection.constructor.getTableCols(col, this.schemaCollection);
             },
-            onClickSchemaTag: function(e) {
+            addTagModalView: function(e) {
+                if (e) {
+                    e.stopPropagation();
+                }
                 var that = this;
                 require(['views/tag/addTagModalView'], function(AddTagModalView) {
                     var view = new AddTagModalView({
@@ -194,6 +221,23 @@ define(['require',
                     //override saveTagData function 
                     // }
                 });
+            },
+            addTermModalView: function(e) {
+                if (e) {
+                    e.stopPropagation();
+                }
+                var that = this;
+                require([
+                    'views/business_catalog/AddTermToEntityLayoutView',
+                ], function(AddTermToEntityLayoutView) {
+                    var view = new AddTermToEntityLayoutView({
+                        guid: that.$(e.currentTarget).data("guid"),
+                        callback: function() {
+                            that.fetchCollection();
+                        }
+                    });
+                });
+
             },
             onClickTagCross: function(e) {
                 var tagName = $(e.target).data("name"),

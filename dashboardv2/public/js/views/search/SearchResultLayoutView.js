@@ -39,13 +39,14 @@ define(['require',
             regions: {
                 RTagLayoutView: "#r_tagLayoutView",
                 RSearchLayoutView: "#r_searchLayoutView",
-                REntityTableLayoutView: "#r_entityTableLayoutView",
+                REntityTableLayoutView: "#r_searchResultTableLayoutView",
             },
 
             /** ui selector cache */
             ui: {
                 tagClick: '[data-id="tagClick"]',
                 addTag: '[data-id="addTag"]',
+                addTerm: '[data-id="addTerm"]'
             },
 
             /** ui events hash */
@@ -55,16 +56,27 @@ define(['require',
                     if (e.target.nodeName.toLocaleLowerCase() == "i") {
                         this.onClickTagCross(e);
                     } else {
-                        Utils.setUrl({
-                            url: '#!/tag/tagAttribute/' + e.currentTarget.text,
-                            mergeBrowserUrl: false,
-                            trigger: true
-                        });
+                        var scope = $(e.currentTarget);
+                        if (scope.hasClass('term')) {
+                            var url = scope.data('href').split(".").join("/terms/");
+                            Globals.saveApplicationState.tabState.stateChanged = false;
+                            Utils.setUrl({
+                                url: '#!/taxonomy/detailCatalog/api/atlas/v1/taxonomies/' + url,
+                                mergeBrowserUrl: false,
+                                trigger: true
+                            });
+                        } else {
+                            Utils.setUrl({
+                                url: '#!/tag/tagAttribute/' + e.currentTarget.text,
+                                mergeBrowserUrl: false,
+                                trigger: true
+                            });
+                        }
+
                     }
                 };
-                events["click " + this.ui.addTag] = function(e) {
-                    this.addModalView(e);
-                };
+                events["click " + this.ui.addTag] = 'addTagModalView';
+                events["click " + this.ui.addTerm] = 'addTermModalView';
                 events["click " + this.ui.tagCrossIcon] = function(e) {};
                 return events;
             },
@@ -135,7 +147,7 @@ define(['require',
             },
             fetchCollection: function(value) {
                 this.$('.fontLoader').show();
-                this.$('.entityTable').hide();
+                this.$('.searchTable').hide();
                 if (value) {
                     if (value.searchType) {
                         this.searchCollection.url = "/api/atlas/discovery/search/" + value.searchType;
@@ -183,7 +195,7 @@ define(['require',
             checkTableFetch: function() {
                 if (this.fetchList <= 0) {
                     this.$('.fontLoader').hide();
-                    this.$('.entityTable').show();
+                    this.$('.searchTable').show();
                 }
             },
             getEntityTableColumns: function() {
@@ -244,7 +256,10 @@ define(['require',
                                         var atags = "",
                                             addTag = "";
                                         _.keys(model.get('$traits$')).map(function(key) {
-                                            atags += '<a class="inputTag" data-id="tagClick">' + traits[key].$typeName$ + '<i class="fa fa-times" data-id="delete" data-name="' + traits[key].$typeName$ + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
+                                            var tagName = Utils.checkTagOrTerm(traits[key].$typeName$);
+                                            if (!tagName.term) {
+                                                atags += '<a class="inputTag" data-id="tagClick">' + traits[key].$typeName$ + '<i class="fa fa-times" data-id="delete" data-name="' + tagName.name + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
+                                            }
                                         });
                                         if (model.get('$id$')) {
                                             addTag += '<a href="javascript:void(0)" data-id="addTag" class="inputTag" data-guid="' + model.get('$id$').id + '" ><i style="right:0" class="fa fa-plus"></i></a>';
@@ -256,12 +271,31 @@ define(['require',
                                     }
                                 })
                             };
-                            col['taxonomy'] = {
-                                label: "Taxonomy",
+                            col['terms'] = {
+                                label: "Terms",
                                 cell: "Html",
                                 editable: false,
                                 sortable: false,
                                 orderable: true,
+                                formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                                    fromRaw: function(rawValue, model) {
+                                        var traits = model.get('$traits$');
+                                        var aterm = "",
+                                            addTerm = "";
+                                        _.keys(model.get('$traits$')).map(function(key) {
+                                            var tagName = Utils.checkTagOrTerm(traits[key].$typeName$);
+                                            if (tagName.term) {
+                                                aterm += '<a class="inputTag term" data-id="tagClick" data-href="' + traits[key].$typeName$ + '">' + traits[key].$typeName$ + '<i class="fa fa-times" data-id="delete" data-name="' + traits[key].$typeName$ + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
+                                            }
+                                        });
+                                        if (model.get('$id$')) {
+                                            addTerm += '<a href="javascript:void(0)" data-id="addTerm" class="inputTag" data-guid="' + model.get('$id$').id + '" ><i style="right:0" class="fa fa-plus"></i></a>';
+                                        } else {
+                                            addTerm += '<a href="javascript:void(0)" data-id="addTerm" class="inputTag"><i style="right:0" class="fa fa-plus"></i></a>';
+                                        }
+                                        return '<div class="tagList">' + aterm + addTerm + '</div>';
+                                    }
+                                })
                             };
                             that.checkTableFetch();
                             return this.searchCollection.constructor.getTableCols(col, this.searchCollection);
@@ -342,18 +376,33 @@ define(['require',
                     }
                 }, this.searchCollection);
             },
-            addModalView: function(e) {
+            addTagModalView: function(e) {
                 var that = this;
                 require(['views/tag/addTagModalView'], function(AddTagModalView) {
                     var view = new AddTagModalView({
-                        vent: that.vent,
                         guid: that.$(e.currentTarget).data("guid"),
-                        modalCollection: that.searchCollection
+                        callback: function() {
+                            that.fetchCollection();
+                        }
                     });
                     // view.saveTagData = function() {
                     //override saveTagData function 
                     // }
                 });
+            },
+            addTermModalView: function(e) {
+                var that = this;
+                require([
+                    'views/business_catalog/AddTermToEntityLayoutView',
+                ], function(AddTermToEntityLayoutView) {
+                    var view = new AddTermToEntityLayoutView({
+                        guid: that.$(e.currentTarget).data("guid"),
+                        callback: function() {
+                            that.fetchCollection();
+                        }
+                    });
+                });
+
             },
             onClickTagCross: function(e) {
                 var tagName = $(e.target).data("name"),
@@ -374,7 +423,9 @@ define(['require',
                 CommonViewFunction.deleteTag({
                     'tagName': tagName,
                     'guid': guid,
-                    'collection': that.searchCollection
+                    callback: function() {
+                        that.fetchCollection();
+                    }
                 });
             }
         });

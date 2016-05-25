@@ -225,5 +225,19 @@ define(['require', 'utils/Globals'], function(require, Globals) {
             }
         }
     }
+    Utils.checkTagOrTerm = function(value) {
+        var name = value.split('.');
+        if (name.length > 1) {
+            return {
+                term: true,
+                name: name[name.length - 1]
+            }
+        } else {
+            return {
+                term: false,
+                name: name[name.length - 1]
+            }
+        }
+    }
     return Utils;
 });

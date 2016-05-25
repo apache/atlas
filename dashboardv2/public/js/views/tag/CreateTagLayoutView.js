@@ -71,7 +71,7 @@ define(['require',
                     this.ui.parentTag.html(str);
                 }
                 this.ui.parentTag.select2({
-                    placeholder: "Select parent Tag",
+                    placeholder: "Search Tags",
                     allowClear: true
                 });
             },

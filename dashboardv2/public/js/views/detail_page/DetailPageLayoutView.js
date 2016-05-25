@@ -22,8 +22,9 @@ define(['require',
     'utils/Utils',
     'collection/VTagList',
     'models/VEntity',
-    'utils/CommonViewFunction'
-], function(require, Backbone, DetailPageLayoutViewTmpl, Utils, VTagList, VEntity, CommonViewFunction) {
+    'utils/CommonViewFunction',
+    'utils/Globals'
+], function(require, Backbone, DetailPageLayoutViewTmpl, Utils, VTagList, VEntity, CommonViewFunction, Globals) {
     'use strict';
 
     var DetailPageLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -39,6 +40,8 @@ define(['require',
                 RSchemaTableLayoutView: "#r_schemaTableLayoutView",
                 RTagTableLayoutView: "#r_tagTableLayoutView",
                 RLineageLayoutView: "#r_lineageLayoutView",
+                RTermTableLayoutView: "#r_termTableLayoutView"
+
             },
             /** ui selector cache */
             ui: {
@@ -53,15 +56,12 @@ define(['require',
                 createDate: '[data-id="createDate"]',
                 updateDate: '[data-id="updateDate"]',
                 createdUser: '[data-id="createdUser"]',
-                addTagBtn: '[data-id="addTagBtn"]',
-                appendList: '[data-id="appendList"]',
-                inputTagging: '[data-id="inputTagging"]',
                 deleteTag: '[data-id="deleteTag"]',
-                addTagtext: '[data-id="addTagtext"]',
-                addTagPlus: '[data-id="addTagPlus"]',
-                searchTag: '[data-id="searchTag"] input',
-                addTagListBtn: '[data-id="addTagListBtn"]',
-                backButton: "[data-id='backButton']"
+                backButton: "[data-id='backButton']",
+                addTag: '[data-id="addTag"]',
+                addTerm: '[data-id="addTerm"]',
+                tagList: '[data-id="tagList"]',
+                termList: '[data-id="termList"]'
             },
             /** ui events hash */
             events: function() {
@@ -77,20 +77,29 @@ define(['require',
                 };
                 events["click " + this.ui.tagClick] = function(e) {
                     if (e.target.nodeName.toLocaleLowerCase() != "i") {
-                        Utils.setUrl({
-                            url: '#!/tag/tagAttribute/' + e.currentTarget.textContent,
-                            mergeBrowserUrl: false,
-                            trigger: true
-                        });
+                        var scope = $(e.currentTarget);
+                        if (scope.hasClass('term')) {
+                            var url = scope.data('href').split(".").join("/terms/");
+                            Globals.saveApplicationState.tabState.stateChanged = false;
+                            Utils.setUrl({
+                                url: '#!/taxonomy/detailCatalog/api/atlas/v1/taxonomies/' + url,
+                                mergeBrowserUrl: false,
+                                trigger: true
+                            });
+                        } else {
+                            Utils.setUrl({
+                                url: '#!/tag/tagAttribute/' + e.currentTarget.textContent,
+                                mergeBrowserUrl: false,
+                                trigger: true
+                            });
+                        }
                     }
                 };
                 // events["click " + this.ui.publishButton] = 'onPublishButtonClick';
                 events["click " + this.ui.cancelButton] = 'onCancelButtonClick';
                 events["click " + this.ui.deleteTag] = 'onClickTagCross';
-                // events["keyup " + this.ui.searchTag] = function(e) {
-                //    // this.offlineSearchTag(e);
-                // };
-                events["click " + this.ui.addTagListBtn] = 'onClickAddTagBtn';
+                events["click " + this.ui.addTag] = 'onClickAddTagBtn';
+                events["click " + this.ui.addTerm] = 'onClickAddTermBtn';
                 events['click ' + this.ui.backButton] = function() {
                     Backbone.history.history.back();
                 };
@@ -145,9 +154,6 @@ define(['require',
                         }
                         if (collectionJSON[0].traits) {
                             this.tagElement = _.keys(collectionJSON[0].traits);
-                            this.ui.addTagtext.hide();
-                            this.ui.addTagPlus.show();
-                            this.ui.inputTagging.find('.inputTag').remove();
                             this.addTagToTerms(this.tagElement);
                         }
                     }
@@ -156,20 +162,20 @@ define(['require',
                     this.renderTagTableLayoutView(tagGuid);
                     this.renderLineageLayoutView(tagGuid);
                     this.renderSchemaLayoutView(tagGuid);
+                    this.renderTermTableLayoutView(tagGuid);
                 }, this);
             },
             onRender: function() {
                 var that = this;
                 this.ui.editBox.hide();
-                this.ui.appendList.on('click', 'div', function(e) {
-                    if (e.target.nodeName == "INPUT") {
-                        return false;
-                    }
-                    that.ui.addTagtext.hide();
-                    that.ui.addTagPlus.show();
-                    // that.addTagToTerms([$(this).text()]);
-                    that.saveTagFromList($(this));
-                });
+                /*    this.ui.appendList.on('click', 'div', function(e) {
+                        if (e.target.nodeName == "INPUT") {
+                            return false;
+                        }
+                        that.ui.addTagtext.hide();
+                        that.ui.addTagPlus.show();
+                        that.saveTagFromList($(this));
+                    });*/
             },
             fetchCollection: function() {
                 this.collection.fetch({ reset: true });
@@ -202,11 +208,21 @@ define(['require',
                 });
             },
             addTagToTerms: function(tagObject) {
-                var tagData = "";
+                var tagData = "",
+                    termData = "";
                 _.each(tagObject, function(val) {
-                    tagData += '<span class="inputTag" data-id="tagClick">' + val + '<i class="fa fa-close" data-id="deleteTag"></i></span>';
+                    var isTerm = Utils.checkTagOrTerm(val);
+                    if (!isTerm.term) {
+                        tagData += '<span class="inputTag" data-id="tagClick">' + val + '<i class="fa fa-close" data-id="deleteTag"></i></span>';
+                    }
+                    if (isTerm.term) {
+                        termData += '<span class="inputTag term" data-id="tagClick" data-href="' + val + '">' + val + '<i class="fa fa-close" data-id="deleteTag"></i></span>';
+                    }
                 });
-                this.$('.addTag-dropdown').before(tagData);
+                this.ui.tagList.find("span.inputTag").remove();
+                this.ui.termList.find("span.inputTag").remove();
+                this.ui.tagList.prepend(tagData);
+                this.ui.termList.prepend(termData);
             },
             saveTagFromList: function(ref) {
                 var that = this;
@@ -246,6 +262,20 @@ define(['require',
                     }*/
                 });
             },
+            onClickAddTermBtn: function(e) {
+                var that = this;
+                require([
+                    'views/business_catalog/AddTermToEntityLayoutView',
+                ], function(AddTermToEntityLayoutView) {
+                    var view = new AddTermToEntityLayoutView({
+                        guid: that.id,
+                        callback: function() {
+                            that.fetchCollection();
+                        }
+                    });
+                });
+
+            },
             renderEntityDetailTableLayoutView: function() {
                 var that = this;
                 require(['views/entity/EntityDetailTableLayoutView'], function(EntityDetailTableLayoutView) {
@@ -280,6 +310,17 @@ define(['require',
                     that.RSchemaTableLayoutView.show(new SchemaLayoutView({
                         globalVent: that.globalVent,
                         guid: tagGuid
+                    }));
+                });
+            },
+            renderTermTableLayoutView: function(tagGuid) {
+                var that = this;
+                require(['views/tag/TagDetailTableLayoutView'], function(TagDetailTableLayoutView) {
+                    that.RTermTableLayoutView.show(new TagDetailTableLayoutView({
+                        globalVent: that.globalVent,
+                        collection: that.collection,
+                        guid: tagGuid,
+                        term: true
                     }));
                 });
             }

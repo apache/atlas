@@ -103,7 +103,8 @@ define(['require',
                         createdDate = this.model.get('creation_time');
                     if (name) {
                         this.ui.title.show();
-                        this.ui.title.html('<span>' + name + '</span>');
+                        var termName = Utils.checkTagOrTerm(name);
+                        this.ui.title.html('<span>' + termName.name + '</span>');
                     } else {
                         this.ui.title.hide();
                     }

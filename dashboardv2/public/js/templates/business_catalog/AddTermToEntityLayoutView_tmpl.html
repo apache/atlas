@@ -14,15 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<form name="tagDefinitionform" class="css-form">
-    <!-- <h4 style="margin-bottom:30px"></h4> -->
-    <div class="form-group">
-        <input class="form-control row-margin-bottom" data-id="tagName" placeholder="Name(required)">
-        </input>
-        <input class="form-control row-margin-bottom" data-id="description" placeholder="Description">
-        </input>
-        <span class="row-margin-bottom">Select tags to inherit attributes(optional)</span>
-        <p class="attributeText">Attributes define additional properties for the tag</p>
-        <select class="form-control tagList" data-id="parentTag" multiple="multiple"></select>
+<div class="row">
+    <div name="tagDefinitionform" class="css-form">
+        <div class="form-group">
+            <label class="control-label col-sm-4">Term</label>
+            <div class="col-sm-8 input-spacing">
+                <select class="form-control" data-id="addTermOptions" required>
+                </select>
+            </div>
+        </div>
     </div>
-</form>
+</div>
+</div>

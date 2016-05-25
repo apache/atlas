@@ -19,8 +19,9 @@
 define(['require',
     'backbone',
     'hbs!tmpl/tag/TagDetailTableLayoutView_tmpl',
-    'utils/CommonViewFunction'
-], function(require, Backbone, TagDetailTableLayoutView_tmpl, CommonViewFunction) {
+    'utils/CommonViewFunction',
+    'utils/Utils'
+], function(require, Backbone, TagDetailTableLayoutView_tmpl, CommonViewFunction, Utils) {
     'use strict';
 
     var TagDetailTableLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -55,20 +56,25 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'collection', 'guid'));
+                _.extend(this, _.pick(options, 'globalVent', 'collection', 'guid', 'term'));
                 this.collectionObject = this.collection.toJSON();
 
             },
             bindEvents: function() {},
             onRender: function() {
                 this.tagTableGenerate();
+                if (this.term) {
+                    this.$('.tagTermheading').text('Terms');
+                } else {
+                    this.$('.tagTermheading').text('Tags');
+                }
             },
             tagTableGenerate: function() {
                 var that = this,
                     table = "",
                     valueObject = this.collectionObject[0].traits;
                 if (_.isEmpty(valueObject)) {
-                    this.$(".noTags").show();
+                    this.showNoTagorTermMessage()
                 } else {
                     this.$(".noTags").hide();
                     _.keys(valueObject).map(function(key) {
@@ -86,10 +92,27 @@ define(['require',
                                 });
                                 tagValue += stringArr.join(", ");
                             }
-                            table += '<tr><td>' + keyValue.typeName + '</td><td>' + tagValue + '</td><td>' + '<a href="javascript:void(0)"><i class="fa fa-trash" data-id="delete" data-name="' + keyValue.typeName + '"></i></a></tr>';
+                            var name = Utils.checkTagOrTerm(keyValue.typeName);
+                            if (that.term && name.term) {
+                                table += '<tr><td>' + keyValue.typeName + '</td><td>' + tagValue + '</td><td>' + '<a href="javascript:void(0)"><i class="fa fa-trash" data-id="delete" data-name="' + keyValue.typeName + '"></i></a></tr>';
+                            }
+                            if (!that.term && !name.term) {
+                                table += '<tr><td>' + keyValue.typeName + '</td><td>' + tagValue + '</td><td>' + '<a href="javascript:void(0)"><i class="fa fa-trash" data-id="delete" data-name="' + keyValue.typeName + '"></i></a></tr>';
+                            }
+
                         } else {}
                     });
+                    if (table.length == 0) {
+                        this.showNoTagorTermMessage();
+                    }
                     that.ui.detailValue.append(table);
+                }
+            },
+            showNoTagorTermMessage: function() {
+                if (this.term) {
+                    this.$(".noTags").text(' No terms to display').show();
+                } else {
+                    this.$(".noTags").text(' No tags to display').show();
                 }
             },
             addModalView: function(e) {

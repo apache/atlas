@@ -137,9 +137,11 @@ define(['require',
                             return $(this).text() === tag;
                         }).addClass('active');
                         if (this.createTag || !manual) {
-                            $('#sidebar-wrapper').animate({
-                                scrollTop: target.offset().top - 100
-                            }, 500);
+                            if (target && target.offset()) {
+                                $('#sidebar-wrapper').animate({
+                                    scrollTop: target.offset().top - 100
+                                }, 500);
+                            }
                         }
 
                     }
@@ -150,15 +152,18 @@ define(['require',
                     str = '';
                 _.each(this[collection].fullCollection.models, function(model) {
                     var tagName = model.get("tags");
-                    if (searchString) {
-                        if (tagName.search(new RegExp(searchString, "i")) != -1) {
-                            str = '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + tagName + '">' + tagName + '</a></li>' + str;
+                    var tagOrTerm = Utils.checkTagOrTerm(tagName);
+                    if (!tagOrTerm.term) {
+                        if (searchString) {
+                            if (tagName.search(new RegExp(searchString, "i")) != -1) {
+                                str = '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + tagName + '">' + tagName + '</a></li>' + str;
+                            } else {
+                                return;
+                            }
                         } else {
-                            return;
+                            //str = '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-trash-o" data-id="deleteTerm"></i></div><a href="#!/tag/tagAttribute/' + tagName + '">' + tagName + '</a></li>' + str;
+                            str = '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + tagName + '">' + tagName + '</a></li>' + str;
                         }
-                    } else {
-                        //str = '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-trash-o" data-id="deleteTerm"></i></div><a href="#!/tag/tagAttribute/' + tagName + '">' + tagName + '</a></li>' + str;
-                        str = '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + tagName + '">' + tagName + '</a></li>' + str;
                     }
                 });
                 this.ui.tagsParent.empty().html(str);

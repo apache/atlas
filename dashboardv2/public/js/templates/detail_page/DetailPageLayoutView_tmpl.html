@@ -26,18 +26,17 @@
             <button class="btn-atlas" data-id="publishButton">Publish</button>
         </div>
     </div>
-    <div data-id="inputTagging">
-        <div class="dropdown addTag-dropdown" data-id="addTagListBtn">
-            <div class=" addTagBase dropdown-toggle" data-id="addTagBtn" data-toggle="dropdown">
-                <div class="addTagText" data-id="addTagtext" style="display: block">ADD TAG &nbsp; <i class="fa fa-plus"></i></div>
-                <div class="addTagPlus" data-id="addTagPlus" style="display: none"><i class="fa fa-plus"></i></div>
+    <div class="tagTerm">
+        <div class="" data-id="tagList">
+            <div class="addTag-dropdown" data-id="addTag">
+                <div class="addTagBase tagBox" data-id="addTagPlus"> Add Tag <i class="fa fa-plus"></i></div>
             </div>
-            <!-- <div class="dropdown-menu menuItem" data-id="addTagCollection">
-                <div data-id="searchTag" class="searchTag row-margin-bottom">
-                    <input placeholder="Search" type=search class="inputSearchTag form-control"></input>
-                </div>
-                <div class="appendList" data-id="appendList"></div>
-            </div> -->
+        </div>
+        <hr class=" termTagLine">
+        <div class="" data-id="termList">
+            <div class="addTag-dropdown" data-id="addTerm">
+                <div class="addTagBase termBox" data-id="addTermPlus"> Add Term <i class="fa fa-plus"></i></div>
+            </div>
         </div>
     </div>
 </div>
@@ -57,7 +56,8 @@
                 <ul class="nav nav-tabs" role="tablist">
                     <li role="presentation" class="tab active"><a href="#tab-details" aria-controls="tab-details" role="tab" data-toggle="tab">Properties</a></li>
                     <!--  <li role="presentation"><a href="#profile" aria-controls="profile" role="tab" data-toggle="tab">Acceptable Use</a></li> -->
-                    <li role="presentation"><a href="#tab-tagTable" aria-controls="tab-tagTable" role="tab" data-toggle="tab">Tag Attribute</a></li>
+                    <li role="presentation"><a href="#tab-tagTable" aria-controls="tab-tagTable" role="tab" data-toggle="tab">Tags</a></li>
+                    <li role="presentation"><a href="#tab-termTable" aria-controls="tab-termTable" role="tab" data-toggle="tab">Terms</a></li>
                     <li role="presentation" class="tab schemaTable" style="display:none"><a href="#tab-schema" aria-controls="tab-schema" role="tab" data-toggle="tab">Schema</a></li>
                 </ul>
                 <div class="tab-content">
@@ -66,6 +66,9 @@
                     </div>
                     <div id="tab-tagTable" role="tabpanel" class="tab-pane">
                         <div id="r_tagTableLayoutView"></div>
+                    </div>
+                    <div id="tab-termTable" role="tabpanel" class="tab-pane">
+                        <div id="r_termTableLayoutView"></div>
                     </div>
                     <div id="tab-schema" role="tabpanel" class="tab-pane">
                         <div id="r_schemaTableLayoutView"></div>

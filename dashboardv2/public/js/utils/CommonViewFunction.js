@@ -23,7 +23,12 @@ define(['require', 'utils/Utils', 'modules/Modal'], function(require, Utils, Mod
     CommonViewFunction.deleteTagModel = function(tagName) {
         var msg = "<b>Tag:</b>";
         if (tagName) {
-            msg = "<b>Tag: " + tagName + "</b>";
+            var tagOrTerm = Utils.checkTagOrTerm(tagName);
+            if (tagOrTerm.term) {
+                msg = "<b>Term: " + tagName + "</b>";
+            } else {
+                msg = "<b>Tag: " + tagName + "</b>";
+            }
         }
         var modal = new Modal({
             title: 'Are you sure you want to delete ?',
@@ -39,12 +44,29 @@ define(['require', 'utils/Utils', 'modules/Modal'], function(require, Utils, Mod
     CommonViewFunction.deleteTag = function(options) {
         require(['models/VTag'], function(VTag) {
             var tagModel = new VTag();
-            if (options && options.guid && options.tagName)
+            if (options && options.guid && options.tagName) {
+
                 tagModel.deleteTag(options.guid, options.tagName, {
                     beforeSend: function() {},
                     success: function(data) {
+                        var msg = "Tag " + name.name + " has been deleted successfully";
+                        if (data.traitName) {
+                            var tagOrTerm = Utils.checkTagOrTerm(data.traitName);
+                            if (tagOrTerm.term) {
+                                msg = "Term " + data.traitName + " has been deleted successfully";
+                            } else {
+                                msg = "Tag " + data.traitName + " has been deleted successfully";
+                            }
+                        } else {
+                            var tagOrTerm = Utils.checkTagOrTerm(options.tagName);
+                            if (tagOrTerm.term) {
+                                msg = "Term " + data.traitName + " has been deleted successfully";
+                            } else {
+                                msg = "Tag " + data.traitName + " has been deleted successfully";
+                            }
+                        }
                         Utils.notifySuccess({
-                            content: "Tag " + options.tagName + " has been deleted successfully"
+                            content: msg
                         });
                         if (options.callback) {
                             options.callback();
@@ -55,7 +77,7 @@ define(['require', 'utils/Utils', 'modules/Modal'], function(require, Utils, Mod
 
                     },
                     error: function(error, data, status) {
-                        var message = "Tag " + options.tagName + " could not be deleted";
+                        var message = options.tagName + " could not be deleted";
                         if (data.error) {
                             message = data.error;
                         }
@@ -65,6 +87,7 @@ define(['require', 'utils/Utils', 'modules/Modal'], function(require, Utils, Mod
                     },
                     complete: function() {}
                 });
+            }
         });
     };
     return CommonViewFunction;

@@ -80,11 +80,13 @@ define(['require',
         },
         tagsCollection: function() {
             var str = '<option selected="selected" disabled="disabled">-- Select Tag --</option>';
-            for (var i = 0; i < this.collection.fullCollection.models.length; i++) {
-                var tags = this.collection.fullCollection.models[i].get("tags");
-                str += '<option>' + tags + '</option>';
-                this.ui.addTagOptions.html(str);
-            }
+            _.each(this.collection.fullCollection.models, function(obj, key) {
+                var tagOrTerm = Utils.checkTagOrTerm(obj.get('tags'));
+                if (!tagOrTerm.term) {
+                    str += '<option>' + obj.get('tags') + '</option>';
+                }
+            });
+            this.ui.addTagOptions.html(str);
         },
         onChangeTagDefination: function() {
             this.ui.tagAttribute.empty();
