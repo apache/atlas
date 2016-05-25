@@ -107,11 +107,13 @@ public final class GraphHelper {
 
         // add timestamp information
         setProperty(vertexWithoutIdentity, Constants.TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
+        setProperty(vertexWithoutIdentity, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY,
+                RequestContext.get().getRequestTime());
 
         return vertexWithoutIdentity;
     }
 
-    public Edge addEdge(Vertex fromVertex, Vertex toVertex, String edgeLabel) {
+    private Edge addEdge(Vertex fromVertex, Vertex toVertex, String edgeLabel) {
         LOG.debug("Adding edge for {} -> label {} -> {}", string(fromVertex), edgeLabel, string(toVertex));
         Edge edge = titanGraph.addEdge(null, fromVertex, toVertex, edgeLabel);
 
@@ -127,10 +129,32 @@ public final class GraphHelper {
         Iterable<Edge> edges = inVertex.getEdges(Direction.IN, edgeLabel);
         for (Edge edge : edges) {
             if (edge.getVertex(Direction.OUT).getId().toString().equals(outVertex.getId().toString())) {
-                return edge;
+                Id.EntityState edgeState = getState(edge);
+                if (edgeState == null || edgeState == Id.EntityState.ACTIVE) {
+                    return edge;
+                }
             }
         }
         return addEdge(outVertex, inVertex, edgeLabel);
+    }
+
+
+    public Edge getEdgeByEdgeId(Vertex outVertex, String edgeLabel, String edgeId) {
+        if (edgeId == null) {
+            return null;
+        }
+        return titanGraph.getEdge(edgeId);
+
+        //TODO get edge id is expensive. Use this logic. But doesn't work for now
+        /**
+        Iterable<Edge> edges = outVertex.getEdges(Direction.OUT, edgeLabel);
+        for (Edge edge : edges) {
+            if (edge.getId().toString().equals(edgeId)) {
+                return edge;
+            }
+        }
+        return null;
+         **/
     }
 
     /**
@@ -180,15 +204,14 @@ public final class GraphHelper {
      * @return
      */
     public static Edge getEdgeForLabel(Vertex vertex, String edgeLabel) {
-        String vertexState = vertex.getProperty(Constants.STATE_PROPERTY_KEY);
-
         Iterator<Edge> iterator = GraphHelper.getOutGoingEdgesByLabel(vertex, edgeLabel);
         Edge latestDeletedEdge = null;
         long latestDeletedEdgeTime = Long.MIN_VALUE;
+
         while (iterator != null && iterator.hasNext()) {
             Edge edge = iterator.next();
-            String edgeState = edge.getProperty(Constants.STATE_PROPERTY_KEY);
-            if (edgeState == null || Id.EntityState.ACTIVE.name().equals(edgeState)) {
+            Id.EntityState edgeState = getState(edge);
+            if (edgeState == null || edgeState == Id.EntityState.ACTIVE) {
                 LOG.debug("Found {}", string(edge));
                 return edge;
             } else {
@@ -201,19 +224,8 @@ public final class GraphHelper {
         }
 
         //If the vertex is deleted, return latest deleted edge
-        if (Id.EntityState.DELETED.equals(vertexState)) {
-            LOG.debug("Found {}", string(latestDeletedEdge));
-            return latestDeletedEdge;
-        }
-
-        return null;
-    }
-
-    public Edge getEdgeById(String edgeId) {
-        if(edgeId != null) {
-            return titanGraph.getEdge(edgeId);
-        }
-        return null;
+        LOG.debug("Found {}", latestDeletedEdge == null ? "null" : string(latestDeletedEdge));
+        return latestDeletedEdge;
     }
 
     public static String vertexString(final Vertex vertex) {
@@ -341,6 +353,15 @@ public final class GraphHelper {
 
     public static String getTypeName(Vertex instanceVertex) {
         return instanceVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY);
+    }
+
+    public static Id.EntityState getState(Element element) {
+        String state = getStateAsString(element);
+        return state == null ? null : Id.EntityState.valueOf(state);
+    }
+
+    public static String getStateAsString(Element element) {
+        return element.getProperty(Constants.STATE_PROPERTY_KEY);
     }
 
     /**

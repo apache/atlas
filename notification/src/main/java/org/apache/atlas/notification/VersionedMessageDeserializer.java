@@ -31,7 +31,7 @@ import java.lang.reflect.Type;
 public abstract class VersionedMessageDeserializer<T> implements MessageDeserializer<T> {
 
     public static final String VERSION_MISMATCH_MSG =
-        "Notification message version mismatch.  Expected %s but recieved %s";
+        "Notification message version mismatch. Expected %s but recieved %s. Message %s";
 
     private final Type versionedMessageType;
     private final MessageVersion expectedVersion;
@@ -90,18 +90,16 @@ public abstract class VersionedMessageDeserializer<T> implements MessageDeserial
 
         // message has newer version
         if (comp > 0) {
-            String msg = String.format(VERSION_MISMATCH_MSG, expectedVersion, versionedMessage.getVersion());
+            String msg =
+                    String.format(VERSION_MISMATCH_MSG, expectedVersion, versionedMessage.getVersion(), messageJson);
             notificationLogger.error(msg);
-            notificationLogger.info(messageJson);
             throw new IncompatibleVersionException(msg);
         }
 
         // message has older version
         if (comp < 0) {
-            notificationLogger.info(
-                String.format(VERSION_MISMATCH_MSG, expectedVersion, versionedMessage.getVersion()));
-
-            notificationLogger.info(messageJson);
+            notificationLogger.info(String.format(VERSION_MISMATCH_MSG, expectedVersion, versionedMessage.getVersion(),
+                    messageJson));
         }
     }
 }

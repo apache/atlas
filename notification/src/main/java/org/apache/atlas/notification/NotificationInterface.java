@@ -17,11 +17,11 @@
  */
 package org.apache.atlas.notification;
 
+import com.google.gson.reflect.TypeToken;
 import org.apache.atlas.notification.entity.EntityMessageDeserializer;
 import org.apache.atlas.notification.entity.EntityNotification;
 import org.apache.atlas.notification.hook.HookMessageDeserializer;
 import org.apache.atlas.notification.hook.HookNotification;
-import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.util.List;

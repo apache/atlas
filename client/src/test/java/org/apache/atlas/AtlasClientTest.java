@@ -21,8 +21,12 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.commons.configuration.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.codehaus.jettison.json.JSONObject;
+import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
@@ -33,9 +37,12 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.ConnectException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -74,6 +81,25 @@ public class AtlasClientTest {
         when(builder.method(AtlasClient.API.VERSION.getMethod(), ClientResponse.class, null)).thenReturn(response);
 
         assertTrue(atlasClient.isServerReady());
+    }
+
+    @Test
+    public void testCreateEntity() throws Exception {
+        setupRetryParams();
+        AtlasClient atlasClient = new AtlasClient(service, configuration);
+
+        WebResource.Builder builder = setupBuilder(AtlasClient.API.CREATE_ENTITY, service);
+        ClientResponse response = mock(ClientResponse.class);
+        when(response.getStatus()).thenReturn(Response.Status.CREATED.getStatusCode());
+
+        JSONObject jsonResponse = new JSONObject(new AtlasClient.EntityResult(Arrays.asList("id"), null, null).toString());
+        when(response.getEntity(String.class)).thenReturn(jsonResponse.toString());
+        String entityJson = InstanceSerialization.toJson(new Referenceable("type"), true);
+        when(builder.method(anyString(), Matchers.<Class>any(), anyString())).thenReturn(response);
+
+        List<String> ids = atlasClient.createEntity(entityJson);
+        assertEquals(ids.size(), 1);
+        assertEquals(ids.get(0), "id");
     }
 
     private WebResource.Builder setupBuilder(AtlasClient.API api, WebResource webResource) {

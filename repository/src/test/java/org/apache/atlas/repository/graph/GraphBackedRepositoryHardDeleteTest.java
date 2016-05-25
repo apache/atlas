@@ -21,8 +21,10 @@ package org.apache.atlas.repository.graph;
 import com.tinkerpop.blueprints.Vertex;
 
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
@@ -32,8 +34,11 @@ import org.apache.atlas.typesystem.types.TypeSystem;
 import org.testng.Assert;
 
 import java.util.List;
+import java.util.Map;
 
+import static org.apache.atlas.TestUtils.COLUMNS_ATTR_NAME;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.fail;
 import static org.testng.AssertJUnit.assertNotNull;
@@ -45,7 +50,24 @@ public class GraphBackedRepositoryHardDeleteTest extends GraphBackedMetadataRepo
     }
 
     @Override
-    protected void assertTestDeleteReference(ITypedReferenceableInstance processInstance) throws Exception {
+    protected void assertTestDeleteEntityWithTraits(String guid) {
+        //entity is deleted. So, no assertions
+    }
+
+    @Override
+    protected void assertTableForTestDeleteReference(String tableId) {
+        //entity is deleted. So, no assertions
+    }
+
+    @Override
+    protected void assertColumnForTestDeleteReference(ITypedReferenceableInstance tableInstance) throws AtlasException {
+        List<ITypedReferenceableInstance> columns =
+                (List<ITypedReferenceableInstance>) tableInstance.get(COLUMNS_ATTR_NAME);
+        assertNull(columns);
+    }
+
+    @Override
+    protected void assertProcessForTestDeleteReference(ITypedReferenceableInstance processInstance) throws Exception {
         //assert that outputs is empty
         ITypedReferenceableInstance newProcess =
                 repositoryService.getEntityDefinition(processInstance.getId()._getId());
@@ -60,6 +82,11 @@ public class GraphBackedRepositoryHardDeleteTest extends GraphBackedMetadataRepo
         } catch(EntityNotFoundException e) {
             //expected
         }
+    }
+
+    @Override
+    protected void assertDeletedColumn(ITypedReferenceableInstance tableInstance) throws AtlasException {
+        assertEquals(((List<IReferenceableInstance>) tableInstance.get(COLUMNS_ATTR_NAME)).size(), 2);
     }
 
     @Override
@@ -85,12 +112,42 @@ public class GraphBackedRepositoryHardDeleteTest extends GraphBackedMetadataRepo
     }
 
     @Override
-    protected void assertTestDisconnectBidirectionalReferences(String janeGuid) throws Exception {
+    protected void assertJohnForTestDisconnectBidirectionalReferences(ITypedReferenceableInstance john,
+                                                                      String janeGuid) throws Exception {
+        assertNull(john.get("manager"));
+    }
+
+    @Override
+    protected void assertMaxForTestDisconnectBidirectionalReferences(Map<String, String> nameGuidMap)
+            throws Exception {
+        // Verify that the Department.employees reference to the deleted employee
+        // was disconnected.
+        ITypedReferenceableInstance hrDept = repositoryService.getEntityDefinition(nameGuidMap.get("hr"));
+        List<ITypedReferenceableInstance> employees = (List<ITypedReferenceableInstance>) hrDept.get("employees");
+        Assert.assertEquals(employees.size(), 3);
+        String maxGuid = nameGuidMap.get("Max");
+        for (ITypedReferenceableInstance employee : employees) {
+            Assert.assertNotEquals(employee.getId()._getId(), maxGuid);
+        }
+
         // Verify that the Manager.subordinates reference to the deleted employee
         // Max was disconnected.
-        ITypedReferenceableInstance jane = repositoryService.getEntityDefinition(janeGuid);
+        ITypedReferenceableInstance jane = repositoryService.getEntityDefinition(nameGuidMap.get("Jane"));
         List<ITypedReferenceableInstance> subordinates = (List<ITypedReferenceableInstance>) jane.get("subordinates");
         assertEquals(subordinates.size(), 1);
+
+        // Verify that max's Person.mentor unidirectional reference to john was disconnected.
+        ITypedReferenceableInstance john = repositoryService.getEntityDefinition(nameGuidMap.get("John"));
+        assertNull(john.get("mentor"));
+    }
+
+    @Override
+    protected void assertTestDisconnectUnidirectionalArrayReferenceFromClassType(
+            List<ITypedReferenceableInstance> columns, String columnGuid) {
+        assertEquals(columns.size(), 4);
+        for (ITypedReferenceableInstance column : columns) {
+            assertFalse(column.getId()._getId().equals(columnGuid));
+        }
     }
 
     @Override

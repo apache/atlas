@@ -23,7 +23,7 @@ import com.google.inject.multibindings.Multibinder;
 import org.apache.atlas.kafka.KafkaNotification;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.notification.NotificationHookConsumer;
-import org.apache.atlas.notification.entity.NotificationEntityChangeListener;
+import org.apache.atlas.notification.NotificationEntityChangeListener;
 import org.apache.atlas.service.Service;
 
 public class ServiceModule extends AbstractModule {

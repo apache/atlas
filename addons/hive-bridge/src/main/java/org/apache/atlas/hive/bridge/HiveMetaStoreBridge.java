@@ -188,7 +188,7 @@ public class HiveMetaStoreBridge {
         List<String> guids = getAtlasClient().createEntity(entityJSON);
         LOG.debug("created instance for type " + typeName + ", guid: " + guids);
 
-        return new Referenceable(guids.get(0), referenceable.getTypeName(), null);
+        return new Referenceable(guids.get(guids.size() - 1), referenceable.getTypeName(), null);
     }
 
     /**

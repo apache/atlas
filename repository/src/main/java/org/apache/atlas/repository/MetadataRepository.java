@@ -18,6 +18,7 @@
 
 package org.apache.atlas.repository;
 
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
@@ -26,7 +27,6 @@ import org.apache.atlas.typesystem.exception.EntityNotFoundException;
 import org.apache.atlas.typesystem.exception.TraitNotFoundException;
 import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.IDataType;
-import org.apache.atlas.typesystem.types.TypeUtils;
 
 import java.util.List;
 
@@ -111,7 +111,7 @@ public interface MetadataRepository {
      * @return guids of deleted entities
      * @throws RepositoryException
      */
-    TypeUtils.Pair<List<String>, List<ITypedReferenceableInstance>> deleteEntities(List<String> guids) throws RepositoryException;
+    AtlasClient.EntityResult deleteEntities(List<String> guids) throws RepositoryException;
     
     
     // Trait management functions
@@ -147,13 +147,13 @@ public interface MetadataRepository {
      * Adds/Updates the property to the entity that corresponds to the GUID
      * Supports only primitive attribute/Class Id updations.
      */
-    TypeUtils.Pair<List<String>, List<String>> updatePartial(ITypedReferenceableInstance entity) throws RepositoryException;
+    AtlasClient.EntityResult updatePartial(ITypedReferenceableInstance entity) throws RepositoryException;
 
     /**
      * Adds the property to the entity that corresponds to the GUID
      * @param entitiesToBeUpdated The entities to be updated
      */
-    TypeUtils.Pair<List<String>, List<String>> updateEntities(ITypedReferenceableInstance... entitiesToBeUpdated) throws RepositoryException;
+    AtlasClient.EntityResult updateEntities(ITypedReferenceableInstance... entitiesToBeUpdated) throws RepositoryException;
 
     /**
      * Returns the entity for the given type and qualified name

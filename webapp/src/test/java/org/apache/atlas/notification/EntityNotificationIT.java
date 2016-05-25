@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-
 import org.apache.atlas.notification.entity.EntityNotification;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
@@ -43,7 +42,6 @@ import org.testng.annotations.Test;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.Response;
-
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;

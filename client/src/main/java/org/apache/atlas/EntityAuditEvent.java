@@ -18,16 +18,14 @@
 
 package org.apache.atlas;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import org.apache.atlas.typesystem.IReferenceableInstance;
+import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.commons.lang.StringUtils;
 
 /**
  * Structure of entity audit event
  */
 public class EntityAuditEvent {
-    public static final Gson GSON = new GsonBuilder().create();
-
     public enum EntityAuditAction {
         ENTITY_CREATE, ENTITY_UPDATE, ENTITY_DELETE, TAG_ADD, TAG_DELETE
     }
@@ -38,16 +36,19 @@ public class EntityAuditEvent {
     private EntityAuditAction action;
     private String details;
     private String eventKey;
+    private IReferenceableInstance entityDefinition;
 
     public EntityAuditEvent() {
     }
 
-    public EntityAuditEvent(String entityId, Long ts, String user, EntityAuditAction action, String details) {
+    public EntityAuditEvent(String entityId, Long ts, String user, EntityAuditAction action, String details,
+                            IReferenceableInstance entityDefinition) throws AtlasException {
         this.entityId = entityId;
         this.timestamp = ts;
         this.user = user;
         this.action = action;
         this.details = details;
+        this.entityDefinition = entityDefinition;
     }
 
     @Override
@@ -62,10 +63,12 @@ public class EntityAuditEvent {
 
         EntityAuditEvent otherEvent = (EntityAuditEvent) other;
         return StringUtils.equals(entityId, otherEvent.entityId) &&
-                (timestamp == otherEvent.timestamp) &&
-                StringUtils.equals(user, otherEvent.user) && (action == otherEvent.action) &&
-                StringUtils.equals(details, otherEvent.details) &&
-                StringUtils.equals(eventKey, otherEvent.eventKey);
+                    (timestamp == otherEvent.timestamp) &&
+                    StringUtils.equals(user, otherEvent.user) &&
+                    (action == otherEvent.action) &&
+                    StringUtils.equals(details, otherEvent.details) &&
+                    StringUtils.equals(eventKey, otherEvent.eventKey) &&
+                    StringUtils.equals(getEntityDefinitionString(), otherEvent.getEntityDefinitionString());
     }
 
     @Override
@@ -75,11 +78,11 @@ public class EntityAuditEvent {
 
     @Override
     public String toString() {
-        return GSON.toJson(this);
+        return SerDe.GSON.toJson(this);
     }
 
     public static EntityAuditEvent fromString(String eventString) {
-        return GSON.fromJson(eventString, EntityAuditEvent.class);
+        return SerDe.GSON.fromJson(eventString, EntityAuditEvent.class);
     }
 
     public String getEntityId() {
@@ -128,5 +131,20 @@ public class EntityAuditEvent {
 
     public void setEventKey(String eventKey) {
         this.eventKey = eventKey;
+    }
+
+    public IReferenceableInstance getEntityDefinition() {
+        return entityDefinition;
+    }
+
+    public String getEntityDefinitionString() {
+        if (entityDefinition != null) {
+            return InstanceSerialization.toJson(entityDefinition, true);
+        }
+        return null;
+    }
+
+    public void setEntityDefinition(String entityDefinition) {
+        this.entityDefinition = InstanceSerialization.fromJsonReferenceable(entityDefinition, true);
     }
 }

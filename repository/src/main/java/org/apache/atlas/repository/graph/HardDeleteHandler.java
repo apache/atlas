@@ -26,20 +26,18 @@ import org.apache.atlas.typesystem.types.TypeSystem;
 
 public class HardDeleteHandler extends DeleteHandler {
 
-    private static final GraphHelper graphHelper = GraphHelper.getInstance();
-
     @Inject
     public HardDeleteHandler(TypeSystem typeSystem) {
-        super(typeSystem, true);
+        super(typeSystem, true, false);
     }
 
     @Override
-    protected void _deleteVertex(Vertex instanceVertex) {
+    protected void _deleteVertex(Vertex instanceVertex, boolean force) {
         graphHelper.removeVertex(instanceVertex);
     }
 
     @Override
-    protected void deleteEdge(Edge edge) throws AtlasException {
+    protected void deleteEdge(Edge edge, boolean force) throws AtlasException {
         graphHelper.removeEdge(edge);
     }
 }

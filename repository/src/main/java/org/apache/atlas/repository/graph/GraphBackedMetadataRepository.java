@@ -22,8 +22,10 @@ import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RequestContext;
@@ -40,7 +42,6 @@ import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.TypeSystem;
-import org.apache.atlas.typesystem.types.TypeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -258,8 +259,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         try {
             final String entityTypeName = GraphHelper.getTypeName(instanceVertex);
             String relationshipLabel = GraphHelper.getTraitLabel(entityTypeName, traitNameToBeDeleted);
-
-            deleteHandler.deleteReference(instanceVertex, relationshipLabel, DataTypes.TypeCategory.TRAIT);
+            Edge edge = GraphHelper.getEdgeForLabel(instanceVertex, relationshipLabel);
+            deleteHandler.deleteEdgeReference(edge, DataTypes.TypeCategory.TRAIT, false, true);
 
             // update the traits in entity once trait removal is successful
             traitNames.remove(traitNameToBeDeleted);
@@ -284,14 +285,15 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
     @Override
     @GraphTransaction
-    public TypeUtils.Pair<List<String>, List<String>> updateEntities(ITypedReferenceableInstance... entitiesUpdated) throws RepositoryException {
+    public AtlasClient.EntityResult updateEntities(ITypedReferenceableInstance... entitiesUpdated) throws RepositoryException {
         LOG.info("updating entity {}", entitiesUpdated);
         try {
             TypedInstanceToGraphMapper instanceToGraphMapper = new TypedInstanceToGraphMapper(graphToInstanceMapper, deleteHandler);
             instanceToGraphMapper.mapTypedInstanceToGraph(TypedInstanceToGraphMapper.Operation.UPDATE_FULL,
                     entitiesUpdated);
             RequestContext requestContext = RequestContext.get();
-            return TypeUtils.Pair.of(requestContext.getCreatedEntityIds(), requestContext.getUpdatedEntityIds());
+            return new AtlasClient.EntityResult(requestContext.getCreatedEntityIds(),
+                    requestContext.getUpdatedEntityIds(), requestContext.getDeletedEntityIds());
         } catch (AtlasException e) {
             throw new RepositoryException(e);
         }
@@ -299,13 +301,14 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
     @Override
     @GraphTransaction
-    public TypeUtils.Pair<List<String>, List<String>> updatePartial(ITypedReferenceableInstance entity) throws RepositoryException {
+    public AtlasClient.EntityResult updatePartial(ITypedReferenceableInstance entity) throws RepositoryException {
         LOG.info("updating entity {}", entity);
         try {
             TypedInstanceToGraphMapper instanceToGraphMapper = new TypedInstanceToGraphMapper(graphToInstanceMapper, deleteHandler);
             instanceToGraphMapper.mapTypedInstanceToGraph(TypedInstanceToGraphMapper.Operation.UPDATE_PARTIAL, entity);
             RequestContext requestContext = RequestContext.get();
-            return TypeUtils.Pair.of(requestContext.getCreatedEntityIds(), requestContext.getUpdatedEntityIds());
+            return new AtlasClient.EntityResult(requestContext.getCreatedEntityIds(),
+                    requestContext.getUpdatedEntityIds(), requestContext.getDeletedEntityIds());
         } catch (AtlasException e) {
             throw new RepositoryException(e);
         }
@@ -313,7 +316,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
     @Override
     @GraphTransaction
-    public TypeUtils.Pair<List<String>, List<ITypedReferenceableInstance>> deleteEntities(List<String> guids) throws RepositoryException {
+    public AtlasClient.EntityResult deleteEntities(List<String> guids) throws RepositoryException {
 
         if (guids == null || guids.size() == 0) {
             throw new IllegalArgumentException("guids must be non-null and non-empty");
@@ -337,6 +340,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             }
         }
         RequestContext requestContext = RequestContext.get();
-        return new TypeUtils.Pair<>(requestContext.getDeletedEntityIds(), requestContext.getDeletedEntities());
+        return new AtlasClient.EntityResult(requestContext.getCreatedEntityIds(),
+                requestContext.getUpdatedEntityIds(), requestContext.getDeletedEntityIds());
     }
 }

@@ -27,9 +27,13 @@ import java.lang.reflect.Type;
 import java.util.LinkedList;
 import java.util.List;
 
+import static org.mockito.Matchers.endsWith;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 /**
  * AbstractNotificationConsumer tests.
@@ -110,17 +114,17 @@ public class AbstractNotificationConsumerTest {
         assertTrue(consumer.hasNext());
 
         assertEquals(new TestMessage("sValue2", 98), consumer.next());
-        verify(logger).info(json2);
+        verify(logger).info(endsWith(json2));
 
         assertTrue(consumer.hasNext());
 
         assertEquals(new TestMessage("sValue3", 97), consumer.next());
-        verify(logger).info(json3);
+        verify(logger).info(endsWith(json3));
 
         assertTrue(consumer.hasNext());
 
         assertEquals(new TestMessage("sValue4", 96), consumer.next());
-        verify(logger).info(json4);
+        verify(logger).info(endsWith(json4));
 
         assertFalse(consumer.hasNext());
     }
@@ -154,7 +158,7 @@ public class AbstractNotificationConsumerTest {
             consumer.next();
             fail("Expected VersionMismatchException!");
         } catch (IncompatibleVersionException e) {
-            verify(logger).info(json2);
+            verify(logger).error(endsWith(json2));
         }
 
         assertFalse(consumer.hasNext());

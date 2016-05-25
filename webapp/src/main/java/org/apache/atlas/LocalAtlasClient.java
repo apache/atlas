@@ -83,13 +83,13 @@ public class LocalAtlasClient extends AtlasClient {
             }
         };
         JSONObject response = entityOperation.run();
-        List<String> results = extractResults(response, GUID, new ExtractOperation<String, String>());
+        EntityResult results = extractEntityResult(response);
         LOG.debug("Create entities returned results: {}", results);
-        return results;
+        return results.getCreatedEntities();
     }
 
     @Override
-    protected List<String> updateEntities(final JSONArray entities) throws AtlasServiceException {
+    protected EntityResult updateEntities(final JSONArray entities) throws AtlasServiceException {
         LOG.debug("Updating entities: {}", entities);
         EntityOperation entityOperation = new EntityOperation(API.UPDATE_ENTITY) {
             @Override
@@ -98,7 +98,7 @@ public class LocalAtlasClient extends AtlasClient {
             }
         };
         JSONObject response = entityOperation.run();
-        List<String> results = extractResults(response, GUID, new ExtractOperation<String, String>());
+        EntityResult results = extractEntityResult(response);
         LOG.debug("Update entities returned results: {}", results);
         return results;
     }
@@ -130,7 +130,7 @@ public class LocalAtlasClient extends AtlasClient {
     }
 
     @Override
-    public String updateEntity(final String entityType, final String uniqueAttributeName,
+    public EntityResult updateEntity(final String entityType, final String uniqueAttributeName,
                                final String uniqueAttributeValue, Referenceable entity) throws AtlasServiceException {
         final String entityJson = InstanceSerialization.toJson(entity, true);
         LOG.debug("Updating entity type: {}, attributeName: {}, attributeValue: {}, entity: {}", entityType,
@@ -143,13 +143,13 @@ public class LocalAtlasClient extends AtlasClient {
             }
         };
         JSONObject response = entityOperation.run();
-        String result = getString(response, GUID);
+        EntityResult result = extractEntityResult(response);
         LOG.debug("Update entity returned result: {}", result);
         return result;
     }
 
     @Override
-    public List<String> deleteEntity(final String entityType, final String uniqueAttributeName,
+    public EntityResult deleteEntity(final String entityType, final String uniqueAttributeName,
                                      final String uniqueAttributeValue) throws AtlasServiceException {
         LOG.debug("Deleting entity type: {}, attributeName: {}, attributeValue: {}", entityType, uniqueAttributeName,
                 uniqueAttributeValue);
@@ -160,7 +160,7 @@ public class LocalAtlasClient extends AtlasClient {
             }
         };
         JSONObject response = entityOperation.run();
-        List<String> results = extractResults(response, GUID, new ExtractOperation<String, String>());
+        EntityResult results = extractEntityResult(response);
         LOG.debug("Delete entities returned results: {}", results);
         return results;
     }
@@ -191,18 +191,18 @@ public class LocalAtlasClient extends AtlasClient {
     }
 
     @Override
-    public void updateEntityAttribute(final String guid, final String attribute, String value) throws AtlasServiceException {
+    public EntityResult updateEntityAttribute(final String guid, final String attribute, String value) throws AtlasServiceException {
         throw new IllegalStateException("Not supported in LocalAtlasClient");
     }
 
     @Override
-    public void updateEntity(String guid, Referenceable entity) throws AtlasServiceException {
+    public EntityResult updateEntity(String guid, Referenceable entity) throws AtlasServiceException {
         throw new IllegalStateException("Not supported in LocalAtlasClient");
     }
 
 
     @Override
-    public List<String> deleteEntities(final String ... guids) throws AtlasServiceException {
+    public EntityResult deleteEntities(final String ... guids) throws AtlasServiceException {
         throw new IllegalStateException("Not supported in LocalAtlasClient");
     }
 

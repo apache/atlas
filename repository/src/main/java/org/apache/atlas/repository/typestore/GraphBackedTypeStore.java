@@ -69,6 +69,8 @@ public class GraphBackedTypeStore implements ITypeStore {
 
     private final TitanGraph titanGraph;
 
+    private GraphHelper graphHelper = GraphHelper.getInstance();
+
     @Inject
     public GraphBackedTypeStore(GraphProvider<TitanGraph> graphProvider) {
         titanGraph = graphProvider.get();
@@ -155,7 +157,7 @@ public class GraphBackedTypeStore implements ITypeStore {
             for (String superTypeName : superTypes) {
                 HierarchicalType superType = typeSystem.getDataType(HierarchicalType.class, superTypeName);
                 Vertex superVertex = createVertex(superType.getTypeCategory(), superTypeName, superType.getDescription());
-                addEdge(vertex, superVertex, SUPERTYPE_EDGE_LABEL);
+                graphHelper.getOrCreateEdge(vertex, superVertex, SUPERTYPE_EDGE_LABEL);
             }
         }
     }
@@ -200,24 +202,9 @@ public class GraphBackedTypeStore implements ITypeStore {
             if (!coreTypes.contains(attrType.getName())) {
                 Vertex attrVertex = createVertex(attrType.getTypeCategory(), attrType.getName(), attrType.getDescription());
                 String label = getEdgeLabel(vertexTypeName, attribute.name);
-                addEdge(vertex, attrVertex, label);
+                graphHelper.getOrCreateEdge(vertex, attrVertex, label);
             }
         }
-    }
-
-    private void addEdge(Vertex fromVertex, Vertex toVertex, String label) {
-        Iterator<Edge> edges = GraphHelper.getOutGoingEdgesByLabel(fromVertex, label);
-        // ATLAS-474: Check if this type system edge already exists, to avoid duplicates.
-        while (edges.hasNext()) {
-            Edge edge = edges.next();
-            if (edge.getVertex(Direction.IN).equals(toVertex)) {
-                LOG.debug("Edge from {} to {} with label {} already exists", 
-                    toString(fromVertex), toString(toVertex), label);
-                return;
-            }
-        }        
-        LOG.debug("Adding edge from {} to {} with label {}", toString(fromVertex), toString(toVertex), label);
-        titanGraph.addEdge(null, fromVertex, toVertex, label);
     }
 
     @Override

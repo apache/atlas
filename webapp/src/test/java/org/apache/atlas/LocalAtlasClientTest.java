@@ -23,7 +23,6 @@ import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.web.resources.EntityResource;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.commons.lang.RandomStringUtils;
-import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -36,6 +35,7 @@ import javax.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.apache.atlas.AtlasClient.ENTITIES;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Matchers.anyString;
@@ -64,7 +64,8 @@ public class LocalAtlasClientTest {
         when(entityResource.submit(any(HttpServletRequest.class))).thenReturn(response);
         final String guid = random();
         when(response.getEntity()).thenReturn(new JSONObject() {{
-            put(AtlasClient.GUID, new JSONArray(Arrays.asList(guid)));
+            put(ENTITIES, new JSONObject(
+                    new AtlasClient.EntityResult(Arrays.asList(guid), null, null).toString()).get(ENTITIES));
         }});
 
         LocalAtlasClient atlasClient = new LocalAtlasClient(serviceState, entityResource);
@@ -119,12 +120,14 @@ public class LocalAtlasClientTest {
         when(entityResource.updateByUniqueAttribute(anyString(), anyString(), anyString(),
                 any(HttpServletRequest.class))).thenReturn(response);
         when(response.getEntity()).thenReturn(new JSONObject() {{
-            put(AtlasClient.GUID, guid);
+            put(ENTITIES, new JSONObject(
+                    new AtlasClient.EntityResult(null, Arrays.asList(guid), null).toString()).get(ENTITIES));
         }});
 
         LocalAtlasClient atlasClient = new LocalAtlasClient(serviceState, entityResource);
-        String actualId = atlasClient.updateEntity(random(), random(), random(), new Referenceable(random()));
-        assertEquals(actualId, guid);
+        AtlasClient.EntityResult
+                entityResult = atlasClient.updateEntity(random(), random(), random(), new Referenceable(random()));
+        assertEquals(entityResult.getUpdateEntities(), Arrays.asList(guid));
     }
 
     @Test
@@ -132,14 +135,14 @@ public class LocalAtlasClientTest {
         final String guid = random();
         Response response = mock(Response.class);
         when(response.getEntity()).thenReturn(new JSONObject() {{
-            put(AtlasClient.GUID, new JSONArray(Arrays.asList(guid)));
+            put(ENTITIES, new JSONObject(
+                    new AtlasClient.EntityResult(null, null, Arrays.asList(guid)).toString()).get(ENTITIES));
         }});
 
         when(entityResource.deleteEntities(anyListOf(String.class), anyString(), anyString(), anyString())).thenReturn(response);
         LocalAtlasClient atlasClient = new LocalAtlasClient(serviceState, entityResource);
-        List<String> results = atlasClient.deleteEntity(random(), random(), random());
-        assertEquals(results.size(), 1);
-        assertEquals(results.get(0), guid);
+        AtlasClient.EntityResult entityResult = atlasClient.deleteEntity(random(), random(), random());
+        assertEquals(entityResult.getDeletedEntities(), Arrays.asList(guid));
     }
 
     private String random() {

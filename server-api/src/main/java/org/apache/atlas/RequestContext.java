@@ -49,7 +49,16 @@ public class RequestContext {
     private RequestContext() {
     }
 
+    //To handle gets from background threads where createContext() is not called
+    //createContext called for every request in the filter
     public static RequestContext get() {
+        if (CURRENT_CONTEXT.get() == null) {
+            synchronized (RequestContext.class) {
+                if (CURRENT_CONTEXT.get() == null) {
+                    createContext();
+                }
+            }
+        }
         return CURRENT_CONTEXT.get();
     }
 
@@ -72,15 +81,19 @@ public class RequestContext {
         this.user = user;
     }
 
-    public void recordCreatedEntities(Collection<String> createdEntityIds) {
+    public void recordEntityCreate(Collection<String> createdEntityIds) {
         this.createdEntityIds.addAll(createdEntityIds);
     }
 
-    public void recordUpdatedEntities(Collection<String> updatedEntityIds) {
+    public void recordEntityUpdate(Collection<String> updatedEntityIds) {
         this.updatedEntityIds.addAll(updatedEntityIds);
     }
 
-    public void recordDeletedEntity(String entityId, String typeName) throws AtlasException {
+    public void recordEntityUpdate(String entityId) {
+        this.updatedEntityIds.add(entityId);
+    }
+
+    public void recordEntityDelete(String entityId, String typeName) throws AtlasException {
         ClassType type = typeSystem.getDataType(ClassType.class, typeName);
         ITypedReferenceableInstance entity = type.createInstance(new Id(entityId, 0, typeName));
         if (deletedEntityIds.add(entityId)) {

@@ -3,6 +3,7 @@ Apache Atlas Release Notes
 
 --trunk - unreleased
 INCOMPATIBLE CHANGES:
+ATLAS-716 Entity update/delete notifications (shwethags)
 ATLAS-619 Canonicalize hive queries (sumasai)
 ATLAS-497 Simple Authorization (saqeeb.s via yhemanth)
 ATLAS-661 REST API Authentication (nixonrodrigues via yhemanth)

@@ -100,7 +100,7 @@ public class Referenceable extends Struct implements IReferenceableInstance {
      * @throws AtlasException if the referenceable can not be created
      */
     public Referenceable(IReferenceableInstance instance) throws AtlasException {
-        this(instance.getId()._getId(), instance.getTypeName(), instance.getValuesMap(), instance.getTraits(),
+        this(instance.getId(), instance.getTypeName(), instance.getValuesMap(), instance.getTraits(),
             getTraits(instance));
     }
 

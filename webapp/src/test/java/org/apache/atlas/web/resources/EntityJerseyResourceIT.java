@@ -71,6 +71,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
 
 
@@ -154,7 +155,10 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         JSONObject response = new JSONObject(responseAsString);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
-        Assert.assertNotNull(response.get(AtlasClient.GUID));
+
+        AtlasClient.EntityResult entityResult = AtlasClient.EntityResult.fromString(response.toString());
+        assertEquals(entityResult.getCreatedEntities().size(), 1);
+        assertNotNull(entityResult.getCreatedEntities().get(0));
     }
 
     @Test
@@ -376,7 +380,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     }
 
     private void addProperty(String guid, String property, String value) throws AtlasServiceException {
-        serviceClient.updateEntityAttribute(guid, property, value);
+        AtlasClient.EntityResult entityResult = serviceClient.updateEntityAttribute(guid, property, value);
+        assertEquals(entityResult.getUpdateEntities().size(), 1);
+        assertEquals(entityResult.getUpdateEntities().get(0), guid);
     }
 
     private ClientResponse getEntityDefinition(String guid) {
@@ -482,7 +488,6 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         JSONObject response = new JSONObject(responseAsString);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
-        Assert.assertNotNull(response.get("GUID"));
 
         final JSONArray list = response.getJSONArray(AtlasClient.RESULTS);
         Assert.assertEquals(list.length(), 7);
@@ -513,7 +518,6 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         JSONObject response = new JSONObject(responseAsString);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
-        Assert.assertNotNull(response.get(AtlasClient.GUID));
 
         assertEntityAudit(guid, EntityAuditEvent.EntityAuditAction.TAG_ADD);
     }
@@ -561,7 +565,6 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         JSONObject response = new JSONObject(responseAsString);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
-        Assert.assertNotNull(response.get(AtlasClient.GUID));
 
         // verify the response
         clientResponse = getEntityDefinition(guid);
@@ -612,7 +615,6 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         JSONObject response = new JSONObject(responseAsString);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
-        Assert.assertNotNull(response.get("GUID"));
         Assert.assertNotNull(response.get("traitName"));
         assertEntityAudit(guid, EntityAuditEvent.EntityAuditAction.TAG_DELETE);
     }
@@ -635,7 +637,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
                 "trait=" + traitName + " should be defined in type system before it can be deleted");
         Assert.assertNotNull(response.get(AtlasClient.STACKTRACE));
     }
-@Test(dependsOnMethods = "testSubmitEntity()")
+
+    @Test(dependsOnMethods = "testSubmitEntity()")
     public void testDeleteExistentTraitNonExistentForEntity() throws Exception {
     
         final String guid = tableId._getId();
@@ -704,7 +707,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }});
 
         LOG.debug("Updating entity= " + tableUpdated);
-        serviceClient.updateEntity(tableId._getId(), tableUpdated);
+        AtlasClient.EntityResult entityResult = serviceClient.updateEntity(tableId._getId(), tableUpdated);
+        assertEquals(entityResult.getUpdateEntities().size(), 1);
+        assertEquals(entityResult.getUpdateEntities().get(0), tableId._getId());
 
         ClientResponse response = getEntityDefinition(tableId._getId());
         String definition = getEntityDefinition(response);
@@ -722,8 +727,10 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }});
 
         LOG.debug("Updating entity= " + tableUpdated);
-        serviceClient.updateEntity(BaseResourceIT.HIVE_TABLE_TYPE, "name", (String) tableInstance.get("name"),
-                tableUpdated);
+        entityResult = serviceClient.updateEntity(BaseResourceIT.HIVE_TABLE_TYPE, "name",
+                (String) tableInstance.get("name"), tableUpdated);
+        assertEquals(entityResult.getUpdateEntities().size(), 1);
+        assertEquals(entityResult.getUpdateEntities().get(0), tableId._getId());
 
         response = getEntityDefinition(tableId._getId());
         definition = getEntityDefinition(response);
@@ -732,7 +739,6 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         Assert.assertTrue(refs.get(0).equalsContents(columns.get(0)));
         Assert.assertEquals(refs.get(0).get("dataType"), "int");
-
     }
 
     @Test(dependsOnMethods = "testSubmitEntity")
@@ -765,9 +771,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         // ATLAS-586: verify response entity can be parsed by GSON.
         String entity = clientResponse.getEntity(String.class);
         Gson gson = new Gson();
-        UpdateEntitiesResponse updateEntitiesResponse = null;
         try {
-            updateEntitiesResponse = gson.fromJson(entity, UpdateEntitiesResponse.class);
+            UpdateEntitiesResponse updateEntitiesResponse = gson.fromJson(entity, UpdateEntitiesResponse.class);
         }
         catch (JsonSyntaxException e) {
             Assert.fail("Response entity from " + service.path(ENTITIES).getURI() + " not parseable by GSON", e);
@@ -785,7 +790,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     
     private static class UpdateEntitiesResponse {
         String requestId;
-        String[] GUID;
+        AtlasClient.EntityResult entities;
         AtlasEntity definition;
     }
     
@@ -811,15 +816,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
             queryParam(AtlasClient.GUID.toLowerCase(), db1Id._getId()).
             queryParam(AtlasClient.GUID.toLowerCase(), db2Id._getId()).
             accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE).method(HttpMethod.DELETE, ClientResponse.class);
+
         JSONObject response = getEntity(clientResponse);
-        final String deletedGuidsJson = response.getString(AtlasClient.GUID);
-        Assert.assertNotNull(deletedGuidsJson);
-        JSONArray guidsArray = new JSONArray(deletedGuidsJson);
-        Assert.assertEquals(guidsArray.length(), 2);
-        List<String> deletedGuidsList = new ArrayList<>(2);
-        for (int index = 0; index < guidsArray.length(); index++) {
-            deletedGuidsList.add(guidsArray.getString(index));
-        }
+        List<String> deletedGuidsList = AtlasClient.EntityResult.fromString(response.toString()).getDeletedEntities();
         Assert.assertTrue(deletedGuidsList.contains(db1Id._getId()));
         Assert.assertTrue(deletedGuidsList.contains(db2Id._getId()));
 
@@ -843,7 +842,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Id db2Id = createInstance(db2);
         
         // Delete the database entities
-        List<String> deletedGuidsList = serviceClient.deleteEntities(db1Id._getId(), db2Id._getId());
+        List<String> deletedGuidsList =
+                serviceClient.deleteEntities(db1Id._getId(), db2Id._getId()).getDeletedEntities();
         
         // Verify that deleteEntities() response has database entity guids 
         Assert.assertEquals(deletedGuidsList.size(), 2);
@@ -867,7 +867,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Id db1Id = createInstance(db1);
 
         // Delete the database entity
-        List<String> deletedGuidsList = serviceClient.deleteEntity(DATABASE_TYPE, "name", dbName);
+        List<String> deletedGuidsList = serviceClient.deleteEntity(DATABASE_TYPE, "name", dbName).getDeletedEntities();
 
         // Verify that deleteEntities() response has database entity guids
         Assert.assertEquals(deletedGuidsList.size(), 1);

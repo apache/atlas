@@ -78,6 +78,7 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
     public static final byte[] COLUMN_ACTION = Bytes.toBytes("action");
     public static final byte[] COLUMN_DETAIL = Bytes.toBytes("detail");
     public static final byte[] COLUMN_USER = Bytes.toBytes("user");
+    public static final byte[] COLUMN_DEFINITION = Bytes.toBytes("def");
 
     private TableName tableName;
     private Connection connection;
@@ -110,6 +111,7 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
                 addColumn(put, COLUMN_ACTION, event.getAction());
                 addColumn(put, COLUMN_USER, event.getUser());
                 addColumn(put, COLUMN_DETAIL, event.getDetails());
+                addColumn(put, COLUMN_DEFINITION, event.getEntityDefinitionString());
                 puts.add(put);
             }
             table.put(puts);
@@ -183,6 +185,7 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
                 event.setUser(getResultString(result, COLUMN_USER));
                 event.setAction(EntityAuditEvent.EntityAuditAction.valueOf(getResultString(result, COLUMN_ACTION)));
                 event.setDetails(getResultString(result, COLUMN_DETAIL));
+                event.setEntityDefinition(getResultString(result, COLUMN_DEFINITION));
                 events.add(event);
             }
             LOG.info("Got events for entity id {}, starting timestamp {}, #records {}", entityId, startKey, events.size());

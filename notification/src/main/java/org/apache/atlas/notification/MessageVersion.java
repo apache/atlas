@@ -97,6 +97,11 @@ public class MessageVersion implements Comparable<MessageVersion> {
     }
 
 
+    @Override
+    public String toString() {
+        return "MessageVersion[version=" + version + "]";
+    }
+
     // ----- helper methods --------------------------------------------------
 
     /**

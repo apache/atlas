@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.tinkerpop.blueprints.Vertex;
-
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RepositoryMetadataModule;
@@ -50,7 +49,6 @@ import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
-import org.apache.atlas.typesystem.types.TypeUtils;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -60,7 +58,6 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -71,6 +68,7 @@ import java.util.Map;
 import static org.apache.atlas.TestUtils.COLUMNS_ATTR_NAME;
 import static org.apache.atlas.TestUtils.COLUMN_TYPE;
 import static org.apache.atlas.TestUtils.NAME;
+import static org.apache.atlas.TestUtils.PII;
 import static org.apache.atlas.TestUtils.PROCESS_TYPE;
 import static org.apache.atlas.TestUtils.TABLE_TYPE;
 import static org.apache.atlas.TestUtils.createColumnEntity;
@@ -78,8 +76,6 @@ import static org.apache.atlas.TestUtils.createDBEntity;
 import static org.apache.atlas.TestUtils.createTableEntity;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -145,7 +141,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         assertEquals(instance.getId()._getId(), id);
 
         //delete entity should mark it as deleted
-        List<String> results = deleteEntities(id);
+        List<String> results = deleteEntities(id).getDeletedEntities();
         assertEquals(results.get(0), id);
         assertEntityDeleted(id);
 
@@ -167,6 +163,26 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
     }
 
     @Test
+    public void testDeleteEntityWithTraits() throws Exception {
+        Referenceable entity = createDBEntity();
+        String id = createInstance(entity);
+
+        TraitType dataType = typeSystem.getDataType(TraitType.class, PII);
+        ITypedStruct trait = dataType.convert(new Struct(TestUtils.PII), Multiplicity.REQUIRED);
+        repositoryService.addTrait(id, trait);
+
+        ITypedReferenceableInstance instance = repositoryService.getEntityDefinition(id);
+        assertTrue(instance.getTraits().contains(PII));
+
+        deleteEntities(id);
+        assertEntityDeleted(id);
+        assertTestDeleteEntityWithTraits(id);
+    }
+
+    protected abstract void assertTestDeleteEntityWithTraits(String guid)
+            throws EntityNotFoundException, RepositoryException, Exception;
+
+    @Test
     public void testDeleteReference() throws Exception {
         //Deleting column should update table
         Referenceable db = createDBEntity();
@@ -179,13 +195,16 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         table.set(COLUMNS_ATTR_NAME, Arrays.asList(new Id(colId, 0, COLUMN_TYPE)));
         String tableId = createInstance(table);
 
-        deleteEntities(colId);
+        AtlasClient.EntityResult entityResult = deleteEntities(colId);
+        assertEquals(entityResult.getDeletedEntities().size(), 1);
+        assertEquals(entityResult.getDeletedEntities().get(0), colId);
+        assertEquals(entityResult.getUpdateEntities().size(), 1);
+        assertEquals(entityResult.getUpdateEntities().get(0), tableId);
+
         assertEntityDeleted(colId);
 
         ITypedReferenceableInstance tableInstance = repositoryService.getEntityDefinition(tableId);
-        List<ITypedReferenceableInstance> columns =
-                (List<ITypedReferenceableInstance>) tableInstance.get(COLUMNS_ATTR_NAME);
-        assertNull(columns);
+        assertColumnForTestDeleteReference(tableInstance);
 
         //Deleting table should update process
         Referenceable process = new Referenceable(PROCESS_TYPE);
@@ -195,18 +214,23 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
 
         deleteEntities(tableId);
         assertEntityDeleted(tableId);
-        assertTestDeleteReference(processInstance);
+
+        assertTableForTestDeleteReference(tableId);
+        assertProcessForTestDeleteReference(processInstance);
     }
 
-    protected abstract void assertTestDeleteReference(ITypedReferenceableInstance processInstance) throws Exception;
+    protected abstract void assertTableForTestDeleteReference(String tableId) throws Exception;
+
+    protected abstract void assertColumnForTestDeleteReference(ITypedReferenceableInstance tableInstance)
+            throws AtlasException;
+
+    protected abstract void assertProcessForTestDeleteReference(ITypedReferenceableInstance processInstance) throws Exception;
 
     protected abstract void assertEntityDeleted(String id) throws Exception;
 
-    private List<String> deleteEntities(String... id) throws Exception {
+    private AtlasClient.EntityResult deleteEntities(String... id) throws Exception {
         RequestContext.createContext();
-        List<String> response = repositoryService.deleteEntities(Arrays.asList(id)).left;
-        assertNotNull(response);
-        return response;
+        return repositoryService.deleteEntities(Arrays.asList(id));
     }
 
     private String createInstance(Referenceable entity) throws Exception {
@@ -228,21 +252,41 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         table1Entity.set(COLUMNS_ATTR_NAME, ImmutableList.of(col1, col2, col3));
         createInstance(table1Entity);
 
-        // Retrieve the table entities from the auditRepository,
-        // to get their guids and the composite column guids.
+        // Retrieve the table entities from the Repository, to get their guids and the composite column guids.
         ITypedReferenceableInstance tableInstance = repositoryService.getEntityDefinition(TestUtils.TABLE_TYPE,
                 NAME, table1Entity.get(NAME));
-        List<IReferenceableInstance> table1Columns = (List<IReferenceableInstance>) tableInstance.get(COLUMNS_ATTR_NAME);
+        List<IReferenceableInstance> columns = (List<IReferenceableInstance>) tableInstance.get(COLUMNS_ATTR_NAME);
 
-        // Delete the table entities.  The deletion should cascade
-        // to their composite columns.
-        List<String> deletedGuids = deleteEntities(tableInstance.getId()._getId());
+        //Delete column
+        String colId = columns.get(0).getId()._getId();
+        String tableId = tableInstance.getId()._getId();
+
+        AtlasClient.EntityResult entityResult = deleteEntities(colId);
+        assertEquals(entityResult.getDeletedEntities().size(), 1);
+        assertEquals(entityResult.getDeletedEntities().get(0), colId);
+        assertEquals(entityResult.getUpdateEntities().size(), 1);
+        assertEquals(entityResult.getUpdateEntities().get(0), tableId);
+        assertEntityDeleted(colId);
+
+        tableInstance = repositoryService.getEntityDefinition(TestUtils.TABLE_TYPE, NAME, table1Entity.get(NAME));
+        assertDeletedColumn(tableInstance);
+
+        //update by removing a column
+        tableInstance.set(COLUMNS_ATTR_NAME, ImmutableList.of(col3));
+        entityResult = updatePartial(tableInstance);
+        colId = columns.get(1).getId()._getId();
+        assertEquals(entityResult.getDeletedEntities().size(), 1);
+        assertEquals(entityResult.getDeletedEntities().get(0), colId);
+        assertEntityDeleted(colId);
+
+        // Delete the table entities.  The deletion should cascade to their composite columns.
+        tableInstance = repositoryService.getEntityDefinition(TestUtils.TABLE_TYPE, NAME, table1Entity.get(NAME));
+        List<String> deletedGuids = deleteEntities(tableInstance.getId()._getId()).getDeletedEntities();
+        assertEquals(deletedGuids.size(), 2);
 
         // Verify that deleteEntities() response has guids for tables and their composite columns.
         Assert.assertTrue(deletedGuids.contains(tableInstance.getId()._getId()));
-        for (IReferenceableInstance column : table1Columns) {
-            Assert.assertTrue(deletedGuids.contains(column.getId()._getId()));
-        }
+        Assert.assertTrue(deletedGuids.contains(columns.get(2).getId()._getId()));
 
         // Verify that tables and their composite columns have been deleted from the graph Repository.
         for (String guid : deletedGuids) {
@@ -250,6 +294,8 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         }
         assertTestDeleteEntities(tableInstance);
     }
+
+    protected abstract void assertDeletedColumn(ITypedReferenceableInstance tableInstance) throws AtlasException;
 
     protected abstract void assertTestDeleteEntities(ITypedReferenceableInstance tableInstance) throws Exception;
 
@@ -276,12 +322,13 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         vertexCount = getVertices(Constants.ENTITY_TYPE_PROPERTY_KEY, "SecurityClearance").size();
         Assert.assertEquals(vertexCount, 1);
 
-        List<String> deletedEntities = deleteEntities(hrDeptGuid);
+        List<String> deletedEntities = deleteEntities(hrDeptGuid).getDeletedEntities();
         assertTrue(deletedEntities.contains(hrDeptGuid));
+        assertEntityDeleted(hrDeptGuid);
 
         // Verify Department entity and its contained Person entities were deleted.
-        assertEntityDeleted(hrDeptGuid);
         for (String employeeGuid : employeeGuids) {
+            assertTrue(deletedEntities.contains(employeeGuid));
             assertEntityDeleted(employeeGuid);
         }
 
@@ -341,15 +388,16 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         object = mapOwnerVertex.getProperty(atlasEdgeLabel.getQualifiedMapKey());
         Assert.assertNotNull(object);
 
-        List<String> deletedEntities = deleteEntities(mapOwnerGuid);
+        List<String> deletedEntities = deleteEntities(mapOwnerGuid).getDeletedEntities();
         Assert.assertEquals(deletedEntities.size(), 2);
-        Assert.assertTrue(deletedEntities.containsAll(guids));
+        Assert.assertTrue(deletedEntities.contains(mapOwnerGuid));
+        Assert.assertTrue(deletedEntities.contains(mapValueGuid));
 
         assertEntityDeleted(mapOwnerGuid);
         assertEntityDeleted(mapValueGuid);
     }
 
-    private TypeUtils.Pair<List<String>, List<String>> updatePartial(ITypedReferenceableInstance entity) throws RepositoryException {
+    private AtlasClient.EntityResult updatePartial(ITypedReferenceableInstance entity) throws RepositoryException {
         RequestContext.createContext();
         return repositoryService.updatePartial(entity);
     }
@@ -379,7 +427,9 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         ClassType personType = typeSystem.getDataType(ClassType.class, "Person");
         ITypedReferenceableInstance maxEntity = personType.createInstance(max.getId());
         maxEntity.set("mentor", johnGuid);
-        updatePartial(maxEntity);
+        AtlasClient.EntityResult entityResult = updatePartial(maxEntity);
+        assertEquals(entityResult.getUpdateEntities().size(), 1);
+        assertTrue(entityResult.getUpdateEntities().contains(maxGuid));
 
         // Verify the update was applied correctly - john should now be max's mentor.
         max = repositoryService.getEntityDefinition(maxGuid);
@@ -394,7 +444,9 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
 
         // Update max's mentor reference to jane.
         maxEntity.set("mentor", janeGuid);
-        updatePartial(maxEntity);
+        entityResult = updatePartial(maxEntity);
+        assertEquals(entityResult.getUpdateEntities().size(), 1);
+        assertTrue(entityResult.getUpdateEntities().contains(maxGuid));
 
         // Verify the update was applied correctly - jane should now be max's mentor.
         max = repositoryService.getEntityDefinition(maxGuid);
@@ -411,7 +463,11 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         Id juliusGuid = julius.getId();
         maxEntity = personType.createInstance(max.getId());
         maxEntity.set("manager", juliusGuid);
-        updatePartial(maxEntity);
+        entityResult = updatePartial(maxEntity);
+        //TODO ATLAS-499 should have updated julius' subordinates
+        assertEquals(entityResult.getUpdateEntities().size(), 2);
+        assertTrue(entityResult.getUpdateEntities().contains(maxGuid));
+        assertTrue(entityResult.getUpdateEntities().contains(janeGuid._getId()));
 
         // Verify the update was applied correctly - julius should now be max's manager.
         max = repositoryService.getEntityDefinition(maxGuid);
@@ -456,41 +512,38 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         }
         Assert.assertTrue(subordinateIds.contains(maxGuid));
 
-        List<String> deletedEntities = deleteEntities(maxGuid);
-        Assert.assertTrue(deletedEntities.contains(maxGuid));
+
+        AtlasClient.EntityResult entityResult = deleteEntities(maxGuid);
+        ITypedReferenceableInstance john = repositoryService.getEntityDefinition("Manager", "name", "John");
+
+        assertEquals(entityResult.getDeletedEntities().size(), 1);
+        assertTrue(entityResult.getDeletedEntities().contains(maxGuid));
+        assertEquals(entityResult.getUpdateEntities().size(), 3);
+        assertTrue(entityResult.getUpdateEntities().containsAll(Arrays.asList(jane.getId()._getId(), hrDeptGuid,
+                john.getId()._getId())));
         assertEntityDeleted(maxGuid);
 
-        // Verify that the Department.employees reference to the deleted employee
-        // was disconnected.
-        hrDept = repositoryService.getEntityDefinition(hrDeptGuid);
-        refValue = hrDept.get("employees");
-        Assert.assertTrue(refValue instanceof List);
-        List<Object> employees = (List<Object>)refValue;
-        Assert.assertEquals(employees.size(), 3);
-        for (Object listValue : employees) {
-            Assert.assertTrue(listValue instanceof ITypedReferenceableInstance);
-            ITypedReferenceableInstance employee = (ITypedReferenceableInstance) listValue;
-            Assert.assertNotEquals(employee.getId()._getId(), maxGuid);
-        }
-
-        // Verify that max's Person.mentor unidirectional reference to john was disconnected.
-        ITypedReferenceableInstance john = repositoryService.getEntityDefinition(johnGuid);
-        refValue = john.get("mentor");
-        Assert.assertNull(refValue);
-
-        assertTestDisconnectBidirectionalReferences(janeGuid);
+        assertMaxForTestDisconnectBidirectionalReferences(nameGuidMap);
 
         // Now delete jane - this should disconnect the manager reference from her
         // subordinate.
-        deletedEntities = deleteEntities(janeGuid);
-        Assert.assertTrue(deletedEntities.contains(janeGuid));
+        entityResult = deleteEntities(janeGuid);
+        assertEquals(entityResult.getDeletedEntities().size(), 1);
+        assertTrue(entityResult.getDeletedEntities().contains(janeGuid));
+        assertEquals(entityResult.getUpdateEntities().size(), 2);
+        assertTrue(entityResult.getUpdateEntities().containsAll(Arrays.asList(hrDeptGuid, john.getId()._getId())));
+
         assertEntityDeleted(janeGuid);
 
-        john = repositoryService.getEntityDefinition(johnGuid);
-        Assert.assertNull(john.get("manager"));
+        john = repositoryService.getEntityDefinition("Person", "name", "John");
+        assertJohnForTestDisconnectBidirectionalReferences(john, janeGuid);
     }
 
-    protected abstract void assertTestDisconnectBidirectionalReferences(String janeGuid) throws Exception;
+    protected abstract void assertJohnForTestDisconnectBidirectionalReferences(ITypedReferenceableInstance john,
+                                                                               String janeGuid) throws Exception;
+
+    protected abstract void assertMaxForTestDisconnectBidirectionalReferences(Map<String, String> nameGuidMap)
+            throws Exception;
 
     /**
      * Verify deleting entity that is the target of a unidirectional class array reference
@@ -503,29 +556,26 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         // Get the guid for one of the table's columns.
         ITypedReferenceableInstance table = repositoryService.getEntityDefinition(TestUtils.TABLE_TYPE, "name", TestUtils.TABLE_NAME);
         String tableGuid = table.getId()._getId();
-        Object refValues = table.get("columns");
-        Assert.assertTrue(refValues instanceof List);
-        List<Object> refList = (List<Object>) refValues;
-        Assert.assertEquals(refList.size(), 5);
-        Assert.assertTrue(refList.get(0) instanceof ITypedReferenceableInstance);
-        ITypedReferenceableInstance column = (ITypedReferenceableInstance) refList.get(0);
-        String columnGuid = column.getId()._getId();
+        List<ITypedReferenceableInstance> columns = (List<ITypedReferenceableInstance>) table.get("columns");
+        Assert.assertEquals(columns.size(), 5);
+        String columnGuid = columns.get(0).getId()._getId();
 
         // Delete the column.
-        List<String> deletedEntities = deleteEntities(columnGuid);
-        Assert.assertTrue(deletedEntities.contains(columnGuid));
+        AtlasClient.EntityResult entityResult = deleteEntities(columnGuid);
+        assertEquals(entityResult.getDeletedEntities().size(), 1);
+        Assert.assertTrue(entityResult.getDeletedEntities().contains(columnGuid));
+        assertEquals(entityResult.getUpdateEntities().size(), 1);
+        Assert.assertTrue(entityResult.getUpdateEntities().contains(tableGuid));
         assertEntityDeleted(columnGuid);
 
         // Verify table.columns reference to the deleted column has been disconnected.
         table = repositoryService.getEntityDefinition(tableGuid);
-        refList = (List<Object>) table.get("columns");
-        Assert.assertEquals(refList.size(), 4);
-        for (Object refValue : refList) {
-            Assert.assertTrue(refValue instanceof ITypedReferenceableInstance);
-            column = (ITypedReferenceableInstance)refValue;
-            Assert.assertFalse(column.getId()._getId().equals(columnGuid));
-        }
+        assertTestDisconnectUnidirectionalArrayReferenceFromClassType(
+                (List<ITypedReferenceableInstance>) table.get("columns"), columnGuid);
     }
+
+    protected abstract void assertTestDisconnectUnidirectionalArrayReferenceFromClassType(
+            List<ITypedReferenceableInstance> columns, String columnGuid);
 
     /**
      * Verify deleting entities that are the target of a unidirectional class array reference
@@ -559,8 +609,8 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         Referenceable structTargetEntity = new Referenceable("StructTarget");
         Referenceable traitTargetEntity = new Referenceable("TraitTarget");
         Referenceable structContainerEntity = new Referenceable("StructContainer");
-        Referenceable structInstance = new Referenceable("TestStruct");
-        Referenceable nestedStructInstance = new Referenceable("NestedStruct");
+        Struct structInstance = new Struct("TestStruct");
+        Struct nestedStructInstance = new Struct("NestedStruct");
         Referenceable traitInstance = new Referenceable("TestTrait");
         structContainerEntity.set("struct", structInstance);
         structInstance.set("target", ImmutableList.of(structTargetEntity));
@@ -623,19 +673,19 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         Assert.assertEquals(refList.get(0).getId()._getId(), traitTargetGuid);
 
         // Delete the entities that are targets of the struct and trait instances.
-        List<String> deletedEntities = deleteEntities(structTargetGuid, traitTargetGuid);
+        AtlasClient.EntityResult entityResult = deleteEntities(structTargetGuid, traitTargetGuid);
+        Assert.assertEquals(entityResult.getDeletedEntities().size(), 2);
+        Assert.assertTrue(entityResult.getDeletedEntities().containsAll(Arrays.asList(structTargetGuid, traitTargetGuid)));
         assertEntityDeleted(structTargetGuid);
         assertEntityDeleted(traitTargetGuid);
-        Assert.assertEquals(deletedEntities.size(), 2);
-        Assert.assertTrue(deletedEntities.containsAll(Arrays.asList(structTargetGuid, traitTargetGuid)));
 
         assertTestDisconnectUnidirectionalArrayReferenceFromStructAndTraitTypes(structContainerGuid);
 
         // Delete the entity which contains nested structs and has the TestTrait trait.
-        deletedEntities = deleteEntities(structContainerGuid);
+        entityResult = deleteEntities(structContainerGuid);
+        Assert.assertEquals(entityResult.getDeletedEntities().size(), 1);
+        Assert.assertTrue(entityResult.getDeletedEntities().contains(structContainerGuid));
         assertEntityDeleted(structContainerGuid);
-        Assert.assertEquals(deletedEntities.size(), 1);
-        Assert.assertTrue(deletedEntities.contains(structContainerGuid));
 
         // Verify all TestStruct struct vertices were removed.
         assertVerticesDeleted(getVertices(Constants.ENTITY_TYPE_PROPERTY_KEY, "TestStruct"));
@@ -890,13 +940,14 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
         return list;
     }
 
-    private Map<String, String> getEmployeeNameGuidMap(ITypedReferenceableInstance hrDept) throws AtlasException {
-
+    private Map<String, String> getEmployeeNameGuidMap(final ITypedReferenceableInstance hrDept) throws AtlasException {
         Object refValue = hrDept.get("employees");
         Assert.assertTrue(refValue instanceof List);
         List<Object> employees = (List<Object>)refValue;
         Assert.assertEquals(employees.size(), 4);
-        Map<String, String> nameGuidMap = new HashMap<String, String>();
+        Map<String, String> nameGuidMap = new HashMap<String, String>() {{
+            put("hr", hrDept.getId()._getId());
+        }};
 
         for (Object listValue : employees) {
             Assert.assertTrue(listValue instanceof ITypedReferenceableInstance);

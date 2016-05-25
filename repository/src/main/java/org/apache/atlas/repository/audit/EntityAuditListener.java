@@ -55,8 +55,9 @@ public class EntityAuditListener implements EntityChangeListener {
     }
 
     private EntityAuditEvent createEvent(ITypedReferenceableInstance entity, long ts,
-                                         EntityAuditEvent.EntityAuditAction action, String details) {
-        return new EntityAuditEvent(entity.getId()._getId(), ts, RequestContext.get().getUser(), action, details);
+                                         EntityAuditEvent.EntityAuditAction action, String details)
+            throws AtlasException {
+        return new EntityAuditEvent(entity.getId()._getId(), ts, RequestContext.get().getUser(), action, details, entity);
     }
 
     @Override
