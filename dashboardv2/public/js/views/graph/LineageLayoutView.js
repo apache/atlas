@@ -124,7 +124,17 @@ define(['require',
                         obj['toolTiplabel'] = values.name;
                     }
                     obj['class'] = "type-TOP";
-                    that.g.setNode(data.GUID, obj);
+                    if (data.GUID) {
+                        that.g.setNode(data.GUID, obj);
+                    } else {
+                        if (data && data.definition) {
+                            if (_.isString(data.definition.id)) {
+                                that.g.setNode(data.definition.id, obj);
+                            } else if (_.isString(data.definition.id.id)) {
+                                that.g.setNode(data.definition.id.id, obj);
+                            }
+                        }
+                    }
                     --that.fetchList;
                     if (that.fetchList <= 0) {
                         if (that.edgesAndvertices) {
@@ -169,7 +179,9 @@ define(['require',
                             obj['class'] = "type-TOP";
                             obj['shape'] = "img";
                             obj['typeName'] = vertices[val].values.vertexId.values.typeName;
-                            that.g.setNode(val, obj);
+                            if (val && obj) {
+                                that.g.setNode(val, obj);
+                            }
                         } else {
                             fetchLoadProcess(val);
                         }
@@ -186,7 +198,6 @@ define(['require',
                             };
                             _.each(valuObj.edges, function(val, key, obj) {
                                 _.each(val, function(val1, key1, obj1) {
-                                    var chiledParent = {};
                                     if (!obj[val1]) {
                                         that.startingPoint.push(val1);
                                     }
@@ -215,18 +226,13 @@ define(['require',
                 }
             },
             createGraph: function(edgesAndvertices, startingPoint) {
-                var that = this;
-                this.g.nodes().forEach(function(v) {
-                    var node = that.g.node(v);
-                    // Round the corners of the nodes
-                    node.rx = node.ry = 5;
-                });
-                // Set up edges, no special attributes.
-                // For input
-                var lastVal = "";
+                var that = this,
+                    lastVal = "";
                 _.each(startingPoint, function(val, key, obj) {
                     _.each(edgesAndvertices.edges[val], function(val1) {
-                        that.g.setEdge(val, val1);
+                        if (val && val1) {
+                            that.g.setEdge(val, val1);
+                        }
                         createRemaningEdge(edgesAndvertices.edges, val1);
                     });
                 });
@@ -234,11 +240,21 @@ define(['require',
                 function createRemaningEdge(obj, starting) {
                     if (obj[starting] && obj[starting].length) {
                         _.each(obj[starting], function(val, key) {
-                            that.g.setEdge(starting, val);
+                            if (starting && val) {
+                                that.g.setEdge(starting, val);
+                            }
                             createRemaningEdge(obj, val);
                         });
                     }
                 }
+
+                this.g.nodes().forEach(function(v) {
+                    var node = that.g.node(v);
+                    // Round the corners of the nodes
+                    if (node) {
+                        node.rx = node.ry = 5;
+                    }
+                });
                 if (this.outputState) {
                     // Create the renderer
                     var render = new dagreD3.render();

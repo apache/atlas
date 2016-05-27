@@ -1,164 +1,4 @@
     /* tree.scss */
-    /* .fuelux {
-    margin-top: 10px;
-    .tree {
-        padding-left: 0;
-        position: relative;
-        list-style: none;
-        ul {
-            padding-left: 0;
-            margin-top: 0;
-            margin-bottom: 0;
-            list-style: none;
-        }
-        li {
-            margin: 0;
-            margin-top: 5px;
-            margin-bottom: 5px;
-        }
-        .tree-loader {
-            margin-left: 45px;
-        }
-        .tree-branch {
-            .tree-branch-header {
-                color: $white;
-                position: relative;
-                white-space: nowrap;
-                padding: 4px 0;
-                .tree-branch-name {
-                    white-space: nowrap;
-                    background-color: transparent;
-                    border: 0;
-                    &:hover {
-                        color: $white;
-                    }
-                }
-                .glyphicon-menu-right {
-                    font-size: 10px;
-                    padding-right: 5px;
-                    padding-left: 7px;
-                    &:before {
-                        position: relative;
-                        top: -2px;
-                    }
-                }
-                label {
-                    font-weight: normal;
-                    padding-left: 3px;
-                    margin-bottom: 0;
-                    cursor: pointer;
-                }
-            }
-            .tree-branch-children {
-                margin-left: 25px;
-            }
-        }
-        .tree-item {
-            white-space: nowrap;
-            position: relative;
-            cursor: pointer;
-            padding: 4px 0;
-            .tree-item-name {
-                color: $white;
-                white-space: nowrap;
-                background-color: transparent;
-                border: 0;
-                &:hover {
-                    color: $white;
-                }
-            }
-            &.tree-selected {
-                background-color: $color_keppel_approx;
-                &:before {
-                    content: "";
-                    position: absolute;
-                    background-color: $color_keppel_approx;
-                    height: 33px;
-                    top: 0;
-                    left: -100%;
-                    right: -100%;
-                    z-index: -1;
-                }
-            }
-            label {
-                font-weight: normal;
-                padding-left: 7px;
-                margin-bottom: 0;
-                cursor: pointer;
-            }
-        }
-        *:focus {
-            outline: none;
-        }
-        button:focus {
-            color: $white;
-        }
-        .tree-open > .tree-branch-header .glyphicon-menu-right {
-            //Instead of the line below you could use @include transform($scale, $rotate, $transx, $transy, $skewx, $skewy, $originx, $originy)
-            transform: rotate(90deg);
-            position: relative;
-        }
-        [data-children=false] > .tree-branch-header .icon-caret:before {
-            content: '\00a0';
-        }
-        .tree-branch[haschildren='false'] .icon-caret {
-            visibility: hidden;
-        }
-        .tree-branch[data-has-children='false'] .icon-caret {
-            visibility: hidden;
-        }
-        .icon-caret:hover + .tree-branch-name {
-            color: $white;
-        }
-        &.tree-folder-select .tree-branch {
-            .icon-folder {
-                visibility: hidden;
-            }
-            .icon-caret {
-                background-color: transparent;
-                border: 0;
-                &:hover {
-                    cursor: pointer;
-                    color: $white;
-                }
-            }
-            > .tree-branch-name {
-                padding: 1px 5px 0;
-                &.tree-selected {
-                    background-color: $color_gallery_approx;
-                }
-            }
-            &.tree-selected > .tree-branch-header {
-                background-color: $color_keppel_approx;
-                &:before {
-                    content: "";
-                    position: absolute;
-                    background-color: $color_keppel_approx;
-                    height: 33px;
-                    top: 0;
-                    left: -100%;
-                    right: -100%;
-                    z-index: -1;
-                }
-                .tree-branch-name:hover {
-                    background-color: $color_keppel_approx;
-                }
-                > .action-icons {
-                    visibility: visible;
-                }
-            }
-        }
-    }
-    .action-icons {
-        visibility: hidden;
-        float: right;
-        a {
-            display: inline-block;
-            margin-left: 4px;
-            color: $white;
-        }
-    }
-} */
     
     .jstree-container-ul {
         padding-left: 0px;
@@ -216,7 +56,7 @@
                         width: 91%;
                     }
                     a {
-                        max-width: 92%;
+                        max-width: 90%;
                     }
                 }
             }
@@ -240,7 +80,7 @@
                 display: block;
                 color: $concrete;
                 white-space: nowrap;
-                padding: 5px 18px;
+                padding: 5px 25px;
                 text-overflow: ellipsis;
                 overflow: hidden;
                 cursor: pointer;
@@ -249,8 +89,8 @@
                 background: $color_jungle_green_approx;
                 display: none;
                 position: absolute;
-                right: 3px;
-                padding: 5px 10px;
+                right: 2px;
+                padding: 5px;
             }
         }
     }
@@ -283,4 +123,11 @@
             color: #666;
             padding: 5px;
         }
+    }
+    
+    .toggleArrow {
+        position: absolute;
+        left: 0px;
+        padding: 8px;
+        cursor: pointer;
     }

@@ -40,6 +40,7 @@ define(['require',
                 chiledList: '[data-id="chiledList"]',
                 liClick: 'li a[data-href]',
                 backTaxanomy: '[data-id="backTaxanomy"]',
+                expandArrow: '[data-id="expandArrow"]'
             },
             /** ui events hash */
             events: function() {
@@ -53,9 +54,8 @@ define(['require',
                     this.dblClick = false;
                     this.forwardClick(e);
                 };
-                events['click ' + this.ui.backTaxanomy] = function(e) {
-                    this.backButtonTaxanomy();
-                };
+                events['click ' + this.ui.backTaxanomy] = 'backButtonTaxanomy';
+                events['click ' + this.ui.expandArrow] = 'changeArrowState';
                 return events;
             },
             /**
@@ -115,8 +115,48 @@ define(['require',
                     }
                 });
             },
-            manualRender: function(url, isParent) {
-                this.fetchCollection(url, isParent);
+            manualRender: function(url, isParent, back) {
+                if (back) {
+                    this.backButton = back;
+                }
+                if (this.ui.Parent.children().length <= 0 || this.backButton) {
+                    this.fetchCollection(url, isParent);
+                }
+                if (url && isParent && !this.backButton) {
+                    this.fetchCollection(url, isParent);
+                }
+                if (!url && !back && isParent) {
+                    var url = this.$('.taxonomyTree').find('.active a').data('href');
+                    this.forwardClick(undefined, undefined, url);
+                }
+                if (this.backButton) {
+                    this.backButton = false;
+                }
+            },
+            changeArrowState: function(e) {
+
+                var scope = this.$('[data-id="expandArrow"]');
+                if (e) {
+                    scope = $(e.currentTarget);
+                }
+                if (scope.hasClass('fa-chevron-down')) {
+                    scope.removeClass('fa-chevron-down');
+                    scope.addClass('fa-chevron-right');
+                    this.addActiveClass(scope[0]);
+                    this.ui.chiledList.hide();
+                } else {
+                    if (e && $(e.currentTarget).parents('li.parentChiled').length) {
+                        scope.parent('li').find('.tools .taxanomyloader').show();
+                        this.forwardClick(e, true);
+                    } else {
+                        scope.addClass('fa-chevron-down');
+                        scope.removeClass('fa-chevron-right');
+                        this.singleClick = false;
+                        this.ui.chiledList.show();
+                    }
+                }
+
+
             },
             fetchCollection: function(url, isParent) {
                 if (url) {
@@ -142,10 +182,18 @@ define(['require',
                     this.chiledCollection.fetch({ reset: true });
                 }
             },
-            forwardClick: function(e, forward) {
-                var hrefUrl = $(e.currentTarget).data('href');
+            forwardClick: function(e, forward, url) {
+                var hrefUrl = "";
+                if (e) {
+                    hrefUrl = $(e.currentTarget).data('href');
+                }
+                if (url) {
+                    hrefUrl = url;
+                }
+
                 if (forward) {
                     this.dblClick = true;
+                    this.ui.chiledList.show();
                     this.fetchCollection(hrefUrl, true);
                 } else {
                     this.singleClick = true;
@@ -158,7 +206,9 @@ define(['require',
                     },
                     trigger: true
                 });
-                this.addActiveClass(e);
+                if (e) {
+                    this.addActiveClass(e);
+                }
             },
             addActiveClass: function(e) {
                 $(e.currentTarget).parents('ul.taxonomyTree').find('li').removeClass('active');
@@ -175,6 +225,8 @@ define(['require',
 
                         if (model.get('terms')) {
                             href = model.get('terms').href;
+                        } else if (model.get('href')) {
+                            href = model.get('href') + "/terms";
                         }
                         var hrefUrl = "/api" + model.get('href').split("/api")[1];
                         if (hrefUrl) {
@@ -187,11 +239,12 @@ define(['require',
                                 }
                             }
                         }
-                        var name = model.get('name').split('.');
-                        parentLi = '<div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i><i class="fa fa-ellipsis-h termPopover"></i></div><a href="javascript:void(0)" data-href="' + hrefUrl + '">' + name[name.length - 1] + '</a>';
+                        var name = Utils.checkTagOrTerm(model.get('name'));
+                        parentLi = '<div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i><i class="fa fa-ellipsis-h termPopover"></i></div><i class="fa fa-chevron-right toggleArrow" data-id="expandArrow" data-href="' + hrefUrl + '"></i><a href="javascript:void(0)" data-href="' + hrefUrl + '" data-name="`' + model.get('name') + '`">' + name.name + '</a>';
                     });
                     if (href) {
-                        that.fetchCollection(href);
+                        var hrefUrl = "/api" + href.split("/api")[1];
+                        that.fetchCollection(hrefUrl);
                     }
                     that.ui.chiledList.html('');
                     that.ui.Parent.addClass('active');
@@ -200,8 +253,9 @@ define(['require',
 
                 function createTerm() {
                     _.each(that.chiledCollection.fullCollection.models, function(model, key) {
-                        var name = model.get('name').split('.');
-                        chiledLi += '<li class="children"><div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i><i class="fa fa-ellipsis-h termPopover" ></i></div><a href="javascript:void(0)" data-href="/api' + model.get('href').split("/api")[1] + '">' + name[name.length - 1] + '</a></li>';
+                        var name = Utils.checkTagOrTerm(model.get('name'));
+                        var hrefUrl = "/api" + model.get('href').split("/api")[1]
+                        chiledLi += '<li class="children"><div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i><i class="fa fa-ellipsis-h termPopover" ></i></div><i class="fa fa-chevron-right toggleArrow" data-id="expandArrow" data-href="' + hrefUrl + '"></i><a href="javascript:void(0)" data-href="' + hrefUrl + '" data-name="`' + model.get('name') + '`">' + name.name + '</a></li>';
                     });
                     that.ui.chiledList.html(chiledLi);
                 }
@@ -209,6 +263,12 @@ define(['require',
                 if (isParent) {
                     createTaxonomy();
                 } else {
+                    this.changeArrowState();
+                    /*  if (!this.create) {
+                          this.changeArrowState();
+                      } else {
+                          this.create = false;
+                      }*/
                     createTerm();
 
                 }
@@ -221,7 +281,7 @@ define(['require',
                     container: 'body',
                     content: function() {
                         return "<ul class='termPopoverList'>" +
-                            "<li class='listTerm' ><i class='fa fa-search'></i> <a href='javascript:void(0)' data-fn='onSearchTerm'>Search Asset</a></li>" +
+                            "<li class='listTerm' ><i class='fa fa-search'></i> <a href='javascript:void(0)' data-fn='onSearchTerm'>Search Assets</a></li>" +
                             "<li class='listTerm'><i class='fa fa-plus'></i> <a href='javascript:void(0)' data-fn='onAddTerm'>Add Subterm</a></li>" +
                             /* "<li class='listTerm' ><i class='fa fa-arrow-right'></i> <a href='javascript:void(0)' data-fn='moveTerm'>Move Term</a></li>" +
                              "<li class='listTerm' ><i class='fa fa-edit'></i> <a href='javascript:void(0)' data-fn='onEditTerm'>Edit Term</a></li>" +
@@ -265,12 +325,15 @@ define(['require',
             },
             saveAddTerm: function(view) {
                 var that = this;
-                view.model.url = view.url + "/terms/" + view.ui.termName.val();
+                var url = view.url;
+                view.model.url = url + "/terms/" + view.ui.termName.val();
                 view.model.set({ description: view.ui.termDetail.val() }).save(null, {
                     success: function(model, response) {
-                        that.fetchCollection(that.url);
+                        that.create = true;
+                        that.forwardClick(undefined, true, url);
+                        //that.fetchCollection(that.url);
                         Utils.notifySuccess({
-                            content: "Term Created successfully"
+                            content: "Term " + view.ui.termName.val() + " Created successfully"
                         });
                     },
                     error: function(model, response) {
@@ -330,9 +393,9 @@ define(['require',
                 Utils.setUrl({
                     url: '#!/search/searchResult',
                     urlParams: {
-                        query: this.$('.taxonomyTree').find('li.active').find("a").text(),
-                        searchType: "fulltext",
-                        dslChecked: false
+                        query: this.$('.taxonomyTree').find('li.active').find("a").data('name'),
+                        searchType: "dsl",
+                        dslChecked: true
                     },
                     updateTabState: function() {
                         return { searchUrl: this.url, stateChanged: true };
@@ -344,6 +407,7 @@ define(['require',
             backButtonTaxanomy: function(e) {
                 var that = this;
                 this.dblClick = false;
+                this.backButton = true;
                 var dataURL = this.$('.taxonomyTree').find('li[data-id="Parent"]').find("a").data('href').split("/terms");
                 var backUrl = dataURL.pop();
                 if (dataURL.join("/terms").length) {

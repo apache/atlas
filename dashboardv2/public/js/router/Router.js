@@ -108,6 +108,7 @@ define([
                 'views/business_catalog/SideNavLayoutView',
                 'collection/VCatalogList'
             ], function(BusinessCatalogHeader, BusinessCatalogDetailLayoutView, SideNavLayoutView, VCatalogList) {
+                var paramObj = Utils.getUrlState.getQueryParams();
                 this.collection = new VCatalogList();
                 this.collection.url = url;
                 App.rNHeader.show(new BusinessCatalogHeader({ 'globalVent': that.globalVent, 'url': url, 'collection': this.collection }));
@@ -117,15 +118,13 @@ define([
                 } else {
                     var view = App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView;
                     if (view.dblClick == false && view.singleClick == false && !Globals.saveApplicationState.tabState.stateChanged) {
-                        App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender(url, true);
+                        if (paramObj && paramObj.back == "true") {
+                            App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender(url, true, true);
+                        } else {
+                            App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender(url, true);
+                        }
                         view.dblClick == false;
-
-                    }
-                    /* else if (view.firstManualClick) {
-                                            view.firstManualClick = false;
-                                            App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender(url);
-                                        }*/
-                    else if (view.singleClick) {
+                    } else if (view.singleClick) {
                         view.singleClick = false;
                     }
                     App.rSideNav.currentView.selectTab();

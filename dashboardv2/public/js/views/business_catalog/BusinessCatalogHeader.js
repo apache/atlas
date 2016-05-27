@@ -76,7 +76,7 @@ define(['require',
                 value = this.value,
                 that = this;
             _.each(value, function(object) {
-                li += '<li><a href="/#!/taxonomy/detailCatalog/api/atlas/v1/taxonomies/' + object.href + '">' + object.value + '</a></li>';
+                li += '<li><a href="/#!/taxonomy/detailCatalog/api/atlas/v1/taxonomies/' + object.href + '?back=true">' + object.value + '</a></li>';
             });
             this.$('.breadcrumb').html(li);
             //this.$(".breadcrumb").asBreadcrumbs("destroy");
