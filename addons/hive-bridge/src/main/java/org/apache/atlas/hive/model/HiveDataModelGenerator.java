@@ -65,6 +65,7 @@ public class HiveDataModelGenerator {
     public static final String PARAMETERS = "parameters";
     public static final String COLUMNS = "columns";
     public static final String PART_COLS = "partitionKeys";
+    public static final String TABLE_ALIAS_LIST = "aliases";
 
     public static final String STORAGE_NUM_BUCKETS = "numBuckets";
     public static final String STORAGE_IS_STORED_AS_SUB_DIRS = "storedAsSubDirectories";
@@ -256,6 +257,8 @@ public class HiveDataModelGenerator {
                 new AttributeDefinition(STORAGE_DESC, HiveDataTypes.HIVE_STORAGEDESC.getName(), Multiplicity.OPTIONAL, true,
                         null),
                 new AttributeDefinition(PART_COLS, DataTypes.arrayTypeName(HiveDataTypes.HIVE_COLUMN.getName()),
+                        Multiplicity.OPTIONAL, true, null),
+                new AttributeDefinition(TABLE_ALIAS_LIST, DataTypes.arrayTypeName(DataTypes.STRING_TYPE.getName()),
                         Multiplicity.OPTIONAL, true, null),
                 new AttributeDefinition("columns", DataTypes.arrayTypeName(HiveDataTypes.HIVE_COLUMN.getName()),
                         Multiplicity.OPTIONAL, true, null),

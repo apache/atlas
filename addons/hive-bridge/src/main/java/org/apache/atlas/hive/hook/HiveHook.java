@@ -51,6 +51,7 @@ import org.apache.hadoop.hive.ql.metadata.Partition;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.log4j.LogManager;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,8 +74,8 @@ import java.util.concurrent.TimeUnit;
  * AtlasHook sends lineage information to the AtlasSever.
  */
 public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
-
     private static final Logger LOG = LoggerFactory.getLogger(HiveHook.class);
+
 
     public static final String CONF_PREFIX = "atlas.hook.hive.";
     private static final String MIN_THREADS = CONF_PREFIX + "minThreads";
@@ -406,7 +407,9 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         final Referenceable newEntity = new Referenceable(HiveDataTypes.HIVE_TABLE.getName());
         newEntity.set(HiveDataModelGenerator.NAME, newTableQFName);
         newEntity.set(HiveDataModelGenerator.TABLE_NAME, newTable.getTableName().toLowerCase());
-
+        ArrayList<String> alias_list = new ArrayList<>();
+        alias_list.add(oldTable.getTableName().toLowerCase());
+        newEntity.set(HiveDataModelGenerator.TABLE_ALIAS_LIST, alias_list);
         messages.add(new HookNotification.EntityPartialUpdateRequest(event.getUser(),
             HiveDataTypes.HIVE_TABLE.getName(), HiveDataModelGenerator.NAME,
             oldTableQFName, newEntity));

@@ -627,6 +627,20 @@ public class HiveHookIT {
     }
 
     @Test
+    public void testAlterTableRenameAliasRegistered() throws Exception{
+        String tableName = createTable(false);
+        String tableGuid = assertTableIsRegistered(DEFAULT_DB, tableName);
+        String newTableName = tableName();
+        String query = String.format("alter table %s rename to %s", tableName, newTableName);
+        runCommand(query);
+        String newTableGuid = assertTableIsRegistered(DEFAULT_DB, newTableName);
+        Map<String, Object> valueMap = atlasClient.getEntity(newTableGuid).getValuesMap();
+        Iterable<String> aliasList = (Iterable<String>) valueMap.get("aliases");
+        String aliasTableName = aliasList.iterator().next();
+        assert tableName.toLowerCase().equals(aliasTableName);
+    }
+
+    @Test
     public void testAlterTableRename() throws Exception {
         String tableName = createTable(true);
         final String newDBName = createDatabase();
