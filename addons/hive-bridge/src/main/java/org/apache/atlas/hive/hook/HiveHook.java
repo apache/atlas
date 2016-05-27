@@ -36,6 +36,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.Database;
+import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.ql.QueryPlan;
 import org.apache.hadoop.hive.ql.exec.ExplainTask;
 import org.apache.hadoop.hive.ql.exec.Task;
@@ -53,6 +54,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.tools.cmd.gen.AnyVals;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;
@@ -229,9 +231,11 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         case ALTERTABLE_SERIALIZER:
         case ALTERTABLE_ADDCOLS:
         case ALTERTABLE_REPLACECOLS:
-        case ALTERTABLE_RENAMECOL:
         case ALTERTABLE_PARTCOLTYPE:
             handleEventOutputs(dgiBridge, event, Type.TABLE);
+            break;
+        case ALTERTABLE_RENAMECOL:
+            renameColumn(dgiBridge, event);
             break;
         case ALTERTABLE_LOCATION:
             List<Pair<? extends Entity, Referenceable>> tablesUpdated = handleEventOutputs(dgiBridge, event, Type.TABLE);
@@ -295,6 +299,64 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                         dbQualifiedName));
             }
         }
+    }
+
+    private Pair<String, String> findChangedColNames(List<FieldSchema> oldColList, List<FieldSchema> newColList){
+        HashMap<FieldSchema, Integer> oldColHashMap = new HashMap<>();
+        HashMap<FieldSchema, Integer> newColHashMap = new HashMap<>();
+        for (int i = 0; i < oldColList.size(); i++){
+            oldColHashMap.put(oldColList.get(i), i);
+            newColHashMap.put(newColList.get(i), i);
+        }
+
+        String changedColStringOldName = oldColList.get(0).getName();
+        String changedColStringNewName = changedColStringOldName;
+
+        for(int i = 0; i < oldColList.size(); i++){
+            if (!newColHashMap.containsKey(oldColList.get(i))){
+                changedColStringOldName = oldColList.get(i).getName();
+                break;
+            }
+        }
+
+        for(int i = 0; i < newColList.size(); i++){
+            if (!oldColHashMap.containsKey(newColList.get(i))){
+                changedColStringNewName = newColList.get(i).getName();
+                break;
+            }
+        }
+
+        return Pair.of(changedColStringOldName, changedColStringNewName);
+    }
+
+    private void renameColumn(HiveMetaStoreBridge dgiBridge, HiveEventContext event) throws  Exception{
+        assert event.getInputs() != null && event.getInputs().size() == 1;
+        assert event.getOutputs() != null && event.getOutputs().size() > 0;
+        Table oldTable = event.getInputs().iterator().next().getTable();
+        List<FieldSchema> oldColList = oldTable.getAllCols();
+        List<FieldSchema> newColList = dgiBridge.hiveClient.getTable(event.getOutputs().iterator().next().getTable().getTableName()).getAllCols();
+        assert oldColList.size() == newColList.size();
+
+        Pair<String, String> changedColNamePair = findChangedColNames(oldColList, newColList);
+        String oldColName = changedColNamePair.getLeft();
+        String newColName = changedColNamePair.getRight();
+        for(WriteEntity writeEntity : event.getOutputs()){
+            if (writeEntity.getType() == Type.TABLE){
+                Table newTable = writeEntity.getTable();
+                createOrUpdateEntities(dgiBridge, event.getUser(), writeEntity, true, oldTable);
+                final String newQualifiedTableName = dgiBridge.getTableQualifiedName(dgiBridge.getClusterName(),
+                        newTable);
+                String oldColumnQFName = HiveMetaStoreBridge.getColumnQualifiedName(newQualifiedTableName, oldColName);
+                String newColumnQFName = HiveMetaStoreBridge.getColumnQualifiedName(newQualifiedTableName, newColName);
+                Referenceable newColEntity = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
+                newColEntity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, newColumnQFName);
+
+                messages.add(new HookNotification.EntityPartialUpdateRequest(event.getUser(),
+                        HiveDataTypes.HIVE_COLUMN.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+                        oldColumnQFName, newColEntity));
+            }
+        }
+        handleEventOutputs(dgiBridge, event, Type.TABLE);
     }
 
     private void renameTable(HiveMetaStoreBridge dgiBridge, HiveEventContext event) throws Exception {
@@ -389,7 +451,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         return newSDEntity;
     }
 
-    private Referenceable createOrUpdateEntities(HiveMetaStoreBridge dgiBridge, String user, Entity entity, boolean skipTempTables) throws Exception {
+    private Referenceable createOrUpdateEntities(HiveMetaStoreBridge dgiBridge, String user, Entity entity, boolean skipTempTables, Table existTable) throws Exception {
         Database db = null;
         Table table = null;
         Partition partition = null;
@@ -419,13 +481,16 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         Referenceable tableEntity = null;
 
         if (table != null) {
-            table = dgiBridge.hiveClient.getTable(table.getDbName(), table.getTableName());
+            if (existTable != null) {
+                table = existTable;
+            } else {
+                table = dgiBridge.hiveClient.getTable(table.getDbName(), table.getTableName());
+            }
             //If its an external table, even though the temp table skip flag is on,
             // we create the table since we need the HDFS path to temp table lineage.
             if (skipTempTables &&
                 table.isTemporary() &&
                 !TableType.EXTERNAL_TABLE.equals(table.getTableType())) {
-
                LOG.debug("Skipping temporary table registration {} since it is not an external table {} ", table.getTableName(), table.getTableType().name());
 
             } else {
@@ -436,6 +501,10 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
         messages.add(new HookNotification.EntityUpdateRequest(user, entities));
         return tableEntity;
+    }
+
+    private Referenceable createOrUpdateEntities(HiveMetaStoreBridge dgiBridge, String user, Entity entity, boolean skipTempTables) throws Exception{
+        return createOrUpdateEntities(dgiBridge, user, entity, skipTempTables, null);
     }
 
     private List<Pair<? extends Entity, Referenceable>> handleEventOutputs(HiveMetaStoreBridge dgiBridge, HiveEventContext event, Type entityType) throws Exception {

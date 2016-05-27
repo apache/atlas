@@ -68,6 +68,7 @@ import static org.apache.atlas.hive.hook.HiveHook.normalize;
 import static org.apache.atlas.hive.model.HiveDataModelGenerator.NAME;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class HiveHookIT {
@@ -327,8 +328,8 @@ public class HiveHookIT {
         String datasetName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, viewName);
         JSONObject response = atlasClient.getInputGraph(datasetName);
         JSONObject vertices = response.getJSONObject("values").getJSONObject("vertices");
-        Assert.assertTrue(vertices.has(viewId));
-        Assert.assertTrue(vertices.has(table1Id));
+        assertTrue(vertices.has(viewId));
+        assertTrue(vertices.has(table1Id));
 
         //Alter the view from table2
         String table2Name = createTable();
@@ -343,13 +344,13 @@ public class HiveHookIT {
         datasetName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, viewName);
         response = atlasClient.getInputGraph(datasetName);
         vertices = response.getJSONObject("values").getJSONObject("vertices");
-        Assert.assertTrue(vertices.has(viewId));
+        assertTrue(vertices.has(viewId));
 
         //This is through the alter view process
-        Assert.assertTrue(vertices.has(table2Id));
+        assertTrue(vertices.has(table2Id));
 
         //This is through the Create view process
-        Assert.assertTrue(vertices.has(table1Id));
+        assertTrue(vertices.has(table1Id));
 
         //Outputs dont exist
         response = atlasClient.getOutputGraph(datasetName);
@@ -668,7 +669,7 @@ public class HiveHookIT {
             public void assertOnEntity(final Referenceable entity) throws Exception {
                 Referenceable sd = ((Referenceable) entity.get(HiveDataModelGenerator.STORAGE_DESC));
                 String location = (String) sd.get(HiveDataModelGenerator.LOCATION);
-                Assert.assertTrue(location.contains(newTableName));
+                assertTrue(location.contains(newTableName));
             }
         });
     }
@@ -909,6 +910,42 @@ public class HiveHookIT {
 
             }
         });
+    }
+
+    @Test
+    public void testAlterTableWithoutHookConf() throws Exception {
+        HiveConf conf = new HiveConf();
+        conf.set("hive.exec.post.hooks", "");
+        SessionState ss = new SessionState(conf);
+        ss = SessionState.start(ss);
+        SessionState.setCurrentSessionState(ss);
+        Driver driver = new Driver(conf);
+        String tableName = tableName();
+        String createCommand = "create table " + tableName + " (id int, name string)";
+        driver.run(createCommand);
+        assertTableIsNotRegistered(DEFAULT_DB, tableName);
+        String command = "alter table " + tableName + " change id id_new string";
+        runCommand(command);
+        assertTableIsRegistered(DEFAULT_DB, tableName);
+        String tbqn = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName);
+        assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(tbqn, "id_new"));
+    }
+
+    @Test
+    public void testTraitsPreservedOnColumnRename() throws Exception {
+        String tableName = createTable();
+        String tbqn = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName);
+        String guid = assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(tbqn, "id"));
+        String trait = createTrait(guid);
+        String oldColName = "id";
+        String newColName = "id_new";
+        String query = String.format("alter table %s change %s %s string", tableName, oldColName, newColName);
+        runCommand(query);
+
+        String guid2 = assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(tbqn, "id_new"));
+        assertEquals(guid2, guid);
+
+        assertTrue(atlasClient.getEntity(guid2).getTraits().contains(trait));
     }
 
     @Test
@@ -1490,14 +1527,14 @@ public class HiveHookIT {
         String datasetName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, db2, table2);
         JSONObject response = atlasClient.getInputGraph(datasetName);
         JSONObject vertices = response.getJSONObject("values").getJSONObject("vertices");
-        Assert.assertTrue(vertices.has(table1Id));
-        Assert.assertTrue(vertices.has(table2Id));
+        assertTrue(vertices.has(table1Id));
+        assertTrue(vertices.has(table2Id));
 
         datasetName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, table1);
         response = atlasClient.getOutputGraph(datasetName);
         vertices = response.getJSONObject("values").getJSONObject("vertices");
-        Assert.assertTrue(vertices.has(table1Id));
-        Assert.assertTrue(vertices.has(table2Id));
+        assertTrue(vertices.has(table1Id));
+        assertTrue(vertices.has(table2Id));
     }
 
     //For ATLAS-448

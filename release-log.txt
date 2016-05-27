@@ -22,6 +22,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-752 Column renames should retain traits/tags (svimal2106 via shwethags)
 ATLAS-821 Atlas UI - Add arrow to navigate to child term (kevalbhatt18 via yhemanth)
 ATLAS-812 Atlas UI - Associate Terms with Assets (kevalbhatt18 via yhemanth)
 ATLAS-809 JAAS configuration needed for Kafka interaction via Atlas config file (abhayk via shwethags)
