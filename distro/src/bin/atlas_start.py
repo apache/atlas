@@ -118,8 +118,6 @@ def main():
         mc.run_solr(mc.solrBinDir(atlas_home), "start", mc.get_solr_zk_url(confdir), mc.solrPort(), logdir)
         print "solr started."
 
-    #solr indexes
-    if mc.is_solr(confdir):
         print "setting up solr collections..."
         mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), "vertex_index", logdir)
         mc.create_solr_collection(mc.solrBinDir(atlas_home), mc.solrConfDir(atlas_home), "edge_index", logdir)

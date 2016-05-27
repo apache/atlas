@@ -388,7 +388,7 @@ def is_hbase(confdir):
     return grep(confdir, HBASE_STORAGE_CONF_ENTRY) is not None
 
 def is_hbase_local(confdir):
-    if os.environ.get(MANAGE_LOCAL_HBASE, "True").lower() == 'false':
+    if os.environ.get(MANAGE_LOCAL_HBASE, "False").lower() == 'false':
         return False
 
     confdir = os.path.join(confdir, CONF_FILE)
@@ -419,7 +419,7 @@ def is_solr(confdir):
     return grep(confdir, SOLR_INDEX_CONF_ENTRY) is not None
 
 def is_solr_local(confdir):
-    if os.environ.get(MANAGE_LOCAL_SOLR, "True").lower() == 'false':
+    if os.environ.get(MANAGE_LOCAL_SOLR, "False").lower() == 'false':
         return False
 
     confdir = os.path.join(confdir, CONF_FILE)

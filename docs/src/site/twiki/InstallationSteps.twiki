@@ -18,6 +18,17 @@ mvn clean package -Pdist
 
 </verbatim>
 
+To build a distribution that packages HBase and Solr, build with the embedded_services profile.
+
+<verbatim>
+
+mvn clean package -Pdist,embedded_services
+
+</verbatim>
+
+Using the embedded_services profile will configure Atlas so that an HBase instance and a Solr instance will be started
+and stopped along with the Atlas server by default.
+
 Tar can be found in atlas/distro/target/apache-atlas-${project.version}-bin.tar.gz
 
 Tar is structured as follows
@@ -64,15 +75,18 @@ Tar is structured as follows
 
 </verbatim>
 
-Note that HBase is included in the distribution so that a standalone instance of HBase can be started as the default
-storage backend for the graph repository.  During Atlas installation the conf/hbase/hbase-site.xml.template gets
-expanded and moved to hbase/conf/hbase-site.xml for the initial standalone HBase configuration.  To configure ATLAS
+Note that if the embedded_services profile is specified for the build then HBase and Solr are included in the
+distribution.
+
+In this case, a standalone instance of HBase can be started as the default storage backend for the graph repository.
+During Atlas installation the conf/hbase/hbase-site.xml.template gets expanded and moved to hbase/conf/hbase-site.xml
+for the initial standalone HBase configuration.  To configure ATLAS
 graph persistence for a different HBase instance, please see "Graph persistence engine - HBase" in the
 [[Configuration][Configuration]] section.
 
-Also note that Solr is included in the distribution so that a standalone instance of Solr can be started as the default
-search indexing backend.  To configure ATLAS search indexing for a different Solr instance, please see
-"Graph Search Index - Solr" in the [[Configuration][Configuration]] section.
+Also, a standalone instance of Solr can be started as the default search indexing backend.  To configure ATLAS search
+indexing for a different Solr instance please see "Graph Search Index - Solr" in the
+[[Configuration][Configuration]] section.
 
 ---+++ Installing & Running Atlas
 

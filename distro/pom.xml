@@ -28,15 +28,11 @@
     <artifactId>atlas-distro</artifactId>
     <description>Apache Atlas Distribution</description>
     <name>Apache Atlas Distribution</name>
-
     <properties>
-        <hbase.dir>${project.build.directory}/hbase</hbase.dir>
-        <hbase.tar>http://archive.apache.org/dist/hbase/${hbase.version}/hbase-${hbase.version}-bin.tar.gz</hbase.tar>
-        <hbase.folder>hbase-${hbase.version}</hbase.folder>
-
-        <solr.dir>${project.build.directory}/solr</solr.dir>
-        <solr.tar>http://archive.apache.org/dist/lucene/solr/${solr.version}/solr-${solr.version}.tgz</solr.tar>
-        <solr.folder>solr-${solr.version}</solr.folder>
+        <titan.storage.backend>berkeleyje</titan.storage.backend>
+        <titan.index.backend>elasticsearch</titan.index.backend>
+        <hbase.embedded>false</hbase.embedded>
+        <solr.embedded>false</solr.embedded>
     </properties>
 
     <profiles>
@@ -76,10 +72,55 @@
             <build>
                 <plugins>
                     <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>src/main/assemblies/standalone-package.xml</descriptor>
+                                        <descriptor>src/main/assemblies/src-package.xml</descriptor>
+                                    </descriptors>
+                                    <finalName>apache-atlas-${project.version}</finalName>
+                                    <tarLongFileMode>gnu</tarLongFileMode>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <!-- embedded_services profile to package and configure embedded hbase and solr with the distribution -->
+        <profile>
+            <id>embedded_services</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <titan.storage.backend>hbase</titan.storage.backend>
+                <titan.index.backend>solr5</titan.index.backend>
+                <hbase.embedded>true</hbase.embedded>
+                <solr.embedded>true</solr.embedded>
+
+                <hbase.dir>${project.build.directory}/hbase</hbase.dir>
+                <hbase.tar>http://archive.apache.org/dist/hbase/${hbase.version}/hbase-${hbase.version}-bin.tar.gz</hbase.tar>
+                <hbase.folder>hbase-${hbase.version}</hbase.folder>
+
+                <solr.dir>${project.build.directory}/solr</solr.dir>
+                <solr.tar>http://archive.apache.org/dist/lucene/solr/${solr.version}/solr-${solr.version}.tgz</solr.tar>
+                <solr.folder>solr-${solr.version}</solr.folder>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
                         <version>1.7</version>
                         <executions>
+                            <!-- package hbase -->
                             <execution>
                                 <id>hbase</id>
                                 <phase>generate-resources</phase>
@@ -109,6 +150,7 @@
                                     </target>
                                 </configuration>
                             </execution>
+                            <!-- package solr -->
                             <execution>
                                 <id>solr</id>
                                 <phase>generate-resources</phase>
@@ -140,32 +182,13 @@
                             </execution>
                         </executions>
                     </plugin>
-                    <plugin>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <phase>package</phase>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>src/main/assemblies/standalone-package.xml</descriptor>
-                                        <descriptor>src/main/assemblies/src-package.xml</descriptor>
-                                    </descriptors>
-                                    <finalName>apache-atlas-${project.version}</finalName>
-                                    <tarLongFileMode>gnu</tarLongFileMode>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
                 </plugins>
             </build>
         </profile>
     </profiles>
 
     <build>
-        <outputDirectory>target/bin</outputDirectory>
+        <outputDirectory>target</outputDirectory>
         <resources>
             <resource>
                 <directory>src/bin</directory>
@@ -173,6 +196,12 @@
 		        <includes>
 	                <include>**/*.py</include>
 	            </includes>
+                <targetPath>bin</targetPath>
+            </resource>
+            <resource>
+                <directory>src/conf</directory>
+                <filtering>true</filtering>
+                <targetPath>conf</targetPath>
             </resource>
         </resources>
         <plugins>

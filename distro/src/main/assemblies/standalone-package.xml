@@ -28,7 +28,7 @@
     <baseDirectory>apache-atlas-${project.version}</baseDirectory>
     <fileSets>
         <fileSet>
-            <directory>src/conf/</directory>
+            <directory>target/conf/</directory>
             <outputDirectory>conf</outputDirectory>
         </fileSet>
 
