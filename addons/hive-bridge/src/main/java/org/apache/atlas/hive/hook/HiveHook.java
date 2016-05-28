@@ -154,36 +154,39 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     @Override
     public void run(final HookContext hookContext) throws Exception {
         // clone to avoid concurrent access
+        try {
+            final HiveConf conf = new HiveConf(hookContext.getConf());
 
-        final HiveConf conf = new HiveConf(hookContext.getConf());
+            final HiveEventContext event = new HiveEventContext();
+            event.setInputs(hookContext.getInputs());
+            event.setOutputs(hookContext.getOutputs());
+            event.setJsonPlan(getQueryPlan(hookContext.getConf(), hookContext.getQueryPlan()));
+            event.setHookType(hookContext.getHookType());
+            event.setUgi(hookContext.getUgi());
+            event.setUser(getUser(hookContext.getUserName()));
+            event.setOperation(OPERATION_MAP.get(hookContext.getOperationName()));
+            event.setQueryId(hookContext.getQueryPlan().getQueryId());
+            event.setQueryStr(hookContext.getQueryPlan().getQueryStr());
+            event.setQueryStartTime(hookContext.getQueryPlan().getQueryStartTime());
+            event.setQueryType(hookContext.getQueryPlan().getQueryPlan().getQueryType());
 
-        final HiveEventContext event = new HiveEventContext();
-        event.setInputs(hookContext.getInputs());
-        event.setOutputs(hookContext.getOutputs());
-        event.setJsonPlan(getQueryPlan(hookContext.getConf(), hookContext.getQueryPlan()));
-        event.setHookType(hookContext.getHookType());
-        event.setUgi(hookContext.getUgi());
-        event.setUser(getUser(hookContext.getUserName()));
-        event.setOperation(OPERATION_MAP.get(hookContext.getOperationName()));
-        event.setQueryId(hookContext.getQueryPlan().getQueryId());
-        event.setQueryStr(hookContext.getQueryPlan().getQueryStr());
-        event.setQueryStartTime(hookContext.getQueryPlan().getQueryStartTime());
-        event.setQueryType(hookContext.getQueryPlan().getQueryPlan().getQueryType());
-
-        boolean sync = conf.get(CONF_SYNC, "false").equals("true");
-        if (sync) {
-            fireAndForget(event);
-        } else {
-            executor.submit(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        fireAndForget(event);
-                    } catch (Throwable e) {
-                        LOG.info("Atlas hook failed", e);
+            boolean sync = conf.get(CONF_SYNC, "false").equals("true");
+            if (sync) {
+                fireAndForget(event);
+            } else {
+                executor.submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            fireAndForget(event);
+                        } catch (Throwable e) {
+                            LOG.error("Atlas hook failed due to error ", e);
+                        }
                     }
-                }
-            });
+                });
+            }
+        } catch(Throwable t) {
+            LOG.error("Submitting to thread pool failed due to error ", t);
         }
     }
 
