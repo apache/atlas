@@ -28,9 +28,28 @@
     <artifactId>atlas-distro</artifactId>
     <description>Apache Atlas Distribution</description>
     <name>Apache Atlas Distribution</name>
+
+    <!-- by default configure hbase and solr with the distribution -->
     <properties>
-        <titan.storage.backend>berkeleyje</titan.storage.backend>
-        <titan.index.backend>elasticsearch</titan.index.backend>
+
+        <titan.storage.backend>hbase</titan.storage.backend>
+        <titan.storage.properties>#Hbase
+#For standalone mode , specify localhost
+#for distributed mode, specify zookeeper quorum here - For more information refer http://s3.thinkaurelius.com/docs/titan/current/hbase.html#_remote_server_mode_2
+atlas.graph.storage.hostname=
+atlas.graph.storage.hbase.regions-per-server=1
+atlas.graph.storage.lock.wait-time=10000
+        </titan.storage.properties>
+        <titan.index.backend>solr5</titan.index.backend>
+        <titan.index.properties>#Solr
+#Solr cloud mode properties
+atlas.graph.index.search.solr.mode=cloud
+atlas.graph.index.search.solr.zookeeper-url=
+
+#Solr http mode properties
+#atlas.graph.index.search.solr.mode=http
+#atlas.graph.index.search.solr.http-urls=http://localhost:8983/solr
+        </titan.index.properties>
         <hbase.embedded>false</hbase.embedded>
         <solr.embedded>false</solr.embedded>
     </properties>
@@ -93,15 +112,59 @@
                 </plugins>
             </build>
         </profile>
-        <!-- embedded_services profile to package and configure embedded hbase and solr with the distribution -->
+        <!-- profile to configure berkeley and elasticsearch with the distribution -->
         <profile>
-            <id>embedded_services</id>
+            <id>berkeley-elasticsearch</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
-                <titan.storage.backend>hbase</titan.storage.backend>
-                <titan.index.backend>solr5</titan.index.backend>
+                <titan.storage.backend>berkeleyje</titan.storage.backend>
+                <titan.storage.properties>#Berkeley
+atlas.graph.storage.directory=${sys:atlas.home}/data/berkley
+                </titan.storage.properties>
+                <titan.index.backend>elasticsearch</titan.index.backend>
+                <titan.index.properties>#ElasticSearch
+atlas.graph.index.search.directory=${sys:atlas.home}/data/es
+atlas.graph.index.search.elasticsearch.client-only=false
+atlas.graph.index.search.elasticsearch.local-mode=true
+atlas.graph.index.search.elasticsearch.create.sleep=2000
+                </titan.index.properties>
+            </properties>
+        </profile>
+
+        <!-- profile to configure berkeley and elasticsearch with the distribution -->
+        <profile>
+            <id>external-hbase-solr</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        </profile>
+
+        <!-- profile to package and configure embedded hbase and solr with the distribution -->
+        <profile>
+            <id>embedded-hbase-solr</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <titan.storage.properties>#Hbase
+#For standalone mode , specify localhost
+#for distributed mode, specify zookeeper quorum here - For more information refer http://s3.thinkaurelius.com/docs/titan/current/hbase.html#_remote_server_mode_2
+atlas.graph.storage.hostname=localhost
+atlas.graph.storage.hbase.regions-per-server=1
+atlas.graph.storage.lock.wait-time=10000
+                </titan.storage.properties>
+                <titan.index.properties>#Solr
+#Solr cloud mode properties
+atlas.graph.index.search.solr.mode=cloud
+atlas.graph.index.search.solr.zookeeper-url=localhost:2181
+
+#Solr http mode properties
+#atlas.graph.index.search.solr.mode=http
+#atlas.graph.index.search.solr.http-urls=http://localhost:8983/solr
+                </titan.index.properties>
+
                 <hbase.embedded>true</hbase.embedded>
                 <solr.embedded>true</solr.embedded>
 
@@ -193,9 +256,9 @@
             <resource>
                 <directory>src/bin</directory>
                 <filtering>true</filtering>
-		        <includes>
-	                <include>**/*.py</include>
-	            </includes>
+                <includes>
+                    <include>**/*.py</include>
+                </includes>
                 <targetPath>bin</targetPath>
             </resource>
             <resource>

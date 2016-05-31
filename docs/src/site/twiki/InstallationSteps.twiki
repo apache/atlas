@@ -18,15 +18,29 @@ mvn clean package -Pdist
 
 </verbatim>
 
-To build a distribution that packages HBase and Solr, build with the embedded_services profile.
+To build a distribution that configures Atlas for external HBase and Solr, build with the external-hbase-solr profile.
 
 <verbatim>
 
-mvn clean package -Pdist,embedded_services
+mvn clean package -Pdist,external-hbase-solr
 
 </verbatim>
 
-Using the embedded_services profile will configure Atlas so that an HBase instance and a Solr instance will be started
+Note that when the external-hbase-solr profile is used the following steps need to be completed to make Atlas functional.
+   * Configure atlas.graph.storage.hostname (see "Graph persistence engine - HBase" in the [[Configuration][Configuration]] section).
+   * Configure atlas.graph.index.search.solr.zookeeper-url (see "Graph Search Index - Solr" in the [[Configuration][Configuration]] section).
+   * Set HBASE_CONF_DIR to point to a valid HBase config directory (see "Graph persistence engine - HBase" in the [[Configuration][Configuration]] section).
+   * Create the SOLR indices (see "Graph Search Index - Solr" in the [[Configuration][Configuration]] section).
+
+To build a distribution that packages HBase and Solr, build with the embedded-hbase-solr profile.
+
+<verbatim>
+
+mvn clean package -Pdist,embedded-hbase-solr
+
+</verbatim>
+
+Using the embedded-hbase-solr profile will configure Atlas so that an HBase instance and a Solr instance will be started
 and stopped along with the Atlas server by default.
 
 Tar can be found in atlas/distro/target/apache-atlas-${project.version}-bin.tar.gz
@@ -75,7 +89,7 @@ Tar is structured as follows
 
 </verbatim>
 
-Note that if the embedded_services profile is specified for the build then HBase and Solr are included in the
+Note that if the embedded-hbase-solr profile is specified for the build then HBase and Solr are included in the
 distribution.
 
 In this case, a standalone instance of HBase can be started as the default storage backend for the graph repository.

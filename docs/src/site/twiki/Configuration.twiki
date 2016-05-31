@@ -53,10 +53,10 @@ Without Ranger, HBase shell can be used to set the permissions.
    echo "grant 'atlas', 'RWXCA', 'titan'" | hbase shell
 </verbatim>
 
-Note that if the embedded_services profile is used then HBase is included in the distribution so that a standalone
-instance of HBase can be started as the default storage backend for the graph repository.  Using the embedded_services
+Note that if the embedded-hbase-solr profile is used then HBase is included in the distribution so that a standalone
+instance of HBase can be started as the default storage backend for the graph repository.  Using the embedded-hbase-solr
 profile will configure Atlas so that HBase instance will be started and stopped along with the Atlas server by default.
-To use the embedded_services profile please see "Building Atlas" in the [[InstallationSteps][Installation Steps]]
+To use the embedded-hbase-solr profile please see "Building Atlas" in the [[InstallationSteps][Installation Steps]]
 section.
 
 ---+++ Graph Search Index
@@ -80,10 +80,10 @@ Please note that Solr installation in Cloud mode is a prerequisite before config
  atlas.graph.index.search.solr.zookeeper-url=<the ZK quorum setup for solr as comma separated value> eg: 10.1.6.4:2181,10.1.6.5:2181
 </verbatim>
 
-Also note that if the embedded_services profile is used then Solr is included in the distribution so that a standalone
-instance of Solr can be started as the default search indexing backend. Using the embedded_services profile will
+Also note that if the embedded-hbase-solr profile is used then Solr is included in the distribution so that a standalone
+instance of Solr can be started as the default search indexing backend. Using the embedded-hbase-solr profile will
 configure Atlas so that the standalone Solr instance will be started and stopped along with the Atlas server by default.
-To use the embedded_services profile please see "Building Atlas" in the [[InstallationSteps][Installation Steps]]
+To use the embedded-hbase-solr profile please see "Building Atlas" in the [[InstallationSteps][Installation Steps]]
 section.
 
 ---+++ Choosing between Persistence and Indexing Backends
