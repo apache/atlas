@@ -22,6 +22,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-766 Atlas policy file does not honour standard hash as comment format ( saqeeb.s via sumasai )
 ATLAS-843 Atlas UI: Feature to search terms in left navigation. (Kalyanikashikar via sumasai)
 ATLAS-731 Remove dashboard module in Atlas, replaced by dashboardv2 (kevalbhatt18 via sumasai)
 ATLAS-664 UI: Add Support for Versioning / History (Kalyanikashikar via yhemanth)

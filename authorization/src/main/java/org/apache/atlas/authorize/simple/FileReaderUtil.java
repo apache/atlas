@@ -41,7 +41,7 @@ public class FileReaderUtil {
         List<String> fileLines = Files.readAllLines(Paths.get(path), Charset.forName("UTF-8"));
         if (fileLines != null) {
             for (String line : fileLines) {
-                if ((!line.startsWith("##")) && Pattern.matches(".+;;.*;;.*;;.+", line))
+                if ((!line.startsWith("#")) && Pattern.matches(".+;;.*;;.*;;.+", line))
                     list.add(line);
             }
         }
