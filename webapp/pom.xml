@@ -292,14 +292,7 @@
                 <artifactId>spring-ldap-core</artifactId>
                 <version>${spring-ldap-core.version}</version>
         </dependency>
-
-       <!-- <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-dashboard</artifactId>
-            <type>war</type>
-        </dependency> -->
-
-       <dependency>
+        <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-dashboardv2</artifactId>
             <type>war</type>
@@ -315,10 +308,6 @@
                     <archiveClasses>true</archiveClasses>
                     <attachClasses>true</attachClasses>
                     <overlays>
-                        <!-- <overlay>
-                            <groupId>org.apache.atlas</groupId>
-                            <artifactId>atlas-dashboard</artifactId>
-                        </overlay> -->
                         <overlay>
                             <groupId>org.apache.atlas</groupId>
                             <artifactId>atlas-dashboardv2</artifactId>
