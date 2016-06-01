@@ -19,7 +19,8 @@
 define(['require',
     'backbone',
     'hbs!tmpl/entity/EntityDetailTableLayoutView_tmpl',
-], function(require, Backbone, EntityDetailTableLayoutView_tmpl) {
+    'utils/CommonViewFunction'
+], function(require, Backbone, EntityDetailTableLayoutView_tmpl, CommonViewFunction) {
     'use strict';
 
     var EntityDetailTableLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -48,7 +49,7 @@ define(['require',
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'globalVent', 'collection'));
                 this.collectionObject = this.collection.toJSON();
-                this.entityModel = new this.collection.model();
+                this.model = new this.collection.model();
             },
             bindEvents: function() {},
             onRender: function() {
@@ -56,87 +57,9 @@ define(['require',
             },
             entityTableGenerate: function() {
                 var that = this,
-                    table = "",
-                    valueObject = this.collectionObject[0].values;
-                _.keys(valueObject).map(function(key) {
-                    /*  if (key == 'columns')
-                          return;*/
-                    var keyValue = valueObject[key];
-                    if (_.isArray(keyValue)) {
-                        var subLink = "";
-                        for (var i = 0; i < keyValue.length; i++) {
-                            var inputOutputField = keyValue[i],
-                                id = undefined;
-                            if (_.isObject(inputOutputField.id)) {
-                                id = inputOutputField.id.id;
-                            } else {
-                                id = inputOutputField.id;
-                            }
-                            if (id) {
-                                that.fetchInputOutputValue(id);
-                                subLink += '<div data-id="' + id + '"></div>';
-                            } else {
-                                subLink += '<div></div>';
-                            }
-                        }
-                        table += '<tr><td>' + key + '</td><td>' + subLink + '</td></tr>';
-                    } else if (_.isObject(keyValue)) {
-                        var id = undefined;
-                        if (_.isObject(keyValue.id)) {
-                            id = keyValue.id.id;
-                        } else {
-                            id = keyValue.id;
-                        }
-                        if (id) {
-                            that.fetchInputOutputValue(id);
-                            table += '<tr><td>' + key + '</td><td><div data-id="' + id + '"></div></td></tr>';
-                        } else {
-                            var stringArr = [];
-                            _.each(keyValue, function(val, key) {
-                                var value = "";
-                                if (_.isObject(val)) {
-                                    value = JSON.stringify(val);
-                                } else {
-                                    value = val;
-                                }
-                                var attrName = "<span>" + key + " : " + value + "</span>";
-                                stringArr.push(attrName);
-                            });
-                            var jointValues = stringArr.join(", ");
-                            if (jointValues.length) {
-                                table += '<tr><td>' + key + '</td><td><div>' + jointValues + '</div></td></tr>';
-                            } else {
-                                table += '<tr><td>' + key + '</td><td></td></tr>';
-                            }
-                        }
-                    } else {
-                        if (key == "createTime" || key == "lastAccessTime" || key == "retention") {
-                            table += '<tr><td>' + key + '</td><td>' + new Date(valueObject[key]) + '</td></tr>';
-                        } else {
-                            table += '<tr><td>' + key + '</td><td>' + valueObject[key] + '</td></tr>';
-                        }
-
-                    }
-                });
+                    valueObject = this.collectionObject[0].values,
+                    table = CommonViewFunction.propertyTable(valueObject, this);
                 that.ui.detailValue.append(table);
-            },
-            fetchInputOutputValue: function(id) {
-                var that = this;
-                this.entityModel.getEntity(id, {
-                    beforeSend: function() {},
-                    success: function(data) {
-                        var value = "";
-                        if (data.definition.values.name) {
-                            value = data.definition.values.name;
-                        } else {
-                            value = data.GUID;
-                        }
-
-                        that.$('td div[data-id="' + data.GUID + '"]').html('<a href="#!/detailPage/' + data.GUID + '">' + value + '</a>');
-                    },
-                    error: function(error, data, status) {},
-                    complete: function() {}
-                });
             }
         });
     return EntityDetailTableLayoutView;

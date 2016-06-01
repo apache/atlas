@@ -34,6 +34,13 @@ define(['require'], function(require) {
         },
         detailPageState: {}
     };
+    Globals.auditAction = {
+        ENTITY_CREATE: "Entity Created",
+        ENTITY_UPDATE: "Entity Updated",
+        ENTITY_DELETE: "Entity Deleted",
+        TAG_ADD: "Tag Added",
+        TAG_DELETE: "Tag Deleted"
+    }
 
     return Globals;
 });

@@ -74,8 +74,8 @@ define(['require',
                 this.commonTableOptions = {
                     collection: this.schemaCollection,
                     includeFilter: false,
-                    includePagination: false,
-                    includePageSize: false,
+                    includePagination: true,
+                    includePageSize: true,
                     includeFooterRecords: true,
                     gridOpts: {
                         className: "table table-striped table-condensed backgrid table-quickMenu",

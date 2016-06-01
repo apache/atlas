@@ -20,8 +20,8 @@ define(['require',
     'backbone',
     'hbs!tmpl/audit/AuditTableLayoutView_tmpl',
     'collection/VEntityList',
-    'moment'
-], function(require, Backbone, AuditTableLayoutView_tmpl, VEntityList, moment) {
+    'utils/Globals'
+], function(require, Backbone, AuditTableLayoutView_tmpl, VEntityList, Globals) {
     'use strict';
 
     var AuditTableLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -61,11 +61,11 @@ define(['require',
                 this.commonTableOptions = {
                     collection: this.entityCollection,
                     includeFilter: false,
-                    includePagination: false,
-                    includePageSize: false,
+                    includePagination: true,
+                    includePageSize: true,
                     includeFooterRecords: true,
                     gridOpts: {
-                        className: "table table-striped table-condensed backgrid table-quickMenu",
+                        className: "table table-hover backgrid table-quickMenu",
                         emptyText: 'No records found!'
                     },
                     filterOpts: {},
@@ -88,10 +88,7 @@ define(['require',
                     var cols = new Backgrid.Columns(that.getAuditTableColumns());
                     that.RAuditTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
                         globalVent: that.globalVent,
-                        columns: cols,
-                        gridOpts: {
-                            className: "table table-quickMenu",
-                        },
+                        columns: cols
                     })));
                 });
             },
@@ -99,41 +96,52 @@ define(['require',
                 var that = this;
                 return this.entityCollection.constructor.getTableCols({
                     user: {
-                        label: "User",
+                        label: "Users",
                         cell: "html",
                         editable: false,
                         sortable: false,
                     },
                     timestamp: {
                         label: "Timestamp",
-                        cell: "time",
+                        cell: "html",
                         editable: false,
                         sortable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                return moment(rawValue).format("YYYY-MM-DD HH:mm:ss,SSS");
+                                return new Date(rawValue);
                             }
                         })
                     },
                     action: {
-                        label: "Action",
-                        cell: "html",
-                        editable: false,
-                        sortable: false
-                    },
-                    tool: {
-                        label: "Tool",
+                        label: "Actions",
                         cell: "html",
                         editable: false,
                         sortable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                return '<div class="label label-success auditCreateBtn" data-id="auditCreate">Create</div>';
+                                that.detailBtnDisable = false;
+                                if (Globals.auditAction[rawValue]) {
+                                    return Globals.auditAction[rawValue]
+                                } else {
+                                    return rawValue
+                                }
+                            }
+                        })
+                    },
+                    tool: {
+                        label: "Tools",
+                        cell: "html",
+                        editable: false,
+                        sortable: false,
+                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                            fromRaw: function(rawValue, model) {
+                                return '<div class="label label-success aditCreateBtn" data-id="auditCreate" data-action="' + Globals.auditAction[model.attributes.action] + '" disabled="' + that.detailBtnDisable + '" data-modalId="' + model.get('eventKey') + '">Detail</div>';
                             }
                         })
                     },
 
                 }, this.entityCollection);
+
             },
             onClickAuditCreate: function(e) {
                 var that = this;
@@ -141,14 +149,18 @@ define(['require',
                     'modules/Modal',
                     'views/audit/CreateAuditTableLayoutView',
                 ], function(Modal, CreateAuditTableLayoutView) {
-
-                    var view = new CreateAuditTableLayoutView({ guid: that.guid });
+                    var collectionModel = that.entityCollection.findWhere({ 'eventKey': $(e.currentTarget).data('modalid') });
+                    that.action = $(e.target).data("action");
+                    var view = new CreateAuditTableLayoutView({ guid: that.guid, model: collectionModel, action: that.action });
                     var modal = new Modal({
-                        title: 'Create',
+                        title: that.action,
                         content: view,
                         okCloses: true,
                         showFooter: true,
                     }).open();
+                    view.on('closeModal', function() {
+                        modal.trigger('cancel');
+                    });
                 });
             }
         });

@@ -27,7 +27,7 @@ $color_puerto_rico_approx: #3dd4af;
 $color_star_dust_approx: #9a9a9a;
 $color_mirage_approx: #1c1e2a;
 $concrete: #f2f2f2;
-//fonts
+$lightGrey:#e1e2e4; //fonts
 $font_0: Source Sans Pro;
 $font_1: sans-serif;
 $font_2: FontAwesome;
@@ -132,6 +132,7 @@ ul {
 }
 
 .table {
+    background-color: $white;
     .table {
         width: auto;
     }
@@ -154,4 +155,14 @@ ul {
     z-index: 99;
     bottom: 0;
     display: none;
+}
+
+.auditCreateBtn {
+    background-color: #359f89;
+    color: white;
+    cursor: pointer;
+}
+
+.aditCreateBtn {
+    cursor: pointer;
 }

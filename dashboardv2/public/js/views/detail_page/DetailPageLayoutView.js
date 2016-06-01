@@ -40,6 +40,7 @@ define(['require',
                 RSchemaTableLayoutView: "#r_schemaTableLayoutView",
                 RTagTableLayoutView: "#r_tagTableLayoutView",
                 RLineageLayoutView: "#r_lineageLayoutView",
+                RAuditTableLayoutView: "#r_auditTableLayoutView",
                 RTermTableLayoutView: "#r_termTableLayoutView"
 
             },
@@ -162,6 +163,7 @@ define(['require',
                     this.renderTagTableLayoutView(tagGuid);
                     this.renderLineageLayoutView(tagGuid);
                     this.renderSchemaLayoutView(tagGuid);
+                    this.renderAuditTableLayoutView(tagGuid);
                     this.renderTermTableLayoutView(tagGuid);
                 }, this);
             },
@@ -308,6 +310,15 @@ define(['require',
                 var that = this;
                 require(['views/schema/SchemaLayoutView'], function(SchemaLayoutView) {
                     that.RSchemaTableLayoutView.show(new SchemaLayoutView({
+                        globalVent: that.globalVent,
+                        guid: tagGuid
+                    }));
+                });
+            },
+            renderAuditTableLayoutView: function(tagGuid) {
+                var that = this;
+                require(['views/audit/AuditTableLayoutView'], function(AuditTableLayoutView) {
+                    that.RAuditTableLayoutView.show(new AuditTableLayoutView({
                         globalVent: that.globalVent,
                         guid: tagGuid
                     }));

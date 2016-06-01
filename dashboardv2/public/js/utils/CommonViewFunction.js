@@ -90,5 +90,85 @@ define(['require', 'utils/Utils', 'modules/Modal'], function(require, Utils, Mod
             }
         });
     };
+    CommonViewFunction.propertyTable = function(valueObject, scope) {
+        var table = "",
+            fetchInputOutputValue = function(id) {
+                var that = this;
+                scope.model.getEntity(id, {
+                    beforeSend: function() {},
+                    success: function(data) {
+                        var value = "";
+                        if (data.definition.values.name) {
+                            value = data.definition.values.name;
+                        } else {
+                            value = data.GUID;
+                        }
+
+                        scope.$('td div[data-id="' + data.GUID + '"]').html('<a href="#!/detailPage/' + data.GUID + '">' + value + '</a>');
+                    },
+                    error: function(error, data, status) {},
+                    complete: function() {}
+                });
+            }
+        _.keys(valueObject).map(function(key) {
+            var keyValue = valueObject[key];
+            if (_.isArray(keyValue)) {
+                var subLink = "";
+                for (var i = 0; i < keyValue.length; i++) {
+                    var inputOutputField = keyValue[i],
+                        id = undefined;
+                    if (_.isObject(inputOutputField.id)) {
+                        id = inputOutputField.id.id;
+                    } else {
+                        id = inputOutputField.id;
+                    }
+                    if (id) {
+                        fetchInputOutputValue(id);
+                        subLink += '<div data-id="' + id + '"></div>';
+                    } else {
+                        subLink += '<div></div>';
+                    }
+                }
+                table += '<tr><td>' + key + '</td><td>' + subLink + '</td></tr>';
+            } else if (_.isObject(keyValue)) {
+                var id = undefined;
+                if (_.isObject(keyValue.id)) {
+                    id = keyValue.id.id;
+                } else {
+                    id = keyValue.id;
+                }
+                if (id) {
+                    fetchInputOutputValue(id);
+                    table += '<tr><td>' + key + '</td><td><div data-id="' + id + '"></div></td></tr>';
+                } else {
+                    var stringArr = [];
+                    _.each(keyValue, function(val, key) {
+                        var value = "";
+                        if (_.isObject(val)) {
+                            value = JSON.stringify(val);
+                        } else {
+                            value = val;
+                        }
+                        var attrName = "<span>" + key + " : " + value + "</span>";
+                        stringArr.push(attrName);
+                    });
+                    var jointValues = stringArr.join(", ");
+                    if (jointValues.length) {
+                        table += '<tr><td>' + key + '</td><td><div>' + jointValues + '</div></td></tr>';
+                    } else {
+                        table += '<tr><td>' + key + '</td><td></td></tr>';
+                    }
+                }
+            } else {
+                if (key == "createTime" || key == "lastAccessTime" || key == "retention") {
+                    table += '<tr><td>' + key + '</td><td>' + new Date(valueObject[key]) + '</td></tr>';
+                } else {
+                    table += '<tr><td>' + key + '</td><td>' + valueObject[key] + '</td></tr>';
+                }
+
+            }
+        });
+        return table;
+    }
     return CommonViewFunction;
 });

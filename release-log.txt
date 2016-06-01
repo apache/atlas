@@ -22,6 +22,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-664 UI: Add Support for Versioning / History (Kalyanikashikar via yhemanth)
 ATLAS-833 Make default build profile for External HBase and Solr (tbeerbower via yhemanth)
 ATLAS-841 mvn clean install of Atlas is failing python unit tests (yhemanth)
 ATLAS-834 Handle exceptions from HiveHook executor.submit() (sumasai)

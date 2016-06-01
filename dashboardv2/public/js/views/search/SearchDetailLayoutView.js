@@ -60,10 +60,12 @@ define(['require',
                             'searchType': that.value.searchType
                         };
                     }
-                    that.RSearchResultLayoutView.show(new SearchResultLayoutView({
-                        value: value,
-                        tag: that.tag
-                    }));
+                    if (that.RSearchResultLayoutView) {
+                        that.RSearchResultLayoutView.show(new SearchResultLayoutView({
+                            value: value,
+                            tag: that.tag
+                        }));
+                    }
                 });
             }
         });

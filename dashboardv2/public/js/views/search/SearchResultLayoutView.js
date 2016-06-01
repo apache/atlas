@@ -176,9 +176,10 @@ define(['require',
                                 } else if (model.get('name') == "owner") {
                                     model.set("position", 3, { silent: true });
                                     model.set("label", "Owner");
-                                } else {
-                                    model.set("position", ++count, { silent: true });
                                 }
+                                /*else {
+                                                                   model.set("position", ++count, { silent: true });
+                                                               }*/
                             });
                             return this;
                         }
