@@ -37,10 +37,11 @@ define(['require',
             /** ui selector cache */
             ui: {
                 Parent: '[data-id="Parent"]',
-                chiledList: '[data-id="chiledList"]',
+                childList: '[data-id="childList"]',
                 liClick: 'li a[data-href]',
                 backTaxanomy: '[data-id="backTaxanomy"]',
-                expandArrow: '[data-id="expandArrow"]'
+                expandArrow: '[data-id="expandArrow"]',
+                searchTermInput: '[data-id="searchTermInput"]'
             },
             /** ui events hash */
             events: function() {
@@ -56,6 +57,11 @@ define(['require',
                 };
                 events['click ' + this.ui.backTaxanomy] = 'backButtonTaxanomy';
                 events['click ' + this.ui.expandArrow] = 'changeArrowState';
+                events["change " + this.ui.searchTermInput] = function() {
+                    this.singleClick = false;
+                    var termUrl = this.termCollection.url.split("/", 5).join("/") + "/" + this.ui.searchTermInput.val().split(".").join("/terms/");
+                    this.forwardClick(undefined, true, termUrl);
+                };
                 return events;
             },
             /**
@@ -65,7 +71,9 @@ define(['require',
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'globalVent', 'url'));
                 this.parentCollection = new VCatalogList();
-                this.chiledCollection = new VCatalogList();
+                this.childCollection = new VCatalogList();
+                this.taxanomy = new VCatalogList();
+                this.termCollection = new VCatalogList();
                 this.dblClick = false;
                 this.singleClick = false;
             },
@@ -75,11 +83,17 @@ define(['require',
                     this.dblClick = false;
                     this.generateTree(true);
                 }, this);
-                this.listenTo(this.chiledCollection, 'reset', function() {
+                this.listenTo(this.childCollection, 'reset', function() {
                     this.dblClick = false;
                     this.generateTree();
                 }, this);
-                this.listenTo(this.chiledCollection, 'error', function(model, response) {
+                this.listenTo(this.taxanomy, 'reset', function() {
+                    this.searchResult();
+                }, this);
+                this.listenTo(this.termCollection, 'reset', function() {
+                    this.termSearchData();
+                }, this);
+                this.listenTo(this.childCollection, 'error', function(model, response) {
                     if (response && response.responseJSON && response.responseJSON.message) {
                         Utils.notifyError({
                             content: response.responseJSON.message
@@ -102,7 +116,9 @@ define(['require',
                 var that = this;
                 this.bindEvents();
                 that.ui.backTaxanomy.hide();
+
                 this.fetchCollection(this.url, true);
+
                 $('body').on("click", '.termPopoverList li', function(e) {
                     that[$(this).find("a").data('fn')](e);
                 });
@@ -114,6 +130,7 @@ define(['require',
                         that.$('.termPopover').popover('hide');
                     }
                 });
+                this.fetchTaxanomyCollections();
             },
             manualRender: function(url, isParent, back) {
                 if (back) {
@@ -143,16 +160,16 @@ define(['require',
                     scope.removeClass('fa-chevron-down');
                     scope.addClass('fa-chevron-right');
                     this.addActiveClass(scope[0]);
-                    this.ui.chiledList.hide();
+                    this.ui.childList.hide();
                 } else {
-                    if (e && $(e.currentTarget).parents('li.parentChiled').length) {
+                    if (e && $(e.currentTarget).parents('li.parentChild').length) {
                         scope.parent('li').find('.tools .taxanomyloader').show();
                         this.forwardClick(e, true);
                     } else {
                         scope.addClass('fa-chevron-down');
                         scope.removeClass('fa-chevron-right');
                         this.singleClick = false;
-                        this.ui.chiledList.show();
+                        this.ui.childList.show();
                     }
                 }
 
@@ -177,9 +194,9 @@ define(['require',
                     this.parentCollection.fullCollection.reset(undefined, { silent: true });
                     this.parentCollection.fetch({ reset: true });
                 } else {
-                    this.chiledCollection.url = this.url + "?hierarchy/path:.";
-                    this.chiledCollection.fullCollection.reset(undefined, { silent: true });
-                    this.chiledCollection.fetch({ reset: true });
+                    this.childCollection.url = this.url + "?hierarchy/path:.";
+                    this.childCollection.fullCollection.reset(undefined, { silent: true });
+                    this.childCollection.fetch({ reset: true });
                 }
             },
             forwardClick: function(e, forward, url) {
@@ -190,22 +207,29 @@ define(['require',
                 if (url) {
                     hrefUrl = url;
                 }
-
+                if (!e && !url) {
+                    var dataHref = this.ui.Parent.find('a').data('href');
+                    if (dataHref) {
+                        hrefUrl = dataHref;
+                    }
+                }
                 if (forward) {
                     this.dblClick = true;
-                    this.ui.chiledList.show();
+                    this.ui.childList.show();
                     this.fetchCollection(hrefUrl, true);
                 } else {
                     this.singleClick = true;
                 }
-                Utils.setUrl({
-                    url: '#!/taxonomy/detailCatalog' + hrefUrl,
-                    mergeBrowserUrl: false,
-                    updateTabState: function() {
-                        return { taxonomyUrl: this.url, stateChanged: false };
-                    },
-                    trigger: true
-                });
+                if (hrefUrl.length > 1) {
+                    Utils.setUrl({
+                        url: '#!/taxonomy/detailCatalog' + hrefUrl,
+                        mergeBrowserUrl: false,
+                        updateTabState: function() {
+                            return { taxonomyUrl: this.url, stateChanged: false };
+                        },
+                        trigger: true
+                    });
+                }
                 if (e) {
                     this.addActiveClass(e);
                 }
@@ -216,7 +240,7 @@ define(['require',
             },
             generateTree: function(isParent) {
                 var parentLi = "",
-                    chiledLi = "",
+                    childLi = "",
                     that = this;
 
                 function createTaxonomy(url) {
@@ -246,18 +270,18 @@ define(['require',
                         var hrefUrl = "/api" + href.split("/api")[1];
                         that.fetchCollection(hrefUrl);
                     }
-                    that.ui.chiledList.html('');
+                    that.ui.childList.html('');
                     that.ui.Parent.addClass('active');
                     that.ui.Parent.html(parentLi);
                 }
 
                 function createTerm() {
-                    _.each(that.chiledCollection.fullCollection.models, function(model, key) {
+                    _.each(that.childCollection.fullCollection.models, function(model, key) {
                         var name = Utils.checkTagOrTerm(model.get('name'));
                         var hrefUrl = "/api" + model.get('href').split("/api")[1]
-                        chiledLi += '<li class="children"><div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i><i class="fa fa-ellipsis-h termPopover" ></i></div><i class="fa fa-chevron-right toggleArrow" data-id="expandArrow" data-href="' + hrefUrl + '"></i><a href="javascript:void(0)" data-href="' + hrefUrl + '" data-name="`' + model.get('name') + '`">' + name.name + '</a></li>';
+                        childLi += '<li class="children"><div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i><i class="fa fa-ellipsis-h termPopover" ></i></div><i class="fa fa-chevron-right toggleArrow" data-id="expandArrow" data-href="' + hrefUrl + '"></i><a href="javascript:void(0)" data-href="' + hrefUrl + '" data-name="`' + model.get('name') + '`">' + name.name + '</a></li>';
                     });
-                    that.ui.chiledList.html(chiledLi);
+                    that.ui.childList.html(childLi);
                 }
 
                 if (isParent) {
@@ -422,6 +446,32 @@ define(['require',
                         }
                     });
                 }
+            },
+            fetchTaxanomyCollections: function() {
+                this.taxanomy.fetch({ reset: true });
+            },
+            searchResult: function() {
+
+                var that = this;
+                _.each(this.taxanomy.models, function(model, key) {
+                    var name = model.get('name');
+                    that.termCollection.url = "/api/atlas/v1/taxonomies/" + name + "/terms";
+                });
+                this.termCollection.fetch({ reset: true });
+            },
+            termSearchData: function() {
+                var that = this;
+                var str = '<option></option>';
+                for (var j = 0; j < this.termCollection.models.length; j++) {
+                    var terms = this.termCollection.models[j].attributes.name;
+                    str += '<option>' + terms + '</option>';
+                    this.ui.searchTermInput.html(str);
+                }
+                // this.ui.searchTermInput.setAttribute('data-href' : that.termCollection.url);
+                this.ui.searchTermInput.select2({
+                    placeholder: "Search Term",
+                    allowClear: true
+                });
             }
         });
     return BusinessCatalogLayoutView;
