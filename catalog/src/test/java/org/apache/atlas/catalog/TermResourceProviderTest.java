@@ -25,6 +25,7 @@ import org.apache.atlas.catalog.exception.ResourceNotFoundException;
 import org.apache.atlas.catalog.query.AtlasQuery;
 import org.apache.atlas.catalog.query.QueryFactory;
 import org.easymock.Capture;
+import org.easymock.CaptureType;
 import org.easymock.EasyMock;
 import org.testng.annotations.Test;
 
@@ -338,18 +339,170 @@ public class TermResourceProviderTest {
         provider.createResources(userRequest);
     }
 
+    @Test
+    public void testDeleteResourceById() throws Exception {
+        ResourceProvider taxonomyResourceProvider = createStrictMock(ResourceProvider.class);
+        ResourceProvider entityResourceProvider = createStrictMock(ResourceProvider.class);
+        ResourceProvider entityTagResourceProvider = createStrictMock(ResourceProvider.class);
+        AtlasTypeSystem typeSystem = createStrictMock(AtlasTypeSystem.class);
+        QueryFactory queryFactory = createStrictMock(QueryFactory.class);
+        AtlasQuery query = createStrictMock(AtlasQuery.class);
+        Capture<Request> taxonomyRequestCapture = newCapture();
+        Capture<Request> termRequestCapture = newCapture();
+
+        // root term being deleted
+        TermPath termPath = new TermPath("testTaxonomy.termName");
+
+        // entity requests to get id's of entities tagged with terms
+        Request entityRequest1 = new CollectionRequest(Collections.<String, Object>emptyMap(),
+                "tags/name:testTaxonomy.termName.child1");
+        Request entityRequest2 = new CollectionRequest(Collections.<String, Object>emptyMap(),
+                "tags/name:testTaxonomy.termName.child2");
+        Request entityRequest3 = new CollectionRequest(Collections.<String, Object>emptyMap(),
+                "tags/name:testTaxonomy.termName");
+
+        // entity tag requests to delete entity tags
+        Map<String, Object> entityTagRequestMap1 = new HashMap<>();
+        entityTagRequestMap1.put("id", "111");
+        entityTagRequestMap1.put("name", "testTaxonomy.termName.child1");
+        Request entityTagRequest1 = new InstanceRequest(entityTagRequestMap1);
+        Map<String, Object> entityTagRequestMap2 = new HashMap<>();
+        entityTagRequestMap2.put("id", "222");
+        entityTagRequestMap2.put("name", "testTaxonomy.termName.child1");
+        Request entityTagRequest2 = new InstanceRequest(entityTagRequestMap2);
+        Map<String, Object> entityTagRequestMap3 = new HashMap<>();
+        entityTagRequestMap3.put("id", "333");
+        entityTagRequestMap3.put("name", "testTaxonomy.termName.child2");
+        Request entityTagRequest3 = new InstanceRequest(entityTagRequestMap3);
+
+        Map<String, Object> requestProperties = new HashMap<>();
+        requestProperties.put("termPath", termPath);
+        Request userRequest = new InstanceRequest(requestProperties);
+
+        Collection<Map<String, Object>> queryResult = new ArrayList<>();
+        Map<String, Object> queryResultRow = new HashMap<>();
+        queryResult.add(queryResultRow);
+        queryResultRow.put("name", "testTaxonomy.termName");
+        queryResultRow.put("id", "111-222-333");
+
+        Collection<Map<String, Object>> taxonomyResultMaps = new ArrayList<>();
+        Map<String, Object> taxonomyResultMap = new HashMap<>();
+        taxonomyResultMap.put("name", "testTaxonomy");
+        taxonomyResultMap.put("id", "12345");
+        taxonomyResultMaps.add(taxonomyResultMap);
+        Result taxonomyResult = new Result(taxonomyResultMaps);
+
+        Collection<Map<String, Object>> childResult = new ArrayList<>();
+        Map<String, Object> childResultRow = new HashMap<>();
+        childResult.add(childResultRow);
+        childResultRow.put("name", "testTaxonomy.termName.child1");
+        childResultRow.put("id", "1-1-1");
+        Map<String, Object> childResultRow2 = new HashMap<>();
+        childResult.add(childResultRow2);
+        childResultRow2.put("name", "testTaxonomy.termName.child2");
+        childResultRow2.put("id", "2-2-2");
+
+        Collection<Map<String, Object>> entityResults1 = new ArrayList<>();
+        Map<String, Object> entityResult1Map1 = new HashMap<>();
+        entityResult1Map1.put("name", "entity1");
+        entityResult1Map1.put("id", "111");
+        entityResults1.add(entityResult1Map1);
+        Map<String, Object> entityResult1Map2 = new HashMap<>();
+        entityResult1Map2.put("name", "entity2");
+        entityResult1Map2.put("id", "222");
+        entityResults1.add(entityResult1Map2);
+        Result entityResult1 = new Result(entityResults1);
+
+        Collection<Map<String, Object>> entityResults2 = new ArrayList<>();
+        Map<String, Object> entityResult2Map = new HashMap<>();
+        entityResult2Map.put("name", "entity3");
+        entityResult2Map.put("id", "333");
+        entityResults2.add(entityResult2Map);
+        Result entityResult2 = new Result(entityResults2);
+
+        // mock expectations
+        // ensure term exists
+        expect(queryFactory.createTermQuery(userRequest)).andReturn(query);
+        expect(query.execute()).andReturn(queryResult);
+        // taxonomy query
+        expect(taxonomyResourceProvider.getResourceById(capture(taxonomyRequestCapture))).andReturn(taxonomyResult);
+        // get term children
+        expect(queryFactory.createTermQuery(capture(termRequestCapture))).andReturn(query);
+        expect(query.execute()).andReturn(childResult);
+        // entities with child1 tag
+        expect(entityResourceProvider.getResources(eq(entityRequest1))).andReturn(entityResult1);
+//        typeSystem.deleteTag("111", "testTaxonomy.termName.child1");
+//        typeSystem.deleteTag("222", "testTaxonomy.termName.child1");
+        entityTagResourceProvider.deleteResourceById(entityTagRequest1);
+        entityTagResourceProvider.deleteResourceById(entityTagRequest2);
+        // delete child1 from taxonomy
+        typeSystem.deleteTag("12345", "testTaxonomy.termName.child1");
+        // entities with child2 tag
+        expect(entityResourceProvider.getResources(eq(entityRequest2))).andReturn(entityResult2);
+        //typeSystem.deleteTag("333", "testTaxonomy.termName.child2");
+        entityTagResourceProvider.deleteResourceById(entityTagRequest3);
+        // delete child2 from taxonomy
+        typeSystem.deleteTag("12345", "testTaxonomy.termName.child2");
+        // root term being deleted which has no associated tags
+        expect(entityResourceProvider.getResources(eq(entityRequest3))).andReturn(
+                new Result(Collections.<Map<String, Object>>emptyList()));
+        // delete root term from taxonomy
+        typeSystem.deleteTag("12345", "testTaxonomy.termName");
+
+        replay(taxonomyResourceProvider, entityResourceProvider, entityTagResourceProvider, typeSystem, queryFactory, query);
+
+        TermResourceProvider provider = new TestTermResourceProvider(
+                typeSystem, taxonomyResourceProvider, entityResourceProvider, entityTagResourceProvider);
+        provider.setQueryFactory(queryFactory);
+
+        // invoke method being tested
+        provider.deleteResourceById(userRequest);
+
+        Request taxonomyRequest = taxonomyRequestCapture.getValue();
+        assertEquals(taxonomyRequest.getProperties().get("name"), "testTaxonomy");
+        assertEquals(taxonomyRequest.getAdditionalSelectProperties().size(), 1);
+        assertTrue(taxonomyRequest.getAdditionalSelectProperties().contains("id"));
+
+        Request childTermRequest = termRequestCapture.getValue();
+        assertEquals(childTermRequest.<TermPath>getProperty("termPath").getFullyQualifiedName(), "testTaxonomy.termName.");
+        verify(taxonomyResourceProvider, entityResourceProvider, entityTagResourceProvider, typeSystem, queryFactory, query);
+    }
+
     private static class TestTermResourceProvider extends TermResourceProvider {
 
         private ResourceProvider testTaxonomyResourceProvider;
+        private ResourceProvider testEntityResourceProvider;
+        private ResourceProvider testEntityTagResourceProvider;
 
-        public TestTermResourceProvider(AtlasTypeSystem typeSystem, ResourceProvider taxonomyResourceProvider) {
+        public TestTermResourceProvider(AtlasTypeSystem typeSystem,
+                                        ResourceProvider taxonomyResourceProvider) {
             super(typeSystem);
             testTaxonomyResourceProvider = taxonomyResourceProvider;
+        }
+
+        public TestTermResourceProvider(AtlasTypeSystem typeSystem,
+                                        ResourceProvider taxonomyResourceProvider,
+                                        ResourceProvider entityResourceProvider,
+                                        ResourceProvider entityTagResourceProvider) {
+            super(typeSystem);
+            testTaxonomyResourceProvider = taxonomyResourceProvider;
+            testEntityResourceProvider = entityResourceProvider;
+            testEntityTagResourceProvider = entityTagResourceProvider;
         }
 
         @Override
         protected synchronized ResourceProvider getTaxonomyResourceProvider() {
             return testTaxonomyResourceProvider;
+        }
+
+        @Override
+        protected synchronized ResourceProvider getEntityResourceProvider() {
+            return testEntityResourceProvider;
+        }
+
+        @Override
+        protected synchronized ResourceProvider getEntityTagResourceProvider() {
+            return testEntityTagResourceProvider;
         }
     }
 }

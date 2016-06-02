@@ -191,8 +191,22 @@ public interface MetadataService {
      */
     void addTrait(String guid, String traitInstanceDefinition) throws AtlasException;
 
-    //todo:
+    /**
+     * Adds a new trait to an existing entity represented by a guid.
+     *
+     * @param guid           globally unique identifier for the entity
+     * @param traitInstance  trait instance to add     *
+     * @throws AtlasException if unable to add the trait instance
+     */
     void addTrait(String guid, ITypedStruct traitInstance) throws AtlasException;
+
+    /**
+     * Create a typed trait instance.
+     *
+     * @param traitInstance  trait instance
+     * @return a typed trait instance
+     * @throws AtlasException if unable to create the typed trait instance
+     */
     ITypedStruct createTraitInstance(Struct traitInstance) throws AtlasException;
 
 

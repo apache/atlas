@@ -20,6 +20,7 @@ package org.apache.atlas.catalog;
 
 import org.apache.atlas.catalog.definition.ResourceDefinition;
 import org.apache.atlas.catalog.exception.ResourceAlreadyExistsException;
+import org.apache.atlas.catalog.exception.ResourceNotFoundException;
 
 import java.util.Map;
 
@@ -54,6 +55,16 @@ public interface AtlasTypeSystem {
             throws ResourceAlreadyExistsException;
 
     /**
+     * Delete an entity from the Atlas type system.
+     *
+     * @param definition  definition of the resource being deleted
+     * @param request     user request
+     *
+     * @throws ResourceNotFoundException if the resource to delete doesn't exist
+     */
+    void deleteEntity(ResourceDefinition definition, Request request) throws ResourceNotFoundException;
+
+    /**
      * Create a trait instance instance in the Atlas Type System.
      *
      * @param resourceDefinition  resource definition for trait type being created
@@ -76,4 +87,14 @@ public interface AtlasTypeSystem {
      */
     void createTraitInstance(String guid, String typeName, Map<String, Object> properties)
             throws ResourceAlreadyExistsException;
+
+    /**
+     * Delete a tag instance.
+     *
+     * @param guid       associated entity guid
+     * @param traitName  name of the trait to delete
+     *
+     * @throws ResourceNotFoundException if the specified trait doesn't exist for the specified entity
+     */
+    void deleteTag(String guid, String traitName) throws ResourceNotFoundException;
 }

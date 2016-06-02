@@ -60,6 +60,16 @@ public interface ResourceProvider {
     void createResource(Request request)
             throws InvalidPayloadException, ResourceAlreadyExistsException, ResourceNotFoundException;
 
+    /**
+     * Delete a single resource.
+     *
+     * @param request  request instance containing the id of the resource to delete.
+     *
+     * @throws ResourceNotFoundException  if the resource doesn't exist
+     * @throws InvalidPayloadException    if the request is invalid
+     */
+    void deleteResourceById(Request request) throws ResourceNotFoundException, InvalidPayloadException;
+
     //todo: define the behavior for partial success
     /**
      * Create multiple resources.

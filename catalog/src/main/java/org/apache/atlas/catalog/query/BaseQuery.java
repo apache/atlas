@@ -19,16 +19,20 @@
 package org.apache.atlas.catalog.query;
 
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
 import com.tinkerpop.pipes.Pipe;
+import com.tinkerpop.pipes.filter.PropertyFilterPipe;
 import org.apache.atlas.catalog.Request;
 import org.apache.atlas.catalog.VertexWrapper;
 import org.apache.atlas.catalog.definition.ResourceDefinition;
 import org.apache.atlas.catalog.exception.ResourceNotFoundException;
 import org.apache.atlas.catalog.projection.Projection;
 import org.apache.atlas.catalog.projection.ProjectionResult;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.TitanGraphProvider;
+import org.apache.atlas.typesystem.persistence.Id;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -59,13 +63,13 @@ public abstract class BaseQuery implements AtlasQuery {
     }
 
     private List<Vertex> executeQuery() {
-        GremlinPipeline pipeline = getInitialPipeline().as("root");
+        GremlinPipeline pipeline = buildPipeline().as("root");
 
-        Pipe adapterPipe = queryExpression.asPipe();
+        Pipe expressionPipe = queryExpression.asPipe();
         try {
             // AlwaysQuery returns null for pipe
-            List<Vertex> vertices =  adapterPipe == null ? pipeline.toList() :
-                    pipeline.add(adapterPipe).back("root").toList();
+            List<Vertex> vertices =  expressionPipe == null ? pipeline.toList() :
+                    pipeline.add(expressionPipe).back("root").toList();
 
             // Even non-mutating queries can result in objects being created in
             // the graph such as new fields or property keys. So, it is important
@@ -79,9 +83,28 @@ public abstract class BaseQuery implements AtlasQuery {
         }
     }
 
-    protected abstract GremlinPipeline getInitialPipeline();
+    protected GremlinPipeline buildPipeline() {
+        GremlinPipeline pipeline = getRootVertexPipeline();
+        Pipe queryPipe = getQueryPipe();
+        if (queryPipe != null) {
+            pipeline.add(queryPipe);
+        }
+        //todo: may be more efficient to move the notDeleted pipe after the expression pipe
+        pipeline.add(getNotDeletedPipe());
+        return pipeline;
+    }
 
-    // todo: consider getting
+    protected abstract Pipe getQueryPipe();
+
+    protected GremlinPipeline getRootVertexPipeline() {
+        return new GremlinPipeline(getGraph().getVertices());
+    }
+
+    protected Pipe getNotDeletedPipe() {
+        return new PropertyFilterPipe(Constants.STATE_PROPERTY_KEY, Compare.EQUAL,
+                Id.EntityState.ACTIVE.name());
+    }
+
     protected Map<String, Object> processPropertyMap(VertexWrapper vertex) {
         Map<String, Object> propertyMap = resourceDefinition.filterProperties(
                 request, vertex.getPropertyMap());
@@ -99,7 +122,7 @@ public abstract class BaseQuery implements AtlasQuery {
         }
     }
 
-    private Map<String, Object> applyProjections(VertexWrapper vertex, Map<String, Object> propertyMap) {
+    protected Map<String, Object> applyProjections(VertexWrapper vertex, Map<String, Object> propertyMap) {
         for (Projection p : resourceDefinition.getProjections().values()) {
             for (ProjectionResult projectionResult : p.values(vertex)) {
                 if (p.getCardinality() == Projection.Cardinality.MULTIPLE) {

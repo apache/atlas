@@ -34,7 +34,7 @@ import java.util.Map;
 /**
  * Represents a generic relation
  */
-public class GenericRelation implements Relation {
+public class GenericRelation extends BaseRelation {
     private final ResourceDefinition resourceDefinition;
 
     public GenericRelation(ResourceDefinition resourceDefinition) {
@@ -52,14 +52,16 @@ public class GenericRelation implements Relation {
             String edgePrefix = String.format("%s%s.", Constants.INTERNAL_PROPERTY_KEY_PREFIX, vertexType);
             if (edgeLabel.startsWith(edgePrefix)) {
                 Vertex adjacentVertex = e.getVertex(Direction.IN);
-                VertexWrapper relationVertex = new VertexWrapper(adjacentVertex, resourceDefinition);
-                String relationName = edgeLabel.substring(edgePrefix.length());
-                Collection<VertexWrapper> vertices = vertexMap.get(relationName);
-                if (vertices == null) {
-                    vertices = new ArrayList<>();
-                    vertexMap.put(relationName, vertices);
+                if (! isDeleted(adjacentVertex)) {
+                    VertexWrapper relationVertex = new VertexWrapper(adjacentVertex, resourceDefinition);
+                    String relationName = edgeLabel.substring(edgePrefix.length());
+                    Collection<VertexWrapper> vertices = vertexMap.get(relationName);
+                    if (vertices == null) {
+                        vertices = new ArrayList<>();
+                        vertexMap.put(relationName, vertices);
+                    }
+                    vertices.add(relationVertex);
                 }
-                vertices.add(relationVertex);
             }
         }
         for (Map.Entry<String, Collection<VertexWrapper>> entry : vertexMap.entrySet()) {

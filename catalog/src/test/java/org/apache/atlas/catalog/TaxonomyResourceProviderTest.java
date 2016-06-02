@@ -284,4 +284,93 @@ public class TaxonomyResourceProviderTest {
 
         provider.createResources(userRequest);
     }
+
+    @Test
+    public void testDeleteResourceById() throws Exception {
+        TermResourceProvider termResourceProvider = createStrictMock(TermResourceProvider.class);
+        AtlasTypeSystem typeSystem = createStrictMock(AtlasTypeSystem.class);
+        QueryFactory queryFactory = createStrictMock(QueryFactory.class);
+        AtlasQuery query = createStrictMock(AtlasQuery.class);
+        Capture<Request> getRequestCapture = newCapture();
+        Capture<TermPath> termPathCapture = newCapture();
+        Capture<ResourceDefinition> resourceDefinitionCapture = newCapture();
+        Capture<Request> deleteRequestCapture = newCapture();
+
+        Collection<Map<String, Object>> queryResult = new ArrayList<>();
+        Map<String, Object> queryResultRow = new HashMap<>();
+        queryResult.add(queryResultRow);
+        queryResultRow.put("name", "testTaxonomy");
+        queryResultRow.put("id", "111-222-333");
+
+        // mock expectations
+        expect(queryFactory.createTaxonomyQuery(capture(getRequestCapture))).andReturn(query);
+        expect(query.execute()).andReturn(queryResult);
+        termResourceProvider.deleteChildren(eq("111-222-333"), capture(termPathCapture));
+        typeSystem.deleteEntity(capture(resourceDefinitionCapture), capture(deleteRequestCapture));
+        replay(termResourceProvider, typeSystem, queryFactory, query);
+
+        TaxonomyResourceProvider provider = new TestTaxonomyResourceProvider(typeSystem, termResourceProvider);
+        provider.setQueryFactory(queryFactory);
+
+        Map<String, Object> requestProperties = new HashMap<>();
+        requestProperties.put("name", "testTaxonomy");
+        Request userRequest = new InstanceRequest(requestProperties);
+
+        // invoke method being tested
+        provider.deleteResourceById(userRequest);
+
+        Request getRequest = getRequestCapture.getValue();
+        assertNull(getRequest.getQueryString());
+        assertEquals(getRequest.getAdditionalSelectProperties().size(), 1);
+        assertTrue(getRequest.getAdditionalSelectProperties().contains("id"));
+        assertEquals(getRequest.getProperties().get("name"), "testTaxonomy");
+
+        Request deleteRequest = deleteRequestCapture.getValue();
+        assertNull(deleteRequest.getQueryString());
+        assertEquals(deleteRequest.getAdditionalSelectProperties().size(), 1);
+        assertTrue(deleteRequest.getAdditionalSelectProperties().contains("id"));
+        assertEquals(deleteRequest.getProperties().get("name"), "testTaxonomy");
+
+        ResourceDefinition resourceDefinition = resourceDefinitionCapture.getValue();
+        assertTrue(resourceDefinition instanceof TaxonomyResourceDefinition);
+
+        verify(termResourceProvider, typeSystem, queryFactory, query);
+    }
+
+    @Test(expectedExceptions = ResourceNotFoundException.class)
+    public void testDeleteResourceById_404() throws Exception {
+        AtlasTypeSystem typeSystem = createStrictMock(AtlasTypeSystem.class);
+        QueryFactory queryFactory = createStrictMock(QueryFactory.class);
+        AtlasQuery query = createStrictMock(AtlasQuery.class);
+        Capture<Request> getRequestCapture = newCapture();
+        // mock expectations
+        expect(queryFactory.createTaxonomyQuery(capture(getRequestCapture))).andReturn(query);
+        expect(query.execute()).andThrow(new ResourceNotFoundException("test msg"));
+
+        replay(typeSystem, queryFactory, query);
+
+        TaxonomyResourceProvider provider = new TestTaxonomyResourceProvider(typeSystem, null);
+        provider.setQueryFactory(queryFactory);
+
+        Map<String, Object> requestProperties = new HashMap<>();
+        requestProperties.put("name", "badName");
+        Request userRequest = new InstanceRequest(requestProperties);
+
+        // invoke method being tested
+        provider.deleteResourceById(userRequest);
+    }
+
+
+    private static class TestTaxonomyResourceProvider extends TaxonomyResourceProvider {
+        private final TermResourceProvider termResourceProvider;
+        public TestTaxonomyResourceProvider(AtlasTypeSystem typeSystem, TermResourceProvider termResourceProvider) {
+            super(typeSystem);
+            this.termResourceProvider = termResourceProvider;
+        }
+
+        @Override
+        protected synchronized TermResourceProvider getTermResourceProvider() {
+            return termResourceProvider;
+        }
+    }
 }

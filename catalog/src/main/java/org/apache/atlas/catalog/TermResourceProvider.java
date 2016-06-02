@@ -30,7 +30,9 @@ import java.util.*;
  */
 public class TermResourceProvider extends BaseResourceProvider implements ResourceProvider {
     private final static ResourceDefinition resourceDefinition = new TermResourceDefinition();
-    private TaxonomyResourceProvider taxonomyResourceProvider;
+    private ResourceProvider taxonomyResourceProvider;
+    private ResourceProvider entityResourceProvider;
+    private ResourceProvider entityTagResourceProvider;
 
     public TermResourceProvider(AtlasTypeSystem typeSystem) {
         super(typeSystem);
@@ -99,6 +101,83 @@ public class TermResourceProvider extends BaseResourceProvider implements Resour
         throw new UnsupportedOperationException("Creating multiple Terms in a request is not currently supported");
     }
 
+    @Override
+    public void deleteResourceById(Request request) throws ResourceNotFoundException, InvalidPayloadException {
+        // will result in expected ResourceNotFoundException if term doesn't exist
+        getResourceById(request);
+
+        TermPath termPath = (TermPath) request.getProperties().get("termPath");
+        String taxonomyId = getTaxonomyId(termPath);
+        deleteChildren(taxonomyId, termPath);
+        deleteTerm(taxonomyId, termPath);
+    }
+
+    protected void deleteChildren(String taxonomyId, TermPath termPath)
+            throws ResourceNotFoundException, InvalidPayloadException {
+
+        TermPath collectionTermPath = new TermPath(termPath.getFullyQualifiedName() + ".");
+        Request queryRequest = new CollectionRequest(Collections.<String, Object>singletonMap("termPath",
+                collectionTermPath), null);
+
+        AtlasQuery collectionQuery;
+        try {
+            collectionQuery = queryFactory.createTermQuery(queryRequest);
+        } catch (InvalidQueryException e) {
+            throw new CatalogRuntimeException("Failed to compile internal predicate: " + e, e);
+        }
+
+        Collection<Map<String, Object>> children = collectionQuery.execute();
+        for (Map<String, Object> childMap : children) {
+            deleteTerm(taxonomyId, new TermPath(String.valueOf(childMap.get("name"))));
+        }
+    }
+
+    private void deleteTerm(String taxonomyId, TermPath termPath)
+            throws ResourceNotFoundException, InvalidPayloadException {
+
+        String  fullyQualifiedName = termPath.getFullyQualifiedName();
+        deleteEntityTagsForTerm(fullyQualifiedName);
+
+        // delete term instance associated with the taxonomy
+        typeSystem.deleteTag(taxonomyId, fullyQualifiedName);
+        //todo: Currently no way to delete type via MetadataService or MetadataRepository
+    }
+
+    private void deleteEntityTagsForTerm(String fullyQualifiedName) throws ResourceNotFoundException {
+        String  entityQueryStr = String.format("tags/name:%s", fullyQualifiedName);
+        Request entityRequest  = new CollectionRequest(Collections.<String, Object>emptyMap(), entityQueryStr);
+        Result entityResult;
+        try {
+            entityResult = getEntityResourceProvider().getResources(entityRequest);
+        } catch (InvalidQueryException e) {
+            throw new CatalogRuntimeException(String.format(
+                    "Failed to compile internal predicate for query '%s': %s", entityQueryStr, e), e);
+        }
+
+        for (Map<String, Object> entityResultMap : entityResult.getPropertyMaps()) {
+            Map<String, Object> tagRequestProperties = new HashMap<>();
+            tagRequestProperties.put("id", String.valueOf(entityResultMap.get("id")));
+            tagRequestProperties.put("name", fullyQualifiedName);
+            try {
+                getEntityTagResourceProvider().deleteResourceById(new InstanceRequest(tagRequestProperties));
+            } catch (InvalidPayloadException e) {
+                throw new CatalogRuntimeException(
+                        "An internal error occurred while trying to delete an entity tag: " + e, e);
+            }
+        }
+    }
+
+    private String getTaxonomyId(TermPath termPath) throws ResourceNotFoundException {
+        Request taxonomyRequest = new InstanceRequest(Collections.<String, Object>singletonMap(
+                "name", termPath.getTaxonomyName()));
+        taxonomyRequest.addAdditionalSelectProperties(Collections.singleton("id"));
+        // will result in proper ResourceNotFoundException if taxonomy doesn't exist
+        Result taxonomyResult = getTaxonomyResourceProvider().getResourceById(taxonomyRequest);
+
+        Map<String, Object> taxonomyResultMap = taxonomyResult.getPropertyMaps().iterator().next();
+        return String.valueOf(taxonomyResultMap.get("id"));
+    }
+
     //todo: add generic support for pre-query modification of expected value
     //todo: similar path parsing code is used in several places in this class
     private String doQueryStringConversions(TermPath termPath, String queryStr) throws InvalidQueryException {
@@ -117,6 +196,20 @@ public class TermResourceProvider extends BaseResourceProvider implements Resour
             taxonomyResourceProvider = new TaxonomyResourceProvider(typeSystem);
         }
         return taxonomyResourceProvider;
+    }
+
+    protected synchronized ResourceProvider getEntityResourceProvider() {
+        if (entityResourceProvider == null) {
+            entityResourceProvider = new EntityResourceProvider(typeSystem);
+        }
+        return entityResourceProvider;
+    }
+
+    protected synchronized ResourceProvider getEntityTagResourceProvider() {
+        if (entityTagResourceProvider == null) {
+            entityTagResourceProvider = new EntityTagResourceProvider(typeSystem);
+        }
+        return entityTagResourceProvider;
     }
 }
 

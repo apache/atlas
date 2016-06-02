@@ -16,26 +16,18 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.catalog.query;
+package org.apache.atlas.catalog.projection;
 
-import com.tinkerpop.gremlin.java.GremlinPipeline;
-import com.tinkerpop.pipes.Pipe;
-import org.apache.atlas.catalog.Request;
-import org.apache.atlas.catalog.definition.ResourceDefinition;
+import com.tinkerpop.blueprints.Vertex;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.typesystem.persistence.Id;
 
 /**
- * Entity resource query.
+ * Provides functionality common across implementations.
  */
-public class AtlasEntityQuery extends BaseQuery {
-    public AtlasEntityQuery(QueryExpression queryExpression, ResourceDefinition resourceDefinition, Request request) {
-        super(queryExpression, resourceDefinition, request);
-    }
-
-    protected Pipe getQueryPipe() {
-        //todo: the property 'entityText' isn't currently indexed
-        //todo: we could use Constants.ENTITY_TYPE_PROPERTY_KEY initially but trait instances also contain this property
-        return new GremlinPipeline().has(Constants.ENTITY_TEXT_PROPERTY_KEY).
-                hasNot(Constants.ENTITY_TYPE_PROPERTY_KEY, "Taxonomy");
+public abstract class BaseRelation implements Relation {
+    protected boolean isDeleted(Vertex v) {
+        return ! Id.EntityState.ACTIVE.name().equals(
+                v.<String>getProperty(Constants.STATE_PROPERTY_KEY));
     }
 }

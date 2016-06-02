@@ -59,4 +59,26 @@ public abstract class BaseRequest implements Request {
     public Collection<String> getAdditionalSelectProperties() {
         return additionalSelectProperties;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        BaseRequest that = (BaseRequest) o;
+
+        return properties.equals(that.properties) &&
+                additionalSelectProperties.equals(that.additionalSelectProperties) &&
+                queryString == null ?
+                that.queryString == null :
+                queryString.equals(that.queryString);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = properties.hashCode();
+        result = 31 * result + (queryString != null ? queryString.hashCode() : 0);
+        result = 31 * result + additionalSelectProperties.hashCode();
+        return result;
+    }
 }

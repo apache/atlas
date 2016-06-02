@@ -21,6 +21,7 @@ package org.apache.atlas.catalog.query;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
+import com.tinkerpop.pipes.Pipe;
 import com.tinkerpop.pipes.PipeFunction;
 import com.tinkerpop.pipes.filter.FilterFunctionPipe;
 import org.apache.atlas.catalog.Request;
@@ -45,8 +46,8 @@ public class AtlasEntityTagQuery extends BaseQuery {
     }
 
     @Override
-    protected GremlinPipeline getInitialPipeline() {
-        GremlinPipeline p =  new GremlinPipeline(getGraph()).V().has(Constants.GUID_PROPERTY_KEY, guid).outE();
+    protected Pipe getQueryPipe() {
+        GremlinPipeline p =  new GremlinPipeline().has(Constants.GUID_PROPERTY_KEY, guid).outE();
         //todo: this is basically the same pipeline used in TagRelation.asPipe()
         p.add(new FilterFunctionPipe<>(new PipeFunction<Edge, Boolean>() {
             @Override

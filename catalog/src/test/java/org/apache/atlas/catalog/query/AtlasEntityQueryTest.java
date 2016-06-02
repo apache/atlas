@@ -43,12 +43,16 @@ public class AtlasEntityQueryTest {
     public void testExecute_Collection() throws Exception {
         TitanGraph graph = createStrictMock(TitanGraph.class);
         QueryExpression expression = createStrictMock(QueryExpression.class);
-        ResourceDefinition resourceDefinition = createNiceMock(ResourceDefinition.class);
-        Request request = createNiceMock(Request.class);
-        Pipe queryExpressionPipe = createStrictMock(Pipe.class);
+        ResourceDefinition resourceDefinition = createStrictMock(ResourceDefinition.class);
+        Request request = createStrictMock(Request.class);
         GremlinPipeline initialPipeline = createStrictMock(GremlinPipeline.class);
+        Pipe queryPipe = createStrictMock(Pipe.class);
+        Pipe expressionPipe = createStrictMock(Pipe.class);
+        Pipe notDeletedPipe = createStrictMock(Pipe.class);
         GremlinPipeline rootPipeline = createStrictMock(GremlinPipeline.class);
+        GremlinPipeline queryPipeline = createStrictMock(GremlinPipeline.class);
         GremlinPipeline expressionPipeline = createStrictMock(GremlinPipeline.class);
+        GremlinPipeline notDeletedPipeline = createStrictMock(GremlinPipeline.class);
         Vertex vertex1 = createStrictMock(Vertex.class);
         VertexWrapper vertex1Wrapper = createStrictMock(VertexWrapper.class);
 
@@ -63,9 +67,11 @@ public class AtlasEntityQueryTest {
         filteredVertex1PropertyMap.put("prop1", "prop1.value1");
 
         // mock expectations
+        expect(initialPipeline.add(queryPipe)).andReturn(queryPipeline);
+        expect(initialPipeline.add(notDeletedPipe)).andReturn(notDeletedPipeline);
         expect(initialPipeline.as("root")).andReturn(rootPipeline);
-        expect(expression.asPipe()).andReturn(queryExpressionPipe);
-        expect(rootPipeline.add(queryExpressionPipe)).andReturn(expressionPipeline);
+        expect(expression.asPipe()).andReturn(expressionPipe);
+        expect(rootPipeline.add(expressionPipe)).andReturn(expressionPipeline);
         expect(expressionPipeline.back("root")).andReturn(rootPipeline);
         expect(rootPipeline.toList()).andReturn(results);
         graph.commit();
@@ -74,12 +80,13 @@ public class AtlasEntityQueryTest {
         expect(resourceDefinition.resolveHref(filteredVertex1PropertyMap)).andReturn("/foo/bar");
         expect(request.getCardinality()).andReturn(Request.Cardinality.COLLECTION);
 
-        replay(graph, expression, resourceDefinition, request, queryExpressionPipe,
-                initialPipeline, rootPipeline, expressionPipeline, vertex1, vertex1Wrapper);
+        replay(graph, expression, resourceDefinition, request, initialPipeline, queryPipe, expressionPipe,
+                notDeletedPipe, rootPipeline, queryPipeline, expressionPipeline, notDeletedPipeline,
+                vertex1, vertex1Wrapper);
         // end mock expectations
 
-        AtlasEntityQuery query = new TestAtlasEntityQuery(
-                expression, resourceDefinition, request, initialPipeline, graph, vertex1Wrapper);
+        AtlasEntityQuery query = new TestAtlasEntityQuery(expression, resourceDefinition, request,
+                initialPipeline, queryPipe, notDeletedPipe, graph, vertex1Wrapper);
 
         // invoke method being tested
         Collection<Map<String, Object>> queryResults = query.execute();
@@ -90,36 +97,46 @@ public class AtlasEntityQueryTest {
         assertEquals(queryResultMap.get("prop1"), "prop1.value1");
         assertEquals(queryResultMap.get("href"), "/foo/bar");
 
-        verify(graph, expression, resourceDefinition, request, queryExpressionPipe,
-                initialPipeline, rootPipeline, expressionPipeline, vertex1, vertex1Wrapper);
+        verify(graph, expression, resourceDefinition, request, initialPipeline, queryPipe, expressionPipe,
+                notDeletedPipe, rootPipeline, queryPipeline, expressionPipeline, notDeletedPipeline,
+                vertex1, vertex1Wrapper);
     }
+
+
+
+
 
     @Test
     public void testExecute_Collection_rollbackOnException() throws Exception {
         TitanGraph graph = createStrictMock(TitanGraph.class);
         QueryExpression expression = createStrictMock(QueryExpression.class);
-        ResourceDefinition resourceDefinition = createNiceMock(ResourceDefinition.class);
-        Request request = createNiceMock(Request.class);
-        Pipe queryExpressionPipe = createStrictMock(Pipe.class);
+        ResourceDefinition resourceDefinition = createStrictMock(ResourceDefinition.class);
+        Request request = createStrictMock(Request.class);
         GremlinPipeline initialPipeline = createStrictMock(GremlinPipeline.class);
+        Pipe queryPipe = createStrictMock(Pipe.class);
+        Pipe expressionPipe = createStrictMock(Pipe.class);
+        Pipe notDeletedPipe = createStrictMock(Pipe.class);
         GremlinPipeline rootPipeline = createStrictMock(GremlinPipeline.class);
+        GremlinPipeline queryPipeline = createStrictMock(GremlinPipeline.class);
         GremlinPipeline expressionPipeline = createStrictMock(GremlinPipeline.class);
+        GremlinPipeline notDeletedPipeline = createStrictMock(GremlinPipeline.class);
 
         // mock expectations
+        expect(initialPipeline.add(queryPipe)).andReturn(queryPipeline);
+        expect(initialPipeline.add(notDeletedPipe)).andReturn(notDeletedPipeline);
         expect(initialPipeline.as("root")).andReturn(rootPipeline);
-        expect(expression.asPipe()).andReturn(queryExpressionPipe);
-        expect(rootPipeline.add(queryExpressionPipe)).andReturn(expressionPipeline);
+        expect(expression.asPipe()).andReturn(expressionPipe);
+        expect(rootPipeline.add(expressionPipe)).andReturn(expressionPipeline);
         expect(expressionPipeline.back("root")).andReturn(rootPipeline);
         expect(rootPipeline.toList()).andThrow(new RuntimeException("something bad happened"));
         graph.rollback();
 
-        replay(graph, expression, resourceDefinition, request, queryExpressionPipe,
-                initialPipeline, rootPipeline, expressionPipeline);
-
+        replay(graph, expression, resourceDefinition, request, initialPipeline, queryPipe, expressionPipe,
+                notDeletedPipe, rootPipeline, queryPipeline, expressionPipeline, notDeletedPipeline);
         // end mock expectations
 
-        AtlasEntityQuery query = new TestAtlasEntityQuery(
-                expression, resourceDefinition, request, initialPipeline, graph, null);
+        AtlasEntityQuery query = new TestAtlasEntityQuery(expression, resourceDefinition, request,
+                initialPipeline, queryPipe, notDeletedPipe, graph, null);
 
         try {
             // invoke method being tested
@@ -129,13 +146,14 @@ public class AtlasEntityQueryTest {
             assertEquals(e.getMessage(), "something bad happened");
         }
 
-        verify(graph, expression, resourceDefinition, request, queryExpressionPipe,
-                initialPipeline, rootPipeline, expressionPipeline);
-
+        verify(graph, expression, resourceDefinition, request, initialPipeline, queryPipe, expressionPipe,
+                notDeletedPipe, rootPipeline, queryPipeline, expressionPipeline, notDeletedPipeline);
     }
 
     private class TestAtlasEntityQuery extends AtlasEntityQuery {
         private final GremlinPipeline initialPipeline;
+        private final Pipe queryPipe;
+        private final Pipe notDeletedPipe;
         private final TitanGraph graph;
         private final VertexWrapper vWrapper;
 
@@ -143,18 +161,32 @@ public class AtlasEntityQueryTest {
                                     ResourceDefinition resourceDefinition,
                                     Request request,
                                     GremlinPipeline initialPipeline,
+                                    Pipe queryPipe,
+                                    Pipe notDeletedPipe,
                                     TitanGraph graph,
                                     VertexWrapper vWrapper) {
 
             super(queryExpression, resourceDefinition, request);
             this.initialPipeline = initialPipeline;
+            this.queryPipe = queryPipe;
+            this.notDeletedPipe = notDeletedPipe;
             this.graph = graph;
             this.vWrapper = vWrapper;
         }
 
         @Override
-        protected GremlinPipeline getInitialPipeline() {
+        protected GremlinPipeline getRootVertexPipeline() {
             return initialPipeline;
+        }
+
+        @Override
+        protected Pipe getQueryPipe() {
+            return queryPipe;
+        }
+
+        @Override
+        protected Pipe getNotDeletedPipe() {
+            return notDeletedPipe;
         }
 
         @Override

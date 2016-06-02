@@ -18,15 +18,20 @@
 
 package org.apache.atlas.catalog;
 
+import com.thinkaurelius.titan.core.TitanGraph;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.catalog.definition.ResourceDefinition;
 import org.apache.atlas.catalog.exception.CatalogRuntimeException;
 import org.apache.atlas.catalog.exception.ResourceAlreadyExistsException;
+import org.apache.atlas.catalog.exception.ResourceNotFoundException;
+import org.apache.atlas.repository.graph.TitanGraphProvider;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.exception.EntityExistsException;
+import org.apache.atlas.typesystem.exception.EntityNotFoundException;
+import org.apache.atlas.typesystem.exception.TraitNotFoundException;
 import org.apache.atlas.typesystem.exception.TypeExistsException;
 import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.typesystem.types.*;
@@ -71,6 +76,24 @@ public class DefaultTypeSystem implements AtlasTypeSystem {
     }
 
     @Override
+    public void deleteEntity(ResourceDefinition definition, Request request) throws ResourceNotFoundException {
+        String typeName = definition.getTypeName();
+        String cleanIdPropName = definition.getIdPropertyName();
+        String idValue = request.getProperty(cleanIdPropName);
+        try {
+            // transaction handled by atlas repository
+            metadataService.deleteEntityByUniqueAttribute(typeName, cleanIdPropName, idValue);
+        } catch (EntityNotFoundException e) {
+            throw new ResourceNotFoundException(String.format("The specified entity doesn't exist: type=%s, %s=%s",
+                    typeName, cleanIdPropName, idValue));
+        } catch (AtlasException e) {
+            throw new CatalogRuntimeException(String.format(
+                    "An unexpected error occurred while attempting to delete entity: type=%s, %s=%s : %s",
+                    typeName, cleanIdPropName, idValue, e), e);
+        }
+    }
+
+    @Override
     public void createClassType(ResourceDefinition resourceDefinition, String name, String description)
             throws ResourceAlreadyExistsException {
 
@@ -84,6 +107,7 @@ public class DefaultTypeSystem implements AtlasTypeSystem {
         createType(resourceDefinition.getPropertyDefinitions(), TraitType.class, name, description, true);
     }
 
+    @Override
     public void createTraitInstance(String guid, String typeName, Map<String, Object> properties)
             throws ResourceAlreadyExistsException {
 
@@ -105,6 +129,19 @@ public class DefaultTypeSystem implements AtlasTypeSystem {
         } catch (AtlasException e) {
             throw new CatalogRuntimeException(String.format(
                     "Unable to create trait instance '%s' in type system: %s", typeName, e), e);
+        }
+    }
+
+    @Override
+    public void deleteTag(String guid, String traitName) throws ResourceNotFoundException {
+        try {
+            metadataService.deleteTrait(guid, traitName);
+        } catch (TraitNotFoundException e) {
+            throw new ResourceNotFoundException(String.format(
+                    "The trait '%s' doesn't exist for entity '%s'", traitName, guid));
+        } catch (AtlasException e) {
+            throw new CatalogRuntimeException(String.format(
+                    "Unable to delete tag '%s' from entity '%s'", traitName, guid), e);
         }
     }
 

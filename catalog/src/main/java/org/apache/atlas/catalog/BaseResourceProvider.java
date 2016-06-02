@@ -18,10 +18,9 @@
 
 package org.apache.atlas.catalog;
 
-import org.apache.atlas.catalog.definition.ResourceDefinition;
+import org.apache.atlas.catalog.exception.InvalidPayloadException;
+import org.apache.atlas.catalog.exception.ResourceNotFoundException;
 import org.apache.atlas.catalog.query.QueryFactory;
-
-import java.util.*;
 
 /**
  * Base class for resource providers.
@@ -36,5 +35,10 @@ public abstract class BaseResourceProvider implements ResourceProvider {
 
     protected void setQueryFactory(QueryFactory factory) {
         queryFactory = factory;
+    }
+
+    @Override
+    public void deleteResourceById(Request request) throws ResourceNotFoundException, InvalidPayloadException {
+        throw new InvalidPayloadException("Delete is not supported for this resource type");
     }
 }

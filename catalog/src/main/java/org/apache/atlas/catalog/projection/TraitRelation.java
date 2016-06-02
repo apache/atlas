@@ -38,7 +38,7 @@ import java.util.Collections;
  * Trait specific relation.
  */
 //todo: combine with TagRelation
-public class TraitRelation implements Relation {
+public class TraitRelation extends BaseRelation {
     //todo: for now using entity tag resource definition
     private static ResourceDefinition resourceDefinition = new EntityTagResourceDefinition();
 
@@ -49,7 +49,7 @@ public class TraitRelation implements Relation {
         for (Edge e : v.getEdges(Direction.OUT)) {
             if (e.getLabel().startsWith(v.<String>getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY))) {
                 VertexWrapper trait = new TermVertexWrapper(e.getVertex(Direction.IN));
-                if (! trait.getPropertyKeys().contains("available_as_tag")) {
+                if (! trait.getPropertyKeys().contains("available_as_tag") && ! isDeleted(trait.getVertex())) {
                     vertices.add(trait);
                 }
             }
@@ -62,9 +62,13 @@ public class TraitRelation implements Relation {
         return new FilterFunctionPipe<>(new PipeFunction<Edge, Boolean>() {
             @Override
             public Boolean compute(Edge edge) {
-                String type = edge.getVertex(Direction.OUT).getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY);
-                VertexWrapper v = new TermVertexWrapper(edge.getVertex(Direction.IN));
-                return edge.getLabel().startsWith(type) && ! v.getPropertyKeys().contains("available_as_tag");
+                String name = edge.getVertex(Direction.OUT).getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY);
+                if (edge.getLabel().startsWith(name)) {
+                    VertexWrapper v = new TermVertexWrapper(edge.getVertex(Direction.IN));
+                    return ! v.getPropertyKeys().contains("available_as_tag") && ! isDeleted(v.getVertex());
+                } else {
+                    return false;
+                }
             }
         });
     }

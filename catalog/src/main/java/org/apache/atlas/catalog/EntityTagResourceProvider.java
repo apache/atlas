@@ -96,6 +96,11 @@ public class EntityTagResourceProvider extends BaseResourceProvider implements R
         return relativeUrls;
     }
 
+    @Override
+    public void deleteResourceById(Request request) throws ResourceNotFoundException, InvalidPayloadException {
+        typeSystem.deleteTag(request.<String>getProperty("id"), request.<String>getProperty("name"));
+    }
+
     private Result getTermQueryResult(String termName) throws ResourceNotFoundException {
         Request tagRequest = new InstanceRequest(
                 Collections.<String, Object>singletonMap("termPath", new TermPath(termName)));

@@ -29,9 +29,12 @@ import java.util.*;
  * Provider for taxonomy resources.
  */
 public class TaxonomyResourceProvider extends BaseResourceProvider implements ResourceProvider {
+    private final TermResourceProvider termResourceProvider;
     private static final ResourceDefinition resourceDefinition = new TaxonomyResourceDefinition();
+
     public TaxonomyResourceProvider(AtlasTypeSystem typeSystem) {
         super(typeSystem);
+        termResourceProvider = new TermResourceProvider(typeSystem);
     }
 
     @Override
@@ -68,6 +71,17 @@ public class TaxonomyResourceProvider extends BaseResourceProvider implements Re
         throw new UnsupportedOperationException("Creating multiple Taxonomies in a request is not currently supported");
     }
 
+    @Override
+    public void deleteResourceById(Request request) throws ResourceNotFoundException, InvalidPayloadException {
+        request.addAdditionalSelectProperties(Collections.singleton("id"));
+        // will result in expected ResourceNotFoundException if taxonomy doesn't exist
+        Result taxonomyResult = getResourceById(request);
+        String taxonomyId = String.valueOf(taxonomyResult.getPropertyMaps().iterator().next().get("id"));
+
+        getTermResourceProvider().deleteChildren(taxonomyId, new TermPath(request.<String>getProperty("name")));
+        typeSystem.deleteEntity(resourceDefinition, request);
+    }
+
     private void ensureTaxonomyDoesntExist(Request request) throws ResourceAlreadyExistsException {
         try {
             getResourceById(request);
@@ -76,5 +90,9 @@ public class TaxonomyResourceProvider extends BaseResourceProvider implements Re
         } catch (ResourceNotFoundException e) {
             // expected case
         }
+    }
+
+    protected TermResourceProvider getTermResourceProvider() {
+        return termResourceProvider;
     }
 }

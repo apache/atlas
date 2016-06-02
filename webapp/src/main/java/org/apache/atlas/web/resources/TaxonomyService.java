@@ -91,6 +91,22 @@ public class TaxonomyService extends BaseService {
                 new Results(ui.getRequestUri().toString(), 201)).build();
     }
 
+    @DELETE
+    @Path("{taxonomyName}")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response deleteTaxonomy(@Context HttpHeaders headers,
+                                   @Context UriInfo ui,
+                                   @PathParam("taxonomyName") String taxonomyName) throws CatalogException {
+
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("name", taxonomyName);
+
+        deleteResource(taxonomyResourceProvider, new InstanceRequest(properties));
+
+        return Response.status(Response.Status.OK).entity(
+                new Results(ui.getRequestUri().toString(), 200)).build();
+    }
+
     @GET
     @Path("{taxonomyName}/terms/{termName}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
@@ -170,6 +186,22 @@ public class TaxonomyService extends BaseService {
 
         return Response.status(Response.Status.CREATED).entity(
                 new Results(ui.getRequestUri().toString(), 201)).build();
+    }
+
+    @DELETE
+    @Path("{taxonomyName}/terms/{termName}")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response deleteTerm(@Context HttpHeaders headers,
+                               @Context UriInfo ui,
+                               @PathParam("taxonomyName") String taxonomyName,
+                               @PathParam("termName") String termName) throws CatalogException {
+
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("termPath", new TermPath(taxonomyName, termName));
+        deleteResource(termResourceProvider, new InstanceRequest(properties));
+
+        return Response.status(Response.Status.OK).entity(
+                new Results(ui.getRequestUri().toString(), 200)).build();
     }
 
     @POST

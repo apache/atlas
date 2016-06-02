@@ -19,6 +19,7 @@
 package org.apache.atlas.catalog.query;
 
 import com.tinkerpop.gremlin.java.GremlinPipeline;
+import com.tinkerpop.pipes.Pipe;
 import org.apache.atlas.catalog.Request;
 import org.apache.atlas.catalog.definition.ResourceDefinition;
 
@@ -31,7 +32,7 @@ public class AtlasTaxonomyQuery extends BaseQuery {
     }
 
     @Override
-    protected GremlinPipeline getInitialPipeline() {
-        return new GremlinPipeline(getGraph()).V().has("__typeName", "Taxonomy");
+    protected Pipe getQueryPipe() {
+        return new GremlinPipeline().has("__typeName", "Taxonomy");
     }
 }

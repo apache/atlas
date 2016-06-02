@@ -37,7 +37,7 @@ import java.util.Collections;
 /**
  * Relation for adjacent Tag vertices.
  */
-public class TagRelation implements Relation {
+public class TagRelation extends BaseRelation {
     private static ResourceDefinition resourceDefinition = new EntityTagResourceDefinition();
     @Override
     public Collection<RelationSet> traverse(VertexWrapper vWrapper) {
@@ -46,7 +46,7 @@ public class TagRelation implements Relation {
         for (Edge e : v.getEdges(Direction.OUT)) {
             if (e.getLabel().startsWith(v.<String>getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY))) {
                 VertexWrapper trait = new TermVertexWrapper(e.getVertex(Direction.IN));
-                if (trait.getPropertyKeys().contains("available_as_tag")) {
+                if (trait.getPropertyKeys().contains("available_as_tag") && ! isDeleted(trait.getVertex())) {
                     vertices.add(trait);
                 }
             }
@@ -60,8 +60,12 @@ public class TagRelation implements Relation {
             @Override
             public Boolean compute(Edge edge) {
                 String name = edge.getVertex(Direction.OUT).getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY);
-                VertexWrapper v = new TermVertexWrapper(edge.getVertex(Direction.IN));
-                return edge.getLabel().startsWith(name) && v.getPropertyKeys().contains("available_as_tag");
+                if (edge.getLabel().startsWith(name)) {
+                    VertexWrapper v = new TermVertexWrapper(edge.getVertex(Direction.IN));
+                    return v.getPropertyKeys().contains("available_as_tag") && ! isDeleted(v.getVertex());
+                } else {
+                    return false;
+                }
             }
         });
     }

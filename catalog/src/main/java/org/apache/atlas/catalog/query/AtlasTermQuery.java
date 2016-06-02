@@ -20,6 +20,7 @@ package org.apache.atlas.catalog.query;
 
 import com.thinkaurelius.titan.core.attribute.Text;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
+import com.tinkerpop.pipes.Pipe;
 import org.apache.atlas.catalog.Request;
 import org.apache.atlas.catalog.TermPath;
 import org.apache.atlas.catalog.definition.ResourceDefinition;
@@ -37,8 +38,8 @@ public class AtlasTermQuery extends BaseQuery {
     }
 
     @Override
-    protected GremlinPipeline getInitialPipeline() {
-        return new GremlinPipeline(getGraph()).V().has("Taxonomy.name", termPath.getTaxonomyName()).out().
+    protected Pipe getQueryPipe() {
+        return new GremlinPipeline().has("Taxonomy.name", termPath.getTaxonomyName()).out().
                 has(Constants.ENTITY_TYPE_PROPERTY_KEY, Text.PREFIX, termPath.getFullyQualifiedName());
     }
 }

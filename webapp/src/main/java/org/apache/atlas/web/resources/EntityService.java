@@ -144,4 +144,21 @@ public class EntityService extends BaseService {
         return Response.status(Response.Status.CREATED).entity(
                 new GenericEntity<Collection<Results>>(result) {}).build();
     }
+
+    @DELETE
+    @Path("{entityId}/tags/{tag}")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response deleteEntityTag(@Context HttpHeaders headers,
+                                    @Context UriInfo ui,
+                                    @PathParam("entityId") String entityId,
+                                    @PathParam("tag") String tagName) throws CatalogException {
+
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("id", entityId);
+        properties.put("name", tagName);
+        deleteResource(entityTagResourceProvider, new InstanceRequest(properties));
+
+        return Response.status(Response.Status.OK).entity(
+                new Results(ui.getRequestUri().toString(), 200)).build();
+    }
 }

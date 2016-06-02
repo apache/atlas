@@ -424,6 +424,27 @@ public class EntityTagResourceProviderTest {
         verify(typeSystem, queryFactory, entityQuery, termResourceProvider);
     }
 
+    @Test
+    public void testDeleteResourceById() throws Exception {
+        AtlasTypeSystem typeSystem = createStrictMock(AtlasTypeSystem.class);
+
+        // mock expectations
+        typeSystem.deleteTag("1", "taxonomyName.termName");
+        replay(typeSystem);
+
+        Map<String, Object> requestProperties = new HashMap<>();
+        requestProperties.put("name", "taxonomyName.termName");
+        requestProperties.put("id", "1");
+        Request userRequest = new InstanceRequest(requestProperties);
+
+        // instantiate EntityTagResourceProvider and invoke method being tested
+        EntityTagResourceProvider provider = new EntityTagResourceProvider(typeSystem);
+        provider.setQueryFactory(null);
+        provider.deleteResourceById(userRequest);
+
+        verify(typeSystem);
+    }
+
     //todo: test behavior of createResources in case of partial success after behavior is defined
 
 
