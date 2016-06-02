@@ -75,10 +75,10 @@ define(['require',
                     collection: this.schemaCollection,
                     includeFilter: false,
                     includePagination: true,
-                    includePageSize: true,
+                    includePageSize: false,
                     includeFooterRecords: true,
                     gridOpts: {
-                        className: "table table-striped table-condensed backgrid table-quickMenu",
+                        className: "table table-hover backgrid table-quickMenu",
                         emptyText: 'No records found!'
                     },
                     filterOpts: {},
@@ -111,10 +111,7 @@ define(['require',
                     var cols = new Backgrid.Columns(that.getSchemaTableColumns());
                     that.RTagLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
                         globalVent: that.globalVent,
-                        columns: cols,
-                        gridOpts: {
-                            className: "table table-quickMenu",
-                        },
+                        columns: cols
                     })));
                 });
             },

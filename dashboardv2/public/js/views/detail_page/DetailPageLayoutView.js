@@ -112,22 +112,7 @@ define(['require',
              */
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'globalVent', 'collection', 'vent', 'id'));
-                this.key = 'branchDetail';
-                //this.updateValue();
                 this.bindEvents();
-                this.commonTableOptions = {
-                    collection: this.collection,
-                    includeFilter: false,
-                    includePagination: false,
-                    includePageSize: false,
-                    includeFooterRecords: true,
-                    gridOpts: {
-                        className: "table table-striped table-condensed backgrid table-quickMenu",
-                        emptyText: 'No records found!'
-                    },
-                    filterOpts: {},
-                    paginatorOpts: {}
-                };
             },
             bindEvents: function() {
                 var that = this;
@@ -170,14 +155,6 @@ define(['require',
             onRender: function() {
                 var that = this;
                 this.ui.editBox.hide();
-                /*    this.ui.appendList.on('click', 'div', function(e) {
-                        if (e.target.nodeName == "INPUT") {
-                            return false;
-                        }
-                        that.ui.addTagtext.hide();
-                        that.ui.addTagPlus.show();
-                        that.saveTagFromList($(this));
-                    });*/
             },
             fetchCollection: function() {
                 this.collection.fetch({ reset: true });

@@ -62,7 +62,7 @@ define(['require',
                     collection: this.entityCollection,
                     includeFilter: false,
                     includePagination: true,
-                    includePageSize: true,
+                    includePageSize: false,
                     includeFooterRecords: true,
                     gridOpts: {
                         className: "table table-hover backgrid table-quickMenu",
