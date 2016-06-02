@@ -20,6 +20,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
@@ -49,8 +50,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import static com.thinkaurelius.titan.diskstorage.EntryMetaData.*;
 
 /**
  * Here are some areas that might need work:
@@ -85,7 +84,9 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
     private LocalLockMediator<StoreTransaction> localLockMediator;
 
-    private Duration lockExpiryTime;
+    private final Duration lockExpiryTimeMs;
+    private final Duration lockMaxWaitTimeMs;
+    private final Integer lockMaxRetries;
 
     HBaseKeyColumnValueStore(HBaseStoreManager storeManager, ConnectionMask cnx, String tableName, String columnFamily, String storeName, LocalLockMediator<StoreTransaction> llm) {
         this.storeManager = storeManager;
@@ -96,7 +97,10 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         this.columnFamilyBytes = columnFamily.getBytes();
         this.entryGetter = new HBaseGetter(storeManager.getMetaDataSchema(storeName));
         this.localLockMediator = llm;
-        this.lockExpiryTime = storeManager.getStorageConfig().get(GraphDatabaseConfiguration.LOCK_EXPIRE);
+        Configuration storageConfig = storeManager.getStorageConfig();
+        this.lockExpiryTimeMs = storageConfig.get(GraphDatabaseConfiguration.LOCK_EXPIRE);
+        this.lockMaxWaitTimeMs = storageConfig.get(GraphDatabaseConfiguration.LOCK_WAIT);
+        this.lockMaxRetries = storageConfig.get(GraphDatabaseConfiguration.LOCK_RETRY);
     }
 
     @Override
@@ -128,12 +132,35 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
         KeyColumn lockID = new KeyColumn(key, column);
         logger.debug("Attempting to acquireLock on {} ", lockID);
-        final Timepoint lockStartTime = Timestamps.NANO.getTime(System.nanoTime(), TimeUnit.NANOSECONDS);
-        boolean locked = localLockMediator.lock(lockID, txh, lockStartTime.add(lockExpiryTime));
-        if (!locked) {
-            throw new PermanentLockingException("Could not lock the keyColumn " + lockID +  " on CF {} " + Bytes.toString(columnFamilyBytes));
+        int trialCount = 0;
+        boolean locked;
+        while (trialCount < lockMaxRetries) {
+            final Timepoint lockStartTime = Timestamps.MILLI.getTime(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+            locked = localLockMediator.lock(lockID, txh, lockStartTime.add(lockExpiryTimeMs));
+            trialCount++;
+            if (!locked) {
+                handleLockFailure(txh, lockID, trialCount);
+            } else {
+                logger.debug("Acquired lock on {}, {}", lockID, txh);
+                break;
+            }
         }
         ((HBaseTransaction) txh).updateLocks(lockID, expectedValue);
+    }
+
+    void handleLockFailure(StoreTransaction txh, KeyColumn lockID, int trialCount) throws PermanentLockingException {
+        if (trialCount < lockMaxRetries) {
+            try {
+                Thread.sleep(lockMaxWaitTimeMs.getLength(TimeUnit.DAYS.MILLISECONDS));
+            } catch (InterruptedException e) {
+                throw new PermanentLockingException(
+                        "Interrupted while waiting for acquiring lock for transaction "
+                        + txh + " lockID " + lockID + " on retry " + trialCount, e);
+            }
+        } else {
+            throw new PermanentLockingException("Could not lock the keyColumn " +
+                    lockID + " on CF {} " + Bytes.toString(columnFamilyBytes));
+        }
     }
 
     @Override

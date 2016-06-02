@@ -220,3 +220,18 @@ atlas.client.ha.sleep.interval.ms=5000
 # Set the following property to true, to enable the setup steps to run on each server start. Default = false.
 atlas.server.run.setup.on.start=false
 </verbatim>
+
+---++ Performance configuration items
+
+The following properties can be used to tune performance of Atlas under specific circumstances:
+
+<verbatim>
+# The number of times Atlas code tries to acquire a lock (to ensure consistency) while committing a transaction.
+# This should be related to the amount of concurrency expected to be supported by the server. For e.g. with retries set to 10, upto 100 threads can concurrently create types in the Atlas system.
+# If this is set to a low value (default is 3), concurrent operations might fail with a PermanentLockingException.
+atlas.graph.storage.lock.retries=10
+
+# Milliseconds to wait before evicting a cached entry. This should be > atlas.graph.storage.lock.wait-time x atlas.graph.storage.lock.retries
+# If this is set to a low value (default is 10000), warnings on transactions taking too long will occur in the Atlas application log.
+atlas.graph.storage.cache.db-cache-time=120000
+</verbatim>
