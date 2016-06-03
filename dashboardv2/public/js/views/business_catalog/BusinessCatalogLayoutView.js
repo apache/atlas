@@ -83,7 +83,13 @@ define(['require',
                 var that = this;
                 this.listenTo(this.parentCollection, 'reset', function() {
                     this.dblClick = false;
-                    this.generateTree(true);
+                    if (this.parentCollection.fullCollection.models.length) {
+                        this.generateTree(true);
+                    } else {
+                        if (Utils.getUrlState.isTaxonomyTab()) {
+                            this.createDefaultTaxonomy();
+                        }
+                    }
                 }, this);
                 this.listenTo(this.childCollection, 'reset', function() {
                     this.dblClick = false;
@@ -516,6 +522,65 @@ define(['require',
                 this.refresh = this.$('.taxonomyTree').find('.active a').data('href');
                 this.fetchCollection(this.url);
                 this.changeArrowState();
+            },
+            createDefaultTaxonomy: function() {
+                var that = this;
+                require([
+                    'views/business_catalog/AddTermLayoutView',
+                    'modules/Modal'
+                ], function(AddTermLayoutView, Modal) {
+                    var view = new AddTermLayoutView({
+                        url: "/api/atlas/v1/taxonomies",
+                        model: new that.parentCollection.model()
+                    });
+                    var modal = new Modal({
+                        title: 'Default taxonomy',
+                        content: view,
+                        okCloses: true,
+                        showFooter: true,
+                        allowCancel: true,
+                        okText: 'Create',
+                    }).open();
+                    modal.$el.find('button.ok').attr('disabled', true);
+                    modal.on('ok', function() {
+                        that.saveDefaultTaxonomy(view);
+                    });
+                    view.ui.termName.attr("placeholder", "Default taxonomy name");
+                    view.ui.termName.on('keyup', function() {
+                        if (this.value.indexOf(' ') >= 0) {
+                            modal.$el.find('button.ok').prop('disabled', true);
+                        } else {
+                            modal.$el.find('button.ok').prop('disabled', false);
+                        }
+
+                    });
+                    view.on('closeModal', function() {
+                        modal.trigger('cancel');
+                    });
+                });
+            },
+            saveDefaultTaxonomy: function(view) {
+                var that = this;
+                var url = view.url;
+                view.model.url = url + "/" + view.ui.termName.val();
+                this.showLoader();
+                view.model.set({ description: view.ui.termDetail.val() }).save(null, {
+                    success: function(model, response) {
+                        that.fetchCollection(view.model.url, true);
+                        that.forwardClick(undefined, undefined, view.model.url);
+                        Utils.notifySuccess({
+                            content: "Default taxonomy" + view.ui.termName.val() + " Created successfully"
+                        });
+                    },
+                    error: function(error, data, status) {
+                        Utils.notifyError({
+                            content: "Default taxonomy " + view.ui.termName.val() + " could not be Created"
+                        });
+                    },
+                    complete: function() {
+                        that.hideLoader();
+                    }
+                });
             }
         });
     return BusinessCatalogLayoutView;
