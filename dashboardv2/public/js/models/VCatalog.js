@@ -37,6 +37,14 @@ define(['require',
         toString: function() {
             return this.get('name');
         },
+        deleteTerm: function(termURL, options) {
+            var url = Globals.baseURL + termURL;
+            options = _.extend({
+                contentType: 'application/json',
+                dataType: 'json'
+            }, options);
+            return this.constructor.nonCrudOperation.call(this, url, 'DELETE', options);
+        }
     }, {});
     return VCatalog;
 });
