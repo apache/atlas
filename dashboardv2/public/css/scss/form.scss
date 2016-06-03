@@ -102,7 +102,7 @@ button:focus {
     border-radius: 4px;
     //Instead of the line below you could use @include transition($transition-1, $transition-2, $transition-3, $transition-4, $transition-5, $transition-6, $transition-7, $transition-8, $transition-9, $transition-10)
     transition: all .3s ease;
-    margin:2px;
+    margin: 2px;
     &.cancel {
         background-color: $transparent;
         color: $color_keppel_approx;
@@ -142,21 +142,22 @@ button:focus {
     background-color: $transparent;
     color: $color_keppel_approx;
     margin-bottom: 10px;
+    border-radius: 4px;
+    padding: 5px 10px;
     &:hover {
-        color: $color_keppel_approx;
-    }
-    &:focus {
-        background-color: $transparent;
-        color: $color_keppel_approx;
+        background-color: $color_keppel_approx;
+        color: $white;
     }
 }
 
 .input-spacing {
     padding-bottom: 10px!important;
 }
+
 .input-group-btn .glyphicon {
     top: 2px;
 }
+
 .pagination > .active {
     > a {
         background-color: $color_curious_blue_approx;
@@ -170,7 +171,6 @@ button:focus {
             border-color: $color_curious_blue_approx;
         }
     }
-    
     > span {
         background-color: $color_curious_blue_approx;
         border-color: $color_curious_blue_approx;

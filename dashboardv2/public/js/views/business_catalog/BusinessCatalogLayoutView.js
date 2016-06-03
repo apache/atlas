@@ -41,7 +41,8 @@ define(['require',
                 liClick: 'li a[data-href]',
                 backTaxanomy: '[data-id="backTaxanomy"]',
                 expandArrow: '[data-id="expandArrow"]',
-                searchTermInput: '[data-id="searchTermInput"]'
+                searchTermInput: '[data-id="searchTermInput"]',
+                refreshTaxanomy: '[data-id="refreshTaxanomy"]'
             },
             /** ui events hash */
             events: function() {
@@ -56,6 +57,7 @@ define(['require',
                     this.forwardClick(e);
                 };
                 events['click ' + this.ui.backTaxanomy] = 'backButtonTaxanomy';
+                events['click ' + this.ui.refreshTaxanomy] = 'refreshButtonTaxanomy';
                 events['click ' + this.ui.expandArrow] = 'changeArrowState';
                 events["change " + this.ui.searchTermInput] = function() {
                     this.singleClick = false;
@@ -288,13 +290,11 @@ define(['require',
                     createTaxonomy();
                 } else {
                     this.changeArrowState();
-                    /*  if (!this.create) {
-                          this.changeArrowState();
-                      } else {
-                          this.create = false;
-                      }*/
                     createTerm();
-
+                }
+                if (this.refresh) {
+                    this.$('.taxonomyTree').find('a[data-href="' + this.refresh + '"]').parent().addClass('active');
+                    this.refresh = undefined;
                 }
                 this.$('.taxanomyloader').hide();
                 this.$('.contentLoading').hide();
@@ -354,6 +354,7 @@ define(['require',
                 view.model.set({ description: view.ui.termDetail.val() }).save(null, {
                     success: function(model, response) {
                         that.create = true;
+                        that.fetchTaxanomyCollections();
                         that.forwardClick(undefined, true, url);
                         //that.fetchCollection(that.url);
                         Utils.notifySuccess({
@@ -472,7 +473,13 @@ define(['require',
                     placeholder: "Search Term",
                     allowClear: true
                 });
-            }
+            },
+            refreshButtonTaxanomy: function() {
+                this.fetchTaxanomyCollections();
+                this.refresh = this.$('.taxonomyTree').find('.active a').data('href');
+                this.fetchCollection(this.url);
+                this.changeArrowState();
+            },
         });
     return BusinessCatalogLayoutView;
 });
