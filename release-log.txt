@@ -22,6 +22,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-858 Unable to delete terms via API which are 3 or more levels deep (jspeidel via sumasai)
 ATLAS-848 Atlas UI: Search term box in left navigation is not auto refresh.(Kalyanikashikar via sumasai)
 ATLAS-793 Business Catalog Delete (jspeidel via yhemanth)
 ATLAS-846 Atlas UI : Add Pagination to Tags and Terms tabs of asset detailes page (kevalbhatt18 via yhemanth)

@@ -38,7 +38,6 @@ public class EntityService extends BaseService {
 
     private final EntityResourceProvider entityResourceProvider;
     private final EntityTagResourceProvider entityTagResourceProvider;
-    private static JsonSerializer m_serializer = new JsonSerializer();
 
     @Inject
     public EntityService(MetadataService metadataService) {
@@ -55,7 +54,7 @@ public class EntityService extends BaseService {
         BaseRequest request = new CollectionRequest(Collections.<String, Object>emptyMap(), queryString);
         Result result = getResources(entityResourceProvider, request);
 
-        return Response.status(Response.Status.OK).entity(m_serializer.serialize(result, ui)).build();
+        return Response.status(Response.Status.OK).entity(getSerializer().serialize(result, ui)).build();
     }
 
     @GET
@@ -68,7 +67,7 @@ public class EntityService extends BaseService {
         BaseRequest request = new InstanceRequest(Collections.<String, Object>singletonMap("id", entityId));
         Result result = getResource(entityResourceProvider, request);
 
-        return Response.status(Response.Status.OK).entity(m_serializer.serialize(result, ui)).build();
+        return Response.status(Response.Status.OK).entity(getSerializer().serialize(result, ui)).build();
     }
 
     @GET
@@ -84,7 +83,7 @@ public class EntityService extends BaseService {
         properties.put("name", tagName);
         Result result = getResource(entityTagResourceProvider, new InstanceRequest(properties));
 
-        return Response.status(Response.Status.OK).entity(m_serializer.serialize(result, ui)).build();
+        return Response.status(Response.Status.OK).entity(getSerializer().serialize(result, ui)).build();
     }
 
     @GET
@@ -98,7 +97,7 @@ public class EntityService extends BaseService {
                 decode(getQueryString(ui)));
         Result result = getResources(entityTagResourceProvider, request);
 
-        return Response.status(Response.Status.OK).entity(m_serializer.serialize(result, ui)).build();
+        return Response.status(Response.Status.OK).entity(getSerializer().serialize(result, ui)).build();
     }
 
     @POST

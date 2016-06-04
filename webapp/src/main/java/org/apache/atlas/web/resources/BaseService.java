@@ -40,6 +40,7 @@ import java.util.Map;
 public abstract class BaseService {
     private static final Gson gson = new Gson();
     private final Logger LOG = LoggerFactory.getLogger(getClass());
+    private final static JsonSerializer serializer = new JsonSerializer();
 
     protected Result getResource(ResourceProvider provider, Request request)
             throws ResourceNotFoundException {
@@ -118,14 +119,18 @@ public abstract class BaseService {
         }
     }
 
-    private RuntimeException wrapRuntimeException(RuntimeException e) {
-        return e instanceof CatalogRuntimeException ? e : new CatalogRuntimeException(e);
+    protected JsonSerializer getSerializer() {
+        return serializer;
     }
 
     //todo: abstract via AtlasTypeSystem
     // ensure that the thread wasn't re-pooled with an existing transaction
-    private void initializeGraphTransaction() {
+    protected void initializeGraphTransaction() {
         TitanGraphProvider.getGraphInstance().rollback();
+    }
+
+    private RuntimeException wrapRuntimeException(RuntimeException e) {
+        return e instanceof CatalogRuntimeException ? e : new CatalogRuntimeException(e);
     }
 
     @XmlRootElement
