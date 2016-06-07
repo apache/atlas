@@ -246,6 +246,14 @@ define([
         },
         defaultAction: function(actions) {
             // We have no matching route, lets just log what the URL was
+            Utils.setUrl({
+                url: '#!/taxonomy',
+                mergeBrowserUrl: false,
+                updateTabState: function() {
+                    return { taxonomyUrl: this.url, stateChanged: false };
+                },
+                trigger: true
+            });
             console.log('No route:', actions);
         }
     });

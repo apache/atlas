@@ -109,7 +109,7 @@ define(['require',
                 }
             },
             setValues: function(manual) {
-                if (Utils.getUrlState.isTagTab() || Utils.getUrlState.isInitial()) {
+                if (Utils.getUrlState.isTagTab()) {
                     if (!this.tag) {
                         this.selectFirst = false;
                         this.ui.tagsParent.find('li').first().addClass('active');

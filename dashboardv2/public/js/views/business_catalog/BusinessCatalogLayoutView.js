@@ -86,7 +86,7 @@ define(['require',
                     if (this.parentCollection.fullCollection.models.length) {
                         this.generateTree(true);
                     } else {
-                        if (Utils.getUrlState.isTaxonomyTab()) {
+                        if (Utils.getUrlState.isTaxonomyTab() || Utils.getUrlState.isInitial()) {
                             this.createDefaultTaxonomy();
                         }
                     }
@@ -328,6 +328,9 @@ define(['require',
                     that.$('.termPopover').not(this).popover('hide');
                     $(this).popover('toggle');
                 });
+                if (Utils.getUrlState.isInitial()) {
+                    this.forwardClick();
+                }
             },
             onAddTerm: function(e) {
                 var that = this;
