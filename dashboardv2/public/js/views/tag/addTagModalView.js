@@ -87,6 +87,10 @@ define(['require',
                 }
             });
             this.ui.addTagOptions.html(str);
+            this.ui.addTagOptions.select2({
+                placeholder: "Select Tag",
+                allowClear: true
+            });
         },
         onChangeTagDefination: function() {
             this.ui.tagAttribute.empty();

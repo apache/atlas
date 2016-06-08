@@ -21,8 +21,9 @@ define(['require',
     'hbs!tmpl/business_catalog/AddTermToEntityLayoutView_tmpl',
     'utils/Utils',
     'modules/Modal',
-    'collection/VCatalogList'
-], function(require, Backbone, AddTermToEntityLayoutViewTmpl, Utils, Modal, VCatalogList) {
+    'collection/VCatalogList',
+    'utils/Messages'
+], function(require, Backbone, AddTermToEntityLayoutViewTmpl, Utils, Modal, VCatalogList, Messages) {
     'use strict';
 
     var AddTermToEntityLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -101,6 +102,10 @@ define(['require',
                     terms += '<option value="' + obj.get('name') + '">' + obj.get('name') + '</option>';
                 });
                 this.ui.addTermOptions.html(terms);
+                this.ui.addTermOptions.select2({
+                    placeholder: "Select Term",
+                    allowClear: true
+                });
             },
             saveTermToAsset: function() {
                 var that = this;
@@ -112,7 +117,7 @@ define(['require',
                     beforeSend: function() {},
                     success: function(data) {
                         Utils.notifySuccess({
-                            content: "Term " + that.ui.addTermOptions.val() + " has been added to entity"
+                            content: "Term " + that.ui.addTermOptions.val() + Messages.addTermToEntitySuccessMessage
                         });
                         if (that.callback) {
                             that.callback();
@@ -125,7 +130,7 @@ define(['require',
                         if (data && data.responseText) {
                             var data = JSON.parse(data.responseText);
                             Utils.notifyError({
-                                content: data.message
+                                content: data.messages
                             });
                         }
                     },
