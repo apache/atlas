@@ -58,7 +58,7 @@ public class UserDao {
 
             Configuration configuration = ApplicationProperties.get();
             PROPERTY_FILE_PATH = configuration
-                    .getString("atlas.login.credentials.file");
+                    .getString("atlas.authentication.method.file.filename");
             if (PROPERTY_FILE_PATH != null && !"".equals(PROPERTY_FILE_PATH)) {
                 userLogins = new Properties();
                 userLogins.load(new FileInputStream(PROPERTY_FILE_PATH));

@@ -64,7 +64,7 @@ public class AtlasAdminClient {
                 AtlasConstants.ATLAS_REST_ADDRESS_KEY, AtlasConstants.DEFAULT_ATLAS_REST_ADDRESS);
 
         AtlasClient atlasClient = null;
-        if (!AuthenticationUtil.isKerberosAuthicationEnabled()) {
+        if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
             String[] basicAuthUsernamePassword = AuthenticationUtil.getBasicAuthenticationInput();
             atlasClient = new AtlasClient(new String[]{atlasServerUri}, basicAuthUsernamePassword);
         } else {

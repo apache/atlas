@@ -562,7 +562,7 @@ public class HiveMetaStoreBridge {
         String atlasEndpoint = atlasConf.getString(ATLAS_ENDPOINT, DEFAULT_DGI_URL);
         AtlasClient atlasClient;
 
-        if (!AuthenticationUtil.isKerberosAuthicationEnabled()) {
+        if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
             String[] basicAuthUsernamePassword = AuthenticationUtil.getBasicAuthenticationInput();
             atlasClient = new AtlasClient(new String[]{atlasEndpoint}, basicAuthUsernamePassword);
         } else {

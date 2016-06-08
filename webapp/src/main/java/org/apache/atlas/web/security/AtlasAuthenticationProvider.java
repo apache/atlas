@@ -34,11 +34,12 @@ public class AtlasAuthenticationProvider extends
     private static final Logger LOG = LoggerFactory
             .getLogger(AtlasAuthenticationProvider.class);
 
-    private String atlasAuthenticationMethod = "UNKNOWN";
-
-    enum AUTH_METHOD {
-        FILE, LDAP, AD
-    };
+    private boolean fileAuthenticationMethodEnabled = true;
+    private boolean ldapAuthenticationMethodEnabled = false;
+    private String ldapType = "UNKNOWN";
+    public static final String FILE_AUTH_METHOD = "atlas.authentication.method.file";
+    public static final String LDAP_AUTH_METHOD = "atlas.authentication.method.ldap";
+    public static final String LDAP_TYPE = "atlas.authentication.method.ldap.type";
 
     @Autowired
     AtlasLdapAuthenticationProvider ldapAuthenticationProvider;
@@ -53,8 +54,12 @@ public class AtlasAuthenticationProvider extends
     void setAuthenticationMethod() {
         try {
             Configuration configuration = ApplicationProperties.get();
-            this.atlasAuthenticationMethod = configuration.getString(
-                    "atlas.login.method", "UNKNOWN");
+
+            this.fileAuthenticationMethodEnabled = configuration.getBoolean(
+                    FILE_AUTH_METHOD, true);
+            this.ldapAuthenticationMethodEnabled = configuration.getBoolean(
+                    LDAP_AUTH_METHOD, false);
+            this.ldapType = configuration.getString(LDAP_TYPE, "UNKNOWN");
         } catch (Exception e) {
             LOG.error(
                     "Error while getting atlas.login.method application properties",
@@ -66,37 +71,30 @@ public class AtlasAuthenticationProvider extends
     public Authentication authenticate(Authentication authentication)
             throws AuthenticationException {
 
-        if (atlasAuthenticationMethod.equalsIgnoreCase(AUTH_METHOD.FILE.name())) {
-            authentication = fileAuthenticationProvider
-                    .authenticate(authentication);
-        } else if (atlasAuthenticationMethod.equalsIgnoreCase(AUTH_METHOD.LDAP
-                .name())) {
-            try {
-                authentication = ldapAuthenticationProvider
-                        .authenticate(authentication);
-            } catch (Exception ex) {
-                LOG.error("Error while LDAP authentication", ex);
+        if (ldapAuthenticationMethodEnabled) {
+
+            if (ldapType.equalsIgnoreCase("LDAP")) {
+                try {
+                    authentication = ldapAuthenticationProvider
+                            .authenticate(authentication);
+                } catch (Exception ex) {
+                    LOG.error("Error while LDAP authentication", ex);
+                }
+            } else if (ldapType.equalsIgnoreCase("AD")) {
+                try {
+                    authentication = adAuthenticationProvider
+                            .authenticate(authentication);
+                } catch (Exception ex) {
+                    LOG.error("Error while AD authentication", ex);
+                }
             }
-        } else if (atlasAuthenticationMethod.equalsIgnoreCase(AUTH_METHOD.AD
-                .name())) {
-            try {
-                authentication = adAuthenticationProvider
-                        .authenticate(authentication);
-            } catch (Exception ex) {
-                LOG.error("Error while AD authentication", ex);
-            }
-        } else {
-            LOG.error("Invalid authentication method :"
-                    + atlasAuthenticationMethod);
         }
 
         if (authentication != null && authentication.isAuthenticated()) {
             return authentication;
         } else {
-            // If the LDAP/AD authentication fails try the local file login method
-            if (atlasAuthenticationMethod.equalsIgnoreCase(AUTH_METHOD.AD
-                    .name()) || atlasAuthenticationMethod.equalsIgnoreCase(AUTH_METHOD.LDAP
-                    .name())) {
+            // If the LDAP/AD authentication fails try the local filebased login method
+            if (fileAuthenticationMethodEnabled) {
                 authentication = fileAuthenticationProvider
                         .authenticate(authentication);
             }

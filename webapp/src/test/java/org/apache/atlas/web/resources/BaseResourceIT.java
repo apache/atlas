@@ -89,7 +89,7 @@ public abstract class BaseResourceIT {
 
         service = client.resource(UriBuilder.fromUri(baseUrl).build());
 
-        if (!AuthenticationUtil.isKerberosAuthicationEnabled()) {
+        if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
             serviceClient = new AtlasClient(new String[]{baseUrl}, new String[]{"admin", "admin"});
         } else {
             serviceClient = new AtlasClient(baseUrl);

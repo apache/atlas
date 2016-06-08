@@ -189,7 +189,7 @@ public class AtlasClient {
         configuration = getClientProperties();
         Client client = getClient(configuration, ugi, doAsUser);
 
-        if ((!AuthenticationUtil.isKerberosAuthicationEnabled()) && basicAuthUser!=null && basicAuthPassword!=null) {
+        if ((!AuthenticationUtil.isKerberosAuthenticationEnabled()) && basicAuthUser!=null && basicAuthPassword!=null) {
             final HTTPBasicAuthFilter authFilter = new HTTPBasicAuthFilter(basicAuthUser, basicAuthPassword);
             client.addFilter(authFilter);
         }
@@ -221,7 +221,7 @@ public class AtlasClient {
 
         URLConnectionClientHandler handler = null;
 
-        if ((!AuthenticationUtil.isKerberosAuthicationEnabled()) && basicAuthUser!=null && basicAuthPassword!=null) {
+        if ((!AuthenticationUtil.isKerberosAuthenticationEnabled()) && basicAuthUser!=null && basicAuthPassword!=null) {
             handler = new URLConnectionClientHandler();
         } else {
             handler =

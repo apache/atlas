@@ -18,20 +18,38 @@
 
 package org.apache.atlas.web.filters;
 
-import com.google.inject.Singleton;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.security.SecurityProperties;
+import org.apache.atlas.utils.AuthenticationUtil;
+import org.apache.atlas.web.listeners.LoginProcessor;
 import org.apache.atlas.web.util.Servlets;
+import org.apache.commons.collections.iterators.IteratorEnumeration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.SecurityUtil;
+import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.security.authentication.client.AuthenticationException;
+import org.apache.hadoop.security.authentication.client.KerberosAuthenticator;
 import org.apache.hadoop.security.authentication.server.AuthenticationFilter;
+import org.apache.hadoop.security.authentication.server.AuthenticationToken;
 import org.apache.hadoop.security.authentication.server.KerberosAuthenticationHandler;
+import org.apache.hadoop.security.authentication.server.AuthenticationHandler;
+import org.apache.hadoop.security.authentication.util.Signer;
+import org.apache.hadoop.security.authentication.util.SignerSecretProvider;
 import org.apache.log4j.NDC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
@@ -39,22 +57,39 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.ServletContext;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Enumeration;
-import java.util.Properties;
+import java.security.Principal;
+import java.text.SimpleDateFormat;
+import java.util.*;
+
 
 /**
  * This enforces authentication as part of the filter before processing the request.
  * todo: Subclass of {@link org.apache.hadoop.security.authentication.server.AuthenticationFilter}.
  */
-@Singleton
+
 public class AtlasAuthenticationFilter extends AuthenticationFilter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthenticationFilter.class);
-    static final String PREFIX = "atlas.http.authentication";
+    static final String PREFIX = "atlas.authentication.method";
+    protected static ServletContext nullContext = new NullServletContext();
+    private Signer signer;
+    private SignerSecretProvider secretProvider;
+    public  final boolean isKerberos = AuthenticationUtil.isKerberosAuthenticationEnabled();
+
+    public AtlasAuthenticationFilter() {
+        try {
+            LOG.info("AtlasAuthenticationFilter initialization started");
+            init(null);
+        } catch (ServletException e) {
+            LOG.error("Error while initializing AtlasAuthenticationFilter : " + e.getMessage());
+        }
+    }
 
     private HttpServlet optionsServlet;
 
@@ -67,10 +102,66 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
         LOG.info("AtlasAuthenticationFilter initialization started");
-        super.init(filterConfig);
+        final FilterConfig globalConf = filterConfig;
 
-        optionsServlet = new HttpServlet() {};
+        final Map<String, String> params = new HashMap<String, String>();
+
+        FilterConfig filterConfig1 = new FilterConfig() {
+            @Override
+            public ServletContext getServletContext() {
+                if (globalConf != null) {
+                    return globalConf.getServletContext();
+                } else {
+                    return nullContext;
+                }
+            }
+
+            @SuppressWarnings("unchecked")
+            @Override
+            public Enumeration<String> getInitParameterNames() {
+                return new IteratorEnumeration(params.keySet().iterator());
+            }
+
+            @Override
+            public String getInitParameter(String param) {
+                return params.get(param);
+            }
+
+            @Override
+            public String getFilterName() {
+                return "AtlasAuthenticationFilter";
+            }
+        };
+
+        super.init(filterConfig1);
+
+        optionsServlet = new HttpServlet() {
+        };
         optionsServlet.init();
+
+    }
+
+
+    @Override
+    public void initializeSecretProvider(FilterConfig filterConfig)
+            throws ServletException {
+        LOG.debug("AtlasAuthenticationFilter :: initializeSecretProvider "+filterConfig);
+        secretProvider = (SignerSecretProvider) filterConfig.getServletContext().
+                getAttribute(AuthenticationFilter.SIGNER_SECRET_PROVIDER_ATTRIBUTE);
+        if (secretProvider == null) {
+            // As tomcat cannot specify the provider object in the configuration.
+            // It'll go into this path
+            String configPrefix = filterConfig.getInitParameter(CONFIG_PREFIX);
+            configPrefix = (configPrefix != null) ? configPrefix + "." : "";
+            try {
+                secretProvider = AuthenticationFilter.constructSecretProvider(
+                        filterConfig.getServletContext(),
+                        super.getConfiguration(configPrefix, filterConfig), false);
+            } catch (Exception ex) {
+                throw new ServletException(ex);
+            }
+        }
+        signer = new Signer(secretProvider);
     }
 
     @Override
@@ -82,10 +173,28 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
             throw new ServletException(e);
         }
 
-        // transfer atlas-application.properties config items starting with defined prefix
-        Configuration subConfiguration = ApplicationProperties.getSubsetConfiguration(configuration, PREFIX);
-        Properties config = ConfigurationConverter.getProperties(subConfiguration);
+        Properties config = new Properties();
 
+        String kerberosAuthEnabled = configuration != null ? configuration.getString("atlas.authentication.method.kerberos") : null;
+        // getString may return null, and would like to log the nature of the default setting
+        String authMethod = "";
+        if (kerberosAuthEnabled == null || kerberosAuthEnabled.equalsIgnoreCase("false")) {
+            LOG.info("No authentication method configured.  Defaulting to simple authentication");
+            authMethod = "simple";
+        } else if (kerberosAuthEnabled.equalsIgnoreCase("true")) {
+            authMethod = "kerberos";
+        }
+
+        if(configuration.getString("atlas.authentication.method.kerberos.name.rules")!=null) {
+            config.put("kerberos.name.rules", configuration.getString("atlas.authentication.method.kerberos.name.rules"));
+        }
+        if(configuration.getString("atlas.authentication.method.kerberos.keytab")!=null) {
+            config.put("kerberos.keytab", configuration.getString("atlas.authentication.method.kerberos.keytab"));
+        }
+        if(configuration.getString("atlas.authentication.method.kerberos.principal")!=null) {
+            config.put("kerberos.principal", configuration.getString("atlas.authentication.method.kerberos.principal"));
+        }
+        config.put(AuthenticationFilter.AUTH_TYPE, authMethod );
         config.put(AuthenticationFilter.COOKIE_PATH, "/");
 
         // add any config passed in as init parameters
@@ -115,7 +224,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
             config.put(KerberosAuthenticationHandler.PRINCIPAL, principal);
         }
 
-        LOG.info("AuthenticationFilterConfig: {}", config);
+        LOG.debug(" AuthenticationFilterConfig: {}", config);
 
         return config;
     }
@@ -123,21 +232,53 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
     @Override
     public void doFilter(final ServletRequest request, final ServletResponse response,
                          final FilterChain filterChain) throws IOException, ServletException {
+
+        final HttpServletRequest httpRequest = (HttpServletRequest) request;
         FilterChain filterChainWrapper = new FilterChain() {
             @Override
             public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse)
                     throws IOException, ServletException {
                 final HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
+                final HttpServletResponse httpResponse = (HttpServletResponse) servletResponse;
 
+                if (isKerberos) {
+                    Authentication existingAuth = SecurityContextHolder.getContext().getAuthentication();
+                    String userName = readUserFromCookie(httpResponse);
+
+                    if (StringUtils.isEmpty(userName) && !StringUtils.isEmpty(httpRequest.getRemoteUser())) {
+                        userName = httpRequest.getRemoteUser();
+                    }
+
+                    if ((existingAuth == null || !existingAuth.isAuthenticated()) && (!StringUtils.isEmpty(userName))) {
+                        UserGroupInformation ugi = UserGroupInformation.getLoginUser();
+                        String[] groupsName = ugi.getGroupNames();
+
+                        final List<GrantedAuthority> grantedAuths = new ArrayList<>();
+                        for (String group : groupsName) {
+                            grantedAuths.add(new SimpleGrantedAuthority(group));
+                        }
+
+                        final UserDetails principal = new User(userName, "", grantedAuths);
+                        final Authentication finalAuthentication = new UsernamePasswordAuthenticationToken(principal, "", grantedAuths);
+                        WebAuthenticationDetails webDetails = new WebAuthenticationDetails(httpRequest);
+                        ((AbstractAuthenticationToken) finalAuthentication).setDetails(webDetails);
+                        SecurityContextHolder.getContext().setAuthentication(finalAuthentication);
+
+                        request.setAttribute("atlas.http.authentication.type", true);
+                        LOG.info("Logged into Atlas as = " + userName);
+                    }
+                }
+                // OPTIONS method is sent from quick start jersey atlas client
                 if (httpRequest.getMethod().equals("OPTIONS")) {
                     optionsServlet.service(request, response);
-
                 } else {
                     try {
                         String requestUser = httpRequest.getRemoteUser();
                         NDC.push(requestUser + ":" + httpRequest.getMethod() + httpRequest.getRequestURI());
                         RequestContext requestContext = RequestContext.get();
-                        requestContext.setUser(requestUser);
+                        if(requestContext!=null) {
+                            requestContext.setUser(requestUser);
+                        }
                         LOG.info("Request from authenticated user: {}, URL={}", requestUser,
                                 Servlets.getRequestURI(httpRequest));
 
@@ -149,12 +290,144 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
             }
         };
 
+
         try {
-            super.doFilter(request, response, filterChainWrapper);
+            String authHeader = httpRequest.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Basic")) {
+                filterChain.doFilter(request, response);
+            } else if (isKerberos) {
+                doKerberosAuth(request, response, filterChainWrapper);
+            } else {
+                filterChain.doFilter(request, response);
+            }
         } catch (NullPointerException e) {
+            LOG.error("Exception in AtlasAuthenticationFilter ", e);
             //PseudoAuthenticationHandler.getUserName() from hadoop-auth throws NPE if user name is not specified
             ((HttpServletResponse) response).sendError(Response.Status.BAD_REQUEST.getStatusCode(),
                     "Authentication is enabled and user is not specified. Specify user.name parameter");
+        }
+    }
+
+
+
+    /**
+     * This method is copied from hadoop auth lib, code added for error handling and fallback to other auth methods
+     *
+     * If the request has a valid authentication token it allows the request to continue to the target resource,
+     * otherwise it triggers an authentication sequence using the configured {@link org.apache.hadoop.security.authentication.server.AuthenticationHandler}.
+     *
+     * @param request the request object.
+     * @param response the response object.
+     * @param filterChain the filter chain object.
+     *
+     * @throws IOException thrown if an IO error occurred.
+     * @throws ServletException thrown if a processing error occurred.
+     */
+    public void doKerberosAuth(ServletRequest request, ServletResponse response, FilterChain filterChain)
+            throws IOException, ServletException {
+        boolean unauthorizedResponse = true;
+        int errCode = HttpServletResponse.SC_UNAUTHORIZED;
+        AuthenticationException authenticationEx = null;
+        HttpServletRequest httpRequest = (HttpServletRequest) request;
+        HttpServletResponse httpResponse = (HttpServletResponse) response;
+        boolean isHttps = "https".equals(httpRequest.getScheme());
+        AuthenticationHandler   authHandler = getAuthenticationHandler();
+        try {
+            boolean newToken = false;
+            AuthenticationToken token;
+            try {
+                token = getToken(httpRequest);
+            }
+            catch (AuthenticationException ex) {
+                LOG.warn("AuthenticationToken ignored: " + ex.getMessage());
+                // will be sent back in a 401 unless filter authenticates
+                authenticationEx = ex;
+                token = null;
+            }
+            if (authHandler.managementOperation(token, httpRequest, httpResponse)) {
+                if (token == null) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Request [{}] triggering authentication", getRequestURL(httpRequest));
+                    }
+                    token = authHandler.authenticate(httpRequest, httpResponse);
+                    if (token != null && token.getExpires() != 0 &&
+                            token != AuthenticationToken.ANONYMOUS) {
+                        token.setExpires(System.currentTimeMillis() + getValidity() * 1000);
+                    }
+                    newToken = true;
+                }
+                if (token != null) {
+                    unauthorizedResponse = false;
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Request [{}] user [{}] authenticated", getRequestURL(httpRequest), token.getUserName());
+                    }
+                    final AuthenticationToken authToken = token;
+                    httpRequest = new HttpServletRequestWrapper(httpRequest) {
+
+                        @Override
+                        public String getAuthType() {
+                            return authToken.getType();
+                        }
+
+                        @Override
+                        public String getRemoteUser() {
+                            return authToken.getUserName();
+                        }
+
+                        @Override
+                        public Principal getUserPrincipal() {
+                            return (authToken != AuthenticationToken.ANONYMOUS) ? authToken : null;
+                        }
+                    };
+                    if (newToken && !token.isExpired() && token != AuthenticationToken.ANONYMOUS) {
+                        String signedToken = signer.sign(token.toString());
+                        createAuthCookie(httpResponse, signedToken, getCookieDomain(),
+                                getCookiePath(), token.getExpires(), isHttps);
+                    }
+
+                   filterChain.doFilter(httpRequest, httpResponse);
+                }
+            } else {
+                unauthorizedResponse = false;
+            }
+        } catch (AuthenticationException ex) {
+            // exception from the filter itself is fatal
+            errCode = HttpServletResponse.SC_FORBIDDEN;
+            authenticationEx = ex;
+            LOG.warn("Authentication exception: " + ex.getMessage(), ex);
+        }
+        if (unauthorizedResponse) {
+            if (!httpResponse.isCommitted()) {
+                createAuthCookie(httpResponse, "", getCookieDomain(),
+                        getCookiePath(), 0, isHttps);
+                // If response code is 401. Then WWW-Authenticate Header should be
+                // present.. reset to 403 if not found..
+                if ((errCode == HttpServletResponse.SC_UNAUTHORIZED)
+                        && (!httpResponse.containsHeader(
+                        KerberosAuthenticator.WWW_AUTHENTICATE))) {
+                    errCode = HttpServletResponse.SC_FORBIDDEN;
+                }
+                if (authenticationEx == null) { // added this code for atlas error handling and fallback
+                    boolean chk = true;
+                    Collection<String> headerNames = httpResponse.getHeaderNames();
+                    for (String headerName : headerNames) {
+                        String value = httpResponse.getHeader(headerName);
+                        if (headerName.equalsIgnoreCase("Set-Cookie") && value.startsWith("JSESSIONID")) {
+                            chk = false;
+                            break;
+                        }
+                    }
+                    String authHeader = httpRequest.getHeader("Authorization");
+                    if (authHeader == null && chk) {
+                        filterChain.doFilter(request, response);
+                    } else if (authHeader != null && authHeader.startsWith("Basic")) {
+                        filterChain.doFilter(request, response);
+                    }
+
+                } else {
+                    httpResponse.sendError(errCode, authenticationEx.getMessage());
+                }
+            }
         }
     }
 
@@ -164,4 +437,74 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
         optionsServlet.destroy();
         super.destroy();
     }
+
+
+    private static String readUserFromCookie(HttpServletResponse response1) {
+        String userName = null;
+        boolean isCookieSet = response1.containsHeader("Set-Cookie");
+        if (isCookieSet) {
+            Collection<String> authUserName = response1.getHeaders("Set-Cookie");
+            if (authUserName != null) {
+                Iterator<String> i = authUserName.iterator();
+                while (i.hasNext()) {
+                    String cookie = i.next();
+                    if (!StringUtils.isEmpty(cookie)) {
+                        if (cookie.toLowerCase().startsWith("hadoop.auth".toLowerCase()) && cookie.contains("u=")) {
+                            String[] split = cookie.split(";");
+                            if (split != null) {
+                                for (String s : split) {
+                                    if (!StringUtils.isEmpty(s) && s.toLowerCase().startsWith("hadoop.auth".toLowerCase())) {
+                                        int ustr = s.indexOf("u=");
+                                        if (ustr != -1) {
+                                            int andStr = s.indexOf("&", ustr);
+                                            if (andStr != -1) {
+                                                try {
+                                                    userName = s.substring(ustr + 2, andStr);
+                                                    break;
+                                                } catch (Exception e) {
+                                                    userName = null;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return userName;
+    }
+
+    public static void createAuthCookie(HttpServletResponse resp, String token, String domain, String path, long expires, boolean isSecure) {
+        StringBuilder sb = (new StringBuilder("hadoop.auth")).append("=");
+        if(token != null && token.length() > 0) {
+            sb.append("\"").append(token).append("\"");
+        }
+
+        sb.append("; Version=1");
+        if(path != null) {
+            sb.append("; Path=").append(path);
+        }
+
+        if(domain != null) {
+            sb.append("; Domain=").append(domain);
+        }
+
+        if(expires >= 0L) {
+            Date date = new Date(expires);
+            SimpleDateFormat df = new SimpleDateFormat("EEE, dd-MMM-yyyy HH:mm:ss zzz");
+            df.setTimeZone(TimeZone.getTimeZone("GMT"));
+            sb.append("; Expires=").append(df.format(date));
+        }
+
+        if(isSecure) {
+            sb.append("; Secure");
+        }
+
+        sb.append("; HttpOnly");
+        resp.addHeader("Set-Cookie", sb.toString());
+    }
+
 }

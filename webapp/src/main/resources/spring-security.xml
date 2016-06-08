@@ -30,6 +30,7 @@
 
     <security:http pattern="/login.jsp" security="none" />
     <security:http pattern="/css/**" security="none" />
+    <security:http pattern="/img/**" security="none" />
     <security:http pattern="/libs/**" security="none" />
     <security:http pattern="/js/**" security="none" />
     <security:http pattern="/api/atlas/admin/status" security="none" />
@@ -41,6 +42,8 @@
                 session-fixation-protection="newSession" />
         <intercept-url pattern="/**" access="isAuthenticated()" />
 
+        <security:custom-filter ref="krbAuthenticationFilter" after="SERVLET_API_SUPPORT_FILTER" />
+
         <form-login
                 login-page="/login.jsp"
                 authentication-success-handler-ref="atlasAuthenticationSuccessHandler"
@@ -51,8 +54,11 @@
         <security:logout logout-success-url="/login.jsp" delete-cookies="JSESSIONID"
                          logout-url="/logout.html" />
         <http-basic />
-        <security:custom-filter position="LAST" ref="atlasAuthorizationFilter"/>        
+        <security:custom-filter position="LAST" ref="atlasAuthorizationFilter"/>
     </security:http>
+
+    <beans:bean id="krbAuthenticationFilter" class="org.apache.atlas.web.filters.AtlasAuthenticationFilter">
+    </beans:bean>
 
     <beans:bean id="atlasAuthenticationSuccessHandler"
                 class="org.apache.atlas.web.security.AtlasAuthenticationSuccessHandler" />

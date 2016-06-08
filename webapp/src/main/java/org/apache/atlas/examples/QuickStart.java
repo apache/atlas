@@ -72,7 +72,7 @@ public class QuickStart {
 
     public static void main(String[] args) throws Exception {
         String[] basicAuthUsernamePassword = null;
-        if (!AuthenticationUtil.isKerberosAuthicationEnabled()) {
+        if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
             basicAuthUsernamePassword = AuthenticationUtil.getBasicAuthenticationInput();
         }
 
@@ -84,7 +84,7 @@ public class QuickStart {
         String baseUrl = getServerUrl(args);
         QuickStart quickStart;
 
-        if (!AuthenticationUtil.isKerberosAuthicationEnabled()) {
+        if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
             quickStart = new QuickStart(baseUrl, basicAuthUsernamePassword);
         } else {
             quickStart = new QuickStart(baseUrl);

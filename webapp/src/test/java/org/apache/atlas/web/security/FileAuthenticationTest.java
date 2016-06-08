@@ -77,8 +77,8 @@ public class FileAuthenticationTest {
 
     private void setUpAltasApplicationProperties(String persistDir) throws Exception {
         final PropertiesConfiguration configuration = new PropertiesConfiguration();
-        configuration.setProperty("atlas.login.method", "FILE");
-        configuration.setProperty("atlas.login.credentials.file", persistDir
+        configuration.setProperty("atlas.authentication.method.file", "true");
+        configuration.setProperty("atlas.authentication.method.file.filename", persistDir
                 + "/users-credentials");
         configuration.setProperty("atlas.auth.policy.file",persistDir
                 + "/policy-store.txt" );

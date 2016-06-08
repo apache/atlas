@@ -95,11 +95,6 @@ public class GuiceServletConfig extends GuiceServletContextListener {
                         protected void configureServlets() {
                             filter("/*").through(AuditFilter.class);
                             configureActiveServerFilterIfNecessary();
-                            try {
-                                configureAuthenticationFilter();
-                            } catch (ConfigurationException e) {
-                                LOG.warn("Unable to add and configure authentication filter", e);
-                            }
 
                             String packages = getServletContext().getInitParameter(GUICE_CTX_PARAM);
 
@@ -120,16 +115,6 @@ public class GuiceServletConfig extends GuiceServletContextListener {
                             }
                         }
 
-                        private void configureAuthenticationFilter() throws ConfigurationException {
-                            Configuration configuration = getConfiguration();
-                            if (configuration == null) {
-                                throw new ConfigurationException("Could not load application configuration");
-                            }
-                            if (Boolean.valueOf(configuration.getString(AtlasClient.HTTP_AUTHENTICATION_ENABLED))) {
-                                LOG.info("Enabling AuthenticationFilter");
-                                filter("/*").through(AtlasAuthenticationFilter.class);
-                            }
-                        }
                     });
 
             LOG.info("Guice modules loaded");

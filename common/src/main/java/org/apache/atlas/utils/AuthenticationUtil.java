@@ -35,22 +35,21 @@ public final class AuthenticationUtil {
     private AuthenticationUtil() {
     }
 
-    public static boolean isKerberosAuthicationEnabled() {
-        boolean isKerberosAuthicationEnabled = false;
+    public static boolean isKerberosAuthenticationEnabled() {
+        boolean isKerberosAuthenticationEnabled = false;
         try {
             Configuration atlasConf = ApplicationProperties.get();
 
-            if ("true".equalsIgnoreCase(atlasConf.getString("atlas.http.authentication.enabled"))
-                    && "kerberos".equalsIgnoreCase(atlasConf.getString("atlas.http.authentication.type"))) {
-                isKerberosAuthicationEnabled = true;
+            if ("true".equalsIgnoreCase(atlasConf.getString("atlas.authentication.method.kerberos"))) {
+                isKerberosAuthenticationEnabled = true;
             } else {
-                isKerberosAuthicationEnabled = false;
+                isKerberosAuthenticationEnabled = false;
             }
 
         } catch (AtlasException e) {
-            LOG.error("Error while isKerberosAuthicationEnabled ", e);
+            LOG.error("Error while isKerberosAuthenticationEnabled ", e);
         }
-        return isKerberosAuthicationEnabled;
+        return isKerberosAuthenticationEnabled;
     }
 
     public static String[] getBasicAuthenticationInput() {
