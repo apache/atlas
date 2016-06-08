@@ -22,6 +22,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-867 Excessive logs: default log level should be set to 'info'; currently it is 'debug' (svimal2106 via sumasai )
 ATLAS-870 Add search feature while associating Tags / Terms with entity. (Kalyanikashikar via yhemanth)
 ATLAS-865 Edit description functionality for Tags (kevalbhatt18 via yhemanth)
 ATLAS-820 Kerberized env: Authentication failing (nixonrodrigues via yhemanth)
