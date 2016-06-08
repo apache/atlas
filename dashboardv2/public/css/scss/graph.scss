@@ -1,4 +1,5 @@
 /* graph.scss */
+
 /* .graph-bg svg {
     background-image: linear-gradient(to right, $black -10px, rgba(0, 0, 0, 0) 1px), linear-gradient($black -10px, $color_cararra_approx 1px);
     background-size: 10px 10px;
@@ -66,7 +67,7 @@ g.type-TK > rect {
 }
 
 .edgePath path {
-    stroke: $black;
+    stroke: #cccccc;
 }
 
 .zoomButtonGroup {

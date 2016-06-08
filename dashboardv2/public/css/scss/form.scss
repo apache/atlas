@@ -138,7 +138,7 @@ button:focus {
     }
 }
 
-.btn-taxanomyBack {
+.btn-atlasAction {
     background-color: $transparent;
     color: $color_keppel_approx;
     margin-bottom: 10px;
@@ -147,6 +147,10 @@ button:focus {
     &:hover {
         background-color: $color_keppel_approx;
         color: $white;
+    }
+    &:focus {
+        background-color: $transparent;
+        color: $color_keppel_approx;
     }
 }
 

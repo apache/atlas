@@ -1,7 +1,4 @@
 //tag.scss
-
-/* Tree View */
-
 .tag-tree {
     padding: 0;
     overflow: auto;
@@ -10,7 +7,7 @@
         cursor: pointer;
         &.parent-node {
             position: relative;
-            margin-top: 10px;
+            margin-top: 5px;
             /* margin-bottom: 5px; */
             border-radius: 4px;
             &:hover {
@@ -106,7 +103,6 @@
     border: 1px $tag_color solid;
     color: $tag_color;
     font-size: 14px;
-    text-transform: uppercase;
     border-radius: 4px;
     margin-right: 3px;
     margin-bottom: 3px;
@@ -212,7 +208,7 @@ form-control .tagInpput {
 }
 
 .termTagLine {
-    border-top: 1px solid $action_gray;
+    border-top: none;
 }
 
 .tagTerm {

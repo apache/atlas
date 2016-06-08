@@ -25,7 +25,7 @@ define(['require',
     var VLineageList = BaseCollection.extend(
         //Prototypal attributes
         {
-            url: Globals.baseURL + 'api/atlas/lineage/assetName/outputs/graph',
+            url: Globals.baseURL,
 
             model: VLineage,
 

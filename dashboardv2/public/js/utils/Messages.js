@@ -16,28 +16,18 @@
  * limitations under the License.
  */
 
-define(['require',
-    'utils/Globals',
-    'models/BaseModel'
-], function(require, Globals, VBaseModel) {
+define(['require'], function(require) {
     'use strict';
-    var VLineage = VBaseModel.extend({
 
-        urlRoot: Globals.baseURL,
-
-        defaults: {},
-
-        serverSchema: {},
-
-        idAttribute: 'id',
-
-        initialize: function() {
-            this.modelName = 'VLineage';
-            this.bindErrorEvents();
-        },
-        toString: function() {
-            return this.get('id');
-        },
-    }, {});
-    return VLineage;
+    var Messages = {
+        addSuccessMessage: " has been created successfully",
+        addErrorMessage: " could not be Created",
+        addTermToEntitySuccessMessage: " has been added to entity",
+        deleteTitle: "Are you sure you want to delete ?",
+        deleteSuccessMessage: " has been deleted successfully",
+        deleteErrorMessage: " could not be deleted",
+        addAttributeSuccessMessage: "Tag attribute is added successfully",
+        updateTagDescriptionMessage: "Tag description is updated successfully"
+    };
+    return Messages;
 });

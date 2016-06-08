@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Utils', 'modules/Modal'], function(require, Utils, Modal) {
+define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages'], function(require, Utils, Modal, Messages) {
     'use strict';
 
     var CommonViewFunction = {};
@@ -31,7 +31,7 @@ define(['require', 'utils/Utils', 'modules/Modal'], function(require, Utils, Mod
             }
         }
         var modal = new Modal({
-            title: 'Are you sure you want to delete ?',
+            title: Messages.deleteTitle,
             okText: 'Delete',
             htmlContent: msg,
             cancelText: "Cancel",
@@ -49,20 +49,20 @@ define(['require', 'utils/Utils', 'modules/Modal'], function(require, Utils, Mod
                 tagModel.deleteTag(options.guid, options.tagName, {
                     beforeSend: function() {},
                     success: function(data) {
-                        var msg = "Tag " + name.name + " has been deleted successfully";
+                        var msg = "Tag " + name.name + Messages.deleteSuccessMessage;
                         if (data.traitName) {
                             var tagOrTerm = Utils.checkTagOrTerm(data.traitName);
                             if (tagOrTerm.term) {
-                                msg = "Term " + data.traitName + " has been deleted successfully";
+                                msg = "Term " + data.traitName + Messages.deleteSuccessMessage;
                             } else {
-                                msg = "Tag " + data.traitName + " has been deleted successfully";
+                                msg = "Tag " + data.traitName + Messages.deleteSuccessMessage;
                             }
                         } else {
                             var tagOrTerm = Utils.checkTagOrTerm(options.tagName);
                             if (tagOrTerm.term) {
-                                msg = "Term " + data.traitName + " has been deleted successfully";
+                                msg = "Term " + data.traitName + Messages.deleteSuccessMessage;
                             } else {
-                                msg = "Tag " + data.traitName + " has been deleted successfully";
+                                msg = "Tag " + data.traitName + Messages.deleteSuccessMessage;
                             }
                         }
                         Utils.notifySuccess({
@@ -77,7 +77,7 @@ define(['require', 'utils/Utils', 'modules/Modal'], function(require, Utils, Mod
 
                     },
                     error: function(error, data, status) {
-                        var message = options.tagName + " could not be deleted";
+                        var message = options.tagName + Messages.deleteErrorMessage;
                         if (data.error) {
                             message = data.error;
                         }

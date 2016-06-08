@@ -22,7 +22,8 @@ define(['require',
     'collection/VTagList',
     'collection/VEntityList',
     'utils/Utils',
-], function(require, Backbone, TagLayoutViewTmpl, VTagList, VEntityList, Utils) {
+    'utils/Messages'
+], function(require, Backbone, TagLayoutViewTmpl, VTagList, VEntityList, Utils, Messages) {
     'use strict';
 
     var TagLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -41,7 +42,8 @@ define(['require',
                 createTag: "[data-id='createTag']",
                 tags: "[data-id='tags']",
                 offLineSearchTag: "[data-id='offlineSearchTag']",
-                deleteTerm: "[data-id='deleteTerm']"
+                deleteTerm: "[data-id='deleteTerm']",
+                refreshTag: '[data-id="refreshTag"]'
 
             },
             /** ui events hash */
@@ -55,6 +57,7 @@ define(['require',
                 // events["click " + this.ui.referesh] = 'refereshClick';
                 events["keyup " + this.ui.offLineSearchTag] = 'offlineSearchTag';
                 events["click " + this.ui.deleteTerm] = 'onDeleteTerm';
+                events['click ' + this.ui.refreshTag] = 'fetchCollections';
                 return events;
             },
             /**
@@ -228,7 +231,7 @@ define(['require',
                         that.fetchCollections();
                         that.setUrl('#!/tag/tagAttribute/' + ref.ui.tagName.val(), true);
                         Utils.notifySuccess({
-                            content: that.name + "  has been created"
+                            content: "Tag " + that.name + Messages.addSuccessMessage
                         });
                         that.collection.reset([]);
                     },

@@ -14,7 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<div class="clearfix"><a href="javascript:void(0)" data-id="createTag"><i class="fa fa-plus"></i> Create Tag</a></div>
+<div class="clearfix">
+    <button class="btn btn-atlasAction btn-atlas pull-left" data-id="createTag"><i class="fa fa-plus"></i> Create Tag</button>
+    <button class="btn btn-atlasAction btn-atlas pull-right" data-id="refreshTag" onclick="this.blur();"><i class="fa fa-refresh"></i> Refresh</button>
+</div>
+<!--     <a href="javascript:void(0)" data-id="createTag"><i class="fa fa-plus"></i> Create Tag</a></div> -->
 <hr>
 <input type="text" class="form-control" data-id="offlineSearchTag" placeholder="Search Tags...">
 <ul class="tag-tree" data-id="tagsParent">

@@ -15,9 +15,16 @@
  * limitations under the License.
 -->
 <div class="page-title clearfix">
-    <h1><span  data-id="title"></span>
-    <!--  <small>8 Asset</small><button data-id="editButton" class="hide btn btn-default pull-right editbutton" data-id="editText"><i class="fa fa-pencil"></i></button>--></h1>
-   <p data-id="description"></p>
+    <h1><span data-id="title"></span></h1>
+    <button data-id="editButton" class="btn btn-default pull-right editbutton" id="editText"><i class="fa fa-pencil"></i></button>
+    <p class="sub-title" data-id="description">Description</p>
+    <div data-id="editBox" style="margin-bottom:10px;  display:none">
+        <textarea class="well well-sm col-sm-12" data-id="descriptionTextArea"></textarea>
+        <div class="clearfix" align="right">
+            <button class="btn btn-atlas cancel" data-id="cancelButton">Cancel</button>
+            <button class="btn btn-atlas ok" data-id="publishButton">Publish</button>
+        </div>
+    </div>
     <div data-id="showAttribute">
     </div>
     <div class="dropdown addTag-dropdown" data-id="addTagListBtn">
@@ -25,7 +32,5 @@
             <div class="addTagText" data-id="addTagtext" style="display: block">ADD Attribute &nbsp; <i class="fa fa-plus"></i></div>
             <div class="addTagPlus" data-id="addTagPlus" style="display: none"><i class="fa fa-plus"></i></div>
         </div>
-    </div>
-    <div data-id="editBox" style="margin-bottom:10px; display:none">
     </div>
 </div>

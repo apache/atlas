@@ -2,7 +2,7 @@
 
 //common color 
 $white: #fff;
-$action_gray:#ccc;
+$action_gray:#999999;
 $color_keppel_approx: #37bb9b;
 $color_gallery_approx: #eee;
 $gray: #808080;
@@ -144,6 +144,7 @@ ul {
 
 #sideNav-wrapper {
     color: $white;
+    font-size: 16px !important;
 }
 
 .contentLoading {
@@ -157,12 +158,17 @@ ul {
     display: none;
 }
 
-.auditCreateBtn {
-    background-color: #359f89;
-    color: white;
-    cursor: pointer;
-}
-
-.aditCreateBtn {
+.auditDetailBtn {
+    padding: 5px 10px;
+    font-size: 14px;
+    line-height: 1;
+    color: $color_jungle_green_approx;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 4px;
+    font-weight: 100;
+    background-color: $transparent;
+    border: 1px solid $color_jungle_green_approx;
     cursor: pointer;
 }

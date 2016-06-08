@@ -21,8 +21,9 @@ define(['require',
     'hbs!tmpl/business_catalog/BusinessCatalogLayoutView_tmpl',
     'utils/Utils',
     'collection/VCatalogList',
-    'utils/CommonViewFunction'
-], function(require, Backbone, BusinessCatalogLayoutViewTmpl, Utils, VCatalogList, CommonViewFunction) {
+    'utils/CommonViewFunction',
+    'utils/Messages'
+], function(require, Backbone, BusinessCatalogLayoutViewTmpl, Utils, VCatalogList, CommonViewFunction, Messages) {
     'use strict';
 
     var BusinessCatalogLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -343,12 +344,12 @@ define(['require',
                         model: new that.parentCollection.model()
                     });
                     var modal = new Modal({
-                        title: 'Add Term',
+                        title: 'Create a new subterm',
                         content: view,
                         okCloses: true,
                         showFooter: true,
                         allowCancel: true,
-                        okText: 'Create',
+                        okText: 'Add',
                     }).open();
                     modal.$el.find('button.ok').attr('disabled', true);
                     modal.on('ok', function() {
@@ -357,8 +358,12 @@ define(['require',
                     view.ui.termName.on('keyup', function() {
                         if (this.value.indexOf(' ') >= 0) {
                             modal.$el.find('button.ok').prop('disabled', true);
+                            view.ui.termName.addClass("addTermDiable");
+                            view.$('.alertTerm').show();
                         } else {
                             modal.$el.find('button.ok').prop('disabled', false);
+                            view.ui.termName.removeClass("addTermDiable");
+                            view.$('.alertTerm').hide();
                         }
 
                     });
@@ -380,12 +385,12 @@ define(['require',
                         that.forwardClick(undefined, true, url);
                         //that.fetchCollection(that.url);
                         Utils.notifySuccess({
-                            content: "Term " + view.ui.termName.val() + " Created successfully"
+                            content: "Term " + view.ui.termName.val() + Messages.addSuccessMessage
                         });
                     },
                     error: function(model, response) {
                         Utils.notifyError({
-                            content: "Term " + view.ui.termName.val() + " could not be Created"
+                            content: "Term " + view.ui.termName.val() + Messages.addErrorMessage
                         });
                     },
                     complete: function() {
@@ -415,13 +420,13 @@ define(['require',
                         beforeSend: function() {},
                         success: function(data) {
                             Utils.notifySuccess({
-                                content: "Term " + termName + " has been deleted successfully"
+                                content: "Term " + termName + Messages.deleteSuccessMessage
                             });
                             var termURL = url.split("/").slice(0, -2).join("/");
                             that.forwardClick(undefined, true, termURL);
                         },
                         error: function(error, data, status) {
-                            var message = "Term " + termName + " could not be deleted";
+                            var message = "Term " + termName + Messages.deleteErrorMessage;
                             if (data.error) {
                                 message = data.error;
                             }
@@ -537,7 +542,7 @@ define(['require',
                         model: new that.parentCollection.model()
                     });
                     var modal = new Modal({
-                        title: 'Default taxonomy',
+                        title: 'Taxonomy',
                         content: view,
                         okCloses: true,
                         showFooter: true,
@@ -548,14 +553,17 @@ define(['require',
                     modal.on('ok', function() {
                         that.saveDefaultTaxonomy(view);
                     });
-                    view.ui.termName.attr("placeholder", "Default taxonomy name");
+                    view.ui.termName.attr("placeholder", "Enter Taxonomy Name");
                     view.ui.termName.on('keyup', function() {
                         if (this.value.indexOf(' ') >= 0) {
                             modal.$el.find('button.ok').prop('disabled', true);
+                            view.ui.termName.addClass("addTermDiable");
+                            view.$('.alertTerm').show();
                         } else {
                             modal.$el.find('button.ok').prop('disabled', false);
+                            view.ui.termName.removeClass("addTermDiable");
+                            view.$('.alertTerm').hide();
                         }
-
                     });
                     view.on('closeModal', function() {
                         modal.trigger('cancel');
@@ -572,12 +580,12 @@ define(['require',
                         that.fetchCollection(view.model.url, true);
                         that.forwardClick(undefined, undefined, view.model.url);
                         Utils.notifySuccess({
-                            content: "Default taxonomy" + view.ui.termName.val() + " Created successfully"
+                            content: "Default taxonomy" + view.ui.termName.val() + Messages.addSuccessMessage
                         });
                     },
                     error: function(error, data, status) {
                         Utils.notifyError({
-                            content: "Default taxonomy " + view.ui.termName.val() + " could not be Created"
+                            content: "Default taxonomy " + view.ui.termName.val() + Messages.addErrorMessage
                         });
                     },
                     complete: function() {

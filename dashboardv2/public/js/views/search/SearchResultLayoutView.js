@@ -116,6 +116,7 @@ define(['require',
                         this.checkTableFetch();
                     }
                     this.renderTableLayoutView();
+                    this.$('.searchResult').html(this.searchCollection.fullCollection.length + ' result for <b>' + this.searchCollection.queryParams.query + '</b>');
                 }, this);
                 this.listenTo(this.searchCollection, "error", function(value, responseData) {
                     this.$('.fontLoader').hide();
@@ -148,6 +149,7 @@ define(['require',
             fetchCollection: function(value) {
                 this.$('.fontLoader').show();
                 this.$('.searchTable').hide();
+                this.$('.searchResult').html('');
                 if (value) {
                     if (value.searchType) {
                         this.searchCollection.url = "/api/atlas/discovery/search/" + value.searchType;

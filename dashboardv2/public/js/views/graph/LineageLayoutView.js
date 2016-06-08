@@ -66,23 +66,18 @@ define(['require',
             },
             bindEvents: function() {
                 this.listenTo(this.inputCollection, 'reset', function() {
-                    $('.lineageLayout').show();
                     this.generateData(this.inputCollection, 'input');
                     this.outputCollection.fetch({ reset: true });
                 }, this);
                 this.listenTo(this.outputCollection, 'reset', function() {
-                    $('.lineageLayout').show();
                     this.generateData(this.outputCollection, 'output');
                     this.outputState = true;
                 }, this);
                 this.listenTo(this.outputCollection, 'error', function() {
-                    this.$('.fontLoader').hide();
-                    $('.lineageLayout').hide();
-
+                    this.addNoDataMessage();
                 }, this);
                 this.listenTo(this.inputCollection, 'error', function() {
-                    this.$('.fontLoader').hide();
-                    this.$('.lineageLayout').hide();
+                    this.addNoDataMessage();
                 }, this);
             },
             onRender: function() {
@@ -104,6 +99,11 @@ define(['require',
             },
             fetchGraphData: function() {
                 this.inputCollection.fetch({ reset: true });
+            },
+            addNoDataMessage: function() {
+                //this.$('svg').height('100');
+                this.$('svg').html('<text x="' + (this.$('svg').width() - 150) / 2 + '" y="' + this.$('svg').height() / 2 + '" fill="black">No lineage data found</text>');
+                this.$('.fontLoader').hide();
             },
             generateData: function(collection, type) {
                 var that = this;
@@ -140,9 +140,7 @@ define(['require',
                         if (that.edgesAndvertices) {
                             that.createGraph(that.edgesAndvertices, that.startingPoint);
                         } else if (this.outputState && !that.edgesAndvertices) {
-                            that.$('svg').height('100');
-                            that.$('svg').html('<text x="' + (that.$('svg').width() - 150) / 2 + '" y="' + that.$('svg').height() / 2 + '" fill="black">No lineage data found</text>');
-                            that.$('.fontLoader').hide();
+                            that.addNoDataMessage();
                         }
                     }
                 }
@@ -231,7 +229,7 @@ define(['require',
                 _.each(startingPoint, function(val, key, obj) {
                     _.each(edgesAndvertices.edges[val], function(val1) {
                         if (val && val1) {
-                            that.g.setEdge(val, val1);
+                            that.g.setEdge(val, val1, { 'arrowhead': "arrowPoint", lineInterpolate: 'basis' });
                         }
                         createRemaningEdge(edgesAndvertices.edges, val1);
                     });
@@ -241,7 +239,7 @@ define(['require',
                     if (obj[starting] && obj[starting].length) {
                         _.each(obj[starting], function(val, key) {
                             if (starting && val) {
-                                that.g.setEdge(starting, val);
+                                that.g.setEdge(starting, val, { 'arrowhead': "arrowPoint", lineInterpolate: 'basis' });
                             }
                             createRemaningEdge(obj, val);
                         });
@@ -258,6 +256,26 @@ define(['require',
                 if (this.outputState) {
                     // Create the renderer
                     var render = new dagreD3.render();
+                    // Add our custom arrow (a hollow-point)
+                    render.arrows().arrowPoint = function normal(parent, id, edge, type) {
+                        var marker = parent.append("marker")
+                            .attr("id", id)
+                            .attr("viewBox", "0 0 10 10")
+                            .attr("refX", 9)
+                            .attr("refY", 5)
+                            .attr("markerUnits", "strokeWidth")
+                            .attr("markerWidth", 10)
+                            .attr("markerHeight", 8)
+                            .attr("orient", "auto");
+
+                        var path = marker.append("path")
+                            .attr("d", "M 0 0 L 10 5 L 0 10 z")
+                            .style("stroke-width", 1)
+                            .style("stroke-dasharray", "1,0")
+                            .style("fill", "#cccccc")
+                            .style("stroke", "#cccccc");
+                        dagreD3.util.applyStyle(path, edge[type + "Style"]);
+                    };
                     render.shapes().img = function circle(parent, bbox, node) {
                         //var r = Math.max(bbox.width, bbox.height) / 2,
                         var shapeSvg = parent.insert("image")
@@ -278,17 +296,17 @@ define(['require',
                                         }
                                     }
                                 }
-                            }).attr("x", "-20px")
-                            .attr("y", "-20px")
-                            .attr("width", "40px")
-                            .attr("height", "40px");
+                            }).attr("x", "-12px")
+                            .attr("y", "-12px")
+                            .attr("width", "24px")
+                            .attr("height", "24px");
                         /*shapeSvg = parent.insert("circle", ":first-child")
                             .attr("x", 35)
                             .attr("y", 35)
                             .attr("r", 20);*/
                         node.intersect = function(point) {
                             //return dagreD3.intersect.circle(node, points, point);
-                            return dagreD3.intersect.circle(node, 20, point);
+                            return dagreD3.intersect.circle(node, 13, point);
                         };
                         return shapeSvg;
                     };

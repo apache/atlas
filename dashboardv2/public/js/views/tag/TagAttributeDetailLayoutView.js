@@ -22,8 +22,9 @@ define(['require',
     'utils/Utils',
     'views/tag/AddTagAttributeView',
     'collection/VCommonList',
-    'models/VTag'
-], function(require, Backbone, TagAttributeDetailLayoutViewTmpl, Utils, AddTagAttributeView, VCommonList, VTag) {
+    'models/VTag',
+    'utils/Messages'
+], function(require, Backbone, TagAttributeDetailLayoutViewTmpl, Utils, AddTagAttributeView, VCommonList, VTag, Messages) {
     'use strict';
 
     var TagAttributeDetailLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -45,12 +46,27 @@ define(['require',
                 addTagtext: '[data-id="addTagtext"]',
                 addTagPlus: '[data-id="addTagPlus"]',
                 description: '[data-id="description"]',
+                descriptionTextArea: '[data-id="descriptionTextArea"]',
+                publishButton: '[data-id="publishButton"]',
             },
             /** ui events hash */
             events: function() {
                 var events = {};
+                events["click " + this.ui.editButton] = function() {
+                    this.ui.editButton.hide();
+                    this.ui.description.hide();
+                    this.ui.editBox.show();
+                    this.ui.descriptionTextArea.focus();
+                    this.ui.publishButton.prop('disabled', true);
+                    if (this.ui.description.text().length) {
+                        this.ui.descriptionTextArea.val(this.ui.description.text());
+                    }
+                };
+                events["keyup " + this.ui.descriptionTextArea] = 'textAreaChangeEvent';
+                events["click " + this.ui.cancelButton] = 'onCancelButtonClick';
                 events["click " + this.ui.addAttrBtn] = 'onClickAddAttribute';
                 events["click " + this.ui.addTagListBtn] = 'onClickAddTagBtn';
+                events["click " + this.ui.publishButton] = 'onPublishClick';
                 return events;
             },
             /**
@@ -97,26 +113,17 @@ define(['require',
             onRender: function() {
                 this.ui.title.html('<span>' + this.tag + '</span>');
                 this.ui.saveButton.attr("disabled", "true");
+                this.ui.publishButton.prop('disabled', true);
             },
-            onSaveButton: function(ref) {
+            onSaveButton: function(saveObject, message) {
                 var that = this,
-                    tagModel = new VTag(),
-                    attributeName = $(ref.el).find("input").val();
-                this.tagCollection.first().get('traitTypes')[0].attributeDefinitions.push({
-                    "name": attributeName,
-                    "dataTypeName": "string",
-                    "multiplicity": "optional",
-                    "isComposite": false,
-                    "isUnique": false,
-                    "isIndexable": true,
-                    "reverseAttributeName": null
-                });
-                tagModel.set(this.tagCollection.first().toJSON()).save(null, {
+                    tagModel = new VTag();
+                tagModel.set(saveObject).save(null, {
                     type: "PUT",
                     success: function(model, response) {
                         that.tagCollection.fetch({ reset: true });
                         Utils.notifySuccess({
-                            content: " Attribute has been Updated"
+                            content: message
                         });
                     },
                     error: function(model, response) {
@@ -144,12 +151,41 @@ define(['require',
                                 allowCancel: true,
                             }).open();
                         modal.on('ok', function() {
-                            that.onSaveButton(view);
+                            var attributeName = $(view.el).find("input").val();
+                            that.tagCollection.first().get('traitTypes')[0].attributeDefinitions.push({
+                                "name": attributeName,
+                                "dataTypeName": "string",
+                                "multiplicity": "optional",
+                                "isComposite": false,
+                                "isUniquvar e": false,
+                                "isIndexable": true,
+                                "reverseAttributeName": null
+                            });
+                            that.onSaveButton(that.tagCollection.first().toJSON(), Messages.addAttributeSuccessMessage);
                         });
                         modal.on('closeModal', function() {
                             modal.trigger('cancel');
                         });
                     });
+            },
+            onCancelButtonClick: function() {
+                this.ui.description.show();
+                this.ui.editButton.show();
+                this.ui.editBox.hide();
+            },
+            textAreaChangeEvent: function() {
+                if (this.tagCollection.first().get('traitTypes')[0].typeDescription == this.ui.descriptionTextArea.val()) {
+                    this.ui.publishButton.prop('disabled', true);
+                } else {
+                    this.ui.publishButton.prop('disabled', false);
+                }
+            },
+            onPublishClick: function() {
+                this.tagCollection.first().get('traitTypes')[0].typeDescription = this.ui.descriptionTextArea.val();
+                this.onSaveButton(this.tagCollection.first().toJSON(), Messages.updateTagDescriptionMessage);
+                this.ui.description.show();
+                this.ui.editButton.show();
+                this.ui.editBox.hide();
             }
         });
     return TagAttributeDetailLayoutView;
