@@ -57,4 +57,9 @@ public class HTable0_98 implements TableMask
     {
         table.close();
     }
+
+    @Override
+    public Object getTableObject() {
+        return table;
+    }
 }

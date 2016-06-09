@@ -347,6 +347,11 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     @Override
     public Deployment getDeployment() {
+        return Deployment.REMOTE;
+
+        /* If just one of the regions for titan table is in the localhost,
+         * this method returns Deployment.LOCAL - which does not sound right.
+         *
         List<KeyRange> local;
         try {
             local = getLocalKeyPartition();
@@ -355,6 +360,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             // propagating StorageException might be a better approach
             throw new RuntimeException(e);
         }
+        *
+        */
     }
 
     @Override
@@ -506,14 +513,16 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         List<KeyRange> result = new LinkedList<KeyRange>();
 
-        HTable table = null;
+        TableMask table = null;
         try {
             ensureTableExists(tableName, getCfNameForStoreName(GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME), 0);
 
-            table = new HTable(hconf, tableName);
+            table = cnx.getTable(tableName);
+
+            HTable hTable = (HTable)table.getTableObject();
 
             Map<KeyRange, ServerName> normed =
-                    normalizeKeyBounds(table.getRegionLocations());
+                    normalizeKeyBounds(hTable.getRegionLocations());
 
             for (Map.Entry<KeyRange, ServerName> e : normed.entrySet()) {
                 if (NetworkUtil.isLocalConnection(e.getValue().getHostname())) {

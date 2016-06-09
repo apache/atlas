@@ -37,4 +37,5 @@ public interface TableMask extends Closeable
 
     void batch(List<Row> writes, Object[] results) throws IOException, InterruptedException;
 
+    Object getTableObject();
 }
