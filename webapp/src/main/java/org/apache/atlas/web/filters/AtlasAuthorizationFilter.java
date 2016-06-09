@@ -104,7 +104,7 @@ public class AtlasAuthorizationFilter extends GenericFilterBean {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
             if (auth != null) {
-                userName = String.valueOf(auth.getPrincipal());
+                userName = auth.getName();
                 Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
                 for (GrantedAuthority c : authorities) {
                     groups.add(c.getAuthority());

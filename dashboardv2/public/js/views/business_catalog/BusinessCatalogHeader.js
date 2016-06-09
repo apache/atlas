@@ -17,8 +17,10 @@
  */
 
 define(['require',
-    'hbs!tmpl/business_catalog/BusinessCatalogHeader'
-], function(require, tmpl) {
+    'hbs!tmpl/business_catalog/BusinessCatalogHeader',
+    'utils/CommonViewFunction',
+    'utils/Globals'
+], function(require, tmpl, CommonViewFunction, Globals) {
     'use strict';
 
     var BusinessCatalogHeader = Marionette.LayoutView.extend({
@@ -36,7 +38,20 @@ define(['require',
          * @return {[type]} [description]
          */
         render: function() {
+            var that = this;
             $(this.el).html(this.template());
+            if (!Globals.userLogedIn.status) {
+                CommonViewFunction.userDataFetch({
+                    url: Globals.baseURL + "/api/atlas/admin/session",
+                    callback: function(response) {
+                        that.$('.userName').html(response.userName);
+                        Globals.userLogedIn.status = true;
+                        Globals.userLogedIn.response = response;
+                    }
+                });
+            } else {
+                that.$('.userName').html(Globals.userLogedIn.response.userName);
+            }
             var that = this;
             if (this.url) {
                 var t = [];

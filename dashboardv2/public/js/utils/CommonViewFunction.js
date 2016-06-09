@@ -170,5 +170,17 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages'], function(r
         });
         return table;
     }
+    CommonViewFunction.userDataFetch = function(options) {
+        if (options.url) {
+            $.ajax({
+                url: options.url,
+                success: function(response) {
+                    if (options.callback) {
+                        options.callback(response);
+                    }
+                }
+            });
+        }
+    }
     return CommonViewFunction;
 });

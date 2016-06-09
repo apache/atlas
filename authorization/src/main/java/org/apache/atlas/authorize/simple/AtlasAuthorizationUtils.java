@@ -103,6 +103,8 @@ public class AtlasAuthorizationUtils {
         String api = getApi(contextPath);
         if (api.startsWith("types")) {
             resourceTypes.add(AtlasResourceTypes.TYPE);
+        } else if (api.startsWith("admin") && contextPath.contains("/session")) {
+            resourceTypes.add(AtlasResourceTypes.UNKNOWN);
         } else if ((api.startsWith("discovery") && contextPath.contains("/gremlin")) || api.startsWith("admin")
             || api.startsWith("graph")) {
             resourceTypes.add(AtlasResourceTypes.OPERATION);

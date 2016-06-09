@@ -18,7 +18,9 @@
 
 define(['require',
     'hbs!tmpl/site/header',
-], function(require, tmpl) {
+    'utils/CommonViewFunction',
+    'utils/Globals'
+], function(require, tmpl, CommonViewFunction, Globals) {
     'use strict';
 
     var Header = Marionette.LayoutView.extend({
@@ -26,7 +28,21 @@ define(['require',
         regions: {},
         events: {},
         initialize: function(options) {},
-        onRender: function() {}
+        onRender: function() {
+            var that = this;
+            if (!Globals.userLogedIn.status) {
+                CommonViewFunction.userDataFetch({
+                    url: Globals.baseURL + "/api/atlas/admin/session",
+                    callback: function(response) {
+                        that.$('.userName').html(response.userName);
+                        Globals.userLogedIn.status = true;
+                        Globals.userLogedIn.response = response;
+                    }
+                });
+            } else {
+                that.$('.userName').html(Globals.userLogedIn.response.userName);
+            }
+        },
     });
     return Header;
 });

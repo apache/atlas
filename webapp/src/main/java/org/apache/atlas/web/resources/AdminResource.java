@@ -18,15 +18,9 @@
 
 package org.apache.atlas.web.resources;
 
-import com.google.inject.Inject;
-import org.apache.atlas.AtlasClient;
-import org.apache.atlas.web.service.ServiceState;
-import org.apache.atlas.web.util.Servlets;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.commons.lang.StringUtils;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.inject.Singleton;
 import javax.ws.rs.GET;
@@ -35,6 +29,20 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+
+import org.apache.atlas.AtlasClient;
+import org.apache.atlas.web.service.ServiceState;
+import org.apache.atlas.web.util.Servlets;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.lang.StringUtils;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import com.google.inject.Inject;
 
 /**
  * Jersey Resource for admin operations.
@@ -115,6 +123,32 @@ public class AdminResource {
         JSONObject responseData = new JSONObject();
         try {
             responseData.put(AtlasClient.STATUS, serviceState.getState().toString());
+            Response response = Response.ok(responseData).build();
+            return response;
+        } catch (JSONException e) {
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        }
+    }
+    
+    @GET
+    @Path("session")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response getUserProfile() {
+        JSONObject responseData = new JSONObject();
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String userName = null;
+            Set<String> groups = new HashSet<String>();
+            if (auth != null) {
+                userName = auth.getName();
+                Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
+                for (GrantedAuthority c : authorities) {
+                    groups.add(c.getAuthority());
+                }
+            } 
+            
+            responseData.put("userName", userName);
+            responseData.put("groups", groups);
             Response response = Response.ok(responseData).build();
             return response;
         } catch (JSONException e) {

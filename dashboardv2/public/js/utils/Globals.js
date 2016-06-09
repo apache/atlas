@@ -41,6 +41,10 @@ define(['require'], function(require) {
         TAG_ADD: "Tag Added",
         TAG_DELETE: "Tag Deleted"
     }
+    Globals.userLogedIn = {
+        status: false,
+        response: {}
+    }
 
     return Globals;
 });
