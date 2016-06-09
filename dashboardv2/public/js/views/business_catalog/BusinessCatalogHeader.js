@@ -73,7 +73,7 @@ define(['require',
                         t.push({
                             value: x[v],
                             href: href
-                        })
+                        });
                     };
                 }
                 this.value = t;

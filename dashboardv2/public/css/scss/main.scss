@@ -120,7 +120,7 @@ a {
 }
 
 hr {
-    border-top: 1px solid #1c1e2a
+    border-top: 1px solid $color_mirage_approx
 }
 
 th {
@@ -171,4 +171,8 @@ ul {
     background-color: $transparent;
     border: 1px solid $color_jungle_green_approx;
     cursor: pointer;
+}
+.add-seperator {
+    margin-bottom: 10px;
+    border-bottom: 1px solid $color_mirage_approx
 }

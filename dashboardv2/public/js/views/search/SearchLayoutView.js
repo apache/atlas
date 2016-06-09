@@ -131,9 +131,9 @@ define(['require',
                          });*/
                     }
                     if (this.value.dslChecked == "true") {
-                        this.ui.searchType.prop("checked", true).trigger("change")
+                        this.ui.searchType.prop("checked", true).trigger("change");
                     } else {
-                        this.ui.searchType.prop("checked", false).trigger("change")
+                        this.ui.searchType.prop("checked", false).trigger("change");
                     }
                 }
                 this.bindEvents(arr);

@@ -29,15 +29,22 @@ define(['require',
 
             template: CreateTagLayoutViewTmpl,
 
+            templateHelpers: function() {
+                return {
+                    create: this.create,
+                    description: this.description
+                };
+            },
+
             /** Layout sub regions */
             regions: {},
 
             /** ui selector cache */
             ui: {
-
                 tagName: "[data-id='tagName']",
                 parentTag: "[data-id='parentTag']",
-                description: "[data-id='description']"
+                description: "[data-id='description']",
+                title: "[data-id='title']"
             },
             /** ui events hash */
             events: function() {
@@ -49,19 +56,21 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'tagCollection'));
-                this.bindEvents();
+                _.extend(this, _.pick(options, 'tagCollection', 'tag'));
+                if (this.tagCollection.first().get('traitTypes')) {
+                    this.description = this.tagCollection.first().get('traitTypes')[0].typeDescription;
+                } else {
+                    this.create = true;
+                }
             },
-            bindEvents: function() {
-                // this.listenTo(this.tagCollection, 'reset', function() {
-                //     this.tagCollectionList();
-                // }, this);
-            },
+            bindEvents: function() {},
             onRender: function() {
-                //this.fetchCollection();
-                this.tagCollectionList();
+                if (this.create) {
+                    this.tagCollectionList();
+                } else {
+                    this.ui.title.html('<span>' + this.tag + '</span>');
+                }
             },
-
             tagCollectionList: function() {
                 this.ui.parentTag.empty();
                 var str = '';

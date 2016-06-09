@@ -52,21 +52,10 @@ define(['require',
             /** ui events hash */
             events: function() {
                 var events = {};
-                events["click " + this.ui.editButton] = function() {
-                    this.ui.editButton.hide();
-                    this.ui.description.hide();
-                    this.ui.editBox.show();
-                    this.ui.descriptionTextArea.focus();
-                    this.ui.publishButton.prop('disabled', true);
-                    if (this.ui.description.text().length) {
-                        this.ui.descriptionTextArea.val(this.ui.description.text());
-                    }
-                };
-                events["keyup " + this.ui.descriptionTextArea] = 'textAreaChangeEvent';
                 events["click " + this.ui.cancelButton] = 'onCancelButtonClick';
                 events["click " + this.ui.addAttrBtn] = 'onClickAddAttribute';
                 events["click " + this.ui.addTagListBtn] = 'onClickAddTagBtn';
-                events["click " + this.ui.publishButton] = 'onPublishClick';
+                events["click " + this.ui.editButton] = 'onEditButton';
                 return events;
             },
             /**
@@ -173,19 +162,44 @@ define(['require',
                 this.ui.editButton.show();
                 this.ui.editBox.hide();
             },
-            textAreaChangeEvent: function() {
-                if (this.tagCollection.first().get('traitTypes')[0].typeDescription == this.ui.descriptionTextArea.val()) {
-                    this.ui.publishButton.prop('disabled', true);
+            textAreaChangeEvent: function(view, modal) {
+                if (view.tagCollection.first().get('traitTypes')[0].typeDescription == view.ui.description.val()) {
+                    modal.$el.find('button.ok').prop('disabled', true);
                 } else {
-                    this.ui.publishButton.prop('disabled', false);
+                    modal.$el.find('button.ok').prop('disabled', false);
                 }
             },
-            onPublishClick: function() {
-                this.tagCollection.first().get('traitTypes')[0].typeDescription = this.ui.descriptionTextArea.val();
+            onPublishClick: function(view) {
+                view.tagCollection.first().get('traitTypes')[0].typeDescription = view.ui.description.val();
                 this.onSaveButton(this.tagCollection.first().toJSON(), Messages.updateTagDescriptionMessage);
                 this.ui.description.show();
-                this.ui.editButton.show();
-                this.ui.editBox.hide();
+            },
+            onEditButton: function(e) {
+                var that = this;
+                $(e.currentTarget).blur();
+                require([
+                    'views/tag/CreateTagLayoutView',
+                    'modules/Modal'
+                ], function(CreateTagLayoutView, Modal) {
+                    var view = new CreateTagLayoutView({ 'tagCollection': that.tagCollection, 'tag': that.tag });
+                    var modal = new Modal({
+                        title: 'Edit Tag',
+                        content: view,
+                        cancelText: "Cancel",
+                        okText: 'Save',
+                        allowCancel: true,
+                    }).open();
+                    view.ui.description.on('keyup', function(e) {
+                        that.textAreaChangeEvent(view, modal);
+                    });
+                    modal.$el.find('button.ok').prop('disabled', true);
+                    modal.on('ok', function() {
+                        that.onPublishClick(view);
+                    });
+                    modal.on('closeModal', function() {
+                        modal.trigger('cancel');
+                    });
+                });
             }
         });
     return TagAttributeDetailLayoutView;

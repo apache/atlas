@@ -152,7 +152,7 @@ define(['require',
                             sortable: false,
                             formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                 fromRaw: function(rawValue, model) {
-                                    return '<a href="javascript:void(0)"><i class="fa fa-trash" data-id="delete" data-name="' + model.get('typeName') + '"></i></a>'
+                                    return '<a href="javascript:void(0)"><i class="fa fa-trash" data-id="delete" data-name="' + model.get('typeName') + '"></i></a>';
                                 }
                             })
                         },

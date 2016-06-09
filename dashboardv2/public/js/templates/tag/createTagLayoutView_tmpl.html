@@ -17,12 +17,19 @@
 <form name="tagDefinitionform" class="css-form">
     <!-- <h4 style="margin-bottom:30px"></h4> -->
     <div class="form-group">
+        {{#if create}}
         <input class="form-control row-margin-bottom" data-id="tagName" placeholder="Name(required)" autofocus>
         </input>
-        <input class="form-control row-margin-bottom" data-id="description" placeholder="Description">
+        {{else}}
+        <h4><span data-id="title"></span></h4>
         </input>
+        {{/if}}
+        <input class="form-control row-margin-bottom" data-id="description" value="{{description}}" placeholder="Description">
+        </input>
+        {{#if create}}
         <span class="row-margin-bottom">Select tags to inherit attributes(optional)</span>
         <p class="attributeText">Attributes define additional properties for the tag</p>
         <select class="form-control tagList" data-id="parentTag" multiple="multiple"></select>
+        {{/if}}
     </div>
 </form>

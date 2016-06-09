@@ -100,11 +100,21 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages'], function(r
                         var value = "";
                         if (data.definition.values.name) {
                             value = data.definition.values.name;
+                        }
+                        var id = "";
+                        if (data.definition.id) {
+                            if (_.isObject(data.definition.id) && data.definition.id.id) {
+                                id = data.definition.id.id;
+                            } else {
+                                id = data.definition.id;
+                            }
+                        }
+                        if (value.length > 1) {
+                            scope.$('td div[data-id="' + id + '"]').html('<a href="#!/detailPage/' + id + '">' + value + '</a>');
                         } else {
-                            value = data.GUID;
+                            scope.$('td div[data-id="' + id + '"]').html('<a href="#!/detailPage/' + id + '">' + id + '</a>');
                         }
 
-                        scope.$('td div[data-id="' + data.GUID + '"]').html('<a href="#!/detailPage/' + data.GUID + '">' + value + '</a>');
                     },
                     error: function(error, data, status) {},
                     complete: function() {}
@@ -123,8 +133,17 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages'], function(r
                         id = inputOutputField.id;
                     }
                     if (id) {
-                        fetchInputOutputValue(id);
-                        subLink += '<div data-id="' + id + '"></div>';
+                        if (inputOutputField.values) {
+                            if (inputOutputField.values.name) {
+                                subLink += '<div><a href="#!/detailPage/' + id + '">' + inputOutputField.values.name + '</a><div>'
+                            } else {
+                                subLink += '<a href="#!/detailPage/' + id + '">' + id + '</a>'
+                            }
+                        } else {
+                            fetchInputOutputValue(id);
+                            subLink += '<div data-id="' + id + '"></div>';
+                        }
+
                     } else {
                         subLink += '<div></div>';
                     }
@@ -138,8 +157,16 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages'], function(r
                     id = keyValue.id;
                 }
                 if (id) {
-                    fetchInputOutputValue(id);
-                    table += '<tr><td>' + key + '</td><td><div data-id="' + id + '"></div></td></tr>';
+                    if (keyValue.values) {
+                        if (keyValue.values.name) {
+                            table += '<tr><td>' + key + '</td><td><div><a href="#!/detailPage/' + id + '">' + keyValue.values.name + '</a><div></td></tr>';
+                        } else {
+                            table += '<tr><td>' + key + '</td><td><div><a href="#!/detailPage/' + id + '">' + id + '</a><div></td></tr>';
+                        }
+                    } else {
+                        fetchInputOutputValue(id);
+                        table += '<tr><td>' + key + '</td><td><div data-id="' + id + '"></div></td></tr>';
+                    }
                 } else {
                     var stringArr = [];
                     _.each(keyValue, function(val, key) {

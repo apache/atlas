@@ -121,9 +121,9 @@ define(['require',
                             fromRaw: function(rawValue, model) {
                                 that.detailBtnDisable = false;
                                 if (Globals.auditAction[rawValue]) {
-                                    return Globals.auditAction[rawValue]
+                                    return Globals.auditAction[rawValue];
                                 } else {
-                                    return rawValue
+                                    return rawValue;
                                 }
                             }
                         })
