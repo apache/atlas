@@ -18,52 +18,33 @@
 
 package org.apache.atlas.repository.audit;
 
+import java.util.Collections;
+import java.util.List;
+
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 
 import com.google.inject.Singleton;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
-
 /**
- * Entity audit repository where audit events are stored in-memory. Used only for integration tests
+ * Implementation that completely disables the audit repository.
  */
 @Singleton
-public class InMemoryEntityAuditRepository implements EntityAuditRepository {
-    private TreeMap<String, EntityAuditEvent> auditEvents = new TreeMap<>();
+public class NoopEntityAuditRepository implements EntityAuditRepository {
 
     @Override
     public void putEvents(EntityAuditEvent... events) throws AtlasException {
-        putEvents(Arrays.asList(events));
+        //do nothing
     }
 
     @Override
     public synchronized void putEvents(List<EntityAuditEvent> events) throws AtlasException {
-        for (EntityAuditEvent event : events) {
-            String rowKey = event.getEntityId() + (Long.MAX_VALUE - event.getTimestamp());
-            event.setEventKey(rowKey);
-            auditEvents.put(rowKey, event);
-        }
+        //do nothing
     }
 
     @Override
     public List<EntityAuditEvent> listEvents(String entityId, String startKey, short maxResults)
             throws AtlasException {
-        List<EntityAuditEvent> events = new ArrayList<>();
-        String myStartKey = startKey;
-        if (myStartKey == null) {
-            myStartKey = entityId;
-        }
-        SortedMap<String, EntityAuditEvent> subMap = auditEvents.tailMap(myStartKey);
-        for (EntityAuditEvent event : subMap.values()) {
-            if (events.size() < maxResults && event.getEntityId().equals(entityId)) {
-                events.add(event);
-            }
-        }
-        return events;
+        return Collections.emptyList();
     }
 }

@@ -72,32 +72,36 @@ def main():
     web_app_dir = mc.webAppDir(atlas_home)
     mc.expandWebApp(atlas_home)
 
-    #add hbase-site.xml to classpath
-    hbase_conf_dir = mc.hbaseConfDir(atlas_home)
-
     p = os.pathsep
     atlas_classpath = confdir + p \
                        + os.path.join(web_app_dir, "atlas", "WEB-INF", "classes" ) + p \
                        + os.path.join(web_app_dir, "atlas", "WEB-INF", "lib", "atlas-titan-${project.version}.jar" ) + p \
                        + os.path.join(web_app_dir, "atlas", "WEB-INF", "lib", "*" )  + p \
                        + os.path.join(atlas_home, "libext", "*")
-    if os.path.exists(hbase_conf_dir):
-        atlas_classpath = atlas_classpath + p \
+
+    is_hbase = mc.is_hbase(confdir)
+
+    if is_hbase:
+        #add hbase-site.xml to classpath
+        hbase_conf_dir = mc.hbaseConfDir(atlas_home)
+
+        if os.path.exists(hbase_conf_dir):
+            atlas_classpath = atlas_classpath + p \
                             + hbase_conf_dir
-    else: 
-       if mc.is_hbase(confdir):
-           raise Exception("Could not find hbase-site.xml in %s. Please set env var HBASE_CONF_DIR to the hbase client conf dir", hbase_conf_dir)
+        else:
+            if mc.is_hbase(confdir):
+                raise Exception("Could not find hbase-site.xml in %s. Please set env var HBASE_CONF_DIR to the hbase client conf dir", hbase_conf_dir)
 
     if mc.isCygwin():
         atlas_classpath = mc.convertCygwinPath(atlas_classpath, True)
 
     atlas_pid_file = mc.pidFile(atlas_home)
-            
+
     if os.path.isfile(atlas_pid_file):
        #Check if process listed in atlas.pid file is still running
        pf = file(atlas_pid_file, 'r')
        pid = pf.read().strip()
-       pf.close() 
+       pf.close()
 
        if mc.exist_pid((int)(pid)):
            if is_setup:
@@ -106,7 +110,7 @@ def main():
        else:
            mc.server_pid_not_running(pid)
 
-    if mc.is_hbase_local(confdir):
+    if is_hbase and mc.is_hbase_local(confdir):
         print "configured for local hbase."
         mc.configure_hbase(atlas_home)
         mc.run_hbase_action(mc.hbaseBinDir(atlas_home), "start", hbase_conf_dir, logdir)

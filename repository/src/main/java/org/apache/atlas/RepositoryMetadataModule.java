@@ -87,7 +87,7 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
 
         bindAuditRepository(binder());
 
-        bind(DeleteHandler.class).to(getDeleteHandler()).asEagerSingleton();
+        bind(DeleteHandler.class).to(getDeleteHandlerImpl()).asEagerSingleton();
 
         //Add EntityAuditListener as EntityChangeListener
         Multibinder<EntityChangeListener> entityChangeListenerBinder =
@@ -100,17 +100,35 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
     }
 
     protected void bindAuditRepository(Binder binder) {
-        //Map EntityAuditRepository interface to hbase based implementation
-        binder.bind(EntityAuditRepository.class).to(HBaseBasedAuditRepository.class).asEagerSingleton();
 
-        //Add HBaseBasedAuditRepository to service so that connection is closed at shutdown
-        Multibinder<Service> serviceBinder = Multibinder.newSetBinder(binder, Service.class);
-        serviceBinder.addBinding().to(HBaseBasedAuditRepository.class);
+        Class<? extends EntityAuditRepository> auditRepoImpl = getAuditRepositoryImpl();
+
+        //Map EntityAuditRepository interface to configured implementation
+        binder.bind(EntityAuditRepository.class).to(auditRepoImpl).asEagerSingleton();
+
+        if(Service.class.isAssignableFrom(auditRepoImpl)) {
+            Class<? extends Service> auditRepoService = (Class<? extends Service>)auditRepoImpl;
+            //if it's a service, make sure that it gets properly closed at shutdown
+            Multibinder<Service> serviceBinder = Multibinder.newSetBinder(binder, Service.class);
+            serviceBinder.addBinding().to(auditRepoService);
+        }
+    }
+
+
+    private static final String AUDIT_REPOSITORY_IMPLEMENTATION_PROPERTY = "atlas.EntityAuditRepository.impl";
+
+    private Class<? extends EntityAuditRepository> getAuditRepositoryImpl() {
+        try {
+            return ApplicationProperties.getClass(AUDIT_REPOSITORY_IMPLEMENTATION_PROPERTY,
+                    HBaseBasedAuditRepository.class.getName(), EntityAuditRepository.class);
+        } catch (AtlasException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static final String DELETE_HANDLER_IMPLEMENTATION_PROPERTY = "atlas.DeleteHandler.impl";
 
-    private Class<? extends DeleteHandler> getDeleteHandler() {
+    private Class<? extends DeleteHandler> getDeleteHandlerImpl() {
         try {
             return ApplicationProperties.getClass(DELETE_HANDLER_IMPLEMENTATION_PROPERTY,
                     SoftDeleteHandler.class.getName(), DeleteHandler.class);

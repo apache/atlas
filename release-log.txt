@@ -22,6 +22,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-871 Make audit repository implementation configurable (jnhagelb via shwethags)
 ATLAS-885 optimize HBaseStoreManager to avoid expensive HTable instantiation every 5 seconds (madhan.neethiraj via yhemanth)
 ATLAS-878 UI: Not showing details of SD, DB and COLUMNS (saqeeb.s via shwethags)
 ATLAS-853 User's name to be mentioned in the top user drop down (saqeeb.s via shwethags)

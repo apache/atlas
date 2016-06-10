@@ -52,6 +52,7 @@ atlas.graph.index.search.solr.zookeeper-url=
         </titan.index.properties>
         <hbase.embedded>false</hbase.embedded>
         <solr.embedded>false</solr.embedded>
+	<entity.repository.properties>#atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.HBaseBasedAuditRepository</entity.repository.properties>
     </properties>
 
     <profiles>
@@ -130,6 +131,7 @@ atlas.graph.index.search.elasticsearch.client-only=false
 atlas.graph.index.search.elasticsearch.local-mode=true
 atlas.graph.index.search.elasticsearch.create.sleep=2000
                 </titan.index.properties>
+		<entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.NoopEntityAuditRepository</entity.repository.properties>
             </properties>
         </profile>
 

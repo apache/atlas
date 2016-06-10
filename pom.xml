@@ -411,6 +411,7 @@
 
         <titan.storage.backend>berkeleyje</titan.storage.backend>
         <titan.index.backend>elasticsearch</titan.index.backend>
+	    <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
     </properties>
 
     <profiles>
@@ -425,6 +426,7 @@
                 <titan.index.backend>solr5</titan.index.backend>
                 <solr.zk.address>localhost:9983</solr.zk.address>
                 <titan.storage.hostname>localhost</titan.storage.hostname>
+		        <entity.repository.impl>org.apache.atlas.repository.audit.HBaseBasedAuditRepository</entity.repository.impl>
             </properties>
         </profile>
 
