@@ -202,6 +202,12 @@ Pre-requisites for running HBase as a distributed cluster
    * 3 or 5 !ZooKeeper nodes
    * Atleast 3 !RegionServer nodes. It would be ideal to run the !DataNodes on the same hosts as the Region servers for data locality.
 
+HBase tablename in Titan can be set using the following configuration in ATLAS_HOME/conf/atlas-application.properties:
+<verbatim>
+atlas.graph.storage.hbase.table=apache_atlas_titan
+atlas.audit.hbase.tablename=apache_atlas_entity_audit
+</verbatim>
+
 *Configuring SOLR as the Indexing Backend for the Graph Repository*
 
 By default, Atlas uses Titan as the graph repository and is the only graph repository implementation available currently.
