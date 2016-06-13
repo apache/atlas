@@ -22,6 +22,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-869 Make LDAP/AD properties to be configurable. (nixonrodrigues via yhemanth)
 ATLAS-730 Change titan hbase table name (svimal2106 via sumasai )
 ATLAS-871 Make audit repository implementation configurable (jnhagelb via shwethags)
 ATLAS-885 optimize HBaseStoreManager to avoid expensive HTable instantiation every 5 seconds (madhan.neethiraj via yhemanth)

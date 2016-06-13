@@ -22,18 +22,6 @@
 	http://www.springframework.org/schema/context 
 	http://www.springframework.org/schema/context/spring-context-3.1.xsd">
 
-
         <import resource="classpath:/spring-security.xml" />
-        <bean id="xmlPropertyConfigurer" class="org.apache.atlas.utils.XMLPropertiesUtil" />
-
-        <bean id="propertyConfigurer" class="org.apache.atlas.utils.PropertiesUtil">
-                <property name="locations">
-                        <list>
-                                <value>classpath:atlas-admin-site.xml
-                                </value>
-                        </list>
-                </property>
-                <property name="propertiesPersister" ref="xmlPropertyConfigurer" />
-        </bean>
 
 </beans>

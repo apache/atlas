@@ -20,8 +20,9 @@ package org.apache.atlas.web.security;
 
 import java.util.List;
 import javax.annotation.PostConstruct;
-import org.apache.atlas.utils.PropertiesUtil;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.web.model.User;
+import org.apache.commons.configuration.Configuration;
 import org.apache.log4j.Logger;
 import org.springframework.ldap.core.support.LdapContextSource;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -120,26 +121,31 @@ public class AtlasLdapAuthenticationProvider extends
     }
 
     private void setLdapProperties() {
-        ldapURL = PropertiesUtil.getProperty("atlas.ldap.url", ldapURL);
-        ldapUserDNPattern = PropertiesUtil.getProperty(
-                "atlas.ldap.user.dnpattern", ldapUserDNPattern);
-        ldapGroupSearchBase = PropertiesUtil.getProperty(
-                "atlas.ldap.group.searchbase", ldapGroupSearchBase);
-        ldapGroupSearchFilter = PropertiesUtil.getProperty(
-                "atlas.ldap.group.searchfilter", ldapGroupSearchFilter);
-        ldapGroupRoleAttribute = PropertiesUtil.getProperty(
-                "atlas.ldap.group.roleattribute", ldapGroupRoleAttribute);
-        ldapBindDN = PropertiesUtil.getProperty("atlas.ldap.bind.dn",
-                ldapBindDN);
-        ldapBindPassword = PropertiesUtil.getProperty(
-                "atlas.ldap.bind.password", ldapBindDN);
-        ldapDefaultRole = PropertiesUtil.getProperty("atlas.ldap.default.role",
-                ldapDefaultRole);
-        ldapUserSearchFilter = PropertiesUtil.getProperty(
-                "atlas.ldap.user.searchfilter", ldapUserSearchFilter);
-        ldapReferral = PropertiesUtil.getProperty("atlas.ldap.referral",
-                ldapReferral);
-        ldapBase = PropertiesUtil.getProperty("atlas.ldap.base.dn", ldapBase);
+        try {
+            Configuration configuration = ApplicationProperties.get();
+
+            ldapURL = configuration.getString("atlas.authentication.method.ldap.url");
+            ldapUserDNPattern = configuration.getString(
+                    "atlas.authentication.method.ldap.userDNpattern");
+            ldapGroupSearchBase = configuration.getString(
+                    "atlas.authentication.method.ldap.groupSearchBase");
+            ldapGroupSearchFilter = configuration.getString(
+                    "atlas.authentication.method.ldap.groupSearchFilter");
+            ldapGroupRoleAttribute = configuration.getString(
+                    "atlas.authentication.method.ldap.groupRoleAttribute");
+            ldapBindDN = configuration.getString("atlas.authentication.method.ldap.bind.dn");
+            ldapBindPassword = configuration.getString(
+                    "atlas.authentication.method.ldap.bind.password");
+            ldapDefaultRole = configuration.getString("atlas.authentication.method.ldap.default.role");
+            ldapUserSearchFilter = configuration.getString(
+                    "atlas.authentication.method.ldap.user.searchfilter");
+            ldapReferral = configuration.getString("atlas.authentication.method.ldap.ad.referral");
+            ldapBase = configuration.getString("atlas.authentication.method.ldap.base.dn");
+
+        } catch (Exception e) {
+            LOG.error("Exception while setLdapProperties", e);
+        }
+
     }
 
     private LdapContextSource getLdapContextSource() throws Exception {

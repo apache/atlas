@@ -22,8 +22,9 @@ import java.util.List;
 
 import javax.annotation.PostConstruct;
 
-import org.apache.atlas.utils.PropertiesUtil;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.web.model.User;
+import org.apache.commons.configuration.Configuration;
 import org.apache.log4j.Logger;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -97,18 +98,21 @@ public class AtlasADAuthenticationProvider extends
     }
 
     private void setADProperties() {
-        adDomain = PropertiesUtil.getProperty("atlas.ad.domain", adDomain);
-        adURL = PropertiesUtil.getProperty("atlas.ad.url", adURL);
-        adBindDN = PropertiesUtil.getProperty("atlas.ad.bind.dn", adBindDN);
-        adBindPassword = PropertiesUtil.getProperty("atlas.ad.bind.password",
-                adBindPassword);
-        adUserSearchFilter = PropertiesUtil.getProperty(
-                "atlas.ad.user.searchfilter", adUserSearchFilter);
-        adBase = PropertiesUtil.getProperty("atlas.ad.base.dn", adBase);
-        adReferral = PropertiesUtil
-                .getProperty("atlas.ad.referral", adReferral);
-        adDefaultRole = PropertiesUtil.getProperty("atlas.ad.default.role",
-                adDefaultRole);
+        try {
+
+            Configuration configuration = ApplicationProperties.get();
+            this.adDomain = configuration.getString("atlas.authentication.method.ldap.ad.domain");
+            this.adURL = configuration.getString("atlas.authentication.method.ldap.ad.url");
+            this.adBindDN = configuration.getString("atlas.authentication.method.ldap.ad.bind.dn");
+            this.adBindPassword = configuration.getString("atlas.authentication.method.ldap.ad.bind.password");
+            this.adUserSearchFilter = configuration.getString("atlas.authentication.method.ldap.ad.user.searchfilter");
+            this.adBase = configuration.getString("atlas.authentication.method.ldap.ad.base.dn");
+            this.adReferral = configuration.getString("atlas.authentication.method.ldap.ad.referral");
+            this.adDefaultRole = configuration.getString("atlas.authentication.method.ldap.ad.default.role");
+
+        } catch (Exception e) {
+            LOG.error("Exception while setADProperties", e);
+        }
     }
 
 }
