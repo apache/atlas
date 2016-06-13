@@ -88,6 +88,21 @@ public class SqoopHookIT {
         assertHiveTableIsRegistered(DEFAULT_DB, "hiveTable");
     }
 
+    @Test
+    public void testSqoopExport() throws Exception {
+        SqoopJobDataPublisher.Data d = new SqoopJobDataPublisher.Data("export", "jdbc:mysql:///localhost/db",
+                "mysqluser", "mysql", "myTable", null, "default", "hiveTable", new Properties(),
+                System.currentTimeMillis() - 100, System.currentTimeMillis());
+        SqoopHook hook = new SqoopHook();
+        hook.publish(d);
+        Thread.sleep(1000);
+        String storeName  = SqoopHook.getSqoopDBStoreName(d);
+        assertDBStoreIsRegistered(storeName);
+        String name = SqoopHook.getSqoopProcessName(d, CLUSTER_NAME);
+        assertSqoopProcessIsRegistered(name);
+        assertHiveTableIsRegistered(DEFAULT_DB, "hiveTable");
+    }
+
     private String assertDBStoreIsRegistered(String storeName) throws Exception {
         LOG.debug("Searching for db store {}",  storeName);
         String query = String.format(

@@ -109,8 +109,13 @@ public class SqoopHook extends SqoopJobDataPublisher {
         procRef.set(SqoopDataModelGenerator.NAME, sqoopProcessName);
         procRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, sqoopProcessName);
         procRef.set(SqoopDataModelGenerator.OPERATION, data.getOperation());
-        procRef.set(SqoopDataModelGenerator.INPUTS, dbStoreRef);
-        procRef.set(SqoopDataModelGenerator.OUTPUTS, hiveTableRef);
+        if (isImportOperation(data)) {
+            procRef.set(SqoopDataModelGenerator.INPUTS, dbStoreRef);
+            procRef.set(SqoopDataModelGenerator.OUTPUTS, hiveTableRef);
+        } else {
+            procRef.set(SqoopDataModelGenerator.INPUTS, hiveTableRef);
+            procRef.set(SqoopDataModelGenerator.OUTPUTS, dbStoreRef);
+        }
         procRef.set(SqoopDataModelGenerator.USER, data.getUser());
         procRef.set(SqoopDataModelGenerator.START_TIME, new Date(data.getStartTime()));
         procRef.set(SqoopDataModelGenerator.END_TIME, new Date(data.getEndTime()));
@@ -126,15 +131,16 @@ public class SqoopHook extends SqoopJobDataPublisher {
     }
 
     static String getSqoopProcessName(Data data, String clusterName) {
-        StringBuilder name = new StringBuilder(String.format("sqoop import --connect %s", data.getUrl()));
+        StringBuilder name = new StringBuilder(String.format("sqoop %s --connect %s", data.getOperation(),
+                data.getUrl()));
         if (StringUtils.isNotEmpty(data.getStoreTable())) {
             name.append(" --table ").append(data.getStoreTable());
         }
         if (StringUtils.isNotEmpty(data.getStoreQuery())) {
             name.append(" --query ").append(data.getStoreQuery());
         }
-        name.append(String.format(" --hive-import --hive-database %s --hive-table %s --hive-cluster %s",
-                data.getHiveDB().toLowerCase(), data.getHiveTable().toLowerCase(), clusterName));
+        name.append(String.format(" --hive-%s --hive-database %s --hive-table %s --hive-cluster %s",
+                data.getOperation(), data.getHiveDB().toLowerCase(), data.getHiveTable().toLowerCase(), clusterName));
         return name.toString();
     }
 
@@ -147,6 +153,10 @@ public class SqoopHook extends SqoopJobDataPublisher {
             name.append(" --query ").append(data.getStoreQuery());
         }
         return name.toString();
+    }
+
+    static boolean isImportOperation(SqoopJobDataPublisher.Data data) {
+        return data.getOperation().toLowerCase().equals("import");
     }
 
     @Override
