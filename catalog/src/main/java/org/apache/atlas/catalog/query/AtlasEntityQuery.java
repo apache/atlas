@@ -33,8 +33,6 @@ public class AtlasEntityQuery extends BaseQuery {
     }
 
     protected Pipe getQueryPipe() {
-        //todo: the property 'entityText' isn't currently indexed
-        //todo: we could use Constants.ENTITY_TYPE_PROPERTY_KEY initially but trait instances also contain this property
         return new GremlinPipeline().has(Constants.ENTITY_TEXT_PROPERTY_KEY).
                 hasNot(Constants.ENTITY_TYPE_PROPERTY_KEY, "Taxonomy");
     }

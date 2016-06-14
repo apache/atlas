@@ -69,7 +69,7 @@ public class TermResourceDefinitionTest {
         Request request = new InstanceRequest(properties);
 
         ResourceDefinition termDefinition = new TermResourceDefinition();
-        termDefinition.validate(request);
+        termDefinition.validateCreatePayload(request);
     }
 
     @Test
@@ -80,7 +80,7 @@ public class TermResourceDefinitionTest {
         Request request = new InstanceRequest(properties);
 
         ResourceDefinition termDefinition = new TermResourceDefinition();
-        termDefinition.validate(request);
+        termDefinition.validateCreatePayload(request);
     }
 
     @Test(expectedExceptions = InvalidPayloadException.class)
@@ -93,7 +93,7 @@ public class TermResourceDefinitionTest {
         Request request = new InstanceRequest(properties);
 
         ResourceDefinition termDefinition = new TermResourceDefinition();
-        termDefinition.validate(request);
+        termDefinition.validateCreatePayload(request);
     }
 
     @Test(expectedExceptions = InvalidPayloadException.class)
@@ -104,7 +104,7 @@ public class TermResourceDefinitionTest {
         Request request = new InstanceRequest(properties);
 
         ResourceDefinition termDefinition = new TermResourceDefinition();
-        termDefinition.validate(request);
+        termDefinition.validateCreatePayload(request);
     }
 
     @Test(expectedExceptions = InvalidPayloadException.class)
@@ -116,7 +116,7 @@ public class TermResourceDefinitionTest {
         Request request = new InstanceRequest(properties);
 
         ResourceDefinition termDefinition = new TermResourceDefinition();
-        termDefinition.validate(request);
+        termDefinition.validateCreatePayload(request);
     }
 
     @Test

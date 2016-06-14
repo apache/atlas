@@ -18,7 +18,6 @@
 
 package org.apache.atlas.catalog;
 
-import org.apache.atlas.catalog.definition.ResourceDefinition;
 import org.apache.atlas.catalog.definition.TermResourceDefinition;
 import org.apache.atlas.catalog.exception.*;
 import org.apache.atlas.catalog.query.AtlasQuery;
@@ -29,19 +28,18 @@ import java.util.*;
  * Provider for Term resources.
  */
 public class TermResourceProvider extends BaseResourceProvider implements ResourceProvider {
-    private final static ResourceDefinition resourceDefinition = new TermResourceDefinition();
     private ResourceProvider taxonomyResourceProvider;
     private ResourceProvider entityResourceProvider;
     private ResourceProvider entityTagResourceProvider;
 
     public TermResourceProvider(AtlasTypeSystem typeSystem) {
-        super(typeSystem);
+        super(typeSystem, new TermResourceDefinition());
     }
 
     @Override
     public Result getResourceById(Request request) throws ResourceNotFoundException {
         //todo: shouldn't need to add this here
-        request.getProperties().put("name", request.<TermPath>getProperty("termPath").getFullyQualifiedName());
+        request.getQueryProperties().put("name", request.<TermPath>getProperty("termPath").getFullyQualifiedName());
         AtlasQuery atlasQuery;
         try {
             atlasQuery = queryFactory.createTermQuery(request);
@@ -61,7 +59,7 @@ public class TermResourceProvider extends BaseResourceProvider implements Resour
 
         TermPath termPath = request.getProperty("termPath");
         String queryString = doQueryStringConversions(termPath, request.getQueryString());
-        Request queryRequest = new CollectionRequest(request.getProperties(), queryString);
+        Request queryRequest = new CollectionRequest(request.getQueryProperties(), queryString);
         AtlasQuery atlasQuery = queryFactory.createTermQuery(queryRequest);
         Collection<Map<String, Object>> result = atlasQuery.execute();
         return new Result(result);
@@ -70,10 +68,10 @@ public class TermResourceProvider extends BaseResourceProvider implements Resour
     public void createResource(Request request)
             throws InvalidPayloadException, ResourceAlreadyExistsException, ResourceNotFoundException  {
 
-        TermPath termPath = (TermPath) request.getProperties().remove("termPath");
+        TermPath termPath = (TermPath) request.getQueryProperties().remove("termPath");
         String qualifiedTermName = termPath.getFullyQualifiedName();
-        request.getProperties().put("name", qualifiedTermName);
-        resourceDefinition.validate(request);
+        request.getQueryProperties().put("name", qualifiedTermName);
+        resourceDefinition.validateCreatePayload(request);
 
         // get taxonomy
         Request taxonomyRequest = new InstanceRequest(
@@ -84,7 +82,7 @@ public class TermResourceProvider extends BaseResourceProvider implements Resour
 
         // ensure that parent exists if not a root level term
         if (! termPath.getPath().equals("/")) {
-            Map<String, Object> parentProperties = new HashMap<>(request.getProperties());
+            Map<String, Object> parentProperties = new HashMap<>(request.getQueryProperties());
             parentProperties.put("termPath", termPath.getParent());
             getResourceById(new InstanceRequest(parentProperties));
         }
@@ -93,7 +91,7 @@ public class TermResourceProvider extends BaseResourceProvider implements Resour
                 request.<String>getProperty("description"));
 
         typeSystem.createTraitInstance(String.valueOf(taxonomyPropertyMap.get("id")),
-                qualifiedTermName, request.getProperties());
+                qualifiedTermName, request.getQueryProperties());
     }
 
     @Override
@@ -102,11 +100,44 @@ public class TermResourceProvider extends BaseResourceProvider implements Resour
     }
 
     @Override
+    public void updateResourceById(Request request) throws ResourceNotFoundException, InvalidPayloadException {
+        resourceDefinition.validateUpdatePayload(request);
+        String termName = request.<TermPath>getProperty("termPath").getFullyQualifiedName();
+        request.getQueryProperties().put("name", termName);
+        AtlasQuery atlasQuery;
+        try {
+            atlasQuery = queryFactory.createTermQuery(request);
+        } catch (InvalidQueryException e) {
+            throw new CatalogRuntimeException("Unable to compile internal Term query: " + e, e);
+        }
+        Map<String, Object> updateProperties = request.getUpdateProperties();
+        Collection<Map<String, Object>> results = atlasQuery.execute(updateProperties);
+        if (results.isEmpty()) {
+            throw new ResourceNotFoundException(String.format("Term '%s' not found.",
+                    termName));
+        }
+        // only the term 'description' property is set on entity tags
+        if (updateProperties.containsKey("description")) {
+            // 'description' property is being updated so we need to update tags
+            String tagQueryString = String.format("name:%s", termName);
+            Request tagRequest = new CollectionRequest(
+                    Collections.<String, Object>singletonMap("id", "*"), tagQueryString, null);
+            AtlasQuery tagQuery;
+            try {
+                tagQuery = queryFactory.createEntityTagQuery(tagRequest);
+            } catch (InvalidQueryException e) {
+                throw new CatalogRuntimeException("Unable to compile internal Entity Tag query: " + e, e);
+            }
+            tagQuery.execute(Collections.singletonMap("description", updateProperties.get("description")));
+        }
+    }
+
+    @Override
     public void deleteResourceById(Request request) throws ResourceNotFoundException, InvalidPayloadException {
         // will result in expected ResourceNotFoundException if term doesn't exist
         getResourceById(request);
 
-        TermPath termPath = (TermPath) request.getProperties().get("termPath");
+        TermPath termPath = (TermPath) request.getQueryProperties().get("termPath");
         String taxonomyId = getTaxonomyId(termPath);
         deleteChildren(taxonomyId, termPath);
         deleteTerm(taxonomyId, termPath);

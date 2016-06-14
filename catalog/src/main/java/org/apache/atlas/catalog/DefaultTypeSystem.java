@@ -18,13 +18,11 @@
 
 package org.apache.atlas.catalog;
 
-import com.thinkaurelius.titan.core.TitanGraph;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.catalog.definition.ResourceDefinition;
 import org.apache.atlas.catalog.exception.CatalogRuntimeException;
 import org.apache.atlas.catalog.exception.ResourceAlreadyExistsException;
 import org.apache.atlas.catalog.exception.ResourceNotFoundException;
-import org.apache.atlas.repository.graph.TitanGraphProvider;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
@@ -64,12 +62,12 @@ public class DefaultTypeSystem implements AtlasTypeSystem {
             // ok if type already exists
         }
         try {
-            Referenceable entity = new Referenceable(typeName, request.getProperties());
+            Referenceable entity = new Referenceable(typeName, request.getQueryProperties());
             ITypedReferenceableInstance typedInstance = metadataService.getTypedReferenceableInstance(entity);
             metadataService.createEntities(Collections.singletonList(typedInstance).toArray(new ITypedReferenceableInstance[1]));
         } catch (EntityExistsException e) {
             throw new ResourceAlreadyExistsException(
-                    "Attempted to create an entity which already exists: " + request.getProperties());
+                    "Attempted to create an entity which already exists: " + request.getQueryProperties());
         } catch (AtlasException e) {
             throw new CatalogRuntimeException("An expected exception occurred creating an entity: " + e, e);
         }

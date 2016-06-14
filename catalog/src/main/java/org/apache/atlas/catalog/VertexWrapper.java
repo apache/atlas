@@ -66,6 +66,10 @@ public class VertexWrapper {
         return val;
     }
 
+    public void setProperty(String name, Object value) {
+        vertex.setProperty(propertyMapper.toFullyQualifiedName(name, vertexType), value);
+    }
+
     public Collection<String> getPropertyKeys() {
         Collection<String> propertyKeys = new TreeSet<>(resourceComparator);
 

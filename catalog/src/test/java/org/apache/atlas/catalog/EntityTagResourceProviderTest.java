@@ -74,8 +74,8 @@ public class EntityTagResourceProviderTest {
         Request request = requestCapture.getValue();
         assertNull(request.getQueryString());
         assertEquals(0, request.getAdditionalSelectProperties().size());
-        assertEquals(2, request.getProperties().size());
-        assertEquals("taxonomyName.termName", request.getProperties().get("name"));
+        assertEquals(2, request.getQueryProperties().size());
+        assertEquals("taxonomyName.termName", request.getQueryProperties().get("name"));
         assertEquals(Request.Cardinality.INSTANCE, request.getCardinality());
 
         verify(typeSystem, queryFactory, query);
@@ -236,7 +236,7 @@ public class EntityTagResourceProviderTest {
         provider.createResource(userRequest);
 
         Request termRequest = termRequestCapture.getValue();
-        Map<String, Object> termRequestProps = termRequest.getProperties();
+        Map<String, Object> termRequestProps = termRequest.getQueryProperties();
         assertEquals(1, termRequestProps.size());
         TermPath termPath = (TermPath) termRequestProps.get("termPath");
         assertEquals("testTaxonomy.termName", termPath.getFullyQualifiedName());
@@ -408,7 +408,7 @@ public class EntityTagResourceProviderTest {
         Request termRequest1 = termRequestCapture1.getValue();
         assertNull(termRequest1.getQueryString());
         assertEquals(Request.Cardinality.INSTANCE, termRequest1.getCardinality());
-        Map<String, Object> termRequestProps = termRequest1.getProperties();
+        Map<String, Object> termRequestProps = termRequest1.getQueryProperties();
         assertEquals(1, termRequestProps.size());
         TermPath termPath = (TermPath) termRequestProps.get("termPath");
         assertEquals("testTaxonomy.termName1", termPath.getFullyQualifiedName());
@@ -416,7 +416,7 @@ public class EntityTagResourceProviderTest {
         Request termRequest2 = termRequestCapture2.getValue();
         assertNull(termRequest2.getQueryString());
         assertEquals(Request.Cardinality.INSTANCE, termRequest2.getCardinality());
-        Map<String, Object> termRequestProps2 = termRequest2.getProperties();
+        Map<String, Object> termRequestProps2 = termRequest2.getQueryProperties();
         assertEquals(1, termRequestProps2.size());
         TermPath termPath2 = (TermPath) termRequestProps2.get("termPath");
         assertEquals("testTaxonomy.termName2", termPath2.getFullyQualifiedName());

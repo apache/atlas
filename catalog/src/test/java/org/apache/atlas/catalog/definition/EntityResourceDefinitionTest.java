@@ -66,7 +66,7 @@ public class EntityResourceDefinitionTest {
         Request request = new InstanceRequest(Collections.<String, Object>emptyMap());
 
         ResourceDefinition entityDefinition = new EntityResourceDefinition();
-        entityDefinition.validate(request);
+        entityDefinition.validateCreatePayload(request);
     }
 
     // Because we don't currently support entity creation, no properties are registered

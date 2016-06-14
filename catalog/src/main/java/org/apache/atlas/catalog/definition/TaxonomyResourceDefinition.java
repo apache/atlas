@@ -50,9 +50,9 @@ public class TaxonomyResourceDefinition extends BaseResourceDefinition {
     }
 
     @Override
-    public void validate(Request request) throws InvalidPayloadException {
-        super.validate(request);
-        if (String.valueOf(request.getProperties().get("name")).contains(".")) {
+    public void validateCreatePayload(Request request) throws InvalidPayloadException {
+        super.validateCreatePayload(request);
+        if (String.valueOf(request.getQueryProperties().get("name")).contains(".")) {
             throw new InvalidPayloadException("The \"name\" property may not contain the character '.'");
         }
     }

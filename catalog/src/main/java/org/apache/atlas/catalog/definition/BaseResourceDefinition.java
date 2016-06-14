@@ -58,8 +58,8 @@ public abstract class BaseResourceDefinition implements ResourceDefinition {
     }
 
     @Override
-    public void validate(Request request) throws InvalidPayloadException {
-        Collection<String> propKeys = new HashSet<>(request.getProperties().keySet());
+    public void validateCreatePayload(Request request) throws InvalidPayloadException {
+        Collection<String> propKeys = new HashSet<>(request.getQueryProperties().keySet());
         Collection<String> missingProperties = new HashSet<>();
         for (AttributeInfo property : properties.values()) {
             String name = property.name;
@@ -74,6 +74,19 @@ public abstract class BaseResourceDefinition implements ResourceDefinition {
             throw new InvalidPayloadException(missingProperties, propKeys);
         }
         //todo: property type validation
+    }
+
+    @Override
+    public void validateUpdatePayload(Request request) throws InvalidPayloadException {
+        Collection<String> updateKeys = new HashSet<>(request.getUpdateProperties().keySet());
+        Collection<String> validProperties = new HashSet<>(properties.keySet());
+        // currently updating 'name' property for any resource is unsupported
+        validProperties.remove("name");
+        updateKeys.removeAll(validProperties);
+
+        if (! updateKeys.isEmpty()) {
+            throw new InvalidPayloadException(Collections.<String>emptySet(), updateKeys);
+        }
     }
 
     @Override

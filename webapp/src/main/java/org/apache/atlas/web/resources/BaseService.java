@@ -73,6 +73,15 @@ public abstract class BaseService {
         }
     }
 
+    protected void updateResource(ResourceProvider provider, Request request) throws CatalogException {
+        initializeGraphTransaction();
+        try {
+            provider.updateResourceById(request);
+        } catch (RuntimeException e) {
+            throw wrapRuntimeException(e);
+        }
+    }
+
     protected void deleteResource(ResourceProvider provider, Request request) throws CatalogException {
         initializeGraphTransaction();
         try {

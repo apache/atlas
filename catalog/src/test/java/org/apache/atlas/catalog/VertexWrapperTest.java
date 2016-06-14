@@ -308,4 +308,25 @@ public class VertexWrapperTest {
         assertTrue(vWrapper.isPropertyRemoved("foo"));
         assertFalse(vWrapper.isPropertyRemoved("bar"));
     }
+
+    @Test
+    public void testSetProperty() {
+        String testType = "testType";
+        String cleanPropName = "prop1";
+        String qualifiedPropName = "test.prop1";
+        String propValue = "newValue";
+        Vertex v = createStrictMock(Vertex.class);
+        PropertyMapper propertyMapper = createStrictMock(PropertyMapper.class);
+
+        expect(v.<String>getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY)).andReturn(testType);
+        expect(propertyMapper.toFullyQualifiedName(cleanPropName, testType)).andReturn(qualifiedPropName);
+        v.setProperty(qualifiedPropName, propValue);
+        replay(v, propertyMapper);
+
+        VertexWrapper vWrapper = new VertexWrapper(
+                v, propertyMapper, Collections.<String, PropertyValueFormatter>emptyMap());
+        vWrapper.setProperty(cleanPropName, propValue);
+        verify(v, propertyMapper);
+
+    }
 }

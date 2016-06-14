@@ -27,23 +27,38 @@ import java.util.Map;
  * Base user API request.
  */
 public abstract class BaseRequest implements Request {
-    private final Map<String, Object> properties = new HashMap<>();
+    private final Map<String, Object> queryProperties = new HashMap<>();
+    private final Map<String, Object> updateProperties = new HashMap<>();
     private final String queryString;
     private final Collection<String> additionalSelectProperties = new HashSet<>();
 
-    protected BaseRequest(Map<String, Object> properties, String queryString) {
-        if (properties != null) {
-            this.properties.putAll((properties));
+    protected BaseRequest(Map<String, Object> queryProperties, String queryString) {
+        this(queryProperties, queryString, null);
+    }
+
+    protected BaseRequest(Map<String, Object> queryProperties, String queryString, Map<String, Object> updateProperties) {
+        if (queryProperties != null) {
+            this.queryProperties.putAll(queryProperties);
         }
+
+        if (updateProperties != null) {
+            this.updateProperties.putAll(updateProperties);
+        }
+
         this.queryString = queryString;
     }
 
-    public Map<String, Object> getProperties() {
-        return properties;
+
+    public Map<String, Object> getQueryProperties() {
+        return queryProperties;
+    }
+
+    public Map<String, Object> getUpdateProperties() {
+        return updateProperties;
     }
 
     public <T> T getProperty(String name) {
-        return (T)properties.get(name);
+        return (T) queryProperties.get(name);
     }
 
     public String getQueryString() {
@@ -67,16 +82,16 @@ public abstract class BaseRequest implements Request {
 
         BaseRequest that = (BaseRequest) o;
 
-        return properties.equals(that.properties) &&
-                additionalSelectProperties.equals(that.additionalSelectProperties) &&
-                queryString == null ?
-                that.queryString == null :
-                queryString.equals(that.queryString);
+        return queryProperties.equals(that.queryProperties) &&
+               updateProperties.equals(that.updateProperties) &&
+               additionalSelectProperties.equals(that.additionalSelectProperties) &&
+               queryString == null ? that.queryString == null : queryString.equals(that.queryString);
     }
 
     @Override
     public int hashCode() {
-        int result = properties.hashCode();
+        int result = queryProperties.hashCode();
+        result = 31 * result + updateProperties.hashCode();
         result = 31 * result + (queryString != null ? queryString.hashCode() : 0);
         result = 31 * result + additionalSelectProperties.hashCode();
         return result;

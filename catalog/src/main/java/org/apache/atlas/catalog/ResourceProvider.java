@@ -82,4 +82,14 @@ public interface ResourceProvider {
      * @throws ResourceNotFoundException      if a parent of the resource to create doesn't exist
      */
     Collection<String> createResources(Request request) throws CatalogException;
+
+    /**
+     * Update a single resource.
+     *
+     * @param request  request instance containing the contents of the resource to update
+     *
+     * @throws ResourceNotFoundException if the resource doesn't exist
+     * @throws InvalidPayloadException   if the request payload is invalid
+     */
+    void updateResourceById(Request request) throws  ResourceNotFoundException, InvalidPayloadException;
 }

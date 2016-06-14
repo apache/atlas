@@ -19,7 +19,6 @@
 package org.apache.atlas.catalog;
 
 import org.apache.atlas.catalog.definition.EntityResourceDefinition;
-import org.apache.atlas.catalog.definition.ResourceDefinition;
 import org.apache.atlas.catalog.exception.*;
 import org.apache.atlas.catalog.query.AtlasQuery;
 
@@ -29,10 +28,9 @@ import java.util.*;
  * Provider for entity resources.
  */
 public class EntityResourceProvider extends BaseResourceProvider implements ResourceProvider {
-    private final static ResourceDefinition resourceDefinition = new EntityResourceDefinition();
 
     public EntityResourceProvider(AtlasTypeSystem typeSystem) {
-        super(typeSystem);
+        super(typeSystem, new EntityResourceDefinition());
     }
 
     @Override

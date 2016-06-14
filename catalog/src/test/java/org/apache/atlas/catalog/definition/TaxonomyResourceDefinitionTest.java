@@ -68,7 +68,7 @@ public class TaxonomyResourceDefinitionTest {
         Request request = new InstanceRequest(properties);
 
         ResourceDefinition taxonomyDefinition = new TaxonomyResourceDefinition();
-        taxonomyDefinition.validate(request);
+        taxonomyDefinition.validateCreatePayload(request);
     }
 
     @Test(expectedExceptions = InvalidPayloadException.class)
@@ -79,7 +79,7 @@ public class TaxonomyResourceDefinitionTest {
         Request request = new InstanceRequest(properties);
 
         ResourceDefinition taxonomyDefinition = new TaxonomyResourceDefinition();
-        taxonomyDefinition.validate(request);
+        taxonomyDefinition.validateCreatePayload(request);
     }
 
     @Test(expectedExceptions = InvalidPayloadException.class)
@@ -91,7 +91,7 @@ public class TaxonomyResourceDefinitionTest {
         Request request = new InstanceRequest(properties);
 
         ResourceDefinition taxonomyDefinition = new TaxonomyResourceDefinition();
-        taxonomyDefinition.validate(request);
+        taxonomyDefinition.validateCreatePayload(request);
     }
 
     @Test

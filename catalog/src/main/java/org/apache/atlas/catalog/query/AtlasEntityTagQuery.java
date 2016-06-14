@@ -47,7 +47,13 @@ public class AtlasEntityTagQuery extends BaseQuery {
 
     @Override
     protected Pipe getQueryPipe() {
-        GremlinPipeline p =  new GremlinPipeline().has(Constants.GUID_PROPERTY_KEY, guid).outE();
+        GremlinPipeline p;
+        if (guid.equals("*")) {
+            p = new GremlinPipeline().has(Constants.ENTITY_TEXT_PROPERTY_KEY).
+                    hasNot(Constants.ENTITY_TYPE_PROPERTY_KEY, "Taxonomy").outE();
+        } else {
+            p = new GremlinPipeline().has(Constants.GUID_PROPERTY_KEY, guid).outE();
+        }
         //todo: this is basically the same pipeline used in TagRelation.asPipe()
         p.add(new FilterFunctionPipe<>(new PipeFunction<Edge, Boolean>() {
             @Override
@@ -63,12 +69,18 @@ public class AtlasEntityTagQuery extends BaseQuery {
 
     //todo: duplication of effort with resource definition
     @Override
-    protected void addHref(Map<String, Object> propertyMap) {
-        Map<String, Object> map = new HashMap<>(propertyMap);
-        map.put(EntityTagResourceDefinition.ENTITY_GUID_PROPERTY, guid);
+    protected void addHref(VertexWrapper vWrapper, Map<String, Object> filteredPropertyMap) {
+        Map<String, Object> map = new HashMap<>(filteredPropertyMap);
+        if (guid.equals("*")) {
+            map.put(EntityTagResourceDefinition.ENTITY_GUID_PROPERTY, vWrapper.getVertex().getEdges(Direction.IN).
+                    iterator().next().getVertex(Direction.OUT).getProperty(Constants.GUID_PROPERTY_KEY));
+        } else {
+            map.put(EntityTagResourceDefinition.ENTITY_GUID_PROPERTY, guid);
+        }
+
         String href = resourceDefinition.resolveHref(map);
         if (href != null) {
-            propertyMap.put("href", href);
+            filteredPropertyMap.put("href", href);
         }
     }
 }

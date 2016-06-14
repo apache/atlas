@@ -40,7 +40,7 @@ import static org.testng.Assert.assertTrue;
  */
 public class TaxonomyResourceProviderTest {
     @Test
-    public void testGetResource() throws Exception {
+    public void testGetResourceById() throws Exception {
         AtlasTypeSystem typeSystem = createStrictMock(AtlasTypeSystem.class);
         QueryFactory queryFactory = createStrictMock(QueryFactory.class);
         AtlasQuery query = createStrictMock(AtlasQuery.class);
@@ -73,13 +73,13 @@ public class TaxonomyResourceProviderTest {
         Request request = requestCapture.getValue();
         assertNull(request.getQueryString());
         assertEquals(0, request.getAdditionalSelectProperties().size());
-        assertEquals(requestProperties, request.getProperties());
+        assertEquals(requestProperties, request.getQueryProperties());
 
         verify(typeSystem, queryFactory, query);
     }
 
     @Test(expectedExceptions = ResourceNotFoundException.class)
-    public void testGetResource_404() throws Exception {
+    public void testGetResourceById_404() throws Exception {
         AtlasTypeSystem typeSystem = createStrictMock(AtlasTypeSystem.class);
         QueryFactory queryFactory = createStrictMock(QueryFactory.class);
         AtlasQuery query = createStrictMock(AtlasQuery.class);
@@ -143,7 +143,7 @@ public class TaxonomyResourceProviderTest {
         Request request = requestCapture.getValue();
         assertEquals("name:taxonomy*", request.getQueryString());
         assertEquals(0, request.getAdditionalSelectProperties().size());
-        assertEquals(0, request.getProperties().size());
+        assertEquals(0, request.getQueryProperties().size());
 
         verify(typeSystem, queryFactory, query);
     }
@@ -174,7 +174,7 @@ public class TaxonomyResourceProviderTest {
         Request request = requestCapture.getValue();
         assertEquals("name:taxonomy*", request.getQueryString());
         assertEquals(0, request.getAdditionalSelectProperties().size());
-        assertEquals(0, request.getProperties().size());
+        assertEquals(0, request.getQueryProperties().size());
 
         verify(typeSystem, queryFactory, query);
     }
@@ -262,7 +262,7 @@ public class TaxonomyResourceProviderTest {
 
         Request request = requestCapture.getValue();
         assertNull(request.getQueryString());
-        assertEquals(requestProperties, request.getProperties());
+        assertEquals(requestProperties, request.getQueryProperties());
 
         verify(typeSystem, queryFactory, query);
     }
@@ -323,13 +323,13 @@ public class TaxonomyResourceProviderTest {
         assertNull(getRequest.getQueryString());
         assertEquals(getRequest.getAdditionalSelectProperties().size(), 1);
         assertTrue(getRequest.getAdditionalSelectProperties().contains("id"));
-        assertEquals(getRequest.getProperties().get("name"), "testTaxonomy");
+        assertEquals(getRequest.getQueryProperties().get("name"), "testTaxonomy");
 
         Request deleteRequest = deleteRequestCapture.getValue();
         assertNull(deleteRequest.getQueryString());
         assertEquals(deleteRequest.getAdditionalSelectProperties().size(), 1);
         assertTrue(deleteRequest.getAdditionalSelectProperties().contains("id"));
-        assertEquals(deleteRequest.getProperties().get("name"), "testTaxonomy");
+        assertEquals(deleteRequest.getQueryProperties().get("name"), "testTaxonomy");
 
         ResourceDefinition resourceDefinition = resourceDefinitionCapture.getValue();
         assertTrue(resourceDefinition instanceof TaxonomyResourceDefinition);
@@ -360,6 +360,102 @@ public class TaxonomyResourceProviderTest {
         provider.deleteResourceById(userRequest);
     }
 
+    @Test
+    public void testUpdateResourceById() throws Exception {
+        AtlasTypeSystem typeSystem = createStrictMock(AtlasTypeSystem.class);
+        QueryFactory queryFactory = createStrictMock(QueryFactory.class);
+        AtlasQuery query = createStrictMock(AtlasQuery.class);
+        Capture<Request> taxonomyRequestCapture = newCapture();
+
+        Map<String, Object> requestProperties = new HashMap<>();
+        requestProperties.put("name", "testTaxonomy");
+        Map<String, Object> requestUpdateProperties = new HashMap<>();
+        requestUpdateProperties.put("description", "updatedValue");
+        Request userRequest = new InstanceRequest(requestProperties, requestUpdateProperties);
+
+        Collection<Map<String, Object>> queryResult = new ArrayList<>();
+        Map<String, Object> queryResultRow = new HashMap<>();
+        queryResult.add(queryResultRow);
+        queryResultRow.put("name", "testTaxonomy");
+
+        // mock expectations
+        // term update
+        expect(queryFactory.createTaxonomyQuery(capture(taxonomyRequestCapture))).andReturn(query);
+        expect(query.execute(requestUpdateProperties)).andReturn(queryResult);
+        replay(typeSystem, queryFactory, query);
+
+        // instantiate resource provider and invoke method being tested
+        TaxonomyResourceProvider provider = new TaxonomyResourceProvider(typeSystem);
+        provider.setQueryFactory(queryFactory);
+        provider.updateResourceById(userRequest);
+
+        Request request = taxonomyRequestCapture.getValue();
+        assertNull(request.getQueryString());
+        assertEquals(request.getQueryProperties().size(), 1);
+        assertEquals(request.getQueryProperties().get("name"), "testTaxonomy");
+        assertEquals(request.getUpdateProperties().size(), 1);
+        assertEquals(request.getUpdateProperties().get("description"), "updatedValue");
+
+        verify(typeSystem, queryFactory, query);
+    }
+
+    @Test(expectedExceptions = InvalidPayloadException.class)
+    public void testUpdateResourceById_attemptNameChange() throws Exception {
+        AtlasTypeSystem typeSystem = createStrictMock(AtlasTypeSystem.class);
+        QueryFactory queryFactory = createStrictMock(QueryFactory.class);
+        AtlasQuery query = createStrictMock(AtlasQuery.class);
+        Capture<Request> taxonomyRequestCapture = newCapture();
+
+        Map<String, Object> requestProperties = new HashMap<>();
+        requestProperties.put("name", "testTaxonomy");
+        Map<String, Object> requestUpdateProperties = new HashMap<>();
+        requestUpdateProperties.put("name", "notCurrentlySupported");
+        Request userRequest = new InstanceRequest(requestProperties, requestUpdateProperties);
+
+        Collection<Map<String, Object>> queryResult = new ArrayList<>();
+        Map<String, Object> queryResultRow = new HashMap<>();
+        queryResult.add(queryResultRow);
+        queryResultRow.put("name", "testTaxonomy");
+
+        // mock expectations
+        // term update
+        expect(queryFactory.createTaxonomyQuery(capture(taxonomyRequestCapture))).andReturn(query);
+        expect(query.execute(requestUpdateProperties)).andReturn(queryResult);
+        replay(typeSystem, queryFactory, query);
+
+        // instantiate resource provider and invoke method being tested
+        TaxonomyResourceProvider provider = new TaxonomyResourceProvider(typeSystem);
+        provider.setQueryFactory(queryFactory);
+        provider.updateResourceById(userRequest);
+
+        verify(typeSystem, queryFactory, query);
+    }
+
+    @Test(expectedExceptions = ResourceNotFoundException.class)
+    public void testUpdateResourceById_404() throws Exception {
+        AtlasTypeSystem typeSystem = createStrictMock(AtlasTypeSystem.class);
+        QueryFactory queryFactory = createStrictMock(QueryFactory.class);
+        AtlasQuery query = createStrictMock(AtlasQuery.class);
+        Capture<Request> taxonomyRequestCapture = newCapture();
+
+        Map<String, Object> requestProperties = new HashMap<>();
+        requestProperties.put("name", "testTaxonomy");
+        Map<String, Object> requestUpdateProperties = new HashMap<>();
+        requestUpdateProperties.put("description", "updated");
+        Request userRequest = new InstanceRequest(requestProperties, requestUpdateProperties);
+        // mock expectations
+        // term update
+        expect(queryFactory.createTaxonomyQuery(capture(taxonomyRequestCapture))).andReturn(query);
+        expect(query.execute(requestUpdateProperties)).andReturn(Collections.<Map<String, Object>>emptyList());
+        replay(typeSystem, queryFactory, query);
+
+        // instantiate resource provider and invoke method being tested
+        TaxonomyResourceProvider provider = new TaxonomyResourceProvider(typeSystem);
+        provider.setQueryFactory(queryFactory);
+        provider.updateResourceById(userRequest);
+
+        verify(typeSystem, queryFactory, query);
+    }
 
     private static class TestTaxonomyResourceProvider extends TaxonomyResourceProvider {
         private final TermResourceProvider termResourceProvider;

@@ -31,11 +31,20 @@ public interface Request {
     enum Cardinality {INSTANCE, COLLECTION}
 
     /**
-     * Get request properties.
+     * Get query properties of request.
+     * These are the properties which are used to build the query.
      *
-     * @return request property map
+     * @return query property map
      */
-    Map<String, Object> getProperties();
+    Map<String, Object> getQueryProperties();
+
+    /**
+     * Get update properties of request.
+     * These properties are updated on all resources which are returned from the query.
+     *
+     * @return update property map
+     */
+    Map<String, Object> getUpdateProperties();
 
     /**
      * Get the value of a specified property.

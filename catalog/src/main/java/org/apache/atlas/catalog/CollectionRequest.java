@@ -24,8 +24,12 @@ import java.util.Map;
  * A request for a collection resource.
  */
 public class CollectionRequest extends BaseRequest {
-    public CollectionRequest(Map<String, Object> properties, String queryString) {
-        super(properties, queryString);
+    public CollectionRequest(Map<String, Object> queryProperties, String queryString) {
+        super(queryProperties, queryString);
+    }
+
+    public CollectionRequest(Map<String, Object> queryProperties, String queryString, Map<String, Object> updateProperties) {
+        super(queryProperties, queryString, updateProperties);
     }
 
     @Override

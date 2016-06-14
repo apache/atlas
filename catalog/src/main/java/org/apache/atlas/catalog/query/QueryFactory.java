@@ -88,6 +88,7 @@ public class QueryFactory {
         if (queryString != null && !queryString.isEmpty()) {
             QueryParser queryParser = new QueryParser(Version.LUCENE_48, "name", new KeywordAnalyzer());
             queryParser.setLowercaseExpandedTerms(false);
+            queryParser.setAllowLeadingWildcard(true);
             Query query;
             try {
                 query = queryParser.parse((String) escape(queryString));

@@ -18,19 +18,24 @@
 
 package org.apache.atlas.catalog;
 
+import org.apache.atlas.catalog.definition.ResourceDefinition;
 import org.apache.atlas.catalog.exception.InvalidPayloadException;
 import org.apache.atlas.catalog.exception.ResourceNotFoundException;
 import org.apache.atlas.catalog.query.QueryFactory;
+
+import java.util.Collections;
 
 /**
  * Base class for resource providers.
  */
 public abstract class BaseResourceProvider implements ResourceProvider {
-    protected AtlasTypeSystem typeSystem;
+    protected final AtlasTypeSystem typeSystem;
     protected QueryFactory queryFactory = new QueryFactory();
+    protected final ResourceDefinition resourceDefinition;
 
-    protected BaseResourceProvider(AtlasTypeSystem typeSystem) {
+    protected BaseResourceProvider(AtlasTypeSystem typeSystem, ResourceDefinition resourceDefinition) {
         this.typeSystem = typeSystem;
+        this.resourceDefinition = resourceDefinition;
     }
 
     protected void setQueryFactory(QueryFactory factory) {
@@ -40,5 +45,10 @@ public abstract class BaseResourceProvider implements ResourceProvider {
     @Override
     public void deleteResourceById(Request request) throws ResourceNotFoundException, InvalidPayloadException {
         throw new InvalidPayloadException("Delete is not supported for this resource type");
+    }
+
+    @Override
+    public void updateResourceById(Request request) throws ResourceNotFoundException, InvalidPayloadException {
+        throw new InvalidPayloadException("Update is not supported for this resource type");
     }
 }

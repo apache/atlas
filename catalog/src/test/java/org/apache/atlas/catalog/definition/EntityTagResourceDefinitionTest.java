@@ -68,7 +68,7 @@ public class EntityTagResourceDefinitionTest {
         Request request = new InstanceRequest(properties);
 
         ResourceDefinition entityTagDefinition = new EntityTagResourceDefinition();
-        entityTagDefinition.validate(request);
+        entityTagDefinition.validateCreatePayload(request);
     }
 
     @Test(expectedExceptions = InvalidPayloadException.class)
@@ -77,7 +77,7 @@ public class EntityTagResourceDefinitionTest {
 
         Request request = new InstanceRequest(properties);
         ResourceDefinition entityTagDefinition = new EntityTagResourceDefinition();
-        entityTagDefinition.validate(request);
+        entityTagDefinition.validateCreatePayload(request);
     }
 
     @Test(expectedExceptions = InvalidPayloadException.class)
@@ -89,7 +89,7 @@ public class EntityTagResourceDefinitionTest {
         Request request = new InstanceRequest(properties);
 
         ResourceDefinition entityTagDefinition = new EntityTagResourceDefinition();
-        entityTagDefinition.validate(request);
+        entityTagDefinition.validateCreatePayload(request);
     }
 
     @Test

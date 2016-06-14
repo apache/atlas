@@ -25,7 +25,6 @@ import org.apache.atlas.catalog.exception.ResourceNotFoundException;
 import org.apache.atlas.catalog.query.AtlasQuery;
 import org.apache.atlas.catalog.query.QueryFactory;
 import org.easymock.Capture;
-import org.easymock.CaptureType;
 import org.easymock.EasyMock;
 import org.testng.annotations.Test;
 
@@ -41,7 +40,7 @@ import static org.testng.Assert.assertTrue;
  */
 public class TermResourceProviderTest {
     @Test
-    public void testGetResource() throws Exception {
+    public void testGetResourceById() throws Exception {
         AtlasTypeSystem typeSystem = createStrictMock(AtlasTypeSystem.class);
         QueryFactory queryFactory = createStrictMock(QueryFactory.class);
         AtlasQuery query = createStrictMock(AtlasQuery.class);
@@ -83,15 +82,15 @@ public class TermResourceProviderTest {
         Request request = requestCapture.getValue();
         assertNull(request.getQueryString());
         assertEquals(request.getAdditionalSelectProperties().size(), 0);
-        assertEquals(request.getProperties().size(), 2);
-        assertEquals(request.getProperties().get("termPath"), termPath);
-        assertEquals(request.getProperties().get("name"), termPath.getFullyQualifiedName());
+        assertEquals(request.getQueryProperties().size(), 2);
+        assertEquals(request.getQueryProperties().get("termPath"), termPath);
+        assertEquals(request.getQueryProperties().get("name"), termPath.getFullyQualifiedName());
 
         verify(typeSystem, queryFactory, query);
     }
 
     @Test(expectedExceptions = ResourceNotFoundException.class)
-    public void testGetResource_404() throws Exception {
+    public void testGetResourceById_404() throws Exception {
         AtlasTypeSystem typeSystem = createStrictMock(AtlasTypeSystem.class);
         QueryFactory queryFactory = createStrictMock(QueryFactory.class);
         AtlasQuery query = createStrictMock(AtlasQuery.class);
@@ -172,7 +171,7 @@ public class TermResourceProviderTest {
         Request request = requestCapture.getValue();
         assertEquals(request.getQueryString(), "name:taxonomy*");
         assertEquals(request.getAdditionalSelectProperties().size(), 0);
-        assertEquals(request.getProperties().size(), 1);
+        assertEquals(request.getQueryProperties().size(), 1);
 
         verify(typeSystem, queryFactory, query);
     }
@@ -208,7 +207,7 @@ public class TermResourceProviderTest {
         Request request = requestCapture.getValue();
         assertEquals(request.getQueryString(), "name:taxonomy*");
         assertEquals(request.getAdditionalSelectProperties().size(), 0);
-        assertEquals(request.getProperties().size(), 1);
+        assertEquals(request.getQueryProperties().size(), 1);
 
         verify(typeSystem, queryFactory, query);
     }
@@ -273,7 +272,7 @@ public class TermResourceProviderTest {
         provider.createResource(userRequest);
 
         Request taxonomyRequest = taxonomyRequestCapture.getValue();
-        Map<String, Object> taxonomyRequestProps = taxonomyRequest.getProperties();
+        Map<String, Object> taxonomyRequestProps = taxonomyRequest.getQueryProperties();
         assertEquals(taxonomyRequestProps.size(), 1);
         assertEquals(taxonomyRequestProps.get("name"), "testTaxonomy");
         assertEquals(taxonomyRequest.getAdditionalSelectProperties().size(), 1);
@@ -459,13 +458,64 @@ public class TermResourceProviderTest {
         provider.deleteResourceById(userRequest);
 
         Request taxonomyRequest = taxonomyRequestCapture.getValue();
-        assertEquals(taxonomyRequest.getProperties().get("name"), "testTaxonomy");
+        assertEquals(taxonomyRequest.getQueryProperties().get("name"), "testTaxonomy");
         assertEquals(taxonomyRequest.getAdditionalSelectProperties().size(), 1);
         assertTrue(taxonomyRequest.getAdditionalSelectProperties().contains("id"));
 
         Request childTermRequest = termRequestCapture.getValue();
         assertEquals(childTermRequest.<TermPath>getProperty("termPath").getFullyQualifiedName(), "testTaxonomy.termName.");
         verify(taxonomyResourceProvider, entityResourceProvider, entityTagResourceProvider, typeSystem, queryFactory, query);
+    }
+
+    @Test
+    public void testUpdateResourceById() throws Exception {
+        AtlasTypeSystem typeSystem = createStrictMock(AtlasTypeSystem.class);
+        QueryFactory queryFactory = createStrictMock(QueryFactory.class);
+        AtlasQuery query = createStrictMock(AtlasQuery.class);
+        Capture<Request> termRequestCapture = newCapture();
+        Capture<Request> tagRequestCapture = newCapture();
+
+        TermPath termPath = new TermPath("testTaxonomy", "termName");
+
+        Map<String, Object> requestProperties = new HashMap<>();
+        requestProperties.put("termPath", termPath);
+        Map<String, Object> requestUpdateProperties = new HashMap<>();
+        requestUpdateProperties.put("description", "updatedValue");
+        Request userRequest = new InstanceRequest(requestProperties, requestUpdateProperties);
+
+        Collection<Map<String, Object>> queryResult = new ArrayList<>();
+        Map<String, Object> queryResultRow = new HashMap<>();
+        queryResult.add(queryResultRow);
+        queryResultRow.put("name", "testTaxonomy.termName");
+
+        // mock expectations
+        // term update
+        expect(queryFactory.createTermQuery(capture(termRequestCapture))).andReturn(query);
+        expect(query.execute(requestUpdateProperties)).andReturn(queryResult);
+        // tag updates
+        expect(queryFactory.createEntityTagQuery(capture(tagRequestCapture))).andReturn(query);
+        // query response isn't used so just returning null
+        expect(query.execute(requestUpdateProperties)).andReturn(null);
+        replay(typeSystem, queryFactory, query);
+
+        TermResourceProvider provider = new TermResourceProvider(typeSystem);
+        provider.setQueryFactory(queryFactory);
+
+        provider.updateResourceById(userRequest);
+
+        Request request = termRequestCapture.getValue();
+        assertNull(request.getQueryString());
+        assertTrue(request.getAdditionalSelectProperties().isEmpty());
+        assertEquals(request.getQueryProperties().size(), 2);
+        assertEquals(request.getQueryProperties().get("termPath"), termPath);
+        assertEquals(request.getQueryProperties().get("name"), termPath.getFullyQualifiedName());
+
+        Request tagRequest = tagRequestCapture.getValue();
+        assertEquals(tagRequest.getQueryString(), "name:testTaxonomy.termName");
+        assertEquals(tagRequest.getQueryProperties().size(), 1);
+        assertEquals(tagRequest.getQueryProperties().get("id"), "*");
+
+        verify(typeSystem, queryFactory, query);
     }
 
     private static class TestTermResourceProvider extends TermResourceProvider {

@@ -36,7 +36,7 @@ public class CollectionRequestTest {
         Request request = new CollectionRequest(null, query);
 
         assertEquals(Request.Cardinality.COLLECTION, request.getCardinality());
-        assertTrue(request.getProperties().isEmpty());
+        assertTrue(request.getQueryProperties().isEmpty());
         assertNull(request.getProperty("foo"));
         assertTrue(request.getAdditionalSelectProperties().isEmpty());
     }
@@ -50,7 +50,7 @@ public class CollectionRequestTest {
         Request request = new CollectionRequest(properties, query);
 
         assertEquals(Request.Cardinality.COLLECTION, request.getCardinality());
-        assertEquals(properties, request.getProperties());
+        assertEquals(properties, request.getQueryProperties());
         assertEquals("fooValue", request.getProperty("foo"));
         assertTrue(request.<Boolean>getProperty("someBoolean"));
         assertNull(request.getProperty("other"));

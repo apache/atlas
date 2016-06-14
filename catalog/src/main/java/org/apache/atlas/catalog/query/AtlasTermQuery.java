@@ -39,7 +39,13 @@ public class AtlasTermQuery extends BaseQuery {
 
     @Override
     protected Pipe getQueryPipe() {
-        return new GremlinPipeline().has("Taxonomy.name", termPath.getTaxonomyName()).out().
-                has(Constants.ENTITY_TYPE_PROPERTY_KEY, Text.PREFIX, termPath.getFullyQualifiedName());
+        GremlinPipeline p;
+        if (termPath.getTaxonomyName().equals("*")) {
+            p = new GremlinPipeline().has("Taxonomy.name").out();
+        } else {
+            p = new GremlinPipeline().has("Taxonomy.name", termPath.getTaxonomyName()).out().
+                    has(Constants.ENTITY_TYPE_PROPERTY_KEY, Text.PREFIX, termPath.getFullyQualifiedName());
+        }
+        return p;
     }
 }

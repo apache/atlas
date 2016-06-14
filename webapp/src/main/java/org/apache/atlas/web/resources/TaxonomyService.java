@@ -90,6 +90,23 @@ public class TaxonomyService extends BaseService {
                 new Results(ui.getRequestUri().toString(), 201)).build();
     }
 
+    @PUT
+    @Path("{taxonomyName}")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response updateTaxonomy(String body,
+                                   @Context HttpHeaders headers,
+                                   @Context UriInfo ui,
+                                   @PathParam("taxonomyName") String taxonomyName) throws CatalogException {
+
+        Map<String, Object> queryProperties = new HashMap<>();
+        queryProperties.put("name", taxonomyName);
+        Map<String, Object> updateProperties = parsePayload(body);
+        updateResource(taxonomyResourceProvider, new InstanceRequest(queryProperties, updateProperties));
+
+        return Response.status(Response.Status.OK).entity(
+                new Results(ui.getRequestUri().toString(), 200)).build();
+    }
+
     @DELETE
     @Path("{taxonomyName}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
@@ -205,6 +222,46 @@ public class TaxonomyService extends BaseService {
 
         return Response.status(Response.Status.CREATED).entity(
                 new Results(ui.getRequestUri().toString(), 201)).build();
+    }
+
+    @PUT
+    @Path("{taxonomyName}/terms/{termName}")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response updateTerm(String body,
+                               @Context HttpHeaders headers,
+                               @Context UriInfo ui,
+                               @PathParam("taxonomyName") String taxonomyName,
+                               @PathParam("termName") String termName) throws CatalogException {
+
+        Map<String, Object> queryProperties = new HashMap<>();
+        queryProperties.put("termPath", new TermPath(taxonomyName, termName));
+
+        Map<String, Object> updateProperties = parsePayload(body);
+        updateResource(termResourceProvider, new InstanceRequest(queryProperties, updateProperties));
+
+        return Response.status(Response.Status.OK).entity(
+                new Results(ui.getRequestUri().toString(), 200)).build();
+    }
+
+    @PUT
+    @Path("{taxonomyName}/terms/{termName}/{remainder:.*}")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response updateSubTerm(String body,
+                                  @Context HttpHeaders headers,
+                                  @Context UriInfo ui,
+                                  @PathParam("taxonomyName") String taxonomyName,
+                                  @PathParam("termName") String termName,
+                                  @PathParam("remainder") String remainder) throws CatalogException {
+
+        Map<String, Object> queryProperties = new HashMap<>();
+        queryProperties.put("termPath", new TermPath(taxonomyName, String.format("%s%s", termName,
+                remainder.replaceAll("/?terms/?([.]*)", "$1."))));
+
+        Map<String, Object> updateProperties = parsePayload(body);
+        updateResource(termResourceProvider, new InstanceRequest(queryProperties, updateProperties));
+
+        return Response.status(Response.Status.OK).entity(
+                new Results(ui.getRequestUri().toString(), 200)).build();
     }
 
     @DELETE

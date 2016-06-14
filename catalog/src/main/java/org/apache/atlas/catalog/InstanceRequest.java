@@ -24,8 +24,12 @@ import java.util.Map;
  * A request for an instance resource.
  */
 public class InstanceRequest extends BaseRequest {
-    public InstanceRequest(Map<String, Object> properties) {
-        super(properties, null);
+    public InstanceRequest(Map<String, Object> queryProperties) {
+        super(queryProperties, null);
+    }
+
+    public InstanceRequest(Map<String, Object> queryProperties, Map<String, Object> updateProperties) {
+        super(queryProperties, null, updateProperties);
     }
 
     @Override

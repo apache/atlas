@@ -65,7 +65,7 @@ public class TaxonomyServiceTest {
         assertTrue(service.wasTransactionInitialized());
 
         Request request = requestCapture.getValue();
-        Map<String, Object> requestProperties = request.getProperties();
+        Map<String, Object> requestProperties = request.getQueryProperties();
         assertEquals(requestProperties.size(), 1);
         assertEquals(requestProperties.get("name"), taxonomyName);
 
@@ -105,7 +105,7 @@ public class TaxonomyServiceTest {
         assertTrue(service.wasTransactionInitialized());
 
         Request request = requestCapture.getValue();
-        assertTrue(request.getProperties().isEmpty());
+        assertTrue(request.getQueryProperties().isEmpty());
         assertEquals(request.getQueryString(), "name:testTaxonomy");
 
         assertEquals(response.getStatus(), 200);
@@ -137,9 +137,9 @@ public class TaxonomyServiceTest {
         assertTrue(service.wasTransactionInitialized());
 
         Request request = requestCapture.getValue();
-        assertEquals(request.getProperties().size(), 2);
-        assertEquals(request.getProperties().get("name"), "testTaxonomy");
-        assertEquals(request.getProperties().get("description"), "test description");
+        assertEquals(request.getQueryProperties().size(), 2);
+        assertEquals(request.getQueryProperties().get("name"), "testTaxonomy");
+        assertEquals(request.getQueryProperties().get("description"), "test description");
         assertNull(request.getQueryString());
 
         assertEquals(response.getStatus(), 201);
@@ -172,8 +172,8 @@ public class TaxonomyServiceTest {
         assertTrue(service.wasTransactionInitialized());
 
         Request request = requestCapture.getValue();
-        assertEquals(request.getProperties().size(), 1);
-        assertEquals(request.getProperties().get("name"), "testTaxonomy");
+        assertEquals(request.getQueryProperties().size(), 1);
+        assertEquals(request.getQueryProperties().get("name"), "testTaxonomy");
         assertNull(request.getQueryString());
 
         assertEquals(response.getStatus(), 200);
@@ -212,9 +212,9 @@ public class TaxonomyServiceTest {
         assertTrue(service.wasTransactionInitialized());
 
         Request request = requestCapture.getValue();
-        Map<String, Object> requestProperties = request.getProperties();
+        Map<String, Object> requestProperties = request.getQueryProperties();
         assertEquals(requestProperties.size(), 1);
-        TermPath termPath = (TermPath) request.getProperties().get("termPath");
+        TermPath termPath = (TermPath) request.getQueryProperties().get("termPath");
         assertEquals(termPath.getFullyQualifiedName(), "testTaxonomy.testTaxonomy.termName");
 
         assertEquals(response.getStatus(), 200);
@@ -253,8 +253,8 @@ public class TaxonomyServiceTest {
         assertTrue(service.wasTransactionInitialized());
 
         Request request = requestCapture.getValue();
-        assertEquals(request.getProperties().size(), 1);
-        TermPath termPath = (TermPath) request.getProperties().get("termPath");
+        assertEquals(request.getQueryProperties().size(), 1);
+        TermPath termPath = (TermPath) request.getQueryProperties().get("termPath");
         assertEquals(termPath.getFullyQualifiedName(), "testTaxonomy");
         assertEquals(request.getQueryString(), "name:testTaxonomy.testTerm");
 
@@ -301,8 +301,8 @@ public class TaxonomyServiceTest {
         assertTrue(service.wasTransactionInitialized());
 
         Request request = requestCapture.getValue();
-        assertEquals(request.getProperties().size(), 1);
-        TermPath termPath = (TermPath) request.getProperties().get("termPath");
+        assertEquals(request.getQueryProperties().size(), 1);
+        TermPath termPath = (TermPath) request.getQueryProperties().get("termPath");
         assertEquals(termPath.getFullyQualifiedName(), "testTaxonomy.testTerm.testTerm2");
         assertNull(request.getQueryString());
 
@@ -352,8 +352,8 @@ public class TaxonomyServiceTest {
         assertTrue(service.wasTransactionInitialized());
 
         Request request = requestCapture.getValue();
-        assertEquals(request.getProperties().size(), 1);
-        TermPath termPath = (TermPath) request.getProperties().get("termPath");
+        assertEquals(request.getQueryProperties().size(), 1);
+        TermPath termPath = (TermPath) request.getQueryProperties().get("termPath");
         assertEquals(termPath.getFullyQualifiedName(), "testTaxonomy.testTerm.testTerm2.");
         assertEquals(request.getQueryString(), "name:testTaxonomy.testTerm.testTerm2.testTerm3");
 
@@ -389,9 +389,9 @@ public class TaxonomyServiceTest {
         assertTrue(service.wasTransactionInitialized());
 
         Request request = requestCapture.getValue();
-        assertEquals(request.getProperties().size(), 2);
-        assertEquals(request.getProperties().get("description"), "test description");
-        TermPath termPath = (TermPath) request.getProperties().get("termPath");
+        assertEquals(request.getQueryProperties().size(), 2);
+        assertEquals(request.getQueryProperties().get("description"), "test description");
+        TermPath termPath = (TermPath) request.getQueryProperties().get("termPath");
         assertEquals(termPath.getFullyQualifiedName(), "testTaxonomy.testTerm");
         assertNull(request.getQueryString());
 
@@ -428,9 +428,9 @@ public class TaxonomyServiceTest {
         assertTrue(service.wasTransactionInitialized());
 
         Request request = requestCapture.getValue();
-        assertEquals(request.getProperties().size(), 2);
-        assertEquals(request.getProperties().get("description"), "test description");
-        TermPath termPath = (TermPath) request.getProperties().get("termPath");
+        assertEquals(request.getQueryProperties().size(), 2);
+        assertEquals(request.getQueryProperties().get("description"), "test description");
+        TermPath termPath = (TermPath) request.getQueryProperties().get("termPath");
         assertEquals(termPath.getFullyQualifiedName(), "testTaxonomy.testTerm.testTerm2");
         assertNull(request.getQueryString());
 
@@ -464,8 +464,8 @@ public class TaxonomyServiceTest {
         assertTrue(service.wasTransactionInitialized());
 
         Request request = requestCapture.getValue();
-        assertEquals(request.getProperties().size(), 1);
-        TermPath termPath = (TermPath) request.getProperties().get("termPath");
+        assertEquals(request.getQueryProperties().size(), 1);
+        TermPath termPath = (TermPath) request.getQueryProperties().get("termPath");
         assertEquals(termPath.getFullyQualifiedName(), "testTaxonomy.testTerm");
         assertNull(request.getQueryString());
 
@@ -499,8 +499,8 @@ public class TaxonomyServiceTest {
         assertTrue(service.wasTransactionInitialized());
 
         Request request = requestCapture.getValue();
-        assertEquals(request.getProperties().size(), 1);
-        TermPath termPath = (TermPath) request.getProperties().get("termPath");
+        assertEquals(request.getQueryProperties().size(), 1);
+        TermPath termPath = (TermPath) request.getQueryProperties().get("termPath");
         assertEquals(termPath.getFullyQualifiedName(), "testTaxonomy.testTerm.testTerm2");
         assertNull(request.getQueryString());
 

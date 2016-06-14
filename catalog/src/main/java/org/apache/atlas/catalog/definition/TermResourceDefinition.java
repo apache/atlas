@@ -57,8 +57,8 @@ public class TermResourceDefinition extends BaseResourceDefinition {
     }
 
     @Override
-    public void validate(Request request) throws InvalidPayloadException {
-        super.validate(request);
+    public void validateCreatePayload(Request request) throws InvalidPayloadException {
+        super.validateCreatePayload(request);
 
         String name = request.getProperty("name");
         // name will be in the fully qualified form: taxonomyName.termName
@@ -66,8 +66,8 @@ public class TermResourceDefinition extends BaseResourceDefinition {
             throw new InvalidPayloadException("Term name must be in the form 'taxonomyName.termName.subTermName'");
         }
 
-        if (! request.getProperties().containsKey("available_as_tag")) {
-            request.getProperties().put("available_as_tag", true);
+        if (! request.getQueryProperties().containsKey("available_as_tag")) {
+            request.getQueryProperties().put("available_as_tag", true);
         }
     }
 

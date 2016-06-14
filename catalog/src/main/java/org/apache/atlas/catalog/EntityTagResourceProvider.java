@@ -19,7 +19,6 @@
 package org.apache.atlas.catalog;
 
 import org.apache.atlas.catalog.definition.EntityTagResourceDefinition;
-import org.apache.atlas.catalog.definition.ResourceDefinition;
 import org.apache.atlas.catalog.exception.*;
 import org.apache.atlas.catalog.query.AtlasQuery;
 
@@ -29,12 +28,10 @@ import java.util.*;
  * Provider for entity tag resources.
  */
 public class EntityTagResourceProvider extends BaseResourceProvider implements ResourceProvider {
-    private final static ResourceDefinition resourceDefinition = new EntityTagResourceDefinition();
     private TermResourceProvider termResourceProvider;
 
     public EntityTagResourceProvider(AtlasTypeSystem typeSystem) {
-        super(typeSystem);
-
+        super(typeSystem, new EntityTagResourceDefinition());
     }
 
     @Override
@@ -64,8 +61,8 @@ public class EntityTagResourceProvider extends BaseResourceProvider implements R
     public void createResource(Request request)
             throws InvalidPayloadException, ResourceAlreadyExistsException, ResourceNotFoundException {
 
-        String entityId = String.valueOf(request.getProperties().remove("id"));
-        resourceDefinition.validate(request);
+        String entityId = String.valueOf(request.getQueryProperties().remove("id"));
+        resourceDefinition.validateCreatePayload(request);
         Result termResult = getTermQueryResult(request.<String>getProperty("name"));
         Map<String, Object> termProperties = termResult.getPropertyMaps().iterator().next();
         //todo: use constant for property name

@@ -25,12 +25,15 @@ import com.tinkerpop.pipes.Pipe;
 import org.apache.atlas.catalog.Request;
 import org.apache.atlas.catalog.VertexWrapper;
 import org.apache.atlas.catalog.definition.ResourceDefinition;
+import org.apache.atlas.repository.Constants;
+import org.easymock.Capture;
 import org.testng.annotations.Test;
 
 import java.util.*;
 
 import static org.easymock.EasyMock.*;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 /**
@@ -102,10 +105,6 @@ public class AtlasEntityQueryTest {
                 vertex1, vertex1Wrapper);
     }
 
-
-
-
-
     @Test
     public void testExecute_Collection_rollbackOnException() throws Exception {
         TitanGraph graph = createStrictMock(TitanGraph.class);
@@ -148,6 +147,80 @@ public class AtlasEntityQueryTest {
 
         verify(graph, expression, resourceDefinition, request, initialPipeline, queryPipe, expressionPipe,
                 notDeletedPipe, rootPipeline, queryPipeline, expressionPipeline, notDeletedPipeline);
+    }
+
+    @Test
+    public void testExecute_Collection_update() throws Exception {
+        TitanGraph graph = createStrictMock(TitanGraph.class);
+        QueryExpression expression = createStrictMock(QueryExpression.class);
+        ResourceDefinition resourceDefinition = createStrictMock(ResourceDefinition.class);
+        Request request = createStrictMock(Request.class);
+        GremlinPipeline initialPipeline = createStrictMock(GremlinPipeline.class);
+        Pipe queryPipe = createStrictMock(Pipe.class);
+        Pipe expressionPipe = createStrictMock(Pipe.class);
+        Pipe notDeletedPipe = createStrictMock(Pipe.class);
+        GremlinPipeline rootPipeline = createStrictMock(GremlinPipeline.class);
+        GremlinPipeline queryPipeline = createStrictMock(GremlinPipeline.class);
+        GremlinPipeline expressionPipeline = createStrictMock(GremlinPipeline.class);
+        GremlinPipeline notDeletedPipeline = createStrictMock(GremlinPipeline.class);
+        Vertex vertex1 = createStrictMock(Vertex.class);
+        VertexWrapper vertex1Wrapper = createStrictMock(VertexWrapper.class);
+        Capture<Long> modifiedTimestampCapture = newCapture();
+
+        List<Vertex> results = new ArrayList<>();
+        results.add(vertex1);
+
+        Map<String, Object> vertex1PropertyMap = new HashMap<>();
+        vertex1PropertyMap.put("prop1", "prop1.value1");
+        vertex1PropertyMap.put("prop2", "prop2.value1");
+
+        Map<String, Object> filteredVertex1PropertyMap = new HashMap<>();
+        filteredVertex1PropertyMap.put("prop1", "prop1.value1");
+
+        Map<String, Object> updateProperties = new HashMap<>();
+        updateProperties.put("prop3", "newValue");
+
+        // mock expectations
+        expect(initialPipeline.add(queryPipe)).andReturn(queryPipeline);
+        expect(initialPipeline.add(notDeletedPipe)).andReturn(notDeletedPipeline);
+        expect(initialPipeline.as("root")).andReturn(rootPipeline);
+        expect(expression.asPipe()).andReturn(expressionPipe);
+        expect(rootPipeline.add(expressionPipe)).andReturn(expressionPipeline);
+        expect(expressionPipeline.back("root")).andReturn(rootPipeline);
+        expect(rootPipeline.toList()).andReturn(results);
+        graph.commit();
+        vertex1Wrapper.setProperty("prop3", "newValue");
+        vertex1Wrapper.setProperty(eq(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY), capture(modifiedTimestampCapture));
+        expect(vertex1Wrapper.getPropertyMap()).andReturn(vertex1PropertyMap);
+        expect(resourceDefinition.filterProperties(request, vertex1PropertyMap)).andReturn(filteredVertex1PropertyMap);
+        expect(resourceDefinition.resolveHref(filteredVertex1PropertyMap)).andReturn("/foo/bar");
+        expect(request.getCardinality()).andReturn(Request.Cardinality.COLLECTION);
+
+        replay(graph, expression, resourceDefinition, request, initialPipeline, queryPipe, expressionPipe,
+                notDeletedPipe, rootPipeline, queryPipeline, expressionPipeline, notDeletedPipeline,
+                vertex1, vertex1Wrapper);
+        // end mock expectations
+
+        AtlasEntityQuery query = new TestAtlasEntityQuery(expression, resourceDefinition, request,
+                initialPipeline, queryPipe, notDeletedPipe, graph, vertex1Wrapper);
+
+        long startTime = System.currentTimeMillis();
+        // invoke method being tested
+        Collection<Map<String, Object>> queryResults = query.execute(updateProperties);
+        long endTime = System.currentTimeMillis();
+
+        assertEquals(queryResults.size(), 1);
+        Map<String, Object> queryResultMap = queryResults.iterator().next();
+        assertEquals(queryResultMap.size(), 2);
+        assertEquals(queryResultMap.get("prop1"), "prop1.value1");
+        assertEquals(queryResultMap.get("href"), "/foo/bar");
+
+        long modifiedTimestamp = modifiedTimestampCapture.getValue();
+        assertTrue(modifiedTimestamp >= startTime && modifiedTimestamp <= endTime);
+
+        verify(graph, expression, resourceDefinition, request, initialPipeline, queryPipe, expressionPipe,
+                notDeletedPipe, rootPipeline, queryPipeline, expressionPipeline, notDeletedPipeline,
+                vertex1, vertex1Wrapper);
     }
 
     private class TestAtlasEntityQuery extends AtlasEntityQuery {

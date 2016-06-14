@@ -68,7 +68,7 @@ public class EntityResourceProviderTest {
         Request request = requestCapture.getValue();
         assertNull(request.getQueryString());
         assertEquals(0, request.getAdditionalSelectProperties().size());
-        assertEquals(requestProperties, request.getProperties());
+        assertEquals(requestProperties, request.getQueryProperties());
 
         verify(typeSystem, queryFactory, query);
     }
@@ -138,7 +138,7 @@ public class EntityResourceProviderTest {
         Request request = requestCapture.getValue();
         assertEquals("name:entity*", request.getQueryString());
         assertEquals(0, request.getAdditionalSelectProperties().size());
-        assertEquals(0, request.getProperties().size());
+        assertEquals(0, request.getQueryProperties().size());
 
         verify(typeSystem, queryFactory, query);
     }
@@ -169,7 +169,7 @@ public class EntityResourceProviderTest {
         Request request = requestCapture.getValue();
         assertEquals("name:entity*", request.getQueryString());
         assertEquals(0, request.getAdditionalSelectProperties().size());
-        assertEquals(0, request.getProperties().size());
+        assertEquals(0, request.getQueryProperties().size());
 
         verify(typeSystem, queryFactory, query);
     }

@@ -34,4 +34,14 @@ public interface AtlasQuery {
      * @throws ResourceNotFoundException if an explicitly specified resource doesn't exist
      */
     Collection<Map<String, Object>> execute() throws ResourceNotFoundException;
+
+    /**
+     * Execute the query and update the results with the provided properties.
+     *
+     * @param updateProperties properties name/values to update on query results
+     *
+     * @return collection of property maps, one per matching resource
+     * @throws ResourceNotFoundException if an explicitly specified resource doesn't exist
+     */
+    Collection<Map<String, Object>> execute(Map<String, Object> updateProperties) throws ResourceNotFoundException;
 }

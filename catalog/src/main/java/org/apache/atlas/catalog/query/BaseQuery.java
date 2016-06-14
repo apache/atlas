@@ -56,31 +56,47 @@ public abstract class BaseQuery implements AtlasQuery {
     public Collection<Map<String, Object>> execute() throws ResourceNotFoundException {
         Collection<Map<String, Object>> resultMaps = new ArrayList<>();
 
-        for (Vertex vertex : executeQuery()) {
-            resultMaps.add(processPropertyMap(wrapVertex(vertex)));
+        try {
+            for (Vertex vertex : executeQuery()) {
+                resultMaps.add(processPropertyMap(wrapVertex(vertex)));
+            }
+            getGraph().commit();
+        } catch (Throwable t) {
+            getGraph().rollback();
+            throw t;
+        }
+        return resultMaps;
+    }
+
+    @Override
+    public Collection<Map<String, Object>> execute(Map<String, Object> updateProperties)
+            throws ResourceNotFoundException {
+
+        Collection<Map<String, Object>> resultMaps = new ArrayList<>();
+        try {
+            for (Vertex vertex : executeQuery()) {
+                VertexWrapper vWrapper = wrapVertex(vertex);
+                for (Map.Entry<String, Object> property : updateProperties.entrySet()) {
+                    vWrapper.setProperty(property.getKey(), property.getValue());
+                    vWrapper.setProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, System.currentTimeMillis());
+                }
+                resultMaps.add(processPropertyMap(vWrapper));
+            }
+            getGraph().commit();
+        } catch (Throwable e) {
+            getGraph().rollback();
+            throw e;
         }
         return resultMaps;
     }
 
     private List<Vertex> executeQuery() {
         GremlinPipeline pipeline = buildPipeline().as("root");
-
         Pipe expressionPipe = queryExpression.asPipe();
-        try {
-            // AlwaysQuery returns null for pipe
-            List<Vertex> vertices =  expressionPipe == null ? pipeline.toList() :
-                    pipeline.add(expressionPipe).back("root").toList();
 
-            // Even non-mutating queries can result in objects being created in
-            // the graph such as new fields or property keys. So, it is important
-            // to commit the implicit query after execution, otherwise the uncommitted
-            // transaction will still be associated with the thread when it is re-pooled.
-            getGraph().commit();
-            return vertices;
-        } catch (Throwable e) {
-            getGraph().rollback();
-            throw e;
-        }
+        // AlwaysQuery returns null for pipe
+        return expressionPipe == null ? pipeline.toList() :
+                pipeline.add(expressionPipe).back("root").toList();
     }
 
     protected GremlinPipeline buildPipeline() {
@@ -89,7 +105,6 @@ public abstract class BaseQuery implements AtlasQuery {
         if (queryPipe != null) {
             pipeline.add(queryPipe);
         }
-        //todo: may be more efficient to move the notDeleted pipe after the expression pipe
         pipeline.add(getNotDeletedPipe());
         return pipeline;
     }
@@ -108,17 +123,17 @@ public abstract class BaseQuery implements AtlasQuery {
     protected Map<String, Object> processPropertyMap(VertexWrapper vertex) {
         Map<String, Object> propertyMap = resourceDefinition.filterProperties(
                 request, vertex.getPropertyMap());
-        addHref(propertyMap);
+        addHref(vertex, propertyMap);
 
         return request.getCardinality() == Request.Cardinality.INSTANCE ?
                 applyProjections(vertex, propertyMap) :
                 propertyMap;
     }
 
-    protected void addHref(Map<String, Object> propertyMap) {
-        String href = resourceDefinition.resolveHref(propertyMap);
+    protected void addHref(VertexWrapper vWrapper, Map<String, Object> filteredPropertyMap) {
+        String href = resourceDefinition.resolveHref(filteredPropertyMap);
         if (href != null) {
-            propertyMap.put("href", href);
+            filteredPropertyMap.put("href", href);
         }
     }
 

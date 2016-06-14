@@ -39,14 +39,24 @@ public interface ResourceDefinition {
      * @return the resources type name
      */
     String getTypeName();
+
     /**
-     * Validate a user request.
+     * Validate a user create request payload.
      *
-     * @param request  user request
+     * @param request  user create request
      *
      * @throws InvalidPayloadException if the request payload is invalid in any way
      */
-    void validate(Request request) throws InvalidPayloadException;
+    void validateCreatePayload(Request request) throws InvalidPayloadException;
+
+    /**
+     * Validate a user update request payload.
+     *
+     * @param request  user update request
+     *
+     * @throws InvalidPayloadException if the request payload is invalid in any way
+     */
+    void validateUpdatePayload(Request request) throws InvalidPayloadException;
 
     /**
      * Get the name of the resources id property.

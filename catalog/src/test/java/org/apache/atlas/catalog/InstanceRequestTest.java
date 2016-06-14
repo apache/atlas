@@ -41,7 +41,7 @@ public class InstanceRequestTest {
         Request request = new InstanceRequest(properties);
 
         assertEquals(Request.Cardinality.INSTANCE, request.getCardinality());
-        assertEquals(properties, request.getProperties());
+        assertEquals(properties, request.getQueryProperties());
         assertEquals("fooValue", request.getProperty("foo"));
         assertTrue(request.<Boolean>getProperty("someBoolean"));
         assertNull(request.getProperty("other"));

@@ -18,7 +18,6 @@
 
 package org.apache.atlas.catalog;
 
-import org.apache.atlas.catalog.definition.ResourceDefinition;
 import org.apache.atlas.catalog.definition.TaxonomyResourceDefinition;
 import org.apache.atlas.catalog.exception.*;
 import org.apache.atlas.catalog.query.AtlasQuery;
@@ -30,10 +29,9 @@ import java.util.*;
  */
 public class TaxonomyResourceProvider extends BaseResourceProvider implements ResourceProvider {
     private final TermResourceProvider termResourceProvider;
-    private static final ResourceDefinition resourceDefinition = new TaxonomyResourceDefinition();
 
     public TaxonomyResourceProvider(AtlasTypeSystem typeSystem) {
-        super(typeSystem);
+        super(typeSystem, new TaxonomyResourceDefinition());
         termResourceProvider = new TermResourceProvider(typeSystem);
     }
 
@@ -53,15 +51,17 @@ public class TaxonomyResourceProvider extends BaseResourceProvider implements Re
         return new Result(results);
     }
 
+    @Override
     public Result getResources(Request request) throws InvalidQueryException, ResourceNotFoundException {
         AtlasQuery atlasQuery = queryFactory.createTaxonomyQuery(request);
         return new Result(atlasQuery.execute());
     }
 
+    @Override
     public synchronized void createResource(Request request)
             throws InvalidPayloadException, ResourceAlreadyExistsException {
 
-        resourceDefinition.validate(request);
+        resourceDefinition.validateCreatePayload(request);
         ensureTaxonomyDoesntExist(request);
         typeSystem.createEntity(resourceDefinition, request);
     }
@@ -73,13 +73,24 @@ public class TaxonomyResourceProvider extends BaseResourceProvider implements Re
 
     @Override
     public void deleteResourceById(Request request) throws ResourceNotFoundException, InvalidPayloadException {
-        request.addAdditionalSelectProperties(Collections.singleton("id"));
-        // will result in expected ResourceNotFoundException if taxonomy doesn't exist
-        Result taxonomyResult = getResourceById(request);
-        String taxonomyId = String.valueOf(taxonomyResult.getPropertyMaps().iterator().next().get("id"));
-
+        String taxonomyId = getResourceId(request);
         getTermResourceProvider().deleteChildren(taxonomyId, new TermPath(request.<String>getProperty("name")));
         typeSystem.deleteEntity(resourceDefinition, request);
+    }
+
+    @Override
+    public void updateResourceById(Request request) throws ResourceNotFoundException, InvalidPayloadException {
+        resourceDefinition.validateUpdatePayload(request);
+        AtlasQuery atlasQuery;
+        try {
+            atlasQuery = queryFactory.createTaxonomyQuery(request);
+        } catch (InvalidQueryException e) {
+            throw new CatalogRuntimeException("Unable to compile internal Term query: " + e, e);
+        }
+        if (atlasQuery.execute(request.getUpdateProperties()).isEmpty()) {
+            throw new ResourceNotFoundException(String.format("Taxonomy '%s' not found.",
+                    request.getQueryProperties().get("name")));
+        }
     }
 
     private void ensureTaxonomyDoesntExist(Request request) throws ResourceAlreadyExistsException {
@@ -90,6 +101,13 @@ public class TaxonomyResourceProvider extends BaseResourceProvider implements Re
         } catch (ResourceNotFoundException e) {
             // expected case
         }
+    }
+
+    private String getResourceId(Request request) throws ResourceNotFoundException {
+        request.addAdditionalSelectProperties(Collections.singleton("id"));
+        // will result in expected ResourceNotFoundException if taxonomy doesn't exist
+        Result result = getResourceById(request);
+        return String.valueOf(result.getPropertyMaps().iterator().next().get("id"));
     }
 
     protected TermResourceProvider getTermResourceProvider() {
