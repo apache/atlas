@@ -198,8 +198,8 @@ public class HiveHookIT {
         Assert.assertEquals(tableRef.get(HiveDataModelGenerator.TABLE_TYPE_ATTR), TableType.MANAGED_TABLE.name());
         Assert.assertEquals(tableRef.get(HiveDataModelGenerator.COMMENT), "table comment");
         String entityName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName);
-        Assert.assertEquals(tableRef.get(NAME), entityName);
-        Assert.assertEquals(tableRef.get(NAME), "default." + tableName.toLowerCase() + "@" + CLUSTER_NAME);
+        Assert.assertEquals(tableRef.get(HiveDataModelGenerator.NAME), tableName.toLowerCase());
+        Assert.assertEquals(tableRef.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME), entityName);
 
         Table t = hiveMetaStoreBridge.hiveClient.getTable(DEFAULT_DB, tableName);
         long createTime = Long.parseLong(t.getMetadata().getProperty(hive_metastoreConstants.DDL_TIME)) * HiveMetaStoreBridge.MILLIS_CONVERT_FACTOR;
@@ -263,7 +263,7 @@ public class HiveHookIT {
         List<Id> tableRef = (List<Id>) processReference.get(attrName);
         for(int i = 0; i < expectedTableNames.length; i++) {
             Referenceable entity = atlasClient.getEntity(tableRef.get(i)._getId());
-            Assert.assertEquals(entity.get(AtlasClient.NAME), expectedTableNames[i]);
+            Assert.assertEquals(entity.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME), expectedTableNames[i]);
         }
     }
 
@@ -1009,8 +1009,7 @@ public class HiveHookIT {
 
         Referenceable hdfsPathRef = atlasClient.getEntity(hdfsPathId);
         Assert.assertEquals(hdfsPathRef.get("path"), testPathNormed);
-        Assert.assertEquals(hdfsPathRef.get(NAME), testPathNormed);
-//        Assert.assertEquals(hdfsPathRef.get("name"), new Path(testPath).getName());
+        Assert.assertEquals(hdfsPathRef.get(NAME), new Path(testPathNormed).getName());
         Assert.assertEquals(hdfsPathRef.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME), testPathNormed);
 
         return hdfsPathRef.getId()._getId();
@@ -1018,7 +1017,7 @@ public class HiveHookIT {
 
     private String assertHDFSPathIsRegistered(String path) throws Exception {
         LOG.debug("Searching for hdfs path {}", path);
-        return assertEntityIsRegistered(FSDataTypes.HDFS_PATH().toString(), NAME, path, null);
+        return assertEntityIsRegistered(FSDataTypes.HDFS_PATH().toString(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, path, null);
     }
 
     @Test
@@ -1403,7 +1402,7 @@ public class HiveHookIT {
 
         if (inputTblName != null) {
             Referenceable inputTableRef = new Referenceable(HiveDataTypes.HIVE_TABLE.name(), new HashMap<String, Object>() {{
-                put(NAME, inputTblName);
+                put(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, inputTblName);
             }});
             inputs = new ArrayList<Referenceable>();
             inputs.add(inputTableRef);
@@ -1411,7 +1410,7 @@ public class HiveHookIT {
         List<Referenceable> outputs = null;
         if (outputTblName != null) {
             Referenceable outputTableRef = new Referenceable(HiveDataTypes.HIVE_TABLE.name(), new HashMap<String, Object>() {{
-                put(NAME, outputTblName);
+                put(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, outputTblName);
             }});
 
             outputs = new ArrayList<Referenceable>();
@@ -1448,13 +1447,13 @@ public class HiveHookIT {
     private void assertTableIsNotRegistered(String dbName, String tableName, boolean isTemporaryTable) throws Exception {
         LOG.debug("Searching for table {}.{}", dbName, tableName);
         String tableQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableName, isTemporaryTable);
-        assertEntityIsNotRegistered(HiveDataTypes.HIVE_TABLE.getName(), AtlasClient.NAME, tableQualifiedName);
+        assertEntityIsNotRegistered(HiveDataTypes.HIVE_TABLE.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableQualifiedName);
     }
 
     private void assertTableIsNotRegistered(String dbName, String tableName) throws Exception {
         LOG.debug("Searching for table {}.{}", dbName, tableName);
         String tableQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableName, false);
-        assertEntityIsNotRegistered(HiveDataTypes.HIVE_TABLE.getName(), AtlasClient.NAME, tableQualifiedName);
+        assertEntityIsNotRegistered(HiveDataTypes.HIVE_TABLE.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableQualifiedName);
     }
 
     private void assertDBIsNotRegistered(String dbName) throws Exception {
@@ -1474,7 +1473,7 @@ public class HiveHookIT {
     private String assertTableIsRegistered(String dbName, String tableName, AssertPredicate assertPredicate, boolean isTemporary) throws Exception {
         LOG.debug("Searching for table {}.{}", dbName, tableName);
         String tableQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableName, isTemporary);
-        return assertEntityIsRegistered(HiveDataTypes.HIVE_TABLE.getName(), AtlasClient.NAME, tableQualifiedName,
+        return assertEntityIsRegistered(HiveDataTypes.HIVE_TABLE.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableQualifiedName,
             assertPredicate);
     }
 

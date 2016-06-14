@@ -63,7 +63,7 @@ public class DataSetLineageService implements LineageService {
 
     private static final String DATASET_EXISTS_QUERY = AtlasClient.DATA_SET_SUPER_TYPE + " where __guid = '%s'";
     private static final String DATASET_NAME_EXISTS_QUERY =
-            AtlasClient.DATA_SET_SUPER_TYPE + " where name = '%s' and __state = 'ACTIVE'";
+            AtlasClient.DATA_SET_SUPER_TYPE + " where " + AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME + "='%s' and __state = 'ACTIVE'";
 
     private static final Configuration propertiesConf;
 

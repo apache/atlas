@@ -96,7 +96,6 @@ object StormDataModel extends App {
 
         // HBase Data Set
         _class(StormDataTypes.HBASE_TABLE.getName, List("DataSet")) {
-            "tableName" ~ (string, required, unique, indexed)
             "uri" ~ (string, required)
             "owner" ~ (string, required, indexed)
         }

@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.notification.entity.EntityNotification;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
@@ -113,10 +114,9 @@ public class EntityNotificationIT extends BaseResourceIT {
         waitForNotification(notificationConsumer, MAX_WAIT_TIME,
             newNotificationPredicate(EntityNotification.OperationType.ENTITY_CREATE, HIVE_TABLE_TYPE, guid));
 
-        final String property = "name";
-        final String name = (String) tableInstance.get(property);
+        final String name = (String) tableInstance.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME);
 
-        serviceClient.deleteEntity(HIVE_TABLE_TYPE, property, name);
+        serviceClient.deleteEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
 
         waitForNotification(notificationConsumer, MAX_WAIT_TIME,
             newNotificationPredicate(EntityNotification.OperationType.ENTITY_DELETE, HIVE_TABLE_TYPE, guid));

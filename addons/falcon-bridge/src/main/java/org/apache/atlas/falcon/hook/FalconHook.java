@@ -277,8 +277,8 @@ public class FalconHook extends AtlasHook implements FalconEventPublisher {
 
         Referenceable tableRef = new Referenceable(HiveDataTypes.HIVE_TABLE.getName());
         tableRef.set(HiveDataModelGenerator.NAME,
-                HiveMetaStoreBridge.getTableQualifiedName(clusterName, dbName, tableName));
-        tableRef.set(HiveDataModelGenerator.TABLE_NAME, tableName);
+                tableName);
+        tableRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, HiveMetaStoreBridge.getTableQualifiedName(clusterName, dbName, tableName));
         tableRef.set(HiveDataModelGenerator.DB, dbRef);
         entities.add(tableRef);
 

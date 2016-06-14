@@ -82,7 +82,7 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testInputsGraphForEntity() throws Exception {
-        String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE, "name", salesMonthlyTable).getId()._getId();
+        String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesMonthlyTable).getId()._getId();
         JSONObject results = serviceClient.getInputGraphForEntity(tableId);
         Assert.assertNotNull(results);
 
@@ -126,7 +126,7 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testOutputsGraphForEntity() throws Exception {
-        String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE, "name", salesFactTable).getId()._getId();
+        String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
         JSONObject results = serviceClient.getOutputGraphForEntity(tableId);
         Assert.assertNotNull(results);
 
@@ -172,7 +172,7 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testSchemaForEntity() throws Exception {
-        String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE, "name", salesFactTable).getId()._getId();
+        String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
         JSONObject results = serviceClient.getSchemaForEntity(tableId);
         Assert.assertNotNull(results);
 
@@ -271,6 +271,7 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
             String... traitNames) throws Exception {
         Referenceable referenceable = new Referenceable(HIVE_TABLE_TYPE, traitNames);
         referenceable.set("name", name);
+        referenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
         referenceable.set("description", description);
         referenceable.set("owner", owner);
         referenceable.set("tableType", tableType);
@@ -288,7 +289,7 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
             String queryPlan, String queryId, String queryGraph, String... traitNames) throws Exception {
         Referenceable referenceable = new Referenceable(HIVE_PROCESS_TYPE, traitNames);
         referenceable.set("name", name);
-        referenceable.set("qualifiedName", name);
+        referenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
         referenceable.set("user", user);
         referenceable.set("startTime", System.currentTimeMillis());
         referenceable.set("endTime", System.currentTimeMillis() + 10000);

@@ -154,12 +154,12 @@ public class FalconHookIT {
 
         Id inId = (Id) ((List)processEntity.get("inputs")).get(0);
         Referenceable inEntity = atlasClient.getEntity(inId._getId());
-        assertEquals(inEntity.get("name"),
+        assertEquals(inEntity.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME),
                 HiveMetaStoreBridge.getTableQualifiedName(cluster.getName(), inDbName, inTableName));
 
         Id outId = (Id) ((List)processEntity.get("outputs")).get(0);
         Referenceable outEntity = atlasClient.getEntity(outId._getId());
-        assertEquals(outEntity.get("name"),
+        assertEquals(outEntity.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME),
                 HiveMetaStoreBridge.getTableQualifiedName(cluster.getName(), outDbName, outTableName));
     }
 
@@ -212,7 +212,7 @@ public class FalconHookIT {
 
         Id outId = (Id) ((List)processEntity.get("outputs")).get(0);
         Referenceable outEntity = atlasClient.getEntity(outId._getId());
-        assertEquals(outEntity.get("name"),
+        assertEquals(outEntity.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME),
                 HiveMetaStoreBridge.getTableQualifiedName(cluster.getName(), outDbName, outTableName));
     }
 

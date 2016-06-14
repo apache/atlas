@@ -543,7 +543,7 @@ public class EntityResource {
     @Path("{guid}/traits")
     @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response addTrait(@Context HttpServletRequest request, @PathParam("guid") String guid) {
+    public Response addTrait(@Context HttpServletRequest request, @PathParam("guid") final String guid) {
         try {
             final String traitDefinition = Servlets.getRequestPayload(request);
             LOG.debug("Adding trait={} for entity={} ", traitDefinition, guid);

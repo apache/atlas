@@ -3,6 +3,7 @@ Apache Atlas Release Notes
 
 --trunk - unreleased
 INCOMPATIBLE CHANGES:
+ATLAS-542 Make qualifiedName and name consistent across all Datasets and Process (sumasai via yhemanth)
 ATLAS-716 Entity update/delete notifications (shwethags)
 ATLAS-619 Canonicalize hive queries (sumasai)
 ATLAS-497 Simple Authorization (saqeeb.s via yhemanth)

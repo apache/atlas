@@ -14,16 +14,15 @@ hive_type(ClassType) - super types [] - attributes [name, type1, type2, fields]
 hive_storagedesc(ClassType) - super types [Referenceable] - attributes [cols, location, inputFormat, outputFormat, compressed, numBuckets, serdeInfo, bucketCols, sortCols, parameters, storedAsSubDirectories]
 hive_role(ClassType) - super types [] - attributes [roleName, createTime, ownerName]
 hive_column(ClassType) - super types [Referenceable] - attributes [name, type, comment]
-hive_table(ClassType) - super types [DataSet] - attributes [tableName, db, owner, createTime, lastAccessTime, comment, retention, sd, partitionKeys, columns, parameters, viewOriginalText, viewExpandedText, tableType, temporary]
+hive_table(ClassType) - super types [DataSet] - attributes [name, db, owner, createTime, lastAccessTime, comment, retention, sd, partitionKeys, columns, parameters, viewOriginalText, viewExpandedText, tableType, temporary]
 hive_partition(ClassType) - super types [Referenceable] - attributes [values, table, createTime, lastAccessTime, sd, columns, parameters]
 hive_process(ClassType) - super types [Process] - attributes [startTime, endTime, userName, operationType, queryText, queryPlan, queryId, queryGraph]
 </verbatim>
 
-The entities are created and de-duped using unique qualified name. They provide namespace and can be used for querying/lineage as well. Note that dbName and tableName should be in lower case. clusterName is explained below.
+The entities are created and de-duped using unique qualified name. They provide namespace and can be used for querying/lineage as well. Note that  name, dbName and tableName should be in lower case. clusterName is explained below.
    * hive_db - attribute qualifiedName - <dbName>@<clusterName>
-   * hive_table - attribute name - <dbName>.<tableName>@<clusterName>
+   * hive_table - attribute qualifiedName - <dbName>.<name>@<clusterName>
    * hive_column - attribute qualifiedName - <dbName>.<tableName>.<columnName>@<clusterName>
-   * hive_partition - attribute qualifiedName - <dbName>.<tableName>.<partitionValues('-' separated)>@<clusterName>
    * hive_process - attribute name - <queryString> - trimmed query string in lower case
 
 

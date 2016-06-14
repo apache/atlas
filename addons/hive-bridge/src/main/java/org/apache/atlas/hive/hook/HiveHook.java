@@ -282,7 +282,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         messages.add(
             new HookNotification.EntityDeleteRequest(event.getUser(),
                 HiveDataTypes.HIVE_TABLE.getName(),
-                HiveDataModelGenerator.NAME,
+                AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 tblQualifiedName));
     }
 
@@ -403,18 +403,19 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     }
 
     private Referenceable replaceTableQFName(HiveMetaStoreBridge dgiBridge, HiveEventContext event, Table oldTable, Table newTable, final Referenceable tableEntity, final String oldTableQFName, final String newTableQFName) throws HiveException {
-        tableEntity.set(HiveDataModelGenerator.NAME, oldTableQFName);
-        tableEntity.set(HiveDataModelGenerator.TABLE_NAME, oldTable.getTableName().toLowerCase());
+        tableEntity.set(HiveDataModelGenerator.NAME,  oldTable.getTableName().toLowerCase());
+        tableEntity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, oldTableQFName);
 
         //Replace table entity with new name
         final Referenceable newEntity = new Referenceable(HiveDataTypes.HIVE_TABLE.getName());
-        newEntity.set(HiveDataModelGenerator.NAME, newTableQFName);
-        newEntity.set(HiveDataModelGenerator.TABLE_NAME, newTable.getTableName().toLowerCase());
+        newEntity.set(HiveDataModelGenerator.NAME, newTable.getTableName().toLowerCase());
+        newEntity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, newTableQFName);
+
         ArrayList<String> alias_list = new ArrayList<>();
         alias_list.add(oldTable.getTableName().toLowerCase());
         newEntity.set(HiveDataModelGenerator.TABLE_ALIAS_LIST, alias_list);
         messages.add(new HookNotification.EntityPartialUpdateRequest(event.getUser(),
-            HiveDataTypes.HIVE_TABLE.getName(), HiveDataModelGenerator.NAME,
+            HiveDataTypes.HIVE_TABLE.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
             oldTableQFName, newEntity));
 
         return newEntity;
@@ -724,7 +725,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             for (Referenceable input : refs) {
                 //TODO - Change to qualifiedName later
                 buffer.append(":");
-                String dataSetQlfdName = (String) input.get(AtlasClient.NAME);
+                String dataSetQlfdName = (String) input.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME);
                 buffer.append(dataSetQlfdName.toLowerCase().replaceAll("/", ""));
             }
         }

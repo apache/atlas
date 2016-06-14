@@ -72,9 +72,9 @@ public class SqoopHook extends SqoopJobDataPublisher {
     public Referenceable createHiveTableInstance(String clusterName, Referenceable dbRef,
                                              String tableName, String dbName) throws Exception {
         Referenceable tableRef = new Referenceable(HiveDataTypes.HIVE_TABLE.getName());
-        tableRef.set(HiveDataModelGenerator.NAME,
+        tableRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 HiveMetaStoreBridge.getTableQualifiedName(clusterName, dbName, tableName));
-        tableRef.set(HiveDataModelGenerator.TABLE_NAME, tableName.toLowerCase());
+        tableRef.set(HiveDataModelGenerator.NAME, tableName.toLowerCase());
         tableRef.set(HiveDataModelGenerator.DB, dbRef);
         return tableRef;
     }
@@ -93,6 +93,7 @@ public class SqoopHook extends SqoopJobDataPublisher {
         String source = table != null ? table : query;
         String name = getSqoopDBStoreName(data);
         storeRef.set(SqoopDataModelGenerator.NAME, name);
+        storeRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
         storeRef.set(SqoopDataModelGenerator.DB_STORE_TYPE, data.getStoreType());
         storeRef.set(SqoopDataModelGenerator.DB_STORE_USAGE, usage);
         storeRef.set(SqoopDataModelGenerator.STORE_URI, data.getUrl());

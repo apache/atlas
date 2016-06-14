@@ -35,6 +35,7 @@ import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
@@ -336,8 +337,8 @@ public class HiveMetaStoreBridge {
         }
 
         String tableQualifiedName = getTableQualifiedName(clusterName, hiveTable);
-        tableReference.set(HiveDataModelGenerator.NAME, tableQualifiedName);
-        tableReference.set(HiveDataModelGenerator.TABLE_NAME, hiveTable.getTableName().toLowerCase());
+        tableReference.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableQualifiedName);
+        tableReference.set(HiveDataModelGenerator.NAME, hiveTable.getTableName().toLowerCase());
         tableReference.set(HiveDataModelGenerator.OWNER, hiveTable.getOwner());
 
         Date createDate = new Date();
@@ -485,10 +486,8 @@ public class HiveMetaStoreBridge {
     public Referenceable fillHDFSDataSet(String pathUri) {
         Referenceable ref = new Referenceable(FSDataTypes.HDFS_PATH().toString());
         ref.set("path", pathUri);
-//        Path path = new Path(pathUri);
-//        ref.set("name", path.getName());
-        //TODO - Fix after ATLAS-542 to shorter Name
-        ref.set(HiveDataModelGenerator.NAME, pathUri);
+        Path path = new Path(pathUri);
+        ref.set(AtlasClient.NAME, path.getName());
         ref.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, pathUri);
         return ref;
     }

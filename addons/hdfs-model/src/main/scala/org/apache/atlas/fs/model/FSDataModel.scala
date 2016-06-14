@@ -37,7 +37,7 @@ object FSDataModel extends App {
     val typesDef : TypesDef = types {
 
         // FS DataSet
-        _class(FSDataTypes.FS_PATH.toString, List("DataSet", AtlasClient.REFERENCEABLE_SUPER_TYPE)) {
+        _class(FSDataTypes.FS_PATH.toString) {
             //fully qualified path/URI to the filesystem path is stored in 'qualifiedName' and 'path'.
             "path" ~ (string, required, indexed)
             "createTime" ~ (date, optional, indexed)
@@ -63,7 +63,7 @@ object FSDataModel extends App {
         }
 
         //HDFS DataSet
-        _class(FSDataTypes.HDFS_PATH.toString, List(FSDataTypes.FS_PATH.toString)) {
+        _class(FSDataTypes.HDFS_PATH.toString, List("DataSet", FSDataTypes.FS_PATH.toString)) {
             //Making cluster optional since path is already unique containing the namenode URI
             AtlasConstants.CLUSTER_NAME_ATTRIBUTE ~ (string, optional, indexed)
             "numberOfReplicas" ~ (int, optional, indexed)

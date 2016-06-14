@@ -236,6 +236,7 @@ public abstract class BaseResourceIT {
         Referenceable tableInstance =
                 new Referenceable(HIVE_TABLE_TYPE, "classification", "pii", "phi", "pci", "sox", "sec", "finance");
         tableInstance.set("name", tableName);
+        tableInstance.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableName);
         tableInstance.set("db", databaseInstance);
         tableInstance.set("description", "bar table");
         tableInstance.set("lastAccessTime", "2014-07-11T08:00:00.000Z");

@@ -205,6 +205,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         final String tableName = randomString();
         table.set("name", tableName);
         table.set("db", db);
+        table.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableName);
 
         serviceClient.createEntity(table);
         results = serviceClient.searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, dbName));
@@ -727,7 +728,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }});
 
         LOG.debug("Updating entity= " + tableUpdated);
-        entityResult = serviceClient.updateEntity(BaseResourceIT.HIVE_TABLE_TYPE, "name",
+        entityResult = serviceClient.updateEntity(BaseResourceIT.HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 (String) tableInstance.get("name"), tableUpdated);
         assertEquals(entityResult.getUpdateEntities().size(), 1);
         assertEquals(entityResult.getUpdateEntities().get(0), tableId._getId());

@@ -69,7 +69,7 @@ public class QuickStartIT extends BaseResourceIT {
     }
 
     private Referenceable getTable(String tableName) throws AtlasServiceException {
-        return serviceClient.getEntity(QuickStart.TABLE_TYPE, "name", tableName);
+        return serviceClient.getEntity(QuickStart.TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableName);
     }
 
     private void verifyTrait(Referenceable table) throws JSONException {
@@ -143,7 +143,7 @@ public class QuickStartIT extends BaseResourceIT {
     @Test
     public void testViewIsAdded() throws AtlasServiceException, JSONException {
 
-        Referenceable view = serviceClient.getEntity(QuickStart.VIEW_TYPE, AtlasClient.NAME, QuickStart.PRODUCT_DIM_VIEW);
+        Referenceable view = serviceClient.getEntity(QuickStart.VIEW_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, QuickStart.PRODUCT_DIM_VIEW);
 
         assertEquals(QuickStart.PRODUCT_DIM_VIEW, view.get(AtlasClient.NAME));
 
