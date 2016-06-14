@@ -154,6 +154,23 @@ Note that Kafka group ids are specified for a specific topic.  The Kafka group i
 atlas.kafka.entities.group.id=<consumer id>
 </verbatim>
 
+These configuration parameters are useful for setting up Kafka topics via Atlas provided scripts, described in the
+[[InstallationSteps][Installation Steps]] page.
+
+<verbatim>
+# Whether to create the topics automatically, default is true.
+# Comma separated list of topics to be created, default is "ATLAS_HOOK,ATLAS_ENTITES"
+atlas.notification.topics=ATLAS_HOOK,ATLAS_ENTITIES
+# Number of replicas for the Atlas topics, default is 1. Increase for higher resilience to Kafka failures.
+atlas.notification.replicas=1
+# Enable the below two properties if Kafka is running in Kerberized mode.
+# Set this to the service principal representing the Kafka service
+atlas.notification.kafka.service.principal=kafka/_HOST@EXAMPLE.COM
+# Set this to the location of the keytab file for Kafka
+#atlas.notification.kafka.keytab.location=/etc/security/keytabs/kafka.service.keytab
+
+</verbatim>
+
 
 ---++ Client Configs
 <verbatim>

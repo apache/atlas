@@ -38,16 +38,19 @@ public final class AuthenticationUtil {
     public static boolean isKerberosAuthenticationEnabled() {
         boolean isKerberosAuthenticationEnabled = false;
         try {
-            Configuration atlasConf = ApplicationProperties.get();
-
-            if ("true".equalsIgnoreCase(atlasConf.getString("atlas.authentication.method.kerberos"))) {
-                isKerberosAuthenticationEnabled = true;
-            } else {
-                isKerberosAuthenticationEnabled = false;
-            }
-
+            isKerberosAuthenticationEnabled = isKerberosAuthenticationEnabled(ApplicationProperties.get());
         } catch (AtlasException e) {
             LOG.error("Error while isKerberosAuthenticationEnabled ", e);
+        }
+        return isKerberosAuthenticationEnabled;
+    }
+
+    public static boolean isKerberosAuthenticationEnabled(Configuration atlasConf) {
+        boolean isKerberosAuthenticationEnabled;
+        if ("true".equalsIgnoreCase(atlasConf.getString("atlas.authentication.method.kerberos"))) {
+            isKerberosAuthenticationEnabled = true;
+        } else {
+            isKerberosAuthenticationEnabled = false;
         }
         return isKerberosAuthenticationEnabled;
     }

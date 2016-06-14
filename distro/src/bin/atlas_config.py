@@ -64,6 +64,7 @@ HBASE_STORAGE_LOCAL_CONF_ENTRY="atlas.graph.storage.hostname\s*=\s*localhost"
 SOLR_INDEX_CONF_ENTRY="atlas.graph.index.search.backend\s*=\s*solr5"
 SOLR_INDEX_LOCAL_CONF_ENTRY="atlas.graph.index.search.solr.zookeeper-url\s*=\s*localhost"
 SOLR_INDEX_ZK_URL="atlas.graph.index.search.solr.zookeeper-url"
+TOPICS_TO_CREATE="atlas.notification.topics"
 
 DEBUG = False
 
@@ -120,6 +121,9 @@ def dataDir(dir):
 def webAppDir(dir):
     webapp = os.path.join(dir, WEBAPP)
     return os.environ.get(ATLAS_WEBAPP, webapp)
+
+def kafkaTopicSetupDir(homeDir):
+    return os.path.join(homeDir, "hook", "kafka-topic-setup")
 
 def expandWebApp(dir):
     webappDir = webAppDir(dir)
@@ -428,6 +432,16 @@ def is_solr_local(confdir):
 def get_solr_zk_url(confdir):
     confdir = os.path.join(confdir, CONF_FILE)
     return getConfig(confdir, SOLR_INDEX_ZK_URL)
+
+def get_topics_to_create(confdir):
+    confdir = os.path.join(confdir, CONF_FILE)
+    topic_list = getConfig(confdir, TOPICS_TO_CREATE)
+    if topic_list is not None:
+        topics = topic_list.split(",")
+    else:
+        topics = ["ATLAS_HOOK", "ATLAS_ENTITIES"]
+    return topics
+
 
 def run_solr(dir, action, zk_url = None, port = None, logdir = None, wait=True):
 

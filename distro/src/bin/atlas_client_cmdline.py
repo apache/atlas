@@ -40,6 +40,16 @@ def get_atlas_classpath(confdir):
         atlas_classpath = mc.convertCygwinPath(atlas_classpath, True)
     return atlas_classpath
 
+def get_atlas_hook_classpath(confdir):
+    atlas_home = mc.atlasDir()
+    kafka_topic_setup_dir = mc.kafkaTopicSetupDir(atlas_home)
+    p = os.pathsep
+    atlas_hook_classpath = confdir + p \
+                            + os.path.join(kafka_topic_setup_dir, "*")
+    if mc.isCygwin():
+        atlas_hook_classpath = mc.convertCygwinPath(atlas_hook_classpath, True)
+    return atlas_hook_classpath
+
 def setup_jvm_opts_list(confdir, log_name):
     atlas_home = mc.atlasDir()
     mc.executeEnvSh(confdir)

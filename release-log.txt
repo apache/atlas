@@ -22,6 +22,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-515 Ability to initialize Kafka topics with more than 1 replica (yhemanth)
 ATLAS-891 UI changes to implement Update term (Kalyanikashikar via yhemanth)
 ATLAS-794 Business Catalog Update (jspeidel via yhemanth)
 ATLAS-837 Enhance Sqoop addon to handle export operation (venkatnrangan via shwethags)

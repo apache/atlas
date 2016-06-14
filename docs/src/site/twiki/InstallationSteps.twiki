@@ -262,6 +262,16 @@ Pre-requisites for running Solr in cloud mode
   * !SolrCloud has support for replication and sharding. It is highly recommended to use !SolrCloud with at least two Solr nodes running on different servers with replication enabled.
     If using !SolrCloud, then you also need !ZooKeeper installed and configured with 3 or 5 !ZooKeeper nodes
 
+*Configuring Kafka Topics*
+
+Atlas uses Kafka to ingest metadata from other components at runtime. This is described in the [[Architecture][Architecture page]]
+in more detail. Depending on the configuration of Kafka, sometimes you might need to setup the topics explicitly before
+using Atlas. To do so, Atlas provides a script =bin/atlas_kafka_setup.py= which can be run from the Atlas server. In some
+environments, the hooks might start getting used first before Atlas server itself is setup. In such cases, the topics
+can be run on the hosts where hooks are installed using a similar script =hook-bin/atlas_kafka_setup_hook.py=. Both these
+use configuration in =atlas-application.properties= for setting up the topics. Please refer to the [[Configuration][Configuration page]]
+for these details.
+
 ---++++ Setting up Atlas
 
 There are a few steps that setup dependencies of Atlas. One such example is setting up the Titan schema

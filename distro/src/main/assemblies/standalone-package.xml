@@ -55,6 +55,18 @@
         </fileSet>
 
         <fileSet>
+            <directory>target/bin</directory>
+            <outputDirectory>hook-bin</outputDirectory>
+            <includes>
+                <include>atlas_client_cmdline.py</include>
+                <include>atlas_config.py</include>
+                <include>atlas_kafka_setup_hook.py</include>
+            </includes>
+            <fileMode>0755</fileMode>
+            <directoryMode>0755</directoryMode>
+        </fileSet>
+
+        <fileSet>
             <directory>target/hbase</directory>
             <outputDirectory>hbase</outputDirectory>
             <fileMode>0755</fileMode>
@@ -155,6 +167,12 @@
         <fileSet>
             <directory>../addons/storm-bridge/target/models</directory>
             <outputDirectory>models</outputDirectory>
+        </fileSet>
+
+        <!-- for kafka topic setup -->
+        <fileSet>
+            <directory>../notification/target/dependency/hook</directory>
+            <outputDirectory>hook</outputDirectory>
         </fileSet>
     </fileSets>
 
