@@ -187,8 +187,10 @@ define(['require',
                 });
             },
             addTagToTerms: function(tagObject) {
-                var tagData = "",
+                var that = this,
+                    tagData = "",
                     termData = "";
+
                 _.each(tagObject, function(val) {
                     var isTerm = Utils.checkTagOrTerm(val);
                     if (!isTerm.term) {
@@ -196,12 +198,17 @@ define(['require',
                     }
                     if (isTerm.term) {
                         termData += '<span class="inputTag term" data-id="tagClick" data-href="' + val + '">' + val + '<i class="fa fa-close" data-id="deleteTag"></i></span>';
+                        that.ui.addTerm.hide();
                     }
+
                 });
                 this.ui.tagList.find("span.inputTag").remove();
                 this.ui.termList.find("span.inputTag").remove();
                 this.ui.tagList.prepend(tagData);
                 this.ui.termList.prepend(termData);
+                if (this.ui.termList.find("span.term").length == 0) {
+                    this.ui.addTerm.show();
+                }
             },
             saveTagFromList: function(ref) {
                 var that = this;

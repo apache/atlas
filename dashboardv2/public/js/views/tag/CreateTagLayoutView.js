@@ -56,9 +56,11 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'tagCollection', 'tag'));
-                if (this.tagCollection.first().get('traitTypes')) {
+                _.extend(this, _.pick(options, 'tagCollection', 'tag', 'termCollection', 'descriptionData'));
+                if (this.tagCollection && this.tagCollection.first().get('traitTypes')) {
                     this.description = this.tagCollection.first().get('traitTypes')[0].typeDescription;
+                } else if (this.termCollection) {
+                    this.description = this.descriptionData;
                 } else {
                     this.create = true;
                 }

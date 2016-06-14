@@ -22,7 +22,9 @@ define(['require',
     'utils/Utils',
     'collection/VCatalogList',
     'models/VEntity',
-], function(require, Backbone, BusinessCatalogDetailLayoutViewTmpl, Utils, VCatalogList, VEntity) {
+    'models/VCatalog',
+    'utils/Messages'
+], function(require, Backbone, BusinessCatalogDetailLayoutViewTmpl, Utils, VCatalogList, VEntity, VCatalog, Messages) {
     'use strict';
 
     var BusinessCatalogDetailLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -63,15 +65,7 @@ define(['require',
             /** ui events hash */
             events: function() {
                 var events = {};
-                events["click " + this.ui.editButton] = function() {
-                    this.ui.editButton.hide();
-                    this.ui.description.hide();
-                    this.ui.editBox.show();
-                    this.ui.descriptionTextArea.focus();
-                    if (this.ui.description.text().length) {
-                        this.ui.descriptionTextArea.val(this.ui.description.text());
-                    }
-                };
+                events["click " + this.ui.editButton] = 'onEditButton';
                 events["click " + this.ui.cancelButton] = 'onCancelButtonClick';
                 return events;
             },
@@ -103,8 +97,8 @@ define(['require',
                         createdDate = this.model.get('creation_time');
                     if (name) {
                         this.ui.title.show();
-                        var termName = Utils.checkTagOrTerm(name);
-                        this.ui.title.html('<span>' + termName.name + '</span>');
+                        this.termName = Utils.checkTagOrTerm(name);
+                        this.ui.title.html('<span>' + this.termName.name + '</span>');
                     } else {
                         this.ui.title.hide();
                     }
@@ -185,12 +179,70 @@ define(['require',
                     complete: function() {}
                 });
             },
-            offlineSearchTag: function(e) {
-                this.addTagCollectionList(this.tagCollection.fullCollection.models, $(e.currentTarget).val());
+            onEditButton: function(e) {
+                var that = this;
+                $(e.currentTarget).blur();
+                require([
+                    'views/tag/CreateTagLayoutView',
+                    'modules/Modal'
+                ], function(CreateTagLayoutView, Modal) {
+                    var view = new CreateTagLayoutView({ 'termCollection': that.collection, 'descriptionData': that.model.get('description'), 'tag': that.termName.name });
+                    var modal = new Modal({
+                        title: 'Edit Term',
+                        content: view,
+                        cancelText: "Cancel",
+                        okText: 'Save',
+                        allowCancel: true,
+                    }).open();
+                    view.ui.description.on('keyup', function(e) {
+                        that.textAreaChangeEvent(view, modal);
+                    });
+                    modal.$el.find('button.ok').prop('disabled', true);
+                    modal.on('ok', function() {
+                        that.onSaveDescriptionClick(view);
+                    });
+                    modal.on('closeModal', function() {
+                        modal.trigger('cancel');
+                    });
+                });
             },
-            onClickAddTagBtn: function() {
-                this.ui.searchTag.val("");
-                this.offlineSearchTag(this.ui.searchTag[0]);
+            textAreaChangeEvent: function(view, modal) {
+                if (view.description == view.ui.description.val()) {
+                    modal.$el.find('button.ok').prop('disabled', true);
+                } else {
+                    modal.$el.find('button.ok').prop('disabled', false);
+                }
+            },
+            onSaveDescriptionClick: function(view) {
+                view.description = view.ui.description.val();
+                this.onSaveButton(this.collection.first().toJSON(), Messages.updateTagDescriptionMessage, view);
+                this.ui.description.show();
+            },
+            onSaveButton: function(saveObject, message, view) {
+                var that = this,
+                    termModel = new VCatalog();
+                termModel.url = function() {
+                    return that.collection.url;
+                };
+                termModel.set({
+                    "description": view.ui.description.val()
+                }).save(null, {
+                    type: "PUT",
+                    success: function(model, response) {
+                        that.collection.fetch({ reset: true });
+                        Utils.notifySuccess({
+                            content: message
+                        });
+                    },
+                    error: function(model, response) {
+                        if (response.responseJSON && response.responseJSON.error) {
+                            that.collection.fetch({ reset: true });
+                            Utils.notifyError({
+                                content: response.responseJSON.error
+                            });
+                        }
+                    }
+                });
             }
         });
     return BusinessCatalogDetailLayoutView;

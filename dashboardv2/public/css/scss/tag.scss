@@ -99,7 +99,7 @@
 
 .inputTag {
     display: inline-block;
-    padding: 5px 10px;
+    padding: 2px 10px;
     border: 1px $tag_color solid;
     color: $tag_color;
     font-size: 14px;
@@ -121,7 +121,7 @@
 }
 
 .addTagBase {
-    padding: 4px 8px;
+    padding: 2px 8px;
     border: 1px solid $action_gray;
     color: $action_gray;
     border-radius: 4px;
@@ -176,11 +176,10 @@
 
 .inputAttribute {
     display: inline-block;
-    padding: 5px 10px;
+    padding: 2px 10px;
     border: 1px $action_gray solid;
     color: $action_gray;
     font-size: 14px;
-    text-transform: uppercase;
     border-radius: 4px;
     margin-right: 3px;
     margin-bottom: 3px;
@@ -215,5 +214,44 @@ form-control .tagInpput {
     margin-top: 10px;
     div {
         display: inline-block;
+    }
+}
+
+.tagSpan,
+.termSpan {
+    float: left;
+    padding: 2px 10px 2px 0px;
+    font-weight: 600;
+    width: 45px
+}
+
+.attrLabel {
+    float: left;
+    padding: 2px 10px 2px 0px;
+    font-weight: 600;
+    width: 70px
+}
+
+.inputAssignTag {
+    display: inline-block;
+    padding: 2px 0px;
+    border: 1px $action_gray solid;
+    color: $action_gray;
+    font-size: 14px;
+    border-radius: 4px;
+    margin-right: 3px;
+    margin-bottom: 3px;
+    float: left;
+    cursor: pointer;
+    background-color: $white;
+    width: 100px;
+    i.fa {
+        position: relative;
+        right: -5px;
+        cursor: pointer;
+    }
+    &:hover {
+        color: $color_dark_grey_approx;
+        background-color: $color_mercury_approx;
     }
 }

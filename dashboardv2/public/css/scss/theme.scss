@@ -36,8 +36,8 @@
     background-color: $white;
     padding: 50px;
     h1 {
-        margin-top: 0;
-        margin-bottom: 20px;
+        margin-top: 50px;
+        margin-bottom: 10px;
         font-weight: 600;
         text-overflow: ellipsis;
         max-width: 91%;
@@ -105,7 +105,7 @@
 
 .backButton {
     display: block;
-    margin: 13px 13px;
+    margin: 0px 13px;
     &:hover {
         color: $color_jungle_green_approx;
     }

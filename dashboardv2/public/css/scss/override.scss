@@ -8,7 +8,7 @@
 }
 
 .modal-header {
-    padding: 8px 15px;
+    padding: 15px;
     border-bottom: 1px solid #DEDEDE;
 }
 
@@ -20,7 +20,7 @@
 .modal-footer {
     padding: 15px;
     text-align: right;
-    border: none;
+    border: 1px solid #DEDEDE;
 }
 
 .modal-body {
@@ -45,7 +45,8 @@
     border-collapse: separate;
     border-radius: 6px;
     box-shadow: 0px 0px 4px #d8d8d8;
-    overflow: visible !important;
+    overflow: scroll !important;
+    max-height: 500px;
 }
 
 .table-quickMenu>thead>tr>th {
