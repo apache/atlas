@@ -119,10 +119,6 @@ a {
     }
 }
 
-hr {
-    border-top: 1px solid $color_mirage_approx
-}
-
 th {
     text-transform: capitalize;
 }
@@ -172,7 +168,57 @@ ul {
     border: 1px solid $color_jungle_green_approx;
     cursor: pointer;
 }
+
 .add-seperator {
     margin-bottom: 10px;
     border-bottom: 1px solid $color_mirage_approx
+}
+
+.termTableBreadcrumb {
+    min-width: 200px;
+    /*   width: 200px; */
+    /*  display: inline-block; */
+    i {
+        cursor: pointer;
+    }
+    .liContent {
+        /*  width: 150px; */
+        float: left;
+        line-height: 21px !important;
+        padding: 0px 10px 0px 0px !important;
+    }
+}
+
+.table-quickMenu > tbody > tr > td {
+    &.searchTerm {
+        overflow: visible;
+    }
+    &.searchTag {}
+}
+
+.tab-content >.tab-pane {
+    display: block;
+    opacity: 0;
+    height: 0;
+    padding: 0px;
+    overflow: hidden;
+    &.active {
+        padding: 25px;
+        opacity: 1;
+        height: auto;
+        overflow: auto;
+    }
+}
+
+.ellipsis {
+    text-overflow: ellipsis;
+    max-width: 98%;
+    overflow: hidden;
+}
+
+.modal-body {
+    .table {
+        table-layout: fixed;
+        word-wrap: break-word;
+    }
 }

@@ -14,20 +14,4 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-<div class="form-group">
-    <select type="text" class="form-control" data-id="searchTermInput" placeholder="Search term"></select>
-</div>
-<div class="clearfix">
-    <button class="btn btn-atlasAction btn-atlas pull-left" data-id="backTaxanomy"><i class="fa fa-chevron-left"></i> Back</button>
-    <button class="btn btn-atlasAction btn-atlas pull-right" onclick="this.blur();" data-id="refreshTaxanomy"><i class="fa fa-refresh"></i> Refresh</button>
-</div>
-<div class="">
-    <ul class="taxonomyTree">
-        <div class="contentLoading"></div>
-        <li class="children parent" data-id="Parent"></li>
-        <li class="childs parentChild">
-            <ul data-id="childList">
-            </ul>
-        </li>
-    </ul>
-</div>
+<div id="r_treeLayoutView"></div>

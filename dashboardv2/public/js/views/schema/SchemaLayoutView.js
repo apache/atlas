@@ -40,8 +40,8 @@ define(['require',
             ui: {
                 tagClick: '[data-id="tagClick"]',
                 addTag: "[data-id='addTag']",
-                addTerm: '[data-id="addTerm"]'
-
+                addTerm: '[data-id="addTerm"]',
+                showMoreLess: '[data-id="showMoreLess"]'
             },
             /** ui events hash */
             events: function() {
@@ -59,6 +59,15 @@ define(['require',
                             mergeBrowserUrl: false,
                             trigger: true
                         });
+                    }
+                };
+                events["click " + this.ui.showMoreLess] = function(e) {
+                    $(e.currentTarget).find('i').toggleClass('fa fa-angle-right fa fa-angle-up');
+                    $(e.currentTarget).parents('.searchTag').find('a').toggleClass('hide show');
+                    if ($(e.currentTarget).find('i').hasClass('fa-angle-right')) {
+                        $(e.currentTarget).find('span').text('Show More');
+                    } else {
+                        $(e.currentTarget).find('span').text('Show less');
                     }
                 };
                 return events;
@@ -85,6 +94,7 @@ define(['require',
                     paginatorOpts: {}
                 };
                 this.bindEvents();
+                this.bradCrumbList = [];
             },
             bindEvents: function() {
                 this.listenTo(this.schemaCollection, "reset", function(value) {
@@ -113,6 +123,14 @@ define(['require',
                         globalVent: that.globalVent,
                         columns: cols
                     })));
+                    that.renderBreadcrumb();
+                });
+            },
+            renderBreadcrumb: function() {
+                var that = this;
+                _.each(this.bradCrumbList, function(object) {
+                    var scopeObject = that.$('[dataTerm-id="' + object.scopeId + '"]').find('.liContent');
+                    CommonViewFunction.breadcrumbMaker({ urlList: object.value, scope: scopeObject });
                 });
             },
             getSchemaTableColumns: function() {
@@ -163,17 +181,10 @@ define(['require',
                         cell: "Html",
                         editable: false,
                         sortable: false,
+                        className: 'searchTag',
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                var traits = model.get('$traits$');
-                                var atags = "";
-                                _.keys(model.get('$traits$')).map(function(key) {
-                                    var tagName = Utils.checkTagOrTerm(traits[key].$typeName$);
-                                    if (!tagName.term) {
-                                        atags += '<a class="inputTag" data-id="tagClick">' + traits[key].$typeName$ + '<i class="fa fa-times" data-id="delete" data-name="' + traits[key].$typeName$ + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
-                                    }
-                                });
-                                return '<div class="tagList">' + atags + '<a href="javascript:void(0);" class="inputTag" data-id="addTag" data-guid="' + model.get('$id$').id + '"><i style="right:0" class="fa fa-plus"></i></a></div>';
+                                return CommonViewFunction.tagForTable(model);
                             }
                         })
                     };
@@ -183,23 +194,18 @@ define(['require',
                         editable: false,
                         sortable: false,
                         orderable: true,
+                        className: 'searchTerm',
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                var traits = model.get('$traits$');
-                                var aterms = "";
-                                _.keys(model.get('$traits$')).map(function(key) {
-                                    var tagName = Utils.checkTagOrTerm(traits[key].$typeName$);
-                                    if (tagName.term) {
-                                        aterms += '<a class="inputTag" data-id="tagClick">' + traits[key].$typeName$ + '<i class="fa fa-times" data-id="delete" data-name="' + traits[key].$typeName$ + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
-                                    }
-                                });
-                                return '<div class="tagList">' + aterms + '<a href="javascript:void(0);" class="inputTag" data-id="addTerm" data-guid="' + model.get('$id$').id + '"><i style="right:0" class="fa fa-plus"></i></a></div>';
+                                var returnObject = CommonViewFunction.termTableBreadcrumbMaker(model);
+                                if (returnObject.object) {
+                                    that.bradCrumbList.push(returnObject.object);
+                                }
+                                return returnObject.html;
                             }
                         })
                     };
                 }
-
-
                 return this.schemaCollection.constructor.getTableCols(col, this.schemaCollection);
             },
             addTagModalView: function(e) {

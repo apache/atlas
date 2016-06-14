@@ -112,25 +112,11 @@ define([
                 this.collection = new VCatalogList();
                 this.collection.url = url;
                 App.rNHeader.show(new BusinessCatalogHeader({ 'globalVent': that.globalVent, 'url': url, 'collection': this.collection }));
-                // App.rSideNav.show(new SideNavLayoutView({ 'globalVent': that.globalVent, 'url': url }));
                 if (!App.rSideNav.currentView) {
                     App.rSideNav.show(new SideNavLayoutView({ 'globalVent': that.globalVent, 'url': url }));
                 } else {
-                    var view = App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView;
-                    if (view.dblClick == false && view.singleClick == false && !Globals.saveApplicationState.tabState.stateChanged) {
-                        if (paramObj && paramObj.back == "true") {
-                            App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender(url, true, true);
-                        } else {
-                            App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender(url, true);
-                        }
-                        view.dblClick == false;
-                    } else if (view.singleClick) {
-                        view.singleClick = false;
-                    }
+                    App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender("/" + url);
                     App.rSideNav.currentView.selectTab();
-                }
-                if (Globals.saveApplicationState.tabState.stateChanged) {
-                    Globals.saveApplicationState.tabState.stateChanged = false;
                 }
                 App.rNContent.show(new BusinessCatalogDetailLayoutView({
                     'globalVent': that.globalVent,

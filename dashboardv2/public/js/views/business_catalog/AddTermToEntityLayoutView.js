@@ -34,12 +34,11 @@ define(['require',
             template: AddTermToEntityLayoutViewTmpl,
 
             /** Layout sub regions */
-            regions: {},
-            /** ui selector cache */
-            ui: {
-                termName: '[data-id="termName"]',
-                addTermOptions: '[data-id="addTermOptions"]'
+            regions: {
+                RTreeLayoutView: "#r_treeLayoutView"
             },
+            /** ui selector cache */
+            ui: {},
             /** ui events hash */
             events: function() {
                 var events = {};
@@ -66,58 +65,31 @@ define(['require',
                 this.on('closeModal', function() {
                     this.modal.trigger('cancel');
                 });
-                this.fetchTaxonomy = true;
-                this.bindEvents();
-            },
-            bindEvents: function() {
-                this.listenTo(this.vCatalogList, 'reset', function() {
-                    var url = "",
-                        that = this;
-                    _.each(this.vCatalogList.models, function(obj) {
-                        if (that.fetchTaxonomy && obj.get('href').search("terms") == -1) {
-                            url = obj.get('href');
-                            that.fetchTaxonomy = false;
-                        }
-                    });
-                    if (url.length == 0) {
-                        this.generateTerm();
-                    } else {
-                        url = "/api" + url.split("/api")[1] + "/terms";
-                        this.fetchTerms(url);
-                    }
-                }, this);
             },
             onRender: function() {
-                this.fetchTerms();
+                this.renderTreeLayoutView();
             },
-            fetchTerms: function(url) {
-                if (url) {
-                    this.vCatalogList.url = url;
-                }
-                this.vCatalogList.fetch({ reset: true });
-            },
-            generateTerm: function() {
-                var terms = '<option selected="selected" disabled="disabled">-- Select Term --</option>';
-                _.each(this.vCatalogList.fullCollection.models, function(obj, key) {
-                    terms += '<option value="' + obj.get('name') + '">' + obj.get('name') + '</option>';
-                });
-                this.ui.addTermOptions.html(terms);
-                this.ui.addTermOptions.select2({
-                    placeholder: "Select Term",
-                    allowClear: true
+            renderTreeLayoutView: function() {
+                var that = this;
+                require(['views/business_catalog/TreeLayoutView'], function(TreeLayoutView) {
+                    that.RTreeLayoutView.show(new TreeLayoutView({
+                        url: that.url,
+                        viewBased: false
+                    }));
                 });
             },
             saveTermToAsset: function() {
                 var that = this;
                 var VCatalog = new this.vCatalogList.model();
+                var termName = this.modal.$el.find('.taxonomyTree li.active a').data('name').split("`").join("");
                 VCatalog.url = function() {
-                    return "api/atlas/v1/entities/" + that.guid + "/tags/" + that.ui.addTermOptions.val();
-                }
+                    return "api/atlas/v1/entities/" + that.guid + "/tags/" + termName;
+                };
                 VCatalog.save(null, {
                     beforeSend: function() {},
                     success: function(data) {
                         Utils.notifySuccess({
-                            content: "Term " + that.ui.addTermOptions.val() + Messages.addTermToEntitySuccessMessage
+                            content: "Term " + termName + Messages.addTermToEntitySuccessMessage
                         });
                         if (that.callback) {
                             that.callback();
