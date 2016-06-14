@@ -18,6 +18,7 @@
 
 define(['require', 'backgrid', 'asBreadcrumbs'], function(require) {
     'use strict';
+
     $.asBreadcrumbs.prototype.generateChildrenInfo = function() {
         var self = this;
         this.$children.each(function() {
@@ -37,6 +38,29 @@ define(['require', 'backgrid', 'asBreadcrumbs'], function(require) {
         function(n) {
             return (this.length > n) ? this.substr(0, n - 1) + '...' : this;
         };
+    /*
+     * Overriding Cell for adding custom className to Cell i.e <td>
+     */
+    var cellInit = Backgrid.Cell.prototype.initialize;
+    Backgrid.Cell.prototype.initialize = function() {
+            cellInit.apply(this, arguments);
+            var className = this.column.get('className');
+            if (className) this.$el.addClass(className);
+        }
+        /*
+         * Overriding Cell for adding custom width to Cell i.e <td>
+         */
+    Backgrid.HeaderRow = Backgrid.HeaderRow.extend({
+        render: function() {
+            var that = this;
+            Backgrid.HeaderRow.__super__.render.apply(this, arguments);
+            _.each(this.columns.models, function(modelValue) {
+                if (modelValue.get('width')) that.$el.find('.' + modelValue.get('name')).css('width', modelValue.get('width') + '%')
+                if (modelValue.get('toolTip')) that.$el.find('.' + modelValue.get('name')).attr('title', modelValue.get('toolTip'))
+            });
+            return this;
+        }
+    });
     /*
      * HtmlCell renders any html code
      * @class Backgrid.HtmlCell

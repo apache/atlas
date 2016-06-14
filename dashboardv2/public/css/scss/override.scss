@@ -20,7 +20,7 @@
 .modal-footer {
     padding: 15px;
     text-align: right;
-    border: 1px solid #DEDEDE;
+    border-top: 1px solid #DEDEDE;
 }
 
 .modal-body {
@@ -118,4 +118,14 @@
     .select2-selection__rendered {
         padding-left: 12px;
     }
+}
+
+.fixedPopover {
+    position: fixed;
+}
+
+.popover.fade {
+    -webkit-transition: ease-in .1s ease-out;
+    -o-transition: ease-in .1s ease-out;
+    transition: ease-in .1s ease-out;
 }

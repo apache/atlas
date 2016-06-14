@@ -27,7 +27,8 @@ define(['require'], function(require) {
         deleteSuccessMessage: " has been deleted successfully",
         deleteErrorMessage: " could not be deleted",
         addAttributeSuccessMessage: "Tag attribute is added successfully",
-        updateTagDescriptionMessage: "Tag description is updated successfully"
+        updateTagDescriptionMessage: "Tag description is updated successfully",
+        updateTermDescriptionMessage: "Term description is updated successfully",
     };
     return Messages;
 });

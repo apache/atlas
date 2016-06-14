@@ -46,7 +46,8 @@ define(['require',
             ui: {
                 tagClick: '[data-id="tagClick"]',
                 addTag: '[data-id="addTag"]',
-                addTerm: '[data-id="addTerm"]'
+                addTerm: '[data-id="addTerm"]',
+                showMoreLess: '[data-id="showMoreLess"]'
             },
 
             /** ui events hash */
@@ -77,7 +78,15 @@ define(['require',
                 };
                 events["click " + this.ui.addTag] = 'addTagModalView';
                 events["click " + this.ui.addTerm] = 'addTermModalView';
-                events["click " + this.ui.tagCrossIcon] = function(e) {};
+                events["click " + this.ui.showMoreLess] = function(e) {
+                    $(e.currentTarget).find('i').toggleClass('fa fa-angle-right fa fa-angle-up');
+                    $(e.currentTarget).parents('.searchTag').find('a').toggleClass('hide show');
+                    if ($(e.currentTarget).find('i').hasClass('fa-angle-right')) {
+                        $(e.currentTarget).find('span').text('Show More');
+                    } else {
+                        $(e.currentTarget).find('span').text('Show less');
+                    }
+                };
                 return events;
             },
             /**
@@ -104,7 +113,7 @@ define(['require',
                     paginatorOpts: {}
                 };
                 this.bindEvents();
-
+                this.bradCrumbList = [];
             },
             bindEvents: function() {
                 this.listenTo(this.vent, "show:searchResult", function(value) {
@@ -179,9 +188,9 @@ define(['require',
                                     model.set("position", 3, { silent: true });
                                     model.set("label", "Owner");
                                 }
-                                /*else {
-                                                                   model.set("position", ++count, { silent: true });
-                                                               }*/
+                                // } else {
+                                //     model.set("position", ++count, { silent: true });
+                                // }
                             });
                             return this;
                         }
@@ -193,6 +202,14 @@ define(['require',
                         columns: columns,
                         includeOrderAbleColumns: true
                     })));
+                    that.renderBreadcrumb();
+                });
+            },
+            renderBreadcrumb: function() {
+                var that = this;
+                _.each(this.bradCrumbList, function(object) {
+                    var scopeObject = that.$('[dataTerm-id="' + object.scopeId + '"]').find('.liContent');
+                    CommonViewFunction.breadcrumbMaker({ urlList: object.value, scope: scopeObject });
                 });
             },
             checkTableFetch: function() {
@@ -253,24 +270,10 @@ define(['require',
                                 editable: false,
                                 sortable: false,
                                 orderable: true,
+                                className: 'searchTag',
                                 formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                     fromRaw: function(rawValue, model) {
-                                        var traits = model.get('$traits$');
-                                        var atags = "",
-                                            addTag = "";
-                                        _.keys(model.get('$traits$')).map(function(key) {
-                                            var tagName = Utils.checkTagOrTerm(traits[key].$typeName$);
-                                            if (!tagName.term) {
-                                                atags += '<a class="inputTag" data-id="tagClick">' + traits[key].$typeName$ + '<i class="fa fa-times" data-id="delete" data-name="' + tagName.name + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
-                                            }
-                                        });
-                                        if (model.get('$id$')) {
-                                            addTag += '<a href="javascript:void(0)" data-id="addTag" class="inputTag" data-guid="' + model.get('$id$').id + '" ><i style="right:0" class="fa fa-plus"></i></a>';
-                                        } else {
-                                            addTag += '<a href="javascript:void(0)" data-id="addTag" class="inputTag"><i style="right:0" class="fa fa-plus"></i></a>';
-
-                                        }
-                                        return '<div class="tagList">' + atags + addTag + '</div>';
+                                        return CommonViewFunction.tagForTable(model);
                                     }
                                 })
                             };
@@ -280,23 +283,14 @@ define(['require',
                                 editable: false,
                                 sortable: false,
                                 orderable: true,
+                                className: 'searchTerm',
                                 formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                     fromRaw: function(rawValue, model) {
-                                        var traits = model.get('$traits$');
-                                        var aterm = "",
-                                            addTerm = "";
-                                        _.keys(model.get('$traits$')).map(function(key) {
-                                            var tagName = Utils.checkTagOrTerm(traits[key].$typeName$);
-                                            if (tagName.term) {
-                                                aterm += '<a class="inputTag term" data-id="tagClick" data-href="' + traits[key].$typeName$ + '">' + traits[key].$typeName$ + '<i class="fa fa-times" data-id="delete" data-name="' + traits[key].$typeName$ + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
-                                            }
-                                        });
-                                        if (model.get('$id$')) {
-                                            addTerm += '<a href="javascript:void(0)" data-id="addTerm" class="inputTag" data-guid="' + model.get('$id$').id + '" ><i style="right:0" class="fa fa-plus"></i></a>';
-                                        } else {
-                                            addTerm += '<a href="javascript:void(0)" data-id="addTerm" class="inputTag"><i style="right:0" class="fa fa-plus"></i></a>';
+                                        var returnObject = CommonViewFunction.termTableBreadcrumbMaker(model);
+                                        if (returnObject.object) {
+                                            that.bradCrumbList.push(returnObject.object);
                                         }
-                                        return '<div class="tagList">' + aterm + addTerm + '</div>';
+                                        return returnObject.html;
                                     }
                                 })
                             };

@@ -31,6 +31,9 @@
 .dropdown-menu > li > a {
     color: $color_jungle_green_approx;
     padding: 6px 20px;
+    text-overflow: ellipsis;
+    max-width: 276px;
+    overflow: hidden;
 }
 
 .branchListParent {

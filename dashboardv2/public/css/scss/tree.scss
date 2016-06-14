@@ -22,16 +22,6 @@
             // color: $white;
             display: block;
         }
-        // .jstree-node[aria-selected="true"]:before {
-        //     content: "";
-        //     position: absolute;
-        //     height: 33px;
-        //     background: $color_jungle_green_approx;
-        //     top: 0px;
-        //     left: -100%;
-        //     right: -100%;
-        //     z-index: -1;
-        // }
     }
     
     .taxonomyTree {
@@ -138,4 +128,49 @@
     
     .alertTerm {
         color: #FF0000 !important;
+    }
+    /**Css changes**/
+    
+    .modal-body {
+        .add-seperator {
+            border: none;
+        }
+        .taxonomyTree li {
+            .children {
+                text-indent: 20px;
+            }
+            &.parentChild {
+                ul {
+                    padding-left: 0px;
+                }
+                li {
+                    &.children {
+                        width: 100%;
+                    }
+                    a {
+                        max-width: 100%;
+                    }
+                }
+            }
+            &.active {
+                color: $concrete;
+                a {
+                    color: $concrete;
+                }
+            }
+            a {
+                color: #6C6C6C;
+            }
+            &.children:hover {
+                a {
+                    color: $concrete;
+                }
+                background-color: #ABABAB;
+                color: $white;
+            }
+            .tools {
+                text-indent: 0px;
+                background: none;
+            }
+        }
     }

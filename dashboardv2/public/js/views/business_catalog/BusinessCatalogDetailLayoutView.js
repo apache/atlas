@@ -215,7 +215,7 @@ define(['require',
             },
             onSaveDescriptionClick: function(view) {
                 view.description = view.ui.description.val();
-                this.onSaveButton(this.collection.first().toJSON(), Messages.updateTagDescriptionMessage, view);
+                this.onSaveButton(this.collection.first().toJSON(), Messages.updateTermDescriptionMessage, view);
                 this.ui.description.show();
             },
             onSaveButton: function(saveObject, message, view) {
