@@ -18,8 +18,10 @@
 
 package org.apache.atlas.web.resources;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.services.MetadataService;
@@ -33,6 +35,7 @@ import org.apache.atlas.typesystem.types.ValueConversionException;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.protocol.HTTP;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -59,6 +62,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -119,8 +123,7 @@ public class EntityResource {
             final List<String> guids = metadataService.createEntities(entities);
             JSONObject response = getResponse(new AtlasClient.EntityResult(guids, null, null));
 
-            UriBuilder ub = uriInfo.getAbsolutePathBuilder();
-            URI locationURI = guids.isEmpty() ? null : ub.path(guids.get(0)).build();
+            URI locationURI = getLocationURI(guids);
 
             return Response.created(locationURI).entity(response).build();
 
@@ -128,7 +131,7 @@ public class EntityResource {
             LOG.error("Unique constraint violation", e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.CONFLICT));
         } catch (ValueConversionException ve) {
-            LOG.error("Unable to persist entity instance due to a desrialization error ", ve);
+            LOG.error("Unable to persist entity instance due to a deserialization error ", ve);
             throw new WebApplicationException(Servlets.getErrorResponse(ve.getCause(), Response.Status.BAD_REQUEST));
         } catch (AtlasException | IllegalArgumentException e) {
             LOG.error("Unable to persist entity instance", e);
@@ -137,6 +140,23 @@ public class EntityResource {
             LOG.error("Unable to persist entity instance", e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
+    }
+
+
+    @VisibleForTesting
+    public URI getLocationURI(List<String> guids) {
+        URI locationURI = null;
+        if (uriInfo != null) {
+            UriBuilder ub = uriInfo.getAbsolutePathBuilder();
+            locationURI = guids.isEmpty() ? null : ub.path(guids.get(0)).build();
+        } else {
+            String uriPath = AtlasClient.API.GET_ENTITY.getPath();
+            locationURI = guids.isEmpty() ? null : UriBuilder
+                .fromPath(AtlasConstants.DEFAULT_ATLAS_REST_ADDRESS)
+                .path(uriPath).path(guids.get(0)).build();
+
+        }
+        return locationURI;
     }
 
     private JSONObject getResponse(AtlasClient.EntityResult entityResult) throws AtlasException, JSONException {
@@ -171,7 +191,7 @@ public class EntityResource {
             LOG.error("Unique constraint violation", e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.CONFLICT));
         } catch (ValueConversionException ve) {
-            LOG.error("Unable to persist entity instance due to a desrialization error ", ve);
+            LOG.error("Unable to persist entity instance due to a deserialization error ", ve);
             throw new WebApplicationException(Servlets.getErrorResponse(ve.getCause(), Response.Status.BAD_REQUEST));
         } catch (AtlasException | IllegalArgumentException e) {
             LOG.error("Unable to persist entity instance", e);
@@ -234,7 +254,7 @@ public class EntityResource {
             JSONObject response = getResponse(entityResult);
             return Response.ok(response).build();
         } catch (ValueConversionException ve) {
-            LOG.error("Unable to persist entity instance due to a desrialization error ", ve);
+            LOG.error("Unable to persist entity instance due to a deserialization error ", ve);
             throw new WebApplicationException(Servlets.getErrorResponse(ve.getCause(), Response.Status.BAD_REQUEST));
         } catch(EntityExistsException e) {
             LOG.error("Unique constraint violation", e);
@@ -549,8 +569,9 @@ public class EntityResource {
             LOG.debug("Adding trait={} for entity={} ", traitDefinition, guid);
             metadataService.addTrait(guid, traitDefinition);
 
-            UriBuilder ub = uriInfo.getAbsolutePathBuilder();
-            URI locationURI = ub.path(guid).build();
+            URI locationURI = getLocationURI(new ArrayList<String>() {{
+                add(guid);
+            }});
 
             JSONObject response = new JSONObject();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
