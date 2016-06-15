@@ -159,6 +159,11 @@ public class HookNotification implements JsonDeserializer<HookNotification.HookN
         public List<Referenceable> getEntities() throws JSONException {
             return entities;
         }
+
+        @Override
+        public String toString() {
+            return entities.toString();
+        }
     }
 
     /**
@@ -210,6 +215,16 @@ public class HookNotification implements JsonDeserializer<HookNotification.HookN
         public String getAttributeValue() {
             return attributeValue;
         }
+
+        @Override
+        public String toString() {
+            return  "{"
+                + "entityType='" + typeName + '\''
+                + ", attribute=" + attribute
+                + ", value=" + attributeValue
+                + ", entity=" + entity
+                + '}';
+        }
     }
 
     /**
@@ -246,6 +261,15 @@ public class HookNotification implements JsonDeserializer<HookNotification.HookN
 
         public String getAttributeValue() {
             return attributeValue;
+        }
+
+        @Override
+        public String toString() {
+            return  "{"
+                + "entityType='" + typeName + '\''
+                + ", attribute=" + attribute
+                + ", value=" + attributeValue
+                + '}';
         }
     }
 }
