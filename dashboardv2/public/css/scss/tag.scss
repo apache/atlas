@@ -256,6 +256,7 @@ form-control .tagInpput {
     cursor: pointer;
     background-color: $white;
     width: 100px;
+    white-space: nowrap;
     i.fa {
         position: relative;
         right: -5px;
@@ -265,4 +266,8 @@ form-control .tagInpput {
         color: $color_dark_grey_approx;
         background-color: $color_mercury_approx;
     }
+}
+
+.multiSelect {
+    float: right;
 }

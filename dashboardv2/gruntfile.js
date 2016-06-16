@@ -47,7 +47,7 @@ module.exports = function(grunt) {
             },
             css: {
                 files: ['public/**/*.scss', 'public/**/*.css'],
-                tasks: ['sass', 'copy:dist']
+                tasks: ['copy:dist', 'sass']
             },
             image: {
                 files: ['public/**/*.{ico,gif,png}'],
@@ -73,7 +73,7 @@ module.exports = function(grunt) {
                 },
                 proxies: [{
                     context: '/api', // the context of the data service
-                    host: '127.0.0.1', // wherever the data service is running
+                    host: '127.0.0.1',
                     port: 21000, // the port that the data service is running on
                     ws: true,
                     changeOrigin: false,
@@ -128,7 +128,8 @@ module.exports = function(grunt) {
                     'noty/js': 'noty/js/noty/packaged/jquery.noty.packaged.min.js',
                     'dagre-d3': 'dagre-d3/dist/dagre-d3.min.js',
                     'jstree': 'jstree/dist/jstree.min.js',
-                    'select2': 'select2/dist/js/select2.min.js'
+                    'select2': 'select2/dist/js/select2.min.js',
+                    'backgrid-select-all': 'backgrid-select-all/backgrid-select-all.min.js'
                 }
             },
             css: {
@@ -144,7 +145,8 @@ module.exports = function(grunt) {
                     'backgrid-paginator/css': 'backgrid-paginator/backgrid-paginator.css',
                     'backgrid-sizeable-columns/css': 'backgrid-sizeable-columns/backgrid-sizeable-columns.css',
                     'jquery-asBreadcrumbs/css': 'jquery-asBreadcrumbs/css/asBreadcrumbs.css',
-                    'select2/css': 'select2/dist/css/select2.min.css'
+                    'select2/css': 'select2/dist/css/select2.min.css',
+                    'backgrid-select-all': 'backgrid-select-all/backgrid-select-all.min.css'
                 }
 
             }

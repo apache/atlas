@@ -181,6 +181,22 @@ ul {
     i {
         cursor: pointer;
     }
+    >div {
+        display: inline-block;
+        // padding: 10px 0px;
+        width: 100%;
+    }
+    .hide {
+        opacity: 0;
+        overflow: hidden;
+        height: 0px;
+        display: block !important;
+    }
+    .show {
+        opacity: 1;
+        overflow: visible;
+        height: auto;
+    }
     .liContent {
         /*  width: 150px; */
         float: left;

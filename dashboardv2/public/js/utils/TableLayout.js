@@ -25,7 +25,8 @@ define(['require',
     'backgrid-filter',
     'backgrid-paginator',
     'backgrid-sizeable',
-    'backgrid-orderable'
+    'backgrid-orderable',
+    'backgrid-select-all'
 ], function(require, Backbone, FSTablelayoutTmpl) {
     'use strict';
 
