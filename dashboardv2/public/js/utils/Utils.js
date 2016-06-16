@@ -235,12 +235,14 @@ define(['require', 'utils/Globals'], function(require, Globals) {
         if (name.length > 1) {
             return {
                 term: true,
-                name: name[name.length - 1]
+                name: name[name.length - 1],
+                fullName: value
             }
         } else {
             return {
                 term: false,
-                name: name[name.length - 1]
+                name: name[name.length - 1],
+                fullName: value
             }
         }
     }

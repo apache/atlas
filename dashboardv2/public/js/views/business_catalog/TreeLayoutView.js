@@ -427,7 +427,7 @@ define(['require',
                         container: this.$el,
                         template: '<div class="popover fixedPopover fade bottom in"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>',
                         content: function() {
-                            var li = "<li class='listTerm'><i class='fa fa-plus'></i> <a href='javascript:void(0)' data-fn='onAddTerm'>Add Subterm</a></li>";
+                            var li = "<li class='listTerm'><i class='fa fa-plus'></i> <a href='javascript:void(0)' data-fn='onAddTerm'>Create Subterm</a></li>";
                             /* "<li class='listTerm' ><i class='fa fa-arrow-right'></i> <a href='javascript:void(0)' data-fn='moveTerm'>Move Term</a></li>" +
                              "<li class='listTerm' ><i class='fa fa-edit'></i> <a href='javascript:void(0)' data-fn='onEditTerm'>Edit Term</a></li>" +*/
                             var termDataURL = Utils.getUrlState.getQueryUrl().hash.split("terms");
@@ -457,12 +457,12 @@ define(['require',
                         model: new that.parentCollection.model()
                     });
                     var modal = new Modal({
-                        title: 'Create a new subterm',
+                        title: 'Create Sub-term',
                         content: view,
                         okCloses: true,
                         showFooter: true,
                         allowCancel: true,
-                        okText: 'Add',
+                        okText: 'Create',
                     }).open();
                     modal.$el.find('button.ok').attr('disabled', true);
                     modal.on('ok', function() {

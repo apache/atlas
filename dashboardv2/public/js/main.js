@@ -78,6 +78,9 @@ require.config({
         'backgrid-sizeable': {
             deps: ['backbone', 'backgrid'],
         },
+        'backgrid-select-all': {
+            deps: ['backbone', 'backgrid']
+        },
         hbs: {
             deps: ['underscore', 'handlebars']
         },
@@ -127,6 +130,7 @@ require.config({
         'dagreD3': 'libs/dagre-d3/dagre-d3.min',
         'tree': 'libs/jstree/jstree.min',
         'select2': 'libs/select2/select2.min',
+        'backgrid-select-all': 'libs/backgrid-select-all/backgrid-select-all.min'
     },
 
     /**

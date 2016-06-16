@@ -22,8 +22,9 @@ define(['require',
     'utils/Utils',
     'modules/Modal',
     'collection/VCatalogList',
+    'utils/CommonViewFunction',
     'utils/Messages'
-], function(require, Backbone, AddTermToEntityLayoutViewTmpl, Utils, Modal, VCatalogList, Messages) {
+], function(require, Backbone, AddTermToEntityLayoutViewTmpl, Utils, Modal, VCatalogList, CommonViewFunction, Messages) {
     'use strict';
 
     var AddTermToEntityLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -49,18 +50,44 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'guid', 'modalCollection', 'callback'));
+                _.extend(this, _.pick(options, 'guid', 'modalCollection', 'callback', 'multiple', 'showLoader'));
                 this.vCatalogList = new VCatalogList();
                 var that = this;
                 this.modal = new Modal({
-                    title: 'Add Term',
+                    title: 'Assign Term',
                     content: this,
-                    okText: 'Save',
+                    okText: 'Assign',
                     cancelText: "Cancel",
                     allowCancel: true,
                 }).open();
                 this.on('ok', function() {
-                    that.saveTermToAsset();
+                    if (that.multiple) {
+                        for (var i = 0; i < that.multiple.length; i++) {
+                            if (i == 0) {
+                                that.showLoader();
+                            }
+                            var obj = {
+                                termName: this.modal.$el.find('.taxonomyTree li.active a').data('name').split("`").join(""),
+                                guid: that.multiple[i].id.id
+                            }
+                            if (that.multiple.length - 1 == i) {
+                                obj['callback'] = function() {
+                                    that.callback();
+                                }
+                            }
+                            // if (that.multiple[i].model.get("$traits$") && !that.multiple[i].model.get("$traits$")[obj.termName]) {
+                            CommonViewFunction.saveTermToAsset(obj);
+                            // / }
+                        }
+                    } else {
+                        CommonViewFunction.saveTermToAsset({
+                            termName: this.modal.$el.find('.taxonomyTree li.active a').data('name').split("`").join(""),
+                            guid: this.guid,
+                            callback: function() {
+                                that.callback();
+                            }
+                        });
+                    }
                 });
                 this.on('closeModal', function() {
                     this.modal.trigger('cancel');
@@ -77,40 +104,7 @@ define(['require',
                         viewBased: false
                     }));
                 });
-            },
-            saveTermToAsset: function() {
-                var that = this;
-                var VCatalog = new this.vCatalogList.model();
-                var termName = this.modal.$el.find('.taxonomyTree li.active a').data('name').split("`").join("");
-                VCatalog.url = function() {
-                    return "api/atlas/v1/entities/" + that.guid + "/tags/" + termName;
-                };
-                VCatalog.save(null, {
-                    beforeSend: function() {},
-                    success: function(data) {
-                        Utils.notifySuccess({
-                            content: "Term " + termName + Messages.addTermToEntitySuccessMessage
-                        });
-                        if (that.callback) {
-                            that.callback();
-                        }
-                        if (that.modalCollection) {
-                            that.modalCollection.fetch({ reset: true });
-                        }
-                    },
-                    error: function(error, data, status) {
-                        if (data && data.responseText) {
-                            var data = JSON.parse(data.responseText);
-                            Utils.notifyError({
-                                content: data.messages
-                            });
-                        }
-                    },
-                    complete: function() {}
-                });
-
             }
         });
     return AddTermToEntityLayoutView;
-
 });

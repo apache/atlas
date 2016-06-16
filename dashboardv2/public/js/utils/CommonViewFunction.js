@@ -20,19 +20,32 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages'], function(r
     'use strict';
 
     var CommonViewFunction = {};
-    CommonViewFunction.deleteTagModel = function(tagName) {
-        var msg = "<b>Tag:</b>";
-        if (tagName) {
+    CommonViewFunction.deleteTagModel = function(tagName, AssignTerm) {
+        var msg = "",
+            titleMessage = "",
+            deleteText = "";
+        if (tagName && AssignTerm != "assignTerm") {
             var tagOrTerm = Utils.checkTagOrTerm(tagName);
             if (tagOrTerm.term) {
-                msg = "<div class='ellipsis'><b>Term: " + tagName + "</b></div>";
+                msg = "<div class='ellipsis'>Delete: " + "<b>" + tagName + "?</b></div>" +
+                    "<p class='termNote'>Assets map to this term will be unclassified</p>";
+                titleMessage = Messages.deleteTerm;
+                deleteText = "Delete";
             } else {
-                msg = "<div class='ellipsis'><b>Tag: " + tagName + "</b></div>";
+                msg = "<div class='ellipsis'>Delete: " + "<b>" + tagName + "?</b></div>";
+                var titleMessage = Messages.deleteTag;
+                deleteText = "Delete";
             }
         }
+        if (AssignTerm == "assignTerm") {
+            msg = "<div class='ellipsis'>Remove: " + "<b>" + tagName + "?</b></div>" +
+                "<p class='termNote'>Assets map to this term will be unclassified</p>";
+            titleMessage = Messages.RemoveTerm;
+            deleteText = "Remove";
+        }
         var modal = new Modal({
-            title: Messages.deleteTitle,
-            okText: 'Delete',
+            title: titleMessage,
+            okText: deleteText,
             htmlContent: msg,
             cancelText: "Cancel",
             allowCancel: true,
@@ -246,6 +259,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages'], function(r
                 namespace: 'breadcrumb',
                 overflow: "left",
                 dropicon: "fa fa-ellipsis-h",
+                responsive: false,
                 dropdown: function() {
                     return '<div class=\"dropdown\">' +
                         '<a href=\"javascript:void(0);\" class=\"' + this.namespace + '-toggle\" data-toggle=\"dropdown\"><i class=\"' + this.dropicon + '\"</i></a>' +
@@ -271,39 +285,41 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages'], function(r
     CommonViewFunction.termTableBreadcrumbMaker = function(model) {
         var traits = model.get('$traits$'),
             url = "",
-            deleteHtml = "";
+            deleteHtml = "",
+            html = "",
+            id = model.get('$id$').id,
+            terms = [];
         _.keys(traits).map(function(key) {
             var tagName = Utils.checkTagOrTerm(traits[key].$typeName$);
             if (tagName.term) {
-                deleteHtml = '<a class="pull-left" title="Delete Term"><i class="fa fa-trash" data-id="tagClick" data-name="' + traits[key].$typeName$ + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
-                url = traits[key].$typeName$.split(".").join("/");
+                terms.push({
+                    deleteHtml: '<a class="pull-left" title="Delete Term"><i class="fa fa-trash" data-id="tagClick" data-name="' + traits[key].$typeName$ + '" data-guid="' + model.get('$id$').id + '" ></i></a>',
+                    url: traits[key].$typeName$.split(".").join("/"),
+                    name: tagName.fullName
+                });
             }
         });
-        if (url.length == 0) {
-            if (model.get('$id$')) {
-                return {
-                    html: ' <a href="javascript:void(0)" class="inputAssignTag" data-id="addTerm" data-guid="' + model.get('$id$').id + '"><i class="fa fa-folder-o"><span> Assign Term</span></i></a>'
-                }
-            } else {
-                return {
-                    html: ' <a href="javascript:void(0)" class="inputAssignTag" data-id="addTerm"><i class="fa fa-folder-o"><span> Assign Term</span></i></a>'
-                }
+        _.each(terms, function(obj, i) {
+            var className = "";
+            if (i >= 1) {
+                className += "showHideDiv hide";
             }
-        } else {
-            var value = CommonViewFunction.breadcrumbUrlMaker(url),
-                id = model.get('$id$').id
-            if (id && value) {
-                return {
-                    html: '<div class="termTableBreadcrumb" dataTerm-id="' + id + '"><div class="liContent"></div>' + deleteHtml + '</div>',
-                    object: { scopeId: id, value: value }
-                }
-
-            } else {
-                return {
-                    html: '<div class="termTableBreadcrumb"></div>'
-                }
-            }
+            obj['valueUrl'] = CommonViewFunction.breadcrumbUrlMaker(obj.url);
+            html += '<div class="' + className + '" dataterm-name="' + obj.name + '"><div class="liContent"></div>' + obj.deleteHtml + '</div>';
+        })
+        if (terms.length > 1) {
+            html += '<div><a  href="javascript:void(0)" data-id="showMoreLessTerm" class="inputTag inputTagGreen"><span>Show More </span><i class="fa fa-angle-right"></i></a></div>'
         }
+        if (model.get('$id$')) {
+            html += '<div><a href="javascript:void(0)" class="inputAssignTag" data-id="addTerm" data-guid="' + model.get('$id$').id + '"><i class="fa fa-folder-o">' + " " + 'Assign Term</i></a></div>'
+        } else {
+            html += '<div><a href="javascript:void(0)" class="inputAssignTag" data-id="addTerm"><i class="fa fa-folder-o">' + " " + 'Assign Term</i></a></div>'
+        }
+        return {
+            html: '<div class="termTableBreadcrumb" dataterm-id="' + id + '">' + html + '</div>',
+            object: { scopeId: id, value: terms }
+        }
+
     }
     CommonViewFunction.tagForTable = function(model) {
         var traits = model.get('$traits$'),
@@ -332,6 +348,41 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages'], function(r
         }
         return '<div class="tagList">' + atags + addTag + '</div>';
 
+    }
+    CommonViewFunction.saveTermToAsset = function(options) {
+        require(['models/VCatalog'], function(Vcatalog) {
+            var VCatalog = new Vcatalog();
+            var name = options.termName;
+            VCatalog.url = function() {
+                return "api/atlas/v1/entities/" + options.guid + "/tags/" + name;
+            };
+            VCatalog.save(null, {
+                beforeSend: function() {},
+                success: function(data) {
+                    Utils.notifySuccess({
+                        content: "Term " + name + Messages.addTermToEntitySuccessMessage
+                    });
+                    if (options.callback) {
+                        options.callback();
+                    }
+                    if (options.collection) {
+                        options.collection.fetch({ reset: true });
+                    }
+                },
+                error: function(error, data, status) {
+                    if (data && data.responseText) {
+                        var data = JSON.parse(data.responseText);
+                        Utils.notifyError({
+                            content: data.message
+                        });
+                        if (options.callback) {
+                            options.callback();
+                        }
+                    }
+                },
+                complete: function() {}
+            });
+        })
     }
     CommonViewFunction.userDataFetch = function(options) {
         if (options.url) {
