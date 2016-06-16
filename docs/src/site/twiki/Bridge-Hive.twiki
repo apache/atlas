@@ -3,32 +3,26 @@
 ---++ Hive Model
 The default hive modelling is available in org.apache.atlas.hive.model.HiveDataModelGenerator. It defines the following types:
 <verbatim>
-hive_object_type(EnumType) - values [GLOBAL, DATABASE, TABLE, PARTITION, COLUMN]
-hive_resource_type(EnumType) - values [JAR, FILE, ARCHIVE]
-hive_principal_type(EnumType) - values [USER, ROLE, GROUP]
 hive_db(ClassType) - super types [Referenceable] - attributes [name, clusterName, description, locationUri, parameters, ownerName, ownerType]
-hive_order(StructType) - attributes [col, order]
-hive_resourceuri(StructType) - attributes [resourceType, uri]
-hive_serde(StructType) - attributes [name, serializationLib, parameters]
-hive_type(ClassType) - super types [] - attributes [name, type1, type2, fields]
 hive_storagedesc(ClassType) - super types [Referenceable] - attributes [cols, location, inputFormat, outputFormat, compressed, numBuckets, serdeInfo, bucketCols, sortCols, parameters, storedAsSubDirectories]
-hive_role(ClassType) - super types [] - attributes [roleName, createTime, ownerName]
-hive_column(ClassType) - super types [Referenceable] - attributes [name, type, comment]
-hive_table(ClassType) - super types [DataSet] - attributes [name, db, owner, createTime, lastAccessTime, comment, retention, sd, partitionKeys, columns, parameters, viewOriginalText, viewExpandedText, tableType, temporary]
-hive_partition(ClassType) - super types [Referenceable] - attributes [values, table, createTime, lastAccessTime, sd, columns, parameters]
-hive_process(ClassType) - super types [Process] - attributes [startTime, endTime, userName, operationType, queryText, queryPlan, queryId, queryGraph]
+hive_column(ClassType) - super types [Referenceable] - attributes [name, type, comment, table]
+hive_table(ClassType) - super types [DataSet] - attributes [name, db, owner, createTime, lastAccessTime, comment, retention, sd, partitionKeys, columns, aliases, parameters, viewOriginalText, viewExpandedText, tableType, temporary]
+hive_process(ClassType) - super types [Process] - attributes [name, startTime, endTime, userName, operationType, queryText, queryPlan, queryId]
+hive_principal_type(EnumType) - values [USER, ROLE, GROUP]
+hive_order(StructType) - attributes [col, order]
+hive_serde(StructType) - attributes [name, serializationLib, parameters]
 </verbatim>
 
-The entities are created and de-duped using unique qualified name. They provide namespace and can be used for querying/lineage as well. Note that  name, dbName and tableName should be in lower case. clusterName is explained below.
+The entities are created and de-duped using unique qualified name. They provide namespace and can be used for querying/lineage as well. Note that  dbName, tableName and columnName should be in lower case. clusterName is explained below.
    * hive_db - attribute qualifiedName - <dbName>@<clusterName>
-   * hive_table - attribute qualifiedName - <dbName>.<name>@<clusterName>
+   * hive_table - attribute qualifiedName - <dbName>.<tableName>@<clusterName>
    * hive_column - attribute qualifiedName - <dbName>.<tableName>.<columnName>@<clusterName>
    * hive_process - attribute name - <queryString> - trimmed query string in lower case
 
 
 ---++ Importing Hive Metadata
 org.apache.atlas.hive.bridge.HiveMetaStoreBridge imports the hive metadata into Atlas using the model defined in org.apache.atlas.hive.model.HiveDataModelGenerator. import-hive.sh command can be used to facilitate this.
-Set the following configuration in <atlas-conf>/atlas-application.properties and set environment variable $HIVE_CONF_DIR to the hive conf directory:
+Set the following configuration in hive-site.xml and set environment variable $HIVE_CONF_DIR to the hive conf directory:
   <verbatim>
     <property>
       <name>atlas.cluster.name</name>
@@ -66,7 +60,7 @@ Follow these instructions in your hive set-up to add hive hook for Atlas:
    * Copy <atlas-conf>/atlas-application.properties to the hive conf directory.
 
 The following properties in <atlas-conf>/atlas-application.properties control the thread pool and notification details:
-   * atlas.hook.hive.synchronous - boolean, true to run the hook synchronously. default false
+   * atlas.hook.hive.synchronous - boolean, true to run the hook synchronously. default false. Recommended to be set to false to avoid delays in hive query completion.
    * atlas.hook.hive.numRetries - number of retries for notification failure. default 3
    * atlas.hook.hive.minThreads - core number of threads. default 5
    * atlas.hook.hive.maxThreads - maximum number of threads. default 5
@@ -78,4 +72,11 @@ Refer [[Configuration][Configuration]] for notification related configurations
 
 ---++ Limitations
    * Since database name, table name and column names are case insensitive in hive, the corresponding names in entities are lowercase. So, any search APIs should use lowercase while querying on the entity names
-   * Only the following hive operations are captured by hive hook currently - create database, create table, create view, CTAS, load, import, export, query, alter database, alter table(except alter table replace columns and alter table change column position), alter view (except replacing and changing column position)
+   * The following hive operations are captured by hive hook currently
+      * create database
+      * create table/view, create table as select
+      * load, import, export
+      * DMLs (insert)
+      * alter database
+      * alter table (skewed table information, stored as, protection is not supported)
+      * alter view
