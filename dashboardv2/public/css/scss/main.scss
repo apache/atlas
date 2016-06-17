@@ -83,6 +83,7 @@ $color_mountain_mist_approx: #999;
 $color_suva_gray_approx: #868686;
 // $tag_color:#9599a0;
 $tag_color:#4A90E2;
+$delete_link:#BB5838;
 //urls
 $url_0: url(../img/loading.gif);
 .card {
@@ -236,5 +237,48 @@ ul {
     .table {
         table-layout: fixed;
         word-wrap: break-word;
+    }
+}
+
+.readOnly {
+    .addTag-dropdown {
+        display: none;
+    }
+    span {
+        &.inputTag[data-id="tagClick"] {
+            i.fa-close[data-id="deleteTag"] {
+                display: none;
+            }
+        }
+    }
+    &.readOnlyLink {
+        display: inline-block;
+        .deleteBtn {
+            padding: 0px 5px;
+        }
+        a {
+            color: $delete_link;
+        }
+    }
+    a {
+        &.inputTag[data-id="addTag"] {
+            display: none;
+        }
+        &.inputTag[data-id="tagClick"] {
+            i.fa-times[data-id="delete"] {
+                display: none;
+            }
+        }
+        i {
+            &.fa-trash[data-guid] {
+                display: none;
+            }
+            &.fa-trash[data-id="delete"] {
+                display: none;
+            }
+        }
+        &.inputAssignTag[data-id="addTerm"] {
+            display: none;
+        }
     }
 }

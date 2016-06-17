@@ -188,3 +188,20 @@ button:focus {
         }
     }
 }
+
+.deleteBtn {
+    border-color: $color_mountain_mist_approx;
+    color: $color_mountain_mist_approx;
+    cursor: default;
+    margin: 10px;
+    &:hover {
+        border-color: $color_mountain_mist_approx;
+        color: $color_mountain_mist_approx;
+        background-color: $transparent;
+    }
+    &:focus {
+        border-color: $color_mountain_mist_approx;
+        color: $color_mountain_mist_approx;
+        background-color: $transparent;
+    }
+}

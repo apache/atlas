@@ -289,10 +289,17 @@ define(['require',
                                                             return new Date(rawValue);
                                                         }
                                                         if (model.get('name') == rawValue) {
+                                                            var nameHtml = "";
                                                             if (model.get('$id$')) {
-                                                                return '<a href="#!/detailPage/' + model.get('$id$').id + '">' + rawValue + '</a>';
+                                                                nameHtml = '<a href="#!/detailPage/' + model.get('$id$').id + '">' + rawValue + '</a>';
                                                             } else {
-                                                                return '<a>' + rawValue + '</a>';
+                                                                nameHtml = '<a>' + rawValue + '</a>';
+                                                            }
+                                                            if (Globals.entityStateReadOnly[model.get('$id$').state]) {
+                                                                nameHtml += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
+                                                                return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
+                                                            } else {
+                                                                return nameHtml;
                                                             }
                                                         } else {
                                                             return rawValue;
@@ -313,7 +320,12 @@ define(['require',
                                 className: 'searchTag',
                                 formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                                     fromRaw: function(rawValue, model) {
-                                        return CommonViewFunction.tagForTable(model);
+                                        if (Globals.entityStateReadOnly[model.get('$id$').state]) {
+                                            return '<div class="readOnly">' + CommonViewFunction.tagForTable(model); + '</div>';
+                                        } else {
+                                            return CommonViewFunction.tagForTable(model);
+                                        }
+
                                     }
                                 })
                             };
@@ -330,7 +342,11 @@ define(['require',
                                         if (returnObject.object) {
                                             that.bradCrumbList.push(returnObject.object);
                                         }
-                                        return returnObject.html;
+                                        if (Globals.entityStateReadOnly[model.get('$id$').state]) {
+                                            return '<div class="readOnly">' + returnObject.html + '</div>';
+                                        } else {
+                                            return returnObject.html;
+                                        }
                                     }
                                 })
                             };
@@ -375,10 +391,18 @@ define(['require',
                                     model.getEntity(guid, {
                                         beforeSend: function() {},
                                         success: function(data) {
-                                            if (data.definition && data.definition.values && data.definition.values.name) {
-                                                return that.$('td a[data-id="' + guid + '"]').html(data.definition.values.name);
-                                            } else {
-                                                return that.$('td a[data-id="' + guid + '"]').html(data.definition.id.id);
+                                            if (data.definition) {
+                                                if (data.definition.id && data.definition.id.state) {
+                                                    if (Globals.entityStateReadOnly[data.definition.id.state]) {
+                                                        that.$('td a[data-id="' + guid + '"]').parent().addClass('readOnly readOnlyLink');
+                                                        that.$('td a[data-id="' + guid + '"]').parent().append('<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>');
+                                                    }
+                                                }
+                                                if (data.definition.values && data.definition.values.name) {
+                                                    return that.$('td a[data-id="' + guid + '"]').html(data.definition.values.name);
+                                                } else {
+                                                    return that.$('td a[data-id="' + guid + '"]').html(data.definition.id.id);
+                                                }
                                             }
                                         },
                                         error: function(error, data, status) {},
@@ -387,17 +411,25 @@ define(['require',
                                             that.checkTableFetch();
                                         }
                                     });
-                                    return '<a href="#!/detailPage/' + guid + '" data-id="' + guid + '"></a>';
+                                    return '<div><a href="#!/detailPage/' + guid + '" data-id="' + guid + '"></a></div>';
                                 } else if (!modelObject.$typeName$) {
                                     var guid = model.toJSON().guid;
                                     ++that.fetchList;
                                     model.getEntity(guid, {
                                         beforeSend: function() {},
                                         success: function(data) {
-                                            if (data.definition && data.definition.values && data.definition.values.name) {
-                                                return that.$('td a[data-id="' + guid + '"]').html(data.definition.values.name);
-                                            } else {
-                                                return that.$('td a[data-id="' + guid + '"]').html(data.definition.id.id);
+                                            if (data.definition) {
+                                                if (data.definition.id && data.definition.id.state) {
+                                                    if (Globals.entityStateReadOnly[data.definition.id.state]) {
+                                                        that.$('td a[data-id="' + guid + '"]').parent().addClass('readOnly readOnlyLink');
+                                                        that.$('td a[data-id="' + guid + '"]').parent().append('<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>');
+                                                    }
+                                                }
+                                                if (data.definition.values && data.definition.values.name) {
+                                                    return that.$('td a[data-id="' + guid + '"]').html(data.definition.values.name);
+                                                } else {
+                                                    return that.$('td a[data-id="' + guid + '"]').html(data.definition.id.id);
+                                                }
                                             }
                                         },
                                         error: function(error, data, status) {},
@@ -406,7 +438,7 @@ define(['require',
                                             that.checkTableFetch();
                                         }
                                     });
-                                    return '<a href="#!/detailPage/' + guid + '" data-id="' + guid + '"></a>';
+                                    return '<div><a href="#!/detailPage/' + guid + '" data-id="' + guid + '"></a></div>';
                                 }
                             }
                         })
