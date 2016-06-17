@@ -25,7 +25,6 @@ import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
-
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.RequestContext;
@@ -57,17 +56,20 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
-
 import scala.actors.threadpool.Arrays;
 
 import javax.inject.Inject;
-
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
+
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createUniqueRequiredAttrDef;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
 
 /**
  * GraphBackedMetadataRepository test
@@ -186,7 +188,7 @@ public class GraphBackedMetadataRepositoryTest {
 
         //Reuse the same database instance without id, with the same unique attribute
         ITypedReferenceableInstance table = createHiveTableInstance(databaseInstance);
-        List<String> guids = repositoryService.createEntities(db, table);
+        List<String> guids = createEntities(db, table);
         Assert.assertEquals(guids.size(), 7);   //1 db + 5 columns + 1 table. Shouldn't create db again
         System.out.println("added db = " + guids.get(0));
         System.out.println("added table = " + guids.get(6));
@@ -199,6 +201,17 @@ public class GraphBackedMetadataRepositoryTest {
         ITypedReferenceableInstance table = repositoryService.getEntityDefinition(guid);
         Assert.assertEquals(table.getDate("created"), new Date(TestUtils.TEST_DATE_IN_LONG));
         System.out.println("*** table = " + table);
+    }
+
+    private List<String> createEntities(ITypedReferenceableInstance... instances) throws Exception {
+        RequestContext.createContext();
+        return repositoryService.createEntities(instances);
+    }
+
+    private List<String> createEntity(Referenceable entity) throws Exception {
+        ClassType type = typeSystem.getDataType(ClassType.class, entity.getTypeName());
+        ITypedReferenceableInstance instance = type.convert(entity, Multiplicity.REQUIRED);
+        return createEntities(instance);
     }
 
     @GraphTransaction
@@ -243,6 +256,36 @@ public class GraphBackedMetadataRepositoryTest {
     public void testGetTraitNamesForBadEntity() throws Exception {
         repositoryService.getTraitNames(UUID.randomUUID().toString());
         Assert.fail();
+    }
+
+    @Test
+    public void testMultipleTypesWithSameUniqueAttribute() throws Exception {
+        //Two entities of different types(with same supertype that has the unique attribute) with same qualified name should succeed
+        HierarchicalTypeDefinition<ClassType> supertype =
+                createClassTypeDef(randomString(), ImmutableSet.<String>of(),
+                        createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE));
+        HierarchicalTypeDefinition<ClassType> t1 =
+                createClassTypeDef(randomString(), ImmutableSet.of(supertype.typeName));
+        HierarchicalTypeDefinition<ClassType> t2 =
+                createClassTypeDef(randomString(), ImmutableSet.of(supertype.typeName));
+        typeSystem.defineClassTypes(supertype, t1, t2);
+
+        final String name = randomString();
+        String id1 = createEntity(new Referenceable(t1.typeName) {{
+            set("name", name);
+        }}).get(0);
+        String id2 = createEntity(new Referenceable(t2.typeName) {{
+            set("name", name);
+        }}).get(0);
+        assertNotEquals(id1, id2);
+
+        ITypedReferenceableInstance entity = repositoryService.getEntityDefinition(t1.typeName, "name", name);
+        assertEquals(entity.getTypeName(), t1.typeName);
+        assertEquals(entity.getId()._getId(), id1);
+
+        entity = repositoryService.getEntityDefinition(t2.typeName, "name", name);
+        assertEquals(entity.getTypeName(), t2.typeName);
+        assertEquals(entity.getId()._getId(), id2);
     }
 
     @Test(dependsOnMethods = "testGetTraitNames")
@@ -574,18 +617,22 @@ public class GraphBackedMetadataRepositoryTest {
         return tableType.convert(tableInstance, Multiplicity.REQUIRED);
     }
 
-    private String random() {
+    private String randomUTF() {
         return RandomStringUtils.random(10);
+    }
+
+    private String randomString() {
+        return RandomStringUtils.randomAlphanumeric(10);
     }
 
     @Test
     public void testUTFValues() throws Exception {
         Referenceable hrDept = new Referenceable("Department");
         Referenceable john = new Referenceable("Person");
-        john.set("name", random());
+        john.set("name", randomUTF());
         john.set("department", hrDept);
 
-        hrDept.set("name", random());
+        hrDept.set("name", randomUTF());
         hrDept.set("employees", ImmutableList.of(john));
 
         ClassType deptType = typeSystem.getDataType(ClassType.class, "Department");

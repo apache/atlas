@@ -206,7 +206,6 @@ public final class TestUtils {
                         createOptionalAttrDef("namespace", DataTypes.STRING_TYPE),
                         createOptionalAttrDef("cluster", DataTypes.STRING_TYPE),
                         createOptionalAttrDef("colo", DataTypes.STRING_TYPE));
-
         HierarchicalTypeDefinition<ClassType> databaseTypeDefinition =
                 createClassTypeDef(DATABASE_TYPE, DATABASE_TYPE + _description,ImmutableSet.of(SUPER_TYPE_NAME),
                         TypesUtil.createUniqueRequiredAttrDef(NAME, DataTypes.STRING_TYPE),

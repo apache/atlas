@@ -514,7 +514,7 @@ public abstract class GraphBackedMetadataRepositoryDeleteTestBase {
 
 
         AtlasClient.EntityResult entityResult = deleteEntities(maxGuid);
-        ITypedReferenceableInstance john = repositoryService.getEntityDefinition("Manager", "name", "John");
+        ITypedReferenceableInstance john = repositoryService.getEntityDefinition("Person", "name", "John");
 
         assertEquals(entityResult.getDeletedEntities().size(), 1);
         assertTrue(entityResult.getDeletedEntities().contains(maxGuid));

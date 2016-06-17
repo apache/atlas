@@ -77,7 +77,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
         ITypedReferenceableInstance hrDept = TestUtils.createDeptEg1(typeSystem);
         repositoryService.createEntities(hrDept);
         
-        ITypedReferenceableInstance jane = repositoryService.getEntityDefinition("Person", "name", "Jane");
+        ITypedReferenceableInstance jane = repositoryService.getEntityDefinition("Manager", "name", "Jane");
         Id janeGuid = jane.getId();
         ClassType personType = typeSystem.getDataType(ClassType.class, "Person");
         ITypedReferenceableInstance instance = personType.createInstance(janeGuid);

@@ -164,7 +164,7 @@ public final class GraphHelper {
      * @return vertex with the given property keys
      * @throws EntityNotFoundException
      */
-    private Vertex findVertex(Object... args) throws EntityNotFoundException {
+    public Vertex findVertex(Object... args) throws EntityNotFoundException {
         StringBuilder condition = new StringBuilder();
         GraphQuery query = titanGraph.query();
         for (int i = 0 ; i < args.length; i+=2) {
@@ -301,10 +301,6 @@ public final class GraphHelper {
         return findVertex(Constants.GUID_PROPERTY_KEY, guid);
     }
 
-    public Vertex getVertexForProperty(String propertyKey, Object value) throws EntityNotFoundException {
-        return findVertex(propertyKey, value, Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
-    }
-
     public static String getQualifiedNameForMapKey(String prefix, String key) {
         return prefix + "." + key;
     }
@@ -381,7 +377,9 @@ public final class GraphHelper {
             if (attributeInfo.isUnique) {
                 String propertyKey = getQualifiedFieldName(classType, attributeInfo.name);
                 try {
-                    result = getVertexForProperty(propertyKey, instance.get(attributeInfo.name));
+                    result = findVertex(propertyKey, instance.get(attributeInfo.name),
+                            Constants.ENTITY_TYPE_PROPERTY_KEY, classType.getName(),
+                            Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
                     LOG.debug("Found vertex by unique attribute : " + propertyKey + "=" + instance.get(attributeInfo.name));
                 } catch (EntityNotFoundException e) {
                     //Its ok if there is no entity with the same unique value

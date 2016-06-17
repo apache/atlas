@@ -37,6 +37,7 @@ import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.exception.EntityExistsException;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
 import org.apache.atlas.typesystem.exception.TraitNotFoundException;
+import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
@@ -158,7 +159,9 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         LOG.info("Retrieving entity with type={} and {}={}", entityType, attribute, value);
         IDataType type = typeSystem.getDataType(IDataType.class, entityType);
         String propertyKey = getFieldNameInVertex(type, attribute);
-        Vertex instanceVertex = graphHelper.getVertexForProperty(propertyKey, value);
+        Vertex instanceVertex = graphHelper.findVertex(propertyKey, value,
+                Constants.ENTITY_TYPE_PROPERTY_KEY, entityType,
+                Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
 
         String guid = instanceVertex.getProperty(Constants.GUID_PROPERTY_KEY);
         return graphToInstanceMapper.mapGraphToTypedInstance(guid, instanceVertex);
