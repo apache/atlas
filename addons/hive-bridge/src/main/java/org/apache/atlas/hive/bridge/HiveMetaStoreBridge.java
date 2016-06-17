@@ -27,6 +27,7 @@ import org.apache.atlas.fs.model.FSDataModel;
 import org.apache.atlas.fs.model.FSDataTypes;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
+import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
@@ -37,6 +38,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.Order;
@@ -239,6 +241,18 @@ public class HiveMetaStoreBridge {
         return String.format("%s@%s", dbName.toLowerCase(), clusterName);
     }
 
+    private String getCreateTableString(Table table, String location){
+        String colString = "";
+        List<FieldSchema> colList = table.getAllCols();
+        for(FieldSchema col:colList){
+            colString += col.getName()  + " " + col.getType() + ",";
+        }
+        colString = colString.substring(0, colString.length() - 1);
+        String query = "create external table " + table.getTableName() + "(" + colString + ")" +
+                " location '" + location + "'";
+        return query;
+    }
+
     /**
      * Imports all tables for the given db
      * @param databaseName
@@ -247,10 +261,45 @@ public class HiveMetaStoreBridge {
      */
     private void importTables(Referenceable databaseReferenceable, String databaseName) throws Exception {
         List<String> hiveTables = hiveClient.getAllTables(databaseName);
-
+        LOG.info("Importing tables {} for db {}", hiveTables.toString(), databaseName);
         for (String tableName : hiveTables) {
             Table table = hiveClient.getTable(databaseName, tableName);
             Referenceable tableReferenceable = registerTable(databaseReferenceable, table);
+            if (table.getTableType() == TableType.EXTERNAL_TABLE){
+                String tableQualifiedName = getTableQualifiedName(clusterName, table);
+                Referenceable process = getProcessReference(tableQualifiedName);
+                if (process == null){
+                    LOG.info("Attempting to register create table process for {}", tableQualifiedName);
+                    Referenceable lineageProcess = new Referenceable(HiveDataTypes.HIVE_PROCESS.getName());
+                    ArrayList<Referenceable> sourceList = new ArrayList<>();
+                    ArrayList<Referenceable> targetList = new ArrayList<>();
+                    String tableLocation = table.getDataLocation().toString();
+                    Referenceable path = fillHDFSDataSet(tableLocation);
+                    String query = getCreateTableString(table, tableLocation);
+                    sourceList.add(path);
+                    targetList.add(tableReferenceable);
+                    lineageProcess.set("inputs", sourceList);
+                    lineageProcess.set("outputs", targetList);
+                    lineageProcess.set("userName", table.getOwner());
+                    lineageProcess.set("startTime", new Date(System.currentTimeMillis()));
+                    lineageProcess.set("endTime", new Date(System.currentTimeMillis()));
+                    lineageProcess.set("operationType", "CREATETABLE");
+                    lineageProcess.set("queryText", query);
+                    lineageProcess.set("queryId", query);
+                    lineageProcess.set("queryPlan", "{}");
+                    lineageProcess.set("clusterName", clusterName);
+                    List<String> recentQueries = new ArrayList<>(1);
+                    recentQueries.add(query);
+                    lineageProcess.set("recentQueries", recentQueries);
+                    lineageProcess.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableQualifiedName);
+                    lineageProcess.set(AtlasClient.NAME, query);
+                    registerInstance(lineageProcess);
+
+                }
+                else {
+                    LOG.info("Process {} is already registered", process.toString());
+                }
+            }
         }
     }
 
@@ -269,9 +318,21 @@ public class HiveMetaStoreBridge {
         return getEntityReferenceFromDSL(typeName, dslQuery);
     }
 
+    private Referenceable getProcessReference(String qualifiedName) throws Exception{
+        LOG.debug("Getting reference for process {}", qualifiedName);
+        String typeName = HiveDataTypes.HIVE_PROCESS.getName();
+        String dslQuery = getProcessDSLQuery(typeName, qualifiedName);
+        return getEntityReferenceFromDSL(typeName, dslQuery);
+    }
+
+    static String getProcessDSLQuery(String typeName, String qualifiedName) throws Exception{
+        String dslQuery = String.format("%s as t where qualifiedName = '%s'", typeName, qualifiedName);
+        return dslQuery;
+    }
+
     static String getTableDSLQuery(String clusterName, String dbName, String tableName, String typeName, boolean isTemporary) {
         String entityName = getTableQualifiedName(clusterName, dbName, tableName, isTemporary);
-        return String.format("%s as t where name = '%s'", typeName, entityName);
+        return String.format("%s as t where qualifiedName = '%s'", typeName, entityName);
     }
 
     /**
@@ -398,6 +459,7 @@ public class HiveMetaStoreBridge {
         String tableName = table.getTableName();
         LOG.info("Attempting to register table [" + tableName + "]");
         Referenceable tableReference = getTableReference(table);
+        LOG.info("Found result " + tableReference);
         if (tableReference == null) {
             tableReference = createTableInstance(dbReference, table);
             tableReference = registerInstance(tableReference);

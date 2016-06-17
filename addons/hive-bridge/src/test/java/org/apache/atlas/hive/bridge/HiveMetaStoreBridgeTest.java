@@ -90,7 +90,7 @@ public class HiveMetaStoreBridgeTest {
     public void testImportThatUpdatesRegisteredTable() throws Exception {
         setupDB(hiveClient, TEST_DB_NAME);
 
-        setupTable(hiveClient, TEST_DB_NAME, TEST_TABLE_NAME);
+        Table hiveTable = setupTable(hiveClient, TEST_DB_NAME, TEST_TABLE_NAME);
 
         returnExistingDatabase(TEST_DB_NAME, atlasClient, CLUSTER_NAME);
 
@@ -99,6 +99,9 @@ public class HiveMetaStoreBridgeTest {
                 HiveDataTypes.HIVE_TABLE.getName(), false))).thenReturn(
                 getEntityReference("82e06b34-9151-4023-aa9d-b82103a50e77"));
         when(atlasClient.getEntity("82e06b34-9151-4023-aa9d-b82103a50e77")).thenReturn(createTableReference());
+        String processQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, hiveTable);
+        when(atlasClient.searchByDSL(HiveMetaStoreBridge.getProcessDSLQuery(HiveDataTypes.HIVE_PROCESS.getName(),
+                processQualifiedName))).thenReturn(getEntityReference("82e06b34-9151-4023-aa9d-b82103a50e77"));
 
         HiveMetaStoreBridge bridge = new HiveMetaStoreBridge(CLUSTER_NAME, hiveClient, atlasClient);
         bridge.importHiveMetadata();
@@ -140,6 +143,9 @@ public class HiveMetaStoreBridgeTest {
             TEST_TABLE_NAME,
             HiveDataTypes.HIVE_TABLE.getName(), false))).thenReturn(
             getEntityReference("82e06b34-9151-4023-aa9d-b82103a50e77"));
+        String processQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, hiveTable);
+        when(atlasClient.searchByDSL(HiveMetaStoreBridge.getProcessDSLQuery(HiveDataTypes.HIVE_PROCESS.getName(),
+                processQualifiedName))).thenReturn(getEntityReference("82e06b34-9151-4023-aa9d-b82103a50e77"));
         when(atlasClient.getEntity("82e06b34-9151-4023-aa9d-b82103a50e77")).thenReturn(createTableReference());
 
         Partition partition = mock(Partition.class);
