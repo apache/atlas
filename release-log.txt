@@ -24,6 +24,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-877 CreateTime of an entity(for example hive table) changes for every update (sumasai)
 ATLAS-642 import-hive should create the lineage for external tables (svimal2106 via sumasai)
 ATLAS-901 Log messages that cannot be sent to Kafka to a specific log configuration (yhemanth)
 ATLAS-911 Get entity by unique attribute doesn't enforce type (shwethags)

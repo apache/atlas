@@ -44,7 +44,6 @@ import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.Order;
 import org.apache.hadoop.hive.metastore.api.SerDeInfo;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
-import org.apache.hadoop.hive.metastore.api.hive_metastoreConstants;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Table;
@@ -73,7 +72,7 @@ public class HiveMetaStoreBridge {
     public static final String TEMP_TABLE_PREFIX = "_temp-";
 
     private final String clusterName;
-    public static final int MILLIS_CONVERT_FACTOR = 1000;
+    public static final long MILLIS_CONVERT_FACTOR = 1000;
 
     public static final String ATLAS_ENDPOINT = "atlas.rest.address";
 
@@ -403,9 +402,10 @@ public class HiveMetaStoreBridge {
         tableReference.set(HiveDataModelGenerator.OWNER, hiveTable.getOwner());
 
         Date createDate = new Date();
-        if (hiveTable.getMetadata().getProperty(hive_metastoreConstants.DDL_TIME) != null){
+        if (hiveTable.getTTable() != null){
             try {
-                createDate = new Date(Long.parseLong(hiveTable.getMetadata().getProperty(hive_metastoreConstants.DDL_TIME)) * MILLIS_CONVERT_FACTOR);
+                createDate = new Date(hiveTable.getTTable().getCreateTime() * MILLIS_CONVERT_FACTOR);
+                LOG.debug("Setting create time to {} ", createDate);
                 tableReference.set(HiveDataModelGenerator.CREATE_TIME, createDate);
             } catch(NumberFormatException ne) {
                 LOG.error("Error while updating createTime for the table {} ", hiveTable.getCompleteName(), ne);

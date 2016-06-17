@@ -711,7 +711,11 @@ public class HiveHookIT {
         String tableName = createTable(true);
         final String newDBName = createDatabase();
 
-        assertTableIsRegistered(DEFAULT_DB, tableName);
+        String tableId = assertTableIsRegistered(DEFAULT_DB, tableName);
+        Referenceable tableEntity = atlasClient.getEntity(tableId);
+        final String createTime = (String)tableEntity.get(HiveDataModelGenerator.CREATE_TIME);
+        Assert.assertNotNull(createTime);
+
         String columnGuid = assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), NAME));
         String sdGuid = assertSDIsRegistered(HiveMetaStoreBridge.getStorageDescQFName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName)), null);
         assertDatabaseIsRegistered(newDBName);
@@ -728,7 +732,7 @@ public class HiveHookIT {
 
         final String newTableName = tableName();
         String query = String.format("alter table %s rename to %s", DEFAULT_DB + "." + tableName, newDBName + "." + newTableName);
-        runCommand(query);
+        runCommandWithDelay(query, 1000);
 
         String newColGuid = assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, newDBName, newTableName), NAME));
         Assert.assertEquals(newColGuid, columnGuid);
@@ -750,6 +754,7 @@ public class HiveHookIT {
                 Referenceable sd = ((Referenceable) entity.get(HiveDataModelGenerator.STORAGE_DESC));
                 String location = (String) sd.get(HiveDataModelGenerator.LOCATION);
                 assertTrue(location.contains(newTableName));
+                Assert.assertEquals(entity.get(HiveDataModelGenerator.CREATE_TIME), createTime);
             }
         });
     }
