@@ -7,7 +7,7 @@ git clone https://git-wip-us.apache.org/repos/asf/incubator-atlas.git atlas
 
 cd atlas
 
-export MAVEN_OPTS="-Xmx1024m -XX:MaxPermSize=512m" && mvn clean install
+export MAVEN_OPTS="-Xmx1536m -XX:MaxPermSize=512m" && mvn clean install
 </verbatim>
 
 Once the build successfully completes, artifacts can be packaged for deployment.

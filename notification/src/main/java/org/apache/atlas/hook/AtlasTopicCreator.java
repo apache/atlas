@@ -20,6 +20,7 @@ package org.apache.atlas.hook;
 
 import com.google.common.annotations.VisibleForTesting;
 import kafka.admin.AdminUtils;
+import kafka.admin.RackAwareMode;
 import kafka.utils.ZkUtils;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.ZkConnection;
@@ -114,7 +115,7 @@ public class AtlasTopicCreator {
         int numPartitions = atlasProperties.getInt("atlas.notification.hook.numthreads", 1);
         int numReplicas = atlasProperties.getInt("atlas.notification.replicas", 1);
         AdminUtils.createTopic(zkUtils, topicName,  numPartitions, numReplicas,
-                new Properties());
+                new Properties(), RackAwareMode.Enforced$.MODULE$);
         LOG.warn("Created topic {} with partitions {} and replicas {}", topicName, numPartitions, numReplicas);
     }
 

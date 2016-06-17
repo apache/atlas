@@ -43,7 +43,7 @@ public class NotificationHookConsumerKafkaTest {
     private KafkaNotification kafkaNotification;
 
     @BeforeTest
-    public void setup() throws AtlasException {
+    public void setup() throws AtlasException, InterruptedException {
         kafkaNotification = startKafkaServer();
     }
 
@@ -124,9 +124,10 @@ public class NotificationHookConsumerKafkaTest {
         return entity;
     }
 
-    KafkaNotification startKafkaServer() throws AtlasException {
+    KafkaNotification startKafkaServer() throws AtlasException, InterruptedException {
         KafkaNotification kafkaNotification = (KafkaNotification) notificationInterface;
         kafkaNotification.start();
+        Thread.sleep(2000);
         return kafkaNotification;
     }
 
