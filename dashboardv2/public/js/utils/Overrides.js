@@ -45,6 +45,8 @@ define(['require', 'backgrid', 'asBreadcrumbs'], function(require) {
     Backgrid.Cell.prototype.initialize = function() {
             cellInit.apply(this, arguments);
             var className = this.column.get('className');
+            var rowClassName = this.column.get('rowClassName');
+            if (rowClassName) this.$el.addClass(rowClassName);
             if (className) this.$el.addClass(className);
         }
         /*

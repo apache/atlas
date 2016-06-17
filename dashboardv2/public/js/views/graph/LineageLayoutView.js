@@ -23,8 +23,9 @@ define(['require',
     'models/VEntity',
     'utils/Utils',
     'dagreD3',
-    'd3-tip'
-], function(require, Backbone, LineageLayoutViewtmpl, VLineageList, VEntity, Utils, dagreD3, d3Tip) {
+    'd3-tip',
+    'utils/Globals'
+], function(require, Backbone, LineageLayoutViewtmpl, VLineageList, VEntity, Utils, dagreD3, d3Tip, Globals) {
     'use strict';
 
     var LineageLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -110,19 +111,24 @@ define(['require',
 
                 function addValueInObject(data) {
                     var obj = {};
-                    if (data && data.definition && data.definition.values) {
-                        var values = data.definition.values;
-                        obj['label'] = values.name.trunc(20);
-                        obj['toolTiplabel'] = values.name;
-                        obj['id'] = data.GUID;
-                        if (values.queryText) {
-                            obj['queryText'] = values.queryText;
+                    if (data && data.definition) {
+                        if (data.definition.values) {
+                            var values = data.definition.values;
+                            obj['label'] = values.name.trunc(20);
+                            obj['toolTiplabel'] = values.name;
+                            obj['id'] = data.GUID;
+                            if (values.queryText) {
+                                obj['queryText'] = values.queryText;
+                            }
+                            if (data.definition.id && data.definition.id.state) {
+                                obj['state'] = data.definition.id.state;
+                            }
                         }
-                        obj['shape'] = "img";
                     } else {
-                        obj['label'] = vertices[val].values.name;
-                        obj['toolTiplabel'] = values.name;
+                        obj['label'] = ""
+                        obj['toolTiplabel'] = "";
                     }
+                    obj['shape'] = "img";
                     obj['class'] = "type-TOP";
                     if (data.GUID) {
                         that.g.setNode(data.GUID, obj);
@@ -177,6 +183,11 @@ define(['require',
                             obj['class'] = "type-TOP";
                             obj['shape'] = "img";
                             obj['typeName'] = vertices[val].values.vertexId.values.typeName;
+                            if (vertices[val].values.state) {
+                                obj['state'] = vertices[val].values.state;
+                            } else if (vertices[val].values.vertexId.values.state) {
+                                obj['state'] = vertices[val].values.vertexId.values.state;
+                            }
                             if (val && obj) {
                                 that.g.setNode(val, obj);
                             }
@@ -283,13 +294,17 @@ define(['require',
                             .attr("xlink:href", function(d) {
                                 if (node) {
                                     if (node.typeName) {
-                                        if (node.id == that.guid) {
+                                        if (Globals.entityStateReadOnly[node.state]) {
+                                            return '../img/icon-table-delete.png';
+                                        } else if (node.id == that.guid) {
                                             return '../img/icon-table-active.png';
                                         } else {
                                             return '../img/icon-table.png';
                                         }
                                     } else {
-                                        if (node.id == that.guid) {
+                                        if (Globals.entityStateReadOnly[node.state]) {
+                                            return '../img/icon-gear-delete.png';
+                                        } else if (node.id == that.guid) {
                                             return '../img/icon-gear-active.png';
                                         } else {
                                             return '../img/icon-gear.png';

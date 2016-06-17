@@ -117,9 +117,16 @@ define(['require',
             bindEvents: function() {
                 var that = this;
                 this.listenTo(this.collection, 'reset', function() {
+
                     var collectionJSON = this.collection.toJSON();
                     if (collectionJSON[0].id && collectionJSON[0].id.id) {
                         var tagGuid = collectionJSON[0].id.id;
+                        this.readOnly = Globals.entityStateReadOnly[collectionJSON[0].id.state];
+                    }
+                    if (this.readOnly) {
+                        this.$el.addClass('readOnly');
+                    } else {
+                        this.$el.removeClass('readOnly');
                     }
                     if (collectionJSON && collectionJSON.length) {
                         if (collectionJSON[0].values) {
@@ -127,7 +134,11 @@ define(['require',
                             this.description = collectionJSON[0].values.description;
                             if (this.name) {
                                 this.ui.title.show();
-                                this.ui.title.html('<span>' + this.name + '</span>');
+                                var titleName = '<span>' + this.name + '</span>';
+                                if (this.readOnly) {
+                                    titleName += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i> Deleted</button>'
+                                }
+                                this.ui.title.html(titleName);
                             } else {
                                 this.ui.title.hide();
                             }

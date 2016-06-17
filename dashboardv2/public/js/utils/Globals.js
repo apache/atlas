@@ -41,6 +41,10 @@ define(['require'], function(require) {
         TAG_ADD: "Tag Added",
         TAG_DELETE: "Tag Deleted"
     }
+    Globals.entityStateReadOnly = {
+        ACTIVE: false,
+        DELETED: true
+    }
     Globals.userLogedIn = {
         status: false,
         response: {}
