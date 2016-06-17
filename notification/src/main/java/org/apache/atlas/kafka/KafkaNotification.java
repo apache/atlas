@@ -37,6 +37,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
@@ -90,6 +91,10 @@ public class KafkaNotification extends AbstractNotification implements Service {
         }
     };
 
+    @VisibleForTesting
+    String getTopicName(NotificationType notificationType) {
+        return TOPIC_MAP.get(notificationType);
+    }
 
     // ----- Constructors ----------------------------------------------------
 
@@ -214,23 +219,35 @@ public class KafkaNotification extends AbstractNotification implements Service {
         if (producer == null) {
             createProducer();
         }
+        sendInternalToProducer(producer, type, messages);
+    }
 
+    @VisibleForTesting
+    void sendInternalToProducer(Producer p, NotificationType type, String[] messages) throws NotificationException {
         String topic = TOPIC_MAP.get(type);
-        List<Future<RecordMetadata>> futures = new ArrayList<>();
+        List<MessageContext> messageContexts = new ArrayList<>();
         for (String message : messages) {
             ProducerRecord record = new ProducerRecord(topic, message);
             LOG.debug("Sending message for topic {}: {}", topic, message);
-            futures.add(producer.send(record));
+            Future future = p.send(record);
+            messageContexts.add(new MessageContext(future, message));
         }
 
-        for (Future<RecordMetadata> future : futures) {
+        List<String> failedMessages = new ArrayList<>();
+        Exception lastFailureException = null;
+        for (MessageContext context : messageContexts) {
             try {
-                RecordMetadata response = future.get();
+                RecordMetadata response = context.getFuture().get();
                 LOG.debug("Sent message for topic - {}, partition - {}, offset - {}", response.topic(),
                     response.partition(), response.offset());
             } catch (Exception e) {
-                throw new NotificationException(e);
+                LOG.warn("Could not send message - {}", context.getMessage(), e);
+                lastFailureException = e;
+                failedMessages.add(context.getMessage());
             }
+        }
+        if (lastFailureException != null) {
+            throw new NotificationException(lastFailureException, failedMessages);
         }
     }
 
@@ -357,6 +374,25 @@ public class KafkaNotification extends AbstractNotification implements Service {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    private class MessageContext {
+
+        private final Future<RecordMetadata> future;
+        private final String message;
+
+        public MessageContext(Future<RecordMetadata> future, String message) {
+            this.future = future;
+            this.message = message;
+        }
+
+        public Future<RecordMetadata> getFuture() {
+            return future;
+        }
+
+        public String getMessage() {
+            return message;
         }
     }
 }

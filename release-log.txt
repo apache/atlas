@@ -23,6 +23,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-901 Log messages that cannot be sent to Kafka to a specific log configuration (yhemanth)
 ATLAS-911 Get entity by unique attribute doesn't enforce type (shwethags)
 ATLAS-899 Fix Hive Hook documentation (sumasai via yhemanth)
 ATLAS-890 Log received messages in case of error (sumasai via yhemanth)

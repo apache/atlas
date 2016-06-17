@@ -21,24 +21,101 @@ package org.apache.atlas.hook;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.notification.hook.HookNotification;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 
 
 public class AtlasHookTest {
-    @Test
-    public void testnotifyEntities() throws Exception{
+
+    @Mock
+    private NotificationInterface notificationInterface;
+
+    @Mock
+    private FailedMessagesLogger failedMessagesLogger;
+
+    @BeforeMethod
+    public void setup() {
+        MockitoAnnotations.initMocks(this);
+    }
+
+    @Test (timeOut = 10000)
+    public void testNotifyEntitiesDoesNotHangOnException() throws Exception {
         List<HookNotification.HookNotificationMessage> hookNotificationMessages = new ArrayList<>();
-        NotificationInterface notifInterface = mock(NotificationInterface.class);
-        doThrow(new NotificationException(new Exception())).when(notifInterface)
+        doThrow(new NotificationException(new Exception())).when(notificationInterface)
                 .send(NotificationInterface.NotificationType.HOOK, hookNotificationMessages);
-        AtlasHook.notifInterface = notifInterface;
-        AtlasHook.notifyEntities(hookNotificationMessages, 2);
-        System.out.println("AtlasHook.notifyEntities() returns successfully");
+        AtlasHook.notifyEntitiesInternal(hookNotificationMessages, 0, notificationInterface, false,
+                failedMessagesLogger);
+        // if we've reached here, the method finished OK.
+    }
+
+    @Test
+    public void testNotifyEntitiesRetriesOnException() throws NotificationException {
+        List<HookNotification.HookNotificationMessage> hookNotificationMessages = new ArrayList<>();
+        doThrow(new NotificationException(new Exception())).when(notificationInterface)
+                .send(NotificationInterface.NotificationType.HOOK, hookNotificationMessages);
+        AtlasHook.notifyEntitiesInternal(hookNotificationMessages, 2, notificationInterface, false,
+                failedMessagesLogger);
+
+        verify(notificationInterface, times(2)).
+                send(NotificationInterface.NotificationType.HOOK, hookNotificationMessages);
+    }
+
+    @Test
+    public void testFailedMessageIsLoggedIfRequired() throws NotificationException {
+        List<HookNotification.HookNotificationMessage> hookNotificationMessages = new ArrayList<>();
+        doThrow(new NotificationException(new Exception(), Arrays.asList("test message")))
+                .when(notificationInterface)
+                .send(NotificationInterface.NotificationType.HOOK, hookNotificationMessages);
+        AtlasHook.notifyEntitiesInternal(hookNotificationMessages, 2, notificationInterface, true,
+                failedMessagesLogger);
+
+        verify(failedMessagesLogger, times(1)).log("test message");
+    }
+
+    @Test
+    public void testFailedMessageIsNotLoggedIfNotRequired() throws NotificationException {
+        List<HookNotification.HookNotificationMessage> hookNotificationMessages = new ArrayList<>();
+        doThrow(new NotificationException(new Exception(), Arrays.asList("test message")))
+                .when(notificationInterface)
+                .send(NotificationInterface.NotificationType.HOOK, hookNotificationMessages);
+        AtlasHook.notifyEntitiesInternal(hookNotificationMessages, 2, notificationInterface, false,
+                failedMessagesLogger);
+
+        verifyZeroInteractions(failedMessagesLogger);
+    }
+
+    @Test
+    public void testAllFailedMessagesAreLogged() throws NotificationException {
+        List<HookNotification.HookNotificationMessage> hookNotificationMessages = new ArrayList<>();
+        doThrow(new NotificationException(new Exception(), Arrays.asList("test message1", "test message2")))
+                .when(notificationInterface)
+                .send(NotificationInterface.NotificationType.HOOK, hookNotificationMessages);
+        AtlasHook.notifyEntitiesInternal(hookNotificationMessages, 2, notificationInterface, true,
+                failedMessagesLogger);
+
+        verify(failedMessagesLogger, times(1)).log("test message1");
+        verify(failedMessagesLogger, times(1)).log("test message2");
+    }
+
+    @Test
+    public void testFailedMessageIsNotLoggedIfNotANotificationException() throws Exception {
+        List<HookNotification.HookNotificationMessage> hookNotificationMessages = new ArrayList<>();
+        doThrow(new RuntimeException("test message")).when(notificationInterface)
+                .send(NotificationInterface.NotificationType.HOOK, hookNotificationMessages);
+        AtlasHook.notifyEntitiesInternal(hookNotificationMessages, 2, notificationInterface, true,
+                failedMessagesLogger);
+
+        verifyZeroInteractions(failedMessagesLogger);
     }
 }

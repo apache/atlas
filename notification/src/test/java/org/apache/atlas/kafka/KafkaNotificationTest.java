@@ -22,7 +22,12 @@ import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.serializer.StringDecoder;
 import org.apache.atlas.notification.MessageDeserializer;
 import org.apache.atlas.notification.NotificationConsumer;
+import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.TopicPartition;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -30,6 +35,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -39,6 +46,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 public class KafkaNotificationTest {
 
@@ -75,6 +83,83 @@ public class KafkaNotificationTest {
         assertEquals(consumers.size(), 2);
         assertTrue(consumers.contains(consumer1));
         assertTrue(consumers.contains(consumer2));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void shouldSendMessagesSuccessfully() throws NotificationException,
+            ExecutionException, InterruptedException {
+        Properties configProperties = mock(Properties.class);
+        KafkaNotification kafkaNotification = new KafkaNotification(configProperties);
+
+        Producer producer = mock(Producer.class);
+        String topicName = kafkaNotification.getTopicName(NotificationInterface.NotificationType.HOOK);
+        String message = "This is a test message";
+        Future returnValue = mock(Future.class);
+        when(returnValue.get()).thenReturn(new RecordMetadata(new TopicPartition(topicName, 0), 0, 0));
+        ProducerRecord expectedRecord = new ProducerRecord(topicName, message);
+        when(producer.send(expectedRecord)).thenReturn(returnValue);
+
+        kafkaNotification.sendInternalToProducer(producer,
+                NotificationInterface.NotificationType.HOOK, new String[]{message});
+
+        verify(producer).send(expectedRecord);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void shouldThrowExceptionIfProducerFails() throws NotificationException,
+            ExecutionException, InterruptedException {
+        Properties configProperties = mock(Properties.class);
+        KafkaNotification kafkaNotification = new KafkaNotification(configProperties);
+
+        Producer producer = mock(Producer.class);
+        String topicName = kafkaNotification.getTopicName(NotificationInterface.NotificationType.HOOK);
+        String message = "This is a test message";
+        Future returnValue = mock(Future.class);
+        when(returnValue.get()).thenThrow(new RuntimeException("Simulating exception"));
+        ProducerRecord expectedRecord = new ProducerRecord(topicName, message);
+        when(producer.send(expectedRecord)).thenReturn(returnValue);
+
+        try {
+            kafkaNotification.sendInternalToProducer(producer,
+                NotificationInterface.NotificationType.HOOK, new String[]{message});
+            fail("Should have thrown NotificationException");
+        } catch (NotificationException e) {
+            assertEquals(e.getFailedMessages().size(), 1);
+            assertEquals(e.getFailedMessages().get(0), "This is a test message");
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void shouldCollectAllFailedMessagesIfProducerFails() throws NotificationException,
+            ExecutionException, InterruptedException {
+        Properties configProperties = mock(Properties.class);
+        KafkaNotification kafkaNotification = new KafkaNotification(configProperties);
+
+        Producer producer = mock(Producer.class);
+        String topicName = kafkaNotification.getTopicName(NotificationInterface.NotificationType.HOOK);
+        String message1 = "This is a test message1";
+        String message2 = "This is a test message2";
+        Future returnValue1 = mock(Future.class);
+        when(returnValue1.get()).thenThrow(new RuntimeException("Simulating exception"));
+        Future returnValue2 = mock(Future.class);
+        when(returnValue2.get()).thenThrow(new RuntimeException("Simulating exception"));
+        ProducerRecord expectedRecord1 = new ProducerRecord(topicName, message1);
+        when(producer.send(expectedRecord1)).thenReturn(returnValue1);
+        ProducerRecord expectedRecord2 = new ProducerRecord(topicName, message2);
+        when(producer.send(expectedRecord2)).thenReturn(returnValue1);
+
+        try {
+            kafkaNotification.sendInternalToProducer(producer,
+                    NotificationInterface.NotificationType.HOOK, new String[]{message1, message2});
+            fail("Should have thrown NotificationException");
+        } catch (NotificationException e) {
+            assertEquals(e.getFailedMessages().size(), 2);
+            assertEquals(e.getFailedMessages().get(0), "This is a test message1");
+            assertEquals(e.getFailedMessages().get(1), "This is a test message2");
+        }
     }
 
     class TestKafkaNotification extends KafkaNotification {

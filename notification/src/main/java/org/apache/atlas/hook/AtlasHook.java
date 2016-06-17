@@ -18,9 +18,11 @@
 
 package org.apache.atlas.hook;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.notification.NotificationModule;
 import org.apache.atlas.notification.hook.HookNotification;
@@ -50,11 +52,28 @@ public abstract class AtlasHook {
 
     protected static NotificationInterface notifInterface;
 
+    private static boolean logFailedMessages;
+    private static FailedMessagesLogger failedMessagesLogger;
+
+    public static final String ATLAS_NOTIFICATION_FAILED_MESSAGES_FILENAME_KEY =
+            "atlas.notification.failed.messages.filename";
+    public static final String ATLAS_HOOK_FAILED_MESSAGES_LOG_DEFAULT_NAME = "atlas_hook_failed_messages.log";
+    public static final String ATLAS_NOTIFICATION_LOG_FAILED_MESSAGES_ENABLED_KEY =
+            "atlas.notification.log.failed.messages";
+
     static {
         try {
             atlasProperties = ApplicationProperties.get();
         } catch (Exception e) {
             LOG.info("Failed to load application properties", e);
+        }
+
+        String failedMessageFile = atlasProperties.getString(ATLAS_NOTIFICATION_FAILED_MESSAGES_FILENAME_KEY,
+                ATLAS_HOOK_FAILED_MESSAGES_LOG_DEFAULT_NAME);
+        logFailedMessages = atlasProperties.getBoolean(ATLAS_NOTIFICATION_LOG_FAILED_MESSAGES_ENABLED_KEY, true);
+        if (logFailedMessages) {
+            failedMessagesLogger = new FailedMessagesLogger(failedMessageFile);
+            failedMessagesLogger.init();
         }
 
         Injector injector = Guice.createInjector(new NotificationModule());
@@ -89,18 +108,31 @@ public abstract class AtlasHook {
      * @param maxRetries maximum number of retries while sending message to messaging system
      */
     public static void notifyEntities(List<HookNotification.HookNotificationMessage> messages, int maxRetries) {
+        notifyEntitiesInternal(messages, maxRetries, notifInterface, logFailedMessages, failedMessagesLogger);
+    }
+
+    @VisibleForTesting
+    static void notifyEntitiesInternal(List<HookNotification.HookNotificationMessage> messages, int maxRetries,
+                                       NotificationInterface notificationInterface,
+                                       boolean shouldLogFailedMessages, FailedMessagesLogger logger) {
         final String message = messages.toString();
 
         int numRetries = 0;
         while (true) {
             try {
-                notifInterface.send(NotificationInterface.NotificationType.HOOK, messages);
+                notificationInterface.send(NotificationInterface.NotificationType.HOOK, messages);
                 return;
-            } catch(Exception e) {
+            } catch (Exception e) {
                 numRetries++;
                 if (numRetries < maxRetries) {
                     LOG.debug("Failed to notify atlas for entity {}. Retrying", message, e);
                 } else {
+                    if (shouldLogFailedMessages && e instanceof NotificationException) {
+                        List<String> failedMessages = ((NotificationException) e).getFailedMessages();
+                        for (String msg : failedMessages) {
+                            logger.log(msg);
+                        }
+                    }
                     LOG.error("Failed to notify atlas for entity {} after {} retries. Quitting",
                             message, maxRetries, e);
                     return;

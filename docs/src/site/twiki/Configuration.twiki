@@ -168,9 +168,17 @@ atlas.notification.replicas=1
 atlas.notification.kafka.service.principal=kafka/_HOST@EXAMPLE.COM
 # Set this to the location of the keytab file for Kafka
 #atlas.notification.kafka.keytab.location=/etc/security/keytabs/kafka.service.keytab
-
 </verbatim>
 
+These configuration parameters are useful for saving messages in case there are issues in reaching Kafka for
+sending messages.
+
+<verbatim>
+# Whether to save messages that failed to be sent to Kafka, default is true
+atlas.notification.log.failed.messages=true
+# If saving messages is enabled, the file name to save them to. This file will be created under the log directory of the hook's host component - like HiveServer2
+atlas.notification.failed.messages.filename=atlas_hook_failed_messages.log
+</verbatim>
 
 ---++ Client Configs
 <verbatim>
