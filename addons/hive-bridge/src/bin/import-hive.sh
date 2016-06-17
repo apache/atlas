@@ -59,10 +59,6 @@ fi
 # and jars from bridge/hive and hook/hive directories.
 ATLASCPPATH="$ATLAS_CONF"
 
-for i in "${BASEDIR}/bridge/hive/"*.jar; do
-  ATLASCPPATH="${ATLASCPPATH}:$i"
-done
-
 for i in "${BASEDIR}/hook/hive/"*.jar; do
   ATLASCPPATH="${ATLASCPPATH}:$i"
 done
@@ -85,9 +81,22 @@ else
     echo "Could not find a valid HIVE configuration"
     exit 1
 fi
-export HIVE_CP
 
-CP="${HIVE_CP}:${ATLASCPPATH}"
+#Add hadoop conf in classpath
+if [ ! -z "$HADOOP_CLASSPATH" ]; then
+    HADOOP_CP=$HADOOP_CLASSPATH
+elif [ ! -z "$HADOOP_HOME" ]; then
+    HADOOP_CP=`$HADOOP_HOME/bin/hadoop classpath`
+else
+    echo "Environment variable HADOOP_CLASSPATH or HADOOP_HOME need to be set"
+    exit 1
+fi
+
+for i in "${HIVE_HOME}/lib/"*.jar; do
+    HIVE_CP="${HIVE_CP}:$i"
+done
+
+CP="${ATLASCPPATH}:${HIVE_CP}:${HADOOP_CP}"
 
 # If running in cygwin, convert pathnames and classpath to Windows format.
 if [ "${CYGWIN}" == "true" ]
@@ -95,6 +104,7 @@ then
    ATLAS_LOG_DIR=`cygpath -w ${ATLAS_LOG_DIR}`
    LOGFILE=`cygpath -w ${LOGFILE}`
    HIVE_CP=`cygpath -w ${HIVE_CP}`
+   HADOOP_CP=`cygpath -w ${HADOOP_CP}`
    CP=`cygpath -w -p ${CP}`
 fi
 
