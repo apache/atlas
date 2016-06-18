@@ -24,6 +24,9 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-725 UI : Filter out or highlight deleted entities in search result outputs(dsl, text) , schema view, and lineage graph (kevalbhatt18 via sumasai)
+ATLAS-897 Atlas UI: Feature to associate multiple assets with a term. (kevalbhatt18 via sumasai)
+ATLAS-866 Improve association of terms with entity (Show tree view) (kevalbhatt18 via sumasai)
 ATLAS-688 import-hive should depend on Hive CLASSPATH jars instead of packaging everything (svimal2106 via sumasai)
 ATLAS-877 CreateTime of an entity(for example hive table) changes for every update (sumasai)
 ATLAS-642 import-hive should create the lineage for external tables (svimal2106 via sumasai)
