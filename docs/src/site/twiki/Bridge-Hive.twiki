@@ -21,20 +21,27 @@ The entities are created and de-duped using unique qualified name. They provide 
 
 
 ---++ Importing Hive Metadata
-org.apache.atlas.hive.bridge.HiveMetaStoreBridge imports the hive metadata into Atlas using the model defined in org.apache.atlas.hive.model.HiveDataModelGenerator. import-hive.sh command can be used to facilitate this.
-Set the following configuration in hive-site.xml and set environment variable $HIVE_CONF_DIR to the hive conf directory:
-  <verbatim>
-    <property>
-      <name>atlas.cluster.name</name>
-      <value>primary</value>
-    </property>
-  </verbatim>
+org.apache.atlas.hive.bridge.HiveMetaStoreBridge imports the Hive metadata into Atlas using the model defined in org.apache.atlas.hive.model.HiveDataModelGenerator.
 
-Usage: <atlas package>/bin/import-hive.sh. The logs are in <atlas package>/logs/import-hive.log
+import-hive.sh command can be used to facilitate this.
+The script needs Hadoop and Hive classpath jars.
+
+  * For Hadoop jars, please make sure that the environment variable HADOOP_CLASSPATH is set. Another way is to set HADOOP_HOME to point to root directory of your Hadoop installation
+
+  * Similarly, for Hive jars, set HIVE_HOME to the root of Hive installation
+
+  * Set environment variable HIVE_CONF_DIR to Hive configuration directory
+
+    <verbatim>
+    Usage: <atlas package>/bin/import-hive.sh
+    </verbatim>
+
+The logs are in <atlas package>/logs/import-hive.log
 
 If you you are importing metadata in a kerberized cluster you need to run the command like this:
-
+<verbatim>
 <atlas package>/bin/import-hive.sh -Dsun.security.jgss.debug=true -Djavax.security.auth.useSubjectCredsOnly=false -Djava.security.krb5.conf=[krb5.conf location] -Djava.security.auth.login.config=[jaas.conf location]
+</verbatim>
    * krb5.conf is typically found at /etc/krb5.conf
    * for details about jaas.conf and a suggested location see the [[security][atlas security documentation]]
 
