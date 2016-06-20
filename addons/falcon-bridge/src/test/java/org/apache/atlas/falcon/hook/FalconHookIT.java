@@ -22,24 +22,31 @@ import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
+import org.apache.atlas.falcon.bridge.FalconBridge;
 import org.apache.atlas.falcon.model.FalconDataModelGenerator;
 import org.apache.atlas.falcon.model.FalconDataTypes;
+import org.apache.atlas.fs.model.FSDataTypes;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
+import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.persistence.Id;
+import org.apache.atlas.typesystem.types.TypeUtils;
+import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.RandomStringUtils;
-import org.apache.falcon.atlas.service.AtlasService;
+import org.apache.atlas.falcon.service.AtlasService;
+import org.apache.falcon.entity.FeedHelper;
+import org.apache.falcon.entity.FileSystemStorage;
 import org.apache.falcon.entity.store.ConfigurationStore;
 import org.apache.falcon.entity.v0.Entity;
 import org.apache.falcon.entity.v0.EntityType;
 import org.apache.falcon.entity.v0.cluster.Cluster;
 import org.apache.falcon.entity.v0.feed.Feed;
+import org.apache.falcon.entity.v0.feed.Location;
+import org.apache.falcon.entity.v0.feed.LocationType;
 import org.apache.falcon.entity.v0.process.Process;
 import org.apache.falcon.security.CurrentUser;
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -49,7 +56,7 @@ import java.util.List;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
+import static org.testng.Assert.fail;
 
 public class FalconHookIT {
     public static final Logger LOG = org.slf4j.LoggerFactory.getLogger(FalconHookIT.class);
@@ -57,6 +64,7 @@ public class FalconHookIT {
     public static final String CLUSTER_RESOURCE = "/cluster.xml";
     public static final String FEED_RESOURCE = "/feed.xml";
     public static final String FEED_HDFS_RESOURCE = "/feed-hdfs.xml";
+    public static final String FEED_REPLICATION_RESOURCE = "/feed-replication.xml";
     public static final String PROCESS_RESOURCE = "/process.xml";
 
     private AtlasClient atlasClient;
@@ -91,7 +99,7 @@ public class FalconHookIT {
 
     private boolean isDataModelAlreadyRegistered() throws Exception {
         try {
-            atlasClient.getType(FalconDataTypes.FALCON_PROCESS_ENTITY.getName());
+            atlasClient.getType(FalconDataTypes.FALCON_PROCESS.getName());
             LOG.info("Hive data model is already registered!");
             return true;
         } catch(AtlasServiceException ase) {
@@ -128,18 +136,19 @@ public class FalconHookIT {
         return String.format("catalog:%s:%s#ds=${YEAR}-${MONTH}-${DAY}-${HOUR}", dbName, tableName);
     }
 
-    @Test (enabled = true)
+    @Test
     public void testCreateProcess() throws Exception {
         Cluster cluster = loadEntity(EntityType.CLUSTER, CLUSTER_RESOURCE, "cluster" + random());
         STORE.publish(EntityType.CLUSTER, cluster);
+        assertClusterIsRegistered(cluster);
 
-        Feed infeed = getTableFeed(FEED_RESOURCE, cluster.getName());
-        String inTableName = getTableName(infeed);
-        String inDbName = getDBName(infeed);
+        Feed infeed = getTableFeed(FEED_RESOURCE, cluster.getName(), null);
+        String infeedId = atlasClient.getEntity(FalconDataTypes.FALCON_FEED.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+                FalconBridge.getFeedQualifiedName(infeed.getName(), cluster.getName())).getId()._getId();
 
         Feed outfeed = getTableFeed(FEED_RESOURCE, cluster.getName());
-        String outTableName = getTableName(outfeed);
-        String outDbName = getDBName(outfeed);
+        String outFeedId = atlasClient.getEntity(FalconDataTypes.FALCON_FEED.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+                FalconBridge.getFeedQualifiedName(outfeed.getName(), cluster.getName())).getId()._getId();
 
         Process process = loadEntity(EntityType.PROCESS, PROCESS_RESOURCE, "process" + random());
         process.getClusters().getClusters().get(0).setName(cluster.getName());
@@ -147,57 +156,140 @@ public class FalconHookIT {
         process.getOutputs().getOutputs().get(0).setFeed(outfeed.getName());
         STORE.publish(EntityType.PROCESS, process);
 
-        String pid = assertProcessIsRegistered(cluster.getName(), process.getName());
+        String pid = assertProcessIsRegistered(process, cluster.getName());
         Referenceable processEntity = atlasClient.getEntity(pid);
         assertNotNull(processEntity);
         assertEquals(processEntity.get(AtlasClient.NAME), process.getName());
-
-        Id inId = (Id) ((List)processEntity.get("inputs")).get(0);
-        Referenceable inEntity = atlasClient.getEntity(inId._getId());
-        assertEquals(inEntity.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME),
-                HiveMetaStoreBridge.getTableQualifiedName(cluster.getName(), inDbName, inTableName));
-
-        Id outId = (Id) ((List)processEntity.get("outputs")).get(0);
-        Referenceable outEntity = atlasClient.getEntity(outId._getId());
-        assertEquals(outEntity.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME),
-                HiveMetaStoreBridge.getTableQualifiedName(cluster.getName(), outDbName, outTableName));
+        assertEquals(((List<Id>)processEntity.get("inputs")).get(0)._getId(), infeedId);
+        assertEquals(((List<Id>)processEntity.get("outputs")).get(0)._getId(), outFeedId);
     }
 
-    private Feed getTableFeed(String feedResource, String clusterName) throws Exception {
+    private String assertProcessIsRegistered(Process process, String clusterName) throws Exception {
+        return assertEntityIsRegistered(FalconDataTypes.FALCON_PROCESS.getName(),
+                AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+                FalconBridge.getProcessQualifiedName(process.getName(), clusterName));
+    }
+
+    private String assertClusterIsRegistered(Cluster cluster) throws Exception {
+        return assertEntityIsRegistered(FalconDataTypes.FALCON_CLUSTER.getName(),
+                AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, cluster.getName());
+    }
+
+    private TypeUtils.Pair<String, Feed> getHDFSFeed(String feedResource, String clusterName) throws Exception {
         Feed feed = loadEntity(EntityType.FEED, feedResource, "feed" + random());
         org.apache.falcon.entity.v0.feed.Cluster feedCluster = feed.getClusters().getClusters().get(0);
         feedCluster.setName(clusterName);
-        feedCluster.getTable().setUri(getTableUri("db" + random(), "table" + random()));
         STORE.publish(EntityType.FEED, feed);
+        String feedId = assertFeedIsRegistered(feed, clusterName);
+
+        String processId = assertEntityIsRegistered(FalconDataTypes.FALCON_FEED_CREATION.getName(),
+                AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+                FalconBridge.getFeedQualifiedName(feed.getName(), clusterName));
+        Referenceable processEntity = atlasClient.getEntity(processId);
+        assertEquals(((List<Id>)processEntity.get("outputs")).get(0).getId()._getId(), feedId);
+
+        String inputId = ((List<Id>) processEntity.get("inputs")).get(0).getId()._getId();
+        Referenceable pathEntity = atlasClient.getEntity(inputId);
+        assertEquals(pathEntity.getTypeName(), FSDataTypes.HDFS_PATH().toString());
+
+        List<Location> locations = FeedHelper.getLocations(feedCluster, feed);
+        Location dataLocation = FileSystemStorage.getLocation(locations, LocationType.DATA);
+        assertEquals(pathEntity.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME),
+                FalconBridge.normalize(dataLocation.getPath()));
+
+        return TypeUtils.Pair.of(feedId, feed);
+    }
+
+    private Feed getTableFeed(String feedResource, String clusterName) throws Exception {
+        return getTableFeed(feedResource, clusterName, null);
+    }
+
+    private Feed getTableFeed(String feedResource, String clusterName, String secondClusterName) throws Exception {
+        Feed feed = loadEntity(EntityType.FEED, feedResource, "feed" + random());
+        org.apache.falcon.entity.v0.feed.Cluster feedCluster = feed.getClusters().getClusters().get(0);
+        feedCluster.setName(clusterName);
+        String dbName = "db" + random();
+        String tableName = "table" + random();
+        feedCluster.getTable().setUri(getTableUri(dbName, tableName));
+
+        String dbName2 = "db" + random();
+        String tableName2 = "table" + random();
+
+        if (secondClusterName != null) {
+            org.apache.falcon.entity.v0.feed.Cluster feedCluster2 = feed.getClusters().getClusters().get(1);
+            feedCluster2.setName(secondClusterName);
+            feedCluster2.getTable().setUri(getTableUri(dbName2, tableName2));
+        }
+
+        STORE.publish(EntityType.FEED, feed);
+        String feedId = assertFeedIsRegistered(feed, clusterName);
+        verifyFeedLineage(feed.getName(), clusterName, feedId, dbName, tableName);
+
+        if (secondClusterName != null) {
+            String feedId2 = assertFeedIsRegistered(feed, secondClusterName);
+            verifyFeedLineage(feed.getName(), secondClusterName, feedId2, dbName2, tableName2);
+        }
         return feed;
     }
 
-    private String getDBName(Feed feed) {
-        String uri = feed.getClusters().getClusters().get(0).getTable().getUri();
-        String[] parts = uri.split(":");
-        return parts[1];
+    private void verifyFeedLineage(String feedName, String clusterName, String feedId, String dbName, String tableName)
+            throws Exception{
+        //verify that lineage from hive table to falcon feed is created
+        String processId = assertEntityIsRegistered(FalconDataTypes.FALCON_FEED_CREATION.getName(),
+                AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+                FalconBridge.getFeedQualifiedName(feedName, clusterName));
+        Referenceable processEntity = atlasClient.getEntity(processId);
+        assertEquals(((List<Id>)processEntity.get("outputs")).get(0).getId()._getId(), feedId);
+
+        String inputId = ((List<Id>) processEntity.get("inputs")).get(0).getId()._getId();
+        Referenceable tableEntity = atlasClient.getEntity(inputId);
+        assertEquals(tableEntity.getTypeName(), HiveDataTypes.HIVE_TABLE.getName());
+        assertEquals(tableEntity.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME),
+                HiveMetaStoreBridge.getTableQualifiedName(clusterName, dbName, tableName));
+
     }
 
-    private String getTableName(Feed feed) {
-        String uri = feed.getClusters().getClusters().get(0).getTable().getUri();
-        String[] parts = uri.split(":");
-        parts = parts[2].split("#");
-        return parts[0];
+    private String assertFeedIsRegistered(Feed feed, String clusterName) throws Exception {
+        return assertEntityIsRegistered(FalconDataTypes.FALCON_FEED.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+                FalconBridge.getFeedQualifiedName(feed.getName(), clusterName));
     }
 
-    @Test (enabled = true)
+    @Test
+    public void testReplicationFeed() throws Exception {
+        Cluster srcCluster = loadEntity(EntityType.CLUSTER, CLUSTER_RESOURCE, "cluster" + random());
+        STORE.publish(EntityType.CLUSTER, srcCluster);
+        assertClusterIsRegistered(srcCluster);
+
+        Cluster targetCluster = loadEntity(EntityType.CLUSTER, CLUSTER_RESOURCE, "cluster" + random());
+        STORE.publish(EntityType.CLUSTER, targetCluster);
+        assertClusterIsRegistered(targetCluster);
+
+        Feed feed = getTableFeed(FEED_REPLICATION_RESOURCE, srcCluster.getName(), targetCluster.getName());
+        String inId = atlasClient.getEntity(FalconDataTypes.FALCON_FEED.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+                FalconBridge.getFeedQualifiedName(feed.getName(), srcCluster.getName())).getId()._getId();
+        String outId = atlasClient.getEntity(FalconDataTypes.FALCON_FEED.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+                FalconBridge.getFeedQualifiedName(feed.getName(), targetCluster.getName())).getId()._getId();
+
+
+        String processId = assertEntityIsRegistered(FalconDataTypes.FALCON_FEED_REPLICATION.getName(),
+                AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, feed.getName());
+        Referenceable process = atlasClient.getEntity(processId);
+        assertEquals(((List<Id>)process.get("inputs")).get(0)._getId(), inId);
+        assertEquals(((List<Id>)process.get("outputs")).get(0)._getId(), outId);
+    }
+
+    @Test
     public void testCreateProcessWithHDFSFeed() throws Exception {
         Cluster cluster = loadEntity(EntityType.CLUSTER, CLUSTER_RESOURCE, "cluster" + random());
         STORE.publish(EntityType.CLUSTER, cluster);
 
-        Feed infeed = loadEntity(EntityType.FEED, FEED_HDFS_RESOURCE, "feed" + random());
-        org.apache.falcon.entity.v0.feed.Cluster feedCluster = infeed.getClusters().getClusters().get(0);
-        feedCluster.setName(cluster.getName());
-        STORE.publish(EntityType.FEED, infeed);
+        TypeUtils.Pair<String, Feed> result = getHDFSFeed(FEED_HDFS_RESOURCE, cluster.getName());
+        Feed infeed = result.right;
+        String infeedId = result.left;
 
         Feed outfeed = getTableFeed(FEED_RESOURCE, cluster.getName());
-        String outTableName = getTableName(outfeed);
-        String outDbName = getDBName(outfeed);
+        String outfeedId = atlasClient.getEntity(FalconDataTypes.FALCON_FEED.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+                FalconBridge.getFeedQualifiedName(outfeed.getName(), cluster.getName())).getId()._getId();
 
         Process process = loadEntity(EntityType.PROCESS, PROCESS_RESOURCE, "process" + random());
         process.getClusters().getClusters().get(0).setName(cluster.getName());
@@ -205,65 +297,35 @@ public class FalconHookIT {
         process.getOutputs().getOutputs().get(0).setFeed(outfeed.getName());
         STORE.publish(EntityType.PROCESS, process);
 
-        String pid = assertProcessIsRegistered(cluster.getName(), process.getName());
+        String pid = assertProcessIsRegistered(process, cluster.getName());
         Referenceable processEntity = atlasClient.getEntity(pid);
         assertEquals(processEntity.get(AtlasClient.NAME), process.getName());
-        assertNull(processEntity.get("inputs"));
-
-        Id outId = (Id) ((List)processEntity.get("outputs")).get(0);
-        Referenceable outEntity = atlasClient.getEntity(outId._getId());
-        assertEquals(outEntity.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME),
-                HiveMetaStoreBridge.getTableQualifiedName(cluster.getName(), outDbName, outTableName));
+        assertEquals(processEntity.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME),
+                FalconBridge.getProcessQualifiedName(process.getName(), cluster.getName()));
+        assertEquals(((List<Id>)processEntity.get("inputs")).get(0)._getId(), infeedId);
+        assertEquals(((List<Id>)processEntity.get("outputs")).get(0)._getId(), outfeedId);
     }
 
-    //    @Test (enabled = true, dependsOnMethods = "testCreateProcess")
-//    public void testUpdateProcess() throws Exception {
-//        FalconEvent event = createProcessEntity(PROCESS_NAME_2, INPUT, OUTPUT);
-//        FalconEventPublisher.Data data = new FalconEventPublisher.Data(event);
-//        hook.publish(data);
-//        String id = assertProcessIsRegistered(CLUSTER_NAME, PROCESS_NAME_2);
-//        event = createProcessEntity(PROCESS_NAME_2, INPUT_2, OUTPUT_2);
-//        hook.publish(data);
-//        String id2 = assertProcessIsRegistered(CLUSTER_NAME, PROCESS_NAME_2);
-//        if (!id.equals(id2)) {
-//            throw new Exception("Id mismatch");
-//        }
-//    }
-
-    private String assertProcessIsRegistered(String clusterName, String processName) throws Exception {
-        String name = processName + "@" + clusterName;
-        LOG.debug("Searching for process {}", name);
-        String query = String.format("%s as t where %s = '%s' select t",
-                FalconDataTypes.FALCON_PROCESS_ENTITY.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
-        return assertEntityIsRegistered(query);
-    }
-
-    private String assertEntityIsRegistered(final String query) throws Exception {
-        waitFor(2000000, new Predicate() {
+    private String assertEntityIsRegistered(final String typeName, final String property, final String value) throws Exception {
+        waitFor(80000, new Predicate() {
             @Override
-            public boolean evaluate() throws Exception {
-                JSONArray results = atlasClient.search(query);
-                System.out.println(results);
-                return results.length() == 1;
+            public void evaluate() throws Exception {
+                Referenceable entity = atlasClient.getEntity(typeName, property, value);
+                assertNotNull(entity);
             }
         });
-
-        JSONArray results = atlasClient.search(query);
-        JSONObject row = results.getJSONObject(0).getJSONObject("t");
-
-        return row.getString("id");
+        Referenceable entity = atlasClient.getEntity(typeName, property, value);
+        return entity.getId()._getId();
     }
 
-
     public interface Predicate {
-
         /**
          * Perform a predicate evaluation.
          *
          * @return the boolean result of the evaluation.
          * @throws Exception thrown if the predicate evaluation could not evaluate.
          */
-        boolean evaluate() throws Exception;
+        void evaluate() throws Exception;
     }
 
     /**
@@ -273,16 +335,20 @@ public class FalconHookIT {
      * @param predicate predicate waiting on.
      */
     protected void waitFor(int timeout, Predicate predicate) throws Exception {
+        ParamChecker.notNull(predicate, "predicate");
         long mustEnd = System.currentTimeMillis() + timeout;
 
-        boolean eval;
-        while (!(eval = predicate.evaluate()) && System.currentTimeMillis() < mustEnd) {
-            LOG.info("Waiting up to {} msec", mustEnd - System.currentTimeMillis());
-            Thread.sleep(1000);
-        }
-        if (!eval) {
-            throw new Exception("Waiting timed out after " + timeout + " msec");
+        while (true) {
+            try {
+                predicate.evaluate();
+                return;
+            } catch(Error | Exception e) {
+                if (System.currentTimeMillis() >= mustEnd) {
+                    fail("Assertions failed. Failing after waiting for timeout " + timeout + " msecs", e);
+                }
+                LOG.debug("Waiting up to " + (mustEnd - System.currentTimeMillis()) + " msec as assertion failed", e);
+                Thread.sleep(400);
+            }
         }
     }
-
 }

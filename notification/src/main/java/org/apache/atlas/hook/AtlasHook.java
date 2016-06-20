@@ -115,8 +115,11 @@ public abstract class AtlasHook {
     static void notifyEntitiesInternal(List<HookNotification.HookNotificationMessage> messages, int maxRetries,
                                        NotificationInterface notificationInterface,
                                        boolean shouldLogFailedMessages, FailedMessagesLogger logger) {
-        final String message = messages.toString();
+        if (messages == null || messages.isEmpty()) {
+            return;
+        }
 
+        final String message = messages.toString();
         int numRetries = 0;
         while (true) {
             try {

@@ -16,14 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.falcon.atlas.Util;
+package org.apache.atlas.falcon.Util;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.falcon.FalconException;
 import org.apache.falcon.security.CurrentUser;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -33,7 +31,6 @@ import java.util.Map;
  * Falcon event util
  */
 public final class EventUtil {
-    private static final Logger LOG = LoggerFactory.getLogger(EventUtil.class);
 
     private EventUtil() {}
 
@@ -54,7 +51,6 @@ public final class EventUtil {
         }
         return keyValueMap;
     }
-
 
     public static UserGroupInformation getUgi() throws FalconException {
         UserGroupInformation ugi;

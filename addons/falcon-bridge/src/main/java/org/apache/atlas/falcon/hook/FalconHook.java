@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,32 +21,17 @@ package org.apache.atlas.falcon.hook;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import org.apache.atlas.AtlasClient;
-import org.apache.atlas.AtlasConstants;
-import org.apache.atlas.falcon.model.FalconDataModelGenerator;
-import org.apache.atlas.falcon.model.FalconDataTypes;
-import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
-import org.apache.atlas.hive.model.HiveDataModelGenerator;
-import org.apache.atlas.hive.model.HiveDataTypes;
+import org.apache.atlas.falcon.bridge.FalconBridge;
 import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.notification.NotificationModule;
+import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.typesystem.Referenceable;
-import org.apache.commons.lang.StringUtils;
-import org.apache.falcon.atlas.Util.EventUtil;
-import org.apache.falcon.atlas.event.FalconEvent;
-import org.apache.falcon.atlas.publisher.FalconEventPublisher;
-import org.apache.falcon.entity.CatalogStorage;
-import org.apache.falcon.entity.FeedHelper;
+import org.apache.atlas.falcon.event.FalconEvent;
+import org.apache.atlas.falcon.publisher.FalconEventPublisher;
 import org.apache.falcon.entity.store.ConfigurationStore;
-import org.apache.falcon.entity.v0.EntityType;
-import org.apache.falcon.entity.v0.feed.CatalogTable;
 import org.apache.falcon.entity.v0.feed.Feed;
-import org.apache.falcon.entity.v0.process.Cluster;
-import org.apache.falcon.entity.v0.process.Input;
-import org.apache.falcon.entity.v0.process.Output;
 import org.apache.falcon.entity.v0.process.Process;
-import org.apache.falcon.security.CurrentUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,6 +71,11 @@ public class FalconHook extends AtlasHook implements FalconEventPublisher {
 
     private static ConfigurationStore STORE;
 
+    private enum Operation {
+        ADD,
+        UPDATE
+    }
+
     static {
         try {
             // initialize the async facility to process hook calls. We don't
@@ -115,12 +105,14 @@ public class FalconHook extends AtlasHook implements FalconEventPublisher {
             });
 
             STORE = ConfigurationStore.get();
+
+            Injector injector = Guice.createInjector(new NotificationModule());
+            notifInterface = injector.getInstance(NotificationInterface.class);
+
         } catch (Exception e) {
-            LOG.info("Caught exception initializing the falcon hook.", e);
+            LOG.error("Caught exception initializing the falcon hook.", e);
         }
 
-        Injector injector = Guice.createInjector(new NotificationModule());
-        notifInterface = injector.getInstance(NotificationInterface.class);
 
         LOG.info("Created Atlas Hook for Falcon");
     }
@@ -128,166 +120,92 @@ public class FalconHook extends AtlasHook implements FalconEventPublisher {
     @Override
     public void publish(final Data data) throws Exception {
         final FalconEvent event = data.getEvent();
-        if (sync) {
-            fireAndForget(event);
-        } else {
-            executor.submit(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        fireAndForget(event);
-                    } catch (Throwable e) {
-                        LOG.info("Atlas hook failed", e);
-                    }
-                }
-            });
-        }
-    }
-
-    private void fireAndForget(FalconEvent event) throws Exception {
-        LOG.info("Entered Atlas hook for Falcon hook operation {}", event.getOperation());
-
-        notifyEntities(getAuthenticatedUser(), createEntities(event));
-    }
-
-    private String getAuthenticatedUser() {
-        String user = null;
         try {
-            user = CurrentUser.getAuthenticatedUser();
-        } catch (IllegalArgumentException e) {
-            LOG.warn("Failed to get user from CurrentUser.getAuthenticatedUser");
-        }
-        return getUser(user, null);
-    }
-
-    private List<Referenceable> createEntities(FalconEvent event) throws Exception {
-        switch (event.getOperation()) {
-            case ADD_PROCESS:
-                return createProcessInstance((Process) event.getEntity(), event.getUser(), event.getTimestamp());
-        }
-
-        return null;
-    }
-
-    /**
-     +     * Creates process entity
-     +     *
-     +     * @param event process entity event
-     +     * @return process instance reference
-     +     */
-    public List<Referenceable> createProcessInstance(Process process, String user, long timestamp) throws Exception {
-        LOG.info("Creating process Instance : {}", process.getName());
-
-        // The requirement is for each cluster, create a process entity with name
-        // clustername.processname
-        List<Referenceable> entities = new ArrayList<>();
-
-        if (process.getClusters() != null) {
-
-            for (Cluster processCluster : process.getClusters().getClusters()) {
-                org.apache.falcon.entity.v0.cluster.Cluster cluster = STORE.get(EntityType.CLUSTER, processCluster.getName());
-
-                List<Referenceable> inputs = new ArrayList<>();
-                if (process.getInputs() != null) {
-                    for (Input input : process.getInputs().getInputs()) {
-                        List<Referenceable> clusterInputs = getInputOutputEntity(cluster, input.getFeed());
-                        if (clusterInputs != null) {
-                            entities.addAll(clusterInputs);
-                            inputs.add(clusterInputs.get(clusterInputs.size() - 1));
+            if (sync) {
+                fireAndForget(event);
+            } else {
+                executor.submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            fireAndForget(event);
+                        } catch (Throwable e) {
+                            LOG.info("Atlas hook failed", e);
                         }
                     }
-                }
-
-                List<Referenceable> outputs = new ArrayList<>();
-                if (process.getOutputs() != null) {
-                    for (Output output : process.getOutputs().getOutputs()) {
-                        List<Referenceable> clusterOutputs = getInputOutputEntity(cluster, output.getFeed());
-                        if (clusterOutputs != null) {
-                            entities.addAll(clusterOutputs);
-                            outputs.add(clusterOutputs.get(clusterOutputs.size() - 1));
-                        }
-                    }
-                }
-
-                if (!inputs.isEmpty() || !outputs.isEmpty()) {
-                    Referenceable processEntity = new Referenceable(FalconDataTypes.FALCON_PROCESS_ENTITY.getName());
-                    processEntity.set(FalconDataModelGenerator.NAME, String.format("%s", process.getName(),
-                            cluster.getName()));
-                    processEntity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, String.format("%s@%s", process.getName(),
-                        cluster.getName()));
-                    processEntity.set(FalconDataModelGenerator.TIMESTAMP, timestamp);
-                    if (!inputs.isEmpty()) {
-                        processEntity.set(FalconDataModelGenerator.INPUTS, inputs);
-                    }
-                    if (!outputs.isEmpty()) {
-                        processEntity.set(FalconDataModelGenerator.OUTPUTS, outputs);
-                    }
-                    processEntity.set(FalconDataModelGenerator.USER, user);
-
-                    if (StringUtils.isNotEmpty(process.getTags())) {
-                        processEntity.set(FalconDataModelGenerator.TAGS,
-                                EventUtil.convertKeyValueStringToMap(process.getTags()));
-                    }
-                    entities.add(processEntity);
-                }
-
+                });
             }
+        } catch (Throwable t) {
+            LOG.warn("Error in processing data {}", data);
         }
-
-        return entities;
-    }
-
-    private List<Referenceable> getInputOutputEntity(org.apache.falcon.entity.v0.cluster.Cluster cluster, String feedName) throws Exception {
-        Feed feed = STORE.get(EntityType.FEED, feedName);
-        org.apache.falcon.entity.v0.feed.Cluster feedCluster = FeedHelper.getCluster(feed, cluster.getName());
-
-        final CatalogTable table = getTable(feedCluster, feed);
-        if (table != null) {
-            CatalogStorage storage = new CatalogStorage(cluster, table);
-            return createHiveTableInstance(cluster.getName(), storage.getDatabase().toLowerCase(),
-                    storage.getTable().toLowerCase());
-        }
-
-        return null;
-    }
-
-    private CatalogTable getTable(org.apache.falcon.entity.v0.feed.Cluster cluster, Feed feed) {
-        // check if table is overridden in cluster
-        if (cluster.getTable() != null) {
-            return cluster.getTable();
-        }
-
-        return feed.getTable();
-    }
-
-    private Referenceable createHiveDatabaseInstance(String clusterName, String dbName)
-            throws Exception {
-        Referenceable dbRef = new Referenceable(HiveDataTypes.HIVE_DB.getName());
-        dbRef.set(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, clusterName);
-        dbRef.set(HiveDataModelGenerator.NAME, dbName);
-        dbRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
-                HiveMetaStoreBridge.getDBQualifiedName(clusterName, dbName));
-        return dbRef;
-    }
-
-    private List<Referenceable> createHiveTableInstance(String clusterName, String dbName, String tableName) throws Exception {
-        List<Referenceable> entities = new ArrayList<>();
-        Referenceable dbRef = createHiveDatabaseInstance(clusterName, dbName);
-        entities.add(dbRef);
-
-        Referenceable tableRef = new Referenceable(HiveDataTypes.HIVE_TABLE.getName());
-        tableRef.set(HiveDataModelGenerator.NAME,
-                tableName);
-        tableRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, HiveMetaStoreBridge.getTableQualifiedName(clusterName, dbName, tableName));
-        tableRef.set(HiveDataModelGenerator.DB, dbRef);
-        entities.add(tableRef);
-
-        return entities;
     }
 
     @Override
     protected String getNumberOfRetriesPropertyKey() {
         return HOOK_NUM_RETRIES;
+    }
+
+    private void fireAndForget(FalconEvent event) throws Exception {
+        LOG.info("Entered Atlas hook for Falcon hook operation {}", event.getOperation());
+        List<HookNotification.HookNotificationMessage> messages = new ArrayList<>();
+
+        Operation op = getOperation(event.getOperation());
+        String user = getUser(event.getUser());
+        LOG.info("fireAndForget user:{}, ugi: {}", user, event.getUgi());
+        switch (op) {
+        case ADD:
+            messages.add(new HookNotification.EntityCreateRequest(user, createEntities(event, user)));
+            break;
+
+        }
+        notifyEntities(messages);
+    }
+
+    private List<Referenceable> createEntities(FalconEvent event, String user) throws Exception {
+        List<Referenceable> entities = new ArrayList<>();
+
+        switch (event.getOperation()) {
+        case ADD_CLUSTER:
+            entities.add(FalconBridge
+                    .createClusterEntity((org.apache.falcon.entity.v0.cluster.Cluster) event.getEntity(), user,
+                            event.getTimestamp()));
+            break;
+
+        case ADD_PROCESS:
+            entities.addAll(FalconBridge.createProcessEntity((Process) event.getEntity(), STORE,
+                    user, event.getTimestamp()));
+            break;
+
+        case ADD_FEED:
+            entities.addAll(FalconBridge.createFeedCreationEntity((Feed) event.getEntity(), STORE,
+                    user, event.getTimestamp()));
+            break;
+
+        case UPDATE_CLUSTER:
+        case UPDATE_FEED:
+        case UPDATE_PROCESS:
+        default:
+            LOG.info("Falcon operation {} is not valid or supported", event.getOperation());
+        }
+
+        return entities;
+    }
+
+    private static Operation getOperation(final FalconEvent.OPERATION op) throws Exception {
+        switch (op) {
+        case ADD_CLUSTER:
+        case ADD_FEED:
+        case ADD_PROCESS:
+            return Operation.ADD;
+
+        case UPDATE_CLUSTER:
+        case UPDATE_FEED:
+        case UPDATE_PROCESS:
+            return Operation.UPDATE;
+
+        default:
+            throw new Exception("Falcon operation " + op + " is not valid or supported");
+        }
     }
 }
 

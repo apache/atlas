@@ -61,7 +61,11 @@ public class AtlasHookTest {
 
     @Test
     public void testNotifyEntitiesRetriesOnException() throws NotificationException {
-        List<HookNotification.HookNotificationMessage> hookNotificationMessages = new ArrayList<>();
+        List<HookNotification.HookNotificationMessage> hookNotificationMessages =
+                new ArrayList<HookNotification.HookNotificationMessage>() {{
+                    add(new HookNotification.EntityCreateRequest("user"));
+                }
+            };
         doThrow(new NotificationException(new Exception())).when(notificationInterface)
                 .send(NotificationInterface.NotificationType.HOOK, hookNotificationMessages);
         AtlasHook.notifyEntitiesInternal(hookNotificationMessages, 2, notificationInterface, false,
@@ -73,7 +77,11 @@ public class AtlasHookTest {
 
     @Test
     public void testFailedMessageIsLoggedIfRequired() throws NotificationException {
-        List<HookNotification.HookNotificationMessage> hookNotificationMessages = new ArrayList<>();
+        List<HookNotification.HookNotificationMessage> hookNotificationMessages =
+                new ArrayList<HookNotification.HookNotificationMessage>() {{
+                    add(new HookNotification.EntityCreateRequest("user"));
+                }
+            };
         doThrow(new NotificationException(new Exception(), Arrays.asList("test message")))
                 .when(notificationInterface)
                 .send(NotificationInterface.NotificationType.HOOK, hookNotificationMessages);
@@ -97,7 +105,11 @@ public class AtlasHookTest {
 
     @Test
     public void testAllFailedMessagesAreLogged() throws NotificationException {
-        List<HookNotification.HookNotificationMessage> hookNotificationMessages = new ArrayList<>();
+        List<HookNotification.HookNotificationMessage> hookNotificationMessages =
+                new ArrayList<HookNotification.HookNotificationMessage>() {{
+                    add(new HookNotification.EntityCreateRequest("user"));
+                }
+            };
         doThrow(new NotificationException(new Exception(), Arrays.asList("test message1", "test message2")))
                 .when(notificationInterface)
                 .send(NotificationInterface.NotificationType.HOOK, hookNotificationMessages);
