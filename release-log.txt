@@ -3,6 +3,8 @@ Apache Atlas Release Notes
 
 --trunk - unreleased
 INCOMPATIBLE CHANGES:
+ATLAS-915 Fix docs for import-hive changes (svimal2106 via sumasai)
+ATLAS-688 import-hive should depend on Hive CLASSPATH jars instead of packaging everything (svimal2106 via sumasai)
 ATLAS-835 Falcon Integration with Atlas (sowmyaramesh via shwethags)
 ATLAS-912 Update to use Kafka 0.10.0.0 (from 0.9.0.0) (madhan.neethiraj via yhemanth)
 ATLAS-542 Make qualifiedName and name consistent across all Datasets and Process (sumasai via yhemanth)
@@ -28,7 +30,6 @@ ALL CHANGES:
 ATLAS-725 UI : Filter out or highlight deleted entities in search result outputs(dsl, text) , schema view, and lineage graph (kevalbhatt18 via sumasai)
 ATLAS-897 Atlas UI: Feature to associate multiple assets with a term. (kevalbhatt18 via sumasai)
 ATLAS-866 Improve association of terms with entity (Show tree view) (kevalbhatt18 via sumasai)
-ATLAS-688 import-hive should depend on Hive CLASSPATH jars instead of packaging everything (svimal2106 via sumasai)
 ATLAS-877 CreateTime of an entity(for example hive table) changes for every update (sumasai)
 ATLAS-642 import-hive should create the lineage for external tables (svimal2106 via sumasai)
 ATLAS-901 Log messages that cannot be sent to Kafka to a specific log configuration (yhemanth)
