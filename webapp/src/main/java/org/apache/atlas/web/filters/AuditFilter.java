@@ -73,7 +73,7 @@ public class AuditFilter implements Filter {
             // put the request id into the response so users can trace logs for this request
             ((HttpServletResponse) response).setHeader(AtlasClient.REQUEST_ID, requestId);
             currentThread.setName(oldName);
-            RequestContext.clear();;
+            RequestContext.clear();
         }
     }
 
@@ -88,7 +88,7 @@ public class AuditFilter implements Filter {
         final String whatURL = Servlets.getRequestURL(httpRequest);
         final String whatAddrs = httpRequest.getLocalAddr();
 
-        LOG.debug("Audit: {}/{} performed request {} {} ({}) at time {}", who, fromAddress, whatRequest, whatURL,
+        LOG.info("Audit: {}/{} performed request {} {} ({}) at time {}", who, fromAddress, whatRequest, whatURL,
                 whatAddrs, whenISO9601);
         audit(who, fromAddress, whatRequest, fromHost, whatURL, whatAddrs, whenISO9601);
     }

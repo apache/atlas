@@ -3,6 +3,7 @@ Apache Atlas Release Notes
 
 --trunk - unreleased
 INCOMPATIBLE CHANGES:
+ATLAS-835 Falcon Integration with Atlas (sowmyaramesh via shwethags)
 ATLAS-912 Update to use Kafka 0.10.0.0 (from 0.9.0.0) (madhan.neethiraj via yhemanth)
 ATLAS-542 Make qualifiedName and name consistent across all Datasets and Process (sumasai via yhemanth)
 ATLAS-716 Entity update/delete notifications (shwethags)

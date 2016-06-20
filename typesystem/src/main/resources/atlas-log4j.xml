@@ -23,7 +23,7 @@
     <appender name="console" class="org.apache.log4j.ConsoleAppender">
         <param name="Target" value="System.out"/>
         <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="%d %-5p - [%t:%x] ~ %m (%c{1}:%L)%n"/>
+            <param name="ConversionPattern" value="%d %-5p - [%t:%x] ~ %m (%C{1}:%L)%n"/>
         </layout>
     </appender>
 
@@ -43,7 +43,7 @@
 
     <logger name="com.thinkaurelius.titan" additivity="false">
         <level value="info"/>
-        <appender-ref ref="FILE"/>
+        <appender-ref ref="console"/>
     </logger>
 
     <logger name="AUDIT">

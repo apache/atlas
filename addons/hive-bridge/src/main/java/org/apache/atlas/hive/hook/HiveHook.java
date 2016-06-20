@@ -51,11 +51,9 @@ import org.apache.hadoop.hive.ql.metadata.Partition;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.log4j.LogManager;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.tools.cmd.gen.AnyVals;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;
@@ -98,8 +96,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private static final int maxThreadsDefault = 5;
     private static final long keepAliveTimeDefault = 10;
     private static final int queueSizeDefault = 10000;
-
-    private List<HookNotification.HookNotificationMessage> messages = new ArrayList<>();
 
     private static final HiveConf hiveConf;
 
@@ -266,7 +262,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         default:
         }
 
-        notifyEntities(messages);
+        notifyEntities(event.getMessages());
     }
 
     private void deleteTable(HiveMetaStoreBridge dgiBridge, HiveEventContext event) {
@@ -280,7 +276,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private void deleteTable(HiveMetaStoreBridge dgiBridge, HiveEventContext event, WriteEntity output) {
         final String tblQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(dgiBridge.getClusterName(), output.getTable());
         LOG.info("Deleting table {} ", tblQualifiedName);
-        messages.add(
+        event.addMessage(
             new HookNotification.EntityDeleteRequest(event.getUser(),
                 HiveDataTypes.HIVE_TABLE.getName(),
                 AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
@@ -297,7 +293,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                 deleteTable(dgiBridge, event, output);
             } else if (Type.DATABASE.equals(output.getType())) {
                 final String dbQualifiedName = HiveMetaStoreBridge.getDBQualifiedName(dgiBridge.getClusterName(), output.getDatabase().getName());
-                messages.add(
+                event.addMessage(
                     new HookNotification.EntityDeleteRequest(event.getUser(),
                         HiveDataTypes.HIVE_DB.getName(),
                         AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
@@ -348,7 +344,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         for(WriteEntity writeEntity : event.getOutputs()){
             if (writeEntity.getType() == Type.TABLE){
                 Table newTable = writeEntity.getTable();
-                createOrUpdateEntities(dgiBridge, event.getUser(), writeEntity, true, oldTable);
+                createOrUpdateEntities(dgiBridge, event, writeEntity, true, oldTable);
                 final String newQualifiedTableName = dgiBridge.getTableQualifiedName(dgiBridge.getClusterName(),
                         newTable);
                 String oldColumnQFName = HiveMetaStoreBridge.getColumnQualifiedName(newQualifiedTableName, oldColName);
@@ -356,7 +352,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                 Referenceable newColEntity = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
                 newColEntity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, newColumnQFName);
 
-                messages.add(new HookNotification.EntityPartialUpdateRequest(event.getUser(),
+                event.addMessage(new HookNotification.EntityPartialUpdateRequest(event.getUser(),
                         HiveDataTypes.HIVE_COLUMN.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                         oldColumnQFName, newColEntity));
             }
@@ -385,7 +381,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
                     //Create/update old table entity - create entity with oldQFNme and old tableName if it doesnt exist. If exists, will update
                     //We always use the new entity while creating the table since some flags, attributes of the table are not set in inputEntity and Hive.getTable(oldTableName) also fails since the table doesnt exist in hive anymore
-                    final LinkedHashMap<Type, Referenceable> tables = createOrUpdateEntities(dgiBridge, event.getUser(), writeEntity, true);
+                    final LinkedHashMap<Type, Referenceable> tables = createOrUpdateEntities(dgiBridge, event, writeEntity, true);
                     Referenceable tableEntity = tables.get(Type.TABLE);
 
                     //Reset regular column QF Name to old Name and create a new partial notification request to replace old column QFName to newName to retain any existing traits
@@ -398,13 +394,13 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                     replaceSDQFName(event, tableEntity, oldQualifiedName, newQualifiedName);
 
                     //Reset Table QF Name to old Name and create a new partial notification request to replace old Table QFName to newName
-                    replaceTableQFName(dgiBridge, event, oldTable, newTable, tableEntity, oldQualifiedName, newQualifiedName);
+                    replaceTableQFName(event, oldTable, newTable, tableEntity, oldQualifiedName, newQualifiedName);
                 }
             }
         }
     }
 
-    private Referenceable replaceTableQFName(HiveMetaStoreBridge dgiBridge, HiveEventContext event, Table oldTable, Table newTable, final Referenceable tableEntity, final String oldTableQFName, final String newTableQFName) throws HiveException {
+    private Referenceable replaceTableQFName(HiveEventContext event, Table oldTable, Table newTable, final Referenceable tableEntity, final String oldTableQFName, final String newTableQFName) throws HiveException {
         tableEntity.set(HiveDataModelGenerator.NAME,  oldTable.getTableName().toLowerCase());
         tableEntity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, oldTableQFName);
 
@@ -416,7 +412,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         ArrayList<String> alias_list = new ArrayList<>();
         alias_list.add(oldTable.getTableName().toLowerCase());
         newEntity.set(HiveDataModelGenerator.TABLE_ALIAS_LIST, alias_list);
-        messages.add(new HookNotification.EntityPartialUpdateRequest(event.getUser(),
+        event.addMessage(new HookNotification.EntityPartialUpdateRequest(event.getUser(),
             HiveDataTypes.HIVE_TABLE.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
             oldTableQFName, newEntity));
 
@@ -434,7 +430,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             Referenceable newColEntity = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
             ///Only QF Name changes
             newColEntity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, newColumnQFName);
-            messages.add(new HookNotification.EntityPartialUpdateRequest(event.getUser(),
+            event.addMessage(new HookNotification.EntityPartialUpdateRequest(event.getUser(),
                 HiveDataTypes.HIVE_COLUMN.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 oldColumnQFName, newColEntity));
             newColEntities.add(newColEntity);
@@ -453,14 +449,14 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
         final Referenceable newSDEntity = new Referenceable(HiveDataTypes.HIVE_STORAGEDESC.getName());
         newSDEntity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, newSDQFName);
-        messages.add(new HookNotification.EntityPartialUpdateRequest(event.getUser(),
+        event.addMessage(new HookNotification.EntityPartialUpdateRequest(event.getUser(),
             HiveDataTypes.HIVE_STORAGEDESC.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
             oldSDQFName, newSDEntity));
 
         return newSDEntity;
     }
 
-    private LinkedHashMap<Type, Referenceable> createOrUpdateEntities(HiveMetaStoreBridge dgiBridge, String user, Entity entity, boolean skipTempTables, Table existTable) throws Exception {
+    private LinkedHashMap<Type, Referenceable> createOrUpdateEntities(HiveMetaStoreBridge dgiBridge, HiveEventContext event, Entity entity, boolean skipTempTables, Table existTable) throws Exception {
         Database db = null;
         Table table = null;
         Partition partition = null;
@@ -513,18 +509,18 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         }
 
 
-        messages.add(new HookNotification.EntityUpdateRequest(user, entities));
+        event.addMessage(new HookNotification.EntityUpdateRequest(event.getUser(), entities));
         return result;
     }
 
-    private LinkedHashMap<Type, Referenceable> createOrUpdateEntities(HiveMetaStoreBridge dgiBridge, String user, Entity entity, boolean skipTempTables) throws Exception{
-        return createOrUpdateEntities(dgiBridge, user, entity, skipTempTables, null);
+    private LinkedHashMap<Type, Referenceable> createOrUpdateEntities(HiveMetaStoreBridge dgiBridge, HiveEventContext event, Entity entity, boolean skipTempTables) throws Exception{
+        return createOrUpdateEntities(dgiBridge, event, entity, skipTempTables, null);
     }
 
     private LinkedHashMap<Type, Referenceable> handleEventOutputs(HiveMetaStoreBridge dgiBridge, HiveEventContext event, Type entityType) throws Exception {
         for (Entity entity : event.getOutputs()) {
             if (entity.getType() == entityType) {
-                return createOrUpdateEntities(dgiBridge, event.getUser(), entity, true);
+                return createOrUpdateEntities(dgiBridge, event, entity, true);
             }
         }
         return null;
@@ -602,7 +598,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                     }});
 
                 entities.add(processReferenceable);
-                messages.add(new HookNotification.EntityUpdateRequest(event.getUser(), new ArrayList<Referenceable>(entities)));
+                event.addMessage(new HookNotification.EntityUpdateRequest(event.getUser(), new ArrayList<>(entities)));
             } else {
                 LOG.info("Skipped query {} since it has no getInputs() or resulting getOutputs()", event.getQueryStr());
             }
@@ -615,7 +611,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         if (entity.getType() == Type.TABLE || entity.getType() == Type.PARTITION) {
             final String tblQFName = dgiBridge.getTableQualifiedName(dgiBridge.getClusterName(), entity.getTable());
             if (!dataSets.containsKey(tblQFName)) {
-                LinkedHashMap<Type, Referenceable> result = createOrUpdateEntities(dgiBridge, event.getUser(), entity, false);
+                LinkedHashMap<Type, Referenceable> result = createOrUpdateEntities(dgiBridge, event, entity, false);
                 dataSets.put(tblQFName, result.get(Type.TABLE));
                 entities.addAll(result.values());
             }
@@ -684,7 +680,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             }
             entities.addAll(tables.values());
             entities.add(processReferenceable);
-            messages.add(new HookNotification.EntityUpdateRequest(event.getUser(), entities));
+            event.addMessage(new HookNotification.EntityUpdateRequest(event.getUser(), entities));
         }
     }
 
@@ -770,6 +766,8 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         private Long queryStartTime;
 
         private String queryType;
+
+        List<HookNotification.HookNotificationMessage> messages = new ArrayList<>();
 
         public void setInputs(Set<ReadEntity> inputs) {
             this.inputs = inputs;
@@ -859,5 +857,12 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             return queryType;
         }
 
+        public void addMessage(HookNotification.HookNotificationMessage message) {
+            messages.add(message);
+        }
+
+        public List<HookNotification.HookNotificationMessage> getMessages() {
+            return messages;
+        }
     }
 }

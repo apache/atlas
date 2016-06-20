@@ -22,19 +22,15 @@ package org.apache.atlas.falcon.model;
  * Falcon Data Types for model and bridge.
  */
 public enum FalconDataTypes {
-
-
-    FALCON_PROCESS_ENTITY("falcon_process"),
-    ;
-
-    private final String name;
-
-    FalconDataTypes(java.lang.String name) {
-        this.name = name;
-    }
+    // Classes
+    FALCON_CLUSTER,
+    FALCON_FEED_CREATION,
+    FALCON_FEED,
+    FALCON_FEED_REPLICATION,
+    FALCON_PROCESS;
 
     public String getName() {
-        return name;
+        return name().toLowerCase();
     }
 
 }

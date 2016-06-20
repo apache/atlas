@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.falcon.atlas.publisher;
+package org.apache.atlas.falcon.publisher;
 
 
-import org.apache.falcon.atlas.event.FalconEvent;
+import org.apache.atlas.falcon.event.FalconEvent;
 
 /**
  * Falcon publisher for Atlas

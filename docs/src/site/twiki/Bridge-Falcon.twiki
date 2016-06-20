@@ -3,18 +3,26 @@
 ---++ Falcon Model
 The default falcon modelling is available in org.apache.atlas.falcon.model.FalconDataModelGenerator. It defines the following types:
 <verbatim>
-falcon_process(ClassType) - super types [Process] - attributes [timestamp, owned-by, tags]
+falcon_cluster(ClassType) - super types [Infrastructure] - attributes [timestamp, colo, owner, tags]
+falcon_feed(ClassType) - super types [DataSet] - attributes [timestamp, stored-in, owner, groups, tags]
+falcon_feed_creation(ClassType) - super types [Process] - attributes [timestamp, stored-in, owner]
+falcon_feed_replication(ClassType) - super types [Process] - attributes [timestamp, owner]
+falcon_process(ClassType) - super types [Process] - attributes [timestamp, runs-on, owner, tags, pipelines, workflow-properties]
 </verbatim>
 
 One falcon_process entity is created for every cluster that the falcon process is defined for.
 
-The entities are created and de-duped using unique qualified name. They provide namespace and can be used for querying/lineage as well. The unique attributes are:
-   * falcon_process - attribute name - <process name>@<cluster name>
+The entities are created and de-duped using unique qualifiedName attribute. They provide namespace and can be used for querying/lineage as well. The unique attributes are:
+   * falcon_process - <process name>@<cluster name>
+   * falcon_cluster - <cluster name>
+   * falcon_feed - <feed name>@<cluster name>
+   * falcon_feed_creation - <feed name>
+   * falcon_feed_replication - <feed name>
 
 ---++ Falcon Hook
 Falcon supports listeners on falcon entity submission. This is used to add entities in Atlas using the model defined in org.apache.atlas.falcon.model.FalconDataModelGenerator.
 The hook submits the request to a thread pool executor to avoid blocking the command execution. The thread submits the entities as message to the notification server and atlas server reads these messages and registers the entities.
-   * Add 'org.apache.falcon.atlas.service.AtlasService' to application.services in <falcon-conf>/startup.properties
+   * Add 'org.apache.atlas.falcon.service.AtlasService' to application.services in <falcon-conf>/startup.properties
    * Link falcon hook jars in falcon classpath - 'ln -s <atlas-home>/hook/falcon/* <falcon-home>/server/webapp/falcon/WEB-INF/lib/'
    * In <falcon_conf>/falcon-env.sh, set an environment variable as follows:
      <verbatim>
@@ -33,5 +41,4 @@ Refer [[Configuration][Configuration]] for notification related configurations
 
 
 ---++ Limitations
-   * Only the process entity creation is currently handled. This model will be expanded to include all Falcon metadata
    * In falcon cluster entity, cluster name used should be uniform across components like hive, falcon, sqoop etc. If used with ambari, ambari cluster name should be used for cluster entity
