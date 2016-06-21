@@ -39,6 +39,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-765 Need documentation for Authentication and Authorization features of Atlas (nixonrodrigues via yhemanth)
 ATLAS-930 QuickStart is failing when run after a specific sequence of operations (yhemanth via shwethags)
 ATLAS-904 Hive hook fails due to session state not being set (sumasai via yhemanth)
 ATLAS-929 Add test for trait preservation on column rename for non-default database (svimal2106 via shwethags)

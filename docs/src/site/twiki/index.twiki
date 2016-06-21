@@ -42,6 +42,7 @@ allows integration with the whole enterprise data ecosystem.
    * [[Repository][Metadata Repository]]
    * [[Search][Search]]
    * [[security][Security]]
+   * [[Authentication-Authorization][Authentication and Authorization]]
    * [[Configuration][Configuration]]
    * Notification
       * [[Notification-Entity][Entity Notification]]
