@@ -333,9 +333,12 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private void renameColumn(HiveMetaStoreBridge dgiBridge, HiveEventContext event) throws  Exception{
         assert event.getInputs() != null && event.getInputs().size() == 1;
         assert event.getOutputs() != null && event.getOutputs().size() > 0;
+
         Table oldTable = event.getInputs().iterator().next().getTable();
         List<FieldSchema> oldColList = oldTable.getAllCols();
-        List<FieldSchema> newColList = dgiBridge.hiveClient.getTable(event.getOutputs().iterator().next().getTable().getTableName()).getAllCols();
+        Table outputTbl = event.getOutputs().iterator().next().getTable();
+        outputTbl = dgiBridge.hiveClient.getTable(outputTbl.getDbName(), outputTbl.getTableName());
+        List<FieldSchema> newColList = outputTbl.getAllCols();
         assert oldColList.size() == newColList.size();
 
         Pair<String, String> changedColNamePair = findChangedColNames(oldColList, newColList);

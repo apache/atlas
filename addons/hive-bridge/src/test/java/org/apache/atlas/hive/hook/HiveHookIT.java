@@ -1023,13 +1023,16 @@ public class HiveHookIT {
 
     @Test
     public void testTraitsPreservedOnColumnRename() throws Exception {
-        String tableName = createTable();
-        String tbqn = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName);
+        String dbName = createDatabase();
+        String tableName = tableName();
+        String createQuery = String.format("create table %s.%s (id int, name string)", dbName, tableName);
+        runCommand(createQuery);
+        String tbqn = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableName);
         String guid = assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(tbqn, "id"));
         String trait = createTrait(guid);
         String oldColName = "id";
         String newColName = "id_new";
-        String query = String.format("alter table %s change %s %s string", tableName, oldColName, newColName);
+        String query = String.format("alter table %s.%s change %s %s string", dbName, tableName, oldColName, newColName);
         runCommand(query);
 
         String guid2 = assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(tbqn, "id_new"));
