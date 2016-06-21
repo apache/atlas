@@ -41,6 +41,7 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
+import org.apache.hadoop.classification.InterfaceAudience;
 
 /**
  * Jersey Resource for metadata operations.
@@ -81,10 +82,6 @@ public class MetadataDiscoveryResource {
         JSONObject response;
         try {   // fall back to dsl
             ParamChecker.notEmpty(query, "query cannot be null");
-
-            if (query.startsWith("g.")) { // raw gremlin query
-                return searchUsingGremlinQuery(query);
-            }
 
             final String jsonResultStr = discoveryService.searchByDSL(query);
             response = new DSLJSONResponseBuilder().results(jsonResultStr).query(query).build();
@@ -137,6 +134,7 @@ public class MetadataDiscoveryResource {
     @Path("search/gremlin")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
+    @InterfaceAudience.Private
     public Response searchUsingGremlinQuery(@QueryParam("query") String gremlinQuery) {
         try {
             ParamChecker.notEmpty(gremlinQuery, "gremlinQuery cannot be null or empty");

@@ -100,7 +100,7 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testSearchUsingGremlin() throws Exception {
         String query = "g.V.has('type', 'dsl_test_type').toList()";
-        WebResource resource = service.path("api/atlas/discovery/search").queryParam("query", query);
+        WebResource resource = service.path("api/atlas/discovery/search/gremlin").queryParam("query", query);
 
         ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
