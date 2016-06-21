@@ -1336,6 +1336,10 @@
                 <directory>src/test/resources</directory>
                 <filtering>true</filtering>
             </testResource>
+            <testResource>
+                <directory>typesystem/src/test/resources</directory>
+                <filtering>true</filtering>
+            </testResource>
         </testResources>
 
         <pluginManagement>

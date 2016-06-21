@@ -85,6 +85,14 @@
             <artifactId>jetty-server</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-typesystem</artifactId>
+            <version>${parent.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -230,6 +238,10 @@
                             <name>atlas.data</name>
                             <value>${project.build.directory}/data</value>
                         </systemProperty>
+                        <systemProperty>
+                            <key>atlas.conf</key>
+                            <value>${project.build.directory}/../../../typesystem/target/test-classes</value>
+                        </systemProperty>
                     </systemProperties>
                     <stopKey>atlas-stop</stopKey>
                     <stopPort>31001</stopPort>
@@ -289,6 +301,12 @@
                     <execution>
                         <configuration>
                             <mainClass>org.apache.atlas.falcon.model.FalconDataModelGenerator</mainClass>
+                            <systemProperties>
+                                <systemProperty>
+                                    <key>atlas.conf</key>
+                                    <value>${project.build.directory}/../../../typesystem/target/test-classes</value>
+                                </systemProperty>
+                            </systemProperties>
                             <arguments>
                                 <argument>${project.build.directory}/models/falcon_model.json</argument>
                             </arguments>
