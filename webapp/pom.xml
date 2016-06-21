@@ -36,6 +36,7 @@
     <properties>
         <projectBaseDir>${project.basedir}/..</projectBaseDir>
         <debug.jetty.daemon>true</debug.jetty.daemon>
+        <packages.to.exclude />
     </properties>
 
     <profiles>
@@ -65,6 +66,26 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <profile>
+            <!-- default profile is for external HBase and Solr - hence not packaging those jars -->
+            <id>dist</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <packages.to.exclude>WEB-INF/lib/titan-berkeleyje-${titan.version}.jar,WEB-INF/lib/je-*.jar,WEB-INF/lib/titan-es-${titan.version}.jar,WEB-INF/lib/elasticsearch-*.jar</packages.to.exclude>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>berkeley-elasticsearch</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <packages.to.exclude>WEB-INF/lib/je-*.jar</packages.to.exclude>
+            </properties>
         </profile>
     </profiles>
 
@@ -323,15 +344,18 @@
                             <groupId>org.apache.atlas</groupId>
                             <artifactId>atlas-dashboardv2</artifactId>
                         </overlay>
-		        <overlay>
-		             <!-- empty groupId/artifactId represents the current build -->
-            		</overlay>
+                        <overlay>
+                             <!-- empty groupId/artifactId represents the current build -->
+                        </overlay>
                     </overlays>
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
                         </manifest>
                     </archive>
+                    <packagingExcludes>
+                        ${packages.to.exclude}
+                    </packagingExcludes>
                 </configuration>
             </plugin>
 
