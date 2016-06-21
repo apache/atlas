@@ -123,6 +123,14 @@
             <type>war</type>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-typesystem</artifactId>
+            <version>${parent.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -349,6 +357,10 @@
                             <name>atlas.data</name>
                             <value>${project.build.directory}/data</value>
                         </systemProperty>
+                        <systemProperty>
+                            <key>atlas.conf</key>
+                            <value>${project.build.directory}/../../../typesystem/target/test-classes</value>
+                        </systemProperty>
                     </systemProperties>
                     <stopKey>atlas-stop</stopKey>
                     <stopPort>31001</stopPort>
@@ -409,6 +421,12 @@
                     <execution>
                         <configuration>
                             <mainClass>org.apache.atlas.storm.model.StormDataModelGenerator</mainClass>
+                            <systemProperties>
+                                <systemProperty>
+                                    <key>atlas.conf</key>
+                                    <value>${project.build.directory}/../../../typesystem/target/test-classes</value>
+                                </systemProperty>
+                            </systemProperties>
                             <arguments>
                                 <argument>${project.build.directory}/models/storm_model.json</argument>
                             </arguments>

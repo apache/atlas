@@ -67,8 +67,22 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static Configuration get(String fileName) throws AtlasException {
         String confLocation = System.getProperty("atlas.conf");
         try {
-            URL url = confLocation == null ? ApplicationProperties.class.getResource("/" + fileName)
-                    : new File(confLocation, fileName).toURI().toURL();
+            URL url = null;
+
+            if (confLocation == null) {
+                LOG.info("Looking for {} in classpath", fileName);
+
+                url = ApplicationProperties.class.getClassLoader().getResource(fileName);
+
+                if (url == null) {
+                    LOG.info("Looking for /{} in classpath", fileName);
+
+                    url = ApplicationProperties.class.getClassLoader().getResource("/" + fileName);
+                }
+            } else {
+                url = new File(confLocation, fileName).toURI().toURL();
+            }
+
             LOG.info("Loading {} from {}", fileName, url);
 
             Configuration configuration = new ApplicationProperties(url).interpolatedConfiguration();
