@@ -22,7 +22,7 @@
     <parent>
         <artifactId>apache-atlas</artifactId>
         <groupId>org.apache.atlas</groupId>
-        <version>0.7-incubating-SNAPSHOT</version>
+        <version>0.8-incubating-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>atlas-distro</artifactId>
@@ -194,22 +194,13 @@ atlas.graph.index.search.solr.zookeeper-url=localhost:2181
                                 </goals>
                                 <configuration>
                                     <target name="Download HBase">
-                                        <mkdir dir="${hbase.dir}"/>
-                                        <mkdir dir="${project.basedir}/hbase"/>
-                                        <get
-                                            src="${hbase.tar}"
-                                            dest="${project.basedir}/hbase/${hbase.folder}.tar.gz"
-                                            usetimestamp="true"
-                                            verbose="true" skipexisting="true"
-                                        />
-                                        <untar
-                                            src="${project.basedir}/hbase/${hbase.folder}.tar.gz"
-                                            dest="${project.build.directory}/hbase.temp"
-                                            compression="gzip"
-                                        />
+                                        <mkdir dir="${hbase.dir}" />
+                                        <mkdir dir="${project.basedir}/hbase" />
+                                        <get src="${hbase.tar}" dest="${project.basedir}/hbase/${hbase.folder}.tar.gz" usetimestamp="true" verbose="true" skipexisting="true" />
+                                        <untar src="${project.basedir}/hbase/${hbase.folder}.tar.gz" dest="${project.build.directory}/hbase.temp" compression="gzip" />
                                         <copy todir="${hbase.dir}">
                                             <fileset dir="${project.build.directory}/hbase.temp/${hbase.folder}">
-                                                <include name="**/*"/>
+                                                <include name="**/*" />
                                             </fileset>
                                         </copy>
                                     </target>
@@ -224,22 +215,13 @@ atlas.graph.index.search.solr.zookeeper-url=localhost:2181
                                 </goals>
                                 <configuration>
                                     <target name="Download SOLR">
-                                        <mkdir dir="${solr.dir}"/>
-                                        <mkdir dir="${project.basedir}/solr"/>
-                                        <get
-                                            src="${solr.tar}"
-                                            dest="${project.basedir}/solr/${solr.folder}.tgz"
-                                            usetimestamp="true"
-                                            verbose="true" skipexisting="true"
-                                        />
-                                        <untar
-                                            src="${project.basedir}/solr/${solr.folder}.tgz"
-                                            dest="${project.build.directory}/solr.temp"
-                                            compression="gzip"
-                                        />
+                                        <mkdir dir="${solr.dir}" />
+                                        <mkdir dir="${project.basedir}/solr" />
+                                        <get src="${solr.tar}" dest="${project.basedir}/solr/${solr.folder}.tgz" usetimestamp="true" verbose="true" skipexisting="true" />
+                                        <untar src="${project.basedir}/solr/${solr.folder}.tgz" dest="${project.build.directory}/solr.temp" compression="gzip" />
                                         <copy todir="${solr.dir}">
                                             <fileset dir="${project.build.directory}/solr.temp/${solr.folder}">
-                                                <include name="**/*"/>
+                                                <include name="**/*" />
                                             </fileset>
                                         </copy>
                                     </target>
@@ -304,7 +286,6 @@ atlas.graph.index.search.solr.zookeeper-url=localhost:2181
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>storm-bridge</artifactId>
-            <version>0.7-incubating-SNAPSHOT</version>
         </dependency>
     </dependencies>
 </project>

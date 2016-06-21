@@ -17,9 +17,7 @@
   ~ limitations under the License.
   -->
 
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd"
-         xmlns="http://maven.apache.org/POM/4.0.0">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <parent>
         <groupId>org.apache</groupId>
@@ -30,7 +28,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.apache.atlas</groupId>
     <artifactId>apache-atlas</artifactId>
-    <version>0.7-incubating-SNAPSHOT</version>
+    <version>0.8-incubating-SNAPSHOT</version>
     <description>Metadata Management and Data Governance Platform over Hadoop</description>
     <name>apache-atlas</name>
     <packaging>pom</packaging>
@@ -110,7 +108,7 @@
                 <role>committer</role>
                 <role>PPMC</role>
             </roles>
-            <organization></organization>
+            <organization />
             <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
         </developer>
         <developer>
@@ -1073,6 +1071,12 @@
             <dependency>
                 <groupId>org.apache.atlas</groupId>
                 <artifactId>hive-bridge</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>storm-bridge</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
