@@ -35,7 +35,6 @@ import org.apache.atlas.typesystem.types.ValueConversionException;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.protocol.HTTP;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -121,9 +120,10 @@ public class EntityResource {
             }
 
             entityJson = AtlasClient.toString(new JSONArray(entities));
-            LOG.debug("submitting entities {} ", entityJson);
+            LOG.info("submitting entities {} ", entityJson);
 
             final List<String> guids = metadataService.createEntities(entities);
+            LOG.info("Created entities {}", guids);
             JSONObject response = getResponse(new AtlasClient.EntityResult(guids, null, null));
 
             URI locationURI = getLocationURI(guids);
@@ -189,9 +189,11 @@ public class EntityResource {
             final String entities = Servlets.getRequestPayload(request);
 
             entityJson = AtlasClient.toString(new JSONArray(entities));
-            LOG.debug("updating entities {} ", entityJson);
+            LOG.info("updating entities {} ", entityJson);
 
             AtlasClient.EntityResult entityResult = metadataService.updateEntities(entities);
+            LOG.info("Updated entities: {}", entityResult);
+
             JSONObject response = getResponse(entityResult);
             return Response.ok(response).build();
         } catch(EntityExistsException e) {
@@ -253,13 +255,14 @@ public class EntityResource {
         try {
             entityJson = Servlets.getRequestPayload(request);
 
-            LOG.debug("Partially updating entity by unique attribute {} {} {} {} ", entityType, attribute, value, entityJson);
+            LOG.info("Partially updating entity by unique attribute {} {} {} {} ", entityType, attribute, value, entityJson);
 
             Referenceable updatedEntity =
                 InstanceSerialization.fromJsonReferenceable(entityJson, true);
 
             AtlasClient.EntityResult entityResult =
                     metadataService.updateEntityByUniqueAttribute(entityType, attribute, value, updatedEntity);
+            LOG.info("Updated entities: {}", entityResult);
 
             JSONObject response = getResponse(entityResult);
             return Response.ok(response).build();
@@ -308,11 +311,14 @@ public class EntityResource {
         try {
             ParamChecker.notEmpty(guid, "Guid property cannot be null");
             entityJson = Servlets.getRequestPayload(request);
-            LOG.debug("partially updating entity for guid {} : {} ", guid, entityJson);
+            LOG.info("partially updating entity for guid {} : {} ", guid, entityJson);
 
             Referenceable updatedEntity =
                     InstanceSerialization.fromJsonReferenceable(entityJson, true);
+
             AtlasClient.EntityResult entityResult = metadataService.updateEntityPartialByGuid(guid, updatedEntity);
+            LOG.info("Updated entities: {}", entityResult);
+
             JSONObject response = getResponse(entityResult);
             return Response.ok(response).build();
         } catch (EntityNotFoundException e) {
@@ -344,7 +350,10 @@ public class EntityResource {
             value = Servlets.getRequestPayload(request);
             Preconditions.checkNotNull(value, "Entity value cannot be null");
 
+            LOG.info("Updating entity {} for property {} = {}", guid, property, value);
             AtlasClient.EntityResult entityResult = metadataService.updateEntityAttributeByGuid(guid, property, value);
+            LOG.info("Updated entities: {}", entityResult);
+
             JSONObject response = getResponse(entityResult);
             return Response.ok(response).build();
         } catch (EntityNotFoundException e) {
@@ -381,10 +390,13 @@ public class EntityResource {
         try {
             AtlasClient.EntityResult entityResult;
             if (guids != null && !guids.isEmpty()) {
+                LOG.info("Deleting entities {}", guids);
                 entityResult = metadataService.deleteEntities(guids);
             } else {
+                LOG.info("Deleting entity type={} with property {}={}", entityType, attribute, value);
                 entityResult = metadataService.deleteEntityByUniqueAttribute(entityType, attribute, value);
             }
+            LOG.info("Deleted entity result: {}", entityResult);
             JSONObject response = getResponse(entityResult);
             return Response.ok(response).build();
         } catch (EntityNotFoundException e) {
@@ -579,7 +591,7 @@ public class EntityResource {
         String traitDefinition = null;
         try {
             traitDefinition = Servlets.getRequestPayload(request);
-            LOG.debug("Adding trait={} for entity={} ", traitDefinition, guid);
+            LOG.info("Adding trait={} for entity={} ", traitDefinition, guid);
             metadataService.addTrait(guid, traitDefinition);
 
             URI locationURI = getLocationURI(new ArrayList<String>() {{
@@ -614,7 +626,7 @@ public class EntityResource {
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response deleteTrait(@Context HttpServletRequest request, @PathParam("guid") String guid,
             @PathParam(TRAIT_NAME) String traitName) {
-        LOG.debug("Deleting trait={} from entity={} ", traitName, guid);
+        LOG.info("Deleting trait={} from entity={} ", traitName, guid);
         try {
             metadataService.deleteTrait(guid, traitName);
 

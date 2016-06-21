@@ -28,7 +28,6 @@ import org.apache.falcon.entity.v0.Entity;
 import org.apache.falcon.entity.v0.EntityType;
 import org.apache.falcon.service.ConfigurationChangeListener;
 import org.apache.falcon.service.FalconService;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,15 +126,12 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
         LOG.info("Adding {} entity to Atlas: {}", entity.getEntityType().name(), entity.getName());
 
         try {
-            String user = entity.getACL() != null ? entity.getACL().getOwner() :
-                    UserGroupInformation.getLoginUser().getShortUserName();
             FalconEvent event =
-                    new FalconEvent(user, EventUtil.getUgi(), operation, System.currentTimeMillis(), entity);
+                    new FalconEvent(EventUtil.getUser(), operation, System.currentTimeMillis(), entity);
             FalconEventPublisher.Data data = new FalconEventPublisher.Data(event);
             publisher.publish(data);
         } catch (Exception ex) {
             throw new FalconException("Unable to publish data to publisher " + ex.getMessage(), ex);
         }
     }
-
 }

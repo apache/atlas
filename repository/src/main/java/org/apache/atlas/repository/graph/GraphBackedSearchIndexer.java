@@ -169,7 +169,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             LOG.info("Creating indexes for type name={}, definition={}", dataType.getName(), dataType.getClass());
             try {
                 addIndexForType(management, dataType);
-                LOG.info("Index creation for type {} complete", dataType.getName());
+                LOG.debug("Index creation for type {} complete", dataType.getName());
             } catch (Throwable throwable) {
                 LOG.error("Error creating index for type {}", dataType, throwable);
                 //Rollback indexes if any failure

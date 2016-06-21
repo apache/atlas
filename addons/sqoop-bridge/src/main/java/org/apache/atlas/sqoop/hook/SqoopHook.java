@@ -63,7 +63,7 @@ public class SqoopHook extends SqoopJobDataPublisher {
             throws Exception {
         Referenceable dbRef = new Referenceable(HiveDataTypes.HIVE_DB.getName());
         dbRef.set(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, clusterName);
-        dbRef.set(HiveDataModelGenerator.NAME, dbName);
+        dbRef.set(AtlasClient.NAME, dbName);
         dbRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 HiveMetaStoreBridge.getDBQualifiedName(clusterName, dbName));
         return dbRef;
@@ -74,7 +74,7 @@ public class SqoopHook extends SqoopJobDataPublisher {
         Referenceable tableRef = new Referenceable(HiveDataTypes.HIVE_TABLE.getName());
         tableRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 HiveMetaStoreBridge.getTableQualifiedName(clusterName, dbName, tableName));
-        tableRef.set(HiveDataModelGenerator.NAME, tableName.toLowerCase());
+        tableRef.set(AtlasClient.NAME, tableName.toLowerCase());
         tableRef.set(HiveDataModelGenerator.DB, dbRef);
         return tableRef;
     }
@@ -92,14 +92,14 @@ public class SqoopHook extends SqoopJobDataPublisher {
         String usage = table != null ? "TABLE" : "QUERY";
         String source = table != null ? table : query;
         String name = getSqoopDBStoreName(data);
-        storeRef.set(SqoopDataModelGenerator.NAME, name);
+        storeRef.set(AtlasClient.NAME, name);
         storeRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
         storeRef.set(SqoopDataModelGenerator.DB_STORE_TYPE, data.getStoreType());
         storeRef.set(SqoopDataModelGenerator.DB_STORE_USAGE, usage);
         storeRef.set(SqoopDataModelGenerator.STORE_URI, data.getUrl());
         storeRef.set(SqoopDataModelGenerator.SOURCE, source);
         storeRef.set(SqoopDataModelGenerator.DESCRIPTION, "");
-        storeRef.set(SqoopDataModelGenerator.OWNER, data.getUser());
+        storeRef.set(AtlasClient.OWNER, data.getUser());
         return storeRef;
     }
 
@@ -107,7 +107,7 @@ public class SqoopHook extends SqoopJobDataPublisher {
                                                      SqoopJobDataPublisher.Data data, String clusterName) {
         Referenceable procRef = new Referenceable(SqoopDataTypes.SQOOP_PROCESS.getName());
         final String sqoopProcessName = getSqoopProcessName(data, clusterName);
-        procRef.set(SqoopDataModelGenerator.NAME, sqoopProcessName);
+        procRef.set(AtlasClient.NAME, sqoopProcessName);
         procRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, sqoopProcessName);
         procRef.set(SqoopDataModelGenerator.OPERATION, data.getOperation());
         if (isImportOperation(data)) {

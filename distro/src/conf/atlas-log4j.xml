@@ -49,7 +49,7 @@
     </logger>
 
     <logger name="com.thinkaurelius.titan" additivity="false">
-        <level value="info"/>
+        <level value="warn"/>
         <appender-ref ref="FILE"/>
     </logger>
 

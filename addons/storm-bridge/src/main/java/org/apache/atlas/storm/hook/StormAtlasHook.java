@@ -116,7 +116,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
         if (StringUtils.isEmpty(owner)) {
             owner = ANONYMOUS_OWNER;
         }
-        topologyReferenceable.set("owner", owner);
+        topologyReferenceable.set(AtlasClient.OWNER, owner);
         topologyReferenceable.set("startTime", System.currentTimeMillis());
         topologyReferenceable.set(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, getClusterName(stormConf));
 
@@ -194,7 +194,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
                 if (StringUtils.isEmpty(topologyOwner)) {
                     topologyOwner = ANONYMOUS_OWNER;
                 }
-                dataSetReferenceable.set("owner", topologyOwner);
+                dataSetReferenceable.set(AtlasClient.OWNER, topologyOwner);
                 dataSetReferenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, getKafkaTopicQualifiedName(getClusterName(stormConf), topicName));
                 dataSetReferenceable.set(AtlasClient.NAME, topicName);
                 break;
@@ -204,7 +204,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
                 final String hbaseTableName = config.get("HBaseBolt.tableName");
                 dataSetReferenceable.set("uri", stormConf.get("hbase.rootdir"));
                 dataSetReferenceable.set(AtlasClient.NAME, hbaseTableName);
-                dataSetReferenceable.set("owner", stormConf.get("storm.kerberos.principal"));
+                dataSetReferenceable.set(AtlasClient.OWNER, stormConf.get("storm.kerberos.principal"));
                 clusterName = extractComponentClusterName(HBaseConfiguration.create(), stormConf);
                 //TODO - Hbase Namespace is hardcoded to 'default'. need to check how to get this or is it already part of tableName
                 dataSetReferenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, getHbaseTableQualifiedName(clusterName, HBASE_NAMESPACE_DEFAULT,
@@ -220,7 +220,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
                 dataSetReferenceable.set(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, getClusterName(stormConf));
                 dataSetReferenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, hdfsPathStr);
                 dataSetReferenceable.set("path", hdfsPathStr);
-                dataSetReferenceable.set("owner", stormConf.get("hdfs.kerberos.principal"));
+                dataSetReferenceable.set(AtlasClient.OWNER, stormConf.get("hdfs.kerberos.principal"));
                 final Path hdfsPath = new Path(hdfsPathStr);
                 dataSetReferenceable.set(AtlasClient.NAME, hdfsPath.getName());
                 break;
@@ -229,7 +229,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
                 // todo: verify if hive table has everything needed to retrieve existing table
                 Referenceable dbReferenceable = new Referenceable("hive_db");
                 String databaseName = config.get("HiveBolt.options.databaseName");
-                dbReferenceable.set(HiveDataModelGenerator.NAME, databaseName);
+                dbReferenceable.set(AtlasClient.NAME, databaseName);
                 dbReferenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                         HiveMetaStoreBridge.getDBQualifiedName(getClusterName(stormConf), databaseName));
                 dbReferenceable.set(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, getClusterName(stormConf));
@@ -239,7 +239,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
                 dataSetReferenceable = new Referenceable("hive_table");
                 final String tableQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(clusterName,
                         databaseName, hiveTableName);
-                dataSetReferenceable.set(HiveDataModelGenerator.NAME, hiveTableName);
+                dataSetReferenceable.set(AtlasClient.NAME, hiveTableName);
                 dataSetReferenceable.set(HiveDataModelGenerator.DB, dbReferenceable);
                 dataSetReferenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableQualifiedName);
                 break;
@@ -291,8 +291,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
 
     private Referenceable createSpoutInstance(String spoutName,
                                               SpoutSpec stormSpout) throws IllegalAccessException {
-        Referenceable spoutReferenceable = new Referenceable(
-                StormDataTypes.STORM_SPOUT.getName(), "DataProducer");
+        Referenceable spoutReferenceable = new Referenceable(StormDataTypes.STORM_SPOUT.getName());
         spoutReferenceable.set(AtlasClient.NAME, spoutName);
 
         Serializable instance = Utils.javaDeserialize(
@@ -315,8 +314,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
 
     private Referenceable createBoltInstance(String boltName,
                                              Bolt stormBolt) throws IllegalAccessException {
-        Referenceable boltReferenceable = new Referenceable(
-                StormDataTypes.STORM_BOLT.getName(), "DataProcessor");
+        Referenceable boltReferenceable = new Referenceable(StormDataTypes.STORM_BOLT.getName());
 
         boltReferenceable.set(AtlasClient.NAME, boltName);
 

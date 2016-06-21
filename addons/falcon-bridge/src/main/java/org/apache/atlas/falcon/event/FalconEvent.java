@@ -19,7 +19,6 @@
 package org.apache.atlas.falcon.event;
 
 import org.apache.falcon.entity.v0.Entity;
-import org.apache.hadoop.security.UserGroupInformation;
 
 import java.util.Date;
 
@@ -28,14 +27,12 @@ import java.util.Date;
  */
 public class FalconEvent {
     protected String user;
-    protected UserGroupInformation ugi;
     protected OPERATION operation;
     protected long timestamp;
     protected Entity entity;
 
-    public FalconEvent(String doAsUser, UserGroupInformation ugi, OPERATION falconOperation, long timestamp, Entity entity) {
+    public FalconEvent(String doAsUser, OPERATION falconOperation, long timestamp, Entity entity) {
         this.user = doAsUser;
-        this.ugi = ugi;
         this.operation = falconOperation;
         this.timestamp = timestamp;
         this.entity = entity;
@@ -52,10 +49,6 @@ public class FalconEvent {
 
     public String getUser() {
         return user;
-    }
-
-    public UserGroupInformation getUgi() {
-        return ugi;
     }
 
     public OPERATION getOperation() {

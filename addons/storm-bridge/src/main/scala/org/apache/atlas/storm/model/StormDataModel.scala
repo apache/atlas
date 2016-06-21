@@ -45,8 +45,6 @@ object StormDataModel extends App {
          */
         _class(StormDataTypes.STORM_TOPOLOGY.getName, List(AtlasClient.PROCESS_SUPER_TYPE)) {
             "id" ~ (string, required, indexed, unique)
-            "description" ~ (string, optional, indexed)
-            "owner" ~ (string, required, indexed)
             "startTime" ~ long
             "endTime" ~ long
             "conf" ~ (map(string, string), optional)
@@ -81,31 +79,20 @@ object StormDataModel extends App {
         }
 
         // Kafka Data Set
-        _class(StormDataTypes.KAFKA_TOPIC.getName, List("DataSet")) {
+        _class(StormDataTypes.KAFKA_TOPIC.getName, List(AtlasClient.DATA_SET_SUPER_TYPE)) {
             "topic" ~ (string, required, unique, indexed)
             "uri" ~ (string, required)
-            "owner" ~ (string, required, indexed)
         }
 
         // JMS Data Set
-        _class(StormDataTypes.JMS_TOPIC.getName, List("DataSet")) {
+        _class(StormDataTypes.JMS_TOPIC.getName, List(AtlasClient.DATA_SET_SUPER_TYPE)) {
             "topic" ~ (string, required, unique, indexed)
             "uri" ~ (string, required)
-            "owner" ~ (string, required, indexed)
         }
 
         // HBase Data Set
-        _class(StormDataTypes.HBASE_TABLE.getName, List("DataSet")) {
+        _class(StormDataTypes.HBASE_TABLE.getName, List(AtlasClient.DATA_SET_SUPER_TYPE)) {
             "uri" ~ (string, required)
-            "owner" ~ (string, required, indexed)
-        }
-
-        _trait("DataProcessor") {
-
-        }
-
-        _trait("DataProducer") {
-
         }
         // Hive table data set already exists in atlas.
     }

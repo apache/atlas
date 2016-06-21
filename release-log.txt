@@ -3,6 +3,8 @@ Apache Atlas Release Notes
 
 --trunk - unreleased
 INCOMPATIBLE CHANGES:
+ATLAS-844 Remove titan berkeley and elastic search jars if hbase/solr based profiles are chosen (yhemanth via shwethags)
+ATLAS-819 All user defined types should have a set of common attributes (shwethags)
 ATLAS-915 Fix docs for import-hive changes (svimal2106 via sumasai)
 ATLAS-688 import-hive should depend on Hive CLASSPATH jars instead of packaging everything (svimal2106 via sumasai)
 ATLAS-835 Falcon Integration with Atlas (sowmyaramesh via shwethags)

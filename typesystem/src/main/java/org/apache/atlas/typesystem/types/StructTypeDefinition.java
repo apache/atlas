@@ -28,14 +28,11 @@ public class StructTypeDefinition {
     public final String typeDescription;//optional field
     public final AttributeDefinition[] attributeDefinitions;
 
-    protected StructTypeDefinition(String typeName, boolean validate, AttributeDefinition... attributeDefinitions) {
-        this(typeName, null, validate, attributeDefinitions);
-    }
-
-    protected StructTypeDefinition(String typeName, String typeDescription, boolean validate, AttributeDefinition... attributeDefinitions) {
+    protected StructTypeDefinition(String typeName, String typeDescription, boolean validate,
+                                   AttributeDefinition... attributeDefinitions) {
         this.typeName = ParamChecker.notEmpty(typeName, "Struct type name");
         this.typeDescription = typeDescription;
-        if (attributeDefinitions != null && attributeDefinitions.length != 0) {
+        if (validate) {
             ParamChecker.notNullElements(attributeDefinitions, "Attribute definitions");
         }
         this.attributeDefinitions = attributeDefinitions;

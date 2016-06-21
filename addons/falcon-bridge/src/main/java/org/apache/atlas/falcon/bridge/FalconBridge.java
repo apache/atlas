@@ -20,6 +20,7 @@ package org.apache.atlas.falcon.bridge;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConstants;
+import org.apache.atlas.falcon.Util.EventUtil;
 import org.apache.atlas.falcon.model.FalconDataModelGenerator;
 import org.apache.atlas.falcon.model.FalconDataTypes;
 import org.apache.atlas.fs.model.FSDataTypes;
@@ -28,7 +29,6 @@ import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.atlas.falcon.Util.EventUtil;
 import org.apache.falcon.entity.CatalogStorage;
 import org.apache.falcon.entity.FeedHelper;
 import org.apache.falcon.entity.FileSystemStorage;
@@ -49,7 +49,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,21 +65,21 @@ public class FalconBridge {
      * @param cluster ClusterEntity
      * @return cluster instance reference
      */
-    public static Referenceable createClusterEntity(final org.apache.falcon.entity.v0.cluster.Cluster cluster,
-                                                    final String user,
-                                                    final Date timestamp) throws Exception {
+    public static Referenceable createClusterEntity(final org.apache.falcon.entity.v0.cluster.Cluster cluster)
+            throws Exception {
         LOG.info("Creating cluster Entity : {}", cluster.getName());
 
         Referenceable clusterRef = new Referenceable(FalconDataTypes.FALCON_CLUSTER.getName());
 
-        clusterRef.set(FalconDataModelGenerator.NAME, cluster.getName());
-        clusterRef.set("description", cluster.getDescription());
+        clusterRef.set(AtlasClient.NAME, cluster.getName());
+        clusterRef.set(AtlasClient.DESCRIPTION, cluster.getDescription());
         clusterRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, cluster.getName());
 
-        clusterRef.set(FalconDataModelGenerator.TIMESTAMP, timestamp);
         clusterRef.set(FalconDataModelGenerator.COLO, cluster.getColo());
 
-        clusterRef.set(FalconDataModelGenerator.USER, user);
+        if (cluster.getACL() != null) {
+            clusterRef.set(AtlasClient.OWNER, cluster.getACL().getGroup());
+        }
 
         if (StringUtils.isNotEmpty(cluster.getTags())) {
             clusterRef.set(FalconDataModelGenerator.TAGS,
@@ -90,34 +89,34 @@ public class FalconBridge {
         return clusterRef;
     }
 
-    private static Referenceable createFeedEntity(Feed feed, Referenceable clusterReferenceable,
-                                                  String user, Date timestamp) throws Exception {
+    private static Referenceable createFeedEntity(Feed feed, Referenceable clusterReferenceable) throws Exception {
         LOG.info("Creating feed dataset: {}", feed.getName());
 
-        Referenceable datasetReferenceable = new Referenceable(FalconDataTypes.FALCON_FEED.getName());
-        datasetReferenceable.set(FalconDataModelGenerator.NAME, feed.getName());
+        Referenceable feedEntity = new Referenceable(FalconDataTypes.FALCON_FEED.getName());
+        feedEntity.set(AtlasClient.NAME, feed.getName());
+        feedEntity.set(AtlasClient.DESCRIPTION, feed.getDescription());
         String feedQualifiedName =
-                getFeedQualifiedName(feed.getName(), (String) clusterReferenceable.get(FalconDataModelGenerator.NAME));
-        datasetReferenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, feedQualifiedName);
-        datasetReferenceable.set(FalconDataModelGenerator.TIMESTAMP, timestamp);
-
-        datasetReferenceable.set(FalconDataModelGenerator.STOREDIN, clusterReferenceable);
-        datasetReferenceable.set(FalconDataModelGenerator.USER, user);
+                getFeedQualifiedName(feed.getName(), (String) clusterReferenceable.get(AtlasClient.NAME));
+        feedEntity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, feedQualifiedName);
+        feedEntity.set(FalconDataModelGenerator.FREQUENCY, feed.getFrequency().toString());
+        feedEntity.set(FalconDataModelGenerator.STOREDIN, clusterReferenceable);
+        if (feed.getACL() != null) {
+            feedEntity.set(AtlasClient.OWNER, feed.getACL().getOwner());
+        }
 
         if (StringUtils.isNotEmpty(feed.getTags())) {
-            datasetReferenceable.set(FalconDataModelGenerator.TAGS,
+            feedEntity.set(FalconDataModelGenerator.TAGS,
                     EventUtil.convertKeyValueStringToMap(feed.getTags()));
         }
 
         if (feed.getGroups() != null) {
-            datasetReferenceable.set(FalconDataModelGenerator.GROUPS, feed.getGroups());
+            feedEntity.set(FalconDataModelGenerator.GROUPS, feed.getGroups());
         }
 
-        return datasetReferenceable;
+        return feedEntity;
     }
 
-    public static List<Referenceable> createFeedCreationEntity(Feed feed, ConfigurationStore falconStore, String user,
-                                                               Date timestamp) throws Exception {
+    public static List<Referenceable> createFeedCreationEntity(Feed feed, ConfigurationStore falconStore) throws Exception {
         LOG.info("Creating feed : {}", feed.getName());
 
         List<Referenceable> entities = new ArrayList<>();
@@ -143,7 +142,7 @@ public class FalconBridge {
                 }
 
                 List<Referenceable> outputs = new ArrayList<>();
-                Referenceable feedEntity = createFeedEntity(feed, clusterReferenceable, user, timestamp);
+                Referenceable feedEntity = createFeedEntity(feed, clusterReferenceable);
                 if (feedEntity != null) {
                     entities.add(feedEntity);
                     outputs.add(feedEntity);
@@ -153,19 +152,18 @@ public class FalconBridge {
                     Referenceable feedCreateEntity = new Referenceable(FalconDataTypes.FALCON_FEED_CREATION.getName());
                     String feedQualifiedName = getFeedQualifiedName(feed.getName(), cluster.getName());
 
-                    feedCreateEntity.set(FalconDataModelGenerator.NAME, feed.getName());
+                    feedCreateEntity.set(AtlasClient.NAME, feed.getName());
+                    feedCreateEntity.set(AtlasClient.DESCRIPTION, "Feed creation - " + feed.getName());
                     feedCreateEntity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, feedQualifiedName);
 
-                    feedCreateEntity.set(FalconDataModelGenerator.TIMESTAMP, timestamp);
                     if (!inputs.isEmpty()) {
-                        feedCreateEntity.set(FalconDataModelGenerator.INPUTS, inputs);
+                        feedCreateEntity.set(AtlasClient.PROCESS_ATTRIBUTE_INPUTS, inputs);
                     }
                     if (!outputs.isEmpty()) {
-                        feedCreateEntity.set(FalconDataModelGenerator.OUTPUTS, outputs);
+                        feedCreateEntity.set(AtlasClient.PROCESS_ATTRIBUTE_OUTPUTS, outputs);
                     }
 
                     feedCreateEntity.set(FalconDataModelGenerator.STOREDIN, clusterReferenceable);
-                    feedCreateEntity.set(FalconDataModelGenerator.USER, user);
                     entities.add(feedCreateEntity);
                 }
 
@@ -180,13 +178,11 @@ public class FalconBridge {
                 Referenceable feedReplicationEntity = new Referenceable(FalconDataTypes
                         .FALCON_FEED_REPLICATION.getName());
 
-                feedReplicationEntity.set(FalconDataModelGenerator.NAME, feed.getName());
+                feedReplicationEntity.set(AtlasClient.NAME, feed.getName());
                 feedReplicationEntity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, feed.getName());
 
-                feedReplicationEntity.set(FalconDataModelGenerator.TIMESTAMP, timestamp);
-                feedReplicationEntity.set(FalconDataModelGenerator.INPUTS, replicationInputs);
-                feedReplicationEntity.set(FalconDataModelGenerator.OUTPUTS, replicationOutputs);
-                feedReplicationEntity.set(FalconDataModelGenerator.USER, user);
+                feedReplicationEntity.set(AtlasClient.PROCESS_ATTRIBUTE_INPUTS, replicationInputs);
+                feedReplicationEntity.set(AtlasClient.PROCESS_ATTRIBUTE_OUTPUTS, replicationOutputs);
                 entities.add(feedReplicationEntity);
             }
 
@@ -205,8 +201,7 @@ public class FalconBridge {
      * +
      */
     public static List<Referenceable> createProcessEntity(org.apache.falcon.entity.v0.process.Process process,
-                                                          ConfigurationStore falconStore, String user,
-                                                          Date timestamp) throws Exception {
+                                                          ConfigurationStore falconStore) throws Exception {
         LOG.info("Creating process Entity : {}", process.getName());
 
         // The requirement is for each cluster, create a process entity with name
@@ -224,8 +219,8 @@ public class FalconBridge {
                 List<Referenceable> inputs = new ArrayList<>();
                 if (process.getInputs() != null) {
                     for (Input input : process.getInputs().getInputs()) {
-                        Referenceable inputReferenceable = getFeedDataSetReference(getFeedQualifiedName(input.getFeed(),
-                                cluster.getName()), clusterReferenceable);
+                        Feed feed = falconStore.get(EntityType.FEED, input.getFeed());
+                        Referenceable inputReferenceable = getFeedDataSetReference(feed, clusterReferenceable);
                         entities.add(inputReferenceable);
                         inputs.add(inputReferenceable);
                     }
@@ -234,8 +229,8 @@ public class FalconBridge {
                 List<Referenceable> outputs = new ArrayList<>();
                 if (process.getOutputs() != null) {
                     for (Output output : process.getOutputs().getOutputs()) {
-                        Referenceable outputReferenceable = getFeedDataSetReference(getFeedQualifiedName(output.getFeed(),
-                                cluster.getName()), clusterReferenceable);
+                        Feed feed = falconStore.get(EntityType.FEED, output.getFeed());
+                        Referenceable outputReferenceable = getFeedDataSetReference(feed, clusterReferenceable);
                         entities.add(outputReferenceable);
                         outputs.add(outputReferenceable);
                     }
@@ -244,23 +239,25 @@ public class FalconBridge {
                 if (!inputs.isEmpty() || !outputs.isEmpty()) {
 
                     Referenceable processEntity = new Referenceable(FalconDataTypes.FALCON_PROCESS.getName());
-                    processEntity.set(FalconDataModelGenerator.NAME, process.getName());
+                    processEntity.set(AtlasClient.NAME, process.getName());
                     processEntity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                             getProcessQualifiedName(process.getName(), cluster.getName()));
-                    processEntity.set(FalconDataModelGenerator.TIMESTAMP, timestamp);
+                    processEntity.set(FalconDataModelGenerator.FREQUENCY, process.getFrequency().toString());
 
                     if (!inputs.isEmpty()) {
-                        processEntity.set(FalconDataModelGenerator.INPUTS, inputs);
+                        processEntity.set(AtlasClient.PROCESS_ATTRIBUTE_INPUTS, inputs);
                     }
                     if (!outputs.isEmpty()) {
-                        processEntity.set(FalconDataModelGenerator.OUTPUTS, outputs);
+                        processEntity.set(AtlasClient.PROCESS_ATTRIBUTE_OUTPUTS, outputs);
                     }
 
                     // set cluster
                     processEntity.set(FalconDataModelGenerator.RUNSON, clusterReferenceable);
 
                     // Set user
-                    processEntity.set(FalconDataModelGenerator.USER, user);
+                    if (process.getACL() != null) {
+                        processEntity.set(AtlasClient.OWNER, process.getACL().getOwner());
+                    }
 
                     if (StringUtils.isNotEmpty(process.getTags())) {
                         processEntity.set(FalconDataModelGenerator.TAGS,
@@ -317,7 +314,7 @@ public class FalconBridge {
         //        Path path = new Path(pathUri);
         //        ref.set("name", path.getName());
         //TODO - Fix after ATLAS-542 to shorter Name
-        ref.set(FalconDataModelGenerator.NAME, pathUri);
+        ref.set(AtlasClient.NAME, pathUri);
         ref.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, pathUri);
         ref.set(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, clusterName);
         entities.add(ref);
@@ -328,7 +325,7 @@ public class FalconBridge {
             throws Exception {
         Referenceable dbRef = new Referenceable(HiveDataTypes.HIVE_DB.getName());
         dbRef.set(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, clusterName);
-        dbRef.set(HiveDataModelGenerator.NAME, dbName);
+        dbRef.set(AtlasClient.NAME, dbName);
         dbRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 HiveMetaStoreBridge.getDBQualifiedName(clusterName, dbName));
         return dbRef;
@@ -343,7 +340,7 @@ public class FalconBridge {
         Referenceable tableRef = new Referenceable(HiveDataTypes.HIVE_TABLE.getName());
         tableRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 HiveMetaStoreBridge.getTableQualifiedName(clusterName, dbName, tableName));
-        tableRef.set(HiveDataModelGenerator.NAME, tableName.toLowerCase());
+        tableRef.set(AtlasClient.NAME, tableName.toLowerCase());
         tableRef.set(HiveDataModelGenerator.DB, dbRef);
         entities.add(tableRef);
 
@@ -354,20 +351,21 @@ public class FalconBridge {
                                                            final String colo) {
         LOG.info("Getting reference for entity {}", clusterName);
         Referenceable clusterRef = new Referenceable(FalconDataTypes.FALCON_CLUSTER.getName());
-        clusterRef.set(FalconDataModelGenerator.NAME, String.format("%s", clusterName));
+        clusterRef.set(AtlasClient.NAME, String.format("%s", clusterName));
         clusterRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, clusterName);
         clusterRef.set(FalconDataModelGenerator.COLO, colo);
         return clusterRef;
     }
 
 
-    private static Referenceable getFeedDataSetReference(final String feedDatasetName,
-                                                         Referenceable clusterReference) {
-        LOG.info("Getting reference for entity {}", feedDatasetName);
+    private static Referenceable getFeedDataSetReference(Feed feed, Referenceable clusterReference) {
+        LOG.info("Getting reference for entity {}", feed.getName());
         Referenceable feedDatasetRef = new Referenceable(FalconDataTypes.FALCON_FEED.getName());
-        feedDatasetRef.set(FalconDataModelGenerator.NAME, feedDatasetName);
-        feedDatasetRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, feedDatasetName);
+        feedDatasetRef.set(AtlasClient.NAME, feed.getName());
+        feedDatasetRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, getFeedQualifiedName(feed.getName(),
+                (String) clusterReference.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME)));
         feedDatasetRef.set(FalconDataModelGenerator.STOREDIN, clusterReference);
+        feedDatasetRef.set(FalconDataModelGenerator.FREQUENCY, feed.getFrequency());
         return feedDatasetRef;
     }
 
