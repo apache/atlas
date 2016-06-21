@@ -400,7 +400,7 @@ public class EntityResource {
             JSONObject response = getResponse(entityResult);
             return Response.ok(response).build();
         } catch (EntityNotFoundException e) {
-            if(guids != null || !guids.isEmpty()) {
+            if(guids != null && !guids.isEmpty()) {
                 LOG.error("An entity with GUID={} does not exist ", guids, e);
             } else {
                 LOG.error("An entity with qualifiedName {}-{}-{} does not exist", entityType, attribute, value, e);

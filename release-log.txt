@@ -31,6 +31,7 @@ ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmy
 
 ALL CHANGES:
 ATLAS-930 QuickStart is failing when run after a specific sequence of operations (yhemanth via shwethags)
+ATLAS-904 Hive hook fails due to session state not being set (sumasai via yhemanth)
 ATLAS-929 Add test for trait preservation on column rename for non-default database (svimal2106 via shwethags)
 ATLAS-926 Change version in 0.7 branch to 0.7-incubating (shwethags)
 ATLAS-922 remove test atlas-application.properties embedded in atlas-typesystem.jar (madhan.neethiraj via yhemanth)
