@@ -38,6 +38,19 @@ define(['require',
                         throw new Error("this.modelAttrName not defined for " + this);
                     }
                     this.keyList = resp[this.modelAttrName].dataType.attributeDefinitions;
+                    if (resp[this.modelAttrName].dataType.superTypes) {
+                        if (resp[this.modelAttrName].dataType.superTypes.indexOf("Asset") != -1) {
+                            this.keyList.push({
+                                "name": "name",
+                                "dataTypeName": "string",
+                                "isComposite": false,
+                                "isIndexable": true,
+                                "isUnique": false,
+                                "multiplicity": {},
+                                "reverseAttributeName": null
+                            })
+                        }
+                    }
                     var arr = [];
                     resp[this.modelAttrName].rows.forEach(function(d) {
                         arr.push(d);
