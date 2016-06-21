@@ -40,6 +40,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-932 UI: 'create tag' button does not work (mneethiraj via sumasai)
 ATLAS-928 UI is not showing the name column for hive tables in the schema tab (yhemanth via sumasai)
 ATLAS-922 remove test atlas-application.properties embedded in atlas-typesystem.jar ( mneethiraj via sumasai)
 ATLAS-765 Need documentation for Authentication and Authorization features of Atlas (nixonrodrigues via yhemanth)
