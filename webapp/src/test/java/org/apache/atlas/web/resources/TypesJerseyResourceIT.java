@@ -50,6 +50,8 @@ import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.testng.Assert.assertEquals;
+
 /**
  * Integration test for types jersey resource.
  */
@@ -79,15 +81,15 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
 
             ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
                     .method(HttpMethod.POST, ClientResponse.class, typesAsJSON);
-            Assert.assertEquals(clientResponse.getStatus(), Response.Status.CREATED.getStatusCode());
+            assertEquals(clientResponse.getStatus(), Response.Status.CREATED.getStatusCode());
 
             String responseAsString = clientResponse.getEntity(String.class);
             Assert.assertNotNull(responseAsString);
 
             JSONObject response = new JSONObject(responseAsString);
             JSONArray typesAdded = response.getJSONArray(AtlasClient.TYPES);
-            Assert.assertEquals(typesAdded.length(), 1);
-            Assert.assertEquals(typesAdded.getJSONObject(0).getString("name"), typeDefinition.typeName);
+            assertEquals(typesAdded.length(), 1);
+            assertEquals(typesAdded.getJSONObject(0).getString("name"), typeDefinition.typeName);
             Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
         }
     }
@@ -98,25 +100,24 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
                 .createClassTypeDef(randomString(), ImmutableSet.<String>of(),
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE));
         List<String> typesCreated = serviceClient.createType(TypesSerialization.toJson(typeDefinition, false));
-        Assert.assertEquals(typesCreated.size(), 1);
-        Assert.assertEquals(typesCreated.get(0), typeDefinition.typeName);
+        assertEquals(typesCreated.size(), 1);
+        assertEquals(typesCreated.get(0), typeDefinition.typeName);
 
-        //Add super type
-        HierarchicalTypeDefinition<ClassType> superTypeDefinition = TypesUtil
-                .createClassTypeDef(randomString(), ImmutableSet.<String>of(),
-                        TypesUtil.createOptionalAttrDef("sname", DataTypes.STRING_TYPE));
-
+        //Add attribute description
         typeDefinition = TypesUtil.createClassTypeDef(typeDefinition.typeName,
-            ImmutableSet.of(superTypeDefinition.typeName),
+            ImmutableSet.<String>of(),
                 TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                 TypesUtil.createOptionalAttrDef("description", DataTypes.STRING_TYPE));
         TypesDef typeDef = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(),
                 ImmutableList.<StructTypeDefinition>of(), ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
-                ImmutableList.of(superTypeDefinition, typeDefinition));
+                ImmutableList.of(typeDefinition));
         List<String> typesUpdated = serviceClient.updateType(typeDef);
-        Assert.assertEquals(typesUpdated.size(), 2);
-        Assert.assertTrue(typesUpdated.contains(superTypeDefinition.typeName));
+        assertEquals(typesUpdated.size(), 1);
         Assert.assertTrue(typesUpdated.contains(typeDefinition.typeName));
+
+        HierarchicalTypeDefinition<ClassType>
+                updatedType = serviceClient.getType(typeDefinition.typeName).classTypesAsJavaList().get(0);
+        assertEquals(updatedType.attributeDefinitions.length, 2);
     }
 
     @Test(dependsOnMethods = "testSubmit")
@@ -128,7 +129,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
 
             ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
                     .method(HttpMethod.GET, ClientResponse.class);
-            Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+            assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
             String responseAsString = clientResponse.getEntity(String.class);
             Assert.assertNotNull(responseAsString);
@@ -142,8 +143,8 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
             for (HierarchicalTypeDefinition<ClassType> classType : hierarchicalTypeDefinitions) {
                 for (AttributeDefinition attrDef : classType.attributeDefinitions) {
                     if ("name".equals(attrDef.name)) {
-                        Assert.assertEquals(attrDef.isIndexable, true);
-                        Assert.assertEquals(attrDef.isUnique, true);
+                        assertEquals(attrDef.isIndexable, true);
+                        assertEquals(attrDef.isUnique, true);
                     }
                 }
             }
@@ -156,7 +157,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
 
         ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
+        assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
     }
 
     @Test(dependsOnMethods = "testSubmit")
@@ -165,7 +166,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
 
         ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
                 .method(HttpMethod.GET, ClientResponse.class);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+        assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
         String responseAsString = clientResponse.getEntity(String.class);
         Assert.assertNotNull(responseAsString);
@@ -191,7 +192,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         ClientResponse clientResponse =
                 resource.queryParam("type", DataTypes.TypeCategory.TRAIT.name()).accept(Servlets.JSON_MEDIA_TYPE)
                         .type(Servlets.JSON_MEDIA_TYPE).method(HttpMethod.GET, ClientResponse.class);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+        assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
 
         String responseAsString = clientResponse.getEntity(String.class);
         Assert.assertNotNull(responseAsString);
