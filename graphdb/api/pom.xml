@@ -26,7 +26,7 @@
     <parent>
         <groupId>org.apache.atlas</groupId>
         <artifactId>atlas-graphdb</artifactId>
-        <version>0.7-incubating-SNAPSHOT</version>
+        <version>0.7-incubating</version>
     </parent>
     <artifactId>atlas-graphdb-api</artifactId>
     <description>Apache Atlas Graph Datbase API</description>
