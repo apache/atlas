@@ -181,6 +181,7 @@ public class FalconHookIT {
         feedCluster.setName(clusterName);
         STORE.publish(EntityType.FEED, feed);
         String feedId = assertFeedIsRegistered(feed, clusterName);
+        assertFeedAttributes(feedId);
 
         String processId = assertEntityIsRegistered(FalconDataTypes.FALCON_FEED_CREATION.getName(),
                 AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
@@ -223,13 +224,22 @@ public class FalconHookIT {
 
         STORE.publish(EntityType.FEED, feed);
         String feedId = assertFeedIsRegistered(feed, clusterName);
+        assertFeedAttributes(feedId);
         verifyFeedLineage(feed.getName(), clusterName, feedId, dbName, tableName);
 
         if (secondClusterName != null) {
             String feedId2 = assertFeedIsRegistered(feed, secondClusterName);
+            assertFeedAttributes(feedId2);
             verifyFeedLineage(feed.getName(), secondClusterName, feedId2, dbName2, tableName2);
         }
         return feed;
+    }
+
+    private void assertFeedAttributes(String feedId) throws Exception {
+        Referenceable feedEntity = atlasClient.getEntity(feedId);
+        assertEquals(feedEntity.get(AtlasClient.OWNER), "testuser");
+        assertEquals(feedEntity.get(FalconDataModelGenerator.FREQUENCY), "hours(1)");
+        assertEquals(feedEntity.get(AtlasClient.DESCRIPTION), "test input");
     }
 
     private void verifyFeedLineage(String feedName, String clusterName, String feedId, String dbName, String tableName)

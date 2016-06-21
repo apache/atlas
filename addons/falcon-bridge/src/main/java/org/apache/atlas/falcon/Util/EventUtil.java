@@ -21,9 +21,7 @@ package org.apache.atlas.falcon.Util;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.falcon.FalconException;
 import org.apache.falcon.security.CurrentUser;
-import org.apache.hadoop.security.UserGroupInformation;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -45,20 +43,19 @@ public final class EventUtil {
         String[] tags = keyValueString.split(",");
         for (String tag : tags) {
             int index = tag.indexOf("=");
-            String tagKey = tag.substring(0, index);
-            String tagValue = tag.substring(index + 1, tag.length());
+            String tagKey = tag.substring(0, index).trim();
+            String tagValue = tag.substring(index + 1, tag.length()).trim();
             keyValueMap.put(tagKey, tagValue);
         }
         return keyValueMap;
     }
 
-    public static UserGroupInformation getUgi() throws FalconException {
-        UserGroupInformation ugi;
+    public static String getUser() throws FalconException {
         try {
-            ugi = CurrentUser.getAuthenticatedUGI();
-        } catch (IOException ioe) {
-            throw new FalconException(ioe);
+            return CurrentUser.getAuthenticatedUGI().getShortUserName();
+        } catch (Exception ioe) {
+            //Ignore is failed to get user, uses login user
         }
-        return ugi;
+        return null;
     }
 }

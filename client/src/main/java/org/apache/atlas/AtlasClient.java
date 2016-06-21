@@ -70,7 +70,6 @@ import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
 public class AtlasClient {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasClient.class);
 
-    public static final String NAME = "name";
     public static final String TYPE = "type";
     public static final String TYPENAME = "typeName";
     public static final String GUID = "GUID";
@@ -106,15 +105,19 @@ public class AtlasClient {
     public static final String ATTRIBUTE_NAME = "property";
     public static final String ATTRIBUTE_VALUE = "value";
 
+    public static final String ASSET_TYPE = "Asset";
+    public static final String NAME = "name";
+    public static final String DESCRIPTION = "description";
+    public static final String OWNER = "owner";
 
     public static final String INFRASTRUCTURE_SUPER_TYPE = "Infrastructure";
     public static final String DATA_SET_SUPER_TYPE = "DataSet";
     public static final String PROCESS_SUPER_TYPE = "Process";
-    public static final String REFERENCEABLE_SUPER_TYPE = "Referenceable";
-    public static final String REFERENCEABLE_ATTRIBUTE_NAME = "qualifiedName";
-
     public static final String PROCESS_ATTRIBUTE_INPUTS = "inputs";
     public static final String PROCESS_ATTRIBUTE_OUTPUTS = "outputs";
+
+    public static final String REFERENCEABLE_SUPER_TYPE = "Referenceable";
+    public static final String REFERENCEABLE_ATTRIBUTE_NAME = "qualifiedName";
 
     public static final String JSON_MEDIA_TYPE = MediaType.APPLICATION_JSON + "; charset=UTF-8";
     public static final String UNKNOWN_STATUS = "Unknown status";

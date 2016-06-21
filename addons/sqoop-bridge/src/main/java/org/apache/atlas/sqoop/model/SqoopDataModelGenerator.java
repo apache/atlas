@@ -57,8 +57,6 @@ public class SqoopDataModelGenerator {
     private static final DataTypes.MapType STRING_MAP_TYPE =
             new DataTypes.MapType(DataTypes.STRING_TYPE, DataTypes.STRING_TYPE);
 
-    public static final String NAME = "name";
-    public static final String OWNER = "ownerName";
     public static final String USER = "userName";
     public static final String DB_STORE_TYPE = "dbStoreType";
     public static final String DB_STORE_USAGE = "storeUse";
@@ -127,9 +125,8 @@ public class SqoopDataModelGenerator {
                 new AttributeDefinition(STORE_URI,
                         DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition(SOURCE,
-                        DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition(OWNER,
-                        DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),};
+                        DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null)
+        };
 
         HierarchicalTypeDefinition<ClassType> definition =
                 new HierarchicalTypeDefinition<>(ClassType.class, SqoopDataTypes.SQOOP_DBDATASTORE.getName(), null,

@@ -82,7 +82,7 @@ public class TypesResource {
     public Response submit(@Context HttpServletRequest request) {
         try {
             final String typeDefinition = Servlets.getRequestPayload(request);
-            LOG.debug("Creating type with definition {} ", typeDefinition);
+            LOG.info("Creating type with definition {} ", typeDefinition);
 
             JSONObject typesJson = metadataService.createType(typeDefinition);
             final JSONArray typesJsonArray = typesJson.getJSONArray(AtlasClient.TYPES);
@@ -126,7 +126,7 @@ public class TypesResource {
     public Response update(@Context HttpServletRequest request) {
         try {
             final String typeDefinition = Servlets.getRequestPayload(request);
-            LOG.debug("Updating type with definition {} ", typeDefinition);
+            LOG.info("Updating type with definition {} ", typeDefinition);
 
             JSONObject typesJson = metadataService.updateType(typeDefinition);
             final JSONArray typesJsonArray = typesJson.getJSONArray(AtlasClient.TYPES);

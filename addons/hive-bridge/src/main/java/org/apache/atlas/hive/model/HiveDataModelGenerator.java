@@ -70,15 +70,12 @@ public class HiveDataModelGenerator {
     public static final String STORAGE_NUM_BUCKETS = "numBuckets";
     public static final String STORAGE_IS_STORED_AS_SUB_DIRS = "storedAsSubDirectories";
 
-    public static final String NAME = "name";
-    public static final String TABLE_NAME = "tableName";
     public static final String TABLE = "table";
     public static final String DB = "db";
 
     public static final String STORAGE_DESC = "sd";
     public static final String STORAGE_DESC_INPUT_FMT = "inputFormat";
     public static final String STORAGE_DESC_OUTPUT_FMT = "outputFormat";
-    public static final String OWNER = "owner";
     public static final String LOCATION = "location";
 
     public static final String TABLE_TYPE_ATTR = "tableType";
@@ -147,7 +144,7 @@ public class HiveDataModelGenerator {
 
     private void createSerDeStruct() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition(NAME, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition(AtlasClient.NAME, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition("serializationLib", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL,
                         false, null),
                 new AttributeDefinition(HiveDataModelGenerator.PARAMETERS, STRING_MAP_TYPE.getName(), Multiplicity.OPTIONAL, false, null),};
@@ -206,29 +203,23 @@ public class HiveDataModelGenerator {
 
     private void createDBClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition(NAME, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
-                        null),
-                new AttributeDefinition("description", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
                 new AttributeDefinition(LOCATION, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
                 new AttributeDefinition(HiveDataModelGenerator.PARAMETERS, STRING_MAP_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition(OWNER, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
-                        null),
                 new AttributeDefinition("ownerType", HiveDataTypes.HIVE_PRINCIPAL_TYPE.getName(), Multiplicity.OPTIONAL,
                         false, null),};
 
         HierarchicalTypeDefinition<ClassType> definition =
                 new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_DB.getName(), null,
-                    ImmutableSet.of(AtlasClient.REFERENCEABLE_SUPER_TYPE), attributeDefinitions);
+                    ImmutableSet.of(AtlasClient.REFERENCEABLE_SUPER_TYPE, AtlasClient.ASSET_TYPE), attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_DB.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_DB.getName());
     }
 
     private void createColumnClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition(NAME, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("type", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition(COMMENT, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 //Making this optional since this is an incompatible change
@@ -237,7 +228,7 @@ public class HiveDataModelGenerator {
 
         HierarchicalTypeDefinition<ClassType> definition =
                 new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_COLUMN.getName(), null,
-                    ImmutableSet.of(AtlasClient.REFERENCEABLE_SUPER_TYPE), attributeDefinitions);
+                    ImmutableSet.of(AtlasClient.REFERENCEABLE_SUPER_TYPE, AtlasClient.ASSET_TYPE), attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_COLUMN.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_COLUMN.getName());
     }
@@ -245,7 +236,6 @@ public class HiveDataModelGenerator {
     private void createTableClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition(DB, HiveDataTypes.HIVE_DB.getName(), Multiplicity.REQUIRED, false, null),
-                new AttributeDefinition(OWNER, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 new AttributeDefinition(CREATE_TIME, DataTypes.DATE_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
                 new AttributeDefinition(LAST_ACCESS_TIME, DataTypes.DATE_TYPE.getName(), Multiplicity.OPTIONAL, false,
@@ -271,7 +261,7 @@ public class HiveDataModelGenerator {
                         null),};
         HierarchicalTypeDefinition<ClassType> definition =
                 new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_TABLE.getName(), null,
-                    ImmutableSet.of("DataSet"), attributeDefinitions);
+                    ImmutableSet.of(AtlasClient.DATA_SET_SUPER_TYPE), attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_TABLE.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_TABLE.getName());
     }

@@ -50,23 +50,17 @@ import java.util.Map;
 public class FalconDataModelGenerator {
 
     private static final Logger LOG = LoggerFactory.getLogger(FalconDataModelGenerator.class);
+    public static final String FREQUENCY = "frequency";
 
     private final Map<String, HierarchicalTypeDefinition<ClassType>> classTypeDefinitions;
 
-    public static final String NAME = "name";
-    public static final String TIMESTAMP = "timestamp";
     public static final String COLO = "colo";
-    public static final String USER = "owner";
     public static final String TAGS = "tags";
     public static final String GROUPS = "groups";
     public static final String PIPELINES = "pipelines";
     public static final String WFPROPERTIES = "workflow-properties";
     public static final String RUNSON = "runs-on";
     public static final String STOREDIN = "stored-in";
-
-    // multiple inputs and outputs for process
-    public static final String INPUTS = "inputs";
-    public static final String OUTPUTS = "outputs";
 
     public FalconDataModelGenerator() {
         classTypeDefinitions = new HashMap<>();
@@ -78,8 +72,8 @@ public class FalconDataModelGenerator {
         // classes
         createClusterEntityClass();
         createProcessEntityClass();
+        createFeedCreationEntityClass();
         createFeedEntityClass();
-        createFeedDatasetClass();
         createReplicationFeedEntityClass();
     }
 
@@ -102,11 +96,7 @@ public class FalconDataModelGenerator {
 
     private void createClusterEntityClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition(TIMESTAMP, DataTypes.DATE_TYPE.getName(), Multiplicity.OPTIONAL, false,
-                        null),
                 new AttributeDefinition(COLO, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
-                        null),
-                new AttributeDefinition(USER, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
                 // map of tags
                 new AttributeDefinition(TAGS,
@@ -120,14 +110,11 @@ public class FalconDataModelGenerator {
         LOG.debug("Created definition for {}", FalconDataTypes.FALCON_CLUSTER.getName());
     }
 
-    private void createFeedEntityClass() throws AtlasException {
+    private void createFeedCreationEntityClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition(TIMESTAMP, DataTypes.DATE_TYPE.getName(), Multiplicity.REQUIRED, false,
-                        null),
                 new AttributeDefinition(STOREDIN, FalconDataTypes.FALCON_CLUSTER.getName(), Multiplicity.REQUIRED,
-                        false, null),
-                new AttributeDefinition(USER, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
-                        null)};
+                        false, null)
+        };
 
         HierarchicalTypeDefinition<ClassType> definition =
                 new HierarchicalTypeDefinition<>(ClassType.class, FalconDataTypes.FALCON_FEED_CREATION.getName(), null,
@@ -136,19 +123,17 @@ public class FalconDataModelGenerator {
         LOG.debug("Created definition for {}", FalconDataTypes.FALCON_FEED_CREATION.getName());
     }
 
-    private void createFeedDatasetClass() throws AtlasException {
+    private void createFeedEntityClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition(TIMESTAMP, DataTypes.DATE_TYPE.getName(), Multiplicity.OPTIONAL, false,
-                        null),
+                TypesUtil.createRequiredAttrDef(FREQUENCY, DataTypes.STRING_TYPE),
                 new AttributeDefinition(STOREDIN, FalconDataTypes.FALCON_CLUSTER.getName(), Multiplicity.REQUIRED,
                         false, null),
-                new AttributeDefinition(USER, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
-                        null),
                 new AttributeDefinition(GROUPS, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 // map of tags
                 new AttributeDefinition(TAGS,
                         DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(), DataTypes.STRING_TYPE.getName()),
-                        Multiplicity.OPTIONAL, false, null),};
+                        Multiplicity.OPTIONAL, false, null)
+        };
 
         HierarchicalTypeDefinition<ClassType> definition =
                 new HierarchicalTypeDefinition<>(ClassType.class, FalconDataTypes.FALCON_FEED.getName(), null,
@@ -159,28 +144,19 @@ public class FalconDataModelGenerator {
 
 
     private void createReplicationFeedEntityClass() throws AtlasException {
-        AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition(TIMESTAMP, DataTypes.DATE_TYPE.getName(), Multiplicity.REQUIRED, false,
-                        null),
-                new AttributeDefinition(USER, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
-                        null)};
-
         HierarchicalTypeDefinition<ClassType> definition =
                 new HierarchicalTypeDefinition<>(ClassType.class,
                         FalconDataTypes.FALCON_FEED_REPLICATION.getName(), null,
-                        ImmutableSet.of(AtlasClient.PROCESS_SUPER_TYPE), attributeDefinitions);
+                        ImmutableSet.of(AtlasClient.PROCESS_SUPER_TYPE), null);
         classTypeDefinitions.put(FalconDataTypes.FALCON_FEED_REPLICATION.getName(), definition);
         LOG.debug("Created definition for {}", FalconDataTypes.FALCON_FEED_REPLICATION.getName());
     }
 
     private void createProcessEntityClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition(TIMESTAMP, DataTypes.DATE_TYPE.getName(), Multiplicity.REQUIRED, false,
-                        null),
+                TypesUtil.createRequiredAttrDef(FREQUENCY, DataTypes.STRING_TYPE),
                 new AttributeDefinition(RUNSON, FalconDataTypes.FALCON_CLUSTER.getName(), Multiplicity.REQUIRED,
                         false, null),
-                new AttributeDefinition(USER, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
-                        null),
                 // map of tags
                 new AttributeDefinition(TAGS,
                         DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(), DataTypes.STRING_TYPE.getName()),
