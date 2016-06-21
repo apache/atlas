@@ -3,6 +3,7 @@ Apache Atlas Release Notes
 
 --Release 0.7-incubating
 INCOMPATIBLE CHANGES:
+ATLAS-822 Type updates - don't allow updating supertypes ( shwethags via sumasai )
 ATLAS-698 Remove Rexster Graph API (svimal2106 via shwethags)
 ATLAS-844 Remove titan berkeley and elastic search jars if hbase/solr based profiles are chosen (yhemanth via shwethags)
 ATLAS-819 All user defined types should have a set of common attributes (shwethags)

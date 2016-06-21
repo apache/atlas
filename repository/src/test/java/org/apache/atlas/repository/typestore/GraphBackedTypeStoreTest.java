@@ -25,7 +25,6 @@ import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
-
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
@@ -54,8 +53,6 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
-
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -172,30 +169,18 @@ public class GraphBackedTypeStoreTest {
                         createRequiredAttrDef("city", DataTypes.STRING_TYPE),
                         createOptionalAttrDef("state", DataTypes.STRING_TYPE));
 
-        //Add supertype
-        HierarchicalTypeDefinition<ClassType> superTypeDef = createClassTypeDef("Division", ImmutableSet.<String>of(),
-                createOptionalAttrDef("dname", DataTypes.STRING_TYPE));
-
         HierarchicalTypeDefinition<ClassType> deptTypeDef = createClassTypeDef("Department", "Department"+_description,
-            ImmutableSet.of(superTypeDef.typeName), createRequiredAttrDef("name", DataTypes.STRING_TYPE),
+            ImmutableSet.<String>of(), createRequiredAttrDef("name", DataTypes.STRING_TYPE),
                 new AttributeDefinition("employees", String.format("array<%s>", "Person"), Multiplicity.OPTIONAL,
                         true, "department"));
         TypesDef typesDef = TypesUtil.getTypesDef(ImmutableList.of(orgLevelEnum), ImmutableList.of(addressDetails),
                 ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
-                ImmutableList.of(deptTypeDef, superTypeDef));
+                ImmutableList.of(deptTypeDef));
 
         Map<String, IDataType> typesAdded = ts.updateTypes(typesDef);
         typeStore.store(ts, ImmutableList.copyOf(typesAdded.keySet()));
 
-        // ATLAS-474: verify that type update did not write duplicate edges to the type store.
-        if (typeStore instanceof GraphBackedTypeStore) {
-            GraphBackedTypeStore gbTypeStore = (GraphBackedTypeStore) typeStore;
-            Vertex typeVertex = gbTypeStore.findVertex(TypeCategory.CLASS, "Department");
-            int edgeCount = countOutgoingEdges(typeVertex, GraphBackedTypeStore.SUPERTYPE_EDGE_LABEL);
-            Assert.assertEquals(edgeCount, 1);
-            edgeCount = countOutgoingEdges(typeVertex, gbTypeStore.getEdgeLabel("Department", "employees"));
-            Assert.assertEquals(edgeCount, 1, "Should only be 1 edge for employees attribute on Department type vertex");
-        }
+        verifyEdges();
         
         //Validate the updated types
         TypesDef types = typeStore.restore();
@@ -214,59 +199,26 @@ public class GraphBackedTypeStoreTest {
         Assert.assertEquals(addressType.numFields, 3);
         Assert.assertEquals(addressType.fieldMapping.fields.get("state").dataType(), DataTypes.STRING_TYPE);
 
-        //Assert new super type
-        ClassType deptType = ts.getDataType(ClassType.class, deptTypeDef.typeName);
-        Assert.assertTrue(deptType.superTypes.contains(superTypeDef.typeName));
-        Assert.assertNotNull(ts.getDataType(ClassType.class, superTypeDef.typeName));
+        //Updating the definition again shouldn't add another edge
+        typesDef = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(),
+                ImmutableList.<StructTypeDefinition>of(),
+                ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
+                ImmutableList.of(deptTypeDef));
+        typesAdded = ts.updateTypes(typesDef);
+        typeStore.store(ts, ImmutableList.copyOf(typesAdded.keySet()));
+        verifyEdges();
     }
 
-    @Test(dependsOnMethods = "testTypeUpdate")
-    public void testAddSecondSuperType() throws Exception {
-        // Add a second supertype to Department class
-        HierarchicalTypeDefinition<ClassType> superTypeDef2 = createClassTypeDef("SuperClass2", ImmutableSet.<String>of(),
-                createOptionalAttrDef("name", DataTypes.STRING_TYPE));
-        HierarchicalTypeDefinition<ClassType> deptTypeDef = createClassTypeDef("Department",
-            ImmutableSet.of("Division", superTypeDef2.typeName), createRequiredAttrDef("name", DataTypes.STRING_TYPE),
-            new AttributeDefinition("employees", String.format("array<%s>", "Person"), Multiplicity.OPTIONAL,
-                    true, "department"));
-        TypesDef typesDef = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
-            ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
-            ImmutableList.of(deptTypeDef, superTypeDef2));
-        ts.updateTypes(typesDef);
-        typeStore.store(ts, ImmutableList.of(superTypeDef2.typeName, deptTypeDef.typeName));
-        
+    private void verifyEdges() {
         // ATLAS-474: verify that type update did not write duplicate edges to the type store.
         if (typeStore instanceof GraphBackedTypeStore) {
             GraphBackedTypeStore gbTypeStore = (GraphBackedTypeStore) typeStore;
             Vertex typeVertex = gbTypeStore.findVertex(TypeCategory.CLASS, "Department");
-            // There should now be 2 super type outgoing edges on the Department type vertex.
-            int edgeCount = countOutgoingEdges(typeVertex, GraphBackedTypeStore.SUPERTYPE_EDGE_LABEL);
-            Assert.assertEquals(edgeCount, 2);
-            // There should still be 1 outgoing edge for the employees attribute.
-            edgeCount = countOutgoingEdges(typeVertex, gbTypeStore.getEdgeLabel("Department", "employees"));
-            Assert.assertEquals(edgeCount, 1);
+            int edgeCount = countOutgoingEdges(typeVertex, gbTypeStore.getEdgeLabel("Department", "employees"));
+            Assert.assertEquals(edgeCount, 1, "Should only be 1 edge for employees attribute on Department type vertex");
         }
-        
-        // Verify Department now has 2 super types.
-        TypesDef types = typeStore.restore();
-        for (HierarchicalTypeDefinition<ClassType> classTypeDef : types.classTypesAsJavaList()) {
-            if (classTypeDef.typeName.equals("Department")) {
-                Assert.assertEquals(classTypeDef.superTypes.size(), 2);
-                Assert.assertTrue(classTypeDef.superTypes.containsAll(
-                    Arrays.asList("Division", superTypeDef2.typeName)));
-                break;
-            }
-        }
-        ts.reset();
-        Map<String, IDataType> typesMap = ts.defineTypes(types);
-        IDataType dataType = typesMap.get(deptTypeDef.typeName);
-        Assert.assertTrue(dataType instanceof ClassType);
-        ClassType deptType = (ClassType) dataType;
-        Assert.assertEquals(deptType.superTypes.size(), 2);
-        Assert.assertTrue(deptType.superTypes.containsAll(
-            Arrays.asList("Division", superTypeDef2.typeName)));
-   }
-    
+    }
+
     private int countOutgoingEdges(Vertex typeVertex, String edgeLabel) {
 
         Iterator<Edge> outGoingEdgesByLabel = GraphHelper.getOutGoingEdgesByLabel(typeVertex, edgeLabel);

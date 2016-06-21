@@ -123,8 +123,10 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
         HierarchicalType newHierarchicalType = (HierarchicalType) newType;
 
         //validate on supertypes
-        if (!newHierarchicalType.superTypes.containsAll(superTypes)) {
-            throw new TypeUpdateException(newType, "New type doesn't contain all super types of old type");
+
+        if ((newHierarchicalType.superTypes.size() != superTypes.size())
+                || !newHierarchicalType.superTypes.containsAll(superTypes)) {
+            throw new TypeUpdateException(newType, "New type cannot modify superTypes");
         }
 
         //validate on fields

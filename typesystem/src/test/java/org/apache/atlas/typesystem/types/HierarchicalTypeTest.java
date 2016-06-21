@@ -26,29 +26,36 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 public abstract class HierarchicalTypeTest<T extends HierarchicalType> extends TypeUpdateBaseTest {
-    @Test(enabled = false)
+    @Test
     public void testTypeUpdate() throws Exception {
         testTypeUpdateForAttributes();
 
         //Test super types
-        HierarchicalTypeDefinition classType =
-                getTypeDefinition(newName(), TypesUtil.createRequiredAttrDef("a", DataTypes.INT_TYPE));
+        HierarchicalTypeDefinition baseSuperType =
+                getTypeDefinition(newName(), TypesUtil.createOptionalAttrDef("s", DataTypes.INT_TYPE));
+
+        HierarchicalTypeDefinition classType = getTypeDefinition(newName(), ImmutableSet.of(baseSuperType.typeName),
+                        TypesUtil.createRequiredAttrDef("a", DataTypes.INT_TYPE));
         TypeSystem ts = getTypeSystem();
-        ts.defineTypes(getTypesDef(classType));
+        ts.defineTypes(getTypesDef(baseSuperType, classType));
 
         //Add super type with optional attribute
         HierarchicalTypeDefinition superType =
                 getTypeDefinition(newName(), TypesUtil.createOptionalAttrDef("s", DataTypes.INT_TYPE));
-        classType = getTypeDefinition(classType.typeName, ImmutableSet.of(superType.typeName),
+        classType = getTypeDefinition(classType.typeName, ImmutableSet.of(superType.typeName, baseSuperType.typeName),
                 TypesUtil.createRequiredAttrDef("a", DataTypes.INT_TYPE));
-        ts.updateTypes(getTypesDef(superType, classType));
-
+        try {
+            ts.updateTypes(getTypesDef(superType, classType));
+            Assert.fail("Expected TypeUpdateException");
+        } catch (TypeUpdateException e) {
+            //expected
+        }
 
         //Add super type with required attribute should fail
         HierarchicalTypeDefinition superTypeRequired =
                 getTypeDefinition(newName(), TypesUtil.createRequiredAttrDef("s", DataTypes.INT_TYPE));
         classType = getTypeDefinition(classType.typeName,
-                ImmutableSet.of(superTypeRequired.typeName, superType.typeName),
+                ImmutableSet.of(superTypeRequired.typeName, baseSuperType.typeName),
                 TypesUtil.createRequiredAttrDef("a", DataTypes.INT_TYPE));
         try {
             ts.updateTypes(getTypesDef(superTypeRequired, classType));
@@ -60,7 +67,7 @@ public abstract class HierarchicalTypeTest<T extends HierarchicalType> extends T
         //Deleting super type should fail
         classType = getTypeDefinition(classType.typeName, TypesUtil.createRequiredAttrDef("a", DataTypes.INT_TYPE));
         try {
-            ts.updateTypes(getTypesDef(superType, classType));
+            ts.updateTypes(getTypesDef(classType));
             Assert.fail("Expected TypeUpdateException");
         } catch (TypeUpdateException e) {
             //expected
