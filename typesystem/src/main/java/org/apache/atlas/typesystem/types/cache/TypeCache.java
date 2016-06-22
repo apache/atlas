@@ -27,7 +27,7 @@ import org.apache.atlas.typesystem.types.IDataType;
 /**
  * The types are cached to allow faster lookup when type info is needed during
  * creation/updation of entities, DSL query translation/execution.
- * Implementations of this can chose to plugin a distributed cache provider
+ * Implementations of this can chose to plugin a distributed cache
  * or an in-memory cache synched across nodes in an Altas cluster. <br>
  * <br>
  * Type entries in the cache can be one of ... <br>
@@ -37,7 +37,7 @@ import org.apache.atlas.typesystem.types.IDataType;
  * {@link org.apache.atlas.typesystem.types.EnumType}
  */
 @SuppressWarnings("rawtypes")
-public interface ITypeCacheProvider {
+public interface TypeCache {
 
     /**
      * @param typeName
@@ -83,7 +83,7 @@ public interface ITypeCacheProvider {
     /**
      * This is a convenience API to get the names of all types.
      *
-     * @see ITypeCacheProvider#getTypeNames(org.apache.atlas.typesystem.types.DataTypes.TypeCategory)
+     * @see TypeCache#getTypeNames(org.apache.atlas.typesystem.types.DataTypes.TypeCategory)
      * @return
      * @throws AtlasException
      */

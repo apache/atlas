@@ -40,6 +40,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-856 Lazy-load type cache provider (dkantor via shwethags)
 ATLAS-931 Delete entities fails when hard delete is configured (dkantor via sumasai)
 ATLAS-932 UI: 'create tag' button does not work (mneethiraj via sumasai)
 ATLAS-928 UI is not showing the name column for hive tables in the schema tab (yhemanth via sumasai)

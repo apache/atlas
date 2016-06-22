@@ -25,6 +25,7 @@ import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
@@ -53,6 +54,7 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +66,8 @@ import static org.apache.atlas.typesystem.types.utils.TypesUtil.createStructType
 
 @Guice(modules = RepositoryMetadataModule.class)
 public class GraphBackedTypeStoreTest {
+    private static final String DESCRIPTION = "_description";
+
     @Inject
     private GraphProvider<TitanGraph> graphProvider;
 
@@ -97,6 +101,12 @@ public class GraphBackedTypeStoreTest {
         dumpGraph();
     }
 
+    @Test(dependsOnMethods = "testStore")
+    public void testRestoreType() throws Exception {
+        TypesDef typesDef = ((GraphBackedTypeStore)typeStore).restoreType("Manager");
+        verifyRestoredClassType(typesDef, "Manager");
+    }
+
     private void dumpGraph() {
         TitanGraph graph = graphProvider.get();
         for (Vertex v : graph.getVertices()) {
@@ -109,7 +119,6 @@ public class GraphBackedTypeStoreTest {
 
     @Test(dependsOnMethods = "testStore")
     public void testRestore() throws Exception {
-        String description = "_description";
         TypesDef types = typeStore.restore();
 
         //validate enum
@@ -117,7 +126,7 @@ public class GraphBackedTypeStoreTest {
         Assert.assertEquals(1, enumTypes.size());
         EnumTypeDefinition orgLevel = enumTypes.get(0);
         Assert.assertEquals(orgLevel.name, "OrgLevel");
-        Assert.assertEquals(orgLevel.description, "OrgLevel"+description);
+        Assert.assertEquals(orgLevel.description, "OrgLevel"+DESCRIPTION);
         Assert.assertEquals(orgLevel.enumValues.length, 2);
         EnumValue enumValue = orgLevel.enumValues[0];
         Assert.assertEquals(enumValue.value, "L1");
@@ -127,25 +136,14 @@ public class GraphBackedTypeStoreTest {
         List<StructTypeDefinition> structTypes = types.structTypesAsJavaList();
         Assert.assertEquals(1, structTypes.size());
 
-        boolean clsTypeFound = false;
-        List<HierarchicalTypeDefinition<ClassType>> classTypes = types.classTypesAsJavaList();
-        for (HierarchicalTypeDefinition<ClassType> classType : classTypes) {
-            if (classType.typeName.equals("Manager")) {
-                ClassType expectedType = ts.getDataType(ClassType.class, classType.typeName);
-                Assert.assertEquals(expectedType.immediateAttrs.size(), classType.attributeDefinitions.length);
-                Assert.assertEquals(expectedType.superTypes.size(), classType.superTypes.size());
-                Assert.assertEquals(classType.typeDescription, classType.typeName+description);
-                clsTypeFound = true;
-            }
-        }
-        Assert.assertTrue(clsTypeFound, "Manager type not restored");
+        verifyRestoredClassType(types, "Manager");
 
         //validate trait
         List<HierarchicalTypeDefinition<TraitType>> traitTypes = types.traitTypesAsJavaList();
         Assert.assertEquals(1, traitTypes.size());
         HierarchicalTypeDefinition<TraitType> trait = traitTypes.get(0);
         Assert.assertEquals("SecurityClearance", trait.typeName);
-        Assert.assertEquals(trait.typeName+description, trait.typeDescription);
+        Assert.assertEquals(trait.typeName+DESCRIPTION, trait.typeDescription);
         Assert.assertEquals(1, trait.attributeDefinitions.length);
         AttributeDefinition attribute = trait.attributeDefinitions[0];
         Assert.assertEquals("level", attribute.name);
@@ -229,4 +227,20 @@ public class GraphBackedTypeStoreTest {
         }
         return edgeCount;
     }
+
+    private void verifyRestoredClassType(TypesDef types, String typeName) throws AtlasException {
+        boolean clsTypeFound = false;
+        List<HierarchicalTypeDefinition<ClassType>> classTypes = types.classTypesAsJavaList();
+        for (HierarchicalTypeDefinition<ClassType> classType : classTypes) {
+            if (classType.typeName.equals(typeName)) {
+                ClassType expectedType = ts.getDataType(ClassType.class, classType.typeName);
+                Assert.assertEquals(expectedType.immediateAttrs.size(), classType.attributeDefinitions.length);
+                Assert.assertEquals(expectedType.superTypes.size(), classType.superTypes.size());
+                Assert.assertEquals(classType.typeDescription, classType.typeName+DESCRIPTION);
+                clsTypeFound = true;
+            }
+        }
+        Assert.assertTrue(clsTypeFound, typeName + " type not restored");
+    }
+
 }

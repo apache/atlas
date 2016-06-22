@@ -19,6 +19,7 @@
 package org.apache.atlas.services;
 
 import com.google.inject.Provider;
+
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.listener.TypesChangeListener;
@@ -26,12 +27,8 @@ import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.typestore.ITypeStore;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.ha.HAConfiguration;
-import org.apache.atlas.listener.TypesChangeListener;
-import org.apache.atlas.repository.MetadataRepository;
-import org.apache.atlas.repository.typestore.ITypeStore;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.types.IDataType;
-import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.commons.configuration.Configuration;
 import org.mockito.Matchers;
 import org.mockito.Mock;
@@ -44,6 +41,7 @@ import java.util.HashMap;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -78,7 +76,7 @@ public class DefaultMetadataServiceMockTest {
         DefaultMetadataService defaultMetadataService = new DefaultMetadataService(mock(MetadataRepository.class),
                 mock(ITypeStore.class),
                 typesRegistrar, new ArrayList<Provider<TypesChangeListener>>(),
-                new ArrayList<Provider<EntityChangeListener>>(), typeSystem, configuration);
+                new ArrayList<Provider<EntityChangeListener>>(), typeSystem, configuration, null);
 
         verify(typesRegistrar).registerTypes(ReservedTypesRegistrar.getTypesDir(),
                 typeSystem, defaultMetadataService);
@@ -91,10 +89,10 @@ public class DefaultMetadataServiceMockTest {
         DefaultMetadataService defaultMetadataService = new DefaultMetadataService(metadataRepository,
                 typeStore,
                 typesRegistrar, new ArrayList<Provider<TypesChangeListener>>(),
-                new ArrayList<Provider<EntityChangeListener>>(), typeSystem, configuration);
+                new ArrayList<Provider<EntityChangeListener>>(), typeSystem, configuration, null);
 
         verifyZeroInteractions(typeStore);
-        verifyZeroInteractions(typeSystem);
+        verify(typeSystem, never()).defineTypes(Matchers.<TypesDef>any());
         verifyZeroInteractions(typesRegistrar);
     }
 
@@ -109,7 +107,7 @@ public class DefaultMetadataServiceMockTest {
         DefaultMetadataService defaultMetadataService = new DefaultMetadataService(metadataRepository,
                 typeStore,
                 typesRegistrar, new ArrayList<Provider<TypesChangeListener>>(),
-                new ArrayList<Provider<EntityChangeListener>>(), typeSystem, configuration);
+                new ArrayList<Provider<EntityChangeListener>>(), typeSystem, configuration, null);
         defaultMetadataService.instanceIsActive();
 
         verify(typeStore).restore();
@@ -134,7 +132,7 @@ public class DefaultMetadataServiceMockTest {
         DefaultMetadataService defaultMetadataService = new DefaultMetadataService(metadataRepository,
                 typeStore,
                 typesRegistrar, new ArrayList<Provider<TypesChangeListener>>(),
-                new ArrayList<Provider<EntityChangeListener>>(), typeSystem, configuration);
+                new ArrayList<Provider<EntityChangeListener>>(), typeSystem, configuration, null);
 
         defaultMetadataService.instanceIsActive();
         defaultMetadataService.instanceIsPassive();
