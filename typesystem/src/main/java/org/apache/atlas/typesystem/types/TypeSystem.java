@@ -30,14 +30,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.inject.Singleton;
 
-import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.classification.InterfaceAudience;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.exception.TypeExistsException;
 import org.apache.atlas.typesystem.exception.TypeNotFoundException;
-import org.apache.atlas.typesystem.types.cache.DefaultTypeCacheProvider;
-import org.apache.atlas.typesystem.types.cache.ITypeCacheProvider;
+import org.apache.atlas.typesystem.types.cache.DefaultTypeCache;
+import org.apache.atlas.typesystem.types.cache.TypeCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +47,6 @@ import com.google.common.collect.ImmutableSet;
 @InterfaceAudience.Private
 public class TypeSystem {
     private static final Logger LOG = LoggerFactory.getLogger(TypeSystem.class);
-    private static final String CACHE_PROVIDER_CLASS_PROPERTY = "atlas.typesystem.cache.provider";
 
     private static final TypeSystem INSTANCE = new TypeSystem();
     private static ThreadLocal<SimpleDateFormat> dateFormat = new ThreadLocal<SimpleDateFormat>() {
@@ -60,7 +58,7 @@ public class TypeSystem {
         }
     };
 
-    private ITypeCacheProvider typeCache;
+    private TypeCache typeCache  = new DefaultTypeCache();
     private IdType idType;
     private Map<String, IDataType> coreTypes;
 
@@ -84,42 +82,16 @@ public class TypeSystem {
         return this;
     }
 
+    public void setTypeCache(TypeCache typeCache) {
+        this.typeCache = typeCache;
+    }
+
     private void initialize() {
 
-        initCacheProvider();
         coreTypes = new ConcurrentHashMap<>();
 
         registerPrimitiveTypes();
         registerCoreTypes();
-    }
-
-    /**
-     * Ideally a cache provider should have been injected in the TypeSystemProvider,
-     * but a singleton of TypeSystem is constructed privately within the class so that
-     * clients of TypeSystem would never instantiate a TypeSystem object directly in
-     * their code. As soon as a client makes a call to TypeSystem.getInstance(), they
-     * should have the singleton ready for consumption. To enable such an access pattern,
-     * it kind of becomes imperative to initialize the cache provider within the
-     * TypeSystem constructor (bypassing the GUICE way of injecting a cache provider)
-     */
-    private void initCacheProvider() {
-
-        // read the pluggable cache provider from Atlas configuration
-        final String defaultCacheProvider = DefaultTypeCacheProvider.class.getName();
-        Class cacheProviderClass;
-        try {
-            cacheProviderClass = ApplicationProperties.getClass(CACHE_PROVIDER_CLASS_PROPERTY,
-                defaultCacheProvider, ITypeCacheProvider.class);
-        } catch (AtlasException e) {
-            throw new RuntimeException("Error getting type cache provider implementation class", e);
-        }
-
-        try {
-            typeCache = (ITypeCacheProvider)cacheProviderClass.newInstance();
-        }
-        catch (Exception e) {
-            throw new RuntimeException("Error creating instance of type cache provider implementation class " + cacheProviderClass.getName(), e);
-        }
     }
 
     public ImmutableList<String> getCoreTypes() {

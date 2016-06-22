@@ -58,17 +58,22 @@ public class ApplicationPropertiesTest {
 
     @Test
     public void testGetClass() throws Exception {
+        Configuration configuration = ApplicationProperties.get();
+
         //read from atlas-application.properties
-        Class cls = ApplicationProperties.getClass("atlas.TypeSystem.impl", ApplicationProperties.class.getName(), TypeSystem.class);
+        Class cls = ApplicationProperties.getClass(configuration, "atlas.TypeSystem.impl",
+            ApplicationProperties.class.getName(), TypeSystem.class);
         assertEquals(cls.getName(), TypeSystem.class.getName());
 
         //default value
-        cls = ApplicationProperties.getClass("atlas.TypeSystem2.impl", TypeSystem.class.getName(), TypeSystem.class);
+        cls = ApplicationProperties.getClass(configuration, "atlas.TypeSystem2.impl",
+            TypeSystem.class.getName(), TypeSystem.class);
         assertEquals(cls.getName(), TypeSystem.class.getName());
 
         //incompatible assignTo class, should throw AtlasException
         try {
-            cls = ApplicationProperties.getClass("atlas.TypeSystem.impl", ApplicationProperties.class.getName(), ApplicationProperties.class);
+            cls = ApplicationProperties.getClass(configuration, "atlas.TypeSystem.impl",
+                ApplicationProperties.class.getName(), ApplicationProperties.class);
             Assert.fail(AtlasException.class.getSimpleName() + " was expected but none thrown.");
         }
         catch (AtlasException e) {

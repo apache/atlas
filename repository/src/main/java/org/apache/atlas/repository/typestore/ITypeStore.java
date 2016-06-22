@@ -40,4 +40,13 @@ public interface ITypeStore {
      * @throws AtlasException
      */
     TypesDef restore() throws AtlasException;
+
+    /**
+     * Restore the specified type definition
+     *
+     * @param typeName name of requested type
+     * @return persisted type definition
+     * @throws AtlasException
+     */
+    TypesDef restoreType(String typeName) throws AtlasException;
 }

@@ -24,6 +24,7 @@ import com.google.inject.matcher.Matchers;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.throwingproviders.ThrowingProviderBinder;
 import com.thinkaurelius.titan.core.TitanGraph;
+
 import org.aopalliance.intercept.MethodInterceptor;
 import org.apache.atlas.discovery.DiscoveryService;
 import org.apache.atlas.discovery.DataSetLineageService;
@@ -50,6 +51,9 @@ import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.services.ReservedTypesRegistrar;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.TypeSystemProvider;
+import org.apache.atlas.typesystem.types.cache.DefaultTypeCache;
+import org.apache.atlas.typesystem.types.cache.TypeCache;
+import org.apache.commons.configuration.Configuration;
 
 /**
  * Guice module for Repository module.
@@ -85,9 +89,12 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
 
         bind(LineageService.class).to(DataSetLineageService.class).asEagerSingleton();
 
-        bindAuditRepository(binder());
+        Configuration configuration = getConfiguration();
+        bindAuditRepository(binder(), configuration);
 
-        bind(DeleteHandler.class).to(getDeleteHandlerImpl()).asEagerSingleton();
+        bind(DeleteHandler.class).to(getDeleteHandlerImpl(configuration)).asEagerSingleton();
+
+        bind(TypeCache.class).to(getTypeCache(configuration)).asEagerSingleton();
 
         //Add EntityAuditListener as EntityChangeListener
         Multibinder<EntityChangeListener> entityChangeListenerBinder =
@@ -99,9 +106,17 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
         bindInterceptor(Matchers.any(), Matchers.annotatedWith(GraphTransaction.class), interceptor);
     }
 
-    protected void bindAuditRepository(Binder binder) {
+    protected Configuration getConfiguration() {
+        try {
+            return ApplicationProperties.get();
+        } catch (AtlasException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-        Class<? extends EntityAuditRepository> auditRepoImpl = getAuditRepositoryImpl();
+    protected void bindAuditRepository(Binder binder, Configuration configuration) {
+
+        Class<? extends EntityAuditRepository> auditRepoImpl = getAuditRepositoryImpl(getConfiguration());
 
         //Map EntityAuditRepository interface to configured implementation
         binder.bind(EntityAuditRepository.class).to(auditRepoImpl).asEagerSingleton();
@@ -117,10 +132,10 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
 
     private static final String AUDIT_REPOSITORY_IMPLEMENTATION_PROPERTY = "atlas.EntityAuditRepository.impl";
 
-    private Class<? extends EntityAuditRepository> getAuditRepositoryImpl() {
+    private Class<? extends EntityAuditRepository> getAuditRepositoryImpl(Configuration configuration) {
         try {
-            return ApplicationProperties.getClass(AUDIT_REPOSITORY_IMPLEMENTATION_PROPERTY,
-                    HBaseBasedAuditRepository.class.getName(), EntityAuditRepository.class);
+            return ApplicationProperties.getClass(configuration,
+                    AUDIT_REPOSITORY_IMPLEMENTATION_PROPERTY, HBaseBasedAuditRepository.class.getName(), EntityAuditRepository.class);
         } catch (AtlasException e) {
             throw new RuntimeException(e);
         }
@@ -128,12 +143,26 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
 
     private static final String DELETE_HANDLER_IMPLEMENTATION_PROPERTY = "atlas.DeleteHandler.impl";
 
-    private Class<? extends DeleteHandler> getDeleteHandlerImpl() {
+    private Class<? extends DeleteHandler> getDeleteHandlerImpl(Configuration configuration) {
         try {
-            return ApplicationProperties.getClass(DELETE_HANDLER_IMPLEMENTATION_PROPERTY,
-                    SoftDeleteHandler.class.getName(), DeleteHandler.class);
+            return ApplicationProperties.getClass(configuration,
+                    DELETE_HANDLER_IMPLEMENTATION_PROPERTY, SoftDeleteHandler.class.getName(), DeleteHandler.class);
         } catch (AtlasException e) {
             throw new RuntimeException(e);
         }
     }
+
+    public static final String TYPE_CACHE_IMPLEMENTATION_PROPERTY = "atlas.TypeCache.impl";
+
+    protected Class<? extends TypeCache> getTypeCache(Configuration configuration) {
+
+        // Get the type cache implementation class from Atlas configuration.
+        try {
+            return ApplicationProperties.getClass(configuration, TYPE_CACHE_IMPLEMENTATION_PROPERTY,
+                DefaultTypeCache.class.getName(), TypeCache.class);
+        } catch (AtlasException e) {
+            throw new RuntimeException("Error getting TypeCache implementation class", e);
+        }
+    }
+
 }

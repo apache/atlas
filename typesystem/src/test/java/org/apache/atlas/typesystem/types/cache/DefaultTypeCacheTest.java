@@ -47,10 +47,10 @@ import org.testng.annotations.Test;
 import com.google.common.collect.ImmutableSet;
 
 /**
- * Tests functional behavior of {@link DefaultTypeCacheProvider}
+ * Tests functional behavior of {@link DefaultTypeCache}
  */
 @SuppressWarnings("rawtypes")
-public class DefaultTypeCacheProviderTest {
+public class DefaultTypeCacheTest {
 
     private String CLASSTYPE_CUSTOMER = "Customer";
     private String STRUCTTYPE_ADDRESS = "Address";
@@ -64,7 +64,7 @@ public class DefaultTypeCacheProviderTest {
     private TraitType privilegedTrait;
     private EnumType shippingEnum;
 
-    private DefaultTypeCacheProvider cacheProvider;
+    private DefaultTypeCache cache;
 
     @BeforeClass
     public void onetimeSetup() throws Exception {
@@ -98,48 +98,48 @@ public class DefaultTypeCacheProviderTest {
     @BeforeMethod
     public void eachTestSetup() throws Exception {
 
-        cacheProvider = new DefaultTypeCacheProvider();
+        cache = new DefaultTypeCache();
 
-        cacheProvider.put(customerType);
-        cacheProvider.put(addressType);
-        cacheProvider.put(privilegedTrait);
-        cacheProvider.put(shippingEnum);
+        cache.put(customerType);
+        cache.put(addressType);
+        cache.put(privilegedTrait);
+        cache.put(shippingEnum);
     }
 
     @Test
     public void testCacheGetType() throws Exception {
 
-        IDataType custType = cacheProvider.get(CLASSTYPE_CUSTOMER);
+        IDataType custType = cache.get(CLASSTYPE_CUSTOMER);
         verifyType(custType, CLASSTYPE_CUSTOMER, ClassType.class);
 
-        IDataType addrType = cacheProvider.get(STRUCTTYPE_ADDRESS);
+        IDataType addrType = cache.get(STRUCTTYPE_ADDRESS);
         verifyType(addrType, STRUCTTYPE_ADDRESS, StructType.class);
 
-        IDataType privTrait = cacheProvider.get(TRAITTYPE_PRIVILEGED);
+        IDataType privTrait = cache.get(TRAITTYPE_PRIVILEGED);
         verifyType(privTrait, TRAITTYPE_PRIVILEGED, TraitType.class);
 
-        IDataType shippingEnum = cacheProvider.get(ENUMTYPE_SHIPPING);
+        IDataType shippingEnum = cache.get(ENUMTYPE_SHIPPING);
         verifyType(shippingEnum, ENUMTYPE_SHIPPING, EnumType.class);
 
-        assertNull(cacheProvider.get(UNKNOWN_TYPE));
+        assertNull(cache.get(UNKNOWN_TYPE));
     }
 
     @Test
     public void testCacheGetTypeByCategory() throws Exception {
 
-        IDataType custType = cacheProvider.get(TypeCategory.CLASS, CLASSTYPE_CUSTOMER);
+        IDataType custType = cache.get(TypeCategory.CLASS, CLASSTYPE_CUSTOMER);
         verifyType(custType, CLASSTYPE_CUSTOMER, ClassType.class);
 
-        IDataType addrType = cacheProvider.get(TypeCategory.STRUCT, STRUCTTYPE_ADDRESS);
+        IDataType addrType = cache.get(TypeCategory.STRUCT, STRUCTTYPE_ADDRESS);
         verifyType(addrType, STRUCTTYPE_ADDRESS, StructType.class);
 
-        IDataType privTrait = cacheProvider.get(TypeCategory.TRAIT, TRAITTYPE_PRIVILEGED);
+        IDataType privTrait = cache.get(TypeCategory.TRAIT, TRAITTYPE_PRIVILEGED);
         verifyType(privTrait, TRAITTYPE_PRIVILEGED, TraitType.class);
 
-        IDataType shippingEnum = cacheProvider.get(TypeCategory.ENUM, ENUMTYPE_SHIPPING);
+        IDataType shippingEnum = cache.get(TypeCategory.ENUM, ENUMTYPE_SHIPPING);
         verifyType(shippingEnum, ENUMTYPE_SHIPPING, EnumType.class);
 
-        assertNull(cacheProvider.get(UNKNOWN_TYPE));
+        assertNull(cache.get(UNKNOWN_TYPE));
     }
 
     private void verifyType(IDataType actualType, String expectedName, Class<? extends IDataType> typeClass) {
@@ -152,29 +152,29 @@ public class DefaultTypeCacheProviderTest {
     @Test
     public void testCacheHasType() throws Exception {
 
-        assertTrue(cacheProvider.has(CLASSTYPE_CUSTOMER));
-        assertTrue(cacheProvider.has(STRUCTTYPE_ADDRESS));
-        assertTrue(cacheProvider.has(TRAITTYPE_PRIVILEGED));
-        assertTrue(cacheProvider.has(ENUMTYPE_SHIPPING));
+        assertTrue(cache.has(CLASSTYPE_CUSTOMER));
+        assertTrue(cache.has(STRUCTTYPE_ADDRESS));
+        assertTrue(cache.has(TRAITTYPE_PRIVILEGED));
+        assertTrue(cache.has(ENUMTYPE_SHIPPING));
 
-        assertFalse(cacheProvider.has(UNKNOWN_TYPE));
+        assertFalse(cache.has(UNKNOWN_TYPE));
     }
 
     @Test
     public void testCacheHasTypeByCategory() throws Exception {
 
-        assertTrue(cacheProvider.has(TypeCategory.CLASS, CLASSTYPE_CUSTOMER));
-        assertTrue(cacheProvider.has(TypeCategory.STRUCT, STRUCTTYPE_ADDRESS));
-        assertTrue(cacheProvider.has(TypeCategory.TRAIT, TRAITTYPE_PRIVILEGED));
-        assertTrue(cacheProvider.has(TypeCategory.ENUM, ENUMTYPE_SHIPPING));
+        assertTrue(cache.has(TypeCategory.CLASS, CLASSTYPE_CUSTOMER));
+        assertTrue(cache.has(TypeCategory.STRUCT, STRUCTTYPE_ADDRESS));
+        assertTrue(cache.has(TypeCategory.TRAIT, TRAITTYPE_PRIVILEGED));
+        assertTrue(cache.has(TypeCategory.ENUM, ENUMTYPE_SHIPPING));
 
-        assertFalse(cacheProvider.has(UNKNOWN_TYPE));
+        assertFalse(cache.has(UNKNOWN_TYPE));
     }
 
     @Test
     public void testCacheGetAllTypeNames() throws Exception {
 
-        List<String> allTypeNames = new ArrayList<String>(cacheProvider.getAllTypeNames());
+        List<String> allTypeNames = new ArrayList<String>(cache.getAllTypeNames());
         Collections.sort(allTypeNames);
 
         final int EXPECTED_TYPE_COUNT = 4;
@@ -189,22 +189,22 @@ public class DefaultTypeCacheProviderTest {
     @Test
     public void testCacheGetTypeNamesByCategory() throws Exception {
 
-        List<String> classTypes = new ArrayList<String>(cacheProvider.getTypeNames(TypeCategory.CLASS));
+        List<String> classTypes = new ArrayList<String>(cache.getTypeNames(TypeCategory.CLASS));
         final int EXPECTED_CLASSTYPE_COUNT = 1;
         assertEquals(classTypes.size(), EXPECTED_CLASSTYPE_COUNT);
         assertEquals(CLASSTYPE_CUSTOMER, classTypes.get(0));
 
-        List<String> structTypes = new ArrayList<String>(cacheProvider.getTypeNames(TypeCategory.STRUCT));
+        List<String> structTypes = new ArrayList<String>(cache.getTypeNames(TypeCategory.STRUCT));
         final int EXPECTED_STRUCTTYPE_COUNT = 1;
         assertEquals(structTypes.size(), EXPECTED_STRUCTTYPE_COUNT);
         assertEquals(STRUCTTYPE_ADDRESS, structTypes.get(0));
 
-        List<String> traitTypes = new ArrayList<String>(cacheProvider.getTypeNames(TypeCategory.TRAIT));
+        List<String> traitTypes = new ArrayList<String>(cache.getTypeNames(TypeCategory.TRAIT));
         final int EXPECTED_TRAITTYPE_COUNT = 1;
         assertEquals(traitTypes.size(), EXPECTED_TRAITTYPE_COUNT);
         assertEquals(TRAITTYPE_PRIVILEGED, traitTypes.get(0));
 
-        List<String> enumTypes = new ArrayList<String>(cacheProvider.getTypeNames(TypeCategory.ENUM));
+        List<String> enumTypes = new ArrayList<String>(cache.getTypeNames(TypeCategory.ENUM));
         final int EXPECTED_ENUMTYPE_COUNT = 1;
         assertEquals(enumTypes.size(), EXPECTED_ENUMTYPE_COUNT);
         assertEquals(ENUMTYPE_SHIPPING, enumTypes.get(0));
@@ -219,125 +219,125 @@ public class DefaultTypeCacheProviderTest {
         allTypes.add(privilegedTrait);
         allTypes.add(shippingEnum);
 
-        // create a new cache provider instead of using the one setup for every method call
-        cacheProvider = new DefaultTypeCacheProvider();
-        cacheProvider.putAll(allTypes);
+        // create a new cache instead of using the one setup for every method call
+        cache = new DefaultTypeCache();
+        cache.putAll(allTypes);
 
-        IDataType custType = cacheProvider.get(CLASSTYPE_CUSTOMER);
+        IDataType custType = cache.get(CLASSTYPE_CUSTOMER);
         verifyType(custType, CLASSTYPE_CUSTOMER, ClassType.class);
 
-        IDataType addrType = cacheProvider.get(STRUCTTYPE_ADDRESS);
+        IDataType addrType = cache.get(STRUCTTYPE_ADDRESS);
         verifyType(addrType, STRUCTTYPE_ADDRESS, StructType.class);
 
-        IDataType privTrait = cacheProvider.get(TRAITTYPE_PRIVILEGED);
+        IDataType privTrait = cache.get(TRAITTYPE_PRIVILEGED);
         verifyType(privTrait, TRAITTYPE_PRIVILEGED, TraitType.class);
 
-        IDataType shippingEnum = cacheProvider.get(ENUMTYPE_SHIPPING);
+        IDataType shippingEnum = cache.get(ENUMTYPE_SHIPPING);
         verifyType(shippingEnum, ENUMTYPE_SHIPPING, EnumType.class);
     }
 
     @Test
     public void testCacheRemove() throws Exception {
 
-        cacheProvider.remove(CLASSTYPE_CUSTOMER);
-        assertNull(cacheProvider.get(CLASSTYPE_CUSTOMER));
-        assertFalse(cacheProvider.has(CLASSTYPE_CUSTOMER));
-        assertTrue(cacheProvider.getTypeNames(TypeCategory.CLASS).isEmpty());
+        cache.remove(CLASSTYPE_CUSTOMER);
+        assertNull(cache.get(CLASSTYPE_CUSTOMER));
+        assertFalse(cache.has(CLASSTYPE_CUSTOMER));
+        assertTrue(cache.getTypeNames(TypeCategory.CLASS).isEmpty());
 
         final int EXPECTED_TYPE_COUNT = 3;
-        assertEquals(cacheProvider.getAllTypeNames().size(), EXPECTED_TYPE_COUNT);
+        assertEquals(cache.getAllTypeNames().size(), EXPECTED_TYPE_COUNT);
     }
 
     @Test
     public void testCacheRemoveByCategory() throws Exception {
 
-        cacheProvider.remove(TypeCategory.CLASS, CLASSTYPE_CUSTOMER);
-        assertNull(cacheProvider.get(CLASSTYPE_CUSTOMER));
-        assertFalse(cacheProvider.has(CLASSTYPE_CUSTOMER));
-        assertTrue(cacheProvider.getTypeNames(TypeCategory.CLASS).isEmpty());
+        cache.remove(TypeCategory.CLASS, CLASSTYPE_CUSTOMER);
+        assertNull(cache.get(CLASSTYPE_CUSTOMER));
+        assertFalse(cache.has(CLASSTYPE_CUSTOMER));
+        assertTrue(cache.getTypeNames(TypeCategory.CLASS).isEmpty());
 
         final int EXPECTED_TYPE_COUNT = 3;
-        assertEquals(cacheProvider.getAllTypeNames().size(), EXPECTED_TYPE_COUNT);
+        assertEquals(cache.getAllTypeNames().size(), EXPECTED_TYPE_COUNT);
     }
 
     @Test
     public void testCacheClear() throws Exception {
 
-        cacheProvider.clear();
+        cache.clear();
 
-        assertNull(cacheProvider.get(CLASSTYPE_CUSTOMER));
-        assertFalse(cacheProvider.has(CLASSTYPE_CUSTOMER));
+        assertNull(cache.get(CLASSTYPE_CUSTOMER));
+        assertFalse(cache.has(CLASSTYPE_CUSTOMER));
 
-        assertNull(cacheProvider.get(STRUCTTYPE_ADDRESS));
-        assertFalse(cacheProvider.has(STRUCTTYPE_ADDRESS));
+        assertNull(cache.get(STRUCTTYPE_ADDRESS));
+        assertFalse(cache.has(STRUCTTYPE_ADDRESS));
 
-        assertNull(cacheProvider.get(TRAITTYPE_PRIVILEGED));
-        assertFalse(cacheProvider.has(TRAITTYPE_PRIVILEGED));
+        assertNull(cache.get(TRAITTYPE_PRIVILEGED));
+        assertFalse(cache.has(TRAITTYPE_PRIVILEGED));
 
-        assertNull(cacheProvider.get(ENUMTYPE_SHIPPING));
-        assertFalse(cacheProvider.has(ENUMTYPE_SHIPPING));
+        assertNull(cache.get(ENUMTYPE_SHIPPING));
+        assertFalse(cache.has(ENUMTYPE_SHIPPING));
 
-        assertTrue(cacheProvider.getTypeNames(TypeCategory.CLASS).isEmpty());
-        assertTrue(cacheProvider.getTypeNames(TypeCategory.STRUCT).isEmpty());
-        assertTrue(cacheProvider.getTypeNames(TypeCategory.TRAIT).isEmpty());
-        assertTrue(cacheProvider.getTypeNames(TypeCategory.ENUM).isEmpty());
+        assertTrue(cache.getTypeNames(TypeCategory.CLASS).isEmpty());
+        assertTrue(cache.getTypeNames(TypeCategory.STRUCT).isEmpty());
+        assertTrue(cache.getTypeNames(TypeCategory.TRAIT).isEmpty());
+        assertTrue(cache.getTypeNames(TypeCategory.ENUM).isEmpty());
 
-        assertTrue(cacheProvider.getAllTypeNames().isEmpty());
+        assertTrue(cache.getAllTypeNames().isEmpty());
     }
 
     @Test(expectedExceptions = AtlasException.class)
     public void testPutTypeWithNullType() throws Exception {
 
-        cacheProvider.put(null);
+        cache.put(null);
         fail("Null type should be not allowed in 'put'");
     }
 
     @Test(expectedExceptions = AtlasException.class)
     public void testPutTypeWithInvalidType() throws Exception {
 
-        cacheProvider.put(DataTypes.BOOLEAN_TYPE);
+        cache.put(DataTypes.BOOLEAN_TYPE);
         fail("type should only be an instance of ClassType | EnumType | StructType | TraitType in 'put'");
     }
 
     @Test(expectedExceptions = AtlasException.class)
     public void testGetTypeWithNullCategory() throws Exception {
 
-        cacheProvider.get(null, CLASSTYPE_CUSTOMER);
+        cache.get(null, CLASSTYPE_CUSTOMER);
         fail("Null TypeCategory should be not allowed in 'get'");
     }
 
     @Test(expectedExceptions = AtlasException.class)
     public void testGetTypeWithInvalidCategory() throws Exception {
 
-        cacheProvider.get(TypeCategory.PRIMITIVE, DataTypes.BOOLEAN_TYPE.getName());
+        cache.get(TypeCategory.PRIMITIVE, DataTypes.BOOLEAN_TYPE.getName());
         fail("TypeCategory should only be one of TypeCategory.CLASS | ENUM | STRUCT | TRAIT in 'get'");
     }
 
     @Test(expectedExceptions = AtlasException.class)
     public void testCacheHasTypeWithNullCategory() throws Exception {
 
-        cacheProvider.has(null, CLASSTYPE_CUSTOMER);
+        cache.has(null, CLASSTYPE_CUSTOMER);
         fail("Null TypeCategory should be not allowed in 'has'");
     }
 
     @Test(expectedExceptions = AtlasException.class)
     public void testCacheHasTypeWithInvalidCategory() throws Exception {
 
-        cacheProvider.has(TypeCategory.PRIMITIVE, DataTypes.BOOLEAN_TYPE.getName());
+        cache.has(TypeCategory.PRIMITIVE, DataTypes.BOOLEAN_TYPE.getName());
         fail("TypeCategory should only be one of TypeCategory.CLASS | ENUM | STRUCT | TRAIT in 'has'");
     }
 
     @Test(expectedExceptions = AtlasException.class)
     public void testCacheGetTypeNamesByNullCategory() throws Exception {
 
-        cacheProvider.getTypeNames(null);
+        cache.getTypeNames(null);
         fail("Null TypeCategory should be not allowed in 'getNames'");
     }
 
     @Test(expectedExceptions = AtlasException.class)
     public void testCacheGetTypeNamesByInvalidCategory() throws Exception {
 
-        cacheProvider.getTypeNames(TypeCategory.PRIMITIVE);
+        cache.getTypeNames(TypeCategory.PRIMITIVE);
         fail("TypeCategory should only be one of TypeCategory.CLASS | ENUM | STRUCT | TRAIT in 'getNames'");
     }
 
@@ -347,9 +347,9 @@ public class DefaultTypeCacheProviderTest {
         List<IDataType> allTypes = new ArrayList<>();
         allTypes.add(null);
 
-        // create a new cache provider instead of using the one setup for every method call
-        cacheProvider = new DefaultTypeCacheProvider();
-        cacheProvider.putAll(allTypes);
+        // create a new cache instead of using the one setup for every method call
+        cache = new DefaultTypeCache();
+        cache.putAll(allTypes);
 
         fail("Null type should be not allowed in 'putAll'");
     }
@@ -360,9 +360,9 @@ public class DefaultTypeCacheProviderTest {
         List<IDataType> allTypes = new ArrayList<>();
         allTypes.add(DataTypes.BOOLEAN_TYPE);
 
-        // create a new cache provider instead of using the one setup for every method call
-        cacheProvider = new DefaultTypeCacheProvider();
-        cacheProvider.putAll(allTypes);
+        // create a new cache instead of using the one setup for every method call
+        cache = new DefaultTypeCache();
+        cache.putAll(allTypes);
 
         fail("type should only one of ClassType | EnumType | StructType | TraitType in 'putAll'");
     }
@@ -370,14 +370,14 @@ public class DefaultTypeCacheProviderTest {
     @Test(expectedExceptions = AtlasException.class)
     public void testCacheRemoveByNullCategory() throws Exception {
 
-        cacheProvider.remove(null, CLASSTYPE_CUSTOMER);
+        cache.remove(null, CLASSTYPE_CUSTOMER);
         fail("Null type should be not allowed in 'remove'");
     }
 
     @Test(expectedExceptions = AtlasException.class)
     public void testCacheRemoveByInvalidCategory() throws Exception {
 
-        cacheProvider.remove(TypeCategory.PRIMITIVE, DataTypes.BOOLEAN_TYPE.getName());
+        cache.remove(TypeCategory.PRIMITIVE, DataTypes.BOOLEAN_TYPE.getName());
         fail("TypeCategory should only be one of TypeCategory.CLASS | ENUM | STRUCT | TRAIT in 'remove'");
     }
 }

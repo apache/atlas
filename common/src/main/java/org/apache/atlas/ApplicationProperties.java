@@ -108,10 +108,9 @@ public final class ApplicationProperties extends PropertiesConfiguration {
         return inConf.subset(prefix);
     }
 
-    public static Class getClass(String propertyName, String defaultValue, Class assignableClass)
-        throws AtlasException {
+    public static Class getClass(Configuration configuration, String propertyName, String defaultValue,
+                                 Class assignableClass) throws AtlasException {
         try {
-            Configuration configuration = get();
             String propertyValue = configuration.getString(propertyName, defaultValue);
             Class<?> clazz = Class.forName(propertyValue);
             if (assignableClass == null || assignableClass.isAssignableFrom(clazz)) {

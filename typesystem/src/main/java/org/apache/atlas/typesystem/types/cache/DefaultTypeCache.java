@@ -39,14 +39,14 @@ import com.google.inject.Singleton;
  */
 @Singleton
 @SuppressWarnings("rawtypes")
-public class DefaultTypeCacheProvider implements ITypeCacheProvider {
+public class DefaultTypeCache implements TypeCache {
 
     private Map<String, IDataType> types_ = new ConcurrentHashMap<>();
 
     /*
      * (non-Javadoc)
      * @see
-     * org.apache.atlas.typesystem.types.cache.ITypeCacheProvider#has(java.lang
+     * org.apache.atlas.typesystem.types.cache.TypeCache#has(java.lang
      * .String)
      */
     @Override
@@ -56,7 +56,7 @@ public class DefaultTypeCacheProvider implements ITypeCacheProvider {
     }
 
     /* (non-Javadoc)
-     * @see org.apache.atlas.typesystem.types.cache.ITypeCacheProvider#has(org.
+     * @see org.apache.atlas.typesystem.types.cache.TypeCache#has(org.
      * apache.atlas.typesystem.types.DataTypes.TypeCategory, java.lang.String)
      */
     @Override
@@ -93,7 +93,7 @@ public class DefaultTypeCacheProvider implements ITypeCacheProvider {
     /*
      * (non-Javadoc)
      * @see
-     * org.apache.atlas.typesystem.types.cache.ITypeCacheProvider#get(java.lang
+     * org.apache.atlas.typesystem.types.cache.TypeCache#get(java.lang
      * .String)
      */
     @Override
@@ -103,7 +103,7 @@ public class DefaultTypeCacheProvider implements ITypeCacheProvider {
     }
 
     /* (non-Javadoc)
-     * @see org.apache.atlas.typesystem.types.cache.ITypeCacheProvider#get(org.apache.
+     * @see org.apache.atlas.typesystem.types.cache.TypeCache#get(org.apache.
      * atlas.typesystem.types.DataTypes.TypeCategory, java.lang.String)
      */
     @Override
@@ -116,7 +116,7 @@ public class DefaultTypeCacheProvider implements ITypeCacheProvider {
     /*
      * (non-Javadoc)
      * @see
-     * org.apache.atlas.typesystem.types.cache.ITypeCacheProvider#getNames(org
+     * org.apache.atlas.typesystem.types.cache.TypeCache#getNames(org
      * .apache.atlas.typesystem.types.DataTypes.TypeCategory)
      */
     @Override
@@ -139,7 +139,7 @@ public class DefaultTypeCacheProvider implements ITypeCacheProvider {
     /*
      * (non-Javadoc)
      * @see
-     * org.apache.atlas.typesystem.types.cache.ITypeCacheProvider#getAllNames()
+     * org.apache.atlas.typesystem.types.cache.TypeCache#getAllNames()
      */
     @Override
     public Collection<String> getAllTypeNames() throws AtlasException {
@@ -150,7 +150,7 @@ public class DefaultTypeCacheProvider implements ITypeCacheProvider {
     /*
      * (non-Javadoc)
      * @see
-     * org.apache.atlas.typesystem.types.cache.ITypeCacheProvider#put(org.apache
+     * org.apache.atlas.typesystem.types.cache.TypeCache#put(org.apache
      * .atlas.typesystem.types.IDataType)
      */
     @Override
@@ -181,7 +181,7 @@ public class DefaultTypeCacheProvider implements ITypeCacheProvider {
     /*
      * (non-Javadoc)
      * @see
-     * org.apache.atlas.typesystem.types.cache.ITypeCacheProvider#putAll(java
+     * org.apache.atlas.typesystem.types.cache.TypeCache#putAll(java
      * .util.Collection)
      */
     @Override
@@ -196,7 +196,7 @@ public class DefaultTypeCacheProvider implements ITypeCacheProvider {
     /*
      * (non-Javadoc)
      * @see
-     * org.apache.atlas.typesystem.types.cache.ITypeCacheProvider#remove(java
+     * org.apache.atlas.typesystem.types.cache.TypeCache#remove(java
      * .lang.String)
      */
     @Override
@@ -206,7 +206,7 @@ public class DefaultTypeCacheProvider implements ITypeCacheProvider {
     }
 
     /* (non-Javadoc)
-     * @see org.apache.atlas.typesystem.types.cache.ITypeCacheProvider#remove(org.
+     * @see org.apache.atlas.typesystem.types.cache.TypeCache#remove(org.
      * apache.atlas.typesystem.types.DataTypes.TypeCategory, java.lang.String)
      */
     @Override
@@ -219,7 +219,7 @@ public class DefaultTypeCacheProvider implements ITypeCacheProvider {
 
     /*
      * (non-Javadoc)
-     * @see org.apache.atlas.typesystem.types.cache.ITypeCacheProvider#clear()
+     * @see org.apache.atlas.typesystem.types.cache.TypeCache#clear()
      */
     @Override
     public void clear() {
