@@ -6,6 +6,7 @@ INCOMPATIBLE CHANGES:
 
 
 ALL CHANGES:
+ATLAS-920 Lineage graph is broken when there are multiple paths from same source table (kevalbhatt18 via sumasai)
 ATLAS-940 Type cache implementation property name in atlas-application.properties is incorrect ( dkantor via sumasai)
 ATLAS-925 Change master version to 0.8-incubating (shwethags)
 
