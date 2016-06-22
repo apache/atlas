@@ -28,7 +28,6 @@ import org.apache.atlas.fs.model.FSDataTypes;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
-import org.apache.atlas.hive.rewrite.HiveASTRewriter;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.persistence.Id;
@@ -63,7 +62,6 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
@@ -73,7 +71,6 @@ import static org.apache.atlas.AtlasClient.NAME;
 import static org.apache.atlas.hive.hook.HiveHook.entityComparator;
 import static org.apache.atlas.hive.hook.HiveHook.getProcessQualifiedName;
 import static org.apache.atlas.hive.hook.HiveHook.lower;
-import static org.apache.atlas.hive.hook.HiveHook.normalize;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -526,14 +523,12 @@ public class HiveHookIT {
     public void testInsertIntoTable() throws Exception {
         String tableName = createTable();
         String insertTableName = createTable();
-        String query =
-                "insert into " + insertTableName + " select id, name from " + tableName;
+        assertTableIsRegistered(DEFAULT_DB, tableName);
+        assertTableIsRegistered(DEFAULT_DB, insertTableName);
+
+        String query = "insert into " + insertTableName + " select id, name from " + tableName;
 
         runCommand(query);
-
-        String inputTableId = assertTableIsRegistered(DEFAULT_DB, tableName);
-        String opTableId = assertTableIsRegistered(DEFAULT_DB, insertTableName);
-
         List<Entity> inputs = getInputs(tableName, Entity.Type.TABLE);
         List<Entity> outputs = getOutputs(insertTableName, Entity.Type.TABLE);
         ((WriteEntity)outputs.get(0)).setWriteType(WriteEntity.WriteType.INSERT);
