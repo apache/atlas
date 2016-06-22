@@ -216,9 +216,6 @@ public class EntityResource {
         if (sample == null) {
             sample = getSample(entityResult.getUpdateEntities());
         }
-        if (sample == null) {
-            sample = getSample(entityResult.getDeletedEntities());
-        }
         return sample;
     }
 
