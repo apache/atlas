@@ -46,6 +46,7 @@
                 <exclude>distro/solr/**</exclude>
                 <exclude>**/${sys:atlas.data}/**</exclude>
                 <exclude>**/atlas.data/**</exclude>
+                <exclude>**/*.patch</exclude>
             </excludes>
         </fileSet>
     </fileSets>

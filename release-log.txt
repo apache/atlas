@@ -6,6 +6,7 @@ INCOMPATIBLE CHANGES:
 
 
 ALL CHANGES:
+ATLAS-942 Jenkins build failure - GraphRepoMapperScaleTest (shwethags)
 ATLAS-920 Lineage graph is broken when there are multiple paths from same source table (kevalbhatt18 via sumasai)
 ATLAS-940 Type cache implementation property name in atlas-application.properties is incorrect ( dkantor via sumasai)
 ATLAS-925 Change master version to 0.8-incubating (shwethags)
@@ -56,7 +57,7 @@ ATLAS-929 Add test for trait preservation on column rename for non-default datab
 ATLAS-922 remove test atlas-application.properties embedded in atlas-typesystem.jar (madhan.neethiraj via yhemanth)
 ATLAS-725 UI : Filter out or highlight deleted entities in search result outputs(dsl, text) , schema view, and lineage graph (kevalbhatt18 via sumasai)
 ATLAS-897 Atlas UI: Feature to associate multiple assets with a term. (kevalbhatt18 via sumasai)
-ATLAS-866 Improve association of terms with entity (Show tree view) (kevalbhatt18 via sumasai)
+ATLAS-886 Improve association of terms with entity (Show tree view) (kevalbhatt18 via sumasai)
 ATLAS-877 CreateTime of an entity(for example hive table) changes for every update (sumasai)
 ATLAS-642 import-hive should create the lineage for external tables (svimal2106 via sumasai)
 ATLAS-901 Log messages that cannot be sent to Kafka to a specific log configuration (yhemanth)
@@ -178,7 +179,7 @@ ATLAS-422 JavaDoc NotificationConsumer and NotificationInterface.(tbeerbower via
 ATLAS-536 Falcon hook loads incorrect configuration when -Datlas.conf is not given when falcon server startup (ayubkhan via shwethags)
 ATLAS-502 UI: Provide the ability to search for tags (anilsg via shwethags)
 ATLAS-364 UI Code standardization (darshankumar89 via shwethags)
-ATLAS_396 Creating an entity with non-existing type results in "Unable to deserialize json" error (guptaneeru via sumasai)
+ATLAS-396 Creating an entity with non-existing type results in "Unable to deserialize json" error (guptaneeru via sumasai)
 ATLAS-318 Config file conatining API endpoint + all api calls to be centralized (sanjayp via sumasai)
 ATLAS-471 Atlas Server could run out of memory due to Scala memory leak (yhemanth via sumasai)
 ATLAS-486 Updated pom.xml to fix scm url and upgrade plugin (sneethiraj via sumasai)
