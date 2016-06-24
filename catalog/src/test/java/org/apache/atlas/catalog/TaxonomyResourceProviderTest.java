@@ -58,7 +58,110 @@ public class TaxonomyResourceProviderTest {
         expect(query.execute()).andReturn(queryResult);
         replay(typeSystem, queryFactory, query);
 
-        TaxonomyResourceProvider provider = new TaxonomyResourceProvider(typeSystem);
+        TaxonomyResourceProvider provider = new TestTaxonomyResourceProvider(typeSystem);
+        provider.setQueryFactory(queryFactory);
+
+        Map<String, Object> requestProperties = new HashMap<>();
+        requestProperties.put("name", "taxonomyName");
+        Request userRequest = new InstanceRequest(requestProperties);
+
+        Result result = provider.getResourceById(userRequest);
+
+        assertEquals(1, result.getPropertyMaps().size());
+        assertEquals(queryResultRow, result.getPropertyMaps().iterator().next());
+
+        Request request = requestCapture.getValue();
+        assertNull(request.getQueryString());
+        assertEquals(0, request.getAdditionalSelectProperties().size());
+        assertEquals(requestProperties, request.getQueryProperties());
+
+        verify(typeSystem, queryFactory, query);
+    }
+
+    @Test
+    public void testGetResourceById_notInitialized_createDefaultTaxonomy() throws Exception {
+        AtlasTypeSystem typeSystem = createStrictMock(AtlasTypeSystem.class);
+        QueryFactory queryFactory = createStrictMock(QueryFactory.class);
+        AtlasQuery query = createStrictMock(AtlasQuery.class);
+        Capture<Request> checkForAnyTaxonomiesCapture = newCapture();
+        Capture<Request> createDefaultTaxonomyRequestCapture = newCapture();
+        Capture<Request> requestCapture = newCapture();
+        Capture<ResourceDefinition> resourceDefinitionCapture = newCapture();
+
+        Collection<Map<String, Object>> queryResult = new ArrayList<>();
+        Map<String, Object> queryResultRow = new HashMap<>();
+        queryResult.add(queryResultRow);
+        queryResultRow.put("name", "taxonomyName");
+        queryResultRow.put("description", "test taxonomy description");
+        queryResultRow.put("creation_time", "04/20/2016");
+
+        // mock expectations
+        expect(queryFactory.createTaxonomyQuery(capture(checkForAnyTaxonomiesCapture))).andReturn(query);
+        expect(query.execute()).andReturn(Collections.<Map<String, Object>>emptySet());
+        typeSystem.createEntity(capture(resourceDefinitionCapture), capture(createDefaultTaxonomyRequestCapture));
+        expect(queryFactory.createTaxonomyQuery(capture(requestCapture))).andReturn(query);
+        expect(query.execute()).andReturn(queryResult);
+        replay(typeSystem, queryFactory, query);
+
+        TestTaxonomyResourceProvider provider = new TestTaxonomyResourceProvider(typeSystem);
+        provider.setInitialized(false);
+        provider.setQueryFactory(queryFactory);
+
+        Map<String, Object> requestProperties = new HashMap<>();
+        requestProperties.put("name", "taxonomyName");
+        Request userRequest = new InstanceRequest(requestProperties);
+
+        Result result = provider.getResourceById(userRequest);
+
+        assertEquals(1, result.getPropertyMaps().size());
+        assertEquals(queryResultRow, result.getPropertyMaps().iterator().next());
+
+        Request request = requestCapture.getValue();
+        assertNull(request.getQueryString());
+        assertEquals(0, request.getAdditionalSelectProperties().size());
+        assertEquals(requestProperties, request.getQueryProperties());
+
+        Request checkForAnyTaxonomiesRequest = checkForAnyTaxonomiesCapture.getValue();
+        assertNull(checkForAnyTaxonomiesRequest.getQueryString());
+        assertEquals(checkForAnyTaxonomiesRequest.getAdditionalSelectProperties().size(), 0);
+        assertEquals(checkForAnyTaxonomiesRequest.getQueryProperties().size(), 0);
+
+        Request createDefaultTaxonomyRequest = createDefaultTaxonomyRequestCapture.getValue();
+        assertNull(createDefaultTaxonomyRequest.getQueryString());
+        assertEquals(createDefaultTaxonomyRequest.getAdditionalSelectProperties().size(), 0);
+        assertEquals(createDefaultTaxonomyRequest.getQueryProperties().size(), 2);
+        assertEquals(createDefaultTaxonomyRequest.getQueryProperties().get("name"),
+                TaxonomyResourceProvider.DEFAULT_TAXONOMY_NAME);
+        assertEquals(createDefaultTaxonomyRequest.getQueryProperties().get("description"),
+                TaxonomyResourceProvider.DEFAULT_TAXONOMY_DESCRIPTION);
+
+        verify(typeSystem, queryFactory, query);
+    }
+
+    @Test
+    public void testGetResourceById_notInitialized_taxonomyAlreadyExists() throws Exception {
+        AtlasTypeSystem typeSystem = createStrictMock(AtlasTypeSystem.class);
+        QueryFactory queryFactory = createStrictMock(QueryFactory.class);
+        AtlasQuery query = createStrictMock(AtlasQuery.class);
+        Capture<Request> checkForAnyTaxonomiesCapture = newCapture();
+        Capture<Request> requestCapture = newCapture();
+
+        Collection<Map<String, Object>> queryResult = new ArrayList<>();
+        Map<String, Object> queryResultRow = new HashMap<>();
+        queryResult.add(queryResultRow);
+        queryResultRow.put("name", "taxonomyName");
+        queryResultRow.put("description", "test taxonomy description");
+        queryResultRow.put("creation_time", "04/20/2016");
+
+        // mock expectations
+        expect(queryFactory.createTaxonomyQuery(capture(checkForAnyTaxonomiesCapture))).andReturn(query);
+        expect(query.execute()).andReturn(queryResult);
+        expect(queryFactory.createTaxonomyQuery(capture(requestCapture))).andReturn(query);
+        expect(query.execute()).andReturn(queryResult);
+        replay(typeSystem, queryFactory, query);
+
+        TestTaxonomyResourceProvider provider = new TestTaxonomyResourceProvider(typeSystem);
+        provider.setInitialized(false);
         provider.setQueryFactory(queryFactory);
 
         Map<String, Object> requestProperties = new HashMap<>();
@@ -93,7 +196,7 @@ public class TaxonomyResourceProviderTest {
         expect(query.execute()).andReturn(emptyResponse);
         replay(typeSystem, queryFactory, query);
 
-        TaxonomyResourceProvider provider = new TaxonomyResourceProvider(typeSystem);
+        TaxonomyResourceProvider provider = new TestTaxonomyResourceProvider(typeSystem);
         provider.setQueryFactory(queryFactory);
 
         Map<String, Object> requestProperties = new HashMap<>();
@@ -130,7 +233,7 @@ public class TaxonomyResourceProviderTest {
         expect(query.execute()).andReturn(queryResult);
         replay(typeSystem, queryFactory, query);
 
-        TaxonomyResourceProvider provider = new TaxonomyResourceProvider(typeSystem);
+        TaxonomyResourceProvider provider = new TestTaxonomyResourceProvider(typeSystem);
         provider.setQueryFactory(queryFactory);
 
         Request userRequest = new CollectionRequest(Collections.<String, Object>emptyMap(), "name:taxonomy*");
@@ -163,7 +266,7 @@ public class TaxonomyResourceProviderTest {
         expect(query.execute()).andReturn(queryResult);
         replay(typeSystem, queryFactory, query);
 
-        TaxonomyResourceProvider provider = new TaxonomyResourceProvider(typeSystem);
+        TaxonomyResourceProvider provider = new TestTaxonomyResourceProvider(typeSystem);
         provider.setQueryFactory(queryFactory);
 
         Request userRequest = new CollectionRequest(Collections.<String, Object>emptyMap(), "name:taxonomy*");
@@ -193,7 +296,7 @@ public class TaxonomyResourceProviderTest {
         requestProperties.put("description", "test");
         Request userRequest = new InstanceRequest(requestProperties);
 
-        TaxonomyResourceProvider provider = new TaxonomyResourceProvider(typeSystem);
+        TaxonomyResourceProvider provider = new TestTaxonomyResourceProvider(typeSystem);
         provider.setQueryFactory(queryFactory);
 
         provider.createResource(userRequest);
@@ -225,7 +328,7 @@ public class TaxonomyResourceProviderTest {
         requestProperties.put("name", "taxonomyName");
         Request userRequest = new InstanceRequest(requestProperties);
 
-        TaxonomyResourceProvider provider = new TaxonomyResourceProvider(typeSystem);
+        TaxonomyResourceProvider provider = new TestTaxonomyResourceProvider(typeSystem);
         provider.setQueryFactory(queryFactory);
 
         provider.createResource(userRequest);
@@ -252,7 +355,7 @@ public class TaxonomyResourceProviderTest {
         requestProperties.put("name", "taxonomyName");
         Request userRequest = new InstanceRequest(requestProperties);
 
-        TaxonomyResourceProvider provider = new TaxonomyResourceProvider(typeSystem);
+        TaxonomyResourceProvider provider = new TestTaxonomyResourceProvider(typeSystem);
         provider.setQueryFactory(queryFactory);
 
         provider.createResource(userRequest);
@@ -279,7 +382,7 @@ public class TaxonomyResourceProviderTest {
         requestProperties.put("name", "taxonomyName");
         Request userRequest = new InstanceRequest(requestProperties);
 
-        TaxonomyResourceProvider provider = new TaxonomyResourceProvider(typeSystem);
+        TaxonomyResourceProvider provider = new TestTaxonomyResourceProvider(typeSystem);
         provider.setQueryFactory(queryFactory);
 
         provider.createResources(userRequest);
@@ -385,7 +488,7 @@ public class TaxonomyResourceProviderTest {
         replay(typeSystem, queryFactory, query);
 
         // instantiate resource provider and invoke method being tested
-        TaxonomyResourceProvider provider = new TaxonomyResourceProvider(typeSystem);
+        TaxonomyResourceProvider provider = new TestTaxonomyResourceProvider(typeSystem);
         provider.setQueryFactory(queryFactory);
         provider.updateResourceById(userRequest);
 
@@ -424,7 +527,7 @@ public class TaxonomyResourceProviderTest {
         replay(typeSystem, queryFactory, query);
 
         // instantiate resource provider and invoke method being tested
-        TaxonomyResourceProvider provider = new TaxonomyResourceProvider(typeSystem);
+        TaxonomyResourceProvider provider = new TestTaxonomyResourceProvider(typeSystem);
         provider.setQueryFactory(queryFactory);
         provider.updateResourceById(userRequest);
 
@@ -450,7 +553,7 @@ public class TaxonomyResourceProviderTest {
         replay(typeSystem, queryFactory, query);
 
         // instantiate resource provider and invoke method being tested
-        TaxonomyResourceProvider provider = new TaxonomyResourceProvider(typeSystem);
+        TaxonomyResourceProvider provider = new TestTaxonomyResourceProvider(typeSystem);
         provider.setQueryFactory(queryFactory);
         provider.updateResourceById(userRequest);
 
@@ -459,14 +562,30 @@ public class TaxonomyResourceProviderTest {
 
     private static class TestTaxonomyResourceProvider extends TaxonomyResourceProvider {
         private final TermResourceProvider termResourceProvider;
+        private boolean isInitialized = true;
+
+        public TestTaxonomyResourceProvider(AtlasTypeSystem typeSystem) {
+            super(typeSystem);
+            this.termResourceProvider = null;
+        }
+
         public TestTaxonomyResourceProvider(AtlasTypeSystem typeSystem, TermResourceProvider termResourceProvider) {
             super(typeSystem);
             this.termResourceProvider = termResourceProvider;
         }
 
+        public void setInitialized(boolean isInitialized) {
+            this.isInitialized = isInitialized;
+        }
+
         @Override
         protected synchronized TermResourceProvider getTermResourceProvider() {
             return termResourceProvider;
+        }
+
+        @Override
+        protected boolean autoInitializationChecked() {
+            return isInitialized;
         }
     }
 }
