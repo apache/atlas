@@ -6,6 +6,7 @@ INCOMPATIBLE CHANGES:
 
 
 ALL CHANGES:
+ATLAS-624 UI: Clicking a tag hyperlink should always result in DSL search. In some cases, results in full-text search. (Kalyanikashikar via yhemanth)
 ATLAS-950 Atlas should support Solr that requires Kerberos authentication (madhan.neethiraj via yhemanth)
 ATLAS-947 Return state information in inputs and outputs lineage API (shwethags)
 ATLAS-806 Create default taxonomy at server startup (jspeidel via yhemanth)
