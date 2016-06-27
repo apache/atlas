@@ -57,14 +57,10 @@ define([
             var that = this;
             require([
                 'hbs!tmpl/common/aboutAtlas_tmpl',
-                'modules/Modal'
-            ], function(aboutAtlasTmpl, Modal) {
-
-                var aboutAtlas = Marionette.LayoutView.extend({
-                    template: aboutAtlasTmpl,
-                    events: {},
-                });
-                var view = new aboutAtlas();
+                'modules/Modal',
+                'views/common/aboutAtlas',
+            ], function(aboutAtlasTmpl, Modal, aboutAtlasView) {
+                var view = new aboutAtlasView();
                 var modal = new Modal({
                     title: 'Apache Atlas',
                     content: view,
