@@ -52,7 +52,8 @@ public class DataSetLineageService implements LineageService {
     private static final Logger LOG = LoggerFactory.getLogger(DataSetLineageService.class);
 
     private static final Option<List<String>> SELECT_ATTRIBUTES =
-            Some.<List<String>>apply(List.<String>fromArray(new String[]{"name"}));
+            Some.<List<String>>apply(List.<String>fromArray(new String[]{AtlasClient.NAME,
+                    AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME}));
     public static final String SELECT_INSTANCE_GUID = "__guid";
 
     public static final String DATASET_SCHEMA_QUERY_PREFIX = "atlas.lineage.schema.query.";

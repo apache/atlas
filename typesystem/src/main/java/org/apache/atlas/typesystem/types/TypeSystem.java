@@ -18,18 +18,8 @@
 
 package org.apache.atlas.typesystem.types;
 
-import java.lang.reflect.Constructor;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.concurrent.ConcurrentHashMap;
-
-import javax.inject.Singleton;
-
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.classification.InterfaceAudience;
 import org.apache.atlas.typesystem.TypesDef;
@@ -40,8 +30,16 @@ import org.apache.atlas.typesystem.types.cache.TypeCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
+import javax.inject.Singleton;
+import java.lang.reflect.Constructor;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Singleton
 @InterfaceAudience.Private
@@ -717,6 +715,7 @@ public class TypeSystem {
     public class IdType {
         private static final String ID_ATTRNAME = "guid";
         private static final String TYPENAME_ATTRNAME = "typeName";
+        private static final String STATE_ATTRNAME = "state";
         private static final String TYP_NAME = "__IdType";
 
         private StructType type;
@@ -728,10 +727,14 @@ public class TypeSystem {
             AttributeDefinition typNmAttr =
                     new AttributeDefinition(TYPENAME_ATTRNAME, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED,
                             false, null);
+            AttributeDefinition stateAttr =
+                    new AttributeDefinition(STATE_ATTRNAME, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED,
+                            false, null);
             try {
-                AttributeInfo[] infos = new AttributeInfo[2];
+                AttributeInfo[] infos = new AttributeInfo[3];
                 infos[0] = new AttributeInfo(TypeSystem.this, idAttr, null);
                 infos[1] = new AttributeInfo(TypeSystem.this, typNmAttr, null);
+                infos[2] = new AttributeInfo(TypeSystem.this, stateAttr, null);
 
                 type = new StructType(TypeSystem.this, TYP_NAME, null, infos);
             } catch (AtlasException me) {
@@ -753,6 +756,10 @@ public class TypeSystem {
 
         public String typeNameAttrName() {
             return TYPENAME_ATTRNAME;
+        }
+
+        public String stateAttrName() {
+            return STATE_ATTRNAME;
         }
     }
 

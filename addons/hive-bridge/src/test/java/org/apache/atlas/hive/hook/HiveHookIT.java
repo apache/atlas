@@ -536,8 +536,7 @@ public class HiveHookIT {
         Referenceable processRef1 = validateProcess(query, HiveOperation.QUERY, inputs, outputs);
 
         //Rerun same query. Should result in same process
-        runCommand(query);
-
+        runCommandWithDelay(query, 1000);
         Referenceable processRef2 = validateProcess(query, HiveOperation.QUERY, inputs, outputs);
         Assert.assertEquals(processRef1.getId()._getId(), processRef2.getId()._getId());
 

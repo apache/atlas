@@ -52,7 +52,7 @@ atlas.graph.index.search.solr.zookeeper-url=
         </titan.index.properties>
         <hbase.embedded>false</hbase.embedded>
         <solr.embedded>false</solr.embedded>
-	<entity.repository.properties>#atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.HBaseBasedAuditRepository</entity.repository.properties>
+	<entity.repository.properties>atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.HBaseBasedAuditRepository</entity.repository.properties>
     </properties>
 
     <profiles>

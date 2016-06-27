@@ -6,6 +6,7 @@ INCOMPATIBLE CHANGES:
 
 
 ALL CHANGES:
+ATLAS-947 Return state information in inputs and outputs lineage API (shwethags)
 ATLAS-806 Create default taxonomy at server startup (jspeidel via yhemanth)
 ATLAS-942 Jenkins build failure - GraphRepoMapperScaleTest (shwethags)
 ATLAS-920 Lineage graph is broken when there are multiple paths from same source table (kevalbhatt18 via sumasai)

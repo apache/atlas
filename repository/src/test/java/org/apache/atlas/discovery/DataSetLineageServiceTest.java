@@ -19,12 +19,15 @@
 package org.apache.atlas.discovery;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.BaseRepositoryTest;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
+import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.commons.collections.ArrayStack;
 import org.apache.commons.lang.RandomStringUtils;
@@ -40,9 +43,11 @@ import org.testng.annotations.Test;
 import javax.inject.Inject;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 /**
@@ -334,17 +339,20 @@ public class DataSetLineageServiceTest extends BaseRepositoryTest {
     public void testLineageWithDelete() throws Exception {
         String tableName = "table" + random();
         createTable(tableName, 3, true);
+        String tableId = getEntityId(HIVE_TABLE_TYPE, "name", tableName);
 
         JSONObject results = new JSONObject(lineageService.getSchema(tableName));
         assertEquals(results.getJSONArray("rows").length(), 3);
 
         results = new JSONObject(lineageService.getInputsGraph(tableName));
-        assertEquals(results.getJSONObject("values").getJSONObject("vertices").length(), 2);
+        Struct resultInstance = InstanceSerialization.fromJsonStruct(results.toString(), true);
+        Map<String, Struct> vertices = (Map) resultInstance.get("vertices");
+        assertEquals(vertices.size(), 2);
+        Struct vertex = vertices.get(tableId);
+        assertEquals(((Struct) vertex.get("vertexId")).get("state"), Id.EntityState.ACTIVE.name());
 
         results = new JSONObject(lineageService.getOutputsGraph(tableName));
         assertEquals(results.getJSONObject("values").getJSONObject("vertices").length(), 2);
-
-        String tableId = getEntityId(HIVE_TABLE_TYPE, "name", tableName);
 
         results = new JSONObject(lineageService.getSchemaForEntity(tableId));
         assertEquals(results.getJSONArray("rows").length(), 3);
@@ -357,12 +365,19 @@ public class DataSetLineageServiceTest extends BaseRepositoryTest {
 
         //Delete the entity. Lineage for entity returns the same results as before.
         //Lineage for table name throws EntityNotFoundException
-        repository.deleteEntities(Arrays.asList(tableId));
+        AtlasClient.EntityResult deleteResult = repository.deleteEntities(Arrays.asList(tableId));
+        assertTrue(deleteResult.getDeletedEntities().contains(tableId));
 
         results = new JSONObject(lineageService.getSchemaForEntity(tableId));
         assertEquals(results.getJSONArray("rows").length(), 3);
 
         results = new JSONObject(lineageService.getInputsGraphForEntity(tableId));
+        resultInstance = InstanceSerialization.fromJsonStruct(results.toString(), true);
+        vertices = (Map) resultInstance.get("vertices");
+        assertEquals(vertices.size(), 2);
+        vertex = vertices.get(tableId);
+        assertEquals(((Struct) vertex.get("vertexId")).get("state"), Id.EntityState.DELETED.name());
+
         assertEquals(results.getJSONObject("values").getJSONObject("vertices").length(), 2);
 
         results = new JSONObject(lineageService.getOutputsGraphForEntity(tableId));

@@ -62,6 +62,11 @@ trait GraphPersistenceStrategies {
     def idAttributeName : String
 
     /**
+      * Name of attribute used to store state in vertex
+      */
+    def stateAttributeName : String
+
+    /**
      * Given a dataType and a reference attribute, how is edge labeled
      */
     def edgeLabel(iDataType: IDataType[_], aInfo: AttributeInfo): String
@@ -190,6 +195,7 @@ object GraphPersistenceStrategy1 extends GraphPersistenceStrategies {
     val typeAttributeName = "typeName"
     val superTypeAttributeName = "superTypeNames"
     val idAttributeName = "guid"
+    val stateAttributeName = "state"
 
     def edgeLabel(dataType: IDataType[_], aInfo: AttributeInfo) = s"__${dataType.getName}.${aInfo.name}"
 
