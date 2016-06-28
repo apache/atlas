@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages'], function(require, Utils, Modal, Messages) {
+define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Globals'], function(require, Utils, Modal, Messages, Globals) {
     'use strict';
 
     var CommonViewFunction = {};
@@ -108,16 +108,23 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages'], function(r
             fetchInputOutputValue = function(id) {
                 var that = this;
                 scope.model.getEntity(id, {
-                    beforeSend: function() {},
                     success: function(data) {
-                        var value = "";
+                        var value = "",
+                            deleteButton = "";
                         if (data.definition.values.name) {
                             value = data.definition.values.name;
+                        } else if (data.definition.values.qualifiedName) {
+                            value = data.definition.values.qualifiedName;
+                        } else if (data.definition.typeName) {
+                            value = data.definition.typeName;
                         }
                         var id = "";
                         if (data.definition.id) {
                             if (_.isObject(data.definition.id) && data.definition.id.id) {
                                 id = data.definition.id.id;
+                                if (Globals.entityStateReadOnly[data.definition.id.state]) {
+                                    deleteButton += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
+                                }
                             } else {
                                 id = data.definition.id;
                             }
@@ -127,7 +134,10 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages'], function(r
                         } else {
                             scope.$('td div[data-id="' + id + '"]').html('<a href="#!/detailPage/' + id + '">' + id + '</a>');
                         }
-
+                        if (deleteButton.length) {
+                            scope.$('td div[data-id="' + id + '"]').addClass('block readOnlyLink');
+                            scope.$('td div[data-id="' + id + '"]').append(deleteButton);
+                        }
                     },
                     error: function(error, data, status) {},
                     complete: function() {}
@@ -139,46 +149,78 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages'], function(r
                 var subLink = "";
                 for (var i = 0; i < keyValue.length; i++) {
                     var inputOutputField = keyValue[i],
-                        id = undefined;
+                        id = undefined,
+                        tempLink = "",
+                        readOnly = false;
                     if (_.isObject(inputOutputField.id)) {
                         id = inputOutputField.id.id;
+                        if (Globals.entityStateReadOnly[inputOutputField.id.state]) {
+                            readOnly = inputOutputField.id.state
+                        }
                     } else {
                         id = inputOutputField.id;
                     }
                     if (id) {
                         if (inputOutputField.values) {
                             if (inputOutputField.values.name) {
-                                subLink += '<div><a href="#!/detailPage/' + id + '">' + inputOutputField.values.name + '</a><div>'
+                                tempLink += '<a href="#!/detailPage/' + id + '">' + inputOutputField.values.name + '</a>'
+                            } else if (inputOutputField.values.qualifiedName) {
+                                tempLink += '<a href="#!/detailPage/' + id + '">' + inputOutputField.values.qualifiedName + '</a>'
+                            } else if (inputOutputField.typeName) {
+                                tempLink += '<a href="#!/detailPage/' + id + '">' + inputOutputField.typeName + '</a>'
                             } else {
-                                subLink += '<a href="#!/detailPage/' + id + '">' + id + '</a>'
+                                tempLink += '<a href="#!/detailPage/' + id + '">' + id + '</a>'
                             }
                         } else {
                             fetchInputOutputValue(id);
-                            subLink += '<div data-id="' + id + '"></div>';
+                            tempLink += '<div data-id="' + id + '"></div>';
                         }
 
+                    }
+                    if (readOnly) {
+                        tempLink += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
+                        subLink += '<div class="block readOnlyLink">' + tempLink + '</div>';
                     } else {
-                        subLink += '<div></div>';
+                        if (tempLink.search('href') != -1) {
+                            subLink += '<div>' + tempLink + '</div>'
+                        } else {
+                            subLink += tempLink
+                        }
                     }
                 }
                 table += '<tr><td>' + key + '</td><td>' + subLink + '</td></tr>';
             } else if (_.isObject(keyValue)) {
-                var id = undefined;
+                var id = undefined,
+                    tempLink = "",
+                    readOnly = false;
                 if (_.isObject(keyValue.id)) {
                     id = keyValue.id.id;
+                    if (Globals.entityStateReadOnly[keyValue.id.state]) {
+                        readOnly = keyValue.id.state
+                    }
                 } else {
                     id = keyValue.id;
                 }
                 if (id) {
                     if (keyValue.values) {
                         if (keyValue.values.name) {
-                            table += '<tr><td>' + key + '</td><td><div><a href="#!/detailPage/' + id + '">' + keyValue.values.name + '</a><div></td></tr>';
+                            tempLink += '<a href="#!/detailPage/' + id + '">' + keyValue.values.name + '</a>';
+                        } else if (keyValue.values.qualifiedName) {
+                            tempLink += '<a href="#!/detailPage/' + id + '">' + keyValue.values.qualifiedName + '</a>'
+                        } else if (keyValue.typeName) {
+                            tempLink += '<a href="#!/detailPage/' + id + '">' + keyValue.typeName + '</a>'
                         } else {
-                            table += '<tr><td>' + key + '</td><td><div><a href="#!/detailPage/' + id + '">' + id + '</a><div></td></tr>';
+                            tempLink += '<a href="#!/detailPage/' + id + '">' + id + '</a>';
                         }
                     } else {
                         fetchInputOutputValue(id);
-                        table += '<tr><td>' + key + '</td><td><div data-id="' + id + '"></div></td></tr>';
+                        tempLink += '<div data-id="' + id + '"></div>';
+                    }
+                    if (readOnly) {
+                        tempLink += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
+                        table += '<tr><td>' + key + '</td><td><div class="block readOnlyLink">' + tempLink + '</div></td></tr>';
+                    } else {
+                        table += '<tr><td>' + key + '</td><td>' + tempLink + '</td></tr>';
                     }
                 } else {
                     var stringArr = [];
@@ -194,9 +236,13 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages'], function(r
                     });
                     var jointValues = stringArr.join(", ");
                     if (jointValues.length) {
-                        table += '<tr><td>' + key + '</td><td><div>' + jointValues + '</div></td></tr>';
+                        tempLink += '<div>' + jointValues + '</div>';
+                    }
+                    if (readOnly) {
+                        tempLink += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
+                        table += '<tr><td>' + key + '</td><td><div class="block readOnlyLink">' + tempLink + '</div></td></tr>';
                     } else {
-                        table += '<tr><td>' + key + '</td><td></td></tr>';
+                        table += '<tr><td>' + key + '</td><td>' + tempLink + '</td></tr>';
                     }
                 }
             } else {

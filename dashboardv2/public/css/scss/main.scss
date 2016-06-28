@@ -99,7 +99,8 @@ body {
 }
 
 .gray-bg {
-    background-color: $color_white_lilac_approx;
+    background-color: #f6f7fb;
+    padding-bottom: 4%;
 }
 
 header {
@@ -240,6 +241,16 @@ ul {
     }
 }
 
+.readOnlyLink {
+    display: inline-block;
+    .deleteBtn {
+        padding: 0px 5px;
+    }
+    a {
+        color: $delete_link;
+    }
+}
+
 .readOnly {
     .addTag-dropdown {
         display: none;
@@ -249,15 +260,6 @@ ul {
             i.fa-close[data-id="deleteTag"] {
                 display: none;
             }
-        }
-    }
-    &.readOnlyLink {
-        display: inline-block;
-        .deleteBtn {
-            padding: 0px 5px;
-        }
-        a {
-            color: $delete_link;
         }
     }
     a {
@@ -280,5 +282,14 @@ ul {
         &.inputAssignTag[data-id="addTerm"] {
             display: none;
         }
+    }
+}
+
+@media (min-width: 768px) {
+    .col-sm-offset-1 {
+        margin: 4% 4% 0;
+    }
+    .col-sm-10 {
+        width: 92%;
     }
 }

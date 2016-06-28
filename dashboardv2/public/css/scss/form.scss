@@ -193,7 +193,7 @@ button:focus {
     border-color: $color_mountain_mist_approx;
     color: $color_mountain_mist_approx;
     cursor: default;
-    margin: 10px;
+    margin: 5px 10px;
     &:hover {
         border-color: $color_mountain_mist_approx;
         color: $color_mountain_mist_approx;
@@ -204,4 +204,8 @@ button:focus {
         color: $color_mountain_mist_approx;
         background-color: $transparent;
     }
+}
+
+.block {
+    display: block !important;
 }
