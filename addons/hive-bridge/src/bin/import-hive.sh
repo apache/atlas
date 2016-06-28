@@ -87,6 +87,9 @@ if [ ! -z "$HADOOP_CLASSPATH" ]; then
     HADOOP_CP=$HADOOP_CLASSPATH
 elif [ ! -z "$HADOOP_HOME" ]; then
     HADOOP_CP=`$HADOOP_HOME/bin/hadoop classpath`
+elif [ $(command -v hadoop) ]; then
+    HADOOP_CP=`hadoop classpath`
+    echo $HADOOP_CP
 else
     echo "Environment variable HADOOP_CLASSPATH or HADOOP_HOME need to be set"
     exit 1
