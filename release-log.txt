@@ -6,6 +6,7 @@ INCOMPATIBLE CHANGES:
 
 
 ALL CHANGES:
+ATLAS-948 import-hive should allow an option to continue after failure (sumasai)
 ATLAS-954 Get hadoop classpath if command hadoop is in PATH (svimal2106 via sumasai)
 ATLAS-919 UI : Deleted references should be shown in red or filtered out (kevalbhatt18 via sumasai)
 ATLAS-927 aboutAtlas_tmpl.html has hard-coded project version (Kalyanikashikar via yhemanth)
