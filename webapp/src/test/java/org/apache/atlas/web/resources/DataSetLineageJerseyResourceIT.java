@@ -23,6 +23,8 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.typesystem.Struct;
+import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
@@ -34,6 +36,9 @@ import org.testng.annotations.Test;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.Response;
 import java.util.List;
+import java.util.Map;
+
+import static org.testng.Assert.assertEquals;
 
 /**
  * Hive Lineage Integration Tests.
@@ -70,30 +75,29 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
         JSONObject results = response.getJSONObject(AtlasClient.RESULTS);
         Assert.assertNotNull(results);
 
-        JSONObject values = results.getJSONObject("values");
-        Assert.assertNotNull(values);
+        Struct resultsInstance = InstanceSerialization.fromJsonStruct(results.toString(), true);
+        Map<String, Struct> vertices = (Map<String, Struct>) resultsInstance.get("vertices");
+        Assert.assertEquals(vertices.size(), 4);
 
-        final JSONObject vertices = values.getJSONObject("vertices");
-        Assert.assertEquals(vertices.length(), 4);
-
-        final JSONObject edges = values.getJSONObject("edges");
-        Assert.assertEquals(edges.length(), 4);
+        Map<String, Struct> edges = (Map<String, Struct>) resultsInstance.get("edges");
+        Assert.assertEquals(edges.size(), 4);
     }
 
     @Test
     public void testInputsGraphForEntity() throws Exception {
-        String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesMonthlyTable).getId()._getId();
+        String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+                salesMonthlyTable).getId()._getId();
         JSONObject results = serviceClient.getInputGraphForEntity(tableId);
         Assert.assertNotNull(results);
 
-        JSONObject values = results.getJSONObject("values");
-        Assert.assertNotNull(values);
+        Struct resultsInstance = InstanceSerialization.fromJsonStruct(results.toString(), true);
+        Map<String, Struct> vertices = (Map<String, Struct>) resultsInstance.get("vertices");
+        Assert.assertEquals(vertices.size(), 4);
+        Struct vertex = vertices.get(tableId);
+        assertEquals(((Struct) vertex.get("vertexId")).get("state"), Id.EntityState.ACTIVE.name());
 
-        final JSONObject vertices = values.getJSONObject("vertices");
-        Assert.assertEquals(vertices.length(), 4);
-
-        final JSONObject edges = values.getJSONObject("edges");
-        Assert.assertEquals(edges.length(), 4);
+        Map<String, Struct> edges = (Map<String, Struct>) resultsInstance.get("edges");
+        Assert.assertEquals(edges.size(), 4);
     }
 
     @Test
@@ -114,30 +118,29 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
         JSONObject results = response.getJSONObject(AtlasClient.RESULTS);
         Assert.assertNotNull(results);
 
-        JSONObject values = results.getJSONObject("values");
-        Assert.assertNotNull(values);
+        Struct resultsInstance = InstanceSerialization.fromJsonStruct(results.toString(), true);
+        Map<String, Struct> vertices = (Map<String, Struct>) resultsInstance.get("vertices");
+        Assert.assertEquals(vertices.size(), 3);
 
-        final JSONObject vertices = values.getJSONObject("vertices");
-        Assert.assertEquals(vertices.length(), 3);
-
-        final JSONObject edges = values.getJSONObject("edges");
-        Assert.assertEquals(edges.length(), 4);
+        Map<String, Struct> edges = (Map<String, Struct>) resultsInstance.get("edges");
+        Assert.assertEquals(edges.size(), 4);
     }
 
     @Test
     public void testOutputsGraphForEntity() throws Exception {
-        String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
+        String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+                salesFactTable).getId()._getId();
         JSONObject results = serviceClient.getOutputGraphForEntity(tableId);
         Assert.assertNotNull(results);
 
-        JSONObject values = results.getJSONObject("values");
-        Assert.assertNotNull(values);
+        Struct resultsInstance = InstanceSerialization.fromJsonStruct(results.toString(), true);
+        Map<String, Struct> vertices = (Map<String, Struct>) resultsInstance.get("vertices");
+        Assert.assertEquals(vertices.size(), 3);
+        Struct vertex = vertices.get(tableId);
+        assertEquals(((Struct) vertex.get("vertexId")).get("state"), Id.EntityState.ACTIVE.name());
 
-        final JSONObject vertices = values.getJSONObject("vertices");
-        Assert.assertEquals(vertices.length(), 3);
-
-        final JSONObject edges = values.getJSONObject("edges");
-        Assert.assertEquals(edges.length(), 4);
+        Map<String, Struct> edges = (Map<String, Struct>) resultsInstance.get("edges");
+        Assert.assertEquals(edges.size(), 4);
     }
 
     @Test

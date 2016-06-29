@@ -142,7 +142,7 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
                 if (dataType.getName().equals(idType.getName())) {
                     structInstance.set(idType.typeNameAttrName(), structVertex.getProperty(typeAttributeName()));
                     structInstance.set(idType.idAttrName(), structVertex.getProperty(idAttributeName()));
-
+                    structInstance.set(idType.stateAttrName(), structVertex.getProperty(stateAttributeName()));
                 } else {
                     metadataRepository.getGraphToInstanceMapper()
                         .mapVertexToInstance(structVertex, structInstance, structType.fieldMapping().fields);
@@ -226,6 +226,11 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
     @Override
     public String idAttributeName() {
         return metadataRepository.getIdAttributeName();
+    }
+
+    @Override
+    public String stateAttributeName() {
+        return metadataRepository.getStateAttributeName();
     }
 
     @Override

@@ -50,6 +50,12 @@ public interface MetadataRepository {
     String getSuperTypeAttributeName();
 
     /**
+     * Returns the attribute name used for entity state
+     * @return
+     */
+    String getStateAttributeName();
+
+    /**
      * Return the property key used to store a given traitName in the repository.
      *
      * @param dataType  data type

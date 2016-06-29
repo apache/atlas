@@ -34,7 +34,7 @@ public class ApplicationPropertiesTest {
         assertEquals(properties.getString("atlas.service"), "atlas");
 
         //property containing system property
-        String data = "/var/data/" + System.getProperty("user.name") + "/atlas";
+        String data = System.getProperty("user.dir") + "/target/data";
         assertEquals(properties.getString("atlas.data"), data);
 
         //property referencing other property
@@ -51,7 +51,7 @@ public class ApplicationPropertiesTest {
         Configuration subConfiguration = configuration.subset("atlas");
 
         assertEquals(subConfiguration.getString("service"), "atlas");
-        String data = "/var/data/" + System.getProperty("user.name") + "/atlas";
+        String data = System.getProperty("user.dir") + "/target/data";
         assertEquals(subConfiguration.getString("data"), data);
         assertEquals(subConfiguration.getString("graph.data"), data + "/graph");
     }

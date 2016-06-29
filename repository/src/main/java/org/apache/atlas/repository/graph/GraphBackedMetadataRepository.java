@@ -86,6 +86,11 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         return Constants.ENTITY_TYPE_PROPERTY_KEY;
     }
 
+    @Override
+    public String getStateAttributeName() {
+        return Constants.STATE_PROPERTY_KEY;
+    }
+
     /**
      * Returns the property key used to store super type names.
      *
