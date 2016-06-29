@@ -60,6 +60,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Krb5HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -206,11 +207,13 @@ public class Solr5Index implements IndexProvider {
         waitSearcher = config.get(WAIT_SEARCHER);
 
         if (mode==Mode.CLOUD) {
+            HttpClientUtil.setConfigurer(new Krb5HttpClientConfigurer());
             String zookeeperUrl = config.get(Solr5Index.ZOOKEEPER_URL);
             CloudSolrClient cloudServer = new CloudSolrClient(zookeeperUrl, true);
             cloudServer.connect();
             solrClient = cloudServer;
         } else if (mode==Mode.HTTP) {
+            HttpClientUtil.setConfigurer(new Krb5HttpClientConfigurer());
             HttpClient clientParams = HttpClientUtil.createClient(new ModifiableSolrParams() {{
                 add(HttpClientUtil.PROP_ALLOW_COMPRESSION, config.get(HTTP_ALLOW_COMPRESSION).toString());
                 add(HttpClientUtil.PROP_CONNECTION_TIMEOUT, config.get(HTTP_CONNECTION_TIMEOUT).toString());
@@ -756,7 +759,7 @@ public class Solr5Index implements IndexProvider {
             if (mode!=Mode.CLOUD) throw new UnsupportedOperationException("Operation only supported for SolrCloud");
             logger.debug("Clearing storage from Solr: {}", solrClient);
             ZkStateReader zkStateReader = ((CloudSolrClient) solrClient).getZkStateReader();
-            zkStateReader.updateClusterState(true);
+            zkStateReader.updateClusterState();
             ClusterState clusterState = zkStateReader.getClusterState();
             for (String collection : clusterState.getCollections()) {
                 logger.debug("Clearing collection [{}] in Solr",collection);
@@ -911,7 +914,7 @@ public class Solr5Index implements IndexProvider {
      */
     private static boolean checkIfCollectionExists(CloudSolrClient server, String collection) throws KeeperException, InterruptedException {
         ZkStateReader zkStateReader = server.getZkStateReader();
-        zkStateReader.updateClusterState(true);
+        zkStateReader.updateClusterState();
         ClusterState clusterState = zkStateReader.getClusterState();
         return clusterState.getCollectionOrNull(collection) != null;
     }
@@ -926,7 +929,7 @@ public class Solr5Index implements IndexProvider {
 
             while (cont) {
                 boolean sawLiveRecovering = false;
-                zkStateReader.updateClusterState(true);
+                zkStateReader.updateClusterState();
                 ClusterState clusterState = zkStateReader.getClusterState();
                 Map<String, Slice> slices = clusterState.getSlicesMap(collection);
                 Preconditions.checkNotNull("Could not find collection:" + collection, slices);
@@ -935,9 +938,8 @@ public class Solr5Index implements IndexProvider {
                     Map<String, Replica> shards = entry.getValue().getReplicasMap();
                     for (Map.Entry<String, Replica> shard : shards.entrySet()) {
                         String state = shard.getValue().getStr(ZkStateReader.STATE_PROP);
-                        if ((state.equals(ZkStateReader.RECOVERING)
-                                || state.equals(ZkStateReader.SYNC) || state
-                                .equals(ZkStateReader.DOWN))
+                        if ((state.equals(Replica.State.RECOVERING)
+                                || state.equals(Replica.State.DOWN))
                                 && clusterState.liveNodesContain(shard.getValue().getStr(
                                 ZkStateReader.NODE_NAME_PROP))) {
                             sawLiveRecovering = true;
