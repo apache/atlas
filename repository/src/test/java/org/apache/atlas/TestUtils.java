@@ -43,6 +43,7 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.testng.Assert;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 
@@ -334,7 +335,7 @@ public final class TestUtils {
             TypesDef typesDef = defineHiveTypes();
             return typeSystem.defineTypes(typesDef).values();
         }
-        return null;
+        return new ArrayList<>();
     }
 
     public static final String randomString() {
