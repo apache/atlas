@@ -104,6 +104,7 @@ define(['require',
             fetchCollections: function() {
                 $.extend(this.tagCollection.queryParams, { type: 'TRAIT', });
                 this.tagCollection.fetch({ reset: true });
+                this.ui.offLineSearchTag.val("");
             },
             manualRender: function(tagName) {
                 this.tag = tagName;
@@ -159,13 +160,13 @@ define(['require',
                     if (!tagOrTerm.term) {
                         if (searchString) {
                             if (tagName.search(new RegExp(searchString, "i")) != -1) {
-                                str = '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + tagName + '">' + tagName + '</a></li>' + str;
+                                str = '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + tagName + '"  data-name="`' + tagName + '`" >' + tagName + '</a></li>' + str;
                             } else {
                                 return;
                             }
                         } else {
                             //str = '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-trash-o" data-id="deleteTerm"></i></div><a href="#!/tag/tagAttribute/' + tagName + '">' + tagName + '</a></li>' + str;
-                            str = '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + tagName + '">' + tagName + '</a></li>' + str;
+                            str = '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + tagName + '"  data-name="`' + tagName + '`">' + tagName + '</a></li>' + str;
                         }
                     }
                 });
@@ -291,9 +292,9 @@ define(['require',
                 Utils.setUrl({
                     url: '#!/search/searchResult',
                     urlParams: {
-                        query: this.ui.tagsParent.find('li.active').find("a").text(),
-                        searchType: "fulltext",
-                        dslChecked: false
+                        query: this.ui.tagsParent.find('li.active').find("a").data('name'),
+                        searchType: "dsl",
+                        dslChecked: true
                     },
                     updateTabState: function() {
                         return { searchUrl: this.url, stateChanged: true };
