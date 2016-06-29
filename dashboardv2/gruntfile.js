@@ -127,7 +127,6 @@ module.exports = function(grunt) {
                     'd3/': 'd3-tip/index.js',
                     'noty/js': 'noty/js/noty/packaged/jquery.noty.packaged.min.js',
                     'dagre-d3': 'dagre-d3/dist/dagre-d3.min.js',
-                    'jstree': 'jstree/dist/jstree.min.js',
                     'select2': 'select2/dist/js/select2.min.js',
                     'backgrid-select-all': 'backgrid-select-all/backgrid-select-all.min.js'
                 }
@@ -138,7 +137,6 @@ module.exports = function(grunt) {
                 },
                 files: {
                     'bootstrap/css': 'bootstrap/dist/css/bootstrap.min.css',
-                    'bootstrap/fonts': 'bootstrap/dist/fonts',
                     'backgrid/css': 'backgrid/lib/backgrid.css',
                     'backgrid-filter/css': 'backgrid-filter/backgrid-filter.min.css',
                     'backgrid-orderable-columns/css': 'backgrid-orderable-columns/backgrid-orderable-columns.css',
@@ -146,9 +144,37 @@ module.exports = function(grunt) {
                     'backgrid-sizeable-columns/css': 'backgrid-sizeable-columns/backgrid-sizeable-columns.css',
                     'jquery-asBreadcrumbs/css': 'jquery-asBreadcrumbs/css/asBreadcrumbs.css',
                     'select2/css': 'select2/dist/css/select2.min.css',
-                    'backgrid-select-all': 'backgrid-select-all/backgrid-select-all.min.css'
+                    'backgrid-select-all': 'backgrid-select-all/backgrid-select-all.min.css',
+                    'font-awesome/css': 'font-awesome/css/font-awesome.min.css',
+                    'font-awesome/fonts': 'font-awesome/fonts'
                 }
 
+            },
+            license: {
+                options: {
+                    destPrefix: libPath
+                },
+                files: {
+                    'jquery': 'jquery/LICENSE.txt',
+                    'requirejs-text': 'requirejs-text/LICENSE',
+                    'underscore': 'underscore/LICENSE',
+                    'bootstrap': 'bootstrap/LICENSE',
+                    'backbone-babysitter': 'backbone.babysitter/LICENSE.md',
+                    'backbone-marionette': 'backbone.marionette/license.txt',
+                    'backbone-paginator': 'backbone.paginator/LICENSE-MIT',
+                    'backbone-wreqr': 'backbone.wreqr/LICENSE.md',
+                    'backgrid': 'backgrid/LICENSE-MIT',
+                    'backgrid-filter': 'backgrid-filter/LICENSE-MIT',
+                    'backgrid-orderable-columns': 'backgrid-orderable-columns/LICENSE-MIT',
+                    'backgrid-paginator': 'backgrid-paginator/LICENSE-MIT',
+                    'backgrid-sizeable-columns': 'backgrid-sizeable-columns/LICENSE-MIT',
+                    'jquery-asBreadcrumbs': 'jquery-asBreadcrumbs/LICENSE-GPL',
+                    'd3': 'd3/LICENSE',
+                    'd3/': 'd3-tip/LICENSE',
+                    'noty': 'noty/LICENSE.txt',
+                    'dagre-d3': 'dagre-d3/LICENSE',
+                    'backgrid-select-all': 'backgrid-select-all/LICENSE-MIT'
+                }
             }
         },
         sass: {
@@ -194,6 +220,7 @@ module.exports = function(grunt) {
         'clean',
         'npmcopy:js',
         'npmcopy:css',
+        'npmcopy:license',
         'copy:dist',
         'sass',
         'configureProxies:server',
@@ -206,6 +233,7 @@ module.exports = function(grunt) {
     grunt.registerTask('build', [
         'npmcopy:js',
         'npmcopy:css',
+        'npmcopy:license',
         'copy:dist',
         'sass'
     ]);

@@ -21,8 +21,7 @@ define(['require',
     'hbs!tmpl/search/SearchLayoutView_tmpl',
     'collection/VSearchList',
     'utils/Utils',
-    'collection/VTagList',
-    'tree',
+    'collection/VTagList'
 ], function(require, Backbone, SearchLayoutViewTmpl, VSearchList, Utils, VTagList) {
     'use strict';
 
@@ -42,7 +41,6 @@ define(['require',
                 searchInput: '[data-id="searchInput"]',
                 searchType: 'input[name="queryType"]',
                 advanceSearch: '[data-id="advanceSearch"]',
-                //advanceSearchContainer: '[data-id="advanceSearchContainer"]',
                 tagList: '[data-id="tagList"]',
                 tagListInput: '[data-id="tagListInput"]',
                 termListInput: '[data-id="termListInput"]',
@@ -91,18 +89,11 @@ define(['require',
                 this.listenTo(this.searchCollection, "reset", function(value) {
                     this.renderTree();
                 }, this);
-                // this.listenTo(this.tagCollection, 'reset', function() {
-                //     this.tagsAndTypeGenerator('tagCollection', this.ui.tagListInput, 'listTag', param);
-                // }, this);
-                // this.listenTo(this.typeCollection, 'reset', function() {
-                //     this.tagsAndTypeGenerator('typeCollection', this.ui.termListInput, 'listType', param);
-                // }, this);
             },
             onRender: function() {
                 // array of tags which is coming from url
                 this.ui.searchBtn.attr("disabled", "true");
                 this.setValues();
-                this.fetchCollections();
             },
             manualRender: function(paramObj) {
                 this.setValues(paramObj);
@@ -117,18 +108,6 @@ define(['require',
                         // get only search value and append it to input box
                         this.ui.searchInput.val(this.value.query);
                         this.ui.searchBtn.removeAttr("disabled");
-                        /* if (this.value.query.split(" where ").length > 1) {
-                             this.ui.searchInput.val(this.value.query.split(" where ")[0]);
-                         } else if (this.value.query.split(" isa ").length > 1) {
-                             this.ui.searchInput.val(this.value.query.split(" isa ")[0]);
-                         } else {
-                             this.ui.searchInput.val(this.value.query);
-                         }
-                         _.each(this.value.query.split(' isa '), function(val, key) {
-                             if (key > 0) {
-                                 arr.push(val.split(" ")[0])
-                             }
-                         });*/
                     }
                     if (this.value.dslChecked == "true") {
                         this.ui.searchType.prop("checked", true).trigger("change");
@@ -138,23 +117,11 @@ define(['require',
                 }
                 this.bindEvents(arr);
             },
-            fetchCollections: function() {
-                // this.tagCollection.fetch({ reset: true });
-                // this.typeCollection.fetch({ reset: true });
-            },
             findSearchResult: function() {
                 this.triggerSearch(this.ui.searchInput.val());
             },
             triggerSearch: function(value) {
-                // this.ui.searchType.is(':checked') == true;
-                // var advancedSearchValue = value;
                 if (!this.ui.searchType.is(':checked')) {
-                    // if (this.ui.tagListInput.select2('data').length > 1) {
-                    //     advancedSearchValue = value + " where " + value + " isa " + this.ui.tagListInput.val().join(" and " + value + " isa ");
-                    // } else {
-                    //     advancedSearchValue = value + " isa " + this.ui.tagListInput.val();
-                    //     advancedSearchValue = value;
-                    // }
                     this.type = "dsl";
                 } else if (!this.ui.searchType.is(':checked')) {
                     this.type = "fulltext";
@@ -183,37 +150,11 @@ define(['require',
                 }
                 this.searchCollection.fetch({ reset: true });
             },
-            // tagsAndTypeGenerator: function(collection, element, searchString, params) {
-            //     var str = '';
-            //     _.each(this[collection].fullCollection.models, function(model) {
-            //         var tagName = model.get("tags");
-            //         if (searchString) {
-            //             str += '<option data-id="tags">' + tagName + '</option>';
-            //         }
-            //     });
-            //     element.html(str);
-            //     if (searchString == 'listTag') {
-            //         var placeholderText = "Containing tag(S)";
-            //         if (params) {
-            //             element.val(params);
-            //         }
-            //     } else {
-            //         var placeholderText = "Select type";
-            //     }
-            //     element.select2({
-            //         placeholder: placeholderText,
-            //         allowClear: true
-            //     });
-            // },
             dslFulltextToggle: function(e) {
                 if (e.currentTarget.checked) {
                     this.type = "dsl";
-                    //this.dslSearch = true;
-                    //this.ui.advanceSearchContainer.hide();
                 } else {
                     this.type = "fulltext";
-                    //  this.dslSearch = false;
-                    //this.ui.advanceSearchContainer.show();
                 }
                 if (this.ui.searchInput.val() !== "") {
                     Utils.setUrl({
@@ -235,8 +176,6 @@ define(['require',
             },
             clearSearchData: function() {
                 this.ui.searchInput.val("");
-                //this.ui.tagListInput.select2('val', '');
-                //this.ui.termListInput.select2('val', '');
                 this.ui.searchBtn.attr("disabled", "true");
                 Utils.setUrl({
                     url: '#!/search',

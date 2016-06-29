@@ -214,3 +214,22 @@ This product bundles titan 0.5.4, which is available under
 
 This product bundles mock(for python tests) 1.0.1, which is available under
 "BSD License".  For details, see 3party-licenses/mock-LICENSE
+
+This product bundles animate, which is available under
+"MIT License".  For details, see 3party-licenses/animate-LICENSE
+
+This product bundles Handlebars.js, which is available under
+"MIT License".  For details, see 3party-licenses/handlebars-LICENSE
+
+This product bundles bootstrap-sidebar 0.4.0, which is available under
+"MIT License".  For details, see 3party-licenses/bootstrap-sidebar-LICENSE
+
+This product bundles hbs 0.4.0, which is available under
+"MIT License".  For details, see 3party-licenses/hbs-LICENSE
+
+This product bundles require-handlebars-plugin 0.4.0, which is available under
+"WTFPL License".  For details, see 3party-licenses/require-handlebars-plugin-LICENSE 
+
+This product bundles json2.js, which is available under
+"Public Domain license". By Douglas Crockford.
+=======================================================================

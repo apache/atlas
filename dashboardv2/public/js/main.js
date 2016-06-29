@@ -97,9 +97,6 @@ require.config({
         dagreD3: {
             deps: ['d3'],
             exports: 'dagreD3'
-        },
-        tree: {
-            deps: ['jquery']
         }
     },
 
@@ -128,7 +125,6 @@ require.config({
         'hbs': 'require-handlebars-plugin/js/hbs',
         'i18nprecompile': 'require-handlebars-plugin/js/i18nprecompile',
         'dagreD3': 'libs/dagre-d3/dagre-d3.min',
-        'tree': 'libs/jstree/jstree.min',
         'select2': 'libs/select2/select2.min',
         'backgrid-select-all': 'libs/backgrid-select-all/backgrid-select-all.min'
     },
