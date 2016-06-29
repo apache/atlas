@@ -31,6 +31,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-954 Get hadoop classpath if command hadoop is in PATH (svimal2106 via sumasai)
 ATLAS-919 UI : Deleted references should be shown in red or filtered out (kevalbhatt18 via sumasai)
 ATLAS-927 aboutAtlas_tmpl.html has hard-coded project version (Kalyanikashikar via yhemanth)
 ATLAS-624 UI: Clicking a tag hyperlink should always result in DSL search. In some cases, results in full-text search. (Kalyanikashikar via yhemanth)
