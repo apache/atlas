@@ -37,6 +37,17 @@ define(['require',
         toString: function() {
             return this.get('name');
         },
+        /*************************
+         * Non - CRUD operations
+         *************************/
+        aboutUs: function(url, options) {
+            var url = Globals.baseURL + url;
+            options = _.extend({
+                contentType: 'application/json',
+                dataType: 'json'
+            }, options);
+            return this.constructor.nonCrudOperation.call(this, url, 'GET', options);
+        }
     }, {});
     return VCommon;
 });
