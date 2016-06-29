@@ -210,7 +210,11 @@ define(['require',
                                     if (!obj[val1]) {
                                         that.startingPoint.push(val1);
                                     }
-                                    that.edgesAndvertices.edges[val1] = [key];
+                                    if (that.edgesAndvertices.edges[val1]) {
+                                        that.edgesAndvertices.edges[val1].push(key);
+                                    } else {
+                                        that.edgesAndvertices.edges[val1] = [key];
+                                    }
                                 });
                             });
                         } else {
