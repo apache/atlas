@@ -97,8 +97,8 @@ Tar is structured as follows
    |- bin
    ...
 |- README
-|- NOTICE.txt
-|- LICENSE.txt
+|- NOTICE
+|- LICENSE
 |- DISCLAIMER.txt
 |- CHANGES.txt
 

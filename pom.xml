@@ -1340,8 +1340,8 @@
                 <directory>..</directory>
                 <targetPath>META-INF</targetPath>
                 <includes>
-                    <include>LICENSE.txt</include>
-                    <include>NOTICE.txt</include>
+                    <include>LICENSE</include>
+                    <include>NOTICE</include>
                 </includes>
             </resource>
         </resources>
@@ -1664,6 +1664,7 @@
                     <useEclipseDefaultExcludes>true</useEclipseDefaultExcludes>
                     <excludeSubProjects>true</excludeSubProjects>
                     <excludes>
+                        <exclude>3party-licenses/**</exclude>
                         <exclude>*.txt</exclude>
                         <exclude>**/*.json</exclude>
                         <exclude>.pc/**</exclude>
