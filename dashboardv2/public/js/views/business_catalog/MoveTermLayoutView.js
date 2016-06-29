@@ -19,13 +19,12 @@
 define(['require',
     'backbone',
     'hbs!tmpl/business_catalog/MoveTermLayoutView_tmpl',
-    'utils/Utils',
-    'tree'
+    'utils/Utils'
 ], function(require, Backbone, MoveTermLayoutViewTmpl, Utils) {
     'use strict';
 
     var MoveTermLayoutView = Backbone.Marionette.LayoutView.extend(
-        /** @lends BusinessCatalogLayoutView */
+        /** @lends MoveTermLayoutView */
         {
             _viewName: 'MoveTermLayoutView',
 
@@ -42,34 +41,14 @@ define(['require',
                 return events;
             },
             /**
-             * intialize a new BusinessCatalogLayoutView Layout
+             * intialize a new MoveTermLayoutView Layout
              * @constructs
              */
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'taxanomyCollection'));
-                // $('#using_json_2').jstree({
-
-                // });
             },
             bindEvents: function() {},
-            onRender: function() {
-                this.taxanomyCollectionList();
-            },
-            taxanomyCollectionList: function() {
-                //     var data = [];
-                //     _.each(this.taxanomyCollection.models, function(val, obj) {
-                //         var obj = {};
-                //         obj['text'] = val.get('name');
-                //         //obj['a_attr'] = { 'href': '#!/detailPage/' + val.get('$id$').id }
-                //         obj['children'] = [];
-                //         data.push(obj)
-                //     });
-                //     this.$('#tree').jstree({
-                //         'core': {
-                //             'data': data
-                //         }
-                //     });
-            }
+            onRender: function() {}
         });
     return MoveTermLayoutView;
 });
