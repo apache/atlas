@@ -33,6 +33,10 @@ import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.utils.AuthenticationUtil;
+import org.apache.commons.cli.BasicParser;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.Options;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.fs.Path;
@@ -111,17 +115,16 @@ public class HiveMetaStoreBridge {
         return atlasClient;
     }
 
-    void importHiveMetadata() throws Exception {
+    void importHiveMetadata(boolean failOnError) throws Exception {
         LOG.info("Importing hive metadata");
-        importDatabases();
+        importDatabases(failOnError);
     }
 
-    private void importDatabases() throws Exception {
+    private void importDatabases(boolean failOnError) throws Exception {
         List<String> databases = hiveClient.getAllDatabases();
         for (String databaseName : databases) {
             Referenceable dbReference = registerDatabase(databaseName);
-
-            importTables(dbReference, databaseName);
+            importTables(dbReference, databaseName, failOnError);
         }
     }
 
@@ -254,52 +257,68 @@ public class HiveMetaStoreBridge {
 
     /**
      * Imports all tables for the given db
-     * @param databaseName
      * @param databaseReferenceable
+     * @param databaseName
+     * @param failOnError
      * @throws Exception
      */
-    private void importTables(Referenceable databaseReferenceable, String databaseName) throws Exception {
+    private int importTables(Referenceable databaseReferenceable, String databaseName, final boolean failOnError) throws Exception {
+        int tablesImported = 0;
         List<String> hiveTables = hiveClient.getAllTables(databaseName);
         LOG.info("Importing tables {} for db {}", hiveTables.toString(), databaseName);
         for (String tableName : hiveTables) {
-            Table table = hiveClient.getTable(databaseName, tableName);
-            Referenceable tableReferenceable = registerTable(databaseReferenceable, table);
-            if (table.getTableType() == TableType.EXTERNAL_TABLE){
-                String tableQualifiedName = getTableQualifiedName(clusterName, table);
-                Referenceable process = getProcessReference(tableQualifiedName);
-                if (process == null){
-                    LOG.info("Attempting to register create table process for {}", tableQualifiedName);
-                    Referenceable lineageProcess = new Referenceable(HiveDataTypes.HIVE_PROCESS.getName());
-                    ArrayList<Referenceable> sourceList = new ArrayList<>();
-                    ArrayList<Referenceable> targetList = new ArrayList<>();
-                    String tableLocation = table.getDataLocation().toString();
-                    Referenceable path = fillHDFSDataSet(tableLocation);
-                    String query = getCreateTableString(table, tableLocation);
-                    sourceList.add(path);
-                    targetList.add(tableReferenceable);
-                    lineageProcess.set("inputs", sourceList);
-                    lineageProcess.set("outputs", targetList);
-                    lineageProcess.set("userName", table.getOwner());
-                    lineageProcess.set("startTime", new Date(System.currentTimeMillis()));
-                    lineageProcess.set("endTime", new Date(System.currentTimeMillis()));
-                    lineageProcess.set("operationType", "CREATETABLE");
-                    lineageProcess.set("queryText", query);
-                    lineageProcess.set("queryId", query);
-                    lineageProcess.set("queryPlan", "{}");
-                    lineageProcess.set("clusterName", clusterName);
-                    List<String> recentQueries = new ArrayList<>(1);
-                    recentQueries.add(query);
-                    lineageProcess.set("recentQueries", recentQueries);
-                    lineageProcess.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableQualifiedName);
-                    lineageProcess.set(AtlasClient.NAME, query);
-                    registerInstance(lineageProcess);
-
+            try {
+                Table table = hiveClient.getTable(databaseName, tableName);
+                Referenceable tableReferenceable = registerTable(databaseReferenceable, table);
+                tablesImported++;
+                if (table.getTableType() == TableType.EXTERNAL_TABLE) {
+                    String tableQualifiedName = getTableQualifiedName(clusterName, table);
+                    Referenceable process = getProcessReference(tableQualifiedName);
+                    if (process == null) {
+                        LOG.info("Attempting to register create table process for {}", tableQualifiedName);
+                        Referenceable lineageProcess = new Referenceable(HiveDataTypes.HIVE_PROCESS.getName());
+                        ArrayList<Referenceable> sourceList = new ArrayList<>();
+                        ArrayList<Referenceable> targetList = new ArrayList<>();
+                        String tableLocation = table.getDataLocation().toString();
+                        Referenceable path = fillHDFSDataSet(tableLocation);
+                        String query = getCreateTableString(table, tableLocation);
+                        sourceList.add(path);
+                        targetList.add(tableReferenceable);
+                        lineageProcess.set("inputs", sourceList);
+                        lineageProcess.set("outputs", targetList);
+                        lineageProcess.set("userName", table.getOwner());
+                        lineageProcess.set("startTime", new Date(System.currentTimeMillis()));
+                        lineageProcess.set("endTime", new Date(System.currentTimeMillis()));
+                        lineageProcess.set("operationType", "CREATETABLE");
+                        lineageProcess.set("queryText", query);
+                        lineageProcess.set("queryId", query);
+                        lineageProcess.set("queryPlan", "{}");
+                        lineageProcess.set("clusterName", clusterName);
+                        List<String> recentQueries = new ArrayList<>(1);
+                        recentQueries.add(query);
+                        lineageProcess.set("recentQueries", recentQueries);
+                        lineageProcess.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableQualifiedName);
+                        lineageProcess.set(AtlasClient.NAME, query);
+                        registerInstance(lineageProcess);
+                    } else {
+                        LOG.info("Process {} is already registered", process.toString());
+                    }
                 }
-                else {
-                    LOG.info("Process {} is already registered", process.toString());
+            } catch (Exception e) {
+                LOG.error("Import failed for hive_table {} ", tableName, e);
+                if (failOnError) {
+                    throw e;
                 }
             }
         }
+
+        if ( tablesImported == hiveTables.size()) {
+            LOG.info("Successfully imported all {} tables from {} ", tablesImported, databaseName);
+        } else {
+            LOG.error("Unable to import {} tables out of {} tables from {}", tablesImported, hiveTables.size(), databaseName);
+        }
+
+        return tablesImported;
     }
 
     /**
@@ -618,7 +637,7 @@ public class HiveMetaStoreBridge {
         }
     }
 
-    public static void main(String[] argv) throws Exception {
+    public static void main(String[] args) throws Exception {
 
         Configuration atlasConf = ApplicationProperties.get();
         String atlasEndpoint = atlasConf.getString(ATLAS_ENDPOINT, DEFAULT_DGI_URL);
@@ -632,8 +651,17 @@ public class HiveMetaStoreBridge {
             atlasClient = new AtlasClient(ugi, ugi.getShortUserName(), atlasEndpoint);
         }
 
+        Options options = new Options();
+        CommandLineParser parser = new BasicParser();
+        CommandLine cmd = parser.parse( options, args);
+
+        boolean failOnError = false;
+        if (cmd.hasOption("failOnError")) {
+            failOnError = true;
+        }
+
         HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(new HiveConf(), atlasClient);
         hiveMetaStoreBridge.registerHiveDataModel();
-        hiveMetaStoreBridge.importHiveMetadata();
+        hiveMetaStoreBridge.importHiveMetadata(failOnError);
     }
 }
