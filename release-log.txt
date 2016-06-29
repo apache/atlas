@@ -6,6 +6,39 @@ INCOMPATIBLE CHANGES:
 
 
 ALL CHANGES:
+
+
+--Release 0.7-incubating
+
+INCOMPATIBLE CHANGES:
+ATLAS-822 Type updates - don't allow updating supertypes ( shwethags via sumasai )
+ATLAS-698 Remove Rexster Graph API (svimal2106 via shwethags)
+ATLAS-844 Remove titan berkeley and elastic search jars if hbase/solr based profiles are chosen (yhemanth via shwethags)
+ATLAS-819 All user defined types should have a set of common attributes (shwethags)
+ATLAS-688 import-hive should depend on Hive CLASSPATH jars instead of packaging everything (svimal2106 via sumasai)
+ATLAS-835 Falcon Integration with Atlas (sowmyaramesh via shwethags)
+ATLAS-912 Update to use Kafka 0.10.0.0 (from 0.9.0.0) (madhan.neethiraj via yhemanth)
+ATLAS-542 Make qualifiedName and name consistent across all Datasets and Process (sumasai via yhemanth)
+ATLAS-716 Entity update/delete notifications (shwethags)
+ATLAS-497 Simple Authorization (saqeeb.s via yhemanth)
+ATLAS-661 REST API Authentication (nixonrodrigues via yhemanth)
+ATLAS-672 UI: Make dashboard v2 the default UI implementation (bergenholtz via yhemanth)
+ATLAS-532 Change Data types of all timestamps in Hive model(currently long)(sumasai via yhemanth)
+ATLAS-622 Introduce soft delete (shwethags)
+ATLAS-494 UI Authentication (nixonrodrigues via shwethags)
+ATLAS-479 Add description for different types during create time (guptaneeru via shwethags)
+ATLAS-500 UI: Search Default (sanjayp via shwethags)
+ATLAS-525 Drop support for partitions, select query lineage, roles, principals, resource, hive_type...(sumasai via shwethags)
+ATLAS-483 Remove client.properties (tbeerbower via shwethags)
+ATLAS-349 SSL - Atlas SSL connection has weak/unsafe Ciphers suites (ndjouhr via shwethags)
+ATLAS-409 Atlas will not import avro tables with schema read from a file (dossett@gmail.com via shwethags)
+ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
+
+ALL CHANGES:
+ATLAS-474 Server does not start if the type is updated with same super type class information (dkantor via shwethags)
+ATLAS-621 Introduce entity state in Id object (shwethags)
+ATLAS-619 Canonicalize hive queries (sumasai)
+ATLAS-915 Fix docs for import-hive changes (svimal2106 via sumasai)
 ATLAS-948 import-hive should allow an option to continue after failure (sumasai)
 ATLAS-954 Get hadoop classpath if command hadoop is in PATH (svimal2106 via sumasai)
 ATLAS-919 UI : Deleted references should be shown in red or filtered out (kevalbhatt18 via sumasai)
@@ -18,39 +51,6 @@ ATLAS-942 Jenkins build failure - GraphRepoMapperScaleTest (shwethags)
 ATLAS-920 Lineage graph is broken when there are multiple paths from same source table (kevalbhatt18 via sumasai)
 ATLAS-940 Type cache implementation property name in atlas-application.properties is incorrect ( dkantor via sumasai)
 ATLAS-925 Change master version to 0.8-incubating (shwethags)
-
-
---Release 0.7-incubating
-
-INCOMPATIBLE CHANGES:
-ATLAS-822 Type updates - don't allow updating supertypes ( shwethags via sumasai )
-ATLAS-698 Remove Rexster Graph API (svimal2106 via shwethags)
-ATLAS-844 Remove titan berkeley and elastic search jars if hbase/solr based profiles are chosen (yhemanth via shwethags)
-ATLAS-819 All user defined types should have a set of common attributes (shwethags)
-ATLAS-915 Fix docs for import-hive changes (svimal2106 via sumasai)
-ATLAS-688 import-hive should depend on Hive CLASSPATH jars instead of packaging everything (svimal2106 via sumasai)
-ATLAS-835 Falcon Integration with Atlas (sowmyaramesh via shwethags)
-ATLAS-912 Update to use Kafka 0.10.0.0 (from 0.9.0.0) (madhan.neethiraj via yhemanth)
-ATLAS-542 Make qualifiedName and name consistent across all Datasets and Process (sumasai via yhemanth)
-ATLAS-716 Entity update/delete notifications (shwethags)
-ATLAS-619 Canonicalize hive queries (sumasai)
-ATLAS-497 Simple Authorization (saqeeb.s via yhemanth)
-ATLAS-661 REST API Authentication (nixonrodrigues via yhemanth)
-ATLAS-672 UI: Make dashboard v2 the default UI implementation (bergenholtz via yhemanth)
-ATLAS-532 Change Data types of all timestamps in Hive model(currently long)(sumasai via yhemanth)
-ATLAS-622 Introduce soft delete (shwethags)
-ATLAS-494 UI Authentication (nixonrodrigues via shwethags)
-ATLAS-621 Introduce entity state in Id object (shwethags)
-ATLAS-474 Server does not start if the type is updated with same super type class information (dkantor via shwethags)
-ATLAS-479 Add description for different types during create time (guptaneeru via shwethags)
-ATLAS-500 UI: Search Default (sanjayp via shwethags)
-ATLAS-525 Drop support for partitions, select query lineage, roles, principals, resource, hive_type...(sumasai via shwethags)
-ATLAS-483 Remove client.properties (tbeerbower via shwethags)
-ATLAS-349 SSL - Atlas SSL connection has weak/unsafe Ciphers suites (ndjouhr via shwethags)
-ATLAS-409 Atlas will not import avro tables with schema read from a file (dossett@gmail.com via shwethags)
-ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
-
-ALL CHANGES:
 ATLAS-431 Remove un-used licenses (shwethags)
 ATLAS-934 Exclude temp files in source package (shwethags)
 ATLAS-933 Test failure: HiveHookIT.testInsertIntoTable (shwethags)
