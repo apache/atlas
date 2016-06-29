@@ -95,8 +95,8 @@
             <outputDirectory>/</outputDirectory>
             <includes>
                 <include>DISCLAIMER.txt</include>
-                <include>NOTICE.txt</include>
-                <include>LICENSE.txt</include>
+                <include>NOTICE</include>
+                <include>LICENSE</include>
                 <include>CHANGES.txt</include>
                 <include>README</include>
             </includes>

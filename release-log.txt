@@ -51,6 +51,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-431 Remove un-used licenses (shwethags)
 ATLAS-934 Exclude temp files in source package (shwethags)
 ATLAS-933 Test failure: HiveHookIT.testInsertIntoTable (shwethags)
 ATLAS-856 Lazy-load type cache provider (dkantor via shwethags)

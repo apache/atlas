@@ -37,11 +37,6 @@
                 <exclude>**/*.log</exclude>
                 <exclude>**/*.pyc</exclude> <!-- python compiled executable -->
                 <exclude>**/test-output/**</exclude>
-                <exclude>dashboard/.bower-*/**</exclude> <!-- temp libs -->
-                <exclude>dashboard/lib/**</exclude>  <!-- temp libs -->
-                <exclude>dashboard/node*/**</exclude>  <!-- temp libs -->
-                <exclude>dashboard/dist/**</exclude>  <!-- package -->
-                <exclude>dashboard/*.min.js*</exclude> <!-- minified JS -->
                 <exclude>distro/hbase/**</exclude>
                 <exclude>distro/solr/**</exclude>
                 <exclude>**/${sys:atlas.data}/**</exclude>
