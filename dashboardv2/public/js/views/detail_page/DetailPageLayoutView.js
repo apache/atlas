@@ -130,7 +130,18 @@ define(['require',
                     }
                     if (collectionJSON && collectionJSON.length) {
                         if (collectionJSON[0].values) {
-                            this.name = collectionJSON[0].values.name;
+                            if (collectionJSON[0].values.name) {
+                                this.name = collectionJSON[0].values.name;
+                            }
+                            if (!this.name && collectionJSON[0].values.qualifiedName) {
+                                this.name = collectionJSON[0].values.qualifiedName;
+                            }
+                            if (!this.name && collectionJSON[0].typeName) {
+                                this.name = collectionJSON[0].typeName;
+                            }
+                            if (!this.name && this.id) {
+                                this.name = this.id;
+                            }
                             this.description = collectionJSON[0].values.description;
                             if (this.name) {
                                 this.ui.title.show();
