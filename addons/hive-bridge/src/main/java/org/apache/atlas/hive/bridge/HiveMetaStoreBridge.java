@@ -426,8 +426,8 @@ public class HiveMetaStoreBridge {
                 createDate = new Date(hiveTable.getTTable().getCreateTime() * MILLIS_CONVERT_FACTOR);
                 LOG.debug("Setting create time to {} ", createDate);
                 tableReference.set(HiveDataModelGenerator.CREATE_TIME, createDate);
-            } catch(NumberFormatException ne) {
-                LOG.error("Error while updating createTime for the table {} ", hiveTable.getCompleteName(), ne);
+            } catch(Exception ne) {
+                LOG.error("Error while setting createTime for the table {} ", hiveTable.getCompleteName(), ne);
             }
         }
 

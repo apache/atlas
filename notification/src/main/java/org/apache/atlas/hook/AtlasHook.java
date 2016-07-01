@@ -128,7 +128,7 @@ public abstract class AtlasHook {
             } catch (Exception e) {
                 numRetries++;
                 if (numRetries < maxRetries) {
-                    LOG.debug("Failed to notify atlas for entity {}. Retrying", message, e);
+                    LOG.info("Failed to notify atlas for entity {}. Retrying", message, e);
                 } else {
                     if (shouldLogFailedMessages && e instanceof NotificationException) {
                         List<String> failedMessages = ((NotificationException) e).getFailedMessages();
