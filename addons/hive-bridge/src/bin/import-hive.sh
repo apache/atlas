@@ -82,6 +82,17 @@ else
     exit 1
 fi
 
+echo Using Hive configuration directory ["$HIVE_CP"]
+
+if [ -z "$HIVE_HOME" ]; then
+    echo "Please set HIVE_HOME to the root of Hive installation"
+    exit 1
+fi
+
+for i in "${HIVE_HOME}/lib/"*.jar; do
+    HIVE_CP="${HIVE_CP}:$i"
+done
+
 #Add hadoop conf in classpath
 if [ ! -z "$HADOOP_CLASSPATH" ]; then
     HADOOP_CP=$HADOOP_CLASSPATH
@@ -94,10 +105,6 @@ else
     echo "Environment variable HADOOP_CLASSPATH or HADOOP_HOME need to be set"
     exit 1
 fi
-
-for i in "${HIVE_HOME}/lib/"*.jar; do
-    HIVE_CP="${HIVE_CP}:$i"
-done
 
 CP="${ATLASCPPATH}:${HIVE_CP}:${HADOOP_CP}"
 
@@ -120,7 +127,6 @@ while [[ ${1} =~ ^\-D ]]; do
   shift
 done
 
-echo Using Hive configuration directory ["$HIVE_CP"]
 echo "Log file for import is $LOGFILE"
 
 "${JAVA_BIN}" ${JAVA_PROPERTIES} -cp "${CP}" org.apache.atlas.hive.bridge.HiveMetaStoreBridge

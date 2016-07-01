@@ -27,6 +27,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-966 Exit execution of import_hive.sh if HIVE_HOME is not set (svimal2106 via sumasai)
 ATLAS-1298 UI never finishes loading ( kevalbhatt )
 deleting the fonts that were missed out (shwethags)
 ATLAS-959 Exception while writing to audit log. [java.io.IOException: No FileSystem for scheme: hdfs] (saqeeb.s via sumasai)
