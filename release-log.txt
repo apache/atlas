@@ -7,6 +7,7 @@ INCOMPATIBLE CHANGES:
 
 ALL CHANGES:
 ATLAS-966 Exit execution of import_hive.sh if HIVE_HOME is not set (svimal2106 via sumasai)
+ATLAS-917 Add hdfs paths to process qualified name for non-partition based queries (sumasai)
 
 
 --Release 0.7-incubating
