@@ -28,6 +28,7 @@
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width">
     <link href="js/libs/bootstrap/css/bootstrap.min.css" media="all" rel="stylesheet" type="text/css" id="bootstrap-css">
+    <link href="js/libs/font-awesome/css/font-awesome.min.css" rel="stylesheet">
     <link href="css/login.css" media="all" rel="stylesheet" type="text/css" >
     <script src="js/libs/jquery/js/jquery.min.js" ></script>
     <script src="js/modules/atlasLogin.js" ></script>
@@ -42,11 +43,11 @@
                 <div class="login-pane">
                     <h2 align="center">Apache <strong>Atlas</strong></h2>
                     <div class="input-group">
-                        <span class="input-group-addon"><i class="glyphicon glyphicon-user"></i></span>
+                        <span class="input-group-addon"><i class="fa fa-user"></i></span>
                         <input type="text" class="form-control" id="username" name="username" placeholder="Username" tabindex="1" required="" autofocus>
                     </div>
                     <div class="input-group">
-                        <span class="input-group-addon"><i class="glyphicon glyphicon-lock"></i></span>
+                        <span class="input-group-addon"><i class="fa fa-lock"></i></span>
                         <input type="password" class="form-control" name="password" placeholder="Password" id="password" tabindex="2" autocomplete="off" required>    
                     </div>
                               <span id="errorBox" class="col-md-12 help-inline" style="color:#FF1A40;display:none;text-align:center;padding-bottom: 10px;"><span class="errorMsg"></span></span>
