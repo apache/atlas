@@ -23,10 +23,6 @@
     animation: spin 1000ms infinite linear;
 }
 
-.glyphicon-spin {
-    animation: spin 1000ms infinite linear;
-}
-
 @-webkit-keyframes spin {
     0% {
         //Instead of the line below you could use @include transform($scale, $rotate, $transx, $transy, $skewx, $skewy, $originx, $originy)

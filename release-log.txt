@@ -27,6 +27,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-970 Remove glyphicon from login.jsp (kevalbhatt18 via shwethags)
 ATLAS-917 Add hdfs paths to process qualified name for non-partition based queries (sumasai)
 ATLAS-966 Exit execution of import_hive.sh if HIVE_HOME is not set (svimal2106 via sumasai)
 ATLAS-1298 UI never finishes loading ( kevalbhatt )
