@@ -96,7 +96,7 @@
             <item name="0.6-incubating"
                   href="http://www.apache.org/dyn/closer.cgi/incubator/atlas/0.6.0-incubating/"/>
             <item name="0.5-incubating"
-                  href="http://www.apache.org/dyn/closer.cgi/incubator/atlas/0.5.0-incubating/"/>
+                  href="http://archive.apache.org/dist/incubator/atlas/0.5.0-incubating/"/>
         </menu>
 
         <menu name="Documentation">
