@@ -17,6 +17,11 @@
 
 <configuration>
     <property>
+        <name>hive.exec.submit.local.task.via.child</name>
+        <value>false</value>
+    </property>
+
+    <property>
         <name>mapreduce.framework.name</name>
         <value>local</value>
     </property>

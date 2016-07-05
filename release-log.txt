@@ -37,6 +37,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-988 HiveHookIT.testInsertIntoTable is broken (svimal2106 via shwethags)
 ATLAS-655 Please delete old releases from mirroring system (shwethags)
 ATLAS-970 Remove glyphicon from login.jsp (kevalbhatt18 via shwethags)
 ATLAS-959 Exception while writing to audit log. [java.io.IOException: No FileSystem for scheme: hdfs] (saqeeb.s via sumasai)
