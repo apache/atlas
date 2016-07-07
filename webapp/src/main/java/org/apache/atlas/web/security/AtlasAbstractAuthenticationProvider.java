@@ -22,6 +22,7 @@ package org.apache.atlas.web.security;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.hadoop.security.UserGroupInformation;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -68,6 +69,40 @@ public abstract class AtlasAbstractAuthenticationProvider implements
     protected List<GrantedAuthority> getAuthorities(String username) {
         final List<GrantedAuthority> grantedAuths = new ArrayList<GrantedAuthority>();
         grantedAuths.add(new SimpleGrantedAuthority("DATA_SCIENTIST"));
+        return grantedAuths;
+    }
+
+
+    public Authentication getAuthenticationWithGrantedAuthorityFromUGI(
+            Authentication authentication) {
+        UsernamePasswordAuthenticationToken result = null;
+        if (authentication != null && authentication.isAuthenticated()) {
+
+            List<GrantedAuthority> grantedAuthsUGI = getAuthoritiesFromUGI(authentication
+                    .getName().toString());
+
+            final UserDetails userDetails = new User(authentication.getName()
+                    .toString(), authentication.getCredentials().toString(),
+                    grantedAuthsUGI);
+            result = new UsernamePasswordAuthenticationToken(userDetails,
+                    authentication.getCredentials(), grantedAuthsUGI);
+            result.setDetails(authentication.getDetails());
+            return result;
+        }
+        return authentication;
+    }
+
+    public List<GrantedAuthority> getAuthoritiesFromUGI(String userName) {
+        List<GrantedAuthority> grantedAuths = new ArrayList<GrantedAuthority>();
+        UserGroupInformation ugi = UserGroupInformation.createRemoteUser(userName);
+        if (ugi != null) {
+            String[] userGroups = ugi.getGroupNames();
+            if (userGroups != null) {
+                for (String group : userGroups) {
+                    grantedAuths.add(new SimpleGrantedAuthority(group));
+                }
+            }
+        }
         return grantedAuths;
     }
 

@@ -48,6 +48,7 @@ public class AtlasADAuthenticationProvider extends
     private String adBase;
     private String adReferral;
     private String adDefaultRole;
+    private boolean groupsFromUGI;
 
     @PostConstruct
     public void setup() {
@@ -85,6 +86,9 @@ public class AtlasADAuthenticationProvider extends
                 final Authentication finalAuthentication = new UsernamePasswordAuthenticationToken(
                         principal, userPassword, grantedAuths);
                 authentication = adAuthenticationProvider.authenticate(finalAuthentication);
+                if(groupsFromUGI) {
+                    authentication = getAuthenticationWithGrantedAuthorityFromUGI(authentication);
+                }
                 return authentication;
             } else {
                 throw new AtlasAuthenticationException(
@@ -109,6 +113,7 @@ public class AtlasADAuthenticationProvider extends
             this.adBase = configuration.getString("atlas.authentication.method.ldap.ad.base.dn");
             this.adReferral = configuration.getString("atlas.authentication.method.ldap.ad.referral");
             this.adDefaultRole = configuration.getString("atlas.authentication.method.ldap.ad.default.role");
+            this.groupsFromUGI = configuration.getBoolean("atlas.authentication.method.ldap.ugi-groups", true);
 
         } catch (Exception e) {
             LOG.error("Exception while setADProperties", e);

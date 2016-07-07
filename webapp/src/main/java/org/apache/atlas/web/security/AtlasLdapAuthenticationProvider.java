@@ -54,6 +54,7 @@ public class AtlasLdapAuthenticationProvider extends
     private String ldapUserSearchFilter;
     private String ldapReferral;
     private String ldapBase;
+    private boolean groupsFromUGI;
 
     @PostConstruct
     public void setup() {
@@ -107,6 +108,9 @@ public class AtlasLdapAuthenticationProvider extends
                 final Authentication finalAuthentication = new UsernamePasswordAuthenticationToken(
                         principal, userPassword, grantedAuths);
                 authentication = ldapAuthenticationProvider.authenticate(finalAuthentication);
+                if(groupsFromUGI) {
+                    authentication = getAuthenticationWithGrantedAuthorityFromUGI(authentication);
+                }
                 return authentication;
             } else {
                 throw new AtlasAuthenticationException(
@@ -141,6 +145,7 @@ public class AtlasLdapAuthenticationProvider extends
                     "atlas.authentication.method.ldap.user.searchfilter");
             ldapReferral = configuration.getString("atlas.authentication.method.ldap.ad.referral");
             ldapBase = configuration.getString("atlas.authentication.method.ldap.base.dn");
+            groupsFromUGI = configuration.getBoolean("atlas.authentication.method.ldap.ugi-groups", true);
 
         } catch (Exception e) {
             LOG.error("Exception while setLdapProperties", e);
