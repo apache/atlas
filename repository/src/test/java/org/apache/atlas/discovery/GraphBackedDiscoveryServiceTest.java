@@ -515,6 +515,9 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby '_col_0' limit 10", 1, "_col_0", isAscending},
                 {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby '_col_0' limit 0 offset 1", 0, "_col_0", isAscending},
 
+                
+                //Test if proeprty is not defined. it should not fail the query
+                {"hive_table orderby 'hive_table.owner_notdefined'", 8, null, isAscending},
         };
     }
     
@@ -553,24 +556,22 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
         }
         Iterator<String> iter = returnedList.iterator();
         String _current = null, _prev = null;
-        //Following code compares the results in rows and makes sure data is sorted as expected.
-        while(iter.hasNext())
-        {
-            _prev = _current;
-            _current = iter.next().toLowerCase();
-            if (_prev != null && _prev.compareTo(_current) != 0)
-            {
-                if(ascending)
-                {
-                    Assert.assertTrue(_prev.compareTo(_current) < 0);
-                }
-                else
-                {
-                    Assert.assertTrue(_prev.compareTo(_current) > 0);
+        if (orderBy != null) {
+            // Following code compares the results in rows and makes sure data
+            // is sorted as expected
+            while (iter.hasNext()) {
+                _prev = _current;
+                _current = iter.next().toLowerCase();
+                if (_prev != null && _prev.compareTo(_current) != 0) {
+                    if (ascending) {
+                        Assert.assertTrue(_prev.compareTo(_current) < 0);
+                    } else {
+                        Assert.assertTrue(_prev.compareTo(_current) > 0);
+                    }
                 }
             }
         }
-        
+
         System.out.println("query [" + dslQuery + "] returned [" + rows.length() + "] rows");
     }
     
