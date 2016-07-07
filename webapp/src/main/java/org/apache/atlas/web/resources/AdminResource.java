@@ -31,6 +31,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.configuration.ConfigurationException;
@@ -51,6 +52,11 @@ import com.google.inject.Inject;
 @Singleton
 public class AdminResource {
 
+    private static final String isCSRF_ENABLED = "atlas.rest-csrf.enabled";
+    private static final String BROWSER_USER_AGENT_PARAM = "atlas.rest-csrf.browser-useragents-regex";
+    private static final String CUSTOM_METHODS_TO_IGNORE_PARAM = "atlas.rest-csrf.methods-to-ignore";
+    private static final String CUSTOM_HEADER_PARAM = "atlas.rest-csrf.custom-header";
+    
     private Response version;
     private ServiceState serviceState;
 
@@ -146,6 +152,11 @@ public class AdminResource {
                     groups.add(c.getAuthority());
                 }
             } 
+            
+            responseData.put(isCSRF_ENABLED,  AtlasCSRFPreventionFilter.isCSRF_ENABLED);
+            responseData.put(BROWSER_USER_AGENT_PARAM, AtlasCSRFPreventionFilter.BROWSER_USER_AGENTS_DEFAULT);
+            responseData.put(CUSTOM_METHODS_TO_IGNORE_PARAM, AtlasCSRFPreventionFilter.METHODS_TO_IGNORE_DEFAULT);
+            responseData.put(CUSTOM_HEADER_PARAM, AtlasCSRFPreventionFilter.HEADER_DEFAULT);
             
             responseData.put("userName", userName);
             responseData.put("groups", groups);

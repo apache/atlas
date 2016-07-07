@@ -140,11 +140,23 @@ require.config({
 
 require(['App',
     'router/Router',
+    'utils/CommonViewFunction',
+    'utils/Globals',
     'utils/Overrides',
     'bootstrap',
     'd3',
     'select2'
-], function(App, Router) {
+], function(App, Router, CommonViewFunction, Globals) {
     App.appRouter = new Router();
-    App.start();
+    CommonViewFunction.userDataFetch({
+        url: Globals.baseURL + "/api/atlas/admin/session",
+        callback: function(response) {
+            if (response && response.userName) {
+                Globals.userLogedIn.status = true;
+                Globals.userLogedIn.response = response;
+            }
+            App.start();
+        }
+    });
+
 });

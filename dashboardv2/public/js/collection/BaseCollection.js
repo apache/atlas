@@ -19,8 +19,9 @@
 define(['require',
     'utils/Globals',
     'utils/Utils',
+    'utils/CommonViewFunction',
     'backbone.paginator'
-], function(require, Globals, Utils) {
+], function(require, Globals, Utils, CommonViewFunction) {
     'use strict';
 
     var BaseCollection = Backbone.PageableCollection.extend(
@@ -138,6 +139,7 @@ define(['require',
                 return retCols;
             },
             nonCrudOperation: function(url, requestMethod, options) {
+                options['beforeSend'] = CommonViewFunction.addRestCsrfCustomHeader;
                 return Backbone.sync.call(this, null, this, _.extend({
                     url: url,
                     type: requestMethod
