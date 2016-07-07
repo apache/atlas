@@ -331,8 +331,8 @@ class GremlinTranslator(expr: Expression,
              asc  match {
             //builds a closure comparison function based on provided order by clause in DSL. This will be used to sort the results by gremlin order pipe.
             //Ordering is case insensitive.
-              case false=> orderby = s"order{it.b.getProperty('$odr').toLowerCase() <=> it.a.getProperty('$odr').toLowerCase()}"//descending
-              case _ => orderby = s"order{it.a.getProperty('$odr').toLowerCase() <=> it.b.getProperty('$odr').toLowerCase()}"
+             case false=> orderby = s"order{(it.b.getProperty('$odr') !=null ? it.b.getProperty('$odr').toLowerCase(): it.b.getProperty('$odr')) <=> (it.a.getProperty('$odr') != null ? it.a.getProperty('$odr').toLowerCase(): it.a.getProperty('$odr'))}"//descending
+              case _ => orderby = s"order{(it.a.getProperty('$odr') != null ? it.a.getProperty('$odr').toLowerCase(): it.a.getProperty('$odr')) <=> (it.b.getProperty('$odr') !=null ? it.b.getProperty('$odr').toLowerCase(): it.b.getProperty('$odr'))}"
               
             }
           s"""${genQuery(child, inSelect)}.$orderby"""

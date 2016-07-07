@@ -6,6 +6,7 @@ INCOMPATIBLE CHANGES:
 
 
 ALL CHANGES:
+ATLAS-993 If condition in DSL order by clause is not defined then dsl query fails (guptaneeru via shwethags)
 ATLAS-968 Set group information from UGI for Ldap authentication (nixonrodrigues via shwethags)
 ATLAS-584 Integrate CSRF prevention filter (kevalbhatt18 via shwethags)
 ATLAS-963 UI: Entity details is not display String array attribute values correctly (kevalbhatt18 via shwethags)
