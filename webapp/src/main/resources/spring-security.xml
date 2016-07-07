@@ -43,6 +43,7 @@
         <intercept-url pattern="/**" access="isAuthenticated()" />
 
         <security:custom-filter ref="krbAuthenticationFilter" after="SERVLET_API_SUPPORT_FILTER" />
+        <security:custom-filter ref="CSRFPreventionFilter" after="REMEMBER_ME_FILTER" />
 
         <form-login
                 login-page="/login.jsp"
@@ -58,6 +59,9 @@
     </security:http>
 
     <beans:bean id="krbAuthenticationFilter" class="org.apache.atlas.web.filters.AtlasAuthenticationFilter">
+    </beans:bean>
+    
+    <beans:bean id="CSRFPreventionFilter" class="org.apache.atlas.web.filters.AtlasCSRFPreventionFilter">
     </beans:bean>
 
     <beans:bean id="atlasAuthenticationSuccessHandler"

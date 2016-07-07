@@ -419,7 +419,6 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                 return "api/atlas/v1/entities/" + options.guid + "/tags/" + name;
             };
             VCatalog.save(null, {
-                beforeSend: function() {},
                 success: function(data) {
                     Utils.notifySuccess({
                         content: "Term " + name + Messages.addTermToEntitySuccessMessage
@@ -435,7 +434,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                     if (data && data.responseText) {
                         var data = JSON.parse(data.responseText);
                         Utils.notifyError({
-                            content: data.message
+                            content: data.message || data.msgDesc
                         });
                         if (options.callback) {
                             options.callback();
@@ -446,13 +445,63 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
             });
         })
     }
+    CommonViewFunction.addRestCsrfCustomHeader = function(xhr, settings) {
+        //    if (settings.url == null || !settings.url.startsWith('/webhdfs/')) {
+        if (settings.url == null) {
+            return;
+        }
+        var method = settings.type;
+        if (CommonViewFunction.restCsrfCustomHeader != null && !CommonViewFunction.restCsrfMethodsToIgnore[method]) {
+            // The value of the header is unimportant.  Only its presence matters.
+            xhr.setRequestHeader(CommonViewFunction.restCsrfCustomHeader, '""');
+        }
+    }
+    CommonViewFunction.restCsrfCustomHeader = null;
+    CommonViewFunction.restCsrfMethodsToIgnore = null;
     CommonViewFunction.userDataFetch = function(options) {
+        var csrfEnabled = false,
+            header = null,
+            methods = [];
+
+        function getTrimmedStringArrayValue(string) {
+            var str = string,
+                array = [];
+            if (str) {
+                var splitStr = str.split(',');
+                for (var i = 0; i < splitStr.length; i++) {
+                    array.push(splitStr[i].trim());
+                }
+            }
+            return array;
+        }
         if (options.url) {
             $.ajax({
                 url: options.url,
                 success: function(response) {
+                    if (response) {
+                        if (response['atlas.rest-csrf.enabled']) {
+                            var str = "" + response['atlas.rest-csrf.enabled'];
+                            csrfEnabled = (str.toLowerCase() == 'true');
+                        }
+                        if (response['atlas.rest-csrf.custom-header']) {
+                            header = response['atlas.rest-csrf.custom-header'].trim();
+                        }
+                        if (response['atlas.rest-csrf.methods-to-ignore']) {
+                            methods = getTrimmedStringArrayValue(response['atlas.rest-csrf.methods-to-ignore']);
+                        }
+                        if (csrfEnabled) {
+                            CommonViewFunction.restCsrfCustomHeader = header;
+                            CommonViewFunction.restCsrfMethodsToIgnore = {};
+                            methods.map(function(method) { CommonViewFunction.restCsrfMethodsToIgnore[method] = true; });
+                            Backbone.$.ajaxSetup({
+                                beforeSend: CommonViewFunction.addRestCsrfCustomHeader
+                            });
+                        }
+                    }
+                },
+                complete: function(response) {
                     if (options.callback) {
-                        options.callback(response);
+                        options.callback(response.responseJSON);
                     }
                 }
             });

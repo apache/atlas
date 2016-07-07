@@ -40,16 +40,7 @@ define(['require',
         render: function() {
             var that = this;
             $(this.el).html(this.template());
-            if (!Globals.userLogedIn.status) {
-                CommonViewFunction.userDataFetch({
-                    url: Globals.baseURL + "/api/atlas/admin/session",
-                    callback: function(response) {
-                        that.$('.userName').html(response.userName);
-                        Globals.userLogedIn.status = true;
-                        Globals.userLogedIn.response = response;
-                    }
-                });
-            } else {
+            if (Globals.userLogedIn.status) {
                 that.$('.userName').html(Globals.userLogedIn.response.userName);
             }
             var that = this;

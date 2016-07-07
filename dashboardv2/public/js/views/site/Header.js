@@ -30,16 +30,7 @@ define(['require',
         initialize: function(options) {},
         onRender: function() {
             var that = this;
-            if (!Globals.userLogedIn.status) {
-                CommonViewFunction.userDataFetch({
-                    url: Globals.baseURL + "/api/atlas/admin/session",
-                    callback: function(response) {
-                        that.$('.userName').html(response.userName);
-                        Globals.userLogedIn.status = true;
-                        Globals.userLogedIn.response = response;
-                    }
-                });
-            } else {
+            if (Globals.userLogedIn.status) {
                 that.$('.userName').html(Globals.userLogedIn.response.userName);
             }
         },
