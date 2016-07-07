@@ -6,6 +6,10 @@ INCOMPATIBLE CHANGES:
 
 
 ALL CHANGES:
+ATLAS-963 UI: Entity details is not display String array attribute values correctly (kevalbhatt18 via shwethags)
+ATLAS-988 HiveHookIT.testInsertIntoTable is broken (svimal2106 via shwethags)
+ATLAS-655 Please delete old releases from mirroring system (shwethags)
+ATLAS-970 Remove glyphicon from login.jsp (kevalbhatt18 via shwethags)
 ATLAS-966 Exit execution of import_hive.sh if HIVE_HOME is not set (svimal2106 via sumasai)
 ATLAS-917 Add hdfs paths to process qualified name for non-partition based queries (sumasai)
 
@@ -37,9 +41,6 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
-ATLAS-988 HiveHookIT.testInsertIntoTable is broken (svimal2106 via shwethags)
-ATLAS-655 Please delete old releases from mirroring system (shwethags)
-ATLAS-970 Remove glyphicon from login.jsp (kevalbhatt18 via shwethags)
 ATLAS-959 Exception while writing to audit log. [java.io.IOException: No FileSystem for scheme: hdfs] (saqeeb.s via sumasai)
 ATLAS-967 Remove unused logo file and footer. (kevalbhatt18 via yhemanth)
 ATLAS-964 Cleanup NOTICE and LICENSE (shwethags)
