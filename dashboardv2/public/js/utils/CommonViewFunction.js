@@ -144,7 +144,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                 });
             }
         _.keys(valueObject).map(function(key) {
-            var keyValue = valueObject[key];
+            var keyValue = valueObject[key],
+                valueOfArray = [];
             if (_.isArray(keyValue)) {
                 var subLink = "";
                 for (var i = 0; i < keyValue.length; i++) {
@@ -152,14 +153,27 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                         id = undefined,
                         tempLink = "",
                         readOnly = false;
-                    if (_.isObject(inputOutputField.id)) {
-                        id = inputOutputField.id.id;
-                        if (Globals.entityStateReadOnly[inputOutputField.id.state]) {
-                            readOnly = inputOutputField.id.state
+                    if (inputOutputField) {
+                        if (_.isObject(inputOutputField.id)) {
+                            id = inputOutputField.id.id;
+                            if (Globals.entityStateReadOnly[inputOutputField.id.state]) {
+                                readOnly = inputOutputField.id.state
+                            }
+                        } else if (inputOutputField.id) {
+                            id = inputOutputField.id;
+                        } else if (_.isString(inputOutputField) || _.isBoolean(inputOutputField) || _.isNumber(inputOutputField)) {
+                            valueOfArray.push('<span>' + inputOutputField + '</span>');
+                        } else if (_.isObject(inputOutputField)) {
+                            _.each(inputOutputField, function(objValue, objKey) {
+                                var value = objValue;
+                                if (_.isObject(value)) {
+                                    value = JSON.stringify(value);
+                                }
+                                valueOfArray.push('<span>' + objKey + ':' + value + '</span>');
+                            });
                         }
-                    } else {
-                        id = inputOutputField.id;
                     }
+
                     if (id) {
                         if (inputOutputField.values) {
                             if (inputOutputField.values.name) {
@@ -175,7 +189,6 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                             fetchInputOutputValue(id);
                             tempLink += '<div data-id="' + id + '"></div>';
                         }
-
                     }
                     if (readOnly) {
                         tempLink += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
@@ -183,10 +196,13 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                     } else {
                         if (tempLink.search('href') != -1) {
                             subLink += '<div>' + tempLink + '</div>'
-                        } else {
+                        } else if (tempLink.length) {
                             subLink += tempLink
                         }
                     }
+                }
+                if (valueOfArray.length) {
+                    subLink = valueOfArray.join(', ');
                 }
                 table += '<tr><td>' + key + '</td><td>' + subLink + '</td></tr>';
             } else if (_.isObject(keyValue)) {
