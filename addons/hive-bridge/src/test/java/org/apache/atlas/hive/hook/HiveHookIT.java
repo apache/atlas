@@ -368,6 +368,15 @@ public class HiveHookIT {
     }
 
     @Test
+    public void testEmptyStringAsValue() throws Exception{
+        String tableName = tableName();
+        String command = "create table " + tableName + "(id int, name string) row format delimited lines terminated by '\n' null defined as ''";
+        runCommand(command);
+        assertTableIsRegistered(DEFAULT_DB, tableName);
+
+    }
+
+    @Test
     public void testDropAndRecreateCTASOutput() throws Exception {
         String tableName = createTable();
         String ctasTableName = "table" + random();

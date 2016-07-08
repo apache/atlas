@@ -19,6 +19,7 @@
 package org.apache.atlas.typesystem.types;
 
 import com.google.common.collect.ImmutableList;
+import com.sun.source.tree.AssertTree;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.Struct;
@@ -28,16 +29,21 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
+
 public class StructTest extends TypeUpdateBaseTest {
 
     StructType structType;
     StructType recursiveStructType;
+    StructType invalidStructType;
 
     @BeforeMethod
     public void setup() throws Exception {
         super.setup();
         structType = getTypeSystem().getDataType(StructType.class, STRUCT_TYPE_1);
         recursiveStructType = getTypeSystem().getDataType(StructType.class, STRUCT_TYPE_2);
+        invalidStructType = getTypeSystem().getDataType(StructType.class, STRUCT_TYPE_3);
     }
 
     @Test
@@ -60,7 +66,24 @@ public class StructTest extends TypeUpdateBaseTest {
                 "\tm : \t[1, 1]\n" +
                 "\tn : \t[1.1, 1.1]\n" +
                 "\to : \t{a=1.0, b=2.0}\n" +
+                "\tp : \t\n" +
+                "\tq : \t<null>\n"+
+                "\tr : \t{a=}\n" +
                 "}");
+    }
+
+    @Test
+    public void testStructWithEmptyString() throws AtlasException{
+        try {
+            assertTrue(getTypeSystem().getTypeNames().contains("t3"));
+            Struct s = new Struct(invalidStructType.getName());
+            s.set("a", "");
+            ITypedStruct ts = invalidStructType.convert(s, Multiplicity.REQUIRED);
+        }
+        catch (AtlasException e){
+            String err = "org.apache.atlas.typesystem.types.ValueConversionException: Cannot convert value 'org.apache.atlas.typesystem.Struct@1ba02' to datatype t3";
+            Assert.assertEquals(e.toString(), err);
+        }
     }
 
     @Test

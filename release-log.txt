@@ -27,6 +27,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-902 Atlas throws exception due to null definition in Hive create table statement (svimal2106 via shwethags)
 ATLAS-987 Atlas hooks should avoid adding dependent libraries to component CLASSPATH (madhan.neethiraj via shwethags)
 ATLAS-993 If condition in DSL order by clause is not defined then dsl query fails (guptaneeru via shwethags)
 ATLAS-968 Set group information from UGI for Ldap authentication (nixonrodrigues via shwethags)

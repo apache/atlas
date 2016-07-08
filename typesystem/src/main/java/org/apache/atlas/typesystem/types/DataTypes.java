@@ -449,6 +449,10 @@ public class DataTypes {
             if (val != null && (!(val instanceof String) || StringUtils.isNotEmpty((CharSequence) val))) {
                 return val.toString();
             }
+
+            if (m.nullAllowed() && val != null){
+                return val.toString();
+            }
             return convertNull(m);
         }
 
@@ -584,9 +588,7 @@ public class DataTypes {
                         b.put(keyType.convert(e.getKey(),
                                         TypeSystem.getInstance().allowNullsInCollections() ? Multiplicity.OPTIONAL :
                                                 Multiplicity.REQUIRED),
-                                        valueType.convert(e.getValue(),
-                                        TypeSystem.getInstance().allowNullsInCollections() ? Multiplicity.OPTIONAL :
-                                                Multiplicity.REQUIRED));
+                                        valueType.convert(e.getValue(), Multiplicity.OPTIONAL));
                     }
                     return b.build();
                 } else {
