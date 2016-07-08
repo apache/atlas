@@ -35,10 +35,8 @@ public class AtlasAuthenticationProvider extends
             .getLogger(AtlasAuthenticationProvider.class);
 
     private boolean fileAuthenticationMethodEnabled = true;
-    private boolean ldapAuthenticationMethodEnabled = false;
-    private String ldapType = "UNKNOWN";
+    private String ldapType = "NONE";
     public static final String FILE_AUTH_METHOD = "atlas.authentication.method.file";
-    public static final String LDAP_AUTH_METHOD = "atlas.authentication.method.ldap";
     public static final String LDAP_TYPE = "atlas.authentication.method.ldap.type";
 
     @Autowired
@@ -57,9 +55,7 @@ public class AtlasAuthenticationProvider extends
 
             this.fileAuthenticationMethodEnabled = configuration.getBoolean(
                     FILE_AUTH_METHOD, true);
-            this.ldapAuthenticationMethodEnabled = configuration.getBoolean(
-                    LDAP_AUTH_METHOD, false);
-            this.ldapType = configuration.getString(LDAP_TYPE, "UNKNOWN");
+            this.ldapType = configuration.getString(LDAP_TYPE, "NONE");
         } catch (Exception e) {
             LOG.error(
                     "Error while getting atlas.login.method application properties",
@@ -71,22 +67,19 @@ public class AtlasAuthenticationProvider extends
     public Authentication authenticate(Authentication authentication)
             throws AuthenticationException {
 
-        if (ldapAuthenticationMethodEnabled) {
-
-            if (ldapType.equalsIgnoreCase("LDAP")) {
-                try {
-                    authentication = ldapAuthenticationProvider
-                            .authenticate(authentication);
-                } catch (Exception ex) {
-                    LOG.error("Error while LDAP authentication", ex);
-                }
-            } else if (ldapType.equalsIgnoreCase("AD")) {
-                try {
-                    authentication = adAuthenticationProvider
-                            .authenticate(authentication);
-                } catch (Exception ex) {
-                    LOG.error("Error while AD authentication", ex);
-                }
+        if (ldapType.equalsIgnoreCase("LDAP")) {
+            try {
+                authentication = ldapAuthenticationProvider
+                        .authenticate(authentication);
+            } catch (Exception ex) {
+                LOG.error("Error while LDAP authentication", ex);
+            }
+        } else if (ldapType.equalsIgnoreCase("AD")) {
+            try {
+                authentication = adAuthenticationProvider
+                        .authenticate(authentication);
+            } catch (Exception ex) {
+                LOG.error("Error while AD authentication", ex);
             }
         }
 
