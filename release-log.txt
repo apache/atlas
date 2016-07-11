@@ -6,6 +6,7 @@ INCOMPATIBLE CHANGES:
 
 
 ALL CHANGES:
+ATLAS-936 Update atlas website for 0.7 release (shwethags)
 ATLAS-995 Atlas to setup ldap authentication type as either LDAP / AD or None (nixonrodrigues via shwethags)
 ATLAS-902 Atlas throws exception due to null definition in Hive create table statement (svimal2106 via shwethags)
 ATLAS-987 Atlas hooks should avoid adding dependent libraries to component CLASSPATH (madhan.neethiraj via shwethags)
