@@ -100,6 +100,7 @@ atlas.graph.index.search.solr.zookeeper-url=
                                 </goals>
                                 <phase>package</phase>
                                 <configuration>
+                                    <skipAssembly>false</skipAssembly>
                                     <descriptors>
                                         <descriptor>src/main/assemblies/standalone-package.xml</descriptor>
                                         <descriptor>src/main/assemblies/src-package.xml</descriptor>
