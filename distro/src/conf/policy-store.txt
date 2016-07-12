@@ -6,3 +6,4 @@ adminPolicy;;admin:rwud;;ROLE_ADMIN:rwud;;type:*,entity:*,operation:*,taxonomy:*
 dataScientistPolicy;;;;DATA_SCIENTIST:r;;type:*,entity:*,taxonomy:*,term:*
 dataStewardPolicy;;;;DATA_STEWARD:rwu;;type:*,entity:*,taxonomy:*,term:*
 hadoopPolicy;;;;hadoop:rwud;;type:*,entity:*,operation:*,taxonomy:*,term:*
+rangerTagSyncPolicy;;;;RANGER_TAG_SYNC:r;;type:*,entity:*
