@@ -87,7 +87,7 @@ define(['require', 'utils/Globals'], function(require, Globals) {
             Utils.notifyError({
                 content: message
             });
-        } else if (error.status == "0") {
+        } else if (error.status == "0" && error.statusText != "abort") {
             var diffTime = (new Date().getTime() - prevNetworkErrorTime);
             if (diffTime > 3000) {
                 prevNetworkErrorTime = new Date().getTime();

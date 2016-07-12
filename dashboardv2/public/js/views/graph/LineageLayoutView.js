@@ -154,7 +154,6 @@ define(['require',
                 function fetchLoadProcess(id) {
                     ++that.fetchList;
                     that.entityModel.getEntity(id, {
-                        beforeSend: function() {},
                         success: function(data) {
                             addValueInObject(data);
                         },

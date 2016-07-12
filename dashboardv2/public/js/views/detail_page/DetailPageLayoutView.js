@@ -23,8 +23,9 @@ define(['require',
     'collection/VTagList',
     'models/VEntity',
     'utils/CommonViewFunction',
-    'utils/Globals'
-], function(require, Backbone, DetailPageLayoutViewTmpl, Utils, VTagList, VEntity, CommonViewFunction, Globals) {
+    'utils/Globals',
+    'utils/Messages'
+], function(require, Backbone, DetailPageLayoutViewTmpl, Utils, VTagList, VEntity, CommonViewFunction, Globals, Messages) {
     'use strict';
 
     var DetailPageLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -188,8 +189,21 @@ define(['require',
             },
             onClickTagCross: function(e) {
                 var tagName = $(e.currentTarget).parent().text(),
-                    that = this,
-                    modal = CommonViewFunction.deleteTagModel(tagName);
+                    that = this;
+                var tagOrTerm = Utils.checkTagOrTerm(tagName);
+                if (tagOrTerm.term) {
+                    var modal = CommonViewFunction.deleteTagModel({
+                        msg: "<div class='ellipsis'>Remove: " + "<b>" + tagName + "</b> assignment from" + " " + "<b>" + this.name + "?</b></div>",
+                        titleMessage: Messages.removeTerm,
+                        buttonText: "Remove"
+                    });
+                } else {
+                    var modal = CommonViewFunction.deleteTagModel({
+                        msg: "<div class='ellipsis'>Remove: " + "<b>" + tagName + "</b> assignment from" + " " + "<b>" + this.name + "?</b></div>",
+                        titleMessage: Messages.removeTag,
+                        buttonText: "Remove"
+                    });
+                }
                 modal.on('ok', function() {
                     that.deleteTagData(e);
                 });
@@ -216,10 +230,10 @@ define(['require',
                 _.each(tagObject, function(val) {
                     var isTerm = Utils.checkTagOrTerm(val);
                     if (!isTerm.term) {
-                        tagData += '<span class="inputTag" data-id="tagClick">' + val + '<i class="fa fa-close" data-id="deleteTag"></i></span>';
+                        tagData += '<span class="inputTag" data-id="tagClick"><span class="inputValue">' + val + '</span><i class="fa fa-close" data-id="deleteTag"></i></span>';
                     }
                     if (isTerm.term) {
-                        termData += '<span class="inputTag term" data-id="tagClick" data-href="' + val + '">' + val + '<i class="fa fa-close" data-id="deleteTag"></i></span>';
+                        termData += '<span class="inputTag term" data-id="tagClick" data-href="' + val + '"><span class="inputValue">' + val + '</span><i class="fa fa-close" data-id="deleteTag"></i></span>';
                     }
 
                 });
@@ -239,7 +253,6 @@ define(['require',
                 };
                 this.entityModel.saveEntity(this.id, {
                     data: JSON.stringify(json),
-                    beforeSend: function() {},
                     success: function(data) {
                         that.fetchCollection();
                     },
@@ -295,7 +308,8 @@ define(['require',
                     that.RTagTableLayoutView.show(new TagDetailTableLayoutView({
                         globalVent: that.globalVent,
                         collection: that.collection,
-                        guid: tagGuid
+                        guid: tagGuid,
+                        assetName: that.name
                     }));
                 });
             },
@@ -333,6 +347,7 @@ define(['require',
                         globalVent: that.globalVent,
                         collection: that.collection,
                         guid: tagGuid,
+                        assetName: that.name,
                         term: true
                     }));
                 });

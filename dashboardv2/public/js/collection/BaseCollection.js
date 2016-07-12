@@ -36,27 +36,17 @@ define(['require',
             initialize: function() {},
             bindErrorEvents: function() {
                 this.bind("error", Utils.defaultErrorHandler);
-
             },
-            bindLoader: function(element) {
+            bindRequest: function() {
                 this.bind('request', function(model, ajaxObj, collectionObj) {
-                    this.ajaxStart(collectionObj.$el);
+                    this.ajaxStart(model, ajaxObj, collectionObj);
                 }, this);
                 this.bind('sync', function(model, ajaxObj, collectionObj) {
-                    this.ajaxComplete(collectionObj.$el);
+                    this.ajaxComplete(model, ajaxObj, collectionObj);
                 }, this);
             },
-            ajaxStart: function(element) {
-                //start spinner
-                if (element) {
-                    element.prepend("<div class='loading'></div>");
-                }
-            },
-            ajaxComplete: function(element) {
-                if (element) {
-                    element.find('loading').remove();
-                }
-            },
+            ajaxStart: function(model, ajaxObj, collectionObj) {},
+            ajaxComplete: function(model, ajaxObj, collectionObj) {},
             /**
              * state required for the PageableCollection
              */

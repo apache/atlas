@@ -21,8 +21,9 @@ define(['require',
     'hbs!tmpl/tag/TagDetailTableLayoutView_tmpl',
     'utils/CommonViewFunction',
     'utils/Utils',
-    'collection/VTagList'
-], function(require, Backbone, TagDetailTableLayoutView_tmpl, CommonViewFunction, Utils, VTagList) {
+    'collection/VTagList',
+    'utils/Messages'
+], function(require, Backbone, TagDetailTableLayoutView_tmpl, CommonViewFunction, Utils, VTagList, Messages) {
     'use strict';
 
     var TagDetailTableLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -59,7 +60,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'collection', 'guid', 'term'));
+                _.extend(this, _.pick(options, 'globalVent', 'collection', 'guid', 'term', 'assetName'));
                 this.collectionObject = this.collection.toJSON();
                 this.tagTermCollection = new VTagList();
                 var tagorterm = _.toArray(this.collectionObject[0].traits),
@@ -175,8 +176,22 @@ define(['require',
             },
             deleteTagDataModal: function(e) {
                 var tagName = $(e.currentTarget).data("name"),
-                    that = this,
-                    modal = CommonViewFunction.deleteTagModel(tagName);
+                    that = this;
+                if (that.term) {
+                    var modal = CommonViewFunction.deleteTagModel({
+                        msg: "<div class='ellipsis'>Remove: " + "<b>" + tagName + "</b> assignment from" + " " + "<b>" + this.assetName + "?</b></div>",
+                        titleMessage: Messages.removeTerm,
+                        buttonText: "Remove",
+                    });
+                } else {
+                    var modal = CommonViewFunction.deleteTagModel({
+                        msg: "<div class='ellipsis'>Remove: " + "<b>" + tagName + "</b> assignment from" + " " + "<b>" + this.assetName + "?</b></div>",
+                        titleMessage: Messages.removeTag,
+                        buttonText: "Remove",
+                    });
+                }
+
+
                 modal.on('ok', function() {
                     that.deleteTagData(e);
                 });

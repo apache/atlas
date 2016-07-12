@@ -117,7 +117,6 @@
 
 .inputTag {
     display: inline-block;
-    padding: 2px 10px;
     border: 1px $tag_color solid;
     color: $tag_color;
     font-size: 14px;
@@ -128,11 +127,42 @@
     cursor: pointer;
     background-color: $white;
     white-space: nowrap;
+    overflow: hidden;
+    &:hover {
+        color: $tag_color;
+    }
     i.fa {
         position: relative;
-        right: -5px;
+        padding: 5px;
         cursor: pointer;
+        &:hover {
+            color: $white;
+            background-color: $tag_color;
+        }
     }
+    > .inputValue {
+        padding: 5px;
+        &:hover {
+            color: $white;
+            background-color: $tag_color;
+        }
+    }
+}
+
+.inputTagAdd {
+    display: inline-block;
+    border: 1px #4A90E2 solid;
+    color: #4A90E2;
+    font-size: 14px;
+    border-radius: 4px;
+    margin-right: 3px;
+    margin-bottom: 3px;
+    float: left;
+    cursor: pointer;
+    background-color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    padding: 2px 6px;
     &:hover {
         color: $white;
         background-color: $tag_color;
@@ -288,4 +318,24 @@ form-control .tagInpput {
 
 .multiSelect {
     float: right;
+}
+
+.popover.popoverTag {
+    display: block;
+}
+
+.popoverContainer .inputTag {
+    display: block;
+    float: none;
+    margin-top: 10px;
+}
+
+.popoverContainer .inputTag > .inputValue {
+    padding: 2px 5px;
+    display: inline-block;
+    width: 100px;
+}
+
+.tagAttributeLabel {
+    color: $color_star_dust_approx;
 }

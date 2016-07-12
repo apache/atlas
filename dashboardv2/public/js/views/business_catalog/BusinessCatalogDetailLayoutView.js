@@ -152,7 +152,7 @@ define(['require',
             addTagToTerms: function(tagObject) {
                 var tagData = "";
                 _.each(tagObject, function(val) {
-                    tagData += '<span class="inputTag">' + val + '<i class="fa fa-close" data-id="deleteTag"></i></span>';
+                    tagData += '<span class="inputTag"><span class="inputValue">' + val + '</span><i class="fa fa-close" data-id="deleteTag"></i></span>';
                 });
                 this.$('.addTag-dropdown').before(tagData);
             },
@@ -167,7 +167,6 @@ define(['require',
                 };
                 this.entityModel.saveEntity(this.id, {
                     data: JSON.stringify(json),
-                    beforeSend: function() {},
                     success: function(data) {
                         that.collection.fetch({ reset: true });
                     },
