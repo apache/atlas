@@ -43,7 +43,8 @@ define(['require',
                 backTaxanomy: '[data-id="backTaxanomy"]',
                 expandArrow: '[data-id="expandArrow"]',
                 searchTermInput: '[data-id="searchTermInput"]',
-                refreshTaxanomy: '[data-id="refreshTaxanomy"]'
+                refreshTaxanomy: '[data-id="refreshTaxanomy"]',
+                descriptionAssign: '[data-id="descriptionAssign"]',
             },
             /** ui events hash */
             events: function() {
@@ -150,6 +151,11 @@ define(['require',
                     }
                 });
                 this.fetchTaxanomyCollections();
+                if (!this.viewBased) {
+                    this.ui.descriptionAssign.show();
+                } else {
+                    this.ui.descriptionAssign.hide();
+                }
             },
             backButtonTaxanomy: function(e) {
                 var that = this;
@@ -495,7 +501,6 @@ define(['require',
                         that.create = true;
                         that.fetchTaxanomyCollections();
                         that.fetchCollection(url, true);
-                        //that.fetchCollection(that.url);
                         Utils.notifySuccess({
                             content: "Term " + view.ui.termName.val() + Messages.addSuccessMessage
                         });
@@ -512,8 +517,14 @@ define(['require',
             },
             deleteTerm: function(e) {
                 var termName = this.$('.taxonomyTree').find('li.active a').data("name"),
+                    assetName = $(e.target).data("assetname"),
                     that = this,
-                    modal = CommonViewFunction.deleteTagModel(termName);
+                    modal = CommonViewFunction.deleteTagModel({
+                        msg: "<div class='ellipsis'>Delete: " + "<b>" + termName + "?</b></div>" +
+                            "<p class='termNote'>Assets mapped to this term will be unclassified.</p>",
+                        titleMessage: Messages.deleteTerm,
+                        buttonText: "Delete"
+                    });
                 modal.on('ok', function() {
                     that.deleteTermData(e);
                 });
@@ -529,7 +540,6 @@ define(['require',
                         url = that.$('.taxonomyTree').find('li.active a').data('href');
                     var termName = that.$('.taxonomyTree').find('li.active a').text();
                     termModel.deleteTerm(url, {
-                        beforeSend: function() {},
                         success: function(data) {
                             Utils.notifySuccess({
                                 content: "Term " + termName + Messages.deleteSuccessMessage

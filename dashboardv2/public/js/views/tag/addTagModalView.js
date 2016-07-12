@@ -51,7 +51,7 @@ define(['require',
             this.modal = new Modal({
                 title: 'Add Tag',
                 content: this,
-                okText: 'Save',
+                okText: 'Add',
                 cancelText: "Cancel",
                 allowCancel: true,
             }).open();
@@ -79,7 +79,7 @@ define(['require',
             }, this);
         },
         tagsCollection: function() {
-            var str = '<option selected="selected" disabled="disabled">-- Select Tag --</option>';
+            var str = '<option selected="selected" disabled="disabled">-- Select a tag from the dropdown list --</option>';
             _.each(this.collection.fullCollection.models, function(obj, key) {
                 var tagOrTerm = Utils.checkTagOrTerm(obj.get('tags'));
                 if (!tagOrTerm.term) {
@@ -106,13 +106,15 @@ define(['require',
         },
         subAttributeData: function() {
             if (this.commonCollection.models[0] && this.commonCollection.models[0].attributes && this.commonCollection.models[0].attributes.traitTypes[0].attributeDefinitions) {
+                var strAttribute = '<p>Tag Attributes(optional)</p>' +
+                    '<p class="tagAttributeLabel">Add attribute values for this tag</p>';
                 for (var i = 0; i < this.commonCollection.models[0].attributes.traitTypes[0].attributeDefinitions.length; i++) {
                     var attribute = this.commonCollection.models[0].attributes.traitTypes[0].attributeDefinitions;
                     this.ui.tagAttribute.show();
-                    this.strAttribute = '<label class="control-label col-sm-4 ng-binding">' + attribute[i].name + '</label>' +
-                        '<div class="col-sm-8 input-spacing">' +
-                        '<input type="text" class="form-control attributeInputVal attrName" data-key="' + attribute[i].name + '" ></input></div>';
-                    this.ui.tagAttribute.append(this.strAttribute);
+                    strAttribute += '<div class="form-group"><label class="control-label col-sm-2">' + attribute[i].name + '</label>' +
+                        '<div class="col-sm-10">' +
+                        '<input type="text" class="form-control attributeInputVal attrName" data-key="' + attribute[i].name + '" ></input></div></div>';
+                    this.ui.tagAttribute.html(strAttribute);
                 }
                 if (this.commonCollection.models[0].attributes.traitTypes[0].superTypes.length > 0) {
                     for (var j = 0; j < this.commonCollection.models[0].attributes.traitTypes[0].superTypes.length; j++) {
@@ -139,7 +141,6 @@ define(['require',
             };
             that.entityModel.saveEntity(that.guid, {
                 data: JSON.stringify(json),
-                beforeSend: function() {},
                 success: function(data) {
                     Utils.notifySuccess({
                         content: "Tag " + tagName + " has been added to entity"

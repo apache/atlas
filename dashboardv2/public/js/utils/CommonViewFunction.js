@@ -20,33 +20,11 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
     'use strict';
 
     var CommonViewFunction = {};
-    CommonViewFunction.deleteTagModel = function(tagName, AssignTerm) {
-        var msg = "",
-            titleMessage = "",
-            deleteText = "";
-        if (tagName && AssignTerm != "assignTerm") {
-            var tagOrTerm = Utils.checkTagOrTerm(tagName);
-            if (tagOrTerm.term) {
-                msg = "<div class='ellipsis'>Delete: " + "<b>" + tagName + "?</b></div>" +
-                    "<p class='termNote'>Assets map to this term will be unclassified</p>";
-                titleMessage = Messages.deleteTerm;
-                deleteText = "Delete";
-            } else {
-                msg = "<div class='ellipsis'>Delete: " + "<b>" + tagName + "?</b></div>";
-                var titleMessage = Messages.deleteTag;
-                deleteText = "Delete";
-            }
-        }
-        if (AssignTerm == "assignTerm") {
-            msg = "<div class='ellipsis'>Remove: " + "<b>" + tagName + "?</b></div>" +
-                "<p class='termNote'>Assets map to this term will be unclassified</p>";
-            titleMessage = Messages.RemoveTerm;
-            deleteText = "Remove";
-        }
+    CommonViewFunction.deleteTagModel = function(options) {
         var modal = new Modal({
-            title: titleMessage,
-            okText: deleteText,
-            htmlContent: msg,
+            title: options.titleMessage,
+            okText: options.buttonText,
+            htmlContent: options.msg,
             cancelText: "Cancel",
             allowCancel: true,
             okCloses: true,
@@ -58,24 +36,22 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
         require(['models/VTag'], function(VTag) {
             var tagModel = new VTag();
             if (options && options.guid && options.tagName) {
-
                 tagModel.deleteTag(options.guid, options.tagName, {
-                    beforeSend: function() {},
                     success: function(data) {
-                        var msg = "Tag " + name.name + Messages.deleteSuccessMessage;
+                        var msg = "Tag " + name.name + Messages.removeSuccessMessage;
                         if (data.traitName) {
                             var tagOrTerm = Utils.checkTagOrTerm(data.traitName);
                             if (tagOrTerm.term) {
-                                msg = "Term " + data.traitName + Messages.deleteSuccessMessage;
+                                msg = "Term " + data.traitName + Messages.removeSuccessMessage;
                             } else {
-                                msg = "Tag " + data.traitName + Messages.deleteSuccessMessage;
+                                msg = "Tag " + data.traitName + Messages.removeSuccessMessage;
                             }
                         } else {
                             var tagOrTerm = Utils.checkTagOrTerm(options.tagName);
                             if (tagOrTerm.term) {
-                                msg = "Term " + data.traitName + Messages.deleteSuccessMessage;
+                                msg = "Term " + data.traitName + Messages.removeSuccessMessage;
                             } else {
-                                msg = "Tag " + data.traitName + Messages.deleteSuccessMessage;
+                                msg = "Tag " + data.traitName + Messages.removeSuccessMessage;
                             }
                         }
                         Utils.notifySuccess({
@@ -325,7 +301,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                 dropdown: function() {
                     return '<div class=\"dropdown\">' +
                         '<a href=\"javascript:void(0);\" class=\"' + this.namespace + '-toggle\" data-toggle=\"dropdown\"><i class=\"' + this.dropicon + '\"</i></a>' +
-                        '<ul class=\"' + this.namespace + '-menu dropdown-menu popover bottom arrowPosition \" ><div class="arrow"></div></ul>' +
+                        '<ul class=\"' + this.namespace + '-menu dropdown-menu popover popoverTerm bottom arrowPosition \" ><div class="arrow"></div></ul>' +
                         '</div>';
                 },
                 dropdownContent: function(a) {
@@ -355,7 +331,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
             var tagName = Utils.checkTagOrTerm(traits[key].$typeName$);
             if (tagName.term) {
                 terms.push({
-                    deleteHtml: '<a class="pull-left" title="Delete Term"><i class="fa fa-trash" data-id="tagClick" data-name="' + traits[key].$typeName$ + '" data-guid="' + model.get('$id$').id + '" ></i></a>',
+                    deleteHtml: '<a class="pull-left" title="Remove Term"><i class="fa fa-trash" data-id="tagClick" data-assetname="' + model.get("name") + '" data-name="' + traits[key].$typeName$ + '" data-guid="' + model.get('$id$').id + '" ></i></a>',
                     url: traits[key].$typeName$.split(".").join("/"),
                     name: tagName.fullName
                 });
@@ -387,29 +363,29 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
         var traits = model.get('$traits$'),
             atags = "",
             addTag = "",
+            popTag = "",
             count = 0;
         _.keys(model.get('$traits$')).map(function(key) {
             var tagName = Utils.checkTagOrTerm(traits[key].$typeName$),
                 className = "inputTag";
             if (!tagName.term) {
                 if (count >= 1) {
-                    className += " hide";
+                    popTag += '<a class="' + className + '" data-id="tagClick"><span class="inputValue">' + traits[key].$typeName$ + '</span><i class="fa fa-times" data-id="delete"  data-assetname="' + model.get("name") + '"data-name="' + tagName.name + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
+                } else {
+                    atags += '<a class="' + className + '" data-id="tagClick"><span class="inputValue">' + traits[key].$typeName$ + '</span><i class="fa fa-times" data-id="delete" data-assetname="' + model.get("name") + '" data-name="' + tagName.name + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
                 }
                 ++count;
-                atags += '<a class="' + className + '" data-id="tagClick">' + traits[key].$typeName$ + '<i class="fa fa-times" data-id="delete" data-name="' + tagName.name + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
             }
         });
-
         if (model.get('$id$')) {
-            addTag += '<a href="javascript:void(0)" data-id="addTag" class="inputTag" data-guid="' + model.get('$id$').id + '" ><i style="right:0" class="fa fa-plus"></i></a>';
+            addTag += '<a href="javascript:void(0)" data-id="addTag" class="inputTagAdd" data-guid="' + model.get('$id$').id + '" ><i class="fa fa-plus"></i></a>';
         } else {
-            addTag += '<a href="javascript:void(0)" data-id="addTag" class="inputTag"><i style="right:0" class="fa fa-plus"></i></a>';
+            addTag += '<a href="javascript:void(0)" data-id="addTag" class="inputTagAdd"><i style="right:0" class="fa fa-plus"></i></a>';
         }
         if (count > 1) {
-            addTag += '<a  href="javascript:void(0)" data-id="showMoreLess" class="inputTag inputTagGreen"><span>Show More </span><i class="fa fa-angle-right"></i></a>'
+            addTag += '<div data-id="showMoreLess" class="inputTagAdd tagDetailPopover"><i class="fa fa-ellipsis-h" aria-hidden="true"></i></div>'
         }
-        return '<div class="tagList">' + atags + addTag + '</div>';
-
+        return '<div class="tagList">' + atags + addTag + '<div class="popover popoverTag bottom" style="display:none"><div class="arrow"></div><div class="popover-content popoverContainer">' + popTag + '</div></div></div>';
     }
     CommonViewFunction.saveTermToAsset = function(options) {
         require(['models/VCatalog'], function(Vcatalog) {

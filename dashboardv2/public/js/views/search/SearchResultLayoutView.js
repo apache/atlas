@@ -24,8 +24,9 @@ define(['require',
     'utils/Utils',
     'utils/Globals',
     'collection/VSearchList',
-    'utils/CommonViewFunction'
-], function(require, Backbone, SearchResultLayoutViewTmpl, Modal, VEntity, Utils, Globals, VSearchList, CommonViewFunction) {
+    'utils/CommonViewFunction',
+    'utils/Messages'
+], function(require, Backbone, SearchResultLayoutViewTmpl, Modal, VEntity, Utils, Globals, VSearchList, CommonViewFunction, Messages) {
     'use strict';
 
     var SearchResultLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -80,13 +81,12 @@ define(['require',
                 events["click " + this.ui.addTag] = 'addTagModalView';
                 events["click " + this.ui.addTerm] = 'checkedValue';
                 events["click " + this.ui.showMoreLess] = function(e) {
-                    $(e.currentTarget).find('i').toggleClass('fa fa-angle-right fa fa-angle-up');
-                    $(e.currentTarget).parents('.searchTag').find('a').toggleClass('hide show');
-                    if ($(e.currentTarget).find('i').hasClass('fa-angle-right')) {
-                        $(e.currentTarget).find('span').text('Show More');
-                    } else {
-                        $(e.currentTarget).find('span').text('Show less');
-                    }
+                    $(e.currentTarget).parents('tr').siblings().find("div.popover.popoverTag").hide();
+                    $(e.currentTarget).parent().find("div.popover").toggle();
+                    var positionContent = $(e.currentTarget).position();
+                    positionContent.top = positionContent.top + 26;
+                    positionContent.left = positionContent.left - 67;
+                    $(e.currentTarget).parent().find("div.popover").css(positionContent);
                 };
                 events["click " + this.ui.showMoreLessTerm] = function(e) {
                     $(e.currentTarget).find('i').toggleClass('fa fa-angle-right fa fa-angle-up');
@@ -127,6 +127,7 @@ define(['require',
                 this.arr = [];
             },
             bindEvents: function() {
+                var that = this;
                 this.listenTo(this.searchCollection, 'backgrid:selected', function(model, checked) {
                     if (checked === true) {
                         model.set("isEnable", true);
@@ -136,7 +137,6 @@ define(['require',
                         this.$('.searchResult').find(".inputAssignTag.multiSelect").hide();
                     }
                     this.arr = [];
-                    var that = this;
                     this.searchCollection.find(function(item) {
                         if (item.get('isEnable')) {
                             var term = [];
@@ -147,19 +147,6 @@ define(['require',
                         }
                     });
                 });
-                this.listenTo(this.vent, "show:searchResult", function(value) {
-                    this.fetchCollection(value);
-                    this.REntityTableLayoutView.reset();
-                }, this);
-                this.listenTo(this.searchCollection, "reset", function(value) {
-                    if (this.searchCollection.toJSON().length == 0) {
-                        this.checkTableFetch();
-                    }
-                    this.renderTableLayoutView();
-                    var resultData = this.searchCollection.fullCollection.length + ' result for <b>' + this.searchCollection.queryParams.query + '</b>'
-                    var multiAssignData = '<a href="javascript:void(0)" class="inputAssignTag multiSelect" style="display:none" data-id="addTerm"><i class="fa fa-folder-o">' + " " + 'Assign Term</i></a>'
-                    this.$('.searchResult').html(resultData + multiAssignData);
-                }, this);
                 this.listenTo(this.searchCollection, "error", function(value, responseData) {
                     this.$('.fontLoader').hide();
                     var message = "Invalid expression";
@@ -176,7 +163,8 @@ define(['require',
             },
             onRender: function() {
                 //this.renderTableLayoutView();
-                var value = {};
+                var value = {},
+                    that = this;
                 if (this.value) {
                     value = this.value;
                 } else {
@@ -187,18 +175,43 @@ define(['require',
                     };
                 }
                 this.fetchCollection(value);
+                $('body').click(function(e) {
+                    var iconEvnt = e.target.nodeName;
+                    if (that.$('.popoverContainer').length) {
+                        if ($(e.target).hasClass('tagDetailPopover') || iconEvnt == "I") {
+                            return;
+                        }
+                        that.$('.popover.popoverTag').hide();
+                    }
+                });
             },
             fetchCollection: function(value) {
+                var that = this;
                 this.$('.fontLoader').show();
                 this.$('.searchTable').hide();
                 this.$('.searchResult').html('');
+                if (Globals.searchApiCallRef) {
+                    Globals.searchApiCallRef.abort();
+                }
                 if (value) {
                     if (value.searchType) {
                         this.searchCollection.url = "/api/atlas/discovery/search/" + value.searchType;
                     }
                     _.extend(this.searchCollection.queryParams, { 'query': value.query });
                 }
-                this.searchCollection.fetch({ reset: true });
+                Globals.searchApiCallRef = this.searchCollection.fetch({
+                    success: function() {
+                        Globals.searchApiCallRef = undefined;
+                        if (that.searchCollection.toJSON().length == 0) {
+                            that.checkTableFetch();
+                        }
+                        that.renderTableLayoutView();
+                        var resultData = that.searchCollection.fullCollection.length + ' results for <b>' + that.searchCollection.queryParams.query + '</b>'
+                        var multiAssignData = '<a href="javascript:void(0)" class="inputAssignTag multiSelect" style="display:none" data-id="addTerm"><i class="fa fa-folder-o">' + " " + 'Assign Term</i></a>'
+                        that.$('.searchResult').html(resultData + multiAssignData);
+                    },
+                    silent: true
+                });
             },
             renderTableLayoutView: function() {
                 var that = this,
@@ -389,7 +402,6 @@ define(['require',
                                     var guid = model.toJSON().instanceInfo.guid;
                                     ++that.fetchList;
                                     model.getEntity(guid, {
-                                        beforeSend: function() {},
                                         success: function(data) {
                                             if (data.definition) {
                                                 if (data.definition.id && data.definition.id.state) {
@@ -416,7 +428,6 @@ define(['require',
                                     var guid = model.toJSON().guid;
                                     ++that.fetchList;
                                     model.getEntity(guid, {
-                                        beforeSend: function() {},
                                         success: function(data) {
                                             if (data.definition) {
                                                 if (data.definition.id && data.definition.id.state) {
@@ -491,8 +502,22 @@ define(['require',
             onClickTagCross: function(e) {
                 var tagName = $(e.target).data("name"),
                     guid = $(e.target).data("guid"),
+                    assetName = $(e.target).data("assetname"),
                     that = this,
-                    modal = CommonViewFunction.deleteTagModel(tagName, "assignTerm");
+                    tagOrTerm = Utils.checkTagOrTerm(tagName);
+                if (tagOrTerm.term) {
+                    var modal = CommonViewFunction.deleteTagModel({
+                        msg: "<div class='ellipsis'>Remove: " + "<b>" + tagName + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
+                        titleMessage: Messages.removeTerm,
+                        buttonText: "Remove"
+                    });
+                } else {
+                    var modal = CommonViewFunction.deleteTagModel({
+                        msg: "<div class='ellipsis'>Remove: " + "<b>" + tagName + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
+                        titleMessage: Messages.removeTag,
+                        buttonText: "Remove"
+                    });
+                }
                 modal.on('ok', function() {
                     that.deleteTagData(e);
                 });
