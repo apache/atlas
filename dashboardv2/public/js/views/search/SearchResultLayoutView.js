@@ -189,7 +189,7 @@ define(['require',
                 var that = this;
                 this.$('.fontLoader').show();
                 this.$('.searchTable').hide();
-                this.$('.searchResult').html('');
+                that.$('.searchResult').hide();
                 if (Globals.searchApiCallRef) {
                     Globals.searchApiCallRef.abort();
                 }
@@ -260,8 +260,10 @@ define(['require',
             },
             checkTableFetch: function() {
                 if (this.fetchList <= 0) {
+                    this.$('div[data-id="r_tableSpinner"]').removeClass('show')
                     this.$('.fontLoader').hide();
                     this.$('.searchTable').show();
+                    this.$('.searchResult').show();
                 }
             },
             getEntityTableColumns: function() {
@@ -273,13 +275,15 @@ define(['require',
                         if (responseData.dataType.attributeDefinitions.length == 2 && responseData.dataType.attributeDefinitions[1].name == "instanceInfo") {
                             return this.getFixedColumn();
                         } else {
-                            col['Check'] = {
-                                name: "selected",
-                                label: "",
-                                cell: "select-row",
-                                headerCell: "select-all",
-                                position: 1
-                            };
+                            if (Globals.taxonomy) {
+                                col['Check'] = {
+                                    name: "selected",
+                                    label: "",
+                                    cell: "select-row",
+                                    headerCell: "select-all",
+                                    position: 1
+                                };
+                            }
                             var modelJSON = this.searchCollection.toJSON()[0];
                             _.keys(modelJSON).map(function(key) {
                                 if (key.indexOf("$") == -1 && typeof modelJSON[key] != "object") {
@@ -342,27 +346,29 @@ define(['require',
                                     }
                                 })
                             };
-                            col['terms'] = {
-                                label: "Terms",
-                                cell: "Html",
-                                editable: false,
-                                sortable: false,
-                                orderable: true,
-                                className: 'searchTerm',
-                                formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                                    fromRaw: function(rawValue, model) {
-                                        var returnObject = CommonViewFunction.termTableBreadcrumbMaker(model);
-                                        if (returnObject.object) {
-                                            that.bradCrumbList.push(returnObject.object);
+                            if (Globals.taxonomy) {
+                                col['terms'] = {
+                                    label: "Terms",
+                                    cell: "Html",
+                                    editable: false,
+                                    sortable: false,
+                                    orderable: true,
+                                    className: 'searchTerm',
+                                    formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                                        fromRaw: function(rawValue, model) {
+                                            var returnObject = CommonViewFunction.termTableBreadcrumbMaker(model);
+                                            if (returnObject.object) {
+                                                that.bradCrumbList.push(returnObject.object);
+                                            }
+                                            if (Globals.entityStateReadOnly[model.get('$id$').state]) {
+                                                return '<div class="readOnly">' + returnObject.html + '</div>';
+                                            } else {
+                                                return returnObject.html;
+                                            }
                                         }
-                                        if (Globals.entityStateReadOnly[model.get('$id$').state]) {
-                                            return '<div class="readOnly">' + returnObject.html + '</div>';
-                                        } else {
-                                            return returnObject.html;
-                                        }
-                                    }
-                                })
-                            };
+                                    })
+                                };
+                            }
                             that.checkTableFetch();
                             return this.searchCollection.constructor.getTableCols(col, this.searchCollection);
                         }

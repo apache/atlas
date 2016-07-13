@@ -22,8 +22,9 @@ define(['require',
     'collection/VTagList',
     'collection/VEntityList',
     'utils/Utils',
-    'utils/Messages'
-], function(require, Backbone, TagLayoutViewTmpl, VTagList, VEntityList, Utils, Messages) {
+    'utils/Messages',
+    'utils/Globals'
+], function(require, Backbone, TagLayoutViewTmpl, VTagList, VEntityList, Utils, Messages, Globals) {
     'use strict';
 
     var TagLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -113,18 +114,20 @@ define(['require',
                 }
             },
             setValues: function(manual) {
-                if (Utils.getUrlState.isTagTab()) {
+                if (Utils.getUrlState.isTagTab() || (Utils.getUrlState.isInitial() && !Globals.taxonomy)) {
                     if (!this.tag) {
                         this.selectFirst = false;
                         this.ui.tagsParent.find('li').first().addClass('active');
-                        Utils.setUrl({
-                            url: this.ui.tagsParent.find('li a').first().attr("href"),
-                            mergeBrowserUrl: false,
-                            trigger: true,
-                            updateTabState: function() {
-                                return { tagUrl: this.url, stateChanged: true };
-                            }
-                        });
+                        if (this.ui.tagsParent.find('li a').first().length) {
+                            Utils.setUrl({
+                                url: this.ui.tagsParent.find('li a').first().attr("href"),
+                                mergeBrowserUrl: false,
+                                trigger: true,
+                                updateTabState: function() {
+                                    return { tagUrl: this.url, stateChanged: true };
+                                }
+                            });
+                        }
                     } else {
                         Utils.setUrl({
                             url: Utils.getUrlState.getQueryUrl().hash,

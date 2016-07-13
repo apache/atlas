@@ -104,22 +104,26 @@ define([
                 'views/business_catalog/SideNavLayoutView',
                 'collection/VCatalogList'
             ], function(BusinessCatalogHeader, BusinessCatalogDetailLayoutView, SideNavLayoutView, VCatalogList) {
-                var paramObj = Utils.getUrlState.getQueryParams();
-                this.collection = new VCatalogList();
-                this.collection.url = url;
-                App.rNHeader.show(new BusinessCatalogHeader({ 'globalVent': that.globalVent, 'url': url, 'collection': this.collection }));
-                if (!App.rSideNav.currentView) {
-                    App.rSideNav.show(new SideNavLayoutView({ 'globalVent': that.globalVent, 'url': url }));
+                if (Globals.taxonomy) {
+                    var paramObj = Utils.getUrlState.getQueryParams();
+                    this.collection = new VCatalogList();
+                    this.collection.url = url;
+                    App.rNHeader.show(new BusinessCatalogHeader({ 'globalVent': that.globalVent, 'url': url, 'collection': this.collection }));
+                    if (!App.rSideNav.currentView) {
+                        App.rSideNav.show(new SideNavLayoutView({ 'globalVent': that.globalVent, 'url': url }));
+                    } else {
+                        App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender("/" + url);
+                        App.rSideNav.currentView.selectTab();
+                    }
+                    App.rNContent.show(new BusinessCatalogDetailLayoutView({
+                        'globalVent': that.globalVent,
+                        'url': url,
+                        'collection': this.collection
+                    }));
+                    this.collection.fetch({ reset: true });
                 } else {
-                    App.rSideNav.currentView.RBusinessCatalogLayoutView.currentView.manualRender("/" + url);
-                    App.rSideNav.currentView.selectTab();
+                    that.defaultAction()
                 }
-                App.rNContent.show(new BusinessCatalogDetailLayoutView({
-                    'globalVent': that.globalVent,
-                    'url': url,
-                    'collection': this.collection
-                }));
-                this.collection.fetch({ reset: true });
             });
         },
         detailPage: function(id) {
@@ -228,14 +232,26 @@ define([
         },
         defaultAction: function(actions) {
             // We have no matching route, lets just log what the URL was
-            Utils.setUrl({
-                url: '#!/taxonomy',
-                mergeBrowserUrl: false,
-                updateTabState: function() {
-                    return { taxonomyUrl: this.url, stateChanged: false };
-                },
-                trigger: true
-            });
+            if (Globals.taxonomy) {
+                Utils.setUrl({
+                    url: '#!/taxonomy',
+                    mergeBrowserUrl: false,
+                    updateTabState: function() {
+                        return { taxonomyUrl: this.url, stateChanged: false };
+                    },
+                    trigger: true
+                });
+            } else {
+                Utils.setUrl({
+                    url: '#!/tag',
+                    mergeBrowserUrl: false,
+                    updateTabState: function() {
+                        return { tagUrl: this.url, stateChanged: false };
+                    },
+                    trigger: true
+                });
+            }
+
             console.log('No route:', actions);
         }
     });

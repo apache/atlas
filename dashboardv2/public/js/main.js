@@ -155,8 +155,10 @@ require(['App',
                 Globals.userLogedIn.status = true;
                 Globals.userLogedIn.response = response;
             }
+            if (response && response['atlas.feature.taxonomy.enable'] !== undefined) {
+                Globals.taxonomy = response['atlas.feature.taxonomy.enable']
+            }
             App.start();
         }
     });
-
 });

@@ -22,8 +22,9 @@ define(['require',
     'collection/VSchemaList',
     'utils/Utils',
     'utils/CommonViewFunction',
-    'utils/Messages'
-], function(require, Backbone, SchemaTableLayoutViewTmpl, VSchemaList, Utils, CommonViewFunction, Messages) {
+    'utils/Messages',
+    'utils/Globals'
+], function(require, Backbone, SchemaTableLayoutViewTmpl, VSchemaList, Utils, CommonViewFunction, Messages, Globals) {
     'use strict';
 
     var SchemaTableLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -225,13 +226,15 @@ define(['require',
                             })
                         };
                     });
-                    col['Check'] = {
-                        name: "selected",
-                        label: "",
-                        cell: "select-row",
-                        headerCell: "select-all",
-                        position: 1
-                    };
+                    if (Globals.taxonomy) {
+                        col['Check'] = {
+                            name: "selected",
+                            label: "",
+                            cell: "select-row",
+                            headerCell: "select-all",
+                            position: 1
+                        };
+                    }
                     col['tag'] = {
                         label: "Tags",
                         cell: "Html",
@@ -244,23 +247,25 @@ define(['require',
                             }
                         })
                     };
-                    col['terms'] = {
-                        label: "Terms",
-                        cell: "Html",
-                        editable: false,
-                        sortable: false,
-                        orderable: true,
-                        className: 'searchTerm',
-                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                            fromRaw: function(rawValue, model) {
-                                var returnObject = CommonViewFunction.termTableBreadcrumbMaker(model, "schema");
-                                if (returnObject.object) {
-                                    that.bradCrumbList.push(returnObject.object);
+                    if (Globals.taxonomy) {
+                        col['terms'] = {
+                            label: "Terms",
+                            cell: "Html",
+                            editable: false,
+                            sortable: false,
+                            orderable: true,
+                            className: 'searchTerm',
+                            formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                                fromRaw: function(rawValue, model) {
+                                    var returnObject = CommonViewFunction.termTableBreadcrumbMaker(model, "schema");
+                                    if (returnObject.object) {
+                                        that.bradCrumbList.push(returnObject.object);
+                                    }
+                                    return returnObject.html;
                                 }
-                                return returnObject.html;
-                            }
-                        })
-                    };
+                            })
+                        };
+                    }
                 }
                 return this.schemaCollection.constructor.getTableCols(col, this.schemaCollection);
             },

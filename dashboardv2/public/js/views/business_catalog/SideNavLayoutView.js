@@ -34,6 +34,12 @@ define(['require',
         ui: {
             tabs: '.tabs li a',
         },
+        templateHelpers: function() {
+            return {
+                taxonomy: Globals.taxonomy,
+                tabClass: this.tabClass
+            };
+        },
         events: function() {
             var events = {},
                 that = this;
@@ -61,12 +67,19 @@ define(['require',
         },
         initialize: function(options) {
             _.extend(this, _.pick(options, 'globalVent', 'url', 'value', 'tag', 'selectFirst'));
+            if (Globals.taxonomy) {
+                this.tabClass = "tab col-sm-4";
+            } else {
+                this.tabClass = "tab col-sm-6";
+            }
         },
         onRender: function() {
             this.bindEvent();
             this.renderTagLayoutView();
             this.renderSearchLayoutView();
-            this.rendeBusinessCatalogLayoutView();
+            if (Globals.taxonomy) {
+                this.rendeBusinessCatalogLayoutView();
+            }
             this.selectTab();
 
         },
@@ -101,13 +114,13 @@ define(['require',
             });
         },
         selectTab: function() {
-            if (Utils.getUrlState.isTagTab()) {
+            if (Utils.getUrlState.isTagTab() || (Utils.getUrlState.isInitial() && !Globals.taxonomy)) {
                 this.$('.tabs').find('li a[aria-controls="tab-tag"]').parents('li').addClass('active').siblings().removeClass('active');
                 this.$('.tab-content').find('div#tab-tag').addClass('active').siblings().removeClass('active');
-            } else if (Utils.getUrlState.isTaxonomyTab()) {
+            } else if (Utils.getUrlState.isTaxonomyTab() || (Utils.getUrlState.isInitial() && Globals.taxonomy)) {
                 this.$('.tabs').find('li a[aria-controls="tab-taxonomy"]').parents('li').addClass('active').siblings().removeClass('active');
                 this.$('.tab-content').find('div#tab-taxonomy').addClass('active').siblings().removeClass('active');
-            } else if (Utils.getUrlState.isSearchTab()) {
+            } else if (Utils.getUrlState.isSearchTab() || (Utils.getUrlState.isDetailPage())) {
                 this.$('.tabs').find('li a[aria-controls="tab-search"]').parents('li').addClass('active').siblings().removeClass('active');
                 this.$('.tab-content').find('div#tab-search').addClass('active').siblings().removeClass('active');
             }

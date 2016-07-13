@@ -196,6 +196,9 @@ define(['require', 'utils/Globals'], function(require, Globals) {
         isSearchTab: function() {
             return this.getQueryUrl().firstValue == "search" ? true : false;
         },
+        isDetailPage: function() {
+            return this.getQueryUrl().firstValue == "detailPage" ? true : false;
+        },
         getLastValue: function() {
             return this.getQueryUrl().lastValue;
         },

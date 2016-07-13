@@ -65,6 +65,11 @@ define(['require',
                 tagList: '[data-id="tagList"]',
                 termList: '[data-id="termList"]'
             },
+            templateHelpers: function() {
+                return {
+                    taxonomy: Globals.taxonomy
+                };
+            },
             /** ui events hash */
             events: function() {
                 var events = {};
