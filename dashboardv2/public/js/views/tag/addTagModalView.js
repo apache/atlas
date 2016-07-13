@@ -111,9 +111,8 @@ define(['require',
                 for (var i = 0; i < this.commonCollection.models[0].attributes.traitTypes[0].attributeDefinitions.length; i++) {
                     var attribute = this.commonCollection.models[0].attributes.traitTypes[0].attributeDefinitions;
                     this.ui.tagAttribute.show();
-                    strAttribute += '<div class="form-group"><label class="control-label col-sm-2">' + attribute[i].name + '</label>' +
-                        '<div class="col-sm-10">' +
-                        '<input type="text" class="form-control attributeInputVal attrName" data-key="' + attribute[i].name + '" ></input></div></div>';
+                    strAttribute += '<div class="form-group"><label>' + attribute[i].name + '</label>' +
+                        '<input type="text" class="form-control attributeInputVal attrName" data-key="' + attribute[i].name + '" ></input></div>';
                     this.ui.tagAttribute.html(strAttribute);
                 }
                 if (this.commonCollection.models[0].attributes.traitTypes[0].superTypes.length > 0) {

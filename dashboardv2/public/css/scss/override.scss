@@ -148,3 +148,24 @@
     -o-transition: ease-in .1s ease-out;
     transition: ease-in .1s ease-out;
 }
+
+.pager {
+    margin: 0px;
+    li {
+        >button {
+            display: inline-block;
+            padding: 5px 14px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            color: $color_jungle_green_approx;
+        }
+        >button,
+        >span {
+            &:hover {
+                background-color: $color_jungle_green_approx;
+                color: $white;
+            }
+        }
+    }
+}
