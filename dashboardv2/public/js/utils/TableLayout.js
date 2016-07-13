@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
- /**
+/**
  * @file This is the common View file for displaying Table/Grid to be used overall in the application.
  */
 define(['require',
@@ -154,10 +154,10 @@ define(['require',
             /** all events binding here */
             bindEvents: function() {
                 this.listenTo(this.collection, 'request', function() {
-                    this.$('div[data-id="r_tableSpinner"]').addClass('loading');
+                    this.$('div[data-id="r_tableSpinner"]').addClass('show');
                 }, this);
                 this.listenTo(this.collection, 'sync error', function() {
-                    this.$('div[data-id="r_tableSpinner"]').removeClass('loading');
+                    this.$('div[data-id="r_tableSpinner"]').removeClass('show');
                 }, this);
 
                 this.listenTo(this.collection, 'reset', function(collection, response) {

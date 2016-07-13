@@ -33,13 +33,14 @@
                 <div class="addTagBase tagBox" data-id="addTagPlus"><i class="fa fa-plus"></i></div>
             </div>
         </div>
-        <hr class="termTagLine">
+        <hr class="termTagLine"> {{#if taxonomy}}
         <span class="termSpan">Terms:</span>
         <div class="" data-id="termList">
             <div class="addTag-dropdown" data-id="addTerm">
                 <div class="addTagBase termBox" data-id="addTermPlus"><i class="fa fa-plus"></i></div>
             </div>
         </div>
+        {{/if}}
     </div>
 </div>
 <div class="container-fluid gray-bg">
@@ -61,7 +62,9 @@
                     <li role="presentation" class="tab active"><a href="#tab-details" aria-controls="tab-details" role="tab" data-toggle="tab">Properties</a></li>
                     <!--  <li role="presentation"><a href="#profile" aria-controls="profile" role="tab" data-toggle="tab">Acceptable Use</a></li> -->
                     <li role="presentation"><a href="#tab-tagTable" aria-controls="tab-tagTable" role="tab" data-toggle="tab">Tags</a></li>
+                    {{#if taxonomy}}
                     <li role="presentation"><a href="#tab-termTable" aria-controls="tab-termTable" role="tab" data-toggle="tab">Terms</a></li>
+                    {{/if}}
                     <li role="presentation" class="tab"><a href="#tab-audit" aria-controls="tab-audit" role="tab" data-toggle="tab">Audits</a></li>
                     <li role="presentation" class="tab schemaTable" style="display:none"><a href="#tab-schema" aria-controls="tab-schema" role="tab" data-toggle="tab">Schema</a></li>
                 </ul>

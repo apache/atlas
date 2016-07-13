@@ -19,16 +19,18 @@
         <a href="index.html"><i class="fa fa-globe"></i> Apache Atlas</a>
     </li>
     <ul class="tabs" style="width: 100%;" role="tablist">
-        <li role="presentation" class="tab col-sm-4"><a href="#tab-tag" aria-controls="tab-tag" data-name="tab-tag" role="tab" data-toggle="tab">Tags</a></li>
-        <li role="presentation" class="tab col-sm-4 active"><a href="#tab-taxonomy" aria-controls="tab-taxonomy" data-name="tab-taxonomy" role="tab" data-toggle="tab" class="">Taxonomy</a></li>
-        <li role="presentation" class="tab col-sm-4"><a href="#tab-search" aria-controls="tab-search" data-name="tab-search" role="tab" data-toggle="tab" class=""><i class="fa fa-search"></i> Search</a></li>
+        <li role="presentation" class="{{tabClass}}"><a href="#tab-tag" aria-controls="tab-tag" data-name="tab-tag" role="tab" data-toggle="tab">Tags</a></li>
+        {{#if taxonomy}}
+        <li role="presentation" class="tab col-sm-4"><a href="#tab-taxonomy" aria-controls="tab-taxonomy" data-name="tab-taxonomy" role="tab" data-toggle="tab" class="">Taxonomy</a></li>
+        {{/if}}
+        <li role="presentation" class="{{tabClass}}"><a href="#tab-search" aria-controls="tab-search" data-name="tab-search" role="tab" data-toggle="tab" class=""><i class="fa fa-search"></i> Search</a></li>
     </ul>
 </ul>
 <div class="tab-content">
     <div role="tabpanel" class="tab-pane" id="tab-tag">
         <div id="r_tagLayoutView"></div>
     </div>
-    <div role="tabpanel" class="tab-pane active" id="tab-taxonomy">
+    <div role="tabpanel" class="tab-pane" id="tab-taxonomy">
         <div id="r_businessCatalogLayoutView"></div>
     </div>
     <div role="tabpanel" class="tab-pane" id="tab-search">

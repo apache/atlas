@@ -56,6 +56,7 @@ public class AdminResource {
     private static final String BROWSER_USER_AGENT_PARAM = "atlas.rest-csrf.browser-useragents-regex";
     private static final String CUSTOM_METHODS_TO_IGNORE_PARAM = "atlas.rest-csrf.methods-to-ignore";
     private static final String CUSTOM_HEADER_PARAM = "atlas.rest-csrf.custom-header";
+    private static final String isTaxonomyEnabled = "atlas.feature.taxonomy.enable";
     
     private Response version;
     private ServiceState serviceState;
@@ -141,7 +142,10 @@ public class AdminResource {
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getUserProfile() {
         JSONObject responseData = new JSONObject();
+        Boolean enableTaxonomy = null;
         try {
+            PropertiesConfiguration configProperties = new PropertiesConfiguration("atlas-application.properties");
+            enableTaxonomy = new Boolean(configProperties.getString(isTaxonomyEnabled, "false"));
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String userName = null;
             Set<String> groups = new HashSet<String>();
@@ -158,11 +162,13 @@ public class AdminResource {
             responseData.put(CUSTOM_METHODS_TO_IGNORE_PARAM, AtlasCSRFPreventionFilter.METHODS_TO_IGNORE_DEFAULT);
             responseData.put(CUSTOM_HEADER_PARAM, AtlasCSRFPreventionFilter.HEADER_DEFAULT);
             
+            responseData.put(isTaxonomyEnabled, enableTaxonomy);
+            
             responseData.put("userName", userName);
             responseData.put("groups", groups);
             Response response = Response.ok(responseData).build();
             return response;
-        } catch (JSONException e) {
+        } catch (JSONException | ConfigurationException e) {
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
