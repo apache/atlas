@@ -31,15 +31,6 @@ done
 BASEDIR=`dirname ${PRG}`
 BASEDIR=`cd ${BASEDIR}/..;pwd`
 
-if [ -z "$ATLAS_CONF" ]; then
-  ATLAS_CONF=${BASEDIR}/conf
-fi
-export ATLAS_CONF
-
-if [ -f "${ATLAS_CONF}/atlas-env.sh" ]; then
-  . "${ATLAS_CONF}/atlas-env.sh"
-fi
-
 if test -z "${JAVA_HOME}"
 then
     JAVA_BIN=`which java`
@@ -55,11 +46,8 @@ if [ ! -e "${JAVA_BIN}" ] || [ ! -e "${JAR_BIN}" ]; then
   exit 1
 fi
 
-# Construct classpath using Atlas conf directory
-# and jars from bridge/hive and hook/hive directories.
-ATLASCPPATH="$ATLAS_CONF"
-
-for i in "${BASEDIR}/hook/hive/"*.jar; do
+# Construct Atlas classpath using jars from hook/hive/atlas-hive-plugin-impl/ directory.
+for i in "${BASEDIR}/hook/hive/atlas-hive-plugin-impl/"*.jar; do
   ATLASCPPATH="${ATLASCPPATH}:$i"
 done
 
@@ -72,22 +60,29 @@ TIME=`date +%Y%m%d%H%M%s`
 
 #Add hive conf in classpath
 if [ ! -z "$HIVE_CONF_DIR" ]; then
-    HIVE_CP=$HIVE_CONF_DIR
+    HIVE_CONF=$HIVE_CONF_DIR
 elif [ ! -z "$HIVE_HOME" ]; then
-    HIVE_CP="$HIVE_HOME/conf"
+    HIVE_CONF="$HIVE_HOME/conf"
 elif [ -e /etc/hive/conf ]; then
-    HIVE_CP="/etc/hive/conf"
+    HIVE_CONF="/etc/hive/conf"
 else
     echo "Could not find a valid HIVE configuration"
     exit 1
 fi
 
-echo Using Hive configuration directory ["$HIVE_CP"]
+echo Using Hive configuration directory ["$HIVE_CONF"]
+
+
+if [ -f "${HIVE_CONF}/hive-env.sh" ]; then
+  . "${HIVE_CONF}/hive-env.sh"
+fi
 
 if [ -z "$HIVE_HOME" ]; then
     echo "Please set HIVE_HOME to the root of Hive installation"
     exit 1
 fi
+
+HIVE_CP="${HIVE_CONF}"
 
 for i in "${HIVE_HOME}/lib/"*.jar; do
     HIVE_CP="${HIVE_CP}:$i"
