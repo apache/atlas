@@ -43,7 +43,12 @@ class LineageQueryTest extends BaseGremlinTest {
 
     @AfterClass
     def afterAll() {
-      g.shutdown()
+      try {
+          g.shutdown()
+      } catch {
+        case ex: Exception =>
+          print("Could not shutdown the graph ", ex);
+      }
       try {
         TitanCleanup.clear(g);
       } catch {

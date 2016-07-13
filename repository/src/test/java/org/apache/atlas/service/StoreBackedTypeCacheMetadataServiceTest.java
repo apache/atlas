@@ -18,6 +18,7 @@
 package org.apache.atlas.service;
 
 import org.apache.atlas.TestUtils;
+import org.apache.atlas.repository.graph.GraphProvider;
 import org.apache.atlas.repository.typestore.ITypeStore;
 import org.apache.atlas.repository.typestore.StoreBackedTypeCache;
 import org.apache.atlas.repository.typestore.StoreBackedTypeCacheTestModule;
@@ -25,12 +26,15 @@ import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.cache.TypeCache;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.util.TitanCleanup;
 
 
 /**
@@ -47,8 +51,11 @@ public class StoreBackedTypeCacheMetadataServiceTest
     @Inject
     private ITypeStore typeStore;
 
-    @Inject 
+    @Inject
     TypeCache typeCache;
+
+    @Inject
+    private GraphProvider<TitanGraph> graphProvider;
 
     private TypeSystem ts;
 
@@ -63,6 +70,24 @@ public class StoreBackedTypeCacheMetadataServiceTest
         ImmutableList<String> typeNames = ts.getTypeNames();
         typeStore.store(ts, typeNames);
         ts.reset();
+    }
+
+    @AfterClass
+    public void tearDown() throws Exception {
+        ts.reset();
+        try {
+            graphProvider.get().shutdown();
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            TitanCleanup.clear(graphProvider.get());
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Test

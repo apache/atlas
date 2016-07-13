@@ -86,7 +86,11 @@ public class GraphBackedTypeStoreTest {
     @AfterClass
     public void tearDown() throws Exception {
         ts.reset();
-        graphProvider.get().shutdown();
+        try {
+            graphProvider.get().shutdown();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         try {
             TitanCleanup.clear(graphProvider.get());
         } catch(Exception e) {
