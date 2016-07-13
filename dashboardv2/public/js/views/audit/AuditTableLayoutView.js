@@ -40,11 +40,15 @@ define(['require',
             ui: {
                 auditValue: "[data-id='auditValue']",
                 auditCreate: "[data-id='auditCreate']",
+                previousAuditData: "[data-id='previousAuditData']",
+                nextAuditData: "[data-id='nextAuditData']"
             },
             /** ui events hash */
             events: function() {
                 var events = {};
                 events["click " + this.ui.auditCreate] = "onClickAuditCreate";
+                events["click " + this.ui.nextAuditData] = "onClickNextAuditData";
+                events["click " + this.ui.previousAuditData] = "onClickPreviousAuditData";
                 return events;
             },
             /**
@@ -54,16 +58,17 @@ define(['require',
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'globalVent', 'guid'));
                 this.entityCollection = new VEntityList();
+                this.count = 25;
                 this.entityCollection.url = "/api/atlas/entities/" + this.guid + "/audit";
-                this.entityCollection.modelAttrName = "events";
-                //this.collectionObject = entityCollection;
+                this.entityCollection.modelAttrName = "events"
                 this.entityModel = new this.entityCollection.model();
+                this.pervOld = [];
                 this.commonTableOptions = {
                     collection: this.entityCollection,
                     includeFilter: false,
-                    includePagination: true,
+                    includePagination: false,
                     includePageSize: false,
-                    includeFooterRecords: true,
+                    includeFooterRecords: false,
                     gridOpts: {
                         className: "table table-hover backgrid table-quickMenu",
                         emptyText: 'No records found!'
@@ -72,15 +77,54 @@ define(['require',
                     paginatorOpts: {}
                 };
             },
-            bindEvents: function() {
-                this.listenTo(this.entityCollection, "reset", function(value) {
-                    this.renderTableLayoutView();
-                }, this);
-            },
             onRender: function() {
-                this.entityCollection.fetch({ reset: true });
-                this.bindEvents();
+                $.extend(this.entityCollection.queryParams, { count: this.count });
+                this.fetchCollection({
+                    next: this.ui.nextAuditData,
+                    nextClick: false,
+                    previous: this.ui.previousAuditData
+                });
                 this.renderTableLayoutView();
+            },
+            fetchCollection: function(options) {
+                var that = this;
+                this.$('.fontLoader').show();
+                this.$('.auditTable').hide();
+                if (that.entityCollection.models.length > 1) {
+                    if (options.nextClick) {
+                        this.pervOld.push(that.entityCollection.first().get('eventKey'));
+                    }
+                }
+                this.entityCollection.fetch({
+                    success: function() {
+                        that.$('.fontLoader').hide();
+                        that.$('.auditTable').show();
+                        options.previous.attr('disabled', true);
+                        if (that.entityCollection.models.length <= 1) {
+                            that.pervOld.pop();
+                            options.next.attr('disabled', true);
+                        }
+                        if (that.entityCollection.models.length == 1 && that.next == that.entityCollection.last().get('eventKey')) {
+                            options.next.attr('disabled', true);
+                            options.previous.removeAttr("disabled");
+                        } else {
+                            if (that.entityCollection.models.length > 0) {
+                                that.next = that.entityCollection.last().get('eventKey');
+                                if (options.nextClick) {
+                                    options.previous.removeAttr("disabled");
+                                }
+                                if (options.previousClick) {
+                                    options.previous.removeAttr("disabled");
+                                }
+                                if (that.pervOld.length == 0) {
+                                    options.previous.attr('disabled', true);
+                                }
+                            }
+                            that.renderTableLayoutView();
+                        }
+                    },
+                    silent: true
+                });
             },
             renderTableLayoutView: function() {
                 var that = this;
@@ -161,8 +205,39 @@ define(['require',
                     view.on('closeModal', function() {
                         modal.trigger('cancel');
                     });
+                    view.$el.on('click', 'td a', function() {
+                        modal.trigger('cancel');
+                    })
                 });
-            }
+            },
+            onClickNextAuditData: function() {
+                var that = this;
+                this.ui.previousAuditData.removeAttr("disabled");
+                $.extend(this.entityCollection.queryParams, {
+                    startKey: function() {
+                        return that.next
+                    }
+                });
+                this.fetchCollection({
+                    next: this.ui.nextAuditData,
+                    nextClick: true,
+                    previous: this.ui.previousAuditData
+                });
+            },
+            onClickPreviousAuditData: function() {
+                var that = this;
+                this.ui.nextAuditData.removeAttr("disabled");
+                $.extend(this.entityCollection.queryParams, {
+                    startKey: function() {
+                        return that.pervOld.pop()
+                    }
+                });
+                this.fetchCollection({
+                    next: this.ui.nextAuditData,
+                    previousClick: true,
+                    previous: this.ui.previousAuditData
+                });
+            },
         });
     return AuditTableLayoutView;
 });

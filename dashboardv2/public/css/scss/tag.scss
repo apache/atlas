@@ -292,8 +292,8 @@ form-control .tagInpput {
 }
 
 .inputAssignTag {
-    display: inline-block;
-    padding: 2px 0px;
+    display: block;
+    padding: 2px 5px;
     border: 1px $action_gray solid;
     color: $action_gray;
     font-size: 14px;
@@ -303,13 +303,12 @@ form-control .tagInpput {
     float: left;
     cursor: pointer;
     background-color: $white;
-    width: 100px;
     white-space: nowrap;
-    i.fa {
-        position: relative;
-        right: -5px;
-        cursor: pointer;
-    }
+    // i.fa {
+    //     position: relative;
+    //     right: -5px;
+    //     cursor: pointer;
+    // }
     &:hover {
         color: $color_dark_grey_approx;
         background-color: $color_mercury_approx;
