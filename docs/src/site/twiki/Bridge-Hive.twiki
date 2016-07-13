@@ -21,16 +21,11 @@ The entities are created and de-duped using unique qualified name. They provide 
 
 
 ---++ Importing Hive Metadata
-org.apache.atlas.hive.bridge.HiveMetaStoreBridge imports the Hive metadata into Atlas using the model defined in org.apache.atlas.hive.model.HiveDataModelGenerator.
-
-import-hive.sh command can be used to facilitate this.
-The script needs Hadoop and Hive classpath jars.
-
+org.apache.atlas.hive.bridge.HiveMetaStoreBridge imports the Hive metadata into Atlas using the model defined in org.apache.atlas.hive.model.HiveDataModelGenerator. import-hive.sh command can be used to facilitate this. The script needs Hadoop and Hive classpath jars.
   * For Hadoop jars, please make sure that the environment variable HADOOP_CLASSPATH is set. Another way is to set HADOOP_HOME to point to root directory of your Hadoop installation
-
   * Similarly, for Hive jars, set HIVE_HOME to the root of Hive installation
-
   * Set environment variable HIVE_CONF_DIR to Hive configuration directory
+  * Copy <atlas-conf>/atlas-application.properties to the hive conf directory
 
     <verbatim>
     Usage: <atlas package>/bin/import-hive.sh
