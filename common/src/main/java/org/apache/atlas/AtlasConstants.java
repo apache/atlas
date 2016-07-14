@@ -32,4 +32,5 @@ public final class AtlasConstants {
     public static final String DEFAULT_APP_PORT_STR = "21000";
     public static final String ATLAS_REST_ADDRESS_KEY = "atlas.rest.address";
     public static final String DEFAULT_ATLAS_REST_ADDRESS = "http://localhost:21000";
+
 }

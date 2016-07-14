@@ -18,6 +18,7 @@
 
 package org.apache.atlas.web.resources;
 
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.catalog.*;
 import org.apache.atlas.catalog.Request;
 import org.apache.atlas.catalog.exception.CatalogException;
@@ -45,7 +46,7 @@ public class TaxonomyService extends BaseService {
     private ResourceProvider termResourceProvider;
 
     @Inject
-    public void setMetadataService(MetadataService metadataService) {
+    public void setMetadataService(MetadataService metadataService) throws AtlasException {
         DefaultTypeSystem typeSystem = new DefaultTypeSystem(metadataService);
         taxonomyResourceProvider = createTaxonomyResourceProvider(typeSystem);
         termResourceProvider = createTermResourceProvider(typeSystem);
