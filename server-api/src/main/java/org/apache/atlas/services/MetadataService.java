@@ -209,6 +209,14 @@ public interface MetadataService {
      */
     ITypedStruct createTraitInstance(Struct traitInstance) throws AtlasException;
 
+    /**
+     * Return trait definition of a single trait for a given entity
+     * @param guid - Guid of the entity to which the trait is tagged
+     * @param traitName - Name of the trait
+     * @return
+     * @throws AtlasException
+     */
+    String getTraitDefinition(String guid, String traitName) throws AtlasException;
 
     /**
      * Deletes a given trait from an existing entity represented by a guid.

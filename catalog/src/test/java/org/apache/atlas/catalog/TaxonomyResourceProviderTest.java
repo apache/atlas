@@ -98,7 +98,7 @@ public class TaxonomyResourceProviderTest {
         // mock expectations
         expect(queryFactory.createTaxonomyQuery(capture(checkForAnyTaxonomiesCapture))).andReturn(query);
         expect(query.execute()).andReturn(Collections.<Map<String, Object>>emptySet());
-        typeSystem.createEntity(capture(resourceDefinitionCapture), capture(createDefaultTaxonomyRequestCapture));
+        expect(typeSystem.createEntity(capture(resourceDefinitionCapture), capture(createDefaultTaxonomyRequestCapture))).andReturn("testGuid");
         expect(queryFactory.createTaxonomyQuery(capture(requestCapture))).andReturn(query);
         expect(query.execute()).andReturn(queryResult);
         replay(typeSystem, queryFactory, query);
@@ -348,7 +348,7 @@ public class TaxonomyResourceProviderTest {
         // mock expectations
         expect(queryFactory.createTaxonomyQuery(capture(requestCapture))).andReturn(query);
         expect(query.execute()).andReturn(queryResult);
-        typeSystem.createEntity(capture(resourceDefinitionCapture), capture(requestCapture));
+        expect(typeSystem.createEntity(capture(resourceDefinitionCapture), capture(requestCapture))).andReturn("testGuid");
         replay(typeSystem, queryFactory, query);
 
         Map<String, Object> requestProperties = new HashMap<>();

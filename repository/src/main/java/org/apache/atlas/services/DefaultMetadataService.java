@@ -25,6 +25,7 @@ import com.google.inject.Provider;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.RequestContext;
@@ -637,7 +638,6 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
 
     private ITypedStruct deserializeTraitInstance(String traitInstanceDefinition)
     throws AtlasException {
-
         return createTraitInstance(InstanceSerialization.fromJsonStruct(traitInstanceDefinition, true));
     }
 
@@ -654,6 +654,15 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
         } catch (Exception e) {
             throw new AtlasException("Error deserializing trait instance", e);
         }
+    }
+
+    @Override
+    public String getTraitDefinition(final String guid, final String traitName) throws AtlasException {
+        ParamChecker.notEmpty(guid, "entity id");
+
+        final ITypedReferenceableInstance instance = repository.getEntityDefinition(guid);
+        IStruct struct = instance.getTrait(traitName);
+        return InstanceSerialization.toJson(struct, true);
     }
 
     /**

@@ -20,7 +20,9 @@ package org.apache.atlas.catalog.definition;
 
 import com.tinkerpop.pipes.PipeFunction;
 import com.tinkerpop.pipes.transform.TransformFunctionPipe;
+import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.catalog.Request;
+import org.apache.atlas.catalog.TaxonomyResourceProvider;
 import org.apache.atlas.catalog.VertexWrapper;
 import org.apache.atlas.catalog.exception.InvalidPayloadException;
 import org.apache.atlas.catalog.projection.Projection;
@@ -37,6 +39,7 @@ public class TaxonomyResourceDefinition extends BaseResourceDefinition {
     public TaxonomyResourceDefinition() {
         registerProperty(TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE));
         registerProperty(TypesUtil.createOptionalAttrDef("description", DataTypes.STRING_TYPE));
+        registerProperty(TypesUtil.createOptionalAttrDef(TaxonomyResourceProvider.NAMESPACE_ATTRIBUTE_NAME, DataTypes.STRING_TYPE));
 
         //todo: combine with above registrations
         instanceProperties.add("name");

@@ -36,6 +36,15 @@ public class TaxonomyResourceProvider extends BaseResourceProvider implements Re
     private static final Logger LOG = LoggerFactory.getLogger(TaxonomyResourceProvider.class);
     public static final String DEFAULT_TAXONOMY_NAME = "Catalog";
     public static final String DEFAULT_TAXONOMY_DESCRIPTION = "Business Catalog";
+
+    public static final String NAMESPACE_ATTRIBUTE_NAME = "taxonomy.namespace";
+
+    // Taxonomy Term type
+    public static final String TAXONOMY_TERM_TYPE = "TaxonomyTerm";
+
+    // Taxonomy Namespace
+    public static final String TAXONOMY_NS = "atlas.taxonomy";
+
     private final TermResourceProvider termResourceProvider;
 
     // This is a cached value to prevent checking for taxonomy objects in every API call.

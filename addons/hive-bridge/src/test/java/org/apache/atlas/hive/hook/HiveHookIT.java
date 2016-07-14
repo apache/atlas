@@ -395,7 +395,7 @@ public class HiveHookIT {
         runCommand(drpquery);
         assertTableIsNotRegistered(DEFAULT_DB, ctasTableName);
 
-        //Fix after ATLAS-876
+        //TODO : Fix after ATLAS-876
         runCommand(query);
         assertTableIsRegistered(DEFAULT_DB, ctasTableName);
         String process2Id = assertProcessIsRegistered(hiveEventContext, inputs, outputs);
@@ -760,7 +760,7 @@ public class HiveHookIT {
         assertTableIsRegistered(DEFAULT_DB, tableName);
         assertTableIsRegistered(DEFAULT_DB, insertTableName);
 
-        //TODO - update
+        //TODO -Add update test case
     }
 
     private String random() {

@@ -18,6 +18,7 @@
 
 package org.apache.atlas.web.resources;
 
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.catalog.*;
 import org.apache.atlas.catalog.exception.CatalogException;
 import org.apache.atlas.services.MetadataService;
@@ -40,7 +41,7 @@ public class EntityService extends BaseService {
     private final EntityTagResourceProvider entityTagResourceProvider;
 
     @Inject
-    public EntityService(MetadataService metadataService) {
+    public EntityService(MetadataService metadataService) throws AtlasException {
         DefaultTypeSystem typeSystem = new DefaultTypeSystem(metadataService);
         entityResourceProvider = new EntityResourceProvider(typeSystem);
         entityTagResourceProvider = new EntityTagResourceProvider(typeSystem);

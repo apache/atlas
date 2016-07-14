@@ -23,9 +23,11 @@ import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.util.io.graphson.GraphSONWriter;
 import org.apache.atlas.repository.graph.GraphHelper;
+import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.TypesDef;
+import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.AttributeDefinition;
 import org.apache.atlas.typesystem.types.ClassType;
@@ -40,12 +42,14 @@ import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.commons.lang.RandomStringUtils;
+import org.codehaus.jettison.json.JSONArray;
 import org.testng.Assert;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
@@ -367,5 +371,18 @@ public final class TestUtils {
         entity.set(NAME, RandomStringUtils.randomAlphanumeric(10));
         entity.set("type", "VARCHAR(32)");
         return entity;
+    }
+
+    public static String createInstance(MetadataService metadataService, Referenceable entity) throws Exception {
+        RequestContext.createContext();
+
+        String entityjson = InstanceSerialization.toJson(entity, true);
+        JSONArray entitiesJson = new JSONArray();
+        entitiesJson.put(entityjson);
+        List<String> guids = metadataService.createEntities(entitiesJson.toString());
+        if (guids != null && guids.size() > 0) {
+            return guids.get(guids.size() - 1);
+        }
+        return null;
     }
 }

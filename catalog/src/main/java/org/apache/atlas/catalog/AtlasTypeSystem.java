@@ -51,7 +51,7 @@ public interface AtlasTypeSystem {
      *
      * @throws ResourceAlreadyExistsException if type already exists
      */
-    void createEntity(ResourceDefinition definition, Request request)
+    String createEntity(ResourceDefinition definition, Request request)
             throws ResourceAlreadyExistsException;
 
     /**

@@ -99,7 +99,7 @@ public class TaxonomyResourceDefinitionTest {
         ResourceDefinition taxonomyDefinition = new TaxonomyResourceDefinition();
         Collection<AttributeDefinition> propertyDefinitions = taxonomyDefinition.getPropertyDefinitions();
 
-        assertEquals(propertyDefinitions.size(), 2);
+        assertEquals(propertyDefinitions.size(), 3);
         Set<String> defNames = new HashSet<>();
         for (AttributeDefinition def : propertyDefinitions) {
             defNames.add(def.name);

@@ -24,6 +24,7 @@ import com.google.inject.Inject;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.RepositoryMetadataModule;
@@ -212,6 +213,12 @@ public class DefaultMetadataServiceTest {
         List<String> traits = metadataService.getTraitNames(id);
         assertEquals(traits.size(), 1);
         assertEquals(traits.get(0), PII);
+
+        //getTrait
+        String traitDefinition = metadataService.getTraitDefinition(id, PII);
+        Struct traitResult = InstanceSerialization.fromJsonStruct(traitDefinition, true);
+        Assert.assertNotNull(traitResult);
+        Assert.assertEquals(traitResult.getValuesMap().size(), 0);
 
         //delete trait
         metadataService.deleteTrait(id, PII);
