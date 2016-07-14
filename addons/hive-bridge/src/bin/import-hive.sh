@@ -78,8 +78,12 @@ if [ -f "${HIVE_CONF}/hive-env.sh" ]; then
 fi
 
 if [ -z "$HIVE_HOME" ]; then
-    echo "Please set HIVE_HOME to the root of Hive installation"
-    exit 1
+    if [ -d "${BASEDIR}/../hive" ]; then
+        HIVE_HOME=${BASEDIR}/../hive
+    else
+        echo "Please set HIVE_HOME to the root of Hive installation"
+        exit 1
+    fi
 fi
 
 HIVE_CP="${HIVE_CONF}"
