@@ -30,6 +30,7 @@ import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.security.authentication.client.AuthenticatedURL;
 import org.apache.hadoop.security.authentication.client.AuthenticationException;
 import org.apache.hadoop.security.authentication.client.KerberosAuthenticator;
 import org.apache.hadoop.security.authentication.server.AuthenticationFilter;
@@ -37,6 +38,7 @@ import org.apache.hadoop.security.authentication.server.AuthenticationToken;
 import org.apache.hadoop.security.authentication.server.KerberosAuthenticationHandler;
 import org.apache.hadoop.security.authentication.server.AuthenticationHandler;
 import org.apache.hadoop.security.authentication.util.Signer;
+import org.apache.hadoop.security.authentication.util.SignerException;
 import org.apache.hadoop.security.authentication.util.SignerSecretProvider;
 import org.apache.log4j.NDC;
 import org.slf4j.Logger;
@@ -67,7 +69,7 @@ import java.net.UnknownHostException;
 import java.security.Principal;
 import java.text.SimpleDateFormat;
 import java.util.*;
-
+import javax.servlet.http.Cookie;
 
 /**
  * This enforces authentication as part of the filter before processing the request.
@@ -80,7 +82,8 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
     protected static ServletContext nullContext = new NullServletContext();
     private Signer signer;
     private SignerSecretProvider secretProvider;
-    public  final boolean isKerberos = AuthenticationUtil.isKerberosAuthenticationEnabled();
+    public final boolean isKerberos = AuthenticationUtil.isKerberosAuthenticationEnabled();
+    private boolean isInitializedByTomcat;
 
     public AtlasAuthenticationFilter() {
         try {
@@ -157,6 +160,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
                 secretProvider = AuthenticationFilter.constructSecretProvider(
                         filterConfig.getServletContext(),
                         super.getConfiguration(configPrefix, filterConfig), false);
+                this.isInitializedByTomcat = true;
             } catch (Exception ex) {
                 throw new ServletException(ex);
             }
@@ -434,6 +438,11 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
 
     @Override
     public void destroy() {
+
+        if ((this.secretProvider != null) && (this.isInitializedByTomcat)) {
+            this.secretProvider.destroy();
+            this.secretProvider = null;
+        }
         optionsServlet.destroy();
         super.destroy();
     }
@@ -449,11 +458,11 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
                 while (i.hasNext()) {
                     String cookie = i.next();
                     if (!StringUtils.isEmpty(cookie)) {
-                        if (cookie.toLowerCase().startsWith("hadoop.auth".toLowerCase()) && cookie.contains("u=")) {
+                        if (cookie.toLowerCase().startsWith(AuthenticatedURL.AUTH_COOKIE.toLowerCase()) && cookie.contains("u=")) {
                             String[] split = cookie.split(";");
                             if (split != null) {
                                 for (String s : split) {
-                                    if (!StringUtils.isEmpty(s) && s.toLowerCase().startsWith("hadoop.auth".toLowerCase())) {
+                                    if (!StringUtils.isEmpty(s) && s.toLowerCase().startsWith(AuthenticatedURL.AUTH_COOKIE.toLowerCase())) {
                                         int ustr = s.indexOf("u=");
                                         if (ustr != -1) {
                                             int andStr = s.indexOf("&", ustr);
@@ -478,7 +487,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
     }
 
     public static void createAuthCookie(HttpServletResponse resp, String token, String domain, String path, long expires, boolean isSecure) {
-        StringBuilder sb = (new StringBuilder("hadoop.auth")).append("=");
+        StringBuilder sb = (new StringBuilder(AuthenticatedURL.AUTH_COOKIE)).append("=");
         if(token != null && token.length() > 0) {
             sb.append("\"").append(token).append("\"");
         }
@@ -505,6 +514,40 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
 
         sb.append("; HttpOnly");
         resp.addHeader("Set-Cookie", sb.toString());
+    }
+
+    @Override
+    protected AuthenticationToken getToken(HttpServletRequest request)
+            throws IOException, AuthenticationException {
+        AuthenticationToken token = null;
+        String tokenStr = null;
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (cookie.getName().equals(AuthenticatedURL.AUTH_COOKIE)) {
+                    tokenStr = cookie.getValue();
+                    try {
+                        tokenStr = this.signer.verifyAndExtract(tokenStr);
+                    } catch (SignerException ex) {
+                        throw new AuthenticationException(ex);
+                    }
+                }
+            }
+        }
+
+        if (tokenStr != null) {
+            token = AuthenticationToken.parse(tokenStr);
+            if(token != null) {
+                AuthenticationHandler authHandler = getAuthenticationHandler();
+                if (!token.getType().equals(authHandler.getType())) {
+                    throw new AuthenticationException("Invalid AuthenticationToken type");
+                }
+                if (token.isExpired()) {
+                    throw new AuthenticationException("AuthenticationToken expired");
+                }
+            }
+        }
+        return token;
     }
 
 }

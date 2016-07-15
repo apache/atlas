@@ -366,7 +366,7 @@
         <jackson.version>1.8.3</jackson.version>
         <tinkerpop.version>2.6.0</tinkerpop.version>
         <titan.version>0.5.4</titan.version>
-        <hadoop.version>2.7.0</hadoop.version>
+        <hadoop.version>2.7.1</hadoop.version>
         <hbase.version>1.1.2</hbase.version>
         <solr.version>5.5.1</solr.version>
         <kafka.version>0.10.0.0</kafka.version>
