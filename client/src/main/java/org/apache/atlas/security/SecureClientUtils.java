@@ -68,14 +68,9 @@ public class SecureClientUtils {
         conf.addResource(conf.get(SSLFactory.SSL_CLIENT_CONF_KEY, SecurityProperties.SSL_CLIENT_PROPERTIES));
         UserGroupInformation.setConfiguration(conf);
         final ConnectionConfigurator connConfigurator = newConnConfigurator(conf);
-        String authType = "simple";
-        if (clientConfig != null) {
-            authType = clientConfig.getString("atlas.http.authentication.type", "simple");
-        }
-        Authenticator authenticator = new PseudoDelegationTokenAuthenticator();
-        if (!authType.equals("simple")) {
-            authenticator = new KerberosDelegationTokenAuthenticator();
-        }
+
+        Authenticator authenticator = new KerberosDelegationTokenAuthenticator();
+
         authenticator.setConnectionConfigurator(connConfigurator);
         final DelegationTokenAuthenticator finalAuthenticator = (DelegationTokenAuthenticator) authenticator;
         final DelegationTokenAuthenticatedURL.Token token = new DelegationTokenAuthenticatedURL.Token();
