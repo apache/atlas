@@ -49,7 +49,7 @@ define(['require',
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'globalVent', 'collection'));
                 this.collectionObject = this.collection.toJSON();
-                this.model = new this.collection.model();
+                this.entityModel = new this.collection.model();
             },
             bindEvents: function() {},
             onRender: function() {
