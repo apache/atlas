@@ -169,7 +169,7 @@ public class EnumTest extends BaseTest {
     public void testStruct() throws AtlasException {
         TypeSystem ts = getTypeSystem();
         defineEnums(ts);
-        StructType structType = ts.defineStructType("t3", true, createRequiredAttrDef("a", DataTypes.INT_TYPE),
+        StructType structType = ts.defineStructType("ts", true, createRequiredAttrDef("a", DataTypes.INT_TYPE),
                 createOptionalAttrDef("b", DataTypes.BOOLEAN_TYPE), createOptionalAttrDef("c", DataTypes.BYTE_TYPE),
                 createOptionalAttrDef("d", DataTypes.SHORT_TYPE),
                 createOptionalAttrDef("enum1", ts.getDataType(EnumType.class, "HiveObjectType")),
@@ -186,7 +186,7 @@ public class EnumTest extends BaseTest {
                 createOptionalAttrDef("o", ts.defineMapType(DataTypes.STRING_TYPE, DataTypes.DOUBLE_TYPE)),
                 createOptionalAttrDef("enum4", ts.getDataType(EnumType.class, "LockLevel")));
 
-        Struct s = createStructWithEnum("t3");
+        Struct s = createStructWithEnum("ts");
         ITypedStruct typedS = structType.convert(s, Multiplicity.REQUIRED);
         Assert.assertEquals(typedS.toString(), "{\n" +
                 "\ta : \t1\n" +

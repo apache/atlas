@@ -342,7 +342,6 @@ public class TypeSystem {
      */
     public void commitTypes(Map<String, IDataType> typesAdded) throws AtlasException {
         for (Map.Entry<String, IDataType> typeEntry : typesAdded.entrySet()) {
-            String typeName = typeEntry.getKey();
             IDataType type = typeEntry.getValue();
             //Add/replace the new type in the typesystem
             typeCache.put(type);
@@ -378,7 +377,6 @@ public class TypeSystem {
         }
 
         private IDataType dataType(String name) throws AtlasException {
-
             if (transientTypes.containsKey(name)) {
                 return transientTypes.get(name);
             }
@@ -394,7 +392,7 @@ public class TypeSystem {
         private void validateAndSetupShallowTypes(boolean update) throws AtlasException {
             for (EnumTypeDefinition eDef : enumDefs) {
                 assert eDef.name != null;
-                if (!update && (transientTypes.containsKey(eDef.name) || isRegistered(eDef.name))) {
+                if (!update && isRegistered(eDef.name)) {
                     throw new AtlasException(String.format("Redefinition of type %s not supported", eDef.name));
                 }
 
@@ -404,7 +402,7 @@ public class TypeSystem {
 
             for (StructTypeDefinition sDef : structDefs) {
                 assert sDef.typeName != null;
-                if (!update && (transientTypes.containsKey(sDef.typeName) || isRegistered(sDef.typeName))) {
+                if (!update && isRegistered(sDef.typeName)) {
                     throw new TypeExistsException(String.format("Cannot redefine type %s", sDef.typeName));
                 }
                 StructType sT = new StructType(this, sDef.typeName, sDef.typeDescription, sDef.attributeDefinitions.length);
@@ -414,8 +412,7 @@ public class TypeSystem {
 
             for (HierarchicalTypeDefinition<TraitType> traitDef : traitDefs) {
                 assert traitDef.typeName != null;
-                if (!update &&
-                        (transientTypes.containsKey(traitDef.typeName) || isRegistered(traitDef.typeName))) {
+                if (!update && isRegistered(traitDef.typeName)) {
                     throw new TypeExistsException(String.format("Cannot redefine type %s", traitDef.typeName));
                 }
                 TraitType tT = new TraitType(this, traitDef.typeName, traitDef.typeDescription, traitDef.superTypes,
@@ -426,8 +423,7 @@ public class TypeSystem {
 
             for (HierarchicalTypeDefinition<ClassType> classDef : classDefs) {
                 assert classDef.typeName != null;
-                if (!update &&
-                        (transientTypes.containsKey(classDef.typeName) || isRegistered(classDef.typeName))) {
+                if (!update && isRegistered(classDef.typeName)) {
                     throw new TypeExistsException(String.format("Cannot redefine type %s", classDef.typeName));
                 }
 
@@ -436,6 +432,11 @@ public class TypeSystem {
                 classNameToDefMap.put(classDef.typeName, classDef);
                 transientTypes.put(classDef.typeName, cT);
             }
+        }
+
+        @Override
+        public boolean isRegistered(String typeName) throws AtlasException {
+            return transientTypes.containsKey(typeName) || TypeSystem.this.isRegistered(typeName);
         }
 
         private <U extends HierarchicalType> void validateSuperTypes(Class<U> cls, HierarchicalTypeDefinition<U> def)

@@ -43,6 +43,7 @@ import com.thinkaurelius.titan.core.util.TitanCleanup;
  *  which has type cache implementation class set to {@link StoreBackedTypeCache}.
  */
 @Guice(modules = StoreBackedTypeCacheTestModule.class)
+@Test(enabled = false)
 public class StoreBackedTypeCacheMetadataServiceTest
 {
     @Inject
@@ -90,7 +91,6 @@ public class StoreBackedTypeCacheMetadataServiceTest
         }
     }
 
-    @Test
     public void testIt() throws Exception {
         Assert.assertTrue(typeCache instanceof StoreBackedTypeCache);
         StoreBackedTypeCache storeBackedCache = (StoreBackedTypeCache) typeCache;
