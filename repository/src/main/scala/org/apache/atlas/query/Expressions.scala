@@ -330,9 +330,9 @@ object Expressions {
         def instance() = new InstanceExpression(this)
 
         def path() = new PathExpression(this)
-        
+
         def limit(lmt: Literal[Integer], offset : Literal[Integer]) = new LimitExpression(this, lmt, offset)
-        
+
         def order(odr: String, asc: Boolean) = new OrderExpression(this, odr, asc)
     }
 
@@ -635,7 +635,11 @@ object Expressions {
                 left.dataType;
             } else if(left.dataType == DataTypes.DATE_TYPE) {
                 DataTypes.DATE_TYPE
-            } else if (left.dataType != DataTypes.STRING_TYPE || right.dataType != DataTypes.STRING_TYPE) {
+            }
+            else if(left.dataType == DataTypes.BOOLEAN_TYPE) {
+                DataTypes.BOOLEAN_TYPE;
+            }
+            else if (left.dataType != DataTypes.STRING_TYPE || right.dataType != DataTypes.STRING_TYPE) {
                 TypeUtils.combinedType(left.dataType, right.dataType)
             }
             DataTypes.BOOLEAN_TYPE
@@ -783,8 +787,8 @@ object Expressions {
             child.dataType
     }
   }
-  
-  case class OrderExpression(child: Expression, odr: String, asc: Boolean) extends Expression with UnaryNode { 
+
+  case class OrderExpression(child: Expression, odr: String, asc: Boolean) extends Expression with UnaryNode {
 
     override def toString = s"$child  order $odr asc $asc"
 

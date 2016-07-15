@@ -19,7 +19,7 @@
 package org.apache.atlas.discovery;
 
 import com.google.common.collect.ImmutableSet;
-
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.BaseRepositoryTest;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.RequestContext;
@@ -27,12 +27,15 @@ import org.apache.atlas.TestUtils;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.MetadataRepository;
+import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
+import org.apache.atlas.repository.graph.TitanGraphProvider;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.codehaus.jettison.json.JSONArray;
@@ -46,12 +49,14 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
-
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
@@ -71,19 +76,47 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
     @BeforeClass
     public void setUp() throws Exception {
         super.setUp();
-        TypeSystem typeSystem = TypeSystem.getInstance();
+
+        final TypeSystem typeSystem = TypeSystem.getInstance();
+        Collection<String> oldTypeNames = new HashSet<String>();
+        oldTypeNames.addAll(typeSystem.getTypeNames());
+
         TestUtils.defineDeptEmployeeTypes(typeSystem);
+
+        addIndexesForNewTypes(oldTypeNames, typeSystem);
 
         ITypedReferenceableInstance hrDept = TestUtils.createDeptEg1(typeSystem);
         repositoryService.createEntities(hrDept);
-        
+
         ITypedReferenceableInstance jane = repositoryService.getEntityDefinition("Manager", "name", "Jane");
         Id janeGuid = jane.getId();
         ClassType personType = typeSystem.getDataType(ClassType.class, "Person");
         ITypedReferenceableInstance instance = personType.createInstance(janeGuid);
         instance.set("orgLevel", "L1");
-        repositoryService.updateEntities(instance);
+        repositoryService.updatePartial(instance);
     }
+
+    private void addIndexesForNewTypes(Collection<String> oldTypeNames, final TypeSystem typeSystem) throws AtlasException {
+        Set<String> newTypeNames = new HashSet<>();
+        newTypeNames.addAll(typeSystem.getTypeNames());
+        newTypeNames.removeAll(oldTypeNames);
+
+        Collection<IDataType> newTypes = new ArrayList<IDataType>();
+        for(String name : newTypeNames) {
+            try {
+                newTypes.add(typeSystem.getDataType(IDataType.class, name));
+            } catch (AtlasException e) {
+                e.printStackTrace();
+            }
+
+        }
+        TitanGraphProvider provider = new TitanGraphProvider();
+        //We need to commit the transaction before creating the indices to release the locks held by the transaction.
+        //otherwise, the index commit will fail while waiting for the those locks to be released.
+        provider.get().commit();
+        GraphBackedSearchIndexer idx = new GraphBackedSearchIndexer(provider);
+        idx.onAdd(newTypes);
+	}
 
     @BeforeMethod
     public void setupContext() {
@@ -205,6 +238,73 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
             object = vertexProps.get(Constants.TIMESTAMP_PROPERTY_KEY);
             assertNotNull(object);
         }
+    }
+
+    @DataProvider(name = "comparisonQueriesProvider")
+    private Object[][] createComparisonQueries() {
+        //create queries the exercise the comparison logic for
+        //all of the different supported data types
+        return new Object[][] {
+            {"Person where (birthday < \"1950-01-01T02:35:58.440Z\" )", 0},
+            {"Person where (birthday > \"1975-01-01T02:35:58.440Z\" )", 2},
+            {"Person where (birthday >= \"1975-01-01T02:35:58.440Z\" )", 2},
+            {"Person where (birthday <= \"1950-01-01T02:35:58.440Z\" )", 0},
+            {"Person where (birthday = \"1975-01-01T02:35:58.440Z\" )", 0},
+            {"Person where (birthday != \"1975-01-01T02:35:58.440Z\" )", 4},
+
+            {"Person where (hasPets = true)", 2},
+            {"Person where (hasPets = false)", 2},
+            {"Person where (hasPets != false)", 2},
+            {"Person where (hasPets != true)", 2},
+
+            {"Person where (numberOfCars > 0)", 2},
+            {"Person where (numberOfCars > 1)", 1},
+            {"Person where (numberOfCars >= 1)", 2},
+            {"Person where (numberOfCars < 2)", 3},
+            {"Person where (numberOfCars <= 2)", 4},
+            {"Person where (numberOfCars = 2)", 1},
+            {"Person where (numberOfCars != 2)", 3},
+
+            {"Person where (houseNumber > 0)", 2},
+            {"Person where (houseNumber > 17)", 1},
+            {"Person where (houseNumber >= 17)", 2},
+            {"Person where (houseNumber < 153)", 3},
+            {"Person where (houseNumber <= 153)", 4},
+            {"Person where (houseNumber =  17)", 1},
+            {"Person where (houseNumber != 17)", 3},
+
+            {"Person where (carMileage > 0)", 2},
+            {"Person where (carMileage > 13)", 1},
+            {"Person where (carMileage >= 13)", 2},
+            {"Person where (carMileage < 13364)", 3},
+            {"Person where (carMileage <= 13364)", 4},
+            {"Person where (carMileage =  13)", 1},
+            {"Person where (carMileage != 13)", 3},
+
+            {"Person where (shares > 0)", 2},
+            {"Person where (shares > 13)", 2},
+            {"Person where (shares >= 16000)", 1},
+            {"Person where (shares < 13364)", 2},
+            {"Person where (shares <= 15000)", 3},
+            {"Person where (shares =  15000)", 1},
+            {"Person where (shares != 1)", 4},
+
+            {"Person where (salary > 0)", 2},
+            {"Person where (salary > 100000)", 2},
+            {"Person where (salary >= 200000)", 1},
+            {"Person where (salary < 13364)", 2},
+            {"Person where (salary <= 150000)", 3},
+            {"Person where (salary =  12334)", 0},
+            {"Person where (salary != 12344)", 4},
+
+            {"Person where (age > 36)", 1},
+            {"Person where (age > 49)", 1},
+            {"Person where (age >= 49)", 1},
+            {"Person where (age < 50)", 3},
+            {"Person where (age <= 35)", 2},
+            {"Person where (age =  35)", 0},
+            {"Person where (age != 35)", 4}
+        };
     }
 
     @DataProvider(name = "dslQueriesProvider")
@@ -577,6 +677,15 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
     
     @Test(dataProvider = "dslQueriesProvider")
     public void  testSearchByDSLQueries(String dslQuery, Integer expectedNumRows) throws Exception {
+        runQuery(dslQuery, expectedNumRows);
+    }
+
+    @Test(dataProvider = "comparisonQueriesProvider")
+    public void testDataTypeComparisonQueries(String dslQuery, Integer expectedNumRows) throws Exception {
+        runQuery(dslQuery, expectedNumRows);
+    }
+
+    public void runQuery(String dslQuery, Integer expectedNumRows) throws Exception {
         System.out.println("Executing dslQuery = " + dslQuery);
         String jsonResults = discoveryService.searchByDSL(dslQuery);
         assertNotNull(jsonResults);
@@ -595,32 +704,13 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
 
         JSONArray rows = results.getJSONArray("rows");
         assertNotNull(rows);
-        assertEquals(rows.length(), expectedNumRows.intValue()); // some queries may not have any results
+        assertEquals( rows.length(), expectedNumRows.intValue(), "query [" + dslQuery + "] returned [" + rows.length() + "] rows.  Expected " + expectedNumRows.intValue() + " rows."); // some queries may not have any results
         System.out.println("query [" + dslQuery + "] returned [" + rows.length() + "] rows");
     }
 
     @Test(dataProvider = "dslLimitQueriesProvider")
     public void  testSearchByDSLQueriesWithLimit(String dslQuery, Integer expectedNumRows) throws Exception {
-        System.out.println("Executing dslQuery = " + dslQuery);
-        String jsonResults = discoveryService.searchByDSL(dslQuery);
-        assertNotNull(jsonResults);
-
-        JSONObject results = new JSONObject(jsonResults);
-        assertEquals(results.length(), 3);
-        System.out.println("results = " + results);
-
-        Object query = results.get("query");
-        assertNotNull(query);
-
-        JSONObject dataType = results.getJSONObject("dataType");
-        assertNotNull(dataType);
-        String typeName = dataType.getString("typeName");
-        assertNotNull(typeName);
-
-        JSONArray rows = results.getJSONArray("rows");
-        assertNotNull(rows);
-        assertEquals(rows.length(), expectedNumRows.intValue()); // some queries may not have any results
-        System.out.println("query [" + dslQuery + "] returned [" + rows.length() + "] rows");
+        runQuery(dslQuery, expectedNumRows);
     }
     
     @DataProvider(name = "invalidDslQueriesProvider")

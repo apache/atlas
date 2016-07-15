@@ -18,6 +18,7 @@
 
 package org.apache.atlas.query
 
+import org.apache.atlas.query.TypeUtils.FieldInfo;
 import org.apache.atlas.query.Expressions._
 import org.apache.atlas.typesystem.types.{TypeSystem, DataTypes}
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory
@@ -25,6 +26,7 @@ import org.joda.time.format.ISODateTimeFormat
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+import org.apache.atlas.typesystem.types.IDataType
 
 trait IntSequence {
     def next: Int
@@ -237,30 +239,9 @@ class GremlinTranslator(expr: Expression,
             }
         }
         case c@ComparisonExpression(symb, f@FieldExpression(fieldName, fInfo, ch), l) => {
-          val QUOTE = "\"";
-          val fieldGremlinExpr = s"${gPersistenceBehavior.fieldNameInVertex(fInfo.dataType, fInfo.attrInfo)}"
-            ch match {
-                case Some(child) => {
-                  s"""${genQuery(child, inSelect)}.has("$fieldGremlinExpr", ${gPersistenceBehavior.gremlinCompOp(c)}, $l)"""
-                }
-                case None => {
-                    if (fInfo.attrInfo.dataType == DataTypes.DATE_TYPE) {
-                        try {
-                            //Accepts both date, datetime formats
-                            val dateStr = l.toString.stripPrefix(QUOTE).stripSuffix(QUOTE)
-                            val dateVal = ISODateTimeFormat.dateOptionalTimeParser().parseDateTime(dateStr).getMillis
-                            s"""has("$fieldGremlinExpr", ${gPersistenceBehavior.gremlinCompOp(c)},${dateVal})"""
-                        } catch {
-                            case pe: java.text.ParseException =>
-                                throw new GremlinTranslationException(c,
-                                    "Date format " + l + " not supported. Should be of the format " + TypeSystem.getInstance().getDateFormat.toPattern);
-
-                        }
-                    }
-                    else
-                        s"""has("$fieldGremlinExpr", ${gPersistenceBehavior.gremlinCompOp(c)}, $l)"""
-                }
-            }
+           val qualifiedPropertyName = s"${gPersistenceBehavior.fieldNameInVertex(fInfo.dataType, fInfo.attrInfo)}";
+           val persistentExprValue = translateValueToPersistentForm(fInfo, l);
+           return generateAndPrependExpr(ch, inSelect, s"""has("${qualifiedPropertyName}", ${gPersistenceBehavior.gremlinCompOp(c)}, $persistentExprValue)""");
         }
         case fil@FilterExpression(child, condExpr) => {
             s"${genQuery(child, inSelect)}.${genQuery(condExpr, inSelect)}"
@@ -342,6 +323,53 @@ class GremlinTranslator(expr: Expression,
           s"""${genQuery(child, inSelect)} [$offset..<$totalResultRows]"""
         }
         case x => throw new GremlinTranslationException(x, "expression not yet supported")
+    }
+
+
+    def translateValueToPersistentForm(fInfo: FieldInfo, l: Expression): Any =  {
+
+        val dataType = fInfo.attrInfo.dataType;
+
+         if (dataType == DataTypes.DATE_TYPE) {
+              val QUOTE = "\"";
+              try {
+                  //Accepts both date, datetime formats
+                  val dateStr = l.toString.stripPrefix(QUOTE).stripSuffix(QUOTE)
+                  val dateVal = ISODateTimeFormat.dateOptionalTimeParser().parseDateTime(dateStr).getMillis
+                  return dateVal
+               } catch {
+                     case pe: java.text.ParseException =>
+                          throw new GremlinTranslationException(l,
+                                      "Date format " + l + " not supported. Should be of the format " +
+                                      TypeSystem.getInstance().getDateFormat.toPattern);
+               }
+         }
+         else if(dataType == DataTypes.BYTE_TYPE) {
+             //cast needed, otherwise get class cast exception when trying to compare, since the
+             //persist value is assumed to be an Integer
+             return s"""(byte)$l"""
+         }
+         else if(dataType == DataTypes.SHORT_TYPE) {
+             return s"""(short)$l"""
+         }
+         else if(dataType == DataTypes.LONG_TYPE) {
+             return s"""${l}L"""
+         }
+         else if(dataType == DataTypes.FLOAT_TYPE) {
+             return s"""${l}f"""
+         }
+         else if(dataType == DataTypes.DOUBLE_TYPE) {
+             return s"""${l}d"""
+         }
+         else {
+             return l
+         }
+    }
+
+    def generateAndPrependExpr(e1: Option[Expression], inSelect: Boolean, e2: String) : String = e1 match {
+
+        case Some(x) => s"""${genQuery(x, inSelect)}.$e2"""
+        case None => e2
     }
 
     def genFullQuery(expr: Expression): String = {

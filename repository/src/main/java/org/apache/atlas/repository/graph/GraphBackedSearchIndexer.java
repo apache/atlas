@@ -90,6 +90,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         try {
             if (management.containsPropertyKey(Constants.VERTEX_TYPE_PROPERTY_KEY)) {
                 LOG.info("Global indexes already exist for graph");
+                management.commit();
                 return;
             }
 
