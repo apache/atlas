@@ -46,6 +46,8 @@ import org.codehaus.jettison.json.JSONArray;
 import org.testng.Assert;
 
 import java.io.File;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -113,7 +115,18 @@ public final class TestUtils {
                 createOptionalAttrDef("address", "Address"),
                 new AttributeDefinition("department", "Department", Multiplicity.REQUIRED, false, "employees"),
                 new AttributeDefinition("manager", "Manager", Multiplicity.OPTIONAL, false, "subordinates"),
-                new AttributeDefinition("mentor", "Person", Multiplicity.OPTIONAL, false, null));
+                new AttributeDefinition("mentor", "Person", Multiplicity.OPTIONAL, false, null),
+                createOptionalAttrDef("birthday", DataTypes.DATE_TYPE),
+                createOptionalAttrDef("hasPets", DataTypes.BOOLEAN_TYPE),
+                createOptionalAttrDef("numberOfCars", DataTypes.BYTE_TYPE),
+                createOptionalAttrDef("houseNumber", DataTypes.SHORT_TYPE),
+                createOptionalAttrDef("carMileage", DataTypes.INT_TYPE),
+                createOptionalAttrDef("shares", DataTypes.LONG_TYPE),
+                createOptionalAttrDef("salary", DataTypes.DOUBLE_TYPE),
+                createOptionalAttrDef("age", DataTypes.FLOAT_TYPE),
+                createOptionalAttrDef("numberOfStarsEstimate", DataTypes.BIGINTEGER_TYPE),
+                createOptionalAttrDef("approximationOfPi", DataTypes.BIGDECIMAL_TYPE)
+                );
 
         HierarchicalTypeDefinition<ClassType> managerTypeDef = createClassTypeDef("Manager", "Manager"+_description, ImmutableSet.of("Person"),
                 new AttributeDefinition("subordinates", String.format("array<%s>", "Person"), Multiplicity.COLLECTION,
@@ -142,7 +155,7 @@ public final class TestUtils {
         Referenceable juliusAddr = new Referenceable("Address");
         Referenceable max = new Referenceable("Person");
         Referenceable maxAddr = new Referenceable("Address");
-        
+
         hrDept.set("name", "hr");
         john.set("name", "John");
         john.set("department", hrDept);
@@ -150,11 +163,23 @@ public final class TestUtils {
         johnAddr.set("city", "Sunnyvale");
         john.set("address", johnAddr);
 
+        john.set("birthday",new Date(1950, 5, 15));
+        john.set("hasPets", true);
+        john.set("numberOfCars", 1);
+        john.set("houseNumber", 153);
+        john.set("carMileage", 13364);
+        john.set("shares", 15000);
+        john.set("salary", 123345.678);
+        john.set("age", 50);
+        john.set("numberOfStarsEstimate", new BigInteger("1000000000000000000000"));
+        john.set("approximationOfPi", new BigDecimal("3.141592653589793238462643383279502884197169399375105820974944592307816406286"));
+
         jane.set("name", "Jane");
         jane.set("department", hrDept);
         janeAddr.set("street", "Great America Parkway");
         janeAddr.set("city", "Santa Clara");
         jane.set("address", janeAddr);
+        janeAddr.set("street", "Great America Parkway");
 
         julius.set("name", "Julius");
         julius.set("department", hrDept);
@@ -162,7 +187,7 @@ public final class TestUtils {
         juliusAddr.set("city", "Newtonville");
         julius.set("address", juliusAddr);
         julius.set("subordinates", ImmutableList.<Referenceable>of());
-        
+
         max.set("name", "Max");
         max.set("department", hrDept);
         maxAddr.set("street", "Ripley St");
@@ -170,7 +195,17 @@ public final class TestUtils {
         max.set("address", maxAddr);
         max.set("manager", jane);
         max.set("mentor", julius);
-        
+        max.set("birthday",new Date(1979, 3, 15));
+        max.set("hasPets", true);
+        max.set("age", 36);
+        max.set("numberOfCars", 2);
+        max.set("houseNumber", 17);
+        max.set("carMileage", 13);
+        max.set("shares", Long.MAX_VALUE);
+        max.set("salary", Double.MAX_VALUE);
+        max.set("numberOfStarsEstimate", new BigInteger("1000000000000000000000000000000"));
+        max.set("approximationOfPi", new BigDecimal("3.1415926535897932"));
+
         john.set("manager", jane);
         john.set("mentor", max);
         hrDept.set("employees", ImmutableList.of(john, jane, julius, max));
