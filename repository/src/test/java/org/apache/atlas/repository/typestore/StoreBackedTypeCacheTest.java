@@ -17,11 +17,10 @@
  */
 package org.apache.atlas.repository.typestore;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.inject.Inject;
-
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.util.TitanCleanup;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
@@ -41,16 +40,16 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.util.TitanCleanup;
+import javax.inject.Inject;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
  * Unit test for {@link StoreBackedTypeCache}
  */
 @Guice(modules = RepositoryMetadataModule.class)
+@Test(enabled = false)
 public class StoreBackedTypeCacheTest {
 
     @Inject
@@ -70,6 +69,7 @@ public class StoreBackedTypeCacheTest {
     public void setUp() throws Exception {
         ts = TypeSystem.getInstance();
         ts.reset();
+        ts.setTypeCache(typeCache);
 
         // Populate the type store for testing.
         TestUtils.defineDeptEmployeeTypes(ts);
@@ -103,16 +103,15 @@ public class StoreBackedTypeCacheTest {
 
     @BeforeMethod
     public void setupTestMethod() throws Exception {
-        typeCache.clear();
+        ts.reset();
     }
 
-    @Test
     public void testGetClassType() throws Exception {
         for (Map.Entry<String, ClassType> typeEntry : classTypesToTest.entrySet()) {
             // Not cached yet
             Assert.assertFalse(typeCache.isCachedInMemory(typeEntry.getKey()));
 
-            IDataType dataType = typeCache.get(typeEntry.getKey());
+            IDataType dataType = ts.getDataType(IDataType.class, typeEntry.getKey());
             // Verify the type is now cached.
             Assert.assertTrue(typeCache.isCachedInMemory(typeEntry.getKey()));
 
@@ -123,7 +122,6 @@ public class StoreBackedTypeCacheTest {
         }
     }
 
-    @Test
     public void testHasClassType() throws Exception {
         for (Map.Entry<String, ClassType> typeEntry : classTypesToTest.entrySet()) {
             // Not cached yet
@@ -138,7 +136,6 @@ public class StoreBackedTypeCacheTest {
         }
     }
 
-    @Test
     public void testGetTraitType() throws Exception {
         ImmutableList<String> traitNames = ts.getTypeNamesByCategory(TypeCategory.TRAIT);
         for (String traitTypeName : traitNames) {
@@ -156,7 +153,6 @@ public class StoreBackedTypeCacheTest {
         }
     }
 
-    @Test
     public void testHasTraitType() throws Exception {
         ImmutableList<String> traitNames = ts.getTypeNamesByCategory(TypeCategory.TRAIT);
         for (String traitTypeName : traitNames) {

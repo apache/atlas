@@ -6,6 +6,7 @@ INCOMPATIBLE CHANGES:
 
 
 ALL CHANGES:
+ATLAS-1010 Atlas allows recreation of tags with same name (shwethags)
 ATLAS-990 Hive Import metadata script fails with auth exception (nixonrodrigues via shwethags)
 ATLAS-998 determine HA mode from property atlas.server.ids, instead of atlas.server.ha.enabled (madhan.neethiraj via shwethags)
 ATLAS-986 Ability to differentiate business catalog terms from traits (sumasai,svimal2106 via shwethags)

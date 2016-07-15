@@ -24,6 +24,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.typesystem.json.TypesSerialization$;
@@ -51,6 +52,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.fail;
 
 /**
  * Integration test for types jersey resource.
@@ -91,6 +93,23 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
             assertEquals(typesAdded.length(), 1);
             assertEquals(typesAdded.getJSONObject(0).getString("name"), typeDefinition.typeName);
             Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
+        }
+    }
+
+    @Test
+    public void testDuplicateSubmit() throws Exception {
+        HierarchicalTypeDefinition<ClassType> type = TypesUtil.createClassTypeDef(randomString(),
+                ImmutableSet.<String>of(), TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE));
+        TypesDef typesDef =
+                TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
+                        ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(), ImmutableList.of(type));
+        serviceClient.createType(typesDef);
+
+        try {
+            serviceClient.createType(typesDef);
+            fail("Expected 409");
+        } catch (AtlasServiceException e) {
+            assertEquals(e.getStatus().getStatusCode(), Response.Status.CONFLICT.getStatusCode());
         }
     }
 

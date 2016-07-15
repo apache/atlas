@@ -1426,7 +1426,7 @@ public class HiveHookIT {
         assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName), NAME));
 
         final String query = String.format("drop table %s ", tableName);
-        runCommand(query);
+        runCommandWithDelay(query, 1000);
         assertColumnIsNotRegistered(HiveMetaStoreBridge
             .getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, tableName),
                 "id"));
@@ -1537,7 +1537,7 @@ public class HiveHookIT {
 
         query = String.format("drop view %s ", viewName);
 
-        runCommand(query);
+        runCommandWithDelay(query, 1000);
         assertColumnIsNotRegistered(HiveMetaStoreBridge
                 .getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, viewName),
                     "id"));

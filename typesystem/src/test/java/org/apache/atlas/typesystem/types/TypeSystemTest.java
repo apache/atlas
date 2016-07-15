@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.typesystem.exception.TypeExistsException;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.Assert;
@@ -41,6 +42,7 @@ import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAt
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createStructTypeDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createTraitTypeDef;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 public class TypeSystemTest extends BaseTest {
 
@@ -265,5 +267,21 @@ public class TypeSystemTest extends BaseTest {
         // Prior to fix for ATLAS-573, the inherited attribute was missing.
         ClassType dataType = getTypeSystem().getDataType(ClassType.class, "MyNewAnnotation");
         Assert.assertTrue(dataType.fieldMapping.fields.containsKey("inheritedAttribute"));
+    }
+
+    @Test
+    public void testDuplicateTypenames() throws Exception {
+        TypeSystem typeSystem = getTypeSystem();
+        HierarchicalTypeDefinition<TraitType> trait = TypesUtil
+                .createTraitTypeDef(random(), "description", ImmutableSet.<String>of(),
+                        TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE));
+        typeSystem.defineTraitType(trait);
+
+        try {
+            typeSystem.defineTraitType(trait);
+            fail("Expected TypeExistsException");
+        } catch(TypeExistsException e) {
+            //expected
+        }
     }
 }
