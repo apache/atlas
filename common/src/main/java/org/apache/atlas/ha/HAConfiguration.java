@@ -59,7 +59,17 @@ public final class HAConfiguration {
      * @return
      */
     public static boolean isHAEnabled(Configuration configuration) {
-        return configuration.getBoolean(ATLAS_SERVER_HA_ENABLED_KEY, false);
+        boolean ret = false;
+
+        if (configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)) {
+            ret = configuration.getBoolean(ATLAS_SERVER_HA_ENABLED_KEY);
+        } else {
+            String[] ids = configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS);
+
+            ret = ids != null && ids.length > 1;
+        }
+
+        return ret;
     }
 
     /**

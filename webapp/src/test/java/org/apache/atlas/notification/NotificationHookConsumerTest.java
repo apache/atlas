@@ -35,7 +35,6 @@ import java.util.concurrent.ExecutorService;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -162,7 +161,8 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testConsumersAreNotStartedIfHAIsEnabled() {
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(true);
+        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
+        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
         when(configuration.getInt(NotificationHookConsumer.CONSUMER_THREADS_PROPERTY, 1)).thenReturn(1);
         List<NotificationConsumer<Object>> consumers = new ArrayList();
         consumers.add(mock(NotificationConsumer.class));
@@ -175,7 +175,8 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testConsumersAreStartedWhenInstanceBecomesActive() {
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(true);
+        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
+        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
         when(configuration.getInt(NotificationHookConsumer.CONSUMER_THREADS_PROPERTY, 1)).thenReturn(1);
         List<NotificationConsumer<Object>> consumers = new ArrayList();
         consumers.add(mock(NotificationConsumer.class));

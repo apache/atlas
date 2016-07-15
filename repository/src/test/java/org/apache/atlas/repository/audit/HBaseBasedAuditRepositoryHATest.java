@@ -54,7 +54,8 @@ public class HBaseBasedAuditRepositoryHATest {
 
     @Test
     public void testTableShouldNotBeCreatedOnStartIfHAIsEnabled() throws IOException, AtlasException {
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(true);
+        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
+        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
         when(configuration.getString(HBaseBasedAuditRepository.CONFIG_TABLE_NAME,
                 HBaseBasedAuditRepository.DEFAULT_TABLE_NAME)).
                 thenReturn(HBaseBasedAuditRepository.DEFAULT_TABLE_NAME);
@@ -71,7 +72,8 @@ public class HBaseBasedAuditRepositoryHATest {
 
     @Test
     public void testShouldCreateTableWhenReactingToActive() throws AtlasException, IOException {
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(true);
+        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
+        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
         when(configuration.getString(HBaseBasedAuditRepository.CONFIG_TABLE_NAME,
                 HBaseBasedAuditRepository.DEFAULT_TABLE_NAME)).
                 thenReturn(HBaseBasedAuditRepository.DEFAULT_TABLE_NAME);
