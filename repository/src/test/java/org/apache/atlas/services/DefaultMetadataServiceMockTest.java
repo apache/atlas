@@ -72,7 +72,8 @@ public class DefaultMetadataServiceMockTest {
     @Test
     public void testShouldInvokeTypesRegistrarOnCreation() throws AtlasException {
         when(typeSystem.isRegistered(any(String.class))).thenReturn(true);
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(false);
+        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
+        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(false);
         DefaultMetadataService defaultMetadataService = new DefaultMetadataService(mock(MetadataRepository.class),
                 mock(ITypeStore.class),
                 typesRegistrar, new ArrayList<Provider<TypesChangeListener>>(),
@@ -84,10 +85,10 @@ public class DefaultMetadataServiceMockTest {
 
     @Test
     public void testShouldNotRestoreTypesIfHAIsEnabled() throws AtlasException {
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(true);
+        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
+        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
 
-        DefaultMetadataService defaultMetadataService = new DefaultMetadataService(metadataRepository,
-                typeStore,
+        new DefaultMetadataService(metadataRepository, typeStore,
                 typesRegistrar, new ArrayList<Provider<TypesChangeListener>>(),
                 new ArrayList<Provider<EntityChangeListener>>(), typeSystem, configuration, null);
 
@@ -98,7 +99,8 @@ public class DefaultMetadataServiceMockTest {
 
     @Test
     public void testShouldRestoreTypeSystemOnServerActive() throws AtlasException {
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(true);
+        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
+        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
 
         TypesDef typesDef = mock(TypesDef.class);
         when(typeStore.restore()).thenReturn(typesDef);
@@ -118,7 +120,8 @@ public class DefaultMetadataServiceMockTest {
 
     @Test
     public void testShouldOnlyRestoreCacheOnServerActiveIfAlreadyDoneOnce() throws AtlasException {
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(true);
+        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
+        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
 
         TypesDef typesDef = mock(TypesDef.class);
         when(typeStore.restore()).thenReturn(typesDef);

@@ -30,9 +30,12 @@ import java.util.List;
 
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class HAConfigurationTest {
+
+    private static final String[] TEST_ATLAS_SERVER_IDS_HA = new String[] { "id1", "id2" };
 
     @Mock
     private Configuration configuration;
@@ -41,6 +44,33 @@ public class HAConfigurationTest {
     public void setup() {
         MockitoAnnotations.initMocks(this);
         System.setProperty(AtlasConstants.SYSTEM_PROPERTY_APP_PORT, AtlasConstants.DEFAULT_APP_PORT_STR);
+    }
+
+    @Test
+    public void testIsHAEnabledByLegacyConfiguration() {
+        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
+        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(Boolean.TRUE);
+
+        boolean isHAEnabled = HAConfiguration.isHAEnabled(configuration);
+        assertTrue(isHAEnabled);
+
+        // restore
+        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(false);
+        isHAEnabled = HAConfiguration.isHAEnabled(configuration);
+        assertFalse(isHAEnabled);
+    }
+
+    @Test
+    public void testIsHAEnabledByIds() {
+        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(false);
+        when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(TEST_ATLAS_SERVER_IDS_HA);
+        boolean isHAEnabled = HAConfiguration.isHAEnabled(configuration);
+        assertTrue(isHAEnabled);
+
+        // restore
+        when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(new String[] { "id1"});
+        isHAEnabled = HAConfiguration.isHAEnabled(configuration);
+        assertFalse(isHAEnabled);
     }
 
     @Test
@@ -55,7 +85,7 @@ public class HAConfigurationTest {
 
     @Test
     public void testShouldReturnListOfAddressesInConfig() {
-        when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(new String[] {"id1", "id2"});
+        when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(TEST_ATLAS_SERVER_IDS_HA);
         when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id1")).thenReturn("127.0.0.1:21000");
         when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id2")).thenReturn("127.0.0.1:31000");
 

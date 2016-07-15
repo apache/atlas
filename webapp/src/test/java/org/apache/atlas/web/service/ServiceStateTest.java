@@ -58,7 +58,8 @@ public class ServiceStateTest {
 
     @Test
     public void testShouldChangeStateIfHAIsEnabled() {
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(true);
+        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
+        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
 
         ServiceState serviceState = new ServiceState(configuration);
         serviceState.becomingPassive();

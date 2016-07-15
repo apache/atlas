@@ -20,7 +20,6 @@ package org.apache.atlas.web.setup;
 
 import com.google.common.base.Charsets;
 import org.apache.atlas.AtlasConstants;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.setup.SetupException;
 import org.apache.atlas.setup.SetupStep;
@@ -123,6 +122,7 @@ public class SetupStepsTest {
 
 
     private void setupServerIdSelectionMocks() {
+        when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(false);
         when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(new String[] {"id1", "id2"});
         when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id1")).thenReturn("127.0.0.1:31000");
         when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id2")).thenReturn("127.0.0.1:21000");
