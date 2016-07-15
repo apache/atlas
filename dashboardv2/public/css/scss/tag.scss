@@ -173,9 +173,15 @@
     border: 1px $color_jungle_green_approx solid;
     background-color: $white;
     color: $color_jungle_green_approx;
+    padding-left: 5px;
     &:hover {
         color: $white;
         background-color: $color_jungle_green_approx;
+    }
+    i.fa {
+        &:hover {
+            background-color: $color_jungle_green_approx;
+        }
     }
 }
 

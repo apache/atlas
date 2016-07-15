@@ -276,16 +276,24 @@ ul {
     }
     span {
         &.inputTag[data-id="tagClick"] {
+            span {
+                display: block;
+                padding: 3px 5px 3px 5px;
+            }
             i.fa-close[data-id="deleteTag"] {
                 display: none;
             }
         }
     }
     a {
-        &.inputTag[data-id="addTag"] {
+        &.inputTagAdd[data-id="addTag"] {
             display: none;
         }
         &.inputTag[data-id="tagClick"] {
+            span {
+                display: block;
+                padding: 3px 5px 3px 5px;
+            }
             i.fa-times[data-id="delete"] {
                 display: none;
             }

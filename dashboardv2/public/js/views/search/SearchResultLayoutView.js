@@ -24,9 +24,10 @@ define(['require',
     'utils/Utils',
     'utils/Globals',
     'collection/VSearchList',
+    'models/VCommon',
     'utils/CommonViewFunction',
     'utils/Messages'
-], function(require, Backbone, SearchResultLayoutViewTmpl, Modal, VEntity, Utils, Globals, VSearchList, CommonViewFunction, Messages) {
+], function(require, Backbone, SearchResultLayoutViewTmpl, Modal, VEntity, Utils, Globals, VSearchList, VCommon, CommonViewFunction, Messages) {
     'use strict';
 
     var SearchResultLayoutView = Backbone.Marionette.LayoutView.extend(
@@ -75,7 +76,6 @@ define(['require',
                                 trigger: true
                             });
                         }
-
                     }
                 };
                 events["click " + this.ui.addTag] = 'addTagModalView';
@@ -207,7 +207,7 @@ define(['require',
                         }
                         that.renderTableLayoutView();
                         var resultData = that.searchCollection.fullCollection.length + ' results for <b>' + that.searchCollection.queryParams.query + '</b>'
-                        var multiAssignData = '<a href="javascript:void(0)" class="inputAssignTag multiSelect" style="display:none" data-id="addTerm"><i class="fa fa-folder-o">' + " " + 'Assign Term</i></a>'
+                        var multiAssignData = '<a href="javascript:void(0)" class="inputAssignTag multiSelect" style="display:none" data-id="addTerm"><i class="fa fa-folder-o"></i>' + " " + 'Assign Term</a>'
                         that.$('.searchResult').html(resultData + multiAssignData);
                     },
                     silent: true
@@ -273,111 +273,166 @@ define(['require',
                 if (this.searchCollection.responseData) {
                     if (responseData.dataType) {
                         if (responseData.dataType.attributeDefinitions.length == 2 && responseData.dataType.attributeDefinitions[1].name == "instanceInfo") {
-                            return this.getFixedColumn();
+                            return this.getFixedFullTextColumn();
                         } else {
-                            if (Globals.taxonomy) {
-                                col['Check'] = {
-                                    name: "selected",
-                                    label: "",
-                                    cell: "select-row",
-                                    headerCell: "select-all",
-                                    position: 1
-                                };
-                            }
-                            var modelJSON = this.searchCollection.toJSON()[0];
-                            _.keys(modelJSON).map(function(key) {
-                                if (key.indexOf("$") == -1 && typeof modelJSON[key] != "object") {
-                                    if (typeof modelJSON[key] == "string" || typeof modelJSON[key] == "number") {
-                                        if (typeof modelJSON[key] == "number" && key != "createTime") {
-                                            return;
+                            if (responseData.dataType.typeName.indexOf('_temp') == -1) {
+                                return this.getFixedDslColumn();
+                            } else {
+                                var idFound = false;
+                                _.each(this.searchCollection.models, function(model) {
+                                    var modelJSON = model.toJSON();
+                                    var guid = "";
+                                    _.each(modelJSON, function(val, key) {
+                                        if (_.isObject(val) && val.id) {
+                                            model.set('id', val.id);
+                                            guid = val.id;
+                                        } else if (key === "id") {
+                                            model.set('id', val);
+                                            guid = val;
                                         }
-                                        if (key == "name" || key == "owner" || key == "description") {
-                                            col[key] = {
-                                                cell: (key == "name") ? ("Html") : ("String"),
-                                                editable: false,
-                                                sortable: false,
-                                                orderable: true,
-                                                formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                                                    fromRaw: function(rawValue, model) {
-                                                        if (rawValue == null) {
-                                                            return null;
-                                                        }
-                                                        if (model.get('createTime') == rawValue) {
-                                                            return new Date(rawValue);
-                                                        }
-                                                        if (model.get('name') == rawValue) {
-                                                            var nameHtml = "";
-                                                            if (model.get('$id$')) {
-                                                                nameHtml = '<a href="#!/detailPage/' + model.get('$id$').id + '">' + rawValue + '</a>';
-                                                            } else {
-                                                                nameHtml = '<a>' + rawValue + '</a>';
-                                                            }
-                                                            if (Globals.entityStateReadOnly[model.get('$id$').state]) {
-                                                                nameHtml += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
-                                                                return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
-                                                            } else {
-                                                                return nameHtml;
-                                                            }
-                                                        } else {
-                                                            return rawValue;
-                                                        }
+                                    });
+                                    if (guid.length) {
+                                        idFound = true;
+                                        model.getEntity(guid, {
+                                            async: false,
+                                            success: function(data) {
+                                                if (data.definition) {
+                                                    if (data.definition.id && data.definition.values) {
+                                                        that.searchCollection.get(data.definition.id).set(data.definition.values);
+                                                        that.searchCollection.get(data.definition.id).set('$id$', data.definition.id);
+                                                        that.searchCollection.get(data.definition.id).set('$traits$', data.definition.traits);
                                                     }
-                                                })
-                                            };
-                                        }
+                                                }
+                                            },
+                                            error: function(error, data, status) {},
+                                            complete: function() {}
+                                        });
                                     }
+                                });
+                                if (idFound) {
+                                    return this.getFixedDslColumn();
+                                } else {
+                                    return this.getDaynamicColumn();
                                 }
-                            });
-                            col['tag'] = {
-                                label: "Tags",
-                                cell: "Html",
-                                editable: false,
-                                sortable: false,
-                                orderable: true,
-                                className: 'searchTag',
-                                formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                                    fromRaw: function(rawValue, model) {
-                                        if (Globals.entityStateReadOnly[model.get('$id$').state]) {
-                                            return '<div class="readOnly">' + CommonViewFunction.tagForTable(model); + '</div>';
-                                        } else {
-                                            return CommonViewFunction.tagForTable(model);
-                                        }
-
-                                    }
-                                })
-                            };
-                            if (Globals.taxonomy) {
-                                col['terms'] = {
-                                    label: "Terms",
-                                    cell: "Html",
-                                    editable: false,
-                                    sortable: false,
-                                    orderable: true,
-                                    className: 'searchTerm',
-                                    formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                                        fromRaw: function(rawValue, model) {
-                                            var returnObject = CommonViewFunction.termTableBreadcrumbMaker(model);
-                                            if (returnObject.object) {
-                                                that.bradCrumbList.push(returnObject.object);
-                                            }
-                                            if (Globals.entityStateReadOnly[model.get('$id$').state]) {
-                                                return '<div class="readOnly">' + returnObject.html + '</div>';
-                                            } else {
-                                                return returnObject.html;
-                                            }
-                                        }
-                                    })
-                                };
                             }
-                            that.checkTableFetch();
-                            return this.searchCollection.constructor.getTableCols(col, this.searchCollection);
                         }
                     } else {
-                        return this.getFixedColumn();
+                        return this.getFixedFullTextColumn();
                     }
                 }
             },
-            getFixedColumn: function() {
+            getDaynamicColumn: function() {
+                var that = this,
+                    modelJSON = "",
+                    col = {};
+                modelJSON = this.searchCollection.toJSON()[0];
+                _.keys(modelJSON).map(function(key) {
+                    if (key.indexOf("$") == -1) {
+                        col[key] = {
+                            cell: 'Html',
+                            editable: false,
+                            sortable: false,
+                            orderable: true,
+                            formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                                fromRaw: function(rawValue, model) {
+                                    return CommonViewFunction.propertyTable({ 'notUsedKey': rawValue }, that, true);
+                                }
+                            })
+                        };
+                    }
+                });
+                that.checkTableFetch();
+                return this.searchCollection.constructor.getTableCols(col, this.searchCollection);
+            },
+            getFixedDslColumn: function() {
+                var that = this,
+                    col = {};
+                col['name'] = {
+                    label: "Name",
+                    cell: "html",
+                    editable: false,
+                    sortable: false,
+                    formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                        fromRaw: function(rawValue, model) {
+                            var nameHtml = "";
+                            if (model.get('$id$')) {
+                                nameHtml = '<a href="#!/detailPage/' + model.get('$id$').id + '">' + rawValue + '</a>';
+                            } else {
+                                nameHtml = '<a>' + rawValue + '</a>';
+                            }
+                            if (model.get('$id$') && model.get('$id$').state && Globals.entityStateReadOnly[model.get('$id$').state]) {
+                                nameHtml += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
+                                return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
+                            } else {
+                                return nameHtml;
+                            }
+                        }
+                    })
+                }
+                col['description'] = {
+                    label: "Description",
+                    cell: "String",
+                    editable: false,
+                    sortable: false
+                }
+                col['owner'] = {
+                    label: "Owner",
+                    cell: "String",
+                    editable: false,
+                    sortable: false
+                }
+                col['tag'] = {
+                    label: "Tags",
+                    cell: "Html",
+                    editable: false,
+                    sortable: false,
+                    orderable: true,
+                    className: 'searchTag',
+                    formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                        fromRaw: function(rawValue, model) {
+                            if (model.get('$id$') && model.get('$id$').state && Globals.entityStateReadOnly[model.get('$id$').state]) {
+                                return '<div class="readOnly">' + CommonViewFunction.tagForTable(model); + '</div>';
+                            } else {
+                                return CommonViewFunction.tagForTable(model);
+                            }
+
+                        }
+                    })
+                };
+                if (Globals.taxonomy) {
+                    col['Check'] = {
+                        name: "selected",
+                        label: "",
+                        cell: "select-row",
+                        headerCell: "select-all",
+                        position: 1
+                    };
+                    col['terms'] = {
+                        label: "Terms",
+                        cell: "Html",
+                        editable: false,
+                        sortable: false,
+                        orderable: true,
+                        className: 'searchTerm',
+                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                            fromRaw: function(rawValue, model) {
+                                var returnObject = CommonViewFunction.termTableBreadcrumbMaker(model);
+                                if (returnObject.object) {
+                                    that.bradCrumbList.push(returnObject.object);
+                                }
+                                if (model.get('$id$') && model.get('$id$').state && Globals.entityStateReadOnly[model.get('$id$').state]) {
+                                    return '<div class="readOnly">' + returnObject.html + '</div>';
+                                } else {
+                                    return returnObject.html;
+                                }
+                            }
+                        })
+                    };
+                }
+                that.checkTableFetch();
+                return this.searchCollection.constructor.getTableCols(col, this.searchCollection);
+            },
+            getFixedFullTextColumn: function() {
                 var that = this;
                 return this.searchCollection.constructor.getTableCols({
                     instanceInfo: {
@@ -406,56 +461,14 @@ define(['require',
                                 var modelObject = model.toJSON();
                                 if (modelObject.$typeName$ && modelObject.instanceInfo) {
                                     var guid = model.toJSON().instanceInfo.guid;
-                                    ++that.fetchList;
-                                    model.getEntity(guid, {
-                                        success: function(data) {
-                                            if (data.definition) {
-                                                if (data.definition.id && data.definition.id.state) {
-                                                    if (Globals.entityStateReadOnly[data.definition.id.state]) {
-                                                        that.$('td a[data-id="' + guid + '"]').parent().addClass('readOnly readOnlyLink');
-                                                        that.$('td a[data-id="' + guid + '"]').parent().append('<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>');
-                                                    }
-                                                }
-                                                if (data.definition.values && data.definition.values.name) {
-                                                    return that.$('td a[data-id="' + guid + '"]').html(data.definition.values.name);
-                                                } else {
-                                                    return that.$('td a[data-id="' + guid + '"]').html(data.definition.id.id);
-                                                }
-                                            }
-                                        },
-                                        error: function(error, data, status) {},
-                                        complete: function() {
-                                            --that.fetchList;
-                                            that.checkTableFetch();
-                                        }
-                                    });
-                                    return '<div><a href="#!/detailPage/' + guid + '" data-id="' + guid + '"></a></div>';
+                                    var json = model.toJSON();
+                                    json['id'] = guid;
+                                    return CommonViewFunction.propertyTable({ 'notUsedKey': json }, that, true);
                                 } else if (!modelObject.$typeName$) {
                                     var guid = model.toJSON().guid;
-                                    ++that.fetchList;
-                                    model.getEntity(guid, {
-                                        success: function(data) {
-                                            if (data.definition) {
-                                                if (data.definition.id && data.definition.id.state) {
-                                                    if (Globals.entityStateReadOnly[data.definition.id.state]) {
-                                                        that.$('td a[data-id="' + guid + '"]').parent().addClass('readOnly readOnlyLink');
-                                                        that.$('td a[data-id="' + guid + '"]').parent().append('<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>');
-                                                    }
-                                                }
-                                                if (data.definition.values && data.definition.values.name) {
-                                                    return that.$('td a[data-id="' + guid + '"]').html(data.definition.values.name);
-                                                } else {
-                                                    return that.$('td a[data-id="' + guid + '"]').html(data.definition.id.id);
-                                                }
-                                            }
-                                        },
-                                        error: function(error, data, status) {},
-                                        complete: function() {
-                                            --that.fetchList;
-                                            that.checkTableFetch();
-                                        }
-                                    });
-                                    return '<div><a href="#!/detailPage/' + guid + '" data-id="' + guid + '"></a></div>';
+                                    var json = model.toJSON();
+                                    json['id'] = guid;
+                                    return CommonViewFunction.propertyTable({ 'notUsedKey': json }, that, true);
                                 }
                             }
                         })

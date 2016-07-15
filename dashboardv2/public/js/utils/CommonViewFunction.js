@@ -79,11 +79,14 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
             }
         });
     };
-    CommonViewFunction.propertyTable = function(valueObject, scope) {
+    CommonViewFunction.propertyTable = function(valueObject, scope, searchTable) {
         var table = "",
             fetchInputOutputValue = function(id) {
                 var that = this;
-                scope.model.getEntity(id, {
+                if (searchTable) {
+                    ++scope.fetchList
+                }
+                scope.entityModel.getEntity(id, {
                     success: function(data) {
                         var value = "",
                             deleteButton = "";
@@ -116,7 +119,12 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                         }
                     },
                     error: function(error, data, status) {},
-                    complete: function() {}
+                    complete: function() {
+                        if (searchTable) {
+                            --scope.fetchList;
+                            scope.checkTableFetch();
+                        }
+                    }
                 });
             }
         _.keys(valueObject).map(function(key) {
@@ -129,6 +137,9 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                         id = undefined,
                         tempLink = "",
                         readOnly = false;
+                    if (inputOutputField['$id$']) {
+                        inputOutputField.id = inputOutputField['$id$'];
+                    }
                     if (inputOutputField) {
                         if (_.isObject(inputOutputField.id)) {
                             id = inputOutputField.id.id;
@@ -138,14 +149,18 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                         } else if (inputOutputField.id) {
                             id = inputOutputField.id;
                         } else if (_.isString(inputOutputField) || _.isBoolean(inputOutputField) || _.isNumber(inputOutputField)) {
-                            valueOfArray.push('<span>' + inputOutputField + '</span>');
+                            if (inputOutputField.indexOf("$") == -1) {
+                                valueOfArray.push('<span>' + inputOutputField + '</span>');
+                            }
                         } else if (_.isObject(inputOutputField)) {
                             _.each(inputOutputField, function(objValue, objKey) {
                                 var value = objValue;
-                                if (_.isObject(value)) {
-                                    value = JSON.stringify(value);
+                                if (objKey.indexOf("$") == -1) {
+                                    if (_.isObject(value)) {
+                                        value = JSON.stringify(value);
+                                    }
+                                    valueOfArray.push('<span>' + objKey + ':' + value + '</span>');
                                 }
-                                valueOfArray.push('<span>' + objKey + ':' + value + '</span>');
                             });
                         }
                     }
@@ -161,14 +176,25 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                             } else {
                                 tempLink += '<a href="#!/detailPage/' + id + '">' + id + '</a>'
                             }
+                        } else if (inputOutputField.name) {
+                            tempLink += '<a href="#!/detailPage/' + id + '">' + inputOutputField.name + '</a>';
+                        } else if (inputOutputField.qualifiedName) {
+                            tempLink += '<a href="#!/detailPage/' + id + '">' + inputOutputField.qualifiedName + '</a>'
                         } else {
+                            var fetch = true;
                             fetchInputOutputValue(id);
                             tempLink += '<div data-id="' + id + '"></div>';
                         }
                     }
                     if (readOnly) {
-                        tempLink += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
-                        subLink += '<div class="block readOnlyLink">' + tempLink + '</div>';
+                        if (!fetch) {
+                            tempLink += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
+                            subLink += '<div class="block readOnlyLink">' + tempLink + '</div>';
+                        } else {
+                            fetch = false;
+                            subLink += tempLink;
+                        }
+
                     } else {
                         if (tempLink.search('href') != -1) {
                             subLink += '<div>' + tempLink + '</div>'
@@ -180,11 +206,18 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                 if (valueOfArray.length) {
                     subLink = valueOfArray.join(', ');
                 }
-                table += '<tr><td>' + key + '</td><td>' + subLink + '</td></tr>';
+                if (searchTable) {
+                    table = subLink;
+                } else {
+                    table += '<tr><td>' + key + '</td><td>' + subLink + '</td></tr>';
+                }
             } else if (_.isObject(keyValue)) {
                 var id = undefined,
                     tempLink = "",
                     readOnly = false;
+                if (keyValue['$id$']) {
+                    keyValue.id = keyValue['$id$'];
+                }
                 if (_.isObject(keyValue.id)) {
                     id = keyValue.id.id;
                     if (Globals.entityStateReadOnly[keyValue.id.state]) {
@@ -204,15 +237,39 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                         } else {
                             tempLink += '<a href="#!/detailPage/' + id + '">' + id + '</a>';
                         }
+                    } else if (keyValue.name) {
+                        tempLink += '<a href="#!/detailPage/' + id + '">' + keyValue.name + '</a>';
+                    } else if (keyValue.qualifiedName) {
+                        tempLink += '<a href="#!/detailPage/' + id + '">' + keyValue.qualifiedName + '</a>'
                     } else {
+                        var fetch = true;
                         fetchInputOutputValue(id);
                         tempLink += '<div data-id="' + id + '"></div>';
                     }
                     if (readOnly) {
-                        tempLink += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
-                        table += '<tr><td>' + key + '</td><td><div class="block readOnlyLink">' + tempLink + '</div></td></tr>';
+                        if (!fetch) {
+                            tempLink += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
+                        }
+
+                        if (searchTable) {
+                            if (!fetch) {
+                                table = '<div class="block readOnlyLink">' + tempLink + '</div>';
+                            } else {
+                                table = tempLink;
+                            }
+                        } else {
+                            if (!fetch) {
+                                table += '<tr><td>' + key + '</td><td><div class="block readOnlyLink">' + tempLink + '</div></td></tr>';
+                            } else {
+                                table += '<tr><td>' + key + '</td><td>' + tempLink + '</td></tr>';
+                            }
+                        }
                     } else {
-                        table += '<tr><td>' + key + '</td><td>' + tempLink + '</td></tr>';
+                        if (searchTable) {
+                            table = tempLink;
+                        } else {
+                            table += '<tr><td>' + key + '</td><td>' + tempLink + '</td></tr>';
+                        }
                     }
                 } else {
                     var stringArr = [];
@@ -232,18 +289,38 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                     }
                     if (readOnly) {
                         tempLink += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
-                        table += '<tr><td>' + key + '</td><td><div class="block readOnlyLink">' + tempLink + '</div></td></tr>';
+                        if (searchTable) {
+                            table = '<div class="block readOnlyLink">' + tempLink + '</div>';
+                        } else {
+                            table += '<tr><td>' + key + '</td><td><div class="block readOnlyLink">' + tempLink + '</div></td></tr>';
+                        }
+
                     } else {
-                        table += '<tr><td>' + key + '</td><td>' + tempLink + '</td></tr>';
+                        if (searchTable) {
+                            table = tempLink;
+                        } else {
+                            table += '<tr><td>' + key + '</td><td>' + tempLink + '</td></tr>';
+                        }
                     }
                 }
             } else {
-                if (key == "createTime" || key == "lastAccessTime" || key == "retention") {
-                    table += '<tr><td>' + key + '</td><td>' + new Date(valueObject[key]) + '</td></tr>';
+                if (key.indexOf("Time") !== -1 || key == "retention") {
+                    if (searchTable) {
+                        table = new Date(valueObject[key]);
+                    } else {
+                        table += '<tr><td>' + key + '</td><td>' + new Date(valueObject[key]) + '</td></tr>';
+                    }
                 } else {
-                    table += '<tr><td>' + key + '</td><td>' + valueObject[key] + '</td></tr>';
+                    if (searchTable) {
+                        if (_.isBoolean(valueObject[key])) {
+                            table = valueObject[key].toString();
+                        } else {
+                            table = valueObject[key];
+                        }
+                    } else {
+                        table += '<tr><td>' + key + '</td><td>' + valueObject[key] + '</td></tr>';
+                    }
                 }
-
             }
         });
         return table;
@@ -328,11 +405,15 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
             id = model.get('$id$').id,
             terms = [];
         _.keys(traits).map(function(key) {
-            var tagName = Utils.checkTagOrTerm(traits[key].$typeName$);
+            if (traits[key].$typeName$) {
+                var tagName = Utils.checkTagOrTerm(traits[key].$typeName$);
+            } else {
+                var tagName = Utils.checkTagOrTerm(traits[key].typeName);
+            }
             if (tagName.term) {
                 terms.push({
-                    deleteHtml: '<a class="pull-left" title="Remove Term"><i class="fa fa-trash" data-id="tagClick" data-assetname="' + model.get("name") + '" data-name="' + traits[key].$typeName$ + '" data-guid="' + model.get('$id$').id + '" ></i></a>',
-                    url: traits[key].$typeName$.split(".").join("/"),
+                    deleteHtml: '<a class="pull-left" title="Remove Term"><i class="fa fa-trash" data-id="tagClick" data-assetname="' + model.get("name") + '" data-name="' + tagName.fullName+ '" data-guid="' + model.get('$id$').id + '" ></i></a>',
+                    url: tagName.fullName.split(".").join("/"),
                     name: tagName.fullName
                 });
             }
@@ -366,13 +447,17 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
             popTag = "",
             count = 0;
         _.keys(model.get('$traits$')).map(function(key) {
-            var tagName = Utils.checkTagOrTerm(traits[key].$typeName$),
-                className = "inputTag";
+            if (traits[key].$typeName$) {
+                var tagName = Utils.checkTagOrTerm(traits[key].$typeName$);
+            } else {
+                var tagName = Utils.checkTagOrTerm(traits[key].typeName);
+            }
+            var className = "inputTag";
             if (!tagName.term) {
                 if (count >= 1) {
-                    popTag += '<a class="' + className + '" data-id="tagClick"><span class="inputValue">' + traits[key].$typeName$ + '</span><i class="fa fa-times" data-id="delete"  data-assetname="' + model.get("name") + '"data-name="' + tagName.name + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
+                    popTag += '<a class="' + className + '" data-id="tagClick"><span class="inputValue">' + tagName.name + '</span><i class="fa fa-times" data-id="delete"  data-assetname="' + model.get("name") + '"data-name="' + tagName.name + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
                 } else {
-                    atags += '<a class="' + className + '" data-id="tagClick"><span class="inputValue">' + traits[key].$typeName$ + '</span><i class="fa fa-times" data-id="delete" data-assetname="' + model.get("name") + '" data-name="' + tagName.name + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
+                    atags += '<a class="' + className + '" data-id="tagClick"><span class="inputValue">' + tagName.name + '</span><i class="fa fa-times" data-id="delete" data-assetname="' + model.get("name") + '" data-name="' + tagName.name + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
                 }
                 ++count;
             }

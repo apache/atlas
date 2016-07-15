@@ -6,6 +6,7 @@ INCOMPATIBLE CHANGES:
 
 
 ALL CHANGES:
+ATLAS-971 UI not displaying results for this query - Eg: "hive_table as t where qualifiedName = 'default.input@cl1' select t" (kevalbhatt18 via shwethags) 
 ATLAS-1010 Atlas allows recreation of tags with same name (shwethags)
 ATLAS-990 Hive Import metadata script fails with auth exception (nixonrodrigues via shwethags)
 ATLAS-998 determine HA mode from property atlas.server.ids, instead of atlas.server.ha.enabled (madhan.neethiraj via shwethags)
