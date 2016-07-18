@@ -22,6 +22,7 @@ import org.apache.atlas.AtlasClient;
 import org.apache.atlas.discovery.DiscoveryException;
 import org.apache.atlas.discovery.LineageService;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
+import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
@@ -41,6 +42,7 @@ import javax.ws.rs.core.Response;
 @Singleton
 public class LineageResource {
     private static final Logger LOG = LoggerFactory.getLogger(DataSetLineageResource.class);
+    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.LineageResource");
 
     private final LineageService lineageService;
 
@@ -67,7 +69,12 @@ public class LineageResource {
     public Response inputsGraph(@PathParam("guid") String guid) {
         LOG.info("Fetching lineage inputs graph for guid={}", guid);
 
+        AtlasPerfTracer perf = null;
         try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "LineageResource.inputsGraph(" + guid + ")");
+            }
+
             final String jsonResult = lineageService.getInputsGraphForEntity(guid);
 
             JSONObject response = new JSONObject();
@@ -84,6 +91,8 @@ public class LineageResource {
         } catch (Throwable e) {
             LOG.error("Unable to get lineage inputs graph for entity guid={}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
     }
 
@@ -99,7 +108,12 @@ public class LineageResource {
     public Response outputsGraph(@PathParam("guid") String guid) {
         LOG.info("Fetching lineage outputs graph for entity guid={}", guid);
 
+        AtlasPerfTracer perf = null;
         try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "LineageResource.outputsGraph(" + guid + ")");
+            }
+
             final String jsonResult = lineageService.getOutputsGraphForEntity(guid);
 
             JSONObject response = new JSONObject();
@@ -116,6 +130,8 @@ public class LineageResource {
         } catch (Throwable e) {
             LOG.error("Unable to get lineage outputs graph for entity guid={}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
     }
 
@@ -131,7 +147,12 @@ public class LineageResource {
     public Response schema(@PathParam("guid") String guid) {
         LOG.info("Fetching schema for entity guid={}", guid);
 
+        AtlasPerfTracer perf = null;
         try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "LineageResource.schema(" + guid + ")");
+            }
+
             final String jsonResult = lineageService.getSchemaForEntity(guid);
 
             JSONObject response = new JSONObject();
@@ -148,6 +169,8 @@ public class LineageResource {
         } catch (Throwable e) {
             LOG.error("Unable to get schema for entity={}", guid, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
     }
 }

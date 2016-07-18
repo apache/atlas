@@ -20,6 +20,7 @@ package org.apache.atlas.web.resources;
 
 import com.google.common.base.Preconditions;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.discovery.DiscoveryException;
 import org.apache.atlas.discovery.DiscoveryService;
@@ -51,6 +52,7 @@ import org.apache.hadoop.classification.InterfaceAudience;
 public class MetadataDiscoveryResource {
 
     private static final Logger LOG = LoggerFactory.getLogger(MetadataDiscoveryResource.class);
+    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.MetadataDiscoveryResource");
     private static final String QUERY_TYPE_DSL = "dsl";
     private static final String QUERY_TYPE_GREMLIN = "gremlin";
     private static final String QUERY_TYPE_FULLTEXT = "full-text";
@@ -80,7 +82,12 @@ public class MetadataDiscoveryResource {
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response search(@QueryParam("query") String query) {
         JSONObject response;
+        AtlasPerfTracer perf = null;
         try {   // fall back to dsl
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MetadataDiscoveryResource.search(" + query + ")");
+            }
+
             ParamChecker.notEmpty(query, "query cannot be null");
 
             final String jsonResultStr = discoveryService.searchByDSL(query);
@@ -94,6 +101,8 @@ public class MetadataDiscoveryResource {
         } catch (Throwable throwable) {
             LOG.error("Unable to get entity list for query {} using dsl", query, throwable);
             return searchUsingFullText(query);
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
     }
 
@@ -108,7 +117,12 @@ public class MetadataDiscoveryResource {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response searchUsingQueryDSL(@QueryParam("query") String dslQuery) {
+        AtlasPerfTracer perf = null;
         try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MetadataDiscoveryResource.searchUsingQueryDSL(" + dslQuery + ")");
+            }
+
             ParamChecker.notEmpty(dslQuery, "dslQuery cannot be null");
             final String jsonResultStr = discoveryService.searchByDSL(dslQuery);
 
@@ -121,6 +135,8 @@ public class MetadataDiscoveryResource {
         } catch (Throwable e) {
             LOG.error("Unable to get entity list for dslQuery {}", dslQuery, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
     }
 
@@ -136,7 +152,12 @@ public class MetadataDiscoveryResource {
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @InterfaceAudience.Private
     public Response searchUsingGremlinQuery(@QueryParam("query") String gremlinQuery) {
+        AtlasPerfTracer perf = null;
         try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MetadataDiscoveryResource.searchUsingGremlinQuery(" + gremlinQuery + ")");
+            }
+
             ParamChecker.notEmpty(gremlinQuery, "gremlinQuery cannot be null or empty");
             final List<Map<String, String>> results = discoveryService.searchByGremlin(gremlinQuery);
 
@@ -159,6 +180,8 @@ public class MetadataDiscoveryResource {
         } catch (Throwable e) {
             LOG.error("Unable to get entity list for gremlinQuery {}", gremlinQuery, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
     }
 
@@ -173,7 +196,12 @@ public class MetadataDiscoveryResource {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response searchUsingFullText(@QueryParam("query") String query) {
+        AtlasPerfTracer perf = null;
         try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MetadataDiscoveryResource.searchUsingFullText(" + query + ")");
+            }
+
             ParamChecker.notEmpty(query, "query cannot be null or empty");
             final String jsonResultStr = discoveryService.searchByFullText(query);
             JSONArray rowsJsonArr = new JSONArray(jsonResultStr);
@@ -186,6 +214,8 @@ public class MetadataDiscoveryResource {
         } catch (Throwable e) {
             LOG.error("Unable to get entity list for query {}", query, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
     }
 

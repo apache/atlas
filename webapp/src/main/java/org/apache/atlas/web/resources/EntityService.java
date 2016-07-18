@@ -22,7 +22,9 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.catalog.*;
 import org.apache.atlas.catalog.exception.CatalogException;
 import org.apache.atlas.services.MetadataService;
+import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
+import org.slf4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -36,6 +38,7 @@ import java.util.*;
 @Path("v1/entities")
 @Singleton
 public class EntityService extends BaseService {
+    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.EntityService");
 
     private final EntityResourceProvider entityResourceProvider;
     private final EntityTagResourceProvider entityTagResourceProvider;
@@ -50,12 +53,21 @@ public class EntityService extends BaseService {
     @GET
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getEntities(@Context HttpHeaders headers, @Context UriInfo ui) throws CatalogException {
-        String queryString = decode(getQueryString(ui));
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityService.getEntities()");
+            }
 
-        BaseRequest request = new CollectionRequest(Collections.<String, Object>emptyMap(), queryString);
-        Result result = getResources(entityResourceProvider, request);
+            String queryString = decode(getQueryString(ui));
 
-        return Response.status(Response.Status.OK).entity(getSerializer().serialize(result, ui)).build();
+            BaseRequest request = new CollectionRequest(Collections.<String, Object>emptyMap(), queryString);
+            Result result = getResources(entityResourceProvider, request);
+
+            return Response.status(Response.Status.OK).entity(getSerializer().serialize(result, ui)).build();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @GET
@@ -64,11 +76,19 @@ public class EntityService extends BaseService {
     public Response getEntity(@Context HttpHeaders headers,
                               @Context UriInfo ui,
                               @PathParam("entityId") String entityId) throws CatalogException {
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityService.getEntity(" + entityId + ")");
+            }
 
-        BaseRequest request = new InstanceRequest(Collections.<String, Object>singletonMap("id", entityId));
-        Result result = getResource(entityResourceProvider, request);
+            BaseRequest request = new InstanceRequest(Collections.<String, Object>singletonMap("id", entityId));
+            Result result = getResource(entityResourceProvider, request);
 
-        return Response.status(Response.Status.OK).entity(getSerializer().serialize(result, ui)).build();
+            return Response.status(Response.Status.OK).entity(getSerializer().serialize(result, ui)).build();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @GET
@@ -78,13 +98,21 @@ public class EntityService extends BaseService {
                                  @Context UriInfo ui,
                                  @PathParam("entityId") String entityId,
                                  @PathParam("tag") String tagName) throws CatalogException {
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityService.getEntityTag(" + entityId + ", " + tagName + ")");
+            }
 
-        Map<String, Object> properties = new HashMap<>();
-        properties.put("id", entityId);
-        properties.put("name", tagName);
-        Result result = getResource(entityTagResourceProvider, new InstanceRequest(properties));
+            Map<String, Object> properties = new HashMap<>();
+            properties.put("id", entityId);
+            properties.put("name", tagName);
+            Result result = getResource(entityTagResourceProvider, new InstanceRequest(properties));
 
-        return Response.status(Response.Status.OK).entity(getSerializer().serialize(result, ui)).build();
+            return Response.status(Response.Status.OK).entity(getSerializer().serialize(result, ui)).build();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @GET
@@ -93,12 +121,20 @@ public class EntityService extends BaseService {
     public Response getEntityTags(@Context HttpHeaders headers,
                                   @Context UriInfo ui,
                                   @PathParam("entityId") String entityGuid) throws CatalogException {
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityService.getEntityTags(" + entityGuid + ")");
+            }
 
-        BaseRequest request = new CollectionRequest(Collections.<String, Object>singletonMap("id", entityGuid),
-                decode(getQueryString(ui)));
-        Result result = getResources(entityTagResourceProvider, request);
+            BaseRequest request = new CollectionRequest(Collections.<String, Object>singletonMap("id", entityGuid),
+                    decode(getQueryString(ui)));
+            Result result = getResources(entityTagResourceProvider, request);
 
-        return Response.status(Response.Status.OK).entity(getSerializer().serialize(result, ui)).build();
+            return Response.status(Response.Status.OK).entity(getSerializer().serialize(result, ui)).build();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @POST
@@ -109,14 +145,22 @@ public class EntityService extends BaseService {
                               @Context UriInfo ui,
                               @PathParam("entityId") String entityId,
                               @PathParam("tag") String tagName) throws CatalogException {
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityService.tagEntity(" + entityId + ", " + tagName + ")");
+            }
 
-        Map<String, Object> properties = new HashMap<>();
-        properties.put("id", entityId);
-        properties.put("name", tagName);
-        createResource(entityTagResourceProvider, new InstanceRequest(properties));
+            Map<String, Object> properties = new HashMap<>();
+            properties.put("id", entityId);
+            properties.put("name", tagName);
+            createResource(entityTagResourceProvider, new InstanceRequest(properties));
 
-        return Response.status(Response.Status.CREATED).entity(
-                new Results(ui.getRequestUri().toString(), 201)).build();
+            return Response.status(Response.Status.CREATED).entity(
+                    new Results(ui.getRequestUri().toString(), 201)).build();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @POST
@@ -124,25 +168,34 @@ public class EntityService extends BaseService {
     public Response tagEntities(String body,
                                 @Context HttpHeaders headers,
                                 @Context UriInfo ui) throws CatalogException {
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityService.tagEntities()");
+            }
 
-        Map<String, Object> properties = parsePayload(body);
+            Map<String, Object> properties = parsePayload(body);
 
-        if (properties.get("tags") == null || properties.size() != 1) {
-            throw new CatalogException(
-                    "Invalid Request, no 'tags' property specified. Creation of entity resource not supported.", 400);
+            if (properties.get("tags") == null || properties.size() != 1) {
+                throw new CatalogException(
+                        "Invalid Request, no 'tags' property specified. Creation of entity resource not supported.", 400);
 
+            }
+            String queryString = decode(getQueryString(ui));
+            Collection<String> createResults = createResources(
+                    entityTagResourceProvider, new CollectionRequest(properties, queryString));
+
+            Collection<Results> result = new ArrayList<>();
+            for (String relativeUrl : createResults) {
+                result.add(new Results(ui.getBaseUri().toString() + relativeUrl, 201));
+            }
+
+            return Response.status(Response.Status.CREATED).entity(
+                    new GenericEntity<Collection<Results>>(result) {
+                    }).build();
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
-        String queryString = decode(getQueryString(ui));
-        Collection<String> createResults = createResources(
-                entityTagResourceProvider, new CollectionRequest(properties, queryString));
-
-        Collection<Results> result = new ArrayList<>();
-        for (String relativeUrl : createResults) {
-            result.add(new Results(ui.getBaseUri().toString() + relativeUrl, 201));
-        }
-
-        return Response.status(Response.Status.CREATED).entity(
-                new GenericEntity<Collection<Results>>(result) {}).build();
     }
 
     @DELETE
@@ -152,13 +205,21 @@ public class EntityService extends BaseService {
                                     @Context UriInfo ui,
                                     @PathParam("entityId") String entityId,
                                     @PathParam("tag") String tagName) throws CatalogException {
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityService.deleteEntityTag()");
+            }
 
-        Map<String, Object> properties = new HashMap<>();
-        properties.put("id", entityId);
-        properties.put("name", tagName);
-        deleteResource(entityTagResourceProvider, new InstanceRequest(properties));
+            Map<String, Object> properties = new HashMap<>();
+            properties.put("id", entityId);
+            properties.put("name", tagName);
+            deleteResource(entityTagResourceProvider, new InstanceRequest(properties));
 
-        return Response.status(Response.Status.OK).entity(
-                new Results(ui.getRequestUri().toString(), 200)).build();
+            return Response.status(Response.Status.OK).entity(
+                    new Results(ui.getRequestUri().toString(), 200)).build();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 }

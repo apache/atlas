@@ -24,6 +24,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.typesystem.exception.TypeExistsException;
 import org.apache.atlas.typesystem.types.DataTypes;
+import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -62,6 +63,7 @@ import java.util.List;
 public class TypesResource {
 
     private static final Logger LOG = LoggerFactory.getLogger(TypesResource.class);
+    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.TypesResource");
 
     private final MetadataService metadataService;
 
@@ -80,7 +82,12 @@ public class TypesResource {
     @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response submit(@Context HttpServletRequest request) {
+        AtlasPerfTracer perf = null;
         try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.submit()");
+            }
+
             final String typeDefinition = Servlets.getRequestPayload(request);
             LOG.info("Creating type with definition {} ", typeDefinition);
 
@@ -108,6 +115,8 @@ public class TypesResource {
         } catch (Throwable e) {
             LOG.error("Unable to persist types", e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
     }
 
@@ -124,7 +133,12 @@ public class TypesResource {
     @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response update(@Context HttpServletRequest request) {
+        AtlasPerfTracer perf = null;
         try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.update()");
+            }
+
             final String typeDefinition = Servlets.getRequestPayload(request);
             LOG.info("Updating type with definition {} ", typeDefinition);
 
@@ -152,6 +166,8 @@ public class TypesResource {
         } catch (Throwable e) {
             LOG.error("Unable to persist types", e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
     }
 
@@ -164,7 +180,12 @@ public class TypesResource {
     @Path("{typeName}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getDefinition(@Context HttpServletRequest request, @PathParam("typeName") String typeName) {
+        AtlasPerfTracer perf = null;
         try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.getDefinition(" + typeName + ")");
+            }
+
             final String typeDefinition = metadataService.getTypeDefinition(typeName);
 
             JSONObject response = new JSONObject();
@@ -182,6 +203,8 @@ public class TypesResource {
         } catch (Throwable e) {
             LOG.error("Unable to get type definition for type {}", typeName, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
     }
 
@@ -197,7 +220,12 @@ public class TypesResource {
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getTypesByFilter(@Context HttpServletRequest request,
             @DefaultValue(TYPE_ALL) @QueryParam("type") String type) {
+        AtlasPerfTracer perf = null;
         try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesResource.getTypesByFilter(" + type + ")");
+            }
+
             List<String> result;
             if (TYPE_ALL.equals(type)) {
                 result = metadataService.getTypeNamesList();
@@ -219,6 +247,8 @@ public class TypesResource {
         } catch (Throwable e) {
             LOG.error("Unable to get types list", e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
     }
 }

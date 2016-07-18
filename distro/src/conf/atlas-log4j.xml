@@ -48,6 +48,22 @@
         <appender-ref ref="FILE"/>
     </logger>
 
+    <!-- uncomment this block to generate performance traces
+    <appender name="perf_appender" class="org.apache.log4j.DailyRollingFileAppender">
+        <param name="file" value="${atlas.log.dir}/atlas_perf.log" />
+        <param name="datePattern" value="'.'yyyy-MM-dd" />
+        <param name="append" value="true" />
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%d|%t|%m%n" />
+        </layout>
+    </appender>
+
+    <logger name="org.apache.atlas.perf" additivity="false">
+        <level value="debug" />
+        <appender-ref ref="perf_appender" />
+    </logger>
+    -->
+
     <logger name="com.thinkaurelius.titan" additivity="false">
         <level value="warn"/>
         <appender-ref ref="FILE"/>

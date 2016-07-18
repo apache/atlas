@@ -24,7 +24,9 @@ import org.apache.atlas.catalog.Request;
 import org.apache.atlas.catalog.exception.CatalogException;
 import org.apache.atlas.catalog.exception.InvalidPayloadException;
 import org.apache.atlas.services.MetadataService;
+import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
+import org.slf4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -41,6 +43,7 @@ import java.util.Map;
 @Path("v1/taxonomies")
 @Singleton
 public class TaxonomyService extends BaseService {
+    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.TaxonomyService");
 
     private ResourceProvider taxonomyResourceProvider;
     private ResourceProvider termResourceProvider;
@@ -58,20 +61,37 @@ public class TaxonomyService extends BaseService {
     public Response getTaxonomy(@Context HttpHeaders headers,
                                 @Context UriInfo ui,
                                 @PathParam("taxonomyName") String taxonomyName) throws CatalogException {
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TaxonomyService.getTaxonomy(" + taxonomyName + ")");
+            }
 
-        Map<String, Object> properties = new HashMap<>();
-        properties.put("name", taxonomyName);
-        Result result = getResource(taxonomyResourceProvider, new InstanceRequest(properties));
-        return Response.status(Response.Status.OK).entity(getSerializer().serialize(result, ui)).build();
+            Map<String, Object> properties = new HashMap<>();
+            properties.put("name", taxonomyName);
+            Result result = getResource(taxonomyResourceProvider, new InstanceRequest(properties));
+            return Response.status(Response.Status.OK).entity(getSerializer().serialize(result, ui)).build();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @GET
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getTaxonomies(@Context HttpHeaders headers, @Context UriInfo ui) throws CatalogException {
-        String queryString = decode(getQueryString(ui));
-        Request request = new CollectionRequest(Collections.<String, Object>emptyMap(), queryString);
-        Result result = getResources(taxonomyResourceProvider, request);
-        return Response.status(Response.Status.OK).entity(getSerializer().serialize(result, ui)).build();
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TaxonomyService.getTaxonomies()");
+            }
+
+            String queryString = decode(getQueryString(ui));
+            Request request = new CollectionRequest(Collections.<String, Object>emptyMap(), queryString);
+            Result result = getResources(taxonomyResourceProvider, request);
+            return Response.status(Response.Status.OK).entity(getSerializer().serialize(result, ui)).build();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @POST
@@ -81,14 +101,22 @@ public class TaxonomyService extends BaseService {
                                    @Context HttpHeaders headers,
                                    @Context UriInfo ui,
                                    @PathParam("taxonomyName") String taxonomyName) throws CatalogException {
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TaxonomyService.createTaxonomy(" + taxonomyName + ")");
+            }
 
-        Map<String, Object> properties = parsePayload(body);
-        properties.put("name", taxonomyName);
+            Map<String, Object> properties = parsePayload(body);
+            properties.put("name", taxonomyName);
 
-        createResource(taxonomyResourceProvider, new InstanceRequest(properties));
+            createResource(taxonomyResourceProvider, new InstanceRequest(properties));
 
-        return Response.status(Response.Status.CREATED).entity(
-                new Results(ui.getRequestUri().toString(), 201)).build();
+            return Response.status(Response.Status.CREATED).entity(
+                    new Results(ui.getRequestUri().toString(), 201)).build();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @PUT
@@ -98,14 +126,22 @@ public class TaxonomyService extends BaseService {
                                    @Context HttpHeaders headers,
                                    @Context UriInfo ui,
                                    @PathParam("taxonomyName") String taxonomyName) throws CatalogException {
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TaxonomyService.updateTaxonomy(" + taxonomyName + ")");
+            }
 
-        Map<String, Object> queryProperties = new HashMap<>();
-        queryProperties.put("name", taxonomyName);
-        Map<String, Object> updateProperties = parsePayload(body);
-        updateResource(taxonomyResourceProvider, new InstanceRequest(queryProperties, updateProperties));
+            Map<String, Object> queryProperties = new HashMap<>();
+            queryProperties.put("name", taxonomyName);
+            Map<String, Object> updateProperties = parsePayload(body);
+            updateResource(taxonomyResourceProvider, new InstanceRequest(queryProperties, updateProperties));
 
-        return Response.status(Response.Status.OK).entity(
-                new Results(ui.getRequestUri().toString(), 200)).build();
+            return Response.status(Response.Status.OK).entity(
+                    new Results(ui.getRequestUri().toString(), 200)).build();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @DELETE
@@ -114,14 +150,22 @@ public class TaxonomyService extends BaseService {
     public Response deleteTaxonomy(@Context HttpHeaders headers,
                                    @Context UriInfo ui,
                                    @PathParam("taxonomyName") String taxonomyName) throws CatalogException {
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TaxonomyService.deleteTaxonomy(" + taxonomyName + ")");
+            }
 
-        Map<String, Object> properties = new HashMap<>();
-        properties.put("name", taxonomyName);
+            Map<String, Object> properties = new HashMap<>();
+            properties.put("name", taxonomyName);
 
-        deleteResource(taxonomyResourceProvider, new InstanceRequest(properties));
+            deleteResource(taxonomyResourceProvider, new InstanceRequest(properties));
 
-        return Response.status(Response.Status.OK).entity(
-                new Results(ui.getRequestUri().toString(), 200)).build();
+            return Response.status(Response.Status.OK).entity(
+                    new Results(ui.getRequestUri().toString(), 200)).build();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @GET
@@ -131,13 +175,21 @@ public class TaxonomyService extends BaseService {
                                     @Context UriInfo ui,
                                     @PathParam("taxonomyName") String taxonomyName,
                                     @PathParam("termName") String termName) throws CatalogException {
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TaxonomyService.getTaxonomyTerm(" + taxonomyName + ", " + termName + ")");
+            }
 
-        TermPath termPath = new TermPath(taxonomyName, termName);
-        Map<String, Object> properties = new HashMap<>();
-        properties.put("termPath", termPath);
-        Result result = getResource(termResourceProvider, new InstanceRequest(properties));
+            TermPath termPath = new TermPath(taxonomyName, termName);
+            Map<String, Object> properties = new HashMap<>();
+            properties.put("termPath", termPath);
+            Result result = getResource(termResourceProvider, new InstanceRequest(properties));
 
-        return Response.status(Response.Status.OK).entity(getSerializer().serialize(result, ui)).build();
+            return Response.status(Response.Status.OK).entity(getSerializer().serialize(result, ui)).build();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @GET
@@ -146,14 +198,22 @@ public class TaxonomyService extends BaseService {
     public Response getTaxonomyTerms(@Context HttpHeaders headers,
                                      @Context UriInfo ui,
                                      @PathParam("taxonomyName") String taxonomyName) throws CatalogException {
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TaxonomyService.getTaxonomyTerms(" + taxonomyName + ")");
+            }
 
-        String queryString = decode(getQueryString(ui));
-        TermPath termPath = new TermPath(taxonomyName, null);
-        Request request = new CollectionRequest(
-                Collections.<String, Object>singletonMap("termPath", termPath), queryString);
-        Result result = getResources(termResourceProvider, request);
+            String queryString = decode(getQueryString(ui));
+            TermPath termPath = new TermPath(taxonomyName, null);
+            Request request = new CollectionRequest(
+                    Collections.<String, Object>singletonMap("termPath", termPath), queryString);
+            Result result = getResources(termResourceProvider, request);
 
-        return Response.status(Response.Status.OK).entity(getSerializer().serialize(result, ui)).build();
+            return Response.status(Response.Status.OK).entity(getSerializer().serialize(result, ui)).build();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @GET
@@ -164,26 +224,34 @@ public class TaxonomyService extends BaseService {
                             @PathParam("taxonomyName") String taxonomyName,
                             @PathParam("rootTerm") String rootTerm,
                             @PathParam("remainder") String remainder) throws CatalogException {
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TaxonomyService.getSubTerms(" + taxonomyName + ", " + rootTerm + ", " + remainder + ")");
+            }
 
-        Result result;
-        String termName = String.format("%s%s", rootTerm,
-                remainder.replaceAll("/?terms/?([.]*)", "$1."));
-        String queryString = decode(getQueryString(ui));
-        TermPath termPath = new TermPath(taxonomyName, termName);
+            Result result;
+            String termName = String.format("%s%s", rootTerm,
+                    remainder.replaceAll("/?terms/?([.]*)", "$1."));
+            String queryString = decode(getQueryString(ui));
+            TermPath termPath = new TermPath(taxonomyName, termName);
 
-        Map<String, Object> properties = new HashMap<>();
-        properties.put("termPath", termPath);
+            Map<String, Object> properties = new HashMap<>();
+            properties.put("termPath", termPath);
 
-        List<PathSegment> pathSegments = ui.getPathSegments();
-        int lastIndex = pathSegments.size() - 1;
-        String lastSegment = pathSegments.get(lastIndex).getPath();
-        if (lastSegment.equals("terms") || (lastSegment.isEmpty() && pathSegments.get(lastIndex - 1).getPath().equals("terms"))) {
-            result = getResources(termResourceProvider, new CollectionRequest(properties, queryString));
-        } else {
-            result = getResource(termResourceProvider, new InstanceRequest(properties));
+            List<PathSegment> pathSegments = ui.getPathSegments();
+            int lastIndex = pathSegments.size() - 1;
+            String lastSegment = pathSegments.get(lastIndex).getPath();
+            if (lastSegment.equals("terms") || (lastSegment.isEmpty() && pathSegments.get(lastIndex - 1).getPath().equals("terms"))) {
+                result = getResources(termResourceProvider, new CollectionRequest(properties, queryString));
+            } else {
+                result = getResource(termResourceProvider, new InstanceRequest(properties));
+            }
+
+            return Response.status(Response.Status.OK).entity(getSerializer().serialize(result, ui)).build();
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
-
-        return Response.status(Response.Status.OK).entity(getSerializer().serialize(result, ui)).build();
     }
 
     @POST
@@ -194,14 +262,22 @@ public class TaxonomyService extends BaseService {
                                @Context UriInfo ui,
                                @PathParam("taxonomyName") String taxonomyName,
                                @PathParam("termName") String termName) throws CatalogException {
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TaxonomyService.createTerm(" + taxonomyName + ", " + termName + ")");
+            }
 
-        Map<String, Object> properties = parsePayload(body);
-        validateName(termName);
-        properties.put("termPath", new TermPath(taxonomyName, termName));
-        createResource(termResourceProvider, new InstanceRequest(properties));
+            Map<String, Object> properties = parsePayload(body);
+            validateName(termName);
+            properties.put("termPath", new TermPath(taxonomyName, termName));
+            createResource(termResourceProvider, new InstanceRequest(properties));
 
-        return Response.status(Response.Status.CREATED).entity(
-                new Results(ui.getRequestUri().toString(), 201)).build();
+            return Response.status(Response.Status.CREATED).entity(
+                    new Results(ui.getRequestUri().toString(), 201)).build();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @POST
@@ -213,16 +289,24 @@ public class TaxonomyService extends BaseService {
                                   @PathParam("taxonomyName") String taxonomyName,
                                   @PathParam("termName") String termName,
                                   @PathParam("remainder") String remainder) throws CatalogException {
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TaxonomyService.createSubTerm(" + taxonomyName + ", " + termName + ", " + remainder + ")");
+            }
 
-        Map<String, Object> properties = parsePayload(body);
-        String[] pathTokens = remainder.split("/");
-        validateName(pathTokens[pathTokens.length -1]);
-        properties.put("termPath", new TermPath(taxonomyName, String.format("%s%s", termName,
-                remainder.replaceAll("/?terms/?([.]*)", "$1."))));
-        createResource(termResourceProvider, new InstanceRequest(properties));
+            Map<String, Object> properties = parsePayload(body);
+            String[] pathTokens = remainder.split("/");
+            validateName(pathTokens[pathTokens.length - 1]);
+            properties.put("termPath", new TermPath(taxonomyName, String.format("%s%s", termName,
+                    remainder.replaceAll("/?terms/?([.]*)", "$1."))));
+            createResource(termResourceProvider, new InstanceRequest(properties));
 
-        return Response.status(Response.Status.CREATED).entity(
-                new Results(ui.getRequestUri().toString(), 201)).build();
+            return Response.status(Response.Status.CREATED).entity(
+                    new Results(ui.getRequestUri().toString(), 201)).build();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @PUT
@@ -233,15 +317,23 @@ public class TaxonomyService extends BaseService {
                                @Context UriInfo ui,
                                @PathParam("taxonomyName") String taxonomyName,
                                @PathParam("termName") String termName) throws CatalogException {
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TaxonomyService.updateTerm(" + taxonomyName + ", " + termName + ")");
+            }
 
-        Map<String, Object> queryProperties = new HashMap<>();
-        queryProperties.put("termPath", new TermPath(taxonomyName, termName));
+            Map<String, Object> queryProperties = new HashMap<>();
+            queryProperties.put("termPath", new TermPath(taxonomyName, termName));
 
-        Map<String, Object> updateProperties = parsePayload(body);
-        updateResource(termResourceProvider, new InstanceRequest(queryProperties, updateProperties));
+            Map<String, Object> updateProperties = parsePayload(body);
+            updateResource(termResourceProvider, new InstanceRequest(queryProperties, updateProperties));
 
-        return Response.status(Response.Status.OK).entity(
-                new Results(ui.getRequestUri().toString(), 200)).build();
+            return Response.status(Response.Status.OK).entity(
+                    new Results(ui.getRequestUri().toString(), 200)).build();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @PUT
@@ -253,16 +345,24 @@ public class TaxonomyService extends BaseService {
                                   @PathParam("taxonomyName") String taxonomyName,
                                   @PathParam("termName") String termName,
                                   @PathParam("remainder") String remainder) throws CatalogException {
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TaxonomyService.updateSubTerm(" + taxonomyName + ", " + termName + ", " + remainder + ")");
+            }
 
-        Map<String, Object> queryProperties = new HashMap<>();
-        queryProperties.put("termPath", new TermPath(taxonomyName, String.format("%s%s", termName,
-                remainder.replaceAll("/?terms/?([.]*)", "$1."))));
+            Map<String, Object> queryProperties = new HashMap<>();
+            queryProperties.put("termPath", new TermPath(taxonomyName, String.format("%s%s", termName,
+                    remainder.replaceAll("/?terms/?([.]*)", "$1."))));
 
-        Map<String, Object> updateProperties = parsePayload(body);
-        updateResource(termResourceProvider, new InstanceRequest(queryProperties, updateProperties));
+            Map<String, Object> updateProperties = parsePayload(body);
+            updateResource(termResourceProvider, new InstanceRequest(queryProperties, updateProperties));
 
-        return Response.status(Response.Status.OK).entity(
-                new Results(ui.getRequestUri().toString(), 200)).build();
+            return Response.status(Response.Status.OK).entity(
+                    new Results(ui.getRequestUri().toString(), 200)).build();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @DELETE
@@ -272,13 +372,21 @@ public class TaxonomyService extends BaseService {
                                @Context UriInfo ui,
                                @PathParam("taxonomyName") String taxonomyName,
                                @PathParam("termName") String termName) throws CatalogException {
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TaxonomyService.deleteTerm(" + taxonomyName + ", " + termName + ")");
+            }
 
-        Map<String, Object> properties = new HashMap<>();
-        properties.put("termPath", new TermPath(taxonomyName, termName));
-        deleteResource(termResourceProvider, new InstanceRequest(properties));
+            Map<String, Object> properties = new HashMap<>();
+            properties.put("termPath", new TermPath(taxonomyName, termName));
+            deleteResource(termResourceProvider, new InstanceRequest(properties));
 
-        return Response.status(Response.Status.OK).entity(
-                new Results(ui.getRequestUri().toString(), 200)).build();
+            return Response.status(Response.Status.OK).entity(
+                    new Results(ui.getRequestUri().toString(), 200)).build();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @DELETE
@@ -289,14 +397,22 @@ public class TaxonomyService extends BaseService {
                                   @PathParam("taxonomyName") String taxonomyName,
                                   @PathParam("termName") String termName,
                                   @PathParam("remainder") String remainder) throws CatalogException {
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TaxonomyService.deleteSubTerm(" + taxonomyName + ", " + termName + ", " + remainder + ")");
+            }
 
-        Map<String, Object> properties = new HashMap<>();
-        properties.put("termPath", new TermPath(taxonomyName, String.format("%s%s", termName,
-                remainder.replaceAll("/?terms/?([.]*)", "$1."))));
-        deleteResource(termResourceProvider, new InstanceRequest(properties));
+            Map<String, Object> properties = new HashMap<>();
+            properties.put("termPath", new TermPath(taxonomyName, String.format("%s%s", termName,
+                    remainder.replaceAll("/?terms/?([.]*)", "$1."))));
+            deleteResource(termResourceProvider, new InstanceRequest(properties));
 
-        return Response.status(Response.Status.OK).entity(
-                new Results(ui.getRequestUri().toString(), 200)).build();
+            return Response.status(Response.Status.OK).entity(
+                    new Results(ui.getRequestUri().toString(), 200)).build();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     protected ResourceProvider createTaxonomyResourceProvider(AtlasTypeSystem typeSystem) {
