@@ -6,6 +6,7 @@ INCOMPATIBLE CHANGES:
 
 
 ALL CHANGES:
+ATLAS-1032 Atlas hook package should not include libraries already present in host component - like log4j (mneethiraj via sumasai)
 ATLAS-1027 Atlas hooks should use properties from atlas-application.properties, instead of component's configuration (mneethiraj via sumasai)
 ATLAS-1030 Add instrumentation to measure performance: REST API (mneethiraj via sumasai)
 ATLAS-996 DSL queries with comparsions of many primitive types fail (jnhagelb via shwethags)
