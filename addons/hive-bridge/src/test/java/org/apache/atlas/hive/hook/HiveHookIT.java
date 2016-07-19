@@ -87,7 +87,7 @@ public class HiveHookIT {
     private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(HiveHookIT.class);
 
     private static final String DGI_URL = "http://localhost:21000/";
-    private static final String CLUSTER_NAME = "test";
+    private static final String CLUSTER_NAME = "primary";
     public static final String DEFAULT_DB = "default";
     
     private static final String PART_FILE = "2015-01-01";
@@ -115,7 +115,7 @@ public class HiveHookIT {
         Configuration configuration = ApplicationProperties.get();
         atlasClient = new AtlasClient(configuration.getString(HiveMetaStoreBridge.ATLAS_ENDPOINT, DGI_URL));
 
-        hiveMetaStoreBridge = new HiveMetaStoreBridge(conf, atlasClient);
+        hiveMetaStoreBridge = new HiveMetaStoreBridge(configuration, conf, atlasClient);
         hiveMetaStoreBridge.registerHiveDataModel();
     }
 
@@ -1624,7 +1624,7 @@ public class HiveHookIT {
         verifyEntityProperties(entityType, entityName, expectedProps, false);
 
         if (entityType != Entity.Type.DATABASE) {
-            //Database unset properties doesnt work strangely - alter database %s unset DBPROPERTIES doesnt work
+            //Database unset properties doesnt work - alter database %s unset DBPROPERTIES doesnt work
             //Unset all the props
             StringBuilder sb = new StringBuilder("'");
             query = String.format(fmtQuery, entityName, UNSET_OP, Joiner.on("','").skipNulls().appendTo(sb, expectedProps.keySet()).append('\''));
@@ -1928,7 +1928,7 @@ public class HiveHookIT {
                     fail("Assertions failed. Failing after waiting for timeout " + timeout + " msecs", e);
                 }
                 LOG.debug("Waiting up to " + (mustEnd - System.currentTimeMillis()) + " msec as assertion failed", e);
-                Thread.sleep(400);
+                Thread.sleep(5000);
             }
         }
     }

@@ -200,7 +200,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
         LOG.info("Entered Atlas hook for hook type {} operation {}", event.getHookType(), event.getOperation());
 
-        HiveMetaStoreBridge dgiBridge = new HiveMetaStoreBridge(hiveConf);
+        HiveMetaStoreBridge dgiBridge = new HiveMetaStoreBridge(atlasProperties, hiveConf);
 
         switch (event.getOperation()) {
         case CREATEDATABASE:
