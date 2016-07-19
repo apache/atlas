@@ -5,34 +5,86 @@
 ---++ Atlas High Level Architecture - Overview
 <img src="images/twiki/architecture.png" height="400" width="600" />
 
-Architecturally, Atlas has the following components:
+The components of Atlas can be grouped under the following major categories:
 
-   * *A Web service*: This exposes RESTful APIs and a Web user interface to create, update and query metadata.
-   * *Metadata store*: Metadata is modeled using a graph model, implemented using the Graph database Titan. Titan has options for a variety of backing stores for persisting the graph, including an embedded Berkeley DB, Apache HBase and Apache Cassandra. The choice of the backing store determines the level of service availability.
-   * *Index store*: For powering full text searches on metadata, Atlas also indexes the metadata, again via Titan. The backing store for the full text search is a search backend like !ElasticSearch or Apache Solr.
-   * *Bridges / Hooks*: To add metadata to Atlas, libraries called ‘hooks’ are enabled in various systems like Apache Hive, Apache Falcon and Apache Sqoop which capture metadata events in the respective systems and propagate those events to Atlas. The Atlas server consumes these events and updates its stores.
-   * *Metadata notification events*: Any updates to metadata in Atlas, either via the Hooks or the API are propagated from Atlas to downstream systems via events. Systems like Apache Ranger consume these events and allow administrators to act on them, for e.g. to configure policies for Access control.
-   * *Notification Server*: Atlas uses Apache Kafka as a notification server for communication between hooks and downstream consumers of metadata notification events. Events are written by the hooks and Atlas to different Kafka topics. Kafka enables a loosely coupled integration between these disparate systems.
+---+++ Core
 
----++ Bridges
-External components like hive/sqoop/storm/falcon should model their taxonomy using typesystem and register the types with Atlas. For every entity created in this external component, the corresponding entity should be registered in Atlas as well.
-This is typically done in a hook which runs in the external component and is called for every entity operation. Hook generally processes the entity asynchronously using a thread pool to avoid adding latency to the main operation.
-The hook can then build the entity and register the entity using Atlas REST APIs. Howerver, any failure in APIs because of network issue etc can result in entity not registered in Atlas and hence inconsistent metadata.
+This category contains the components that implement the core of Atlas functionality, including:
 
-Atlas exposes notification interface and can be used for reliable entity registration by hook as well. The hook can send notification message containing the list of entities to be registered.  Atlas service contains hook consumer that listens to these messages and registers the entities.
+*Type System*: Atlas allows users to define a model for the metadata objects they want to manage. The model is composed
+of definitions called ‘types’. Instances of ‘types’ called ‘entities’ represent the actual metadata objects that are
+managed. The Type System is a component that allows users to define and manage the types and entities. All metadata
+objects managed by Atlas out of the box (like Hive tables, for e.g.) are modelled using types and represented as
+entities. To store new types of metadata in Atlas, one needs to understand the concepts of the type system component.
 
-Available bridges are:
-   * [[Bridge-Hive][Hive Bridge]]
-   * [[Bridge-Sqoop][Sqoop Bridge]]
-   * [[Bridge-Falcon][Falcon Bridge]]
-   * [[StormAtlasHook][Storm Bridge]]
+One key point to note is that the generic nature of the modelling in Atlas allows data stewards and integrators to
+define both technical metadata and business metadata. It is also possible to define rich relationships between the
+two using features of Atlas.
 
----++ Notification
-Notification is used for reliable entity registration from hooks and for entity/type change notifications. Atlas, by default, provides Kafka integration, but its possible to provide other implementations as well. Atlas service starts embedded Kafka server by default.
+*Ingest / Export*: The Ingest component allows metadata to be added to Atlas. Similarly, the Export component exposes
+metadata changes detected by Atlas to be raised as events. Consumers can consume these change events to react to
+metadata changes in real time.
 
-Atlas also provides !NotificationHookConsumer that runs in Atlas Service and listens to messages from hook and registers the entities in Atlas.
-<img src="images/twiki/notification.png" height="10" width="20" />
+*Graph Engine*: Internally, Atlas represents metadata objects it manages using a Graph model. It does this to
+achieve great flexibility and rich relations between the metadata objects. The Graph Engine is a component that is
+responsible for translating between types and entities of the Type System, and the underlying Graph model.
+In addition to managing the Graph objects, The Graph Engine also creates the appropriate indices for the metadata
+objects so that they can be searched for efficiently.
 
+*Titan*: Currently, Atlas uses the Titan Graph Database to store the metadata objects. Titan is used as a library
+within Atlas. Titan uses two stores: The Metadata store is configured to !HBase by default and the Index store
+is configured to Solr. It is also possible to use the Metadata store as BerkeleyDB and Index store as !ElasticSearch
+by building with corresponding profiles. The Metadata store is used for storing the metadata objects proper, and the
+Index store is used for storing indices of the Metadata properties, that allows efficient search.
+
+
+---+++ Integration
+
+Users can manage metadata in Atlas using two methods:
+
+*API*: All functionality of Atlas is exposed to end users via a REST API that allows types and entities to be created,
+updated and deleted. It is also the primary mechanism to query and discover the types and entities managed by Atlas.
+
+*Messaging*: In addition to the API, users can choose to integrate with Atlas using a messaging interface that is
+based on Kafka. This is useful both for communicating metadata objects to Atlas, and also to consume metadata change
+events from Atlas using which applications can be built. The messaging interface is particularly useful if one wishes
+to use a more loosely coupled integration with Atlas that could allow for better scalability, reliability etc. Atlas
+uses Apache Kafka as a notification server for communication between hooks and downstream consumers of metadata
+notification events. Events are written by the hooks and Atlas to different Kafka topics.
+
+---+++ Metadata sources
+
+Atlas supports integration with many sources of metadata out of the box. More integrations will be added in future
+as well. Currently, Atlas supports ingesting and managing metadata from the following sources:
+
+   * [[Bridge-Hive][Hive]]
+   * [[Bridge-Sqoop][Sqoop]]
+   * [[Bridge-Falcon][Falcon]]
+   * [[StormAtlasHook][Storm]]
+
+The integration implies two things:
+There are metadata models that Atlas defines natively to represent objects of these components.
+There are components Atlas provides to ingest metadata objects from these components
+(in real time or in batch mode in some cases).
+
+---+++ Applications
+The metadata managed by Atlas is consumed by a variety of applications for satisfying many governance use cases.
+
+*Atlas Admin UI*: This component is a web based application that allows data stewards and scientists to discover
+and annotate metadata. Of primary importance here is a search interface and SQL like query language that can be
+used to query the metadata types and objects managed by Atlas. The Admin UI uses the REST API of Atlas for
+building its functionality.
+
+*Tag Based Policies*: [[http://ranger.apache.org/][Apache Ranger]] is an advanced security management solution
+for the Hadoop ecosystem having wide integration with a variety of Hadoop components. By integrating with Atlas,
+Ranger allows security administrators to define metadata driven security policies for effective governance.
+Ranger is a consumer to the metadata change events notified by Atlas.
+
+*Business Taxonomy*: The metadata objects ingested into Atlas from the Metadata sources are primarily a form
+of technical metadata. To enhance the discoverability and governance capabilities, Atlas comes with a Business
+Taxonomy interface that allows users to first, define a hierarchical set of business terms that represent their
+business domain and associate them to the metadata entities Atlas manages. Business Taxonomy is a web application that
+is part of the Atlas Admin UI currently and integrates with Atlas using the REST API.
 
 
 
