@@ -370,10 +370,6 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
     }
 
     private String getClusterName(Map stormConf) {
-        String clusterName = AtlasConstants.DEFAULT_CLUSTER_NAME;
-        if (stormConf.containsKey(AtlasConstants.CLUSTER_NAME_KEY)) {
-            clusterName = (String)stormConf.get(AtlasConstants.CLUSTER_NAME_KEY);
-        }
-        return clusterName;
+        return atlasProperties.getString(AtlasConstants.CLUSTER_NAME_KEY, AtlasConstants.DEFAULT_CLUSTER_NAME);
     }
 }

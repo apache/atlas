@@ -54,7 +54,7 @@ public class SqoopHookIT {
 
     private void registerDataModels(AtlasClient client) throws Exception {
         // Make sure hive model exists
-        HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(new HiveConf(), atlasClient);
+        HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(ApplicationProperties.get(), new HiveConf(), atlasClient);
         hiveMetaStoreBridge.registerHiveDataModel();
         SqoopDataModelGenerator dataModelGenerator = new SqoopDataModelGenerator();
 

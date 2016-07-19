@@ -89,7 +89,7 @@ public class FalconHookIT {
             return;
         }
 
-        HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(new HiveConf(), atlasClient);
+        HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(ApplicationProperties.get(), new HiveConf(), atlasClient);
         hiveMetaStoreBridge.registerHiveDataModel();
 
         FalconDataModelGenerator dataModelGenerator = new FalconDataModelGenerator();

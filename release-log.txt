@@ -27,6 +27,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-1027 Atlas hooks should use properties from atlas-application.properties, instead of component's configuration (mneethiraj via sumasai)
 ATLAS-1030 Add instrumentation to measure performance: REST API (mneethiraj via sumasai)
 ATLAS-996 DSL queries with comparsions of many primitive types fail (jnhagelb via shwethags)
 ATLAS-971 UI not displaying results for this query - Eg: "hive_table as t where qualifiedName = 'default.input@cl1' select t" (kevalbhatt18 via shwethags)

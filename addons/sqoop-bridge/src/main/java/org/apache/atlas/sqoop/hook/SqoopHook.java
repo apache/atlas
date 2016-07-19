@@ -163,8 +163,7 @@ public class SqoopHook extends SqoopJobDataPublisher {
     @Override
     public void publish(SqoopJobDataPublisher.Data data) throws Exception {
         Configuration atlasProperties = ApplicationProperties.get();
-        org.apache.hadoop.conf.Configuration sqoopConf = new org.apache.hadoop.conf.Configuration();
-        String clusterName = sqoopConf.get(ATLAS_CLUSTER_NAME, DEFAULT_CLUSTER_NAME);
+        String clusterName = atlasProperties.getString(ATLAS_CLUSTER_NAME, DEFAULT_CLUSTER_NAME);
 
         Referenceable dbStoreRef = createDBStoreInstance(data);
         Referenceable dbRef = createHiveDatabaseInstance(clusterName, data.getHiveDB());

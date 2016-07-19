@@ -99,16 +99,16 @@ public class HiveMetaStoreBridge {
      * Construct a HiveMetaStoreBridge.
      * @param hiveConf {@link HiveConf} for Hive component in the cluster
      */
-    public HiveMetaStoreBridge(HiveConf hiveConf) throws Exception {
-        this(hiveConf.get(HIVE_CLUSTER_NAME, DEFAULT_CLUSTER_NAME), Hive.get(hiveConf), null);
+    public HiveMetaStoreBridge(Configuration atlasProperties, HiveConf hiveConf) throws Exception {
+        this(atlasProperties, hiveConf, null);
     }
 
     /**
      * Construct a HiveMetaStoreBridge.
      * @param hiveConf {@link HiveConf} for Hive component in the cluster
      */
-    public HiveMetaStoreBridge(HiveConf hiveConf, AtlasClient atlasClient) throws Exception {
-        this(hiveConf.get(HIVE_CLUSTER_NAME, DEFAULT_CLUSTER_NAME), Hive.get(hiveConf), atlasClient);
+    public HiveMetaStoreBridge(Configuration atlasProperties, HiveConf hiveConf, AtlasClient atlasClient) throws Exception {
+        this(atlasProperties.getString(HIVE_CLUSTER_NAME, DEFAULT_CLUSTER_NAME), Hive.get(hiveConf), atlasClient);
     }
 
     AtlasClient getAtlasClient() {
@@ -660,7 +660,7 @@ public class HiveMetaStoreBridge {
             failOnError = true;
         }
 
-        HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(new HiveConf(), atlasClient);
+        HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(atlasConf, new HiveConf(), atlasClient);
         hiveMetaStoreBridge.registerHiveDataModel();
         hiveMetaStoreBridge.importHiveMetadata(failOnError);
     }
