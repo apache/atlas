@@ -324,7 +324,7 @@ public final class TypedInstanceToGraphMapper {
         }
 
         String propertyName = GraphHelper.getQualifiedFieldName(typedInstance, attributeInfo);
-        List<String> currentElements = instanceVertex.getProperty(propertyName);
+        List<String> currentElements = GraphHelper.getProperty(instanceVertex, propertyName);
         IDataType elementType = ((DataTypes.ArrayType) attributeInfo.dataType()).getElemType();
         List<Object> newElementsCreated = new ArrayList<>();
 
@@ -403,11 +403,11 @@ public final class TypedInstanceToGraphMapper {
         Map<String, String> currentMap = new HashMap<>();
         Map<String, Object> newMap = new HashMap<>();
 
-        List<String> currentKeys = instanceVertex.getProperty(propertyName);
+        List<String> currentKeys = GraphHelper.getProperty(instanceVertex, propertyName);
         if (currentKeys != null && !currentKeys.isEmpty()) {
             for (String key : currentKeys) {
                 String propertyNameForKey = GraphHelper.getQualifiedNameForMapKey(propertyName, key);
-                String propertyValueForKey = instanceVertex.getProperty(propertyNameForKey).toString();
+                String propertyValueForKey = GraphHelper.getProperty(instanceVertex, propertyNameForKey).toString();
                 currentMap.put(key, propertyValueForKey);
             }
         }
@@ -562,7 +562,7 @@ public final class TypedInstanceToGraphMapper {
         // Update attributes
         final MessageDigest digester = MD5Utils.getDigester();
         String newSignature = newAttributeValue.getSignatureHash(digester);
-        String curSignature = structInstanceVertex.getProperty(SIGNATURE_HASH_PROPERTY_KEY);
+        String curSignature = GraphHelper.getProperty(structInstanceVertex, SIGNATURE_HASH_PROPERTY_KEY);
 
         if (!newSignature.equals(curSignature)) {
             //Update struct vertex instance only if there is a change
@@ -622,7 +622,7 @@ public final class TypedInstanceToGraphMapper {
 
         if (id.isUnassigned()) {
             Vertex classVertex = idToVertexMap.get(id);
-            String guid = classVertex.getProperty(Constants.GUID_PROPERTY_KEY);
+            String guid = GraphHelper.getIdFromVertex(classVertex);
             id = new Id(guid, 0, typedReference.getTypeName());
         }
         return id;

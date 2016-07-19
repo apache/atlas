@@ -36,6 +36,7 @@ import org.apache.atlas.query.QueryParser;
 import org.apache.atlas.query.QueryProcessor;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.MetadataRepository;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graph.GraphProvider;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -94,11 +95,11 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
             Vertex vertex = result.getElement();
 
             JSONObject row = new JSONObject();
-            String guid = vertex.getProperty(Constants.GUID_PROPERTY_KEY);
+            String guid = GraphHelper.getIdFromVertex(vertex);
             if (guid != null) { //Filter non-class entities
                 try {
                     row.put("guid", guid);
-                    row.put(AtlasClient.TYPENAME, vertex.<String>getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY));
+                    row.put(AtlasClient.TYPENAME, GraphHelper.getTypeName(vertex));
                     row.put(SCORE, result.getScore());
                 } catch (JSONException e) {
                     LOG.error("Unable to create response", e);

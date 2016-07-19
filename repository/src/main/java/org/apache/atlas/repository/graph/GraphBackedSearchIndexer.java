@@ -227,7 +227,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     }
 
     private void createIndexForAttribute(TitanManagement management, String typeName, AttributeInfo field) {
-        final String propertyName = typeName + "." + field.name;
+        final String propertyName = GraphHelper.encodePropertyKey(typeName + "." + field.name);
         switch (field.dataType().getTypeCategory()) {
         case PRIMITIVE:
             Cardinality cardinality = getCardinality(field.multiplicity);

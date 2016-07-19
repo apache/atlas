@@ -26,7 +26,6 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
-
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.repository.Constants;
@@ -58,6 +57,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+
+import static org.apache.atlas.repository.graph.GraphHelper.setProperty;
 
 @Singleton
 public class GraphBackedTypeStore implements ITypeStore {
@@ -106,20 +107,15 @@ public class GraphBackedTypeStore implements ITypeStore {
         }
     }
 
-    private void addProperty(Vertex vertex, String propertyName, Object value) {
-        LOG.debug("Setting property {} = \"{}\" to vertex {}", propertyName, value, vertex);
-        vertex.setProperty(propertyName, value);
-    }
-
     private void storeInGraph(EnumType dataType) {
         Vertex vertex = createVertex(dataType.getTypeCategory(), dataType.getName(), dataType.getDescription());
         List<String> values = new ArrayList<>(dataType.values().size());
         for (EnumValue enumValue : dataType.values()) {
             String key = getPropertyKey(dataType.getName(), enumValue.value);
-            addProperty(vertex, key, enumValue.ordinal);
+            setProperty(vertex, key, enumValue.ordinal);
             values.add(enumValue.value);
         }
-        addProperty(vertex, getPropertyKey(dataType.getName()), values);
+        setProperty(vertex, getPropertyKey(dataType.getName()), values);
     }
 
     private String getPropertyKey(String name) {
@@ -142,7 +138,7 @@ public class GraphBackedTypeStore implements ITypeStore {
             for (AttributeInfo attribute : attributes) {
                 String propertyKey = getPropertyKey(typeName, attribute.name);
                 try {
-                    addProperty(vertex, propertyKey, attribute.toJson());
+                    setProperty(vertex, propertyKey, attribute.toJson());
                 } catch (JSONException e) {
                     throw new StorageException(typeName, e);
                 }
@@ -150,7 +146,7 @@ public class GraphBackedTypeStore implements ITypeStore {
                 addReferencesForAttribute(typeSystem, vertex, attribute);
             }
         }
-        addProperty(vertex, getPropertyKey(typeName), attrNames);
+        setProperty(vertex, getPropertyKey(typeName), attrNames);
 
         //Add edges for hierarchy
         if (superTypes != null) {
@@ -272,10 +268,10 @@ public class GraphBackedTypeStore implements ITypeStore {
         String typeName = vertex.getProperty(Constants.TYPENAME_PROPERTY_KEY);
         String typeDescription = vertex.getProperty(Constants.TYPEDESCRIPTION_PROPERTY_KEY);
         List<EnumValue> enumValues = new ArrayList<>();
-        List<String> values = vertex.getProperty(getPropertyKey(typeName));
+        List<String> values = graphHelper.getProperty(vertex, getPropertyKey(typeName));
         for (String value : values) {
             String valueProperty = getPropertyKey(typeName, value);
-            enumValues.add(new EnumValue(value, vertex.<Integer>getProperty(valueProperty)));
+            enumValues.add(new EnumValue(value, (Integer) graphHelper.getProperty(vertex, valueProperty)));
         }
         return new EnumTypeDefinition(typeName, typeDescription, enumValues.toArray(new EnumValue[enumValues.size()]));
     }
@@ -292,22 +288,18 @@ public class GraphBackedTypeStore implements ITypeStore {
 
     private AttributeDefinition[] getAttributes(Vertex vertex, String typeName) throws AtlasException {
         List<AttributeDefinition> attributes = new ArrayList<>();
-        List<String> attrNames = vertex.getProperty(getPropertyKey(typeName));
+        List<String> attrNames = graphHelper.getProperty(vertex, getPropertyKey(typeName));
         if (attrNames != null) {
             for (String attrName : attrNames) {
                 try {
                     String propertyKey = getPropertyKey(typeName, attrName);
-                    attributes.add(AttributeInfo.fromJson((String) vertex.getProperty(propertyKey)));
+                    attributes.add(AttributeInfo.fromJson((String) graphHelper.getProperty(vertex, propertyKey)));
                 } catch (JSONException e) {
                     throw new AtlasException(e);
                 }
             }
         }
         return attributes.toArray(new AttributeDefinition[attributes.size()]);
-    }
-
-    private String toString(Vertex vertex) {
-        return PROPERTY_PREFIX + vertex.getProperty(Constants.TYPENAME_PROPERTY_KEY);
     }
 
     /**
@@ -333,14 +325,14 @@ public class GraphBackedTypeStore implements ITypeStore {
         if (vertex == null) {
             LOG.debug("Adding vertex {}{}", PROPERTY_PREFIX, typeName);
             vertex = titanGraph.addVertex(null);
-            addProperty(vertex, Constants.VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE); // Mark as type vertex
-            addProperty(vertex, Constants.TYPE_CATEGORY_PROPERTY_KEY, category);
-            addProperty(vertex, Constants.TYPENAME_PROPERTY_KEY, typeName);
+            setProperty(vertex, Constants.VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE); // Mark as type vertex
+            setProperty(vertex, Constants.TYPE_CATEGORY_PROPERTY_KEY, category);
+            setProperty(vertex, Constants.TYPENAME_PROPERTY_KEY, typeName);
         }
         if (typeDescription != null) {
             String oldDescription = getPropertyKey(Constants.TYPEDESCRIPTION_PROPERTY_KEY);
             if (!typeDescription.equals(oldDescription)) {
-                addProperty(vertex, Constants.TYPEDESCRIPTION_PROPERTY_KEY, typeDescription);
+                setProperty(vertex, Constants.TYPEDESCRIPTION_PROPERTY_KEY, typeDescription);
             }
         } else {
             LOG.debug(" type description is null ");

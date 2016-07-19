@@ -18,15 +18,16 @@
 
 package org.apache.atlas.query
 
-import org.apache.atlas.query.TypeUtils.FieldInfo;
+import org.apache.atlas.query.TypeUtils.FieldInfo
 import org.apache.atlas.query.Expressions._
-import org.apache.atlas.typesystem.types.{TypeSystem, DataTypes}
+import org.apache.atlas.typesystem.types.{DataTypes, TypeSystem}
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory
 import org.joda.time.format.ISODateTimeFormat
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import org.apache.atlas.typesystem.types.IDataType
+import org.apache.commons.lang.StringEscapeUtils
 
 trait IntSequence {
     def next: Int
@@ -111,7 +112,8 @@ trait SelectExpressionHandling {
     /**
      * For each Output Column in the SelectExpression compute the ArrayList(Src) this maps to and the position within
      * this list.
-     * @param sel
+      *
+      * @param sel
      * @return
      */
     def buildResultMapping(sel: SelectExpression): Map[String, (String, Int)] = {
@@ -200,13 +202,19 @@ class GremlinTranslator(expr: Expression,
     }
 
     def typeTestExpression(typeName : String) : String = {
-        val stats = gPersistenceBehavior.typeTestExpression(typeName, counter)
+        val stats = gPersistenceBehavior.typeTestExpression(escape(typeName), counter)
         preStatements ++= stats.init
         stats.last
     }
 
+  def escape(str: String): String = {
+    if (str != null) {
+      return str.replace("\"", "\\\"").replace("$", "\\$");
+    }
+    str
+  }
 
-    private def genQuery(expr: Expression, inSelect: Boolean): String = expr match {
+  private def genQuery(expr: Expression, inSelect: Boolean): String = expr match {
         case ClassExpression(clsName) =>
             typeTestExpression(clsName)
         case TraitExpression(clsName) =>
@@ -239,9 +247,9 @@ class GremlinTranslator(expr: Expression,
             }
         }
         case c@ComparisonExpression(symb, f@FieldExpression(fieldName, fInfo, ch), l) => {
-           val qualifiedPropertyName = s"${gPersistenceBehavior.fieldNameInVertex(fInfo.dataType, fInfo.attrInfo)}";
-           val persistentExprValue = translateValueToPersistentForm(fInfo, l);
-           return generateAndPrependExpr(ch, inSelect, s"""has("${qualifiedPropertyName}", ${gPersistenceBehavior.gremlinCompOp(c)}, $persistentExprValue)""");
+           val qualifiedPropertyName = s"${gPersistenceBehavior.fieldNameInVertex(fInfo.dataType, fInfo.attrInfo)}"
+           val persistentExprValue = translateValueToPersistentForm(fInfo, l)
+           return generateAndPrependExpr(ch, inSelect, s"""has("${qualifiedPropertyName}", ${gPersistenceBehavior.gremlinCompOp(c)}, $persistentExprValue)""")
         }
         case fil@FilterExpression(child, condExpr) => {
             s"${genQuery(child, inSelect)}.${genQuery(condExpr, inSelect)}"
@@ -329,9 +337,9 @@ class GremlinTranslator(expr: Expression,
     def translateValueToPersistentForm(fInfo: FieldInfo, l: Expression): Any =  {
 
         val dataType = fInfo.attrInfo.dataType;
+      val QUOTE = "\"";
 
          if (dataType == DataTypes.DATE_TYPE) {
-              val QUOTE = "\"";
               try {
                   //Accepts both date, datetime formats
                   val dateStr = l.toString.stripPrefix(QUOTE).stripSuffix(QUOTE)
@@ -360,9 +368,10 @@ class GremlinTranslator(expr: Expression,
          }
          else if(dataType == DataTypes.DOUBLE_TYPE) {
              return s"""${l}d"""
-         }
-         else {
-             return l
+         } else if(dataType == DataTypes.STRING_TYPE) {
+           return string(escape(l.toString.stripPrefix(QUOTE).stripSuffix(QUOTE)));
+         } else {
+           l
          }
     }
 

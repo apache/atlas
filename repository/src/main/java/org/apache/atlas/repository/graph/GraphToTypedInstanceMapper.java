@@ -47,6 +47,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.atlas.repository.graph.GraphHelper.getIdFromVertex;
 import static org.apache.atlas.repository.graph.GraphHelper.string;
 
 @Singleton
@@ -66,11 +67,12 @@ public final class GraphToTypedInstanceMapper {
         throws AtlasException {
 
         LOG.debug("Mapping graph root vertex {} to typed instance for guid {}", instanceVertex, guid);
-        String typeName = instanceVertex.getProperty(Constants.ENTITY_TYPE_PROPERTY_KEY);
+        String typeName = GraphHelper.getProperty(instanceVertex, Constants.ENTITY_TYPE_PROPERTY_KEY);
         List<String> traits = GraphHelper.getTraitNames(instanceVertex);
         String state = GraphHelper.getStateAsString(instanceVertex);
 
-        Id id = new Id(guid, instanceVertex.<Integer>getProperty(Constants.VERSION_PROPERTY_KEY), typeName, state);
+        Id id = new Id(guid, (Integer) GraphHelper.getProperty(instanceVertex, Constants.VERSION_PROPERTY_KEY),
+                typeName, state);
         LOG.debug("Created id {} for instance type {}", id, typeName);
 
         ClassType classType = typeSystem.getDataType(ClassType.class, typeName);
@@ -115,13 +117,12 @@ public final class GraphToTypedInstanceMapper {
             break;  // add only if vertex has this attribute
 
         case ENUM:
-            if (instanceVertex.getProperty(vertexPropertyName) == null) {
+            Object propertyValue = GraphHelper.getProperty(instanceVertex, vertexPropertyName);
+            if (propertyValue == null) {
                 return;
             }
 
-            typedInstance.set(attributeInfo.name,
-                dataType.convert(instanceVertex.<String>getProperty(vertexPropertyName),
-                    Multiplicity.REQUIRED));
+            typedInstance.set(attributeInfo.name, dataType.convert(propertyValue, Multiplicity.REQUIRED));
             break;
 
         case ARRAY:
@@ -168,17 +169,14 @@ public final class GraphToTypedInstanceMapper {
 
         if (edge != null) {
             final Vertex referenceVertex = edge.getVertex(Direction.IN);
-            final String guid = referenceVertex.getProperty(Constants.GUID_PROPERTY_KEY);
+            final String guid = GraphHelper.getIdFromVertex(referenceVertex);
             LOG.debug("Found vertex {} for label {} with guid {}", referenceVertex, relationshipLabel, guid);
             if (attributeInfo.isComposite) {
                 //Also, when you retrieve a type's instance, you get the complete object graph of the composites
                 LOG.debug("Found composite, mapping vertex to instance");
                 return mapGraphToTypedInstance(guid, referenceVertex);
             } else {
-                String state = GraphHelper.getStateAsString(referenceVertex);
-                Id referenceId =
-                        new Id(guid, referenceVertex.<Integer>getProperty(Constants.VERSION_PROPERTY_KEY),
-                                dataType.getName(), state);
+                Id referenceId = getIdFromVertex(dataType.getName(), referenceVertex);
                 LOG.debug("Found non-composite, adding id {} ", referenceId);
                 return referenceId;
             }
@@ -191,7 +189,7 @@ public final class GraphToTypedInstanceMapper {
     private void mapVertexToArrayInstance(Vertex instanceVertex, ITypedInstance typedInstance,
         AttributeInfo attributeInfo, String propertyName) throws AtlasException {
         LOG.debug("mapping vertex {} to array {}", instanceVertex, attributeInfo.name);
-        List list = instanceVertex.getProperty(propertyName);
+        List list = GraphHelper.getProperty(instanceVertex, propertyName);
         if (list == null || list.size() == 0) {
             return;
         }
@@ -240,7 +238,7 @@ public final class GraphToTypedInstanceMapper {
     private void mapVertexToMapInstance(Vertex instanceVertex, ITypedInstance typedInstance,
         AttributeInfo attributeInfo, final String propertyName) throws AtlasException {
         LOG.debug("mapping vertex {} to array {}", instanceVertex, attributeInfo.name);
-        List<String> keys = instanceVertex.getProperty(propertyName);
+        List<String> keys = GraphHelper.getProperty(instanceVertex, propertyName);
         if (keys == null || keys.size() == 0) {
             return;
         }
@@ -251,7 +249,7 @@ public final class GraphToTypedInstanceMapper {
         for (String key : keys) {
             final String keyPropertyName = propertyName + "." + key;
             final String edgeLabel = GraphHelper.EDGE_LABEL_PREFIX + keyPropertyName;
-            final Object keyValue = instanceVertex.getProperty(keyPropertyName);
+            final Object keyValue = GraphHelper.getProperty(instanceVertex, keyPropertyName);
             Object mapValue = mapVertexToCollectionEntry(instanceVertex, attributeInfo, valueType, keyValue, edgeLabel);
             if (mapValue != null) {
                 values.put(key, mapValue);
@@ -312,33 +310,33 @@ public final class GraphToTypedInstanceMapper {
         AttributeInfo attributeInfo) throws AtlasException {
         LOG.debug("Adding primitive {} from vertex {}", attributeInfo, instanceVertex);
         final String vertexPropertyName = GraphHelper.getQualifiedFieldName(typedInstance, attributeInfo);
-        if (instanceVertex.getProperty(vertexPropertyName) == null) {
+        Object propertyValue = GraphHelper.getProperty(instanceVertex, vertexPropertyName);
+        if (propertyValue == null) {
             return;
         }
 
         if (attributeInfo.dataType() == DataTypes.STRING_TYPE) {
-            typedInstance.setString(attributeInfo.name, instanceVertex.<String>getProperty(vertexPropertyName));
+            typedInstance.setString(attributeInfo.name, (String) propertyValue);
         } else if (attributeInfo.dataType() == DataTypes.SHORT_TYPE) {
-            typedInstance.setShort(attributeInfo.name, instanceVertex.<Short>getProperty(vertexPropertyName));
+            typedInstance.setShort(attributeInfo.name, (Short) propertyValue);
         } else if (attributeInfo.dataType() == DataTypes.INT_TYPE) {
-            typedInstance.setInt(attributeInfo.name, instanceVertex.<Integer>getProperty(vertexPropertyName));
+            typedInstance.setInt(attributeInfo.name, (Integer) propertyValue);
         } else if (attributeInfo.dataType() == DataTypes.BIGINTEGER_TYPE) {
-            typedInstance.setBigInt(attributeInfo.name, instanceVertex.<BigInteger>getProperty(vertexPropertyName));
+            typedInstance.setBigInt(attributeInfo.name, (BigInteger) propertyValue);
         } else if (attributeInfo.dataType() == DataTypes.BOOLEAN_TYPE) {
-            typedInstance.setBoolean(attributeInfo.name, instanceVertex.<Boolean>getProperty(vertexPropertyName));
+            typedInstance.setBoolean(attributeInfo.name, (Boolean) propertyValue);
         } else if (attributeInfo.dataType() == DataTypes.BYTE_TYPE) {
-            typedInstance.setByte(attributeInfo.name, instanceVertex.<Byte>getProperty(vertexPropertyName));
+            typedInstance.setByte(attributeInfo.name, (Byte) propertyValue);
         } else if (attributeInfo.dataType() == DataTypes.LONG_TYPE) {
-            typedInstance.setLong(attributeInfo.name, instanceVertex.<Long>getProperty(vertexPropertyName));
+            typedInstance.setLong(attributeInfo.name, (Long) propertyValue);
         } else if (attributeInfo.dataType() == DataTypes.FLOAT_TYPE) {
-            typedInstance.setFloat(attributeInfo.name, instanceVertex.<Float>getProperty(vertexPropertyName));
+            typedInstance.setFloat(attributeInfo.name, (Float) propertyValue);
         } else if (attributeInfo.dataType() == DataTypes.DOUBLE_TYPE) {
-            typedInstance.setDouble(attributeInfo.name, instanceVertex.<Double>getProperty(vertexPropertyName));
+            typedInstance.setDouble(attributeInfo.name, (Double) propertyValue);
         } else if (attributeInfo.dataType() == DataTypes.BIGDECIMAL_TYPE) {
-            typedInstance
-                .setBigDecimal(attributeInfo.name, instanceVertex.<BigDecimal>getProperty(vertexPropertyName));
+            typedInstance.setBigDecimal(attributeInfo.name, (BigDecimal) propertyValue);
         } else if (attributeInfo.dataType() == DataTypes.DATE_TYPE) {
-            final Long dateVal = instanceVertex.<Long>getProperty(vertexPropertyName);
+            final Long dateVal = (Long) propertyValue;
             typedInstance.setDate(attributeInfo.name, new Date(dateVal));
         }
     }
@@ -359,11 +357,7 @@ public final class GraphToTypedInstanceMapper {
                     return instance;
                 case CLASS:
                     //TODO isComposite handling for class loads
-                    final String guid = referredVertex.getProperty(Constants.GUID_PROPERTY_KEY);
-                    Id referenceId =
-                        new Id(guid, referredVertex.<Integer>getProperty(Constants.VERSION_PROPERTY_KEY),
-                            referredType.getName());
-                    return referenceId;
+                    return GraphHelper.getIdFromVertex(referredType.getName(), referredVertex);
                 default:
                     throw new UnsupportedOperationException("Loading " + referredType.getTypeCategory() + " is not supported");
                 }

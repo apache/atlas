@@ -154,7 +154,7 @@ public abstract class DeleteHandler {
 
                 if (valueTypeCategory == DataTypes.TypeCategory.STRUCT ||
                         valueTypeCategory == DataTypes.TypeCategory.CLASS) {
-                    List<String> keys = instanceVertex.getProperty(propertyName);
+                    List<String> keys = GraphHelper.getProperty(instanceVertex, propertyName);
                     if (keys != null) {
                         for (String key : keys) {
                             String mapEdgeLabel = GraphHelper.getQualifiedNameForMapKey(edgeLabel, key);
@@ -286,7 +286,7 @@ public abstract class DeleteHandler {
 
         case ARRAY:
             //If its array attribute, find the right edge between the two vertices and update array property
-            List<String> elements = outVertex.getProperty(propertyName);
+            List<String> elements = GraphHelper.getProperty(outVertex, propertyName);
             if (elements != null) {
                 elements = new ArrayList<>(elements);   //Make a copy, else list.remove reflects on titan.getProperty()
                 for (String elementEdgeId : elements) {
@@ -327,12 +327,12 @@ public abstract class DeleteHandler {
 
         case MAP:
             //If its map attribute, find the right edge between two vertices and update map property
-            List<String> keys = outVertex.getProperty(propertyName);
+            List<String> keys = GraphHelper.getProperty(outVertex, propertyName);
             if (keys != null) {
                 keys = new ArrayList<>(keys);   //Make a copy, else list.remove reflects on titan.getProperty()
                 for (String key : keys) {
                     String keyPropertyName = GraphHelper.getQualifiedNameForMapKey(propertyName, key);
-                    String mapEdgeId = outVertex.getProperty(keyPropertyName);
+                    String mapEdgeId = GraphHelper.getProperty(outVertex, keyPropertyName);
                     Edge mapEdge = graphHelper.getEdgeByEdgeId(outVertex, keyPropertyName, mapEdgeId);
                     Vertex mapVertex = mapEdge.getVertex(Direction.IN);
                     if (mapVertex.getId().toString().equals(inVertex.getId().toString())) {
