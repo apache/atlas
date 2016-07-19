@@ -115,7 +115,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         if (aInfo.name.startsWith(Constants.INTERNAL_PROPERTY_KEY_PREFIX)) {
             return aInfo.name;
         }
-        return GraphHelper.getQualifiedFieldName(dataType, aInfo.name);
+        return GraphHelper.encodePropertyKey(GraphHelper.getQualifiedFieldName(dataType, aInfo.name));
     }
 
     public String getFieldNameInVertex(IDataType<?> dataType, String attrName) throws AtlasException {
@@ -168,7 +168,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
                 Constants.ENTITY_TYPE_PROPERTY_KEY, entityType,
                 Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
 
-        String guid = instanceVertex.getProperty(Constants.GUID_PROPERTY_KEY);
+        String guid = GraphHelper.getIdFromVertex(instanceVertex);
         return graphToInstanceMapper.mapGraphToTypedInstance(guid, instanceVertex);
     }
 
@@ -185,7 +185,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         ArrayList<String> entityList = new ArrayList<>();
         while (results.hasNext()) {
             Vertex vertex = results.next();
-            entityList.add(vertex.<String>getProperty(Constants.GUID_PROPERTY_KEY));
+            entityList.add(GraphHelper.getIdFromVertex(vertex));
         }
 
         return entityList;

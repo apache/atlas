@@ -18,6 +18,9 @@
 
 package org.apache.atlas.repository.graph;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
@@ -41,11 +44,13 @@ import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.HierarchicalType;
 import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.TypeSystem;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -215,7 +220,7 @@ public final class GraphHelper {
                 LOG.debug("Found {}", string(edge));
                 return edge;
             } else {
-                Long modificationTime = edge.getProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY);
+                Long modificationTime = getProperty(edge, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY);
                 if (modificationTime != null && modificationTime >= latestDeletedEdgeTime) {
                     latestDeletedEdgeTime = modificationTime;
                     latestDeletedEdge = edge;
@@ -244,19 +249,34 @@ public final class GraphHelper {
 
     public static <T extends Element> void setProperty(T element, String propertyName, Object value) {
         String elementStr = string(element);
-        LOG.debug("Setting property {} = \"{}\" to {}", propertyName, value, elementStr);
-        Object existValue = element.getProperty(propertyName);
+        String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
+        LOG.debug("Setting property {} = \"{}\" to {}", actualPropertyName, value, elementStr);
+        Object existValue = element.getProperty(actualPropertyName);
         if(value == null || (value instanceof Collection && ((Collection) value).isEmpty())) {
             if(existValue != null) {
-                LOG.info("Removing property - {} value from {}", propertyName, elementStr);
-                element.removeProperty(propertyName);
+                LOG.info("Removing property - {} value from {}", actualPropertyName, elementStr);
+                element.removeProperty(actualPropertyName);
             }
         } else {
             if (!value.equals(existValue)) {
-                element.setProperty(propertyName, value);
-                LOG.debug("Set property {} = \"{}\" to {}", propertyName, value, elementStr);
+                element.setProperty(actualPropertyName, value);
+                LOG.debug("Set property {} = \"{}\" to {}", actualPropertyName, value, elementStr);
             }
         }
+    }
+
+    public static <T extends Element, O> O getProperty(T element, String propertyName) {
+        String elementStr = string(element);
+        String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
+        LOG.debug("Reading property {} from {}", actualPropertyName, elementStr);
+        return element.getProperty(actualPropertyName);
+    }
+
+    public static Iterable<TitanProperty> getProperties(TitanVertex vertex, String propertyName) {
+        String elementStr = string(vertex);
+        String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
+        LOG.debug("Reading property {} from {}", actualPropertyName, elementStr);
+        return vertex.getProperties(actualPropertyName);
     }
 
     private static <T extends Element> String string(T element) {
@@ -339,8 +359,8 @@ public final class GraphHelper {
     }
 
     public static Id getIdFromVertex(String dataTypeName, Vertex vertex) {
-        return new Id(vertex.<String>getProperty(Constants.GUID_PROPERTY_KEY),
-            vertex.<Integer>getProperty(Constants.VERSION_PROPERTY_KEY), dataTypeName);
+        return new Id(getIdFromVertex(vertex),
+            vertex.<Integer>getProperty(Constants.VERSION_PROPERTY_KEY), dataTypeName, getStateAsString(vertex));
     }
 
     public static String getIdFromVertex(Vertex vertex) {
@@ -424,5 +444,40 @@ public final class GraphHelper {
         } else {
             return String.format("edge[id=%s]", edge.getId().toString());
         }
+    }
+
+    @VisibleForTesting
+    //Keys copied from com.thinkaurelius.titan.graphdb.types.StandardRelationTypeMaker
+    //Titan checks that these chars are not part of any keys. So, encoding...
+    public static BiMap<String, String> RESERVED_CHARS_ENCODE_MAP =
+            HashBiMap.create(new HashMap<String, String>() {{
+                put("{", "_o");
+                put("}", "_c");
+                put("\"", "_q");
+                put("$", "_d");
+                put("%", "_p");
+            }});
+
+
+    public static String encodePropertyKey(String key) {
+        if (StringUtils.isBlank(key)) {
+            return key;
+        }
+
+        for (String str : RESERVED_CHARS_ENCODE_MAP.keySet()) {
+            key = key.replace(str, RESERVED_CHARS_ENCODE_MAP.get(str));
+        }
+        return key;
+    }
+
+    public static String decodePropertyKey(String key) {
+        if (StringUtils.isBlank(key)) {
+            return key;
+        }
+
+        for (String encodedStr : RESERVED_CHARS_ENCODE_MAP.values()) {
+            key = key.replace(encodedStr, RESERVED_CHARS_ENCODE_MAP.inverse().get(encodedStr));
+        }
+        return key;
     }
 }
