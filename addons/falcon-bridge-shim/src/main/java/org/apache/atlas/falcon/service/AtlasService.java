@@ -34,7 +34,7 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
     private static final Logger LOG = LoggerFactory.getLogger(AtlasService.class);
 
     private static final String ATLAS_PLUGIN_TYPE = "falcon";
-    private static final String ATLAS_FALCON_HOOK_IMPL_CLASSNAME = "org.apache.atlas.falcon.hook.AtlasService";
+    private static final String ATLAS_FALCON_HOOK_IMPL_CLASSNAME = "org.apache.atlas.falcon.service.AtlasService";
 
     private AtlasPluginClassLoader atlasPluginClassLoader = null;
     private FalconService falconServiceImpl = null;
