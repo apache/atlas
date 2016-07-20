@@ -27,6 +27,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-1022 Update typesystem wiki with details (yhemanth via shwethags)
 ATLAS-1021 Update Atlas architecture wiki (yhemanth via sumasai)
 ATLAS-957 Atlas is not capturing topologies that have $ in the data payload (shwethags)
 ATLAS-1032 Atlas hook package should not include libraries already present in host component - like log4j (mneethiraj via sumasai)
