@@ -11,9 +11,9 @@ The grammar for the DSL is below.
 <verbatim>
 queryWithPath: query ~ opt(WITHPATH)
 
-query: rep1sep(singleQuery, opt(COMMA))
+query: querySrc ~ opt(loopExpression) ~ opt(selectClause) ~ opt(orderby) ~ opt(limitOffset)
 
-singleQuery: singleQrySrc ~ opt(loopExpression) ~ opt(selectClause) ~ opt(orderby) ~ opt(limitOffset)
+querySrc: rep1sep(singleQrySrc, opt(COMMA))
 
 singleQrySrc = FROM ~ fromSrc ~ opt(WHERE) ~ opt(expr ^? notIdExpression) |
         WHERE ~ (expr ^? notIdExpression) |
@@ -22,7 +22,7 @@ singleQrySrc = FROM ~ fromSrc ~ opt(WHERE) ~ opt(expr ^? notIdExpression) |
 
 fromSrc: identifier ~ AS ~ alias | identifier
 
-orderby: ORDERBY ~ order ~ opt (sortOrder) 
+orderby: ORDERBY ~ expr ~ opt (sortOrder)
     
 limitOffset: LIMIT ~ lmt ~ opt (offset)
     
@@ -87,31 +87,36 @@ Language Notes:
    * The _!WithPath_ clause can be used with transitive closure queries to retrieve the Path that
  connects the two related Entities. (We also provide a higher level interface for Closure Queries
   see scaladoc for 'org.apache.atlas.query.ClosureQuery')
-   * ORDERBY is optional. Orderby clause should be specified in single quote ('). When order by clause is specified case insensitive sorting is done in ascending order.
-    For sorting in descending order specify 'DESC' after order by clause. If no order by is specified then no default sorting is applied.
+   * ORDERBY is optional. When order by clause is specified, case insensitive sorting is done based on the column specified.
+    For sorting in descending order specify 'DESC' after order by clause. If no order by is specified, then no default sorting is applied.
    * LIMIT is optional. It limits the maximum number of objects to be fetched starting from specified optional offset. If no offset is specified count starts from beginning.
    * There are couple of Predicate functions different from SQL:
       * _is_ or _isa_can be used to filter Entities that have a particular Trait.
       * _has_ can be used to filter Entities that have a value for a particular Attribute.
-   * When querying for a space delimited multiple-word identifier, it need to be enclosed within
-   backquote (`)
+   * Any identifiers or constants with special characters(space,$,",{,}) should be enclosed within backquote (`)
 
 ---+++ DSL Examples
+For the model,
+Asset - attributes name, owner, description
+DB - supertype Asset - attributes clusterName, parameters, comment
+Column - extends Asset - attributes type, comment
+Table - supertype Asset - db, columns, parameters, comment
+Traits - PII, Log Data
 
-   * from DB
+DSL queries:
+* from DB
    * DB where name="Reporting" select name, owner
-   * DB where name="Reporting" select name, owner orderby 'name'
+   * DB where name="Reporting" select name, owner orderby name
    * DB where name="Reporting" select name limit 10
    * DB where name="Reporting" select name, owner limit 10 offset 0
-   * DB where name="Reporting" select name, owner orderby 'name' limit 10 offset 5
-   * DB where name="Reporting" select name, owner orderby 'name' desc limit 10 offset 5
+   * DB where name="Reporting" select name, owner orderby name limit 10 offset 5
+   * DB where name="Reporting" select name, owner orderby name desc limit 10 offset 5
    * DB has name
    * DB is !JdbcAccess
    * Column where Column isa PII
    * Table where name="sales_fact", columns
    * Table where name="sales_fact", columns as column select column.name, column.dataType, column.comment
    * `Log Data`
-
 
 ---++ Full-text Search
 

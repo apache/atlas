@@ -317,13 +317,20 @@ class GremlinTranslator(expr: Expression,
           s"${genQuery(child, inSelect)}.path"
         }
         case order@OrderExpression(child, odr, asc) => {
+          var orderExpression = odr
+          if(odr.isInstanceOf[BackReference]) { orderExpression = odr.asInstanceOf[BackReference].reference }
+          else if (odr.isInstanceOf[AliasExpression]) { orderExpression = odr.asInstanceOf[AliasExpression].child}
+          val orderbyProperty = genQuery(orderExpression, false)
+          val bProperty = s"it.b.$orderbyProperty"
+          val aProperty = s"it.a.$orderbyProperty"
+          val aCondition = s"($aProperty != null ? $aProperty.toLowerCase(): $aProperty)"
+          val bCondition = s"($bProperty != null ? $bProperty.toLowerCase(): $bProperty)"
           var orderby = ""
-             asc  match {
+            asc  match {
             //builds a closure comparison function based on provided order by clause in DSL. This will be used to sort the results by gremlin order pipe.
             //Ordering is case insensitive.
-             case false=> orderby = s"order{(it.b.getProperty('$odr') !=null ? it.b.getProperty('$odr').toLowerCase(): it.b.getProperty('$odr')) <=> (it.a.getProperty('$odr') != null ? it.a.getProperty('$odr').toLowerCase(): it.a.getProperty('$odr'))}"//descending
-              case _ => orderby = s"order{(it.a.getProperty('$odr') != null ? it.a.getProperty('$odr').toLowerCase(): it.a.getProperty('$odr')) <=> (it.b.getProperty('$odr') !=null ? it.b.getProperty('$odr').toLowerCase(): it.b.getProperty('$odr'))}"
-              
+              case false=> orderby = s"order{$bCondition <=> $aCondition}"//descending
+              case _ => orderby = s"order{$aCondition <=> $bCondition}"
             }
           s"""${genQuery(child, inSelect)}.$orderby"""
         }
@@ -410,7 +417,7 @@ class GremlinTranslator(expr: Expression,
         e1 = e1.transformUp(traitClauseWithInstanceForTop(e1))
         
         //Following code extracts the select expressions from expression tree.
-        
+
              val  se = SelectExpressionHelper.extractSelectExpression(e1)
              if (se.isDefined)
              {

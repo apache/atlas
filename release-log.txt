@@ -6,6 +6,7 @@ INCOMPATIBLE CHANGES:
 
 
 ALL CHANGES:
+ATLAS-347 Atlas search APIs should allow pagination of results (shwethags)
 ATLAS-639 Exception for lineage request (svimal2106 via shwethags)
 ATLAS-1022 Update typesystem wiki with details (yhemanth via shwethags)
 ATLAS-1021 Update Atlas architecture wiki (yhemanth via sumasai)

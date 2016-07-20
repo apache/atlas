@@ -53,7 +53,6 @@ import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -218,7 +217,7 @@ public class HiveMetaStoreBridge {
 
     private Referenceable getEntityReferenceFromDSL(String typeName, String dslQuery) throws Exception {
         AtlasClient dgiClient = getAtlasClient();
-        JSONArray results = dgiClient.searchByDSL(dslQuery);
+        JSONArray results = dgiClient.searchByDSL(dslQuery, 1, 0);
         if (results.length() == 0) {
             return null;
         } else {
@@ -499,17 +498,6 @@ public class HiveMetaStoreBridge {
         LOG.debug("Updating entity {} = {}", referenceable.getTypeName(), entityJSON);
 
         atlasClient.updateEntity(referenceable.getId().id, referenceable);
-    }
-
-    private Referenceable getEntityReferenceFromGremlin(String typeName, String gremlinQuery)
-    throws AtlasServiceException, JSONException {
-        AtlasClient client = getAtlasClient();
-        JSONArray results = client.searchByGremlin(gremlinQuery);
-        if (results.length() == 0) {
-            return null;
-        }
-        String guid = results.getJSONObject(0).getString(SEARCH_ENTRY_GUID_ATTR);
-        return new Referenceable(guid, typeName, null);
     }
 
     public Referenceable fillStorageDesc(StorageDescriptor storageDesc, String tableQualifiedName,

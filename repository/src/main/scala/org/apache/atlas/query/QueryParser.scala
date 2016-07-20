@@ -93,7 +93,7 @@ trait ExpressionUtils {
         input.limit(lmt, offset) 
     }
     
-    def order(input: Expression, odr: String, asc: Boolean) = {
+    def order(input: Expression, odr: Expression, asc: Boolean) = {
         input.order(odr, asc)
     }
         
@@ -118,6 +118,9 @@ trait ExpressionUtils {
         sngQuery2.transformUp(replaceIdWithField(leftSrcId, snglQuery1.field(leftSrcId.name)))
     }
 }
+
+case class QueryParams(limit: Int, offset: Int)
+
 /**
  * Query parser is used to parse the DSL query. It uses scala PackratParsers and pattern matching to extract the expressions.
  * It builds up a expression tree.
@@ -134,7 +137,12 @@ object QueryParser extends StandardTokenParsers with QueryKeywords with Expressi
 
     override val lexical = new QueryLexer(queryreservedWords, querydelims)
 
-    def apply(input: String): Either[NoSuccess, Expression] = synchronized {
+  /**
+    * @param input query string
+    * @param queryParams query parameters that contains limit and offset
+    * @return
+    */
+    def apply(input: String)(implicit queryParams: QueryParams = null): Either[NoSuccess, Expression] = synchronized {
         phrase(queryWithPath)(new lexical.Scanner(input)) match {
             case Success(r, x) => Right(r)
             case f@Failure(m, x) => Left(f)
@@ -142,23 +150,21 @@ object QueryParser extends StandardTokenParsers with QueryKeywords with Expressi
         }
     }
 
-    def queryWithPath = query ~ opt(WITHPATH) ^^ {
+    import scala.math._
+
+    def queryWithPath(implicit queryParams: QueryParams) = query ~ opt(WITHPATH) ^^ {
       case q ~ None => q
       case q ~ p => q.path()
     }
 
-    def query: Parser[Expression] = rep1sep(singleQuery, opt(COMMA)) ^^ { l => l match {
-        case h :: Nil => h
-        case h :: t => t.foldLeft(h)(merge(_, _))
-    }
-    }
-      /**
+    /**
      * A singleQuery can have the following forms:
      * 1. SrcQuery [select] [orderby desc] [Limit x offset y] -> source query followed by optional select statement followed by optional order by followed by optional limit
      * eg: Select "hive_db where hive_db has name orderby 'hive_db.owner' limit 2 offset 1"
-     * @return
+        *
+        * @return
      */
-    def singleQuery = singleQrySrc ~ opt(loopExpression) ~ opt(selectClause) ~ opt(orderby) ~ opt(limitOffset) ^^ {
+    def query(implicit queryParams: QueryParams) = querySrc ~ opt(loopExpression) ~ opt(selectClause) ~ opt(orderby) ~ opt(limitOffset) ^^ {
       case s ~ l ~ sel ~ odr ~ lmtoff => {
         var expressiontree = s
         if (l.isDefined) //Note: The order of if statements is important. 
@@ -169,16 +175,28 @@ object QueryParser extends StandardTokenParsers with QueryKeywords with Expressi
         {
           expressiontree = order(expressiontree, odr.get._1, odr.get._2)
         }
-        if (lmtoff.isDefined)
-        {
-          expressiontree = limit(expressiontree, int (lmtoff.get._1), int (lmtoff.get._2))
-        }
         if (sel.isDefined)
         {
           expressiontree = select(expressiontree, sel.get)
         }
+        if (queryParams != null && lmtoff.isDefined)
+        {
+          val mylimit = int(min(queryParams.limit, max(lmtoff.get._1 - queryParams.offset, 0)))
+          val myoffset = int(queryParams.offset + lmtoff.get._2)
+          expressiontree = limit(expressiontree, mylimit, myoffset)
+        } else if(lmtoff.isDefined) {
+          expressiontree = limit(expressiontree, int(lmtoff.get._1), int(lmtoff.get._2))
+        } else if(queryParams != null) {
+          expressiontree = limit(expressiontree, int(queryParams.limit), int(queryParams.offset))
+        }
         expressiontree
       }
+    }
+
+    def querySrc: Parser[Expression] = rep1sep(singleQrySrc, opt(COMMA)) ^^ { l => l match {
+        case h :: Nil => h
+        case h :: t => t.foldLeft(h)(merge(_, _))
+    }
     }
 
     /**
@@ -218,14 +236,14 @@ object QueryParser extends StandardTokenParsers with QueryKeywords with Expressi
     def fromSrc = identifier ~ AS ~ alias ^^ { case s ~ a ~ al => s.as(al)} |
         identifier
 
-    def orderby = ORDERBY ~ order ~ opt (asce) ^^ {
+    def orderby = ORDERBY ~ expr ~ opt (asce) ^^ {
       case o ~ odr ~ None => (odr, true)
       case o ~ odr ~ asc => (odr, asc.get)
     }
     
-    def limitOffset = LIMIT ~ lmt ~ opt (offset) ^^ {
-      case l ~ lt ~ None => (lt, 0)
-      case l ~ lt ~ of => (lt, of.get)
+    def limitOffset: Parser[(Int, Int)] = LIMIT ~ lmt ~ opt (offset) ^^ {
+      case l ~ lt ~ None => (lt.toInt, 0)
+      case l ~ lt ~ of => (lt.toInt, of.get.toInt)
     }
     
     def offset = OFFSET ~ ofset  ^^ {
@@ -237,7 +255,7 @@ object QueryParser extends StandardTokenParsers with QueryKeywords with Expressi
       case  _ => true
     }
     
-    def loopExpression: Parser[(Expression, Option[Literal[Integer]], Option[String])] =
+    def loopExpression(implicit queryParams: QueryParams): Parser[(Expression, Option[Literal[Integer]], Option[String])] =
         LOOP ~ (LPAREN ~> query <~ RPAREN) ~ opt(intConstant <~ TIMES) ~ opt(AS ~> alias) ^^ {
             case l ~ e ~ None ~ a => (e, None, a)
             case l ~ e ~ Some(i) ~ a => (e, Some(int(i)), a)
@@ -297,8 +315,6 @@ object QueryParser extends StandardTokenParsers with QueryKeywords with Expressi
     
     def ofset = intConstant
 
-    def order = ident | stringLit
-    
     def asc =  ident | stringLit
     
     def literal = booleanConstant ^^ {

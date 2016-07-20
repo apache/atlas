@@ -178,8 +178,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
             }
         });
 
-        JSONArray results =
-                serviceClient.searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, dbName));
+        JSONArray results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, dbName));
         assertEquals(results.length(), 1);
 
         //create entity again shouldn't create another instance with same unique attribute value
@@ -197,7 +196,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
             //expected timeout
         }
 
-        results = serviceClient.searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, dbName));
+        results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, dbName));
         assertEquals(results.length(), 1);
 
         //Test the same across references
@@ -208,7 +207,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         table.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableName);
 
         serviceClient.createEntity(table);
-        results = serviceClient.searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, dbName));
+        results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, dbName));
         assertEquals(results.length(), 1);
     }
 

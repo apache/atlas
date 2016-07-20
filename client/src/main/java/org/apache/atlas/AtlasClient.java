@@ -101,6 +101,8 @@ public class AtlasClient {
     public static final String URI_TRAITS = "traits";
 
     public static final String QUERY = "query";
+    public static final String LIMIT = "limit";
+    public static final String OFFSET = "offset";
     public static final String QUERY_TYPE = "queryType";
     public static final String ATTRIBUTE_NAME = "property";
     public static final String ATTRIBUTE_VALUE = "value";
@@ -479,7 +481,6 @@ public class AtlasClient {
         //Search operations
         SEARCH(BASE_URI + URI_SEARCH, HttpMethod.GET, Response.Status.OK),
         SEARCH_DSL(BASE_URI + URI_SEARCH + "/dsl", HttpMethod.GET, Response.Status.OK),
-        SEARCH_GREMLIN(BASE_URI + URI_SEARCH + "/gremlin", HttpMethod.GET, Response.Status.OK),
         SEARCH_FULL_TEXT(BASE_URI + URI_SEARCH + "/fulltext", HttpMethod.GET, Response.Status.OK),
 
         //Lineage operations based on dataset name
@@ -981,17 +982,21 @@ public class AtlasClient {
     }
 
     /**
-     * Search using gremlin/dsl/full text
+     * Search using dsl/full text
      * @param searchQuery
-     * @return
+     * @param limit number of rows to be returned in the result, used for pagination. maxlimit > limit > 0. -1 maps to atlas.search.defaultlimit property value
+     * @param offset offset to the results returned, used for pagination. offset >= 0. -1 maps to offset 0
+     * @return Query results
      * @throws AtlasServiceException
      */
-    public JSONArray search(final String searchQuery) throws AtlasServiceException {
+    public JSONArray search(final String searchQuery, final int limit, final int offset) throws AtlasServiceException {
         JSONObject result = callAPIWithRetries(API.SEARCH, null, new ResourceCreator() {
             @Override
             public WebResource createResource() {
                 WebResource resource = getResource(API.SEARCH);
                 resource = resource.queryParam(QUERY, searchQuery);
+                resource = resource.queryParam(LIMIT, String.valueOf(limit));
+                resource = resource.queryParam(OFFSET, String.valueOf(offset));
                 return resource;
             }
         });
@@ -1006,39 +1011,20 @@ public class AtlasClient {
     /**
      * Search given query DSL
      * @param query DSL query
+     * @param limit number of rows to be returned in the result, used for pagination. maxlimit > limit > 0. -1 maps to atlas.search.defaultlimit property value
+     * @param offset offset to the results returned, used for pagination. offset >= 0. -1 maps to offset 0
      * @return result json object
      * @throws AtlasServiceException
      */
-    public JSONArray searchByDSL(final String query) throws AtlasServiceException {
+    public JSONArray searchByDSL(final String query, final int limit, final int offset) throws AtlasServiceException {
         LOG.debug("DSL query: {}", query);
         JSONObject result = callAPIWithRetries(API.SEARCH_DSL, null, new ResourceCreator() {
             @Override
             public WebResource createResource() {
                 WebResource resource = getResource(API.SEARCH_DSL);
                 resource = resource.queryParam(QUERY, query);
-                return resource;
-            }
-        });
-        try {
-            return result.getJSONArray(RESULTS);
-        } catch (JSONException e) {
-            throw new AtlasServiceException(e);
-        }
-    }
-
-    /**
-     * Search given gremlin query
-     * @param gremlinQuery Gremlin query
-     * @return result json object
-     * @throws AtlasServiceException
-     */
-    public JSONArray searchByGremlin(final String gremlinQuery) throws AtlasServiceException {
-        LOG.debug("Gremlin query: " + gremlinQuery);
-        JSONObject result = callAPIWithRetries(API.SEARCH_GREMLIN, null, new ResourceCreator() {
-            @Override
-            public WebResource createResource() {
-                WebResource resource = getResource(API.SEARCH_GREMLIN);
-                resource = resource.queryParam(QUERY, gremlinQuery);
+                resource = resource.queryParam(LIMIT, String.valueOf(limit));
+                resource = resource.queryParam(OFFSET, String.valueOf(offset));
                 return resource;
             }
         });
@@ -1052,15 +1038,20 @@ public class AtlasClient {
     /**
      * Search given full text search
      * @param query Query
+     * @param limit number of rows to be returned in the result, used for pagination. maxlimit > limit > 0. -1 maps to atlas.search.defaultlimit property value
+     * @param offset offset to the results returned, used for pagination. offset >= 0. -1 maps to offset 0
+     * NOTE: Pagination is not implemented currently for full text search, so limit and offset are not used
      * @return result json object
      * @throws AtlasServiceException
      */
-    public JSONObject searchByFullText(final String query) throws AtlasServiceException {
+    public JSONObject searchByFullText(final String query, final int limit, final int offset) throws AtlasServiceException {
         return callAPIWithRetries(API.SEARCH_FULL_TEXT, null, new ResourceCreator() {
             @Override
             public WebResource createResource() {
                 WebResource resource = getResource(API.SEARCH_FULL_TEXT);
                 resource = resource.queryParam(QUERY, query);
+                resource = resource.queryParam(LIMIT, String.valueOf(limit));
+                resource = resource.queryParam(OFFSET, String.valueOf(offset));
                 return resource;
             }
         });

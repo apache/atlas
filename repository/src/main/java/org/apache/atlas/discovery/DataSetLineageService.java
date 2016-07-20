@@ -22,12 +22,14 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.AtlasProperties;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.discovery.graph.DefaultGraphPersistenceStrategy;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.atlas.query.GremlinQueryResult;
 import org.apache.atlas.query.InputLineageClosureQuery;
 import org.apache.atlas.query.OutputLineageClosureQuery;
+import org.apache.atlas.query.QueryParams;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.graph.GraphProvider;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
@@ -173,7 +175,8 @@ public class DataSetLineageService implements LineageService {
     private String getSchemaForId(String typeName, String guid) throws DiscoveryException {
         final String schemaQuery =
                 String.format(propertiesConf.getString(DATASET_SCHEMA_QUERY_PREFIX + typeName), guid);
-        return discoveryService.searchByDSL(schemaQuery);
+        int limit = AtlasProperties.getProperty(AtlasProperties.AtlasProperty.SEARCH_MAX_LIMIT);
+        return discoveryService.searchByDSL(schemaQuery, new QueryParams(limit, 0));
     }
 
     @Override
@@ -192,7 +195,7 @@ public class DataSetLineageService implements LineageService {
      */
     private ReferenceableInstance validateDatasetNameExists(String datasetName) throws AtlasException {
         final String tableExistsQuery = String.format(DATASET_NAME_EXISTS_QUERY, datasetName);
-        GremlinQueryResult queryResult = discoveryService.evaluate(tableExistsQuery);
+        GremlinQueryResult queryResult = discoveryService.evaluate(tableExistsQuery, new QueryParams(1, 0));
         if (!(queryResult.rows().length() > 0)) {
             throw new EntityNotFoundException(datasetName + " does not exist");
         }
@@ -207,7 +210,7 @@ public class DataSetLineageService implements LineageService {
      */
     private String validateDatasetExists(String guid) throws AtlasException {
         final String datasetExistsQuery = String.format(DATASET_EXISTS_QUERY, guid);
-        GremlinQueryResult queryResult = discoveryService.evaluate(datasetExistsQuery);
+        GremlinQueryResult queryResult = discoveryService.evaluate(datasetExistsQuery, new QueryParams(1, 0));
         if (!(queryResult.rows().length() > 0)) {
             throw new EntityNotFoundException("Dataset with guid = " + guid + " does not exist");
         }

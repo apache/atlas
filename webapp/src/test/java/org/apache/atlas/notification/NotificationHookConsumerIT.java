@@ -72,8 +72,7 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
-                JSONArray results = serviceClient.searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE,
-                        entity.get("name")));
+                JSONArray results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, entity.get("name")));
                 return results.length() == 1;
             }
         });
@@ -90,8 +89,7 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
-                JSONArray results = serviceClient.searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE,
-                        entity.get("name")));
+                JSONArray results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, entity.get("name")));
                 return results.length() == 1;
             }
         });
@@ -146,14 +144,13 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
-                JSONArray results = serviceClient.searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE,
-                        newName));
+                JSONArray results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, newName));
                 return results.length() == 1;
             }
         });
 
         //no entity with the old qualified name
-        JSONArray results = serviceClient.searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, dbName));
+        JSONArray results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, dbName));
         assertEquals(results.length(), 0);
 
     }
@@ -195,8 +192,7 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
-                JSONArray results = serviceClient.searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE,
-                        dbName));
+                JSONArray results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, dbName));
                 return results.length() == 1;
             }
         });
