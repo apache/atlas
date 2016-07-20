@@ -239,7 +239,7 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
     }
 
     private JSONObject createOrUpdateTypes(String typeDefinition, boolean isUpdate) throws AtlasException {
-        ParamChecker.notEmpty(typeDefinition, "type definition");
+        typeDefinition = ParamChecker.notEmpty(typeDefinition, "type definition");
         TypesDef typesDef = validateTypeDefinition(typeDefinition);
 
         try {
@@ -327,7 +327,7 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
      */
     @Override
     public List<String> createEntities(String entityInstanceDefinition) throws AtlasException {
-        ParamChecker.notEmpty(entityInstanceDefinition, "Entity instance definition");
+        entityInstanceDefinition = ParamChecker.notEmpty(entityInstanceDefinition, "Entity instance definition");
 
         ITypedReferenceableInstance[] typedInstances = deserializeClassInstances(entityInstanceDefinition);
 
@@ -362,8 +362,7 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
 
     @Override
     public ITypedReferenceableInstance getTypedReferenceableInstance(Referenceable entityInstance) throws AtlasException {
-        final String entityTypeName = entityInstance.getTypeName();
-        ParamChecker.notEmpty(entityTypeName, "Entity type cannot be null");
+        final String entityTypeName = ParamChecker.notEmpty(entityInstance.getTypeName(), "Entity type cannot be null");
 
         ClassType entityType = typeSystem.getDataType(ClassType.class, entityTypeName);
 
@@ -385,7 +384,7 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
      */
     @Override
     public String getEntityDefinition(String guid) throws AtlasException {
-        ParamChecker.notEmpty(guid, "entity id");
+        guid = ParamChecker.notEmpty(guid, "entity id");
 
         final ITypedReferenceableInstance instance = repository.getEntityDefinition(guid);
         return InstanceSerialization.toJson(instance, true);
@@ -440,8 +439,7 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
      */
     @Override
     public AtlasClient.EntityResult updateEntities(String entityInstanceDefinition) throws AtlasException {
-
-        ParamChecker.notEmpty(entityInstanceDefinition, "Entity instance definition");
+        entityInstanceDefinition = ParamChecker.notEmpty(entityInstanceDefinition, "Entity instance definition");
         ITypedReferenceableInstance[] typedInstances = deserializeClassInstances(entityInstanceDefinition);
 
         AtlasClient.EntityResult entityResult = repository.updateEntities(typedInstances);
@@ -457,11 +455,11 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
     }
 
     @Override
-    public AtlasClient.EntityResult updateEntityAttributeByGuid(final String guid, String attributeName,
+    public AtlasClient.EntityResult updateEntityAttributeByGuid(String guid, String attributeName,
                                                                 String value) throws AtlasException {
-        ParamChecker.notEmpty(guid, "entity id");
-        ParamChecker.notEmpty(attributeName, "attribute name");
-        ParamChecker.notEmpty(value, "attribute value");
+        guid          = ParamChecker.notEmpty(guid, "entity id");
+        attributeName = ParamChecker.notEmpty(attributeName, "attribute name");
+        value         = ParamChecker.notEmpty(value, "attribute value");
 
         ITypedReferenceableInstance existInstance = validateEntityExists(guid);
         ClassType type = typeSystem.getDataType(ClassType.class, existInstance.getTypeName());
@@ -502,10 +500,10 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
     }
 
     @Override
-    public AtlasClient.EntityResult updateEntityPartialByGuid(final String guid, Referenceable newEntity)
+    public AtlasClient.EntityResult updateEntityPartialByGuid(String guid, Referenceable newEntity)
             throws AtlasException {
-        ParamChecker.notEmpty(guid, "guid cannot be null");
-        ParamChecker.notNull(newEntity, "updatedEntity cannot be null");
+        guid      = ParamChecker.notEmpty(guid, "guid cannot be null");
+        newEntity = ParamChecker.notNull(newEntity, "updatedEntity cannot be null");
         ITypedReferenceableInstance existInstance = validateEntityExists(guid);
 
         ITypedReferenceableInstance newInstance = convertToTypedInstance(newEntity, existInstance.getTypeName());
@@ -563,10 +561,10 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
     public AtlasClient.EntityResult updateEntityByUniqueAttribute(String typeName, String uniqueAttributeName,
                                                                   String attrValue,
                                                                   Referenceable updatedEntity) throws AtlasException {
-        ParamChecker.notEmpty(typeName, "typeName");
-        ParamChecker.notEmpty(uniqueAttributeName, "uniqueAttributeName");
-        ParamChecker.notNull(attrValue, "unique attribute value");
-        ParamChecker.notNull(updatedEntity, "updatedEntity");
+        typeName            = ParamChecker.notEmpty(typeName, "typeName");
+        uniqueAttributeName = ParamChecker.notEmpty(uniqueAttributeName, "uniqueAttributeName");
+        attrValue           = ParamChecker.notNull(attrValue, "unique attribute value");
+        updatedEntity       = ParamChecker.notNull(updatedEntity, "updatedEntity");
 
         ITypedReferenceableInstance oldInstance = getEntityDefinitionReference(typeName, uniqueAttributeName, attrValue);
 
@@ -579,7 +577,7 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
     }
 
     private void validateTypeExists(String entityType) throws AtlasException {
-        ParamChecker.notEmpty(entityType, "entity type");
+        entityType = ParamChecker.notEmpty(entityType, "entity type");
 
         IDataType type = typeSystem.getDataType(IDataType.class, entityType);
         if (type.getTypeCategory() != DataTypes.TypeCategory.CLASS) {
@@ -596,7 +594,7 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
      */
     @Override
     public List<String> getTraitNames(String guid) throws AtlasException {
-        ParamChecker.notEmpty(guid, "entity id");
+        guid = ParamChecker.notEmpty(guid, "entity id");
         return repository.getTraitNames(guid);
     }
 
@@ -609,8 +607,8 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
      */
     @Override
     public void addTrait(String guid, String traitInstanceDefinition) throws AtlasException {
-        ParamChecker.notEmpty(guid, "entity id");
-        ParamChecker.notEmpty(traitInstanceDefinition, "trait instance definition");
+        guid                    = ParamChecker.notEmpty(guid, "entity id");
+        traitInstanceDefinition = ParamChecker.notEmpty(traitInstanceDefinition, "trait instance definition");
 
         ITypedStruct traitInstance = deserializeTraitInstance(traitInstanceDefinition);
         addTrait(guid, traitInstance);
@@ -644,8 +642,7 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
     @Override
     public ITypedStruct createTraitInstance(Struct traitInstance) throws AtlasException {
         try {
-            final String entityTypeName = traitInstance.getTypeName();
-            ParamChecker.notEmpty(entityTypeName, "entity type");
+            final String entityTypeName = ParamChecker.notEmpty(traitInstance.getTypeName(), "entity type");
 
             TraitType traitType = typeSystem.getDataType(TraitType.class, entityTypeName);
             return traitType.convert(traitInstance, Multiplicity.REQUIRED);
@@ -657,8 +654,8 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
     }
 
     @Override
-    public String getTraitDefinition(final String guid, final String traitName) throws AtlasException {
-        ParamChecker.notEmpty(guid, "entity id");
+    public String getTraitDefinition(String guid, final String traitName) throws AtlasException {
+        guid = ParamChecker.notEmpty(guid, "entity id");
 
         final ITypedReferenceableInstance instance = repository.getEntityDefinition(guid);
         IStruct struct = instance.getTrait(traitName);
@@ -674,8 +671,8 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
      */
     @Override
     public void deleteTrait(String guid, String traitNameToBeDeleted) throws AtlasException {
-        ParamChecker.notEmpty(guid, "entity id");
-        ParamChecker.notEmpty(traitNameToBeDeleted, "trait name");
+        guid                 = ParamChecker.notEmpty(guid, "entity id");
+        traitNameToBeDeleted = ParamChecker.notEmpty(traitNameToBeDeleted, "trait name");
 
         // ensure trait type is already registered with the TS
         if (!typeSystem.isRegistered(traitNameToBeDeleted)) {
@@ -747,8 +744,8 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
 
     @Override
     public List<EntityAuditEvent> getAuditEvents(String guid, String startKey, short count) throws AtlasException {
-        ParamChecker.notEmpty(guid, "entity id");
-        ParamChecker.notEmptyIfNotNull(startKey, "start key");
+        guid     = ParamChecker.notEmpty(guid, "entity id");
+        startKey = ParamChecker.notEmptyIfNotNull(startKey, "start key");
         ParamChecker.lessThan(count, maxAuditResults, "count");
 
         return auditRepository.listEvents(guid, startKey, count);
@@ -766,9 +763,9 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
     @Override
     public AtlasClient.EntityResult deleteEntityByUniqueAttribute(String typeName, String uniqueAttributeName,
                                                                   String attrValue) throws AtlasException {
-        ParamChecker.notEmpty(typeName, "delete candidate typeName");
-        ParamChecker.notEmpty(uniqueAttributeName, "delete candidate unique attribute name");
-        ParamChecker.notEmpty(attrValue, "delete candidate unique attribute value");
+        typeName            = ParamChecker.notEmpty(typeName, "delete candidate typeName");
+        uniqueAttributeName = ParamChecker.notEmpty(uniqueAttributeName, "delete candidate unique attribute name");
+        attrValue           = ParamChecker.notEmpty(attrValue, "delete candidate unique attribute value");
 
         //Throws EntityNotFoundException if the entity could not be found by its unique attribute
         ITypedReferenceableInstance instance = getEntityDefinitionReference(typeName, uniqueAttributeName, attrValue);

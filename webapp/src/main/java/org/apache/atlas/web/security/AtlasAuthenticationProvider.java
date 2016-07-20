@@ -69,35 +69,32 @@ public class AtlasAuthenticationProvider extends
 
         if (ldapType.equalsIgnoreCase("LDAP")) {
             try {
-                authentication = ldapAuthenticationProvider
-                        .authenticate(authentication);
+                authentication = ldapAuthenticationProvider.authenticate(authentication);
             } catch (Exception ex) {
                 LOG.error("Error while LDAP authentication", ex);
             }
         } else if (ldapType.equalsIgnoreCase("AD")) {
             try {
-                authentication = adAuthenticationProvider
-                        .authenticate(authentication);
+                authentication = adAuthenticationProvider.authenticate(authentication);
             } catch (Exception ex) {
                 LOG.error("Error while AD authentication", ex);
             }
         }
 
-        if (authentication != null && authentication.isAuthenticated()) {
-            return authentication;
-        } else {
-            // If the LDAP/AD authentication fails try the local filebased login method
-            if (fileAuthenticationMethodEnabled) {
-                authentication = fileAuthenticationProvider
-                        .authenticate(authentication);
-            }
-            if (authentication != null && authentication.isAuthenticated()) {
+        if (authentication != null) {
+            if (authentication.isAuthenticated()) {
                 return authentication;
-            } else {
-                LOG.error("Authentication failed.");
-                throw new AtlasAuthenticationException("Authentication failed.");
+            } else if (fileAuthenticationMethodEnabled) {  // If the LDAP/AD authentication fails try the local filebased login method
+                authentication = fileAuthenticationProvider.authenticate(authentication);
+
+                if (authentication != null && authentication.isAuthenticated()) {
+                    return authentication;
+                }
             }
         }
+
+        LOG.error("Authentication failed.");
+        throw new AtlasAuthenticationException("Authentication failed.");
     }
 
 }

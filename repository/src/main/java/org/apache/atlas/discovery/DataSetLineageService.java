@@ -101,7 +101,7 @@ public class DataSetLineageService implements LineageService {
     @GraphTransaction
     public String getOutputsGraph(String datasetName) throws AtlasException {
         LOG.info("Fetching lineage outputs graph for datasetName={}", datasetName);
-        ParamChecker.notEmpty(datasetName, "dataset name");
+        datasetName = ParamChecker.notEmpty(datasetName, "dataset name");
         ReferenceableInstance datasetInstance = validateDatasetNameExists(datasetName);
         return getOutputsGraphForId(datasetInstance.getId()._getId());
     }
@@ -116,7 +116,7 @@ public class DataSetLineageService implements LineageService {
     @GraphTransaction
     public String getInputsGraph(String tableName) throws AtlasException {
         LOG.info("Fetching lineage inputs graph for tableName={}", tableName);
-        ParamChecker.notEmpty(tableName, "table name");
+        tableName = ParamChecker.notEmpty(tableName, "table name");
         ReferenceableInstance datasetInstance = validateDatasetNameExists(tableName);
         return getInputsGraphForId(datasetInstance.getId()._getId());
     }
@@ -125,7 +125,7 @@ public class DataSetLineageService implements LineageService {
     @GraphTransaction
     public String getInputsGraphForEntity(String guid) throws AtlasException {
         LOG.info("Fetching lineage inputs graph for entity={}", guid);
-        ParamChecker.notEmpty(guid, "Entity id");
+        guid = ParamChecker.notEmpty(guid, "Entity id");
         validateDatasetExists(guid);
         return getInputsGraphForId(guid);
     }
@@ -143,7 +143,7 @@ public class DataSetLineageService implements LineageService {
     @GraphTransaction
     public String getOutputsGraphForEntity(String guid) throws AtlasException {
         LOG.info("Fetching lineage outputs graph for entity guid={}", guid);
-        ParamChecker.notEmpty(guid, "Entity id");
+        guid = ParamChecker.notEmpty(guid, "Entity id");
         validateDatasetExists(guid);
         return getOutputsGraphForId(guid);
     }
@@ -165,7 +165,7 @@ public class DataSetLineageService implements LineageService {
     @Override
     @GraphTransaction
     public String getSchema(String datasetName) throws AtlasException {
-        ParamChecker.notEmpty(datasetName, "table name");
+        datasetName = ParamChecker.notEmpty(datasetName, "table name");
         LOG.info("Fetching schema for tableName={}", datasetName);
         ReferenceableInstance datasetInstance = validateDatasetNameExists(datasetName);
 
@@ -182,7 +182,7 @@ public class DataSetLineageService implements LineageService {
     @Override
     @GraphTransaction
     public String getSchemaForEntity(String guid) throws AtlasException {
-        ParamChecker.notEmpty(guid, "Entity id");
+        guid = ParamChecker.notEmpty(guid, "Entity id");
         LOG.info("Fetching schema for entity guid={}", guid);
         String typeName = validateDatasetExists(guid);
         return getSchemaForId(typeName, guid);

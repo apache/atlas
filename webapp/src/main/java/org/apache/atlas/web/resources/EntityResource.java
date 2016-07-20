@@ -339,7 +339,7 @@ public class EntityResource {
     private Response updateEntityPartialByGuid(String guid, HttpServletRequest request) {
         String entityJson = null;
         try {
-            ParamChecker.notEmpty(guid, "Guid property cannot be null");
+            guid = ParamChecker.notEmpty(guid, "Guid property cannot be null");
             entityJson = Servlets.getRequestPayload(request);
             LOG.info("partially updating entity for guid {} : {} ", guid, entityJson);
 
@@ -468,7 +468,7 @@ public class EntityResource {
             }
 
             LOG.debug("Fetching entity definition for guid={} ", guid);
-            ParamChecker.notEmpty(guid, "guid cannot be null");
+            guid = ParamChecker.notEmpty(guid, "guid cannot be null");
             final String entityDefinition = metadataService.getEntityDefinition(guid);
 
             JSONObject response = new JSONObject();
@@ -564,9 +564,9 @@ public class EntityResource {
     public Response getEntityDefinitionByAttribute(String entityType, String attribute, String value) {
         try {
             LOG.debug("Fetching entity definition for type={}, qualified name={}", entityType, value);
-            ParamChecker.notEmpty(entityType, "Entity type cannot be null");
-            ParamChecker.notEmpty(attribute, "attribute name cannot be null");
-            ParamChecker.notEmpty(value, "attribute value cannot be null");
+            entityType = ParamChecker.notEmpty(entityType, "Entity type cannot be null");
+            attribute  = ParamChecker.notEmpty(attribute, "attribute name cannot be null");
+            value      = ParamChecker.notEmpty(value, "attribute value cannot be null");
 
             final String entityDefinition = metadataService.getEntityDefinition(entityType, attribute, value);
 

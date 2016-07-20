@@ -56,6 +56,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
@@ -491,37 +492,42 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             table = partition.getTable();
             db = dgiBridge.hiveClient.getDatabase(table.getDbName());
             break;
+
+        default:
+            LOG.info("{}: entity-type not handled by Atlas hook. Ignored", entity.getType());
         }
 
-        db = dgiBridge.hiveClient.getDatabase(db.getName());
-        Referenceable dbEntity = dgiBridge.createDBInstance(db);
+        if (db != null) {
+            db = dgiBridge.hiveClient.getDatabase(db.getName());
+            Referenceable dbEntity = dgiBridge.createDBInstance(db);
 
-        entities.add(dbEntity);
-        result.put(Type.DATABASE, dbEntity);
+            entities.add(dbEntity);
+            result.put(Type.DATABASE, dbEntity);
 
-        Referenceable tableEntity = null;
+            Referenceable tableEntity = null;
 
-        if (table != null) {
-            if (existTable != null) {
-                table = existTable;
-            } else {
-                table = dgiBridge.hiveClient.getTable(table.getDbName(), table.getTableName());
+            if (table != null) {
+                if (existTable != null) {
+                    table = existTable;
+                } else {
+                    table = dgiBridge.hiveClient.getTable(table.getDbName(), table.getTableName());
+                }
+                //If its an external table, even though the temp table skip flag is on,
+                // we create the table since we need the HDFS path to temp table lineage.
+                if (skipTempTables &&
+                        table.isTemporary() &&
+                        !TableType.EXTERNAL_TABLE.equals(table.getTableType())) {
+                    LOG.debug("Skipping temporary table registration {} since it is not an external table {} ", table.getTableName(), table.getTableType().name());
+
+                } else {
+                    tableEntity = dgiBridge.createTableInstance(dbEntity, table);
+                    entities.add(tableEntity);
+                    result.put(Type.TABLE, tableEntity);
+                }
             }
-            //If its an external table, even though the temp table skip flag is on,
-            // we create the table since we need the HDFS path to temp table lineage.
-            if (skipTempTables &&
-                table.isTemporary() &&
-                !TableType.EXTERNAL_TABLE.equals(table.getTableType())) {
-                LOG.debug("Skipping temporary table registration {} since it is not an external table {} ", table.getTableName(), table.getTableType().name());
 
-            } else {
-                tableEntity = dgiBridge.createTableInstance(dbEntity, table);
-                entities.add(tableEntity);
-                result.put(Type.TABLE, tableEntity);
-            }
+            event.addMessage(new HookNotification.EntityUpdateRequest(event.getUser(), entities));
         }
-
-        event.addMessage(new HookNotification.EntityUpdateRequest(event.getUser(), entities));
         return result;
     }
 
@@ -620,13 +626,16 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                 entities.addAll(result.values());
             }
         } else if (entity.getType() == Type.DFS_DIR) {
-            final String pathUri = lower(new Path(entity.getLocation()).toString());
-            LOG.debug("Registering DFS Path {} ", pathUri);
-            if (!dataSetsProcessed.contains(pathUri)) {
-                Referenceable hdfsPath = dgiBridge.fillHDFSDataSet(pathUri);
-                dataSets.put(entity, hdfsPath);
-                dataSetsProcessed.add(pathUri);
-                entities.add(hdfsPath);
+            URI location = entity.getLocation();
+            if(location != null) {
+                final String pathUri = lower(new Path(location).toString());
+                LOG.debug("Registering DFS Path {} ", pathUri);
+                if (!dataSetsProcessed.contains(pathUri)) {
+                    Referenceable hdfsPath = dgiBridge.fillHDFSDataSet(pathUri);
+                    dataSets.put(entity, hdfsPath);
+                    dataSetsProcessed.add(pathUri);
+                    entities.add(hdfsPath);
+                }
             }
         }
     }
@@ -666,13 +675,17 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private void handleExternalTables(final HiveMetaStoreBridge dgiBridge, final HiveEventContext event, final LinkedHashMap<Type, Referenceable> tables) throws HiveException, MalformedURLException {
         List<Referenceable> entities = new ArrayList<>();
         final WriteEntity hiveEntity = (WriteEntity) getEntityByType(event.getOutputs(), Type.TABLE);
-        Table hiveTable = hiveEntity.getTable();
-        //Refresh to get the correct location
-        hiveTable = dgiBridge.hiveClient.getTable(hiveTable.getDbName(), hiveTable.getTableName());
 
-        final String location = lower(hiveTable.getDataLocation().toString());
+        Table hiveTable = hiveEntity == null ? null : hiveEntity.getTable();
+
+        //Refresh to get the correct location
+        if(hiveTable != null) {
+            hiveTable = dgiBridge.hiveClient.getTable(hiveTable.getDbName(), hiveTable.getTableName());
+        }
+
         if (hiveTable != null && TableType.EXTERNAL_TABLE.equals(hiveTable.getTableType())) {
             LOG.info("Registering external table process {} ", event.getQueryStr());
+            final String location = lower(hiveTable.getDataLocation().toString());
             final ReadEntity dfsEntity = new ReadEntity();
             dfsEntity.setTyp(Type.DFS_DIR);
             dfsEntity.setName(location);
@@ -702,6 +715,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             entities.add(processReferenceable);
             event.addMessage(new HookNotification.EntityUpdateRequest(event.getUser(), entities));
         }
+
     }
 
     private boolean isCreateOp(HiveEventContext hiveEvent) {

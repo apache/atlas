@@ -161,12 +161,7 @@ public class PolicyParser {
                 if (def.getUsers() != null) {
                     usersMap = def.getUsers();
                 }
-                List<AtlasActionTypes> userAutorities = usersMap.get(userAndRole[USERNAME]);
-                if (userAutorities == null) {
-
-                    userAutorities = new ArrayList<AtlasActionTypes>();
-                }
-                userAutorities = getListOfAutorities(userAndRole[USER_AUTHORITIES]);
+                List<AtlasActionTypes> userAutorities = getListOfAutorities(userAndRole[USER_AUTHORITIES]);
                 usersMap.put(userAndRole[USERNAME], userAutorities);
                 def.setUsers(usersMap);
             }
@@ -195,11 +190,7 @@ public class PolicyParser {
                 if (def.getGroups() != null) {
                     groupsMap = def.getGroups();
                 }
-                List<AtlasActionTypes> groupAutorities = groupsMap.get(groupAndRole[GROUPNAME]);
-                if (groupAutorities == null) {
-                    groupAutorities = new ArrayList<AtlasActionTypes>();
-                }
-                groupAutorities = getListOfAutorities(groupAndRole[GROUP_AUTHORITIES]);
+                List<AtlasActionTypes> groupAutorities = getListOfAutorities(groupAndRole[GROUP_AUTHORITIES]);
                 groupsMap.put(groupAndRole[GROUPNAME], groupAutorities);
                 def.setGroups(groupsMap);
             }

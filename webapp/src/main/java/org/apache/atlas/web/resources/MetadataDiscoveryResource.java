@@ -91,7 +91,7 @@ public class MetadataDiscoveryResource {
                            @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("offset") int offset) {
         AtlasPerfTracer perf = null;
         if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MetadataDiscoveryResource.search(" + query + ")");
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MetadataDiscoveryResource.search(" + query + ", " + limit + ", " + offset + ")");
         }
         Response response = searchUsingQueryDSL(query, limit, offset);
         if (response.getStatus() != Response.Status.OK.getStatusCode()) {
@@ -123,10 +123,10 @@ public class MetadataDiscoveryResource {
         AtlasPerfTracer perf = null;
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MetadataDiscoveryResource.searchUsingQueryDSL(" + dslQuery + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MetadataDiscoveryResource.searchUsingQueryDSL(" + dslQuery + ", " + limit + ", " + offset + ")");
             }
 
-            ParamChecker.notEmpty(dslQuery, "dslQuery cannot be null");
+            dslQuery = ParamChecker.notEmpty(dslQuery, "dslQuery cannot be null");
             QueryParams queryParams = validateQueryParams(limit, offset);
             final String jsonResultStr = discoveryService.searchByDSL(dslQuery, queryParams);
 
@@ -184,7 +184,7 @@ public class MetadataDiscoveryResource {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MetadataDiscoveryResource.searchUsingGremlinQuery(" + gremlinQuery + ")");
             }
 
-            ParamChecker.notEmpty(gremlinQuery, "gremlinQuery cannot be null or empty");
+            gremlinQuery = ParamChecker.notEmpty(gremlinQuery, "gremlinQuery cannot be null or empty");
             final List<Map<String, String>> results = discoveryService.searchByGremlin(gremlinQuery);
 
             JSONObject response = new JSONObject();
@@ -230,10 +230,10 @@ public class MetadataDiscoveryResource {
         AtlasPerfTracer perf = null;
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MetadataDiscoveryResource.searchUsingFullText(" + query + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MetadataDiscoveryResource.searchUsingFullText(" + query + ", " + limit + ", " + offset + ")");
             }
 
-            ParamChecker.notEmpty(query, "query cannot be null or empty");
+            query = ParamChecker.notEmpty(query, "query cannot be null or empty");
             QueryParams queryParams = validateQueryParams(limit, offset);
             final String jsonResultStr = discoveryService.searchByFullText(query, queryParams);
             JSONArray rowsJsonArr = new JSONArray(jsonResultStr);

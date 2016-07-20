@@ -47,12 +47,18 @@ abstract class AbstractDataType<T> implements IDataType<T> {
 
     @Override
     public void output(T val, Appendable buf, String prefix, Set<T> inProcess) throws AtlasException {
-        if (val instanceof Map) {
+        final String strValue;
+
+        if (val == null) {
+            strValue = "<null>";
+        } else if (val instanceof Map) {
             ImmutableSortedMap immutableSortedMap = ImmutableSortedMap.copyOf((Map) val);
-            TypeUtils.outputVal(val == null ? "<null>" : immutableSortedMap.toString(), buf, prefix);
+            strValue = immutableSortedMap.toString();
         } else {
-            TypeUtils.outputVal(val == null ? "<null>" : val.toString(), buf, prefix);
+            strValue = val.toString();
         }
+
+        TypeUtils.outputVal(strValue, buf, prefix);
     }
 
     @Override

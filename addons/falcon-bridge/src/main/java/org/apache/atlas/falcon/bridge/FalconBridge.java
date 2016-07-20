@@ -28,6 +28,7 @@ import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.typesystem.Referenceable;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.falcon.entity.CatalogStorage;
 import org.apache.falcon.entity.FeedHelper;
@@ -284,18 +285,26 @@ public class FalconBridge {
                                                         Feed feed) throws Exception {
         org.apache.falcon.entity.v0.feed.Cluster feedCluster = FeedHelper.getCluster(feed, cluster.getName());
 
-        final CatalogTable table = getTable(feedCluster, feed);
-        if (table != null) {
-            CatalogStorage storage = new CatalogStorage(cluster, table);
-            return createHiveTableInstance(cluster.getName(), storage.getDatabase().toLowerCase(),
-                    storage.getTable().toLowerCase());
-        } else {
-            List<Location> locations = FeedHelper.getLocations(feedCluster, feed);
-            Location dataLocation = FileSystemStorage.getLocation(locations, LocationType.DATA);
-            final String pathUri = normalize(dataLocation.getPath());
-            LOG.info("Registering DFS Path {} ", pathUri);
-            return fillHDFSDataSet(pathUri, cluster.getName());
+        if(feedCluster != null) {
+            final CatalogTable table = getTable(feedCluster, feed);
+            if (table != null) {
+                CatalogStorage storage = new CatalogStorage(cluster, table);
+                return createHiveTableInstance(cluster.getName(), storage.getDatabase().toLowerCase(),
+                        storage.getTable().toLowerCase());
+            } else {
+                List<Location> locations = FeedHelper.getLocations(feedCluster, feed);
+                if (CollectionUtils.isNotEmpty(locations)) {
+                    Location dataLocation = FileSystemStorage.getLocation(locations, LocationType.DATA);
+                    if (dataLocation != null) {
+                        final String pathUri = normalize(dataLocation.getPath());
+                        LOG.info("Registering DFS Path {} ", pathUri);
+                        return fillHDFSDataSet(pathUri, cluster.getName());
+                    }
+                }
+            }
         }
+
+        return null;
     }
 
     private static CatalogTable getTable(org.apache.falcon.entity.v0.feed.Cluster cluster, Feed feed) {

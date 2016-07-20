@@ -144,8 +144,15 @@ public class AtlasClient {
 
     // New constuctor for Basic auth
     public AtlasClient(String[] baseUrl, String[] basicAuthUserNamepassword) {
-        this.basicAuthUser = basicAuthUserNamepassword[0];
-        this.basicAuthPassword = basicAuthUserNamepassword[1];
+        if (basicAuthUserNamepassword != null) {
+            if (basicAuthUserNamepassword.length > 0) {
+                this.basicAuthUser = basicAuthUserNamepassword[0];
+            }
+            if (basicAuthUserNamepassword.length > 1) {
+                this.basicAuthPassword = basicAuthUserNamepassword[1];
+            }
+        }
+
         initializeState(baseUrl, null, null);
     }
 
@@ -1119,7 +1126,8 @@ public class AtlasClient {
     private JSONObject callAPIWithResource(API api, WebResource resource, Object requestObject)
         throws AtlasServiceException {
         ClientResponse clientResponse = null;
-        for (int i = 0; i < getNumberOfRetries(); i++) {
+        int i = 0;
+        do {
             clientResponse = resource.accept(JSON_MEDIA_TYPE).type(JSON_MEDIA_TYPE)
                 .method(api.getMethod(), ClientResponse.class, requestObject);
 
@@ -1137,7 +1145,9 @@ public class AtlasClient {
                 LOG.error("Got a service unavailable when calling: {}, will retry..", resource);
                 sleepBetweenRetries();
             }
-        }
+
+            i++;
+        } while (i < getNumberOfRetries());
 
         throw new AtlasServiceException(api, clientResponse);
     }

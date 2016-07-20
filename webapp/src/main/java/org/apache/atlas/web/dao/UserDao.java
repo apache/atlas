@@ -19,6 +19,7 @@ package org.apache.atlas.web.dao;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Properties;
@@ -54,6 +55,8 @@ public class UserDao {
 
     void loadFileLoginsDetails() {
         String PROPERTY_FILE_PATH = null;
+        InputStream inStr = null;
+
         try {
 
             Configuration configuration = ApplicationProperties.get();
@@ -61,7 +64,8 @@ public class UserDao {
                     .getString("atlas.authentication.method.file.filename");
             if (PROPERTY_FILE_PATH != null && !"".equals(PROPERTY_FILE_PATH)) {
                 userLogins = new Properties();
-                userLogins.load(new FileInputStream(PROPERTY_FILE_PATH));
+                inStr = new FileInputStream(PROPERTY_FILE_PATH);
+                userLogins.load(inStr);
             }else {
                 LOG.error("Error while reading user.properties file, filepath="
                         + PROPERTY_FILE_PATH);
@@ -70,6 +74,14 @@ public class UserDao {
         } catch (IOException | AtlasException e) {
             LOG.error("Error while reading user.properties file, filepath="
                     + PROPERTY_FILE_PATH, e);
+        } finally {
+            if(inStr != null) {
+                try {
+                    inStr.close();
+                } catch(Exception excp) {
+                    // ignore
+                }
+            }
         }
     }
 

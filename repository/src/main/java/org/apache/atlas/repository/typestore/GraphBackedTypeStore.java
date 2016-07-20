@@ -168,16 +168,20 @@ public class GraphBackedTypeStore implements ITypeStore {
         switch (attrDataType.getTypeCategory()) {
         case ARRAY:
             String attrType = TypeUtils.parseAsArrayType(attrDataType.getName());
-            IDataType elementType = typeSystem.getDataType(IDataType.class, attrType);
-            attrDataTypes.add(elementType);
+            if(attrType != null) {
+                IDataType elementType = typeSystem.getDataType(IDataType.class, attrType);
+                attrDataTypes.add(elementType);
+            }
             break;
 
         case MAP:
             String[] attrTypes = TypeUtils.parseAsMapType(attrDataType.getName());
-            IDataType keyType = typeSystem.getDataType(IDataType.class, attrTypes[0]);
-            IDataType valueType = typeSystem.getDataType(IDataType.class, attrTypes[1]);
-            attrDataTypes.add(keyType);
-            attrDataTypes.add(valueType);
+            if(attrTypes != null && attrTypes.length > 1) {
+                IDataType keyType = typeSystem.getDataType(IDataType.class, attrTypes[0]);
+                IDataType valueType = typeSystem.getDataType(IDataType.class, attrTypes[1]);
+                attrDataTypes.add(keyType);
+                attrDataTypes.add(valueType);
+            }
             break;
 
         case ENUM:

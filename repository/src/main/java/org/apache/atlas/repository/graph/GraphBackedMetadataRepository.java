@@ -268,11 +268,13 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             final String entityTypeName = GraphHelper.getTypeName(instanceVertex);
             String relationshipLabel = GraphHelper.getTraitLabel(entityTypeName, traitNameToBeDeleted);
             Edge edge = GraphHelper.getEdgeForLabel(instanceVertex, relationshipLabel);
-            deleteHandler.deleteEdgeReference(edge, DataTypes.TypeCategory.TRAIT, false, true);
+            if(edge != null) {
+                deleteHandler.deleteEdgeReference(edge, DataTypes.TypeCategory.TRAIT, false, true);
 
-            // update the traits in entity once trait removal is successful
-            traitNames.remove(traitNameToBeDeleted);
-            updateTraits(instanceVertex, traitNames);
+                // update the traits in entity once trait removal is successful
+                traitNames.remove(traitNameToBeDeleted);
+                updateTraits(instanceVertex, traitNames);
+            }
         } catch (Exception e) {
             throw new RepositoryException(e);
         }

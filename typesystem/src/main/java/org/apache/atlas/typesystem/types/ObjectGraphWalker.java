@@ -76,7 +76,9 @@ public class ObjectGraphWalker {
     public void walk() throws AtlasException {
         while (!queue.isEmpty()) {
             IReferenceableInstance r = queue.poll();
-            processReferenceableInstance(r);
+            if(r != null) {
+                processReferenceableInstance(r);
+            }
         }
     }
 

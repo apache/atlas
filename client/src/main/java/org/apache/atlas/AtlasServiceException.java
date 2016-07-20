@@ -37,8 +37,8 @@ public class AtlasServiceException extends Exception {
     }
 
     private AtlasServiceException(AtlasClient.API api, ClientResponse.Status status, String response) {
-        super("Metadata service API " + api + " failed with status " + status.getStatusCode() + "(" +
-                status.getReasonPhrase() + ") Response Body (" + response + ")");
+        super("Metadata service API " + api + " failed with status " + (status != null ? status.getStatusCode() : -1)
+                + " (" + status + ") Response Body (" + response + ")");
         this.status = status;
     }
 

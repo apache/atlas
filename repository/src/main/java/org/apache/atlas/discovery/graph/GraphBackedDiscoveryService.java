@@ -167,6 +167,11 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
         LOG.info("Executing gremlin query={}", gremlinQuery);
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName("gremlin-groovy");
+
+        if(engine == null) {
+            throw new DiscoveryException("gremlin-groovy: engine not found");
+        }
+
         Bindings bindings = engine.createBindings();
         bindings.put("g", titanGraph);
 
