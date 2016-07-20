@@ -224,6 +224,16 @@ public class BaseRepositoryTest {
             table("sales_fact_daily_mv", "sales fact daily materialized view", reportingDB, sd, "Joe BI", "Managed",
                 salesFactColumns, "Metric");
 
+        Id circularLineageTable1 = table("table1", "", reportingDB, sd, "Vimal", "Managed", salesFactColumns, "Metric");
+
+        Id circularLineageTable2 = table("table2", "", reportingDB, sd, "Vimal", "Managed", salesFactColumns, "Metric");
+
+        loadProcess("circularLineage1", "hive query for daily summary", "John ETL", ImmutableList.of(circularLineageTable1),
+                ImmutableList.of(circularLineageTable2), "create table as select ", "plan", "id", "graph", "ETL");
+
+        loadProcess("circularLineage2", "hive query for daily summary", "John ETL", ImmutableList.of(circularLineageTable2),
+                ImmutableList.of(circularLineageTable1), "create table as select ", "plan", "id", "graph", "ETL");
+
         loadProcess("loadSalesDaily", "hive query for daily summary", "John ETL", ImmutableList.of(salesFact, timeDim),
             ImmutableList.of(salesFactDaily), "create table as select ", "plan", "id", "graph", "ETL");
 

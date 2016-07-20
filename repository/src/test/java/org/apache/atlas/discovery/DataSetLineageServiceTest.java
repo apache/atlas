@@ -176,6 +176,22 @@ public class DataSetLineageServiceTest extends BaseRepositoryTest {
     }
 
     @Test
+    public void testCircularLineage() throws Exception{
+        JSONObject results = new JSONObject(lineageService.getInputsGraph("table2"));
+        assertNotNull(results);
+        System.out.println("inputs graph = " + results);
+
+        JSONObject values = results.getJSONObject("values");
+        assertNotNull(values);
+
+        final JSONObject vertices = values.getJSONObject("vertices");
+        Assert.assertEquals(vertices.length(), 2);
+
+        final JSONObject edges = values.getJSONObject("edges");
+        Assert.assertEquals(edges.length(), 4);
+    }
+
+    @Test
     public void testGetInputsGraphForEntity() throws Exception {
         ITypedReferenceableInstance entity =
                 repository.getEntityDefinition(HIVE_TABLE_TYPE, "name", "sales_fact_monthly_mv");
