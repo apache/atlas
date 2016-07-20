@@ -280,9 +280,10 @@ class GremlinTranslator(expr: Expression,
             val inputQry = genQuery(input, inSelect)
             val loopingPathGExpr = genQuery(loopExpr, inSelect)
             val loopGExpr = s"""loop("${input.asInstanceOf[AliasExpression].alias}")"""
-            val untilCriteria = if (t.isDefined) s"{it.loops < ${t.get.value}}" else "{true}"
+            val untilCriteria = if (t.isDefined) s"{it.loops < ${t.get.value}}" else "{it.path.contains(it.object)?false:true}"
             val loopObjectGExpr = gPersistenceBehavior.loopObjectExpression(input.dataType)
-            s"""${inputQry}.${loopingPathGExpr}.${loopGExpr}${untilCriteria}${loopObjectGExpr}"""
+            val enablePathExpr = s".enablePath()"
+            s"""${inputQry}.${loopingPathGExpr}.${loopGExpr}${untilCriteria}${loopObjectGExpr}${enablePathExpr}"""
         }
         case BackReference(alias, _, _) =>
             if (inSelect) gPersistenceBehavior.fieldPrefixInSelect else s"""back("$alias")"""

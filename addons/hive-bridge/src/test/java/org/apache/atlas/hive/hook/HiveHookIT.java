@@ -1620,7 +1620,7 @@ public class HiveHookIT {
         expectedProps.put("testPropKey2", "testPropValue2");
         //Add another property
         query = String.format(fmtQuery, entityName, SET_OP, getSerializedProps(expectedProps));
-        runCommand(query);
+        runCommandWithDelay(query, 1000);
         verifyEntityProperties(entityType, entityName, expectedProps, false);
 
         if (entityType != Entity.Type.DATABASE) {
@@ -1628,7 +1628,7 @@ public class HiveHookIT {
             //Unset all the props
             StringBuilder sb = new StringBuilder("'");
             query = String.format(fmtQuery, entityName, UNSET_OP, Joiner.on("','").skipNulls().appendTo(sb, expectedProps.keySet()).append('\''));
-            runCommand(query);
+            runCommandWithDelay(query, 1000);
 
             verifyEntityProperties(entityType, entityName, expectedProps, true);
         }

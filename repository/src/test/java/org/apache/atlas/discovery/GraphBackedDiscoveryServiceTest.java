@@ -316,7 +316,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 {"hive_db hive_db.name = \"Reporting\"", 1},
                 {"hive_db where hive_db.name=\"Reporting\" select name, owner", 1},
                 {"hive_db has name", 3},
-                {"hive_db, hive_table", 8},
+                {"hive_db, hive_table", 10},
                 {"View is JdbcAccess", 2},
                 {"hive_db as db1, hive_table where db1.name = \"Reporting\"", 0}, //Not working - ATLAS-145
                 // - Final working query -> discoveryService.searchByGremlin("L:{_var_0 = [] as Set;g.V().has(\"__typeName\", \"hive_db\").fill(_var_0);g.V().has(\"__superTypeNames\", \"hive_db\").fill(_var_0);_var_0._().as(\"db1\").in(\"__hive_table.db\").back(\"db1\").and(_().has(\"hive_db.name\", T.eq, \"Reporting\")).toList()}")
@@ -324,20 +324,20 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 {"hive_db, hive_process has name"}, //Invalid query
                 {"hive_db where hive_db.name=\"Reporting\" and hive_db.createTime < " + System.currentTimeMillis()}
                 */
-                {"from hive_table", 8},
-                {"hive_table", 8},
+                {"from hive_table", 10},
+                {"hive_table", 10},
                 {"hive_table isa Dimension", 3},
-                {"hive_column where hive_column isa PII", 6},
+                {"hive_column where hive_column isa PII", 8},
                 {"View is Dimension" , 2},
 //                {"hive_column where hive_column isa PII select hive_column.name", 6}, //Not working - ATLAS-175
-                {"hive_column select hive_column.name", 29},
-                {"hive_column select name", 29},
-                {"hive_column where hive_column.name=\"customer_id\"", 4},
-                {"from hive_table select hive_table.name", 8},
+                {"hive_column select hive_column.name", 37},
+                {"hive_column select name",37},
+                {"hive_column where hive_column.name=\"customer_id\"", 6},
+                {"from hive_table select hive_table.name", 10},
                 {"hive_db where (name = \"Reporting\")", 1},
                 {"hive_db where (name = \"Reporting\") select name as _col_0, owner as _col_1", 1},
                 {"hive_db where hive_db is JdbcAccess", 0}, //Not supposed to work
-                {"hive_db hive_table", 8},
+                {"hive_db hive_table", 10},
                 {"hive_db where hive_db has name", 3},
                 {"hive_db as db1 hive_table where (db1.name = \"Reporting\")", 0}, //Not working -> ATLAS-145
                 {"hive_db where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 ", 1},
@@ -359,9 +359,9 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 // trait searches
                 {"Dimension", 5},
                 {"JdbcAccess", 2},
-                {"ETL", 3},
-                {"Metric", 5},
-                {"PII", 6},
+                {"ETL", 5},
+                {"Metric", 9},
+                {"PII", 8},
                 {"`Log Data`", 4},
 
                 /* Lineage queries are fired through ClosureQuery and are tested through HiveLineageJerseyResourceIt in webapp module.
@@ -388,7 +388,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
         return new Object[][]{
                 {"hive_column  limit 10 ", 10},
                 {"hive_column select hive_column.name limit 10 ", 10},
-                {"hive_column select hive_column.name  withPath", 29},
+                {"hive_column select hive_column.name  withPath", 37},
                 {"hive_column select hive_column.name limit 10 withPath", 10},
                 {"from hive_db", 3},
                 {"from hive_db limit 2", 2},
@@ -405,10 +405,10 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 {"hive_db has name limit 2 offset 1", 2},
                 {"hive_db has name limit 10 offset 1", 2},
                 {"hive_db has name limit 10 offset 0", 3},
-                {"hive_db, hive_table", 8},
+                {"hive_db, hive_table", 10},
                 {"hive_db, hive_table limit 5", 5},
                 {"hive_db, hive_table limit 5 offset 0", 5},
-                {"hive_db, hive_table limit 5 offset 5", 3},
+                {"hive_db, hive_table limit 5 offset 5", 5},
                 
                 {"View is JdbcAccess", 2},
                 {"View is JdbcAccess limit 1", 1},
@@ -416,13 +416,13 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 {"hive_db as db1, hive_table where db1.name = \"Reporting\"", 0}, //Not working - ATLAS-145
                 
                 
-                {"from hive_table", 8},
+                {"from hive_table", 10},
                 {"from hive_table limit 5", 5},
-                {"from hive_table limit 5 offset 5", 3},
+                {"from hive_table limit 5 offset 5", 5},
                 
-                {"hive_table", 8},
+                {"hive_table", 10},
                 {"hive_table limit 5", 5},
-                {"hive_table limit 5 offset 5", 3},
+                {"hive_table limit 5 offset 5", 5},
                 
                 {"hive_table isa Dimension", 3},
                 {"hive_table isa Dimension limit 2", 2},
@@ -430,10 +430,10 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 {"hive_table isa Dimension limit 2 offset 1", 2},
                 {"hive_table isa Dimension limit 3 offset 1", 2},
                 
-                {"hive_column where hive_column isa PII", 6},
+                {"hive_column where hive_column isa PII", 8},
                 {"hive_column where hive_column isa PII limit 5", 5},
                 {"hive_column where hive_column isa PII limit 5 offset 1", 5},
-                {"hive_column where hive_column isa PII limit 5 offset 5", 1},
+                {"hive_column where hive_column isa PII limit 5 offset 5", 3},
                 
                 
                 {"View is Dimension" , 2},
@@ -441,31 +441,31 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 {"View is Dimension limit 1 offset 1" , 1},
                 {"View is Dimension limit 10 offset 1" , 1},
                 
-                {"hive_column select hive_column.name", 29},
+                {"hive_column select hive_column.name", 37},
                 {"hive_column select hive_column.name limit 5", 5},
-                {"hive_column select hive_column.name limit 5 offset 28", 1},
+                {"hive_column select hive_column.name limit 5 offset 36", 1},
                 
-                {"hive_column select name", 29},
+                {"hive_column select name", 37},
                 {"hive_column select name limit 5", 5},
-                {"hive_column select name limit 5 offset 28 ", 1},
+                {"hive_column select name limit 5 offset 36 ", 1},
                 
-                {"hive_column where hive_column.name=\"customer_id\"", 4},
+                {"hive_column where hive_column.name=\"customer_id\"", 6},
                 {"hive_column where hive_column.name=\"customer_id\" limit 2", 2},
                 {"hive_column where hive_column.name=\"customer_id\" limit 2 offset 1", 2},
-                {"hive_column where hive_column.name=\"customer_id\" limit 10 offset 3", 1},
+                {"hive_column where hive_column.name=\"customer_id\" limit 10 offset 3", 3},
                 
-                {"from hive_table select hive_table.name", 8},
+                {"from hive_table select hive_table.name", 10},
                 {"from hive_table select hive_table.name limit 5", 5},
-                {"from hive_table select hive_table.name limit 5 offset 5", 3},
+                {"from hive_table select hive_table.name limit 5 offset 5", 5},
                 
                 {"hive_db where (name = \"Reporting\")", 1},
                 {"hive_db where (name = \"Reporting\") limit 10", 1},
                 {"hive_db where (name = \"Reporting\") select name as _col_0, owner as _col_1", 1},
                 {"hive_db where (name = \"Reporting\") select name as _col_0, owner as _col_1 limit 10", 1},
                 {"hive_db where hive_db is JdbcAccess", 0}, //Not supposed to work
-                {"hive_db hive_table", 8},
+                {"hive_db hive_table", 10},
                 {"hive_db hive_table limit 5", 5},
-                {"hive_db hive_table limit 5 offset 5", 3},
+                {"hive_db hive_table limit 5 offset 5", 5},
                 {"hive_db where hive_db has name", 3},
                 {"hive_db where hive_db has name limit 5", 3},
                 {"hive_db where hive_db has name limit 2 offset 0", 2},
@@ -499,24 +499,24 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 {"JdbcAccess limit 2 offset 1", 1},
                 {"JdbcAccess limit 1", 1},
                 
-                {"ETL", 3},
+                {"ETL", 5},
                 {"ETL limit 2", 2},
                 {"ETL limit 1", 1},
                 {"ETL limit 1 offset 0", 1},
                 {"ETL limit 2 offset 1", 2},
                 
-                {"Metric", 5},
-                {"Metric limit 10", 5},
+                {"Metric", 9},
+                {"Metric limit 10", 9},
                 {"Metric limit 2", 2},
-                {"Metric limit 10 offset 1", 4},
+                {"Metric limit 10 offset 1", 8},
                 
                 
                 
-                {"PII", 6},
-                {"PII limit 10", 6},
+                {"PII", 8},
+                {"PII limit 10", 8},
                 {"PII limit 2", 2},
-                {"PII limit 10 offset 1", 5},
-                
+                {"PII limit 10 offset 1", 7},
+
                 {"`Log Data`", 4},
                 {"`Log Data` limit 3", 3},
                 {"`Log Data` limit 10 offset 2", 2},
@@ -553,10 +553,10 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 {"hive_db where hive_db.name=\"Reporting\" select name, owner orderby 'hive_db.name' ", 1, "name", isAscending},
                 {"hive_db has name orderby 'hive_db.owner' limit 10 offset 0", 3, "owner", isAscending},
                 
-                {"from hive_table orderby 'hive_table.owner'", 8, "owner", isAscending},
+                {"from hive_table orderby 'hive_table.owner'", 10, "owner", isAscending},
                 {"from hive_table orderby 'hive_table.owner' limit 8", 8, "owner", isAscending},
                 
-                {"hive_table orderby 'hive_table.owner'", 8, "owner", isAscending},
+                {"hive_table orderby 'hive_table.owner'", 10, "owner", isAscending},
                 {"hive_table orderby 'hive_table.owner' limit 8", 8, "owner", isAscending},
                 {"hive_table orderby 'hive_table.owner' limit 8 offset 0", 8, "owner", isAscending},
                 {"hive_table orderby 'hive_table.owner' desc limit 8 offset 0", 8, "owner", !isAscending},
@@ -566,29 +566,29 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 {"hive_table isa Dimension orderby 'hive_table.owner' limit 3 offset 0", 3, "owner", isAscending},
                 {"hive_table isa Dimension orderby 'hive_table.owner' desc limit 3 offset 0", 3, "owner", !isAscending},
                 
-                {"hive_column where hive_column isa PII orderby 'hive_column.name'", 6, "name", isAscending},
+                {"hive_column where hive_column isa PII orderby 'hive_column.name'", 8, "name", isAscending},
                 {"hive_column where hive_column isa PII orderby 'hive_column.name' limit 5", 5, "name", isAscending},
                 {"hive_column where hive_column isa PII orderby 'hive_column.name' limit 5 offset 1", 5, "name", isAscending},
                 {"hive_column where hive_column isa PII orderby 'hive_column.name' desc limit 5 offset 1", 5, "name", !isAscending},
                 
                 
-                {"hive_column select hive_column.name orderby 'hive_column.name' ", 29, "hive_column.name", isAscending},
+                {"hive_column select hive_column.name orderby 'hive_column.name' ", 37, "hive_column.name", isAscending},
                 {"hive_column select hive_column.name orderby 'hive_column.name' limit 5", 5, "hive_column.name", isAscending},
                 {"hive_column select hive_column.name orderby 'hive_column.name' desc limit 5", 5, "hive_column.name", !isAscending},
-                {"hive_column select hive_column.name orderby 'hive_column.name' limit 5 offset 28", 1, "hive_column.name", isAscending},
+                {"hive_column select hive_column.name orderby 'hive_column.name' limit 5 offset 36", 1, "hive_column.name", isAscending},
                 
-                {"hive_column select name orderby 'hive_column.name'", 29, "name", isAscending},
+                {"hive_column select name orderby 'hive_column.name'", 37, "name", isAscending},
                 {"hive_column select name orderby 'hive_column.name' limit 5", 5, "name", isAscending},
-                {"hive_column select name orderby 'hive_column.name' desc", 29, "name", !isAscending},
+                {"hive_column select name orderby 'hive_column.name' desc", 37, "name", !isAscending},
                 
-                {"hive_column where hive_column.name=\"customer_id\" orderby 'hive_column.name'", 4, "name", isAscending},
+                {"hive_column where hive_column.name=\"customer_id\" orderby 'hive_column.name'", 6, "name", isAscending},
                 {"hive_column where hive_column.name=\"customer_id\" orderby 'hive_column.name' limit 2", 2, "name", isAscending},
                 {"hive_column where hive_column.name=\"customer_id\" orderby 'hive_column.name' limit 2 offset 1", 2, "name", isAscending},
                 
-                {"from hive_table select owner orderby 'hive_table.owner'", 8, "owner", isAscending},
+                {"from hive_table select owner orderby 'hive_table.owner'", 10, "owner", isAscending},
                 {"from hive_table select owner orderby 'hive_table.owner' limit 5", 5, "owner", isAscending},
                 {"from hive_table select owner orderby 'hive_table.owner' desc limit 5", 5, "owner", !isAscending},
-                {"from hive_table select owner orderby 'hive_table.owner' limit 5 offset 5", 3, "owner", isAscending},
+                {"from hive_table select owner orderby 'hive_table.owner' limit 5 offset 5", 5, "owner", isAscending},
                 
                 {"hive_db where (name = \"Reporting\") orderby 'hive_db.name'", 1, "name", isAscending},
                 {"hive_db where (name = \"Reporting\") orderby 'hive_db.name' limit 10", 1, "name", isAscending},
@@ -617,7 +617,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
 
                 
                 //Test if proeprty is not defined. it should not fail the query
-                {"hive_table orderby 'hive_table.owner_notdefined'", 8, null, isAscending},
+                {"hive_table orderby 'hive_table.owner_notdefined'", 10, null, isAscending},
         };
     }
     
