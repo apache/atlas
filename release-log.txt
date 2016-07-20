@@ -27,6 +27,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-347 Atlas search APIs should allow pagination of results (shwethags)
 ATLAS-639 Exception for lineage request (svimal2106 via shwethags)
 ATLAS-1022 Update typesystem wiki with details (yhemanth via shwethags)
 ATLAS-1021 Update Atlas architecture wiki (yhemanth via sumasai)

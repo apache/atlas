@@ -25,6 +25,7 @@ import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
+import org.apache.atlas.query.QueryParams;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
@@ -72,6 +73,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
 
     @Inject
     private GraphBackedDiscoveryService discoveryService;
+    private QueryParams queryParams = new QueryParams(40, 0);
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -128,12 +130,16 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
         super.tearDown();
     }
 
+    private String searchByDSL(String dslQuery) throws Exception {
+        return discoveryService.searchByDSL(dslQuery, queryParams);
+    }
+
     @Test
     public void testSearchBySystemProperties() throws Exception {
         //system property in select
         String dslQuery = "from Department select __guid";
 
-        String jsonResults = discoveryService.searchByDSL(dslQuery);
+        String jsonResults = searchByDSL(dslQuery);
         assertNotNull(jsonResults);
 
         JSONObject results = new JSONObject(jsonResults);
@@ -147,7 +153,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
         //system property in where clause
         String guid = rows.getJSONObject(0).getString("__guid");
         dslQuery = "Department where __guid = '" + guid + "' and __state = 'ACTIVE'";
-        jsonResults = discoveryService.searchByDSL(dslQuery);
+        jsonResults = searchByDSL(dslQuery);
         assertNotNull(jsonResults);
 
         results = new JSONObject(jsonResults);
@@ -162,7 +168,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
     public void testSearchByDSLReturnsEntity() throws Exception {
         String dslQuery = "from Department";
 
-        String jsonResults = discoveryService.searchByDSL(dslQuery);
+        String jsonResults = searchByDSL(dslQuery);
         assertNotNull(jsonResults);
 
         JSONObject results = new JSONObject(jsonResults);
@@ -190,8 +196,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
     @Test(expectedExceptions = Throwable.class)
     public void testSearchByDSLBadQuery() throws Exception {
         String dslQuery = "from blah";
-
-        discoveryService.searchByDSL(dslQuery);
+        searchByDSL(dslQuery);
         Assert.fail();
     }
 
@@ -383,6 +388,30 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
         };
     }
 
+    @DataProvider(name = "dslExplicitLimitQueriesProvider")
+    private Object[][] createDSLQueriesWithExplicitLimit() {
+        return new Object[][]{
+                {"hive_column", 37, 40, 0},//with higher limit all rows returned
+                {"hive_column limit 10", 10, 50, 0},//lower limit in query
+                {"hive_column select hive_column.name limit 10", 5, 5, 0},//lower limit in query param
+                {"hive_column select hive_column.name withPath", 20, 20, 0},//limit only in params
+                //with offset, only remaining rows returned
+                {"hive_column select hive_column.name limit 40 withPath", 17, 40, 20},
+                //with higher offset, no rows returned
+                {"hive_column select hive_column.name limit 40 withPath", 0, 40, 40},
+                //offset used from query
+                {"hive_column select hive_column.name limit 40 offset 10", 27, 40, 0},
+                //offsets in query and parameter added up
+                {"hive_column select hive_column.name limit 40 offset 10", 17, 40, 10},
+                //works with where clause
+                {"hive_db where name = 'Reporting' limit 10 offset 0", 1, 40, 0},
+                //works with joins
+                {"hive_db, hive_table where db.name = 'Reporting' limit 10", 1, 1, 0},
+                {"hive_column limit 25", 5, 10, 20},    //last page should return records limited by limit in query
+                {"hive_column limit 25", 0, 10, 30},    //offset > limit returns 0 rows
+        };
+    }
+
     @DataProvider(name = "dslLimitQueriesProvider")
     private Object[][] createDSLQueriesWithLimit() {
         return new Object[][]{
@@ -390,6 +419,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 {"hive_column select hive_column.name limit 10 ", 10},
                 {"hive_column select hive_column.name  withPath", 37},
                 {"hive_column select hive_column.name limit 10 withPath", 10},
+
                 {"from hive_db", 3},
                 {"from hive_db limit 2", 2},
                 {"from hive_db limit 2 offset 0", 2},
@@ -543,60 +573,60 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
 //                {"hive_db  hive_table  orderby 'hive_db.owner'", 8, "owner", isAscending},
 //                {"hive_db hive_table orderby 'hive_db.owner' limit 5", 5, "owner", isAscending},
 //                {"hive_db hive_table orderby 'hive_db.owner' limit 5 offset 5", 3, "owner", isAscending},
-                {"hive_column select hive_column.name orderby 'hive_column.name' limit 10 withPath", 10, "name", isAscending},
-                {"hive_column select hive_column.name orderby 'hive_column.name' asc limit 10 withPath", 10, "name", isAscending},
+                {"hive_column select hive_column.name orderby name limit 10 withPath", 10, "name", isAscending},
+                {"hive_column select hive_column.name orderby name asc limit 10 withPath", 10, "name", isAscending},
                 {"hive_column select hive_column.name orderby 'hive_column.name' desc limit 10 withPath", 10, "name", !isAscending},
-                {"from hive_db orderby 'hive_db.owner' limit 3", 3, "owner", isAscending},
-                {"hive_db where hive_db.name=\"Reporting\" orderby 'owner'", 1, "owner", isAscending},
+                {"from hive_db orderby owner limit 3", 3, "owner", isAscending},
+                {"hive_db where hive_db.name=\"Reporting\" orderby owner", 1, "owner", isAscending},
                 
-                {"hive_db where hive_db.name=\"Reporting\" orderby 'hive_db.owner' limit 10 ", 1, "owner", isAscending},
-                {"hive_db where hive_db.name=\"Reporting\" select name, owner orderby 'hive_db.name' ", 1, "name", isAscending},
+                {"hive_db where hive_db.name=\"Reporting\" orderby owner limit 10", 1, "owner", isAscending},
+                {"hive_db where hive_db.name=\"Reporting\" select name, owner orderby name", 1, "name", isAscending},
                 {"hive_db has name orderby 'hive_db.owner' limit 10 offset 0", 3, "owner", isAscending},
                 
-                {"from hive_table orderby 'hive_table.owner'", 10, "owner", isAscending},
+                {"from hive_table orderby owner", 10, "owner", isAscending},
                 {"from hive_table orderby 'hive_table.owner' limit 8", 8, "owner", isAscending},
                 
-                {"hive_table orderby 'hive_table.owner'", 10, "owner", isAscending},
-                {"hive_table orderby 'hive_table.owner' limit 8", 8, "owner", isAscending},
-                {"hive_table orderby 'hive_table.owner' limit 8 offset 0", 8, "owner", isAscending},
+                {"hive_table orderby owner", 10, "owner", isAscending},
+                {"hive_table orderby owner limit 8", 8, "owner", isAscending},
+                {"hive_table orderby owner limit 8 offset 0", 8, "owner", isAscending},
                 {"hive_table orderby 'hive_table.owner' desc limit 8 offset 0", 8, "owner", !isAscending},
                 
-                {"hive_table isa Dimension orderby 'hive_table.owner'", 3, "owner", isAscending},//order not working
-                {"hive_table isa Dimension orderby 'hive_table.owner' limit 3", 3, "owner", isAscending},
-                {"hive_table isa Dimension orderby 'hive_table.owner' limit 3 offset 0", 3, "owner", isAscending},
+                {"hive_table isa Dimension orderby owner", 3, "owner", isAscending},//order not working
+                {"hive_table isa Dimension orderby owner limit 3", 3, "owner", isAscending},
+                {"hive_table isa Dimension orderby owner limit 3 offset 0", 3, "owner", isAscending},
                 {"hive_table isa Dimension orderby 'hive_table.owner' desc limit 3 offset 0", 3, "owner", !isAscending},
                 
-                {"hive_column where hive_column isa PII orderby 'hive_column.name'", 8, "name", isAscending},
-                {"hive_column where hive_column isa PII orderby 'hive_column.name' limit 5", 5, "name", isAscending},
-                {"hive_column where hive_column isa PII orderby 'hive_column.name' limit 5 offset 1", 5, "name", isAscending},
+                {"hive_column where hive_column isa PII orderby name", 8, "name", isAscending},
+                {"hive_column where hive_column isa PII orderby name limit 5", 5, "name", isAscending},
+                {"hive_column where hive_column isa PII orderby name limit 5 offset 1", 5, "name", isAscending},
                 {"hive_column where hive_column isa PII orderby 'hive_column.name' desc limit 5 offset 1", 5, "name", !isAscending},
                 
                 
-                {"hive_column select hive_column.name orderby 'hive_column.name' ", 37, "hive_column.name", isAscending},
-                {"hive_column select hive_column.name orderby 'hive_column.name' limit 5", 5, "hive_column.name", isAscending},
-                {"hive_column select hive_column.name orderby 'hive_column.name' desc limit 5", 5, "hive_column.name", !isAscending},
+                {"hive_column select hive_column.name orderby name", 37, "hive_column.name", isAscending},
+                {"hive_column select hive_column.name orderby name limit 5", 5, "hive_column.name", isAscending},
+                {"hive_column select hive_column.name orderby name desc limit 5", 5, "hive_column.name", !isAscending},
                 {"hive_column select hive_column.name orderby 'hive_column.name' limit 5 offset 36", 1, "hive_column.name", isAscending},
                 
-                {"hive_column select name orderby 'hive_column.name'", 37, "name", isAscending},
-                {"hive_column select name orderby 'hive_column.name' limit 5", 5, "name", isAscending},
+                {"hive_column select name orderby name", 37, "name", isAscending},
+                {"hive_column select name orderby name limit 5", 5, "name", isAscending},
                 {"hive_column select name orderby 'hive_column.name' desc", 37, "name", !isAscending},
                 
-                {"hive_column where hive_column.name=\"customer_id\" orderby 'hive_column.name'", 6, "name", isAscending},
-                {"hive_column where hive_column.name=\"customer_id\" orderby 'hive_column.name' limit 2", 2, "name", isAscending},
+                {"hive_column where hive_column.name=\"customer_id\" orderby name", 6, "name", isAscending},
+                {"hive_column where hive_column.name=\"customer_id\" orderby name limit 2", 2, "name", isAscending},
                 {"hive_column where hive_column.name=\"customer_id\" orderby 'hive_column.name' limit 2 offset 1", 2, "name", isAscending},
                 
-                {"from hive_table select owner orderby 'hive_table.owner'", 10, "owner", isAscending},
-                {"from hive_table select owner orderby 'hive_table.owner' limit 5", 5, "owner", isAscending},
-                {"from hive_table select owner orderby 'hive_table.owner' desc limit 5", 5, "owner", !isAscending},
+                {"from hive_table select owner orderby owner", 10, "owner", isAscending},
+                {"from hive_table select owner orderby owner limit 5", 5, "owner", isAscending},
+                {"from hive_table select owner orderby owner desc limit 5", 5, "owner", !isAscending},
                 {"from hive_table select owner orderby 'hive_table.owner' limit 5 offset 5", 5, "owner", isAscending},
                 
-                {"hive_db where (name = \"Reporting\") orderby 'hive_db.name'", 1, "name", isAscending},
+                {"hive_db where (name = \"Reporting\") orderby name", 1, "name", isAscending},
                 {"hive_db where (name = \"Reporting\") orderby 'hive_db.name' limit 10", 1, "name", isAscending},
                 {"hive_db where (name = \"Reporting\") select name as _col_0, owner as _col_1 orderby '_col_1'", 1, "_col_1", isAscending}, //will it work
-                {"hive_db where (name = \"Reporting\") select name as _col_0, owner as _col_1  orderby '_col_1' limit 10", 1, "_col_1", isAscending},
-                {"hive_db where hive_db has name orderby 'hive_db.owner'", 3, "owner", isAscending},
-                {"hive_db where hive_db has name orderby 'hive_db.owner' limit 5", 3, "owner", isAscending},
-                {"hive_db where hive_db has name orderby 'hive_db.owner' limit 2 offset 0", 2, "owner", isAscending},
+                {"hive_db where (name = \"Reporting\") select name as _col_0, owner as _col_1  orderby owner limit 10", 1, "_col_1", isAscending},
+                {"hive_db where hive_db has name orderby owner", 3, "owner", isAscending},
+                {"hive_db where hive_db has name orderby owner limit 5", 3, "owner", isAscending},
+                {"hive_db where hive_db has name orderby owner limit 2 offset 0", 2, "owner", isAscending},
                 {"hive_db where hive_db has name orderby 'hive_db.owner' limit 2 offset 1", 2, "owner", isAscending},
                 
                 {"hive_db where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 orderby '_col_1'", 1, "_col_1", isAscending},
@@ -604,15 +634,15 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 {"hive_db where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 orderby '_col_1' limit 10 offset 1", 0, "_col_1", isAscending},
                 {"hive_db where (name = \"Reporting\") select name as _col_0, (createTime + 1) as _col_1 orderby '_col_1' limit 10 offset 0", 1, "_col_1", isAscending},
                 
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby '_col_1' ", 1, "_col_1", isAscending},
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby '_col_1' limit 10 ", 1, "_col_1", isAscending},
-                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby '_col_1' limit 10 offset 0", 1, "_col_1", isAscending},
+                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime", 1, "_col_1", isAscending},
+                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime limit 10 ", 1, "_col_1", isAscending},
+                {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby createTime limit 10 offset 0", 1, "_col_1", isAscending},
                 {"hive_table where (name = \"sales_fact\" and createTime > \"2014-01-01\" ) select name as _col_0, createTime as _col_1 orderby '_col_1' limit 10 offset 5", 0, "_col_1", isAscending},
                 
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby '_col_0' ", 1, "_col_0", isAscending},
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby '_col_0' limit 10 offset 0", 1, "_col_0", isAscending},
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby '_col_0' limit 10 offset 1", 0, "_col_0", isAscending},
-                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby '_col_0' limit 10", 1, "_col_0", isAscending},
+                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name", 1, "_col_0", isAscending},
+                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 10 offset 0", 1, "_col_0", isAscending},
+                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 10 offset 1", 0, "_col_0", isAscending},
+                {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 10", 1, "_col_0", isAscending},
                 {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby '_col_0' limit 0 offset 1", 0, "_col_0", isAscending},
 
                 
@@ -624,7 +654,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
     @Test(dataProvider = "dslOrderByQueriesProvider")
     public void  testSearchByDSLQueriesWithOrderBy(String dslQuery, Integer expectedNumRows, String orderBy, boolean ascending) throws Exception {
         System.out.println("Executing dslQuery = " + dslQuery);
-        String jsonResults = discoveryService.searchByDSL(dslQuery);
+        String jsonResults = searchByDSL(dslQuery);
         assertNotNull(jsonResults);
 
         JSONObject results = new JSONObject(jsonResults);
@@ -677,17 +707,23 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
     
     @Test(dataProvider = "dslQueriesProvider")
     public void  testSearchByDSLQueries(String dslQuery, Integer expectedNumRows) throws Exception {
-        runQuery(dslQuery, expectedNumRows);
+        runQuery(dslQuery, expectedNumRows, 40, 0);
     }
 
     @Test(dataProvider = "comparisonQueriesProvider")
     public void testDataTypeComparisonQueries(String dslQuery, Integer expectedNumRows) throws Exception {
-        runQuery(dslQuery, expectedNumRows);
+        runQuery(dslQuery, expectedNumRows, 40, 0);
     }
 
-    public void runQuery(String dslQuery, Integer expectedNumRows) throws Exception {
+    @Test(dataProvider = "dslExplicitLimitQueriesProvider")
+    public void testSearchByDSLQueriesWithExplicitLimit(String dslQuery, Integer expectedNumRows, int limit, int offset)
+            throws Exception {
+        runQuery(dslQuery, expectedNumRows, limit, offset);
+    }
+
+    public void runQuery(String dslQuery, Integer expectedNumRows, int limitParam, int offsetParam) throws Exception {
         System.out.println("Executing dslQuery = " + dslQuery);
-        String jsonResults = discoveryService.searchByDSL(dslQuery);
+        String jsonResults = discoveryService.searchByDSL(dslQuery, new QueryParams(limitParam, offsetParam));
         assertNotNull(jsonResults);
 
         JSONObject results = new JSONObject(jsonResults);
@@ -710,9 +746,9 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
 
     @Test(dataProvider = "dslLimitQueriesProvider")
     public void  testSearchByDSLQueriesWithLimit(String dslQuery, Integer expectedNumRows) throws Exception {
-        runQuery(dslQuery, expectedNumRows);
+        runQuery(dslQuery, expectedNumRows, 40, 0);
     }
-    
+
     @DataProvider(name = "invalidDslQueriesProvider")
     private Object[][] createInvalidDSLQueries() {
         return new String[][]{{"from Unknown"}, {"Unknown"}, {"Unknown is Blah"},};
@@ -721,7 +757,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
     @Test(dataProvider = "invalidDslQueriesProvider", expectedExceptions = DiscoveryException.class)
     public void testSearchByDSLInvalidQueries(String dslQuery) throws Exception {
         System.out.println("Executing dslQuery = " + dslQuery);
-        discoveryService.searchByDSL(dslQuery);
+        searchByDSL(dslQuery);
         Assert.fail();
     }
 
@@ -731,7 +767,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
         createInstances();
 
         String dslQuery = "from D where a = 1";
-        String jsonResults = discoveryService.searchByDSL(dslQuery);
+        String jsonResults = searchByDSL(dslQuery);
         assertNotNull(jsonResults);
 
         JSONObject results = new JSONObject(jsonResults);

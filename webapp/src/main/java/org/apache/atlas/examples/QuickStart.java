@@ -462,7 +462,7 @@ public class QuickStart {
 
     private void search() throws Exception {
         for (String dslQuery : getDSLQueries()) {
-            JSONArray results = metadataServiceClient.search(dslQuery);
+            JSONArray results = metadataServiceClient.search(dslQuery, 10, 0);
             if (results != null) {
                 System.out.println("query [" + dslQuery + "] returned [" + results.length() + "] rows");
             } else {

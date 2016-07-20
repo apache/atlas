@@ -158,12 +158,18 @@ public final class ParamChecker {
      * @param maxValue
      * @param name
      */
-    public static void lessThan(short value, short maxValue, String name) {
+    public static void lessThan(long value, long maxValue, String name) {
         if (value <= 0) {
             throw new IllegalArgumentException(name + " should be > 0, current value " + value);
         }
         if (value > maxValue) {
             throw new IllegalArgumentException(name + " should be <= " + maxValue + ", current value " + value);
+        }
+    }
+
+    public static void greaterThan(long value, long minValue, String name) {
+        if (value <= minValue) {
+            throw new IllegalArgumentException(name + " should be > " + minValue + ", current value " + value);
         }
     }
 }

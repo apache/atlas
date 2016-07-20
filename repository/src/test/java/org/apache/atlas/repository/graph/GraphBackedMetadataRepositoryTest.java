@@ -30,6 +30,7 @@ import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
+import org.apache.atlas.query.QueryParams;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.typesystem.IStruct;
@@ -91,6 +92,7 @@ public class GraphBackedMetadataRepositoryTest {
 
     private TypeSystem typeSystem;
     private String guid;
+    private QueryParams queryParams = new QueryParams(100, 0);
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -424,7 +426,7 @@ public class GraphBackedMetadataRepositoryTest {
     public void testSearchByDSLQuery() throws Exception {
         String dslQuery = "hive_database as PII";
         System.out.println("Executing dslQuery = " + dslQuery);
-        String jsonResults = discoveryService.searchByDSL(dslQuery);
+        String jsonResults = discoveryService.searchByDSL(dslQuery, queryParams);
         Assert.assertNotNull(jsonResults);
 
         JSONObject results = new JSONObject(jsonResults);
@@ -457,7 +459,7 @@ public class GraphBackedMetadataRepositoryTest {
     public void testSearchByDSLWithInheritance() throws Exception {
         String dslQuery = "Person where name = 'Jane'";
         System.out.println("Executing dslQuery = " + dslQuery);
-        String jsonResults = discoveryService.searchByDSL(dslQuery);
+        String jsonResults = discoveryService.searchByDSL(dslQuery, queryParams);
         Assert.assertNotNull(jsonResults);
 
         JSONObject results = new JSONObject(jsonResults);
@@ -488,7 +490,7 @@ public class GraphBackedMetadataRepositoryTest {
         TestUtils.dumpGraph(graphProvider.get());
 
         System.out.println("Executing dslQuery = " + dslQuery);
-        String jsonResults = discoveryService.searchByDSL(dslQuery);
+        String jsonResults = discoveryService.searchByDSL(dslQuery, queryParams);
         Assert.assertNotNull(jsonResults);
 
         JSONObject results = new JSONObject(jsonResults);
@@ -522,7 +524,7 @@ public class GraphBackedMetadataRepositoryTest {
 
         //person in hr department whose name is john
         Thread.sleep(sleepInterval);
-        String response = discoveryService.searchByFullText("john");
+        String response = discoveryService.searchByFullText("john", queryParams);
         Assert.assertNotNull(response);
         JSONArray results = new JSONArray(response);
         Assert.assertEquals(results.length(), 1);
@@ -530,7 +532,7 @@ public class GraphBackedMetadataRepositoryTest {
         Assert.assertEquals(row.get("typeName"), "Person");
 
         //person in hr department who lives in santa clara
-        response = discoveryService.searchByFullText("Jane AND santa AND clara");
+        response = discoveryService.searchByFullText("Jane AND santa AND clara", queryParams);
         Assert.assertNotNull(response);
         results = new JSONArray(response);
         Assert.assertEquals(results.length(), 1);
@@ -538,7 +540,7 @@ public class GraphBackedMetadataRepositoryTest {
         Assert.assertEquals(row.get("typeName"), "Manager");
 
         //search for person in hr department whose name starts is john/jahn
-        response = discoveryService.searchByFullText("hr AND (john OR jahn)");
+        response = discoveryService.searchByFullText("hr AND (john OR jahn)", queryParams);
         Assert.assertNotNull(response);
         results = new JSONArray(response);
         Assert.assertEquals(results.length(), 1);

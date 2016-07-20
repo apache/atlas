@@ -23,6 +23,7 @@ import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.BaseRepositoryTest;
 import org.apache.atlas.RepositoryMetadataModule;
+import org.apache.atlas.query.QueryParams;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
@@ -117,7 +118,7 @@ public class DataSetLineageServiceTest extends BaseRepositoryTest {
     @Test(dataProvider = "dslQueriesProvider")
     public void testSearchByDSLQueries(String dslQuery) throws Exception {
         System.out.println("Executing dslQuery = " + dslQuery);
-        String jsonResults = discoveryService.searchByDSL(dslQuery);
+        String jsonResults = discoveryService.searchByDSL(dslQuery, new QueryParams(100, 0));
         assertNotNull(jsonResults);
 
         JSONObject results = new JSONObject(jsonResults);

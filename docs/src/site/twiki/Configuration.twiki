@@ -134,6 +134,18 @@ atlas.lineage.hive.table.schema.query=hive_table where name=?, columns
 </verbatim>
 
 
+---++ Search Configs
+Search APIs (DSL and full text search) support pagination and have optional limit and offset arguments. Following configs are related to search pagination
+
+<verbatim>
+# Default limit used when limit is not specified in API
+atlas.search.defaultlimit=100
+
+# Maximum limit allowed in API. Limits maximum results that can be fetched to make sure the atlas server doesn't run out of memory
+atlas.search.maxlimit=10000
+</verbatim>
+
+
 ---++ Notification Configs
 Refer http://kafka.apache.org/documentation.html#configuration for Kafka configuration. All Kafka configs should be prefixed with 'atlas.kafka.'
 

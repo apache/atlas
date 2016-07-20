@@ -31,6 +31,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.atlas.listener.EntityChangeListener;
+import org.apache.atlas.query.QueryParams;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.audit.HBaseBasedAuditRepository;
 import org.apache.atlas.repository.audit.HBaseTestUtils;
@@ -230,8 +231,9 @@ public class DefaultMetadataServiceTest {
         assertReferenceableEquals(instance, entity);
 
         //Verify that search with reserved characters works - for string attribute
-        String responseJson = discoveryService.searchByDSL(
-                String.format("`%s` where `%s` = '%s'", typeDefinition.typeName, strAttrName, entity.get(strAttrName)));
+        String query =
+                String.format("`%s` where `%s` = '%s'", typeDefinition.typeName, strAttrName, entity.get(strAttrName));
+        String responseJson = discoveryService.searchByDSL(query, new QueryParams(1, 0));
         JSONObject response = new JSONObject(responseJson);
         assertEquals(response.getJSONArray("rows").length(), 1);
     }

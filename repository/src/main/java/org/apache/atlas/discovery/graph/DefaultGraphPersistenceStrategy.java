@@ -142,7 +142,10 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
                 if (dataType.getName().equals(idType.getName())) {
                     structInstance.set(idType.typeNameAttrName(), GraphHelper.getProperty(structVertex, typeAttributeName()));
                     structInstance.set(idType.idAttrName(), GraphHelper.getProperty(structVertex, idAttributeName()));
-                    structInstance.set(idType.stateAttrName(), GraphHelper.getProperty(structVertex, stateAttributeName()));
+                    String stateValue = GraphHelper.getProperty(structVertex, stateAttributeName());
+                    if (stateValue != null) {
+                        structInstance.set(idType.stateAttrName(), stateValue);
+                    }
                 } else {
                     metadataRepository.getGraphToInstanceMapper()
                         .mapVertexToInstance(structVertex, structInstance, structType.fieldMapping().fields);

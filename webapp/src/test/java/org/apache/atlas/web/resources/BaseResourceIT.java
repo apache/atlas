@@ -54,6 +54,7 @@ import org.apache.atlas.utils.ParamChecker;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.RandomStringUtils;
+import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -341,5 +342,9 @@ public abstract class BaseResourceIT {
                         notification.getEntity().getId()._getId().equals(guid);
             }
         };
+    }
+
+    protected JSONArray searchByDSL(String dslQuery) throws AtlasServiceException {
+        return serviceClient.searchByDSL(dslQuery, 10, 0);
     }
 }

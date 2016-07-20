@@ -18,6 +18,8 @@
 
 package org.apache.atlas.discovery;
 
+import org.apache.atlas.query.QueryParams;
+
 import java.util.List;
 import java.util.Map;
 
@@ -27,17 +29,22 @@ import java.util.Map;
 public interface DiscoveryService {
 
     /**
-     * Full text search
+     * Searches using Full text query
+     * @param query query string
+     * @param queryParams Default query parameters like limit, offset
+     * @return results json
+     * @throws DiscoveryException
      */
-    String searchByFullText(String query) throws DiscoveryException;
+    String searchByFullText(String query, QueryParams queryParams) throws DiscoveryException;
 
     /**
-     * Search using query DSL.
-     *
-     * @param dslQuery query in DSL format.
-     * @return JSON representing the type and results.
+     * Searches using DSL query
+     * @param dslQuery query string
+     * @param queryParams Default query parameters like limit, offset
+     * @return results json
+     * @throws DiscoveryException
      */
-    String searchByDSL(String dslQuery) throws DiscoveryException;
+    String searchByDSL(String dslQuery, QueryParams queryParams) throws DiscoveryException;
 
     /**
      * Assumes the User is familiar with the persistence structure of the Repository.

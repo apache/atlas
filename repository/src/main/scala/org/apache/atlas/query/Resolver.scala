@@ -97,7 +97,7 @@ class Resolver(srcExpr: Option[Expression] = None, aliases: Map[String, Expressi
         }
         case order@OrderExpression(child, odr, asc) => {
             val r = new Resolver(Some(child), child.namedExpressions)
-            return new OrderExpression(child.transformUp(r), odr, asc)
+            return new OrderExpression(child, odr.transformUp(r), asc)
         }
         case x => x
     }

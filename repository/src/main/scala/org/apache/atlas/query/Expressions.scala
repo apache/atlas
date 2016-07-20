@@ -18,11 +18,8 @@
 
 package org.apache.atlas.query
 
-import java.util
-
 import com.google.common.collect.ImmutableCollection
 import org.apache.atlas.AtlasException
-import org.apache.atlas.typesystem.ITypedInstance
 import org.apache.atlas.typesystem.types.DataTypes.{ArrayType, PrimitiveType, TypeCategory}
 import org.apache.atlas.typesystem.types._
 
@@ -35,15 +32,15 @@ object Expressions {
         extends AtlasException(message, cause, enableSuppression, writableStackTrace) {
 
         def this(e: Expression, message: String) {
-            this(e, message, null, false, false)
+            this(e, message, null, false, true)
         }
 
         def this(e: Expression, message: String, cause: Throwable) {
-            this(e, message, cause, false, false)
+            this(e, message, cause, false, true)
         }
 
         def this(e: Expression, cause: Throwable) {
-            this(e, null, cause, false, false)
+            this(e, null, cause, false, true)
         }
 
         override def getMessage: String = {
@@ -333,7 +330,7 @@ object Expressions {
 
         def limit(lmt: Literal[Integer], offset : Literal[Integer]) = new LimitExpression(this, lmt, offset)
 
-        def order(odr: String, asc: Boolean) = new OrderExpression(this, odr, asc)
+        def order(odr: Expression, asc: Boolean) = new OrderExpression(this, odr, asc)
     }
 
     trait BinaryNode {
@@ -775,9 +772,9 @@ object Expressions {
     override def toString = s"$child withPath"
   }
 
-  case class LimitExpression(child: Expression, limit: Literal[Integer], offset: Literal[Integer]) extends Expression with UnaryNode { 
+  case class LimitExpression(child: Expression, limit: Literal[Integer], offset: Literal[Integer]) extends Expression with UnaryNode {
 
-    override def toString = s"$child  limit $limit offset $offset "
+    override def toString = s"$child limit $limit offset $offset "
 
     lazy val dataType = {
             if (!resolved) {
@@ -788,9 +785,9 @@ object Expressions {
     }
   }
 
-  case class OrderExpression(child: Expression, odr: String, asc: Boolean) extends Expression with UnaryNode {
+  case class OrderExpression(child: Expression, odr: Expression, asc: Boolean) extends Expression with UnaryNode {
 
-    override def toString = s"$child  order $odr asc $asc"
+    override def toString = s"$child orderby $odr asc $asc"
 
     lazy val dataType = {
             if (!resolved) {

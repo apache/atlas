@@ -229,22 +229,17 @@ public class LocalAtlasClient extends AtlasClient {
     }
 
     @Override
-    public JSONArray search(final String searchQuery) throws AtlasServiceException {
+    public JSONArray search(final String searchQuery, final int limit, final int offset) throws AtlasServiceException {
         throw new IllegalStateException("Not supported in LocalAtlasClient");
     }
 
     @Override
-    public JSONArray searchByDSL(final String query) throws AtlasServiceException {
+    public JSONArray searchByDSL(final String query, final int limit, final int offset) throws AtlasServiceException {
         throw new IllegalStateException("Not supported in LocalAtlasClient");
     }
 
     @Override
-    public JSONArray searchByGremlin(final String gremlinQuery) throws AtlasServiceException {
-        throw new IllegalStateException("Not supported in LocalAtlasClient");
-    }
-
-    @Override
-    public JSONObject searchByFullText(final String query) throws AtlasServiceException {
+    public JSONObject searchByFullText(final String query, final int limit, final int offset) throws AtlasServiceException {
         throw new IllegalStateException("Not supported in LocalAtlasClient");
     }
 
