@@ -466,7 +466,7 @@ public class QuickStart {
             if (results != null) {
                 System.out.println("query [" + dslQuery + "] returned [" + results.length() + "] rows");
             } else {
-                System.out.println("query [" + dslQuery + "] failed, results:" + results.toString());
+                System.out.println("query [" + dslQuery + "] failed, results:" + results);
             }
         }
     }

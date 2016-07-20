@@ -139,20 +139,6 @@ public final class ParamChecker {
     }
 
     /**
-     * Check that a list is not null and that none of its elements is null. If null or if the list has emtpy elements
-     * throws an IllegalArgumentException.
-     *  @param list the list of strings.
-     * @param name parameter name for the exception message.
-     */
-    public static Collection<String> notEmptyElements(Collection<String> list, String name) {
-        notEmpty(list, name);
-        for (String ele : list) {
-            notEmpty(ele, String.format("list %s element %s", name, ele));
-        }
-        return list;
-    }
-
-    /**
      * Checks that the given value is <= max value.
      * @param value
      * @param maxValue

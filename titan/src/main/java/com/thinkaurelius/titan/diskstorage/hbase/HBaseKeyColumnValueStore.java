@@ -330,18 +330,19 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
             ensureOpen();
 
             return new RecordIterator<Entry>() {
-                private final Iterator<Map.Entry<byte[], NavigableMap<Long, byte[]>>> kv = currentRow.getMap().get(columnFamilyBytes).entrySet().iterator();
+                private final NavigableMap<byte[], NavigableMap<byte[], NavigableMap<Long, byte[]>>> currentMap = currentRow.getMap();
+                private final Iterator<Map.Entry<byte[], NavigableMap<Long, byte[]>>> kv = currentMap == null ? null : currentMap.get(columnFamilyBytes).entrySet().iterator();
 
                 @Override
                 public boolean hasNext() {
                     ensureOpen();
-                    return kv.hasNext();
+                    return kv == null ? false : kv.hasNext();
                 }
 
                 @Override
                 public Entry next() {
                     ensureOpen();
-                    return StaticArrayEntry.ofBytes(kv.next(), entryGetter);
+                    return kv == null ? null : StaticArrayEntry.ofBytes(kv.next(), entryGetter);
                 }
 
                 @Override

@@ -370,10 +370,12 @@ public final class TypedInstanceToGraphMapper {
                 if (!cloneElements.isEmpty()) {
                     for (String edgeIdForDelete : cloneElements) {
                         Edge edge = graphHelper.getEdgeByEdgeId(instanceVertex, edgeLabel, edgeIdForDelete);
-                        boolean deleted = deleteHandler.deleteEdgeReference(edge, entryType.getTypeCategory(),
-                                attributeInfo.isComposite, true);
-                        if (!deleted) {
-                            additionalElements.add(edgeIdForDelete);
+                        if(edge != null) {
+                            boolean deleted = deleteHandler.deleteEdgeReference(edge, entryType.getTypeCategory(),
+                                    attributeInfo.isComposite, true);
+                            if (!deleted) {
+                                additionalElements.add(edgeIdForDelete);
+                            }
                         }
                     }
                 }
@@ -454,11 +456,13 @@ public final class TypedInstanceToGraphMapper {
                 if (!newMap.values().contains(currentEdge)) {
                     String edgeLabel = GraphHelper.getQualifiedNameForMapKey(propertyName, currentKey);
                     Edge edge = graphHelper.getEdgeByEdgeId(instanceVertex, edgeLabel, currentMap.get(currentKey));
-                    boolean deleted =
-                            deleteHandler.deleteEdgeReference(edge, elementType.getTypeCategory(), attributeInfo.isComposite, true);
-                    if (!deleted) {
-                        additionalMap.put(currentKey, currentEdge);
-                        shouldDeleteKey = false;
+                    if(edge != null) {
+                        boolean deleted =
+                                deleteHandler.deleteEdgeReference(edge, elementType.getTypeCategory(), attributeInfo.isComposite, true);
+                        if (!deleted) {
+                            additionalMap.put(currentKey, currentEdge);
+                            shouldDeleteKey = false;
+                        }
                     }
                 }
             }
@@ -702,7 +706,9 @@ public final class TypedInstanceToGraphMapper {
         } else if (attributeInfo.dataType() == DataTypes.DATE_TYPE) {
             final Date dateVal = typedInstance.getDate(attributeInfo.name);
             //Convert Property value to Long  while persisting
-            propertyValue = dateVal.getTime();
+            if(dateVal != null) {
+                propertyValue = dateVal.getTime();
+            }
         } else if (attributeInfo.dataType().getTypeCategory() == DataTypes.TypeCategory.ENUM) {
             if (attrValue != null) {
                 propertyValue = ((EnumValue)attrValue).value;

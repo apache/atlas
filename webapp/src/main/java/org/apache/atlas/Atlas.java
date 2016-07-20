@@ -147,9 +147,12 @@ public final class Atlas {
     }
 
     static int getApplicationPort(CommandLine cmd, String enableTLSFlag, Configuration configuration) {
+        String optionValue = cmd.hasOption(APP_PORT) ? cmd.getOptionValue(APP_PORT) : null;
+
         final int appPort;
-        if (cmd.hasOption(APP_PORT)) {
-            appPort = Integer.valueOf(cmd.getOptionValue(APP_PORT));
+
+        if (StringUtils.isNotEmpty(optionValue)) {
+            appPort = Integer.valueOf(optionValue);
         } else {
             // default : atlas.enableTLS is true
             appPort = getPortValue(configuration, enableTLSFlag);

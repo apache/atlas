@@ -517,17 +517,20 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
         @Override
         public Path next() {
             Path p = pathQueue.poll();
-            ST t = null;
-            try {
-                t = (ST) typeSystem.getDataType(superTypeClass, p.typeName);
-            } catch (AtlasException me) {
-                throw new RuntimeException(me);
-            }
-            if (t.superTypes != null) {
-                ImmutableSet<String> sTs = t.superTypes;
-                for (String sT : sTs) {
-                    String nm = sT + "." + p.pathName;
-                    pathQueue.add(pathNameToPathMap.get(nm));
+
+            if(p != null) {
+                ST t = null;
+                try {
+                    t = (ST) typeSystem.getDataType(superTypeClass, p.typeName);
+                } catch (AtlasException me) {
+                    throw new RuntimeException(me);
+                }
+                if (t.superTypes != null) {
+                    ImmutableSet<String> sTs = t.superTypes;
+                    for (String sT : sTs) {
+                        String nm = sT + "." + p.pathName;
+                        pathQueue.add(pathNameToPathMap.get(nm));
+                    }
                 }
             }
             return p;

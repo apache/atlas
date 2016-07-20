@@ -172,7 +172,9 @@ public class ObjectGraphTraversal implements Iterator<ObjectGraphTraversal.Insta
     public InstanceTuple next() {
         try {
             InstanceTuple t = queue.poll();
-            processReferenceableInstance(t.instance);
+            if(t != null) {
+                processReferenceableInstance(t.instance);
+            }
             return t;
         } catch (AtlasException me) {
             throw new RuntimeException(me);

@@ -32,6 +32,7 @@ import org.apache.atlas.authorize.AtlasAuthorizationException;
 import org.apache.atlas.authorize.AtlasAuthorizer;
 import org.apache.atlas.authorize.AtlasResourceTypes;
 import org.apache.atlas.utils.PropertiesUtil;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOCase;
@@ -224,10 +225,12 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
             LOG.debug("==> SimpleAtlasAuthorizer checkAccessForGroups");
         }
 
-        for (String group : groups) {
-            isAccessAllowed = checkAccess(group, resourceType, resource, map);
-            if (isAccessAllowed) {
-                break;
+        if(CollectionUtils.isNotEmpty(groups)) {
+            for (String group : groups) {
+                isAccessAllowed = checkAccess(group, resourceType, resource, map);
+                if (isAccessAllowed) {
+                    break;
+                }
             }
         }
 

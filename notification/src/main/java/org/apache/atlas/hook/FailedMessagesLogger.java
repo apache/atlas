@@ -77,13 +77,15 @@ public class FailedMessagesLogger {
         org.apache.log4j.Logger rootLogger = org.apache.log4j.Logger.getRootLogger();
 
         Enumeration allAppenders = rootLogger.getAllAppenders();
-        while (allAppenders.hasMoreElements()) {
-            Appender appender = (Appender) allAppenders.nextElement();
-            if (appender instanceof FileAppender) {
-                FileAppender fileAppender = (FileAppender) appender;
-                String rootLoggerFile = fileAppender.getFile();
-                rootLoggerDirectory = new File(rootLoggerFile).getParent();
-                break;
+        if (allAppenders != null) {
+            while (allAppenders.hasMoreElements()) {
+                Appender appender = (Appender) allAppenders.nextElement();
+                if (appender instanceof FileAppender) {
+                    FileAppender fileAppender = (FileAppender) appender;
+                    String rootLoggerFile = fileAppender.getFile();
+                    rootLoggerDirectory = new File(rootLoggerFile).getParent();
+                    break;
+                }
             }
         }
         return rootLoggerDirectory;

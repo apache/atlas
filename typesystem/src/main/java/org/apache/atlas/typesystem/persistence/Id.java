@@ -45,9 +45,9 @@ public class Id implements ITypedReferenceableInstance {
     public EntityState state;
 
     public Id(String id, int version, String typeName, String state) {
-        ParamChecker.notEmpty(id, "id");
-        ParamChecker.notEmpty(typeName, "typeName");
-        ParamChecker.notEmptyIfNotNull(state, "state");
+        id       = ParamChecker.notEmpty(id, "id");
+        typeName = ParamChecker.notEmpty(typeName, "typeName");
+        state    = ParamChecker.notEmptyIfNotNull(state, "state");
         this.id = id;
         this.typeName = typeName;
         this.version = version;

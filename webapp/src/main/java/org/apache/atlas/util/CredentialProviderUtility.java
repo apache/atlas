@@ -74,26 +74,28 @@ public class CredentialProviderUtility {
         // prompt for the provider name
         CredentialProvider provider = getCredentialProvider(textDevice);
 
-        char[] cred;
-        for (String key : KEYS) {
-            cred = getPassword(textDevice, key);
-            // create a credential entry and store it
-            boolean overwrite = true;
-            if (provider.getCredentialEntry(key) != null) {
-                String choice = textDevice.readLine("Entry for %s already exists.  Overwrite? (y/n) [y]:", key);
-                overwrite = StringUtils.isEmpty(choice) || choice.equalsIgnoreCase("y");
-                if (overwrite) {
-                    provider.deleteCredentialEntry(key);
-                    provider.flush();
+        if(provider != null) {
+            char[] cred;
+            for (String key : KEYS) {
+                cred = getPassword(textDevice, key);
+                // create a credential entry and store it
+                boolean overwrite = true;
+                if (provider.getCredentialEntry(key) != null) {
+                    String choice = textDevice.readLine("Entry for %s already exists.  Overwrite? (y/n) [y]:", key);
+                    overwrite = StringUtils.isEmpty(choice) || choice.equalsIgnoreCase("y");
+                    if (overwrite) {
+                        provider.deleteCredentialEntry(key);
+                        provider.flush();
+                        provider.createCredentialEntry(key, cred);
+                        provider.flush();
+                        textDevice.printf("Entry for %s was overwritten with the new value.\n", key);
+                    } else {
+                        textDevice.printf("Entry for %s was not overwritten.\n", key);
+                    }
+                } else {
                     provider.createCredentialEntry(key, cred);
                     provider.flush();
-                    textDevice.printf("Entry for %s was overwritten with the new value.\n", key);
-                } else {
-                    textDevice.printf("Entry for %s was not overwritten.\n", key);
                 }
-            } else {
-                provider.createCredentialEntry(key, cred);
-                provider.flush();
             }
         }
     }
@@ -141,16 +143,21 @@ public class CredentialProviderUtility {
      */
     private static CredentialProvider getCredentialProvider(TextDevice textDevice) throws IOException {
         String providerPath = textDevice.readLine("Please enter the full path to the credential provider:");
-        File file = new File(providerPath);
-        if (file.exists()) {
-            textDevice
-                    .printf("%s already exists.  You will need to specify whether existing entries should be "
-                            + "overwritten "
-                            + "(default is 'yes')\n", providerPath);
+
+        if (providerPath != null) {
+            File file = new File(providerPath);
+            if (file.exists()) {
+                textDevice
+                        .printf("%s already exists.  You will need to specify whether existing entries should be "
+                                + "overwritten "
+                                + "(default is 'yes')\n", providerPath);
+            }
+            String providerURI = JavaKeyStoreProvider.SCHEME_NAME + "://file/" + providerPath;
+            Configuration conf = new Configuration(false);
+            conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, providerURI);
+            return CredentialProviderFactory.getProviders(conf).get(0);
         }
-        String providerURI = JavaKeyStoreProvider.SCHEME_NAME + "://file/" + providerPath;
-        Configuration conf = new Configuration(false);
-        conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, providerURI);
-        return CredentialProviderFactory.getProviders(conf).get(0);
+
+        return null;
     }
 }

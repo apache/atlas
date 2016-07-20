@@ -334,28 +334,29 @@ public abstract class DeleteHandler {
                     String keyPropertyName = GraphHelper.getQualifiedNameForMapKey(propertyName, key);
                     String mapEdgeId = GraphHelper.getProperty(outVertex, keyPropertyName);
                     Edge mapEdge = graphHelper.getEdgeByEdgeId(outVertex, keyPropertyName, mapEdgeId);
-                    Vertex mapVertex = mapEdge.getVertex(Direction.IN);
-                    if (mapVertex.getId().toString().equals(inVertex.getId().toString())) {
-                        //TODO keys.size includes deleted items as well. should exclude
-                        if (attributeInfo.multiplicity.nullAllowed() || keys.size() > attributeInfo.multiplicity.lower) {
-                            edge = mapEdge;
-                        }
-                        else {
-                            // Deleting this entry would violate the attribute's lower bound.
-                            throw new NullRequiredAttributeException(
-                                "Cannot remove map entry " + keyPropertyName + " from required attribute " +
-                                    GraphHelper.getQualifiedFieldName(type, attributeName) + " on " + string(outVertex) + " " + string(mapEdge));
-                        }
+                    if(mapEdge != null) {
+                        Vertex mapVertex = mapEdge.getVertex(Direction.IN);
+                        if (mapVertex.getId().toString().equals(inVertex.getId().toString())) {
+                            //TODO keys.size includes deleted items as well. should exclude
+                            if (attributeInfo.multiplicity.nullAllowed() || keys.size() > attributeInfo.multiplicity.lower) {
+                                edge = mapEdge;
+                            } else {
+                                // Deleting this entry would violate the attribute's lower bound.
+                                throw new NullRequiredAttributeException(
+                                        "Cannot remove map entry " + keyPropertyName + " from required attribute " +
+                                                GraphHelper.getQualifiedFieldName(type, attributeName) + " on " + string(outVertex) + " " + string(mapEdge));
+                            }
 
-                        if (shouldUpdateReverseAttribute) {
-                            //remove this key
-                            LOG.debug("Removing edge {}, key {} from the map attribute {}", string(mapEdge), key,
-                                    attributeName);
-                            keys.remove(key);
-                            GraphHelper.setProperty(outVertex, propertyName, keys);
-                            GraphHelper.setProperty(outVertex, keyPropertyName, null);
+                            if (shouldUpdateReverseAttribute) {
+                                //remove this key
+                                LOG.debug("Removing edge {}, key {} from the map attribute {}", string(mapEdge), key,
+                                        attributeName);
+                                keys.remove(key);
+                                GraphHelper.setProperty(outVertex, propertyName, keys);
+                                GraphHelper.setProperty(outVertex, keyPropertyName, null);
+                            }
+                            break;
                         }
-                        break;
                     }
                 }
             }
