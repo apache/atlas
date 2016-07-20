@@ -6,6 +6,7 @@ INCOMPATIBLE CHANGES:
 
 
 ALL CHANGES:
+ATLAS-1022 Update typesystem wiki with details (yhemanth via shwethags)
 ATLAS-1021 Update Atlas architecture wiki (yhemanth via sumasai)
 ATLAS-957 Atlas is not capturing topologies that have $ in the data payload (shwethags)
 ATLAS-1032 Atlas hook package should not include libraries already present in host component - like log4j (mneethiraj via sumasai)
