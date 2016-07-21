@@ -35,6 +35,8 @@ import java.util.Enumeration;
 public final class AtlasPluginClassLoader extends URLClassLoader {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasPluginClassLoader.class);
 
+    private static volatile AtlasPluginClassLoader me = null;
+
     private final MyClassLoader componentClassLoader;
 
     private AtlasPluginClassLoader(String pluginType, Class<?> pluginClass) throws Exception {
@@ -54,13 +56,20 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
 
     public static AtlasPluginClassLoader getInstance(final String pluginType, final Class<?> pluginClass)
         throws Exception {
-        AtlasPluginClassLoader ret =
-                AccessController.doPrivileged(new PrivilegedExceptionAction<AtlasPluginClassLoader>() {
-                    public AtlasPluginClassLoader run() throws Exception {
-                        return new AtlasPluginClassLoader(pluginType, pluginClass);
-                    }
-                });
-
+        AtlasPluginClassLoader ret = me;
+        if (ret == null) {
+            synchronized (AtlasPluginClassLoader.class) {
+                ret = me;
+                if (ret == null) {
+                    me = AccessController.doPrivileged(new PrivilegedExceptionAction<AtlasPluginClassLoader>() {
+                        public AtlasPluginClassLoader run() throws Exception {
+                            return new AtlasPluginClassLoader(pluginType, pluginClass);
+                        }
+                    });
+                    ret = me;
+                }
+            }
+        }
         return ret;
     }
 
