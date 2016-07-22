@@ -69,6 +69,8 @@ public class GraphBackedSearchIndexerTest {
         assertNotNull(edgeIndex);
         assertTrue(edgeIndex.isMixedIndex());
         assertTrue(Edge.class.isAssignableFrom(edgeIndex.getIndexedElement()));
+
+        verifyVertexIndexContains(managementSystem, Constants.STATE_PROPERTY_KEY);
     }
 
     @Test
@@ -126,15 +128,14 @@ public class GraphBackedSearchIndexerTest {
         HierarchicalTypeDefinition<ClassType> databaseTypeDefinition =
                 createClassTypeDef("Database", "Database type description", null,
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        TypesUtil.createUniqueRequiredAttrDef("managedType", managedType));
+                        TypesUtil.createRequiredAttrDef("managedType", managedType));
 
         ClassType databaseType = typeSystem.defineClassType(databaseTypeDefinition);
         graphBackedSearchIndexer.onAdd(Arrays.asList(databaseType));
 
-        verifySystemCompositeIndex(managementSystem, "Database.name", false);
-        verifyVertexIndexContains(managementSystem, "Database.name");
+        verifySystemCompositeIndex(managementSystem, "Database.name" + Constants.ENTITY_TYPE_PROPERTY_KEY, false);
+        verifyVertexIndexContains(managementSystem, "Database.name" + Constants.ENTITY_TYPE_PROPERTY_KEY);
 
-        verifySystemCompositeIndex(managementSystem, "Database.managedType", false);
         verifyVertexIndexContains(managementSystem, "Database.managedType");
     }
 

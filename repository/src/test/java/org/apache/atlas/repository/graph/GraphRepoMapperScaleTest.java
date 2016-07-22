@@ -33,6 +33,7 @@ import org.apache.atlas.repository.Constants;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
+import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.Multiplicity;
@@ -134,6 +135,8 @@ public class GraphRepoMapperScaleTest {
         for (int index = 500; index < 600; index++) {
             searchWithIndex("hive_table.name", "bar-" + index);
         }
+
+        searchWithIndex(Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
     }
 
     private void searchWithOutIndex(String key, String value) {
