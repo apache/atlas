@@ -101,12 +101,12 @@ define(['require',
                         that.$('.auditTable').show();
                         options.previous.attr('disabled', true);
                         if (that.entityCollection.models.length <= 1) {
-                            that.pervOld.pop();
                             options.next.attr('disabled', true);
                         }
                         if (that.entityCollection.models.length == 1 && that.next == that.entityCollection.last().get('eventKey')) {
                             options.next.attr('disabled', true);
                             options.previous.removeAttr("disabled");
+                            that.entityCollection.reset();
                         } else {
                             if (that.entityCollection.models.length > 0) {
                                 that.next = that.entityCollection.last().get('eventKey');
