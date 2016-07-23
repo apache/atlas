@@ -6,6 +6,7 @@ INCOMPATIBLE CHANGES:
 
 
 ALL CHANGES:
+ATLAS-1032 Atlas hook package should not include libraries already present in host component - like log4j(mneethiraj via sumasai)
 ATLAS-1001 UI Paginate search APIs (kevalbhatt18 via sumasai)
 ATLAS-1042 Performance improvement changes for propertykey+typeName based queries (sumasai via shwethags)
 ATLAS-1038 Multiple instances of AtlasPluginClassloader getting initialized (sumasai, mneethiraj)
