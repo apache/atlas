@@ -6,8 +6,9 @@ INCOMPATIBLE CHANGES:
 
 
 ALL CHANGES:
+ATLAS-1001 UI Paginate search APIs (kevalbhatt18 via sumasai)
 ATLAS-1042 Performance improvement changes for propertykey+typeName based queries (sumasai via shwethags)
-ATLAS-1036 Multiple instances of AtlasPluginClassloader getting initialized (sumasai, mneethiraj)
+ATLAS-1038 Multiple instances of AtlasPluginClassloader getting initialized (sumasai, mneethiraj)
 ATLAS-1033 fix for issues flagged by Coverity scan (mneethiraj via sumasai)
 ATLAS-1036 Compilation error on java 1.8 - GraphBackedDiscoveryService (shwethags via sumasai)
 ATLAS-1034 Incorrect Falcon hook impl class name in Falcon hook shim (mneethiraj via shwethags)

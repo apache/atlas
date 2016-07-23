@@ -50,7 +50,10 @@ define(['require',
                 addTag: '[data-id="addTag"]',
                 addTerm: '[data-id="addTerm"]',
                 showMoreLess: '[data-id="showMoreLess"]',
-                showMoreLessTerm: '[data-id="showMoreLessTerm"]'
+                showMoreLessTerm: '[data-id="showMoreLessTerm"]',
+                paginationDiv: '[data-id="paginationDiv"]',
+                previousData: "[data-id='previousData']",
+                nextData: "[data-id='nextData']"
             },
 
             /** ui events hash */
@@ -97,6 +100,8 @@ define(['require',
                         $(e.currentTarget).find('span').text('Show less');
                     }
                 };
+                events["click " + this.ui.nextData] = "onClicknextData";
+                events["click " + this.ui.previousData] = "onClickpreviousData";
                 return events;
             },
             /**
@@ -105,15 +110,22 @@ define(['require',
              */
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'globalVent', 'vent', 'value'));
+                var pagination = "";
                 this.entityModel = new VEntity();
                 this.searchCollection = new VSearchList();
+                this.limit = 25;
                 this.fetchList = 0;
+                if (options.value.searchType == "dsl") {
+                    pagination = false;
+                } else {
+                    pagination = true;
+                }
                 this.commonTableOptions = {
                     collection: this.searchCollection,
                     includeFilter: false,
-                    includePagination: true,
+                    includePagination: pagination,
                     includePageSize: false,
-                    includeFooterRecords: true,
+                    includeFooterRecords: false,
                     includeSizeAbleColumns: false,
                     gridOpts: {
                         emptyText: 'No Record found!',
@@ -162,7 +174,6 @@ define(['require',
                 }, this);
             },
             onRender: function() {
-                //this.renderTableLayoutView();
                 var value = {},
                     that = this;
                 if (this.value) {
@@ -171,7 +182,6 @@ define(['require',
                     value = {
                         'query': '',
                         'searchType': 'fulltext'
-
                     };
                 }
                 this.fetchCollection(value);
@@ -193,14 +203,22 @@ define(['require',
                 if (Globals.searchApiCallRef) {
                     Globals.searchApiCallRef.abort();
                 }
+                $.extend(this.searchCollection.queryParams, { limit: this.limit });
                 if (value) {
                     if (value.searchType) {
                         this.searchCollection.url = "/api/atlas/discovery/search/" + value.searchType;
+                        if (value.searchType === "dsl") {
+                            $.extend(this.searchCollection.queryParams, { limit: this.limit });
+                            this.offset = 0;
+                        }
                     }
                     _.extend(this.searchCollection.queryParams, { 'query': value.query });
                 }
                 Globals.searchApiCallRef = this.searchCollection.fetch({
                     success: function() {
+                        if (that.searchCollection.length === 0) {
+                            that.ui.nextData.attr('disabled', true);
+                        }
                         Globals.searchApiCallRef = undefined;
                         if (that.searchCollection.toJSON().length == 0) {
                             that.checkTableFetch();
@@ -264,6 +282,11 @@ define(['require',
                     this.$('.fontLoader').hide();
                     this.$('.searchTable').show();
                     this.$('.searchResult').show();
+                    if (this.value.searchType == "dsl") {
+                        this.ui.paginationDiv.show();
+                    } else {
+                        this.ui.paginationDiv.hide();
+                    }
                 }
             },
             getEntityTableColumns: function() {
@@ -555,7 +578,35 @@ define(['require',
                         that.fetchCollection();
                     }
                 });
-            }
+            },
+            onClicknextData: function() {
+                var that = this;
+                this.ui.previousData.removeAttr("disabled");
+                $.extend(this.searchCollection.queryParams, {
+                    offset: function() {
+                        that.offset = that.offset + that.limit;
+                        return that.offset;
+                    }
+                });
+                if (this.offset > this.limit) {
+                    this.ui.nextData.attr('disabled', true);
+                }
+                this.fetchCollection();
+            },
+            onClickpreviousData: function() {
+                var that = this;
+                this.ui.nextData.removeAttr("disabled");
+                $.extend(this.searchCollection.queryParams, {
+                    offset: function() {
+                        that.offset = that.offset - that.limit;
+                        return that.offset;
+                    }
+                });
+                if (this.offset <= that.limit) {
+                    this.ui.previousData.attr('disabled', true);
+                }
+                this.fetchCollection();
+            },
         });
     return SearchResultLayoutView;
 });
