@@ -187,6 +187,11 @@
                                 </artifactItem>
                                 <artifactItem>
                                     <groupId>${project.groupId}</groupId>
+                                    <artifactId>hdfs-model</artifactId>
+                                    <version>${project.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
                                     <artifactId>hive-bridge</artifactId>
                                     <version>${project.version}</version>
                                 </artifactItem>
