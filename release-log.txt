@@ -27,6 +27,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-1051 Sqoop Hook does not package HDFS model jars which is required (sumasai)
 ATLAS-1049 List types by supertype (shwethags via sumasai)
 ATLAS-1032 Atlas hook package should not include libraries already present in host component - like log4j(mneethiraj via sumasai)
 ATLAS-1001 UI Paginate search APIs (kevalbhatt18 via sumasai)

@@ -31,7 +31,7 @@ object QueryProcessor {
         val q = new GremlinTranslator(e1, gP).translate()
         LOG.debug("Query: " + e1)
         LOG.debug("Expression Tree:\n" + e1.treeString)
-        LOG.debug("Gremlin Query: " + q.queryStr)
+        LOG.info("Gremlin Query: " + q.queryStr)
         new GremlinEvaluator(q, gP, g).evaluate()
     }
 
