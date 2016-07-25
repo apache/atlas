@@ -36,6 +36,7 @@ import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.typesystem.types.AttributeDefinition;
+import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
@@ -106,6 +107,9 @@ public class AtlasClient {
     public static final String QUERY_TYPE = "queryType";
     public static final String ATTRIBUTE_NAME = "property";
     public static final String ATTRIBUTE_VALUE = "value";
+
+    public static final String SUPERTYPE = "supertype";
+    public static final String NOT_SUPERTYPE = "notsupertype";
 
     public static final String ASSET_TYPE = "Asset";
     public static final String NAME = "name";
@@ -606,9 +610,59 @@ public class AtlasClient {
         return updateType(TypesSerialization.toJson(typeDef));
     }
 
+    /**
+     * Returns all type names in the system
+     * @return list of type names
+     * @throws AtlasServiceException
+     */
     public List<String> listTypes() throws AtlasServiceException {
         final JSONObject jsonObject = callAPI(API.LIST_TYPES, null);
         return extractResults(jsonObject, AtlasClient.RESULTS, new ExtractOperation<String, String>());
+    }
+
+    /**
+     * Returns all type names with the given category
+     * @param category
+     * @return list of type names
+     * @throws AtlasServiceException
+     */
+    public List<String> listTypes(final DataTypes.TypeCategory category) throws AtlasServiceException {
+        JSONObject response = callAPIWithRetries(API.LIST_TYPES, null, new ResourceCreator() {
+            @Override
+            public WebResource createResource() {
+                WebResource resource = getResource(API.LIST_TYPES);
+                resource = resource.queryParam(TYPE, category.name());
+                return resource;
+            }
+        });
+        return extractResults(response, AtlasClient.RESULTS, new ExtractOperation<String, String>());
+    }
+
+    /**
+     * Return the list of type names in the type system which match the specified filter.
+     *
+     * @param category returns types whose category is the given typeCategory
+     * @param superType returns types which contain the given supertype
+     * @param notSupertype returns types which do not contain the given supertype
+     *
+     * Its possible to specify combination of these filters in one request and the conditions are combined with AND
+     * For example, typeCategory = TRAIT && supertype contains 'X' && supertype !contains 'Y'
+     * If there is no filter, all the types are returned
+     * @return list of type names
+     */
+    public List<String> listTypes(final DataTypes.TypeCategory category, final String superType,
+                                  final String notSupertype) throws AtlasServiceException {
+        JSONObject response = callAPIWithRetries(API.LIST_TYPES, null, new ResourceCreator() {
+            @Override
+            public WebResource createResource() {
+                WebResource resource = getResource(API.LIST_TYPES);
+                resource = resource.queryParam(TYPE, category.name());
+                resource = resource.queryParam(SUPERTYPE, superType);
+                resource = resource.queryParam(NOT_SUPERTYPE, notSupertype);
+                return resource;
+            }
+        });
+        return extractResults(response, AtlasClient.RESULTS, new ExtractOperation<String, String>());
     }
 
     public TypesDef getType(String typeName) throws AtlasServiceException {

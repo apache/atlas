@@ -23,11 +23,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Provider;
 
-import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.tinkerpop.blueprints.Vertex;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.RequestContext;
@@ -302,23 +299,16 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
     }
 
     /**
-     * Return the list of types in the repository.
+     * Return the list of type names in the type system which match the specified filter.
      *
-     * @return list of type names in the repository
+     * @return list of type names
+     * @param filterMap - Map of filter for type names. Valid keys are CATEGORY, SUPERTYPE, NOT_SUPERTYPE
+     * For example, CATEGORY = TRAIT && SUPERTYPE contains 'X' && SUPERTYPE !contains 'Y'
+     * If there is no filter, all the types are returned
      */
     @Override
-    public List<String> getTypeNamesList() throws AtlasException {
-        return typeSystem.getTypeNames();
-    }
-
-    /**
-     * Return the list of trait type names in the type system.
-     *
-     * @return list of trait type names in the type system
-     */
-    @Override
-    public List<String> getTypeNamesByCategory(DataTypes.TypeCategory typeCategory) throws AtlasException {
-        return typeSystem.getTypeNamesByCategory(typeCategory);
+    public List<String> getTypeNames(Map<TypeCache.TYPE_FILTER, String> filterMap) throws AtlasException {
+        return typeSystem.getTypeNames(filterMap);
     }
 
     /**
