@@ -362,7 +362,7 @@ public class HiveMetaStoreBridge {
     public static String getTableQualifiedName(String clusterName, String dbName, String tableName, boolean isTemporaryTable) {
         String tableTempName = tableName;
         if (isTemporaryTable) {
-            if (SessionState.get().getSessionId() != null) {
+            if (SessionState.get() != null && SessionState.get().getSessionId() != null) {
                 tableTempName = tableName + TEMP_TABLE_PREFIX + SessionState.get().getSessionId();
             } else {
                 tableTempName = tableName + TEMP_TABLE_PREFIX + RandomStringUtils.random(10);
