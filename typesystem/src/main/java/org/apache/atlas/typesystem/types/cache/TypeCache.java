@@ -18,11 +18,12 @@
 
 package org.apache.atlas.typesystem.types.cache;
 
-import java.util.Collection;
-
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.IDataType;
+
+import java.util.Collection;
+import java.util.Map;
 
 /**
  * The types are cached to allow faster lookup when type info is needed during
@@ -38,6 +39,10 @@ import org.apache.atlas.typesystem.types.IDataType;
  */
 @SuppressWarnings("rawtypes")
 public interface TypeCache {
+
+    enum TYPE_FILTER {
+        CATEGORY, SUPERTYPE, NOT_SUPERTYPE
+    }
 
     /**
      * @param typeName
@@ -56,7 +61,7 @@ public interface TypeCache {
     boolean has(DataTypes.TypeCategory typeCategory, String typeName) throws AtlasException;
 
     /**
-     * @param name The name of the type.
+     * @param typeName The name of the type.
      * @return returns non-null type if cached, otherwise null
      * @throws AtlasException
      */
@@ -72,18 +77,16 @@ public interface TypeCache {
     public IDataType get(DataTypes.TypeCategory typeCategory, String typeName) throws AtlasException;
 
     /**
-     * @param typeCategory The category of types to filter the returned types. Cannot be null.
-     * The category can be one of TypeCategory.CLASS | TypeCategory.TRAIT |
-     * TypeCategory.STRUCT | TypeCategory.ENUM.
-     * @return
+     *
+     * @param filter @return
      * @throws AtlasException
      */
-    Collection<String> getTypeNames(DataTypes.TypeCategory typeCategory) throws AtlasException;
+    Collection<String> getTypeNames(Map<TYPE_FILTER, String> filter) throws AtlasException;
 
     /**
      * This is a convenience API to get the names of all types.
      *
-     * @see TypeCache#getTypeNames(org.apache.atlas.typesystem.types.DataTypes.TypeCategory)
+     * @see TypeCache#getTypeNames(Map)
      * @return
      * @throws AtlasException
      */

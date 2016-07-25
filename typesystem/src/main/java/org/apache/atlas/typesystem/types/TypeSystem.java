@@ -101,12 +101,17 @@ public class TypeSystem {
         return ImmutableList.copyOf(typeNames);
     }
 
-    public ImmutableList<String> getTypeNamesByCategory(DataTypes.TypeCategory typeCategory) throws AtlasException {
-        return ImmutableList.copyOf(typeCache.getTypeNames(typeCategory));
+    public ImmutableList<String> getTypeNamesByCategory(final DataTypes.TypeCategory typeCategory) throws AtlasException {
+        return getTypeNames(new HashMap<TypeCache.TYPE_FILTER, String>() {{
+            put(TypeCache.TYPE_FILTER.CATEGORY, typeCategory.name());
+        }});
+    }
+
+    public ImmutableList<String> getTypeNames(Map<TypeCache.TYPE_FILTER, String> filterMap) throws AtlasException {
+        return ImmutableList.copyOf(typeCache.getTypeNames(filterMap));
     }
 
     private void registerPrimitiveTypes() {
-
         coreTypes.put(DataTypes.BOOLEAN_TYPE.getName(), DataTypes.BOOLEAN_TYPE);
         coreTypes.put(DataTypes.BYTE_TYPE.getName(), DataTypes.BYTE_TYPE);
         coreTypes.put(DataTypes.SHORT_TYPE.getName(), DataTypes.SHORT_TYPE);

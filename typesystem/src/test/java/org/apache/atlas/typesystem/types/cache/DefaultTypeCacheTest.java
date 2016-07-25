@@ -17,18 +17,8 @@
  */
 package org.apache.atlas.typesystem.types.cache;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import org.apache.atlas.AtlasException;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
@@ -44,7 +34,19 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import com.google.common.collect.ImmutableSet;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 /**
  * Tests functional behavior of {@link DefaultTypeCache}
@@ -186,25 +188,31 @@ public class DefaultTypeCacheTest {
         assertEquals(ENUMTYPE_SHIPPING, allTypeNames.get(3));
     }
 
+    private Collection<String> getTypeNamesByCategory(final TypeCategory category)
+            throws AtlasException {
+        return cache.getTypeNames(new HashMap<TypeCache.TYPE_FILTER, String>() {{
+            put(TypeCache.TYPE_FILTER.CATEGORY, category.name());
+        }});
+    }
+
     @Test
     public void testCacheGetTypeNamesByCategory() throws Exception {
-
-        List<String> classTypes = new ArrayList<String>(cache.getTypeNames(TypeCategory.CLASS));
+        List<String> classTypes = new ArrayList(getTypeNamesByCategory(TypeCategory.CLASS));
         final int EXPECTED_CLASSTYPE_COUNT = 1;
         assertEquals(classTypes.size(), EXPECTED_CLASSTYPE_COUNT);
         assertEquals(CLASSTYPE_CUSTOMER, classTypes.get(0));
 
-        List<String> structTypes = new ArrayList<String>(cache.getTypeNames(TypeCategory.STRUCT));
+        List<String> structTypes = new ArrayList(getTypeNamesByCategory(TypeCategory.STRUCT));
         final int EXPECTED_STRUCTTYPE_COUNT = 1;
         assertEquals(structTypes.size(), EXPECTED_STRUCTTYPE_COUNT);
         assertEquals(STRUCTTYPE_ADDRESS, structTypes.get(0));
 
-        List<String> traitTypes = new ArrayList<String>(cache.getTypeNames(TypeCategory.TRAIT));
+        List<String> traitTypes = new ArrayList(getTypeNamesByCategory(TypeCategory.TRAIT));
         final int EXPECTED_TRAITTYPE_COUNT = 1;
         assertEquals(traitTypes.size(), EXPECTED_TRAITTYPE_COUNT);
         assertEquals(TRAITTYPE_PRIVILEGED, traitTypes.get(0));
 
-        List<String> enumTypes = new ArrayList<String>(cache.getTypeNames(TypeCategory.ENUM));
+        List<String> enumTypes = new ArrayList(getTypeNamesByCategory(TypeCategory.ENUM));
         final int EXPECTED_ENUMTYPE_COUNT = 1;
         assertEquals(enumTypes.size(), EXPECTED_ENUMTYPE_COUNT);
         assertEquals(ENUMTYPE_SHIPPING, enumTypes.get(0));
@@ -238,11 +246,10 @@ public class DefaultTypeCacheTest {
 
     @Test
     public void testCacheRemove() throws Exception {
-
         cache.remove(CLASSTYPE_CUSTOMER);
         assertNull(cache.get(CLASSTYPE_CUSTOMER));
         assertFalse(cache.has(CLASSTYPE_CUSTOMER));
-        assertTrue(cache.getTypeNames(TypeCategory.CLASS).isEmpty());
+        assertTrue(getTypeNamesByCategory(TypeCategory.CLASS).isEmpty());
 
         final int EXPECTED_TYPE_COUNT = 3;
         assertEquals(cache.getAllTypeNames().size(), EXPECTED_TYPE_COUNT);
@@ -254,7 +261,7 @@ public class DefaultTypeCacheTest {
         cache.remove(TypeCategory.CLASS, CLASSTYPE_CUSTOMER);
         assertNull(cache.get(CLASSTYPE_CUSTOMER));
         assertFalse(cache.has(CLASSTYPE_CUSTOMER));
-        assertTrue(cache.getTypeNames(TypeCategory.CLASS).isEmpty());
+        assertTrue(getTypeNamesByCategory(TypeCategory.CLASS).isEmpty());
 
         final int EXPECTED_TYPE_COUNT = 3;
         assertEquals(cache.getAllTypeNames().size(), EXPECTED_TYPE_COUNT);
@@ -277,10 +284,10 @@ public class DefaultTypeCacheTest {
         assertNull(cache.get(ENUMTYPE_SHIPPING));
         assertFalse(cache.has(ENUMTYPE_SHIPPING));
 
-        assertTrue(cache.getTypeNames(TypeCategory.CLASS).isEmpty());
-        assertTrue(cache.getTypeNames(TypeCategory.STRUCT).isEmpty());
-        assertTrue(cache.getTypeNames(TypeCategory.TRAIT).isEmpty());
-        assertTrue(cache.getTypeNames(TypeCategory.ENUM).isEmpty());
+        assertTrue(getTypeNamesByCategory(TypeCategory.CLASS).isEmpty());
+        assertTrue(getTypeNamesByCategory(TypeCategory.STRUCT).isEmpty());
+        assertTrue(getTypeNamesByCategory(TypeCategory.TRAIT).isEmpty());
+        assertTrue(getTypeNamesByCategory(TypeCategory.ENUM).isEmpty());
 
         assertTrue(cache.getAllTypeNames().isEmpty());
     }
@@ -299,45 +306,37 @@ public class DefaultTypeCacheTest {
         fail("type should only be an instance of ClassType | EnumType | StructType | TraitType in 'put'");
     }
 
-    @Test(expectedExceptions = AtlasException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testGetTypeWithNullCategory() throws Exception {
 
         cache.get(null, CLASSTYPE_CUSTOMER);
         fail("Null TypeCategory should be not allowed in 'get'");
     }
 
-    @Test(expectedExceptions = AtlasException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testGetTypeWithInvalidCategory() throws Exception {
 
         cache.get(TypeCategory.PRIMITIVE, DataTypes.BOOLEAN_TYPE.getName());
         fail("TypeCategory should only be one of TypeCategory.CLASS | ENUM | STRUCT | TRAIT in 'get'");
     }
 
-    @Test(expectedExceptions = AtlasException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testCacheHasTypeWithNullCategory() throws Exception {
 
         cache.has(null, CLASSTYPE_CUSTOMER);
         fail("Null TypeCategory should be not allowed in 'has'");
     }
 
-    @Test(expectedExceptions = AtlasException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testCacheHasTypeWithInvalidCategory() throws Exception {
 
         cache.has(TypeCategory.PRIMITIVE, DataTypes.BOOLEAN_TYPE.getName());
         fail("TypeCategory should only be one of TypeCategory.CLASS | ENUM | STRUCT | TRAIT in 'has'");
     }
 
-    @Test(expectedExceptions = AtlasException.class)
-    public void testCacheGetTypeNamesByNullCategory() throws Exception {
-
-        cache.getTypeNames(null);
-        fail("Null TypeCategory should be not allowed in 'getNames'");
-    }
-
-    @Test(expectedExceptions = AtlasException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testCacheGetTypeNamesByInvalidCategory() throws Exception {
-
-        cache.getTypeNames(TypeCategory.PRIMITIVE);
+        getTypeNamesByCategory(TypeCategory.PRIMITIVE);
         fail("TypeCategory should only be one of TypeCategory.CLASS | ENUM | STRUCT | TRAIT in 'getNames'");
     }
 
@@ -367,17 +366,93 @@ public class DefaultTypeCacheTest {
         fail("type should only one of ClassType | EnumType | StructType | TraitType in 'putAll'");
     }
 
-    @Test(expectedExceptions = AtlasException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testCacheRemoveByNullCategory() throws Exception {
 
         cache.remove(null, CLASSTYPE_CUSTOMER);
         fail("Null type should be not allowed in 'remove'");
     }
 
-    @Test(expectedExceptions = AtlasException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testCacheRemoveByInvalidCategory() throws Exception {
 
         cache.remove(TypeCategory.PRIMITIVE, DataTypes.BOOLEAN_TYPE.getName());
         fail("TypeCategory should only be one of TypeCategory.CLASS | ENUM | STRUCT | TRAIT in 'remove'");
+    }
+
+    @Test
+    public void testGetTypesByFilter() throws Exception {
+        // init TypeSystem
+        TypeSystem ts = TypeSystem.getInstance().reset();
+
+        ts.defineClassType(TypesUtil.createClassTypeDef("A", ImmutableSet.<String>of()));
+        ts.defineClassType(TypesUtil.createClassTypeDef("A1", ImmutableSet.of("A")));
+
+        ts.defineClassType(TypesUtil.createClassTypeDef("B", ImmutableSet.<String>of()));
+
+        ts.defineClassType(TypesUtil.createClassTypeDef("C", ImmutableSet.of("B", "A")));
+
+        //supertype ~ A
+        ImmutableList<String> results = ts.getTypeNames(new HashMap<TypeCache.TYPE_FILTER, String>() {{
+                    put(TypeCache.TYPE_FILTER.SUPERTYPE, "A");
+                }});
+        assertTrue(results.containsAll(Arrays.asList("A1", "C")), "Results: " + results);
+
+        //!supertype doesn't return the type itself
+        results = ts.getTypeNames(new HashMap<TypeCache.TYPE_FILTER, String>() {{
+            put(TypeCache.TYPE_FILTER.NOT_SUPERTYPE, "A");
+        }});
+        assertTrue(results.containsAll(Arrays.asList("B")), "Results: " + results);
+
+        //supertype ~ A && supertype !~ B
+        results = ts.getTypeNames(new HashMap<TypeCache.TYPE_FILTER, String>() {{
+            put(TypeCache.TYPE_FILTER.SUPERTYPE, "A");
+            put(TypeCache.TYPE_FILTER.NOT_SUPERTYPE, "B");
+        }});
+        assertTrue(results.containsAll(Arrays.asList("A1")), "Results: " + results);
+
+        //none of category trait
+        results = ts.getTypeNames(new HashMap<TypeCache.TYPE_FILTER, String>() {{
+            put(TypeCache.TYPE_FILTER.CATEGORY, TypeCategory.TRAIT.name());
+            put(TypeCache.TYPE_FILTER.SUPERTYPE, "A");
+        }});
+        assertTrue(results.isEmpty(), "Results: " + results);
+
+        //no filter returns all types
+        results = ts.getTypeNames(null);
+        assertTrue(results.containsAll(Arrays.asList("A", "A1", "B", "C")), "Results: " + results);
+
+        results = ts.getTypeNames(new HashMap<TypeCache.TYPE_FILTER, String>());
+        assertTrue(results.containsAll(Arrays.asList("A", "A1", "B", "C")), "Results: " + results);
+
+        //invalid category
+        try {
+            ts.getTypeNames(new HashMap<TypeCache.TYPE_FILTER, String>() {{
+                put(TypeCache.TYPE_FILTER.CATEGORY, "A");
+            }});
+            fail("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            //expected
+        }
+
+        //invalid supertype
+        try {
+            ts.getTypeNames(new HashMap<TypeCache.TYPE_FILTER, String>() {{
+                put(TypeCache.TYPE_FILTER.SUPERTYPE, "X");
+            }});
+            fail("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            //expected
+        }
+
+        //invalid supertype
+        try {
+            ts.getTypeNames(new HashMap<TypeCache.TYPE_FILTER, String>() {{
+                put(TypeCache.TYPE_FILTER.NOT_SUPERTYPE, "X");
+            }});
+            fail("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            //expected
+        }
     }
 }

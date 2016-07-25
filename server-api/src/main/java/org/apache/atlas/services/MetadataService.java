@@ -26,10 +26,11 @@ import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
-import org.apache.atlas.typesystem.types.DataTypes;
+import org.apache.atlas.typesystem.types.cache.TypeCache;
 import org.codehaus.jettison.json.JSONObject;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Metadata service.
@@ -62,18 +63,14 @@ public interface MetadataService {
     String getTypeDefinition(String typeName) throws AtlasException;
 
     /**
-     * Return the list of types in the type system.
+     * Return the list of type names in the type system which match the specified filter.
      *
-     * @return list of type names in the type system
+     * @return list of type names
+     * @param filterMap - Map of filter for type names. Valid keys are CATEGORY, SUPERTYPE, NOT_SUPERTYPE
+     * For example, CATEGORY = TRAIT && SUPERTYPE contains 'X' && SUPERTYPE !contains 'Y'
+     * If there is no filter, all the types are returned
      */
-    List<String> getTypeNamesList() throws AtlasException;
-
-    /**
-     * Return the list of trait type names in the type system.
-     *
-     * @return list of trait type names in the type system
-     */
-    List<String> getTypeNamesByCategory(DataTypes.TypeCategory typeCategory) throws AtlasException;
+    List<String> getTypeNames(Map<TypeCache.TYPE_FILTER, String> filterMap) throws AtlasException;
 
     /**
      * Creates an entity, instance of the type.

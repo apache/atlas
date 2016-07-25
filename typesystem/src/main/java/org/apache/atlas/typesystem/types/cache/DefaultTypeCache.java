@@ -17,22 +17,24 @@
  */
 package org.apache.atlas.typesystem.types.cache;
 
+import com.google.inject.Singleton;
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.typesystem.types.ClassType;
+import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
+import org.apache.atlas.typesystem.types.EnumType;
+import org.apache.atlas.typesystem.types.HierarchicalType;
+import org.apache.atlas.typesystem.types.IDataType;
+import org.apache.atlas.typesystem.types.StructType;
+import org.apache.atlas.typesystem.types.TraitType;
+import org.apache.commons.lang.StringUtils;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.apache.atlas.AtlasException;
-import org.apache.atlas.typesystem.types.ClassType;
-import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
-import org.apache.atlas.typesystem.types.EnumType;
-import org.apache.atlas.typesystem.types.IDataType;
-import org.apache.atlas.typesystem.types.StructType;
-import org.apache.atlas.typesystem.types.TraitType;
-
-import com.google.inject.Singleton;
 
 /**
  * Caches the types in-memory within the same process space.
@@ -42,6 +44,10 @@ import com.google.inject.Singleton;
 public class DefaultTypeCache implements TypeCache {
 
     private Map<String, IDataType> types_ = new ConcurrentHashMap<>();
+    private static final List<TypeCategory> validTypeFilterCategories =
+            Arrays.asList(TypeCategory.CLASS, TypeCategory.TRAIT, TypeCategory.ENUM, TypeCategory.STRUCT);
+    private static final List<TypeCategory> validSupertypeFilterCategories =
+            Arrays.asList(TypeCategory.CLASS, TypeCategory.TRAIT);
 
     /*
      * (non-Javadoc)
@@ -61,32 +67,29 @@ public class DefaultTypeCache implements TypeCache {
      */
     @Override
     public boolean has(TypeCategory typeCategory, String typeName)
-        throws AtlasException {
+            throws AtlasException {
 
         assertValidTypeCategory(typeCategory);
         return has(typeName);
     }
 
-    private void assertValidTypeCategory(TypeCategory typeCategory) throws
-        AtlasException {
+    private void assertValidTypeCategory(String typeCategory) {
+        assertValidTypeCategory(TypeCategory.valueOf(typeCategory));
+    }
 
+    private void assertValidTypeCategory(TypeCategory typeCategory) {
         // there might no need of 'typeCategory' in this implementation for
         // certain API, but for a distributed cache, it might help for the
         // implementers to partition the types per their category
         // while persisting so that look can be efficient
 
         if (typeCategory == null) {
-            throw new AtlasException("Category of the types to be filtered is null.");
+            throw new IllegalArgumentException("Category of the types to be filtered is null.");
         }
 
-        boolean validTypeCategory = typeCategory.equals(TypeCategory.CLASS) ||
-            typeCategory.equals(TypeCategory.TRAIT) ||
-            typeCategory.equals(TypeCategory.ENUM) ||
-            typeCategory.equals(TypeCategory.STRUCT);
-
-        if (!validTypeCategory) {
-            throw new AtlasException("Category of the types should be one of CLASS "
-                + "| TRAIT | ENUM | STRUCT.");
+        if (!validTypeFilterCategories.contains(typeCategory)) {
+            throw new IllegalArgumentException("Category of the types should be one of " +
+                    StringUtils.join(validTypeFilterCategories, ", "));
         }
     }
 
@@ -113,27 +116,81 @@ public class DefaultTypeCache implements TypeCache {
         return get(typeName);
     }
 
-    /*
-     * (non-Javadoc)
-     * @see
-     * org.apache.atlas.typesystem.types.cache.TypeCache#getNames(org
-     * .apache.atlas.typesystem.types.DataTypes.TypeCategory)
+    /**
+     * Return the list of type names in the type system which match the specified filter.
+     *
+     * @return list of type names
+     * @param filterMap - Map of filter for type names. Valid keys are CATEGORY, SUPERTYPE, NOT_SUPERTYPE
+     * For example, CATEGORY = TRAIT && SUPERTYPE contains 'X' && SUPERTYPE !contains 'Y'
      */
     @Override
-    public Collection<String> getTypeNames(TypeCategory typeCategory) throws AtlasException {
-
-        assertValidTypeCategory(typeCategory);
+    public Collection<String> getTypeNames(Map<TYPE_FILTER, String> filterMap) throws AtlasException {
+        assertFilter(filterMap);
 
         List<String> typeNames = new ArrayList<>();
-        for (Entry<String, IDataType> typeEntry : types_.entrySet()) {
-            String name = typeEntry.getKey();
-            IDataType type = typeEntry.getValue();
-
-            if (type.getTypeCategory().equals(typeCategory)) {
-                typeNames.add(name);
+        for (IDataType type : types_.values()) {
+            if (shouldIncludeType(type, filterMap)) {
+                typeNames.add(type.getName());
             }
         }
         return typeNames;
+    }
+
+    private boolean shouldIncludeType(IDataType type, Map<TYPE_FILTER, String> filterMap) {
+        if (filterMap == null) {
+            return true;
+        }
+
+        for (Entry<TYPE_FILTER, String> filterEntry : filterMap.entrySet()) {
+            switch (filterEntry.getKey()) {
+            case CATEGORY:
+                if (!filterEntry.getValue().equals(type.getTypeCategory().name())) {
+                    return false;
+                }
+                break;
+
+            case SUPERTYPE:
+                if (!validSupertypeFilterCategories.contains(type.getTypeCategory()) ||
+                        !((HierarchicalType) type).getAllSuperTypeNames().contains(filterEntry.getValue())) {
+                    return false;
+                }
+                break;
+
+            case NOT_SUPERTYPE:
+                if (!validSupertypeFilterCategories.contains(type.getTypeCategory()) ||
+                        type.getName().equals(filterEntry.getValue()) ||
+                        ((HierarchicalType) type).getAllSuperTypeNames().contains(filterEntry.getValue())) {
+                    return false;
+                }
+                break;
+            }
+        }
+        return true;
+    }
+
+
+    private void assertFilter(Map<TYPE_FILTER, String> filterMap) throws AtlasException {
+        if (filterMap == null) {
+            return;
+        }
+
+        for (Entry<TYPE_FILTER, String> filterEntry : filterMap.entrySet()) {
+            switch (filterEntry.getKey()) {
+            case CATEGORY:
+                assertValidTypeCategory(filterEntry.getValue());
+                break;
+
+            case SUPERTYPE:
+            case NOT_SUPERTYPE:
+                if (!has(filterEntry.getValue())) {
+                    throw new IllegalArgumentException("Invalid supertype " + filterEntry.getValue());
+                }
+                break;
+
+            default:
+                throw new IllegalStateException("Unhandled filter " + filterEntry.getKey());
+            }
+        }
     }
 
     /*

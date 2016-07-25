@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.typesystem.TypesDef;
@@ -47,10 +46,11 @@ import org.testng.annotations.Test;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.Response;
-
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -126,7 +126,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         typeDefinition = TypesUtil.createClassTypeDef(typeDefinition.typeName,
             ImmutableSet.<String>of(),
                 TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                TypesUtil.createOptionalAttrDef("description", DataTypes.STRING_TYPE));
+                createOptionalAttrDef("description", DataTypes.STRING_TYPE));
         TypesDef typeDef = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(),
                 ImmutableList.<StructTypeDefinition>of(), ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
                 ImmutableList.of(typeDefinition));
@@ -224,6 +224,22 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
         Assert.assertTrue(list.length() >= traitsAdded.length);
     }
 
+    @Test
+    public void testListTypesByFilter() throws Exception {
+        AttributeDefinition attr = TypesUtil.createOptionalAttrDef("attr", DataTypes.STRING_TYPE);
+        String a = createType(TypesSerialization.toJson(
+                TypesUtil.createClassTypeDef("A" + randomString(), ImmutableSet.<String>of(), attr), false)).get(0);
+        String a1 = createType(TypesSerialization.toJson(
+                TypesUtil.createClassTypeDef("A1" + randomString(), ImmutableSet.of(a), attr), false)).get(0);
+        String b = createType(TypesSerialization.toJson(
+                TypesUtil.createClassTypeDef("B" + randomString(), ImmutableSet.<String>of(), attr), false)).get(0);
+        String c = createType(TypesSerialization.toJson(
+                TypesUtil.createClassTypeDef("C" + randomString(), ImmutableSet.of(a, b), attr), false)).get(0);
+
+        List<String> results = serviceClient.listTypes(DataTypes.TypeCategory.CLASS, a, b);
+        assertEquals(results, Arrays.asList(a1), "Results: " + results);
+    }
+
     private String[] addTraits() throws Exception {
         String[] traitNames = {"class_trait", "secure_trait", "pii_trait", "ssn_trait", "salary_trait", "sox_trait",};
 
@@ -250,9 +266,9 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
                 .createClassTypeDef("table", ImmutableSet.<String>of(),
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
                         TypesUtil.createRequiredAttrDef("description", DataTypes.STRING_TYPE),
-                        TypesUtil.createOptionalAttrDef("columnNames", DataTypes.arrayTypeName(DataTypes.STRING_TYPE)),
-                        TypesUtil.createOptionalAttrDef("created", DataTypes.DATE_TYPE), TypesUtil
-                                .createOptionalAttrDef("parameters",
+                        createOptionalAttrDef("columnNames", DataTypes.arrayTypeName(DataTypes.STRING_TYPE)),
+                        createOptionalAttrDef("created", DataTypes.DATE_TYPE),
+                        createOptionalAttrDef("parameters",
                                         DataTypes.mapTypeName(DataTypes.STRING_TYPE, DataTypes.STRING_TYPE)),
                         TypesUtil.createRequiredAttrDef("type", DataTypes.STRING_TYPE),
                         new AttributeDefinition("database", "database", Multiplicity.REQUIRED, false, "database"));
