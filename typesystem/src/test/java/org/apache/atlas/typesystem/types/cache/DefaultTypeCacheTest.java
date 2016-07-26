@@ -436,23 +436,15 @@ public class DefaultTypeCacheTest {
         }
 
         //invalid supertype
-        try {
-            ts.getTypeNames(new HashMap<TypeCache.TYPE_FILTER, String>() {{
-                put(TypeCache.TYPE_FILTER.SUPERTYPE, "X");
-            }});
-            fail("Expected IllegalArgumentException");
-        } catch (IllegalArgumentException e) {
-            //expected
-        }
+        results = ts.getTypeNames(new HashMap<TypeCache.TYPE_FILTER, String>() {{
+            put(TypeCache.TYPE_FILTER.SUPERTYPE, "X");
+        }});
+        assertTrue(results.isEmpty(), "Expected empty result for non-existent type 'X'. Found: " + results);
 
         //invalid supertype
-        try {
-            ts.getTypeNames(new HashMap<TypeCache.TYPE_FILTER, String>() {{
-                put(TypeCache.TYPE_FILTER.NOT_SUPERTYPE, "X");
-            }});
-            fail("Expected IllegalArgumentException");
-        } catch (IllegalArgumentException e) {
-            //expected
-        }
+        results = ts.getTypeNames(new HashMap<TypeCache.TYPE_FILTER, String>() {{
+            put(TypeCache.TYPE_FILTER.NOT_SUPERTYPE, "X");
+        }});
+        assertTrue(results.containsAll(Arrays.asList("A", "A1", "B", "C")), "Results: " + results);
     }
 }
