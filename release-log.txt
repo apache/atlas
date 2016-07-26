@@ -6,6 +6,7 @@ INCOMPATIBLE CHANGES:
 
 
 ALL CHANGES:
+ATLAS-1053 Fix issues flagged by Coverity scan - potential NPE (mneethiraj via sumasai)
 ATLAS-1052 Fix NPE in HiveHook due to null Session State (sumasai)
 ATLAS-1051 Sqoop Hook does not package HDFS model jars which is required (sumasai)
 ATLAS-1049 List types by supertype (shwethags via sumasai)

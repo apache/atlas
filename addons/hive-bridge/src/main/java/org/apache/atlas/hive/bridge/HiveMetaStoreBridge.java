@@ -123,7 +123,10 @@ public class HiveMetaStoreBridge {
         List<String> databases = hiveClient.getAllDatabases();
         for (String databaseName : databases) {
             Referenceable dbReference = registerDatabase(databaseName);
-            importTables(dbReference, databaseName, failOnError);
+
+            if (dbReference != null) {
+                importTables(dbReference, databaseName, failOnError);
+            }
         }
     }
 
@@ -146,13 +149,16 @@ public class HiveMetaStoreBridge {
     private Referenceable registerDatabase(String databaseName) throws Exception {
         Referenceable dbRef = getDatabaseReference(clusterName, databaseName);
         Database db = hiveClient.getDatabase(databaseName);
-        if (dbRef == null) {
-            dbRef = createDBInstance(db);
-            dbRef = registerInstance(dbRef);
-        } else {
-            LOG.info("Database {} is already registered with id {}. Updating it.", databaseName, dbRef.getId().id);
-            dbRef = createOrUpdateDBInstance(db, dbRef);
-            updateInstance(dbRef);
+
+        if (db != null) {
+            if (dbRef == null) {
+                dbRef = createDBInstance(db);
+                dbRef = registerInstance(dbRef);
+            } else {
+                LOG.info("Database {} is already registered with id {}. Updating it.", databaseName, dbRef.getId().id);
+                dbRef = createOrUpdateDBInstance(db, dbRef);
+                updateInstance(dbRef);
+            }
         }
         return dbRef;
     }

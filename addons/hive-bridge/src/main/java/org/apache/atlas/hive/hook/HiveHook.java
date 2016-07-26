@@ -499,6 +499,9 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
         if (db != null) {
             db = dgiBridge.hiveClient.getDatabase(db.getName());
+        }
+
+        if (db != null) {
             Referenceable dbEntity = dgiBridge.createDBInstance(db);
 
             entities.add(dbEntity);
