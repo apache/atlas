@@ -545,35 +545,38 @@ define(['require',
                 var tagName = $(e.target).data("name"),
                     guid = $(e.target).data("guid"),
                     assetName = $(e.target).data("assetname"),
-                    that = this,
-                    tagOrTerm = Utils.checkTagOrTerm(tagName);
-                if (tagOrTerm.term) {
+                    tagOrTerm = $(e.target).data("type"),
+                    that = this;
+                if (tagOrTerm === "term") {
                     var modal = CommonViewFunction.deleteTagModel({
                         msg: "<div class='ellipsis'>Remove: " + "<b>" + tagName + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
                         titleMessage: Messages.removeTerm,
                         buttonText: "Remove"
                     });
-                } else {
+                } else if (tagOrTerm === "tag") {
                     var modal = CommonViewFunction.deleteTagModel({
                         msg: "<div class='ellipsis'>Remove: " + "<b>" + tagName + "</b> assignment from" + " " + "<b>" + assetName + " ?</b></div>",
                         titleMessage: Messages.removeTag,
                         buttonText: "Remove"
                     });
                 }
-                modal.on('ok', function() {
-                    that.deleteTagData(e);
-                });
-                modal.on('closeModal', function() {
-                    modal.trigger('cancel');
-                });
+                if (modal) {
+                    modal.on('ok', function() {
+                        that.deleteTagData(e, tagOrTerm);
+                    });
+                    modal.on('closeModal', function() {
+                        modal.trigger('cancel');
+                    });
+                }
             },
-            deleteTagData: function(e) {
+            deleteTagData: function(e, tagOrTerm) {
                 var that = this,
                     tagName = $(e.target).data("name"),
                     guid = $(e.target).data("guid");
                 CommonViewFunction.deleteTag({
                     'tagName': tagName,
                     'guid': guid,
+                    'tagOrTerm': tagOrTerm,
                     callback: function() {
                         that.fetchCollection();
                     }

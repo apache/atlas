@@ -67,14 +67,13 @@ define(['require',
                     tagTermList = [],
                     that = this;
                 _.each(tagorterm, function(object) {
+                    var checkTagOrTerm = Utils.checkTagOrTerm(object);
                     if (that.term) {
-                        var checkTagOrTerm = Utils.checkTagOrTerm(object.typeName);
                         if (checkTagOrTerm.term) {
                             tagTermList.push(object);
                         }
                     } else {
-                        var checkTagOrTerm = Utils.checkTagOrTerm(object.typeName);
-                        if (!checkTagOrTerm.term) {
+                        if (checkTagOrTerm.tag) {
                             tagTermList.push(object);
                         }
                     }
@@ -191,7 +190,6 @@ define(['require',
                     });
                 }
 
-
                 modal.on('ok', function() {
                     that.deleteTagData(e);
                 });
@@ -205,6 +203,7 @@ define(['require',
                 CommonViewFunction.deleteTag({
                     'tagName': tagName,
                     'guid': that.guid,
+                    'tagOrTerm': (that.term ? "term" : "tag"),
                     callback: function() {
                         that.$('.fontLoader').show();
                         that.collection.fetch({ reset: true });

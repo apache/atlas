@@ -233,20 +233,51 @@ define(['require', 'utils/Globals'], function(require, Globals) {
             }
         }
     }
-    Utils.checkTagOrTerm = function(value) {
-        if (value && _.isString(value)) {
+    Utils.checkTagOrTerm = function(value, isTermView) {
+        if (value && _.isString(value) && isTermView) {
+            // For string break
+            if (value == "TaxonomyTerm") {
+                return {}
+            }
             var name = value.split('.');
-            if (name.length > 1) {
+            return {
+                term: true,
+                tag: false,
+                name: name[name.length - 1],
+                fullName: value
+            }
+        }
+        if (_.isObject(value)) {
+            var name = "";
+            if (value && value.$typeName$) {
+                name = value.$typeName$;
+            } else if (value && value.typeName) {
+                name = value.typeName;
+            }
+            if (name === "TaxonomyTerm") {
+                return {}
+            }
+            name = name.split('.');
+            var trem = false;
+            if (value['taxonomy.namespace']) {
+                trem = true;
+            } else if (value.values && value.values['taxonomy.namespace']) {
+                trem = true;
+            }
+
+            if (trem) {
                 return {
                     term: true,
+                    tag: false,
                     name: name[name.length - 1],
-                    fullName: value
+                    fullName: name.join('.')
                 }
             } else {
                 return {
                     term: false,
+                    tag: true,
                     name: name[name.length - 1],
-                    fullName: value
+                    fullName: name.join('.')
                 }
             }
         }

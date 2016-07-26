@@ -85,11 +85,7 @@ define(['require',
                     placeholder: "Search Tags",
                     allowClear: true
                 });
-            },
-            fetchCollection: function() {
-                $.extend(this.tagCollection.queryParams, { type: 'TRAIT' });
-                this.tagCollection.fetch({ reset: true });
-            },
+            }
         });
     return CreateTagLayoutView;
 });

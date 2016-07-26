@@ -103,7 +103,7 @@ define(['require',
                 });
             },
             fetchCollections: function() {
-                $.extend(this.tagCollection.queryParams, { type: 'TRAIT', });
+                $.extend(this.tagCollection.queryParams, { type: 'TRAIT', notsupertype: 'TaxonomyTerm' });
                 this.tagCollection.fetch({ reset: true });
                 this.ui.offLineSearchTag.val("");
             },
@@ -159,18 +159,14 @@ define(['require',
                     str = '';
                 _.each(this[collection].fullCollection.models, function(model) {
                     var tagName = model.get("tags");
-                    var tagOrTerm = Utils.checkTagOrTerm(tagName);
-                    if (!tagOrTerm.term) {
-                        if (searchString) {
-                            if (tagName.search(new RegExp(searchString, "i")) != -1) {
-                                str = '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + tagName + '"  data-name="`' + tagName + '`" >' + tagName + '</a></li>' + str;
-                            } else {
-                                return;
-                            }
+                    if (searchString) {
+                        if (tagName.search(new RegExp(searchString, "i")) != -1) {
+                            str = '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + tagName + '"  data-name="`' + tagName + '`" >' + tagName + '</a></li>' + str;
                         } else {
-                            //str = '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-trash-o" data-id="deleteTerm"></i></div><a href="#!/tag/tagAttribute/' + tagName + '">' + tagName + '</a></li>' + str;
-                            str = '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + tagName + '"  data-name="`' + tagName + '`">' + tagName + '</a></li>' + str;
+                            return;
                         }
+                    } else {
+                        str = '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + tagName + '"  data-name="`' + tagName + '`">' + tagName + '</a></li>' + str;
                     }
                 });
                 this.ui.tagsParent.empty().html(str);

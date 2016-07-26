@@ -39,20 +39,10 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                 tagModel.deleteTag(options.guid, options.tagName, {
                     success: function(data) {
                         var msg = "Tag " + name.name + Messages.removeSuccessMessage;
-                        if (data.traitName) {
-                            var tagOrTerm = Utils.checkTagOrTerm(data.traitName);
-                            if (tagOrTerm.term) {
-                                msg = "Term " + data.traitName + Messages.removeSuccessMessage;
-                            } else {
-                                msg = "Tag " + data.traitName + Messages.removeSuccessMessage;
-                            }
-                        } else {
-                            var tagOrTerm = Utils.checkTagOrTerm(options.tagName);
-                            if (tagOrTerm.term) {
-                                msg = "Term " + data.traitName + Messages.removeSuccessMessage;
-                            } else {
-                                msg = "Tag " + data.traitName + Messages.removeSuccessMessage;
-                            }
+                        if (options.tagOrTerm === "term") {
+                            msg = "Term " + options.tagName + Messages.removeSuccessMessage;
+                        } else if (options.tagOrTerm === "tag") {
+                            msg = "Tag " + options.tagName + Messages.removeSuccessMessage;
                         }
                         Utils.notifySuccess({
                             content: msg
@@ -405,14 +395,12 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
             id = model.get('$id$').id,
             terms = [];
         _.keys(traits).map(function(key) {
-            if (traits[key].$typeName$) {
-                var tagName = Utils.checkTagOrTerm(traits[key].$typeName$);
-            } else {
-                var tagName = Utils.checkTagOrTerm(traits[key].typeName);
+            if (traits[key]) {
+                var tagName = Utils.checkTagOrTerm(traits[key]);
             }
             if (tagName.term) {
                 terms.push({
-                    deleteHtml: '<a class="pull-left" title="Remove Term"><i class="fa fa-trash" data-id="tagClick" data-assetname="' + model.get("name") + '" data-name="' + tagName.fullName+ '" data-guid="' + model.get('$id$').id + '" ></i></a>',
+                    deleteHtml: '<a class="pull-left" title="Remove Term"><i class="fa fa-trash" data-id="tagClick" data-type="term" data-assetname="' + model.get("name") + '" data-name="' + tagName.fullName + '" data-guid="' + model.get('$id$').id + '" ></i></a>',
                     url: tagName.fullName.split(".").join("/"),
                     name: tagName.fullName
                 });
@@ -447,17 +435,15 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
             popTag = "",
             count = 0;
         _.keys(model.get('$traits$')).map(function(key) {
-            if (traits[key].$typeName$) {
-                var tagName = Utils.checkTagOrTerm(traits[key].$typeName$);
-            } else {
-                var tagName = Utils.checkTagOrTerm(traits[key].typeName);
+            if (traits[key]) {
+                var tagName = Utils.checkTagOrTerm(traits[key]);
             }
             var className = "inputTag";
-            if (!tagName.term) {
+            if (tagName.tag) {
                 if (count >= 1) {
-                    popTag += '<a class="' + className + '" data-id="tagClick"><span class="inputValue">' + tagName.name + '</span><i class="fa fa-times" data-id="delete"  data-assetname="' + model.get("name") + '"data-name="' + tagName.name + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
+                    popTag += '<a class="' + className + '" data-id="tagClick"><span class="inputValue">' + tagName.fullName + '</span><i class="fa fa-times" data-id="delete"  data-assetname="' + model.get("name") + '"data-name="' + tagName.fullName + '" data-type="tag" data-guid="' + model.get('$id$').id + '" ></i></a>';
                 } else {
-                    atags += '<a class="' + className + '" data-id="tagClick"><span class="inputValue">' + tagName.name + '</span><i class="fa fa-times" data-id="delete" data-assetname="' + model.get("name") + '" data-name="' + tagName.name + '" data-guid="' + model.get('$id$').id + '" ></i></a>';
+                    atags += '<a class="' + className + '" data-id="tagClick"><span class="inputValue">' + tagName.fullName + '</span><i class="fa fa-times" data-id="delete" data-assetname="' + model.get("name") + '" data-name="' + tagName.fullName + '"  data-type="tag" data-guid="' + model.get('$id$').id + '" ></i></a>';
                 }
                 ++count;
             }

@@ -382,13 +382,14 @@ define(['require',
                                 }
                             }
                         }
-                        var name = Utils.checkTagOrTerm(model.get('name'));
-                        if (that.viewBased) {
-                            parentLi = '<div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i><i class="fa fa-ellipsis-h termPopover"></i></div><i class="fa fa-angle-right toggleArrow" data-id="expandArrow" data-href="' + hrefUrl + '"></i><a href="javascript:void(0)" data-href="' + hrefUrl + '" data-name="`' + model.get('name') + '`">' + name.name + '</a>';
-                        } else {
-                            parentLi = '<div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i></div><i class="fa fa-angle-right toggleArrow" data-id="expandArrow" data-href="' + hrefUrl + '"></i><a href="javascript:void(0)" data-href="' + hrefUrl + '" data-name="`' + model.get('name') + '`">' + name.name + '</a>';
+                        var name = Utils.checkTagOrTerm(model.get('name'), true);
+                        if (name.name) {
+                            if (that.viewBased) {
+                                parentLi = '<div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i><i class="fa fa-ellipsis-h termPopover"></i></div><i class="fa fa-angle-right toggleArrow" data-id="expandArrow" data-href="' + hrefUrl + '"></i><a href="javascript:void(0)" data-href="' + hrefUrl + '" data-name="`' + model.get('name') + '`">' + name.name + '</a>';
+                            } else {
+                                parentLi = '<div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i></div><i class="fa fa-angle-right toggleArrow" data-id="expandArrow" data-href="' + hrefUrl + '"></i><a href="javascript:void(0)" data-href="' + hrefUrl + '" data-name="`' + model.get('name') + '`">' + name.name + '</a>';
+                            }
                         }
-
                     });
                     if (href) {
                         var hrefUrl = "/api" + href.split("/api")[1];
@@ -401,12 +402,14 @@ define(['require',
 
                 function createTerm() {
                     _.each(that.childCollection.fullCollection.models, function(model, key) {
-                        var name = Utils.checkTagOrTerm(model.get('name'));
+                        var name = Utils.checkTagOrTerm(model.get('name'), true);
                         var hrefUrl = "/api" + model.get('href').split("/api")[1];
-                        if (that.viewBased) {
-                            childLi += '<li class="children"><div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i><i class="fa fa-ellipsis-h termPopover" ></i></div><i class="fa fa-angle-right toggleArrow" data-id="expandArrow" data-href="' + hrefUrl + '"></i><a href="javascript:void(0)" data-href="' + hrefUrl + '" data-name="`' + model.get('name') + '`">' + name.name + '</a></li>';
-                        } else {
-                            childLi += '<li class="children"><div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i></div><i class="fa fa-angle-right toggleArrow" data-id="expandArrow" data-href="' + hrefUrl + '"></i><a href="javascript:void(0)" data-href="' + hrefUrl + '" data-name="`' + model.get('name') + '`">' + name.name + '</a></li>';
+                        if (name.name) {
+                            if (that.viewBased) {
+                                childLi += '<li class="children"><div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i><i class="fa fa-ellipsis-h termPopover" ></i></div><i class="fa fa-angle-right toggleArrow" data-id="expandArrow" data-href="' + hrefUrl + '"></i><a href="javascript:void(0)" data-href="' + hrefUrl + '" data-name="`' + model.get('name') + '`">' + name.name + '</a></li>';
+                            } else {
+                                childLi += '<li class="children"><div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i></div><i class="fa fa-angle-right toggleArrow" data-id="expandArrow" data-href="' + hrefUrl + '"></i><a href="javascript:void(0)" data-href="' + hrefUrl + '" data-name="`' + model.get('name') + '`">' + name.name + '</a></li>';
+                            }
                         }
                     });
                     that.ui.childList.html(childLi);

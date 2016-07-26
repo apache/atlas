@@ -67,7 +67,7 @@ define(['require',
         },
 
         onRender: function() {
-            $.extend(this.collection.queryParams, { type: 'TRAIT' });
+            $.extend(this.collection.queryParams, { type: 'TRAIT', notsupertype: 'TaxonomyTerm' });
             this.collection.fetch({ reset: true });
         },
         bindEvents: function() {
@@ -81,10 +81,7 @@ define(['require',
         tagsCollection: function() {
             var str = '<option selected="selected" disabled="disabled">-- Select a tag from the dropdown list --</option>';
             _.each(this.collection.fullCollection.models, function(obj, key) {
-                var tagOrTerm = Utils.checkTagOrTerm(obj.get('tags'));
-                if (!tagOrTerm.term) {
-                    str += '<option>' + obj.get('tags') + '</option>';
-                }
+                str += '<option>' + obj.get('tags') + '</option>';
             });
             this.ui.addTagOptions.html(str);
             this.ui.addTagOptions.select2({

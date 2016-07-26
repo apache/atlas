@@ -167,8 +167,7 @@ define(['require',
                             }
                         }
                         if (collectionJSON[0].traits) {
-                            this.tagElement = _.keys(collectionJSON[0].traits);
-                            this.addTagToTerms(this.tagElement);
+                            this.addTagToTerms(collectionJSON[0].traits);
                         }
                     }
 
@@ -194,34 +193,37 @@ define(['require',
             },
             onClickTagCross: function(e) {
                 var tagName = $(e.currentTarget).parent().text(),
+                    tagOrTerm = $(e.target).data("type"),
                     that = this;
-                var tagOrTerm = Utils.checkTagOrTerm(tagName);
-                if (tagOrTerm.term) {
+                if (tagOrTerm === "term") {
                     var modal = CommonViewFunction.deleteTagModel({
                         msg: "<div class='ellipsis'>Remove: " + "<b>" + tagName + "</b> assignment from" + " " + "<b>" + this.name + "?</b></div>",
                         titleMessage: Messages.removeTerm,
                         buttonText: "Remove"
                     });
-                } else {
+                } else if (tagOrTerm === "tag") {
                     var modal = CommonViewFunction.deleteTagModel({
                         msg: "<div class='ellipsis'>Remove: " + "<b>" + tagName + "</b> assignment from" + " " + "<b>" + this.name + "?</b></div>",
                         titleMessage: Messages.removeTag,
                         buttonText: "Remove"
                     });
                 }
-                modal.on('ok', function() {
-                    that.deleteTagData(e);
-                });
-                modal.on('closeModal', function() {
-                    modal.trigger('cancel');
-                });
+                if (modal) {
+                    modal.on('ok', function() {
+                        that.deleteTagData(e, tagOrTerm);
+                    });
+                    modal.on('closeModal', function() {
+                        modal.trigger('cancel');
+                    });
+                }
             },
-            deleteTagData: function(e) {
+            deleteTagData: function(e, tagOrTerm) {
                 var that = this,
                     tagName = $(e.currentTarget).text();
                 CommonViewFunction.deleteTag({
                     'tagName': tagName,
                     'guid': that.id,
+                    'tagOrTerm': tagOrTerm,
                     callback: function() {
                         that.fetchCollection();
                     }
@@ -234,13 +236,12 @@ define(['require',
 
                 _.each(tagObject, function(val) {
                     var isTerm = Utils.checkTagOrTerm(val);
-                    if (!isTerm.term) {
-                        tagData += '<span class="inputTag" data-id="tagClick"><span class="inputValue">' + val + '</span><i class="fa fa-close" data-id="deleteTag"></i></span>';
+                    if (isTerm.tag) {
+                        tagData += '<span class="inputTag" data-id="tagClick"><span class="inputValue">' + isTerm.fullName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="tag"></i></span>';
                     }
                     if (isTerm.term) {
-                        termData += '<span class="inputTag term" data-id="tagClick" data-href="' + val + '"><span class="inputValue">' + val + '</span><i class="fa fa-close" data-id="deleteTag"></i></span>';
+                        termData += '<span class="inputTag term" data-id="tagClick" data-href="' + isTerm.fullName + '"><span class="inputValue">' + isTerm.fullName + '</span><i class="fa fa-close" data-id="deleteTag" data-type="term"></i></span>';
                     }
-
                 });
                 this.ui.tagList.find("span.inputTag").remove();
                 this.ui.termList.find("span.inputTag").remove();

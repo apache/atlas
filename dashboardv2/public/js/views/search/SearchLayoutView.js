@@ -79,10 +79,6 @@ define(['require',
                     }
                 });
                 this.type = "fulltext";
-                this.tagCollection = new VTagList();
-                $.extend(this.tagCollection.queryParams, { type: 'TRAIT' });
-                this.typeCollection = new VTagList();
-                $.extend(this.typeCollection.queryParams, { type: 'CLASS' });
                 this.bindEvents();
             },
             bindEvents: function(param) {
