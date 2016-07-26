@@ -19,15 +19,32 @@
 
 /* theme.scss */
 
-.user-dropdown {
-    display: inline-block;
-    padding: 14px;
-    color: $color_ironside_gray_approx;
-    .user-circle {
-        padding: 8px 10px;
-        border: 1px solid $color_ironside_gray_approx;
-        border-radius: 20px;
-        margin: 0px 4px;
+.header-menu {
+    .dropdown-menu > li > a {
+        color: $color_ironside_gray_approx;
+        &:hover {
+            color: $color_jungle_green_approx;
+        }
+        i {
+            padding-right: 3px;
+        }
+    }
+    >a {
+        display: inline-block;
+        color: $color_ironside_gray_approx;
+        padding: 16px 14px;
+        &:hover {
+            border-bottom: 2px solid $color_jungle_green_approx;
+            padding: 14px 14px;
+            color: $color_jungle_green_approx;
+        }
+        span {
+            padding: 5px;
+        }
+        i {
+            margin-top: 7px;
+            font-size: 18px;
+        }
     }
 }
 
@@ -132,6 +149,7 @@
         color: $color_jungle_green_approx;
     }
 }
-.position-relative{
-    position:relative;
+
+.position-relative {
+    position: relative;
 }
