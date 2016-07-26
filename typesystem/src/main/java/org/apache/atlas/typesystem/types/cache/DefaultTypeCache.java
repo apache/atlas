@@ -27,6 +27,8 @@ import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.StructType;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,6 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Singleton
 @SuppressWarnings("rawtypes")
 public class DefaultTypeCache implements TypeCache {
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultTypeCache.class);
 
     private Map<String, IDataType> types_ = new ConcurrentHashMap<>();
     private static final List<TypeCategory> validTypeFilterCategories =
@@ -183,7 +186,9 @@ public class DefaultTypeCache implements TypeCache {
             case SUPERTYPE:
             case NOT_SUPERTYPE:
                 if (!has(filterEntry.getValue())) {
-                    throw new IllegalArgumentException("Invalid supertype " + filterEntry.getValue());
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("{}: supertype does not exist", filterEntry.getValue());
+                    }
                 }
                 break;
 
