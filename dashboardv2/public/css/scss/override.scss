@@ -169,3 +169,16 @@
         }
     }
 }
+
+.backgrid-paginator ul {
+    margin: 0px;
+    float: right;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.backgrid-paginator ul > .disabled > span,
+.backgrid-paginator ul > .disabled > a,
+.backgrid-paginator ul > .disabled > a:hover {
+    cursor: pointer;
+}

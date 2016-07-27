@@ -53,7 +53,8 @@ define(['require',
                 showMoreLessTerm: '[data-id="showMoreLessTerm"]',
                 paginationDiv: '[data-id="paginationDiv"]',
                 previousData: "[data-id='previousData']",
-                nextData: "[data-id='nextData']"
+                nextData: "[data-id='nextData']",
+                pageRecordText: "[data-id='pageRecordText']"
             },
 
             /** ui events hash */
@@ -114,9 +115,11 @@ define(['require',
                 this.entityModel = new VEntity();
                 this.searchCollection = new VSearchList();
                 this.limit = 25;
+                this.firstFetch = true;
                 this.fetchList = 0;
-                if (options.value.searchType == "dsl") {
+                if (options.value.searchType === "dsl" || options.value.type === "dsl") {
                     pagination = false;
+                    this.offset = 0;
                 } else {
                     pagination = true;
                 }
@@ -125,7 +128,7 @@ define(['require',
                     includeFilter: false,
                     includePagination: pagination,
                     includePageSize: false,
-                    includeFooterRecords: false,
+                    includeFooterRecords: pagination,
                     includeSizeAbleColumns: false,
                     gridOpts: {
                         emptyText: 'No Record found!',
@@ -216,15 +219,48 @@ define(['require',
                 }
                 Globals.searchApiCallRef = this.searchCollection.fetch({
                     success: function() {
-                        if (that.searchCollection.length === 0) {
+                        if (that.searchCollection.models.length < that.limit) {
                             that.ui.nextData.attr('disabled', true);
                         }
                         Globals.searchApiCallRef = undefined;
-                        if (that.searchCollection.toJSON().length == 0) {
-                            that.checkTableFetch();
+                        if (that.offset === 0) {
+                            that.pageFrom = 1;
+                            that.pageTo = that.limit;
+                            if (that.searchCollection.length > 0) {
+                                that.ui.pageRecordText.html("Showing " + that.pageFrom + " - " + that.searchCollection.length);
+                            }
+                        } else if (that.searchCollection.models.length && !that.previousClick) {
+                            //on next click, adding "1" for showing the another records..
+                            that.pageFrom = that.pageTo + 1;
+                            that.pageTo = that.pageTo + that.searchCollection.models.length;
+                            if (that.pageFrom && that.pageTo) {
+                                that.ui.pageRecordText.html("Showing " + that.pageFrom + " - " + that.pageTo);
+                            }
+                        } else if (that.previousClick) {
+                            that.pageTo = (that.pageTo - (that.pageTo - that.pageFrom)) - 1;
+                            //if limit is 0 then result is change to 1 because page count is showing from 1
+                            that.pageFrom = (that.pageFrom - that.limit === 0 ? 1 : that.pageFrom - that.limit);
+                            that.ui.pageRecordText.html("Showing " + that.pageFrom + " - " + that.pageTo);
                         }
-                        that.renderTableLayoutView();
-                        var resultData = that.searchCollection.fullCollection.length + ' results for <b>' + that.searchCollection.queryParams.query + '</b>'
+                        if (that.searchCollection.models.length === 0) {
+                            that.checkTableFetch();
+                            that.offset = that.offset - that.limit;
+                            if (that.firstFetch) {
+                                that.ui.paginationDiv.hide();
+                                that.renderTableLayoutView();
+                            }
+                        }
+                        if (that.firstFetch) {
+                            that.firstFetch = false;
+                        }
+                        if (that.offset < that.limit) {
+                            that.ui.previousData.attr('disabled', true);
+                        }
+                        // checking length for not rendering the table
+                        if (that.searchCollection.models.length) {
+                            that.renderTableLayoutView();
+                        }
+                        var resultData = 'Results for <b>' + that.searchCollection.queryParams.query + '</b>'
                         var multiAssignData = '<a href="javascript:void(0)" class="inputAssignTag multiSelect" style="display:none" data-id="addTerm"><i class="fa fa-folder-o"></i>' + " " + 'Assign Term</a>'
                         that.$('.searchResult').html(resultData + multiAssignData);
                     },
@@ -282,7 +318,7 @@ define(['require',
                     this.$('.fontLoader').hide();
                     this.$('.searchTable').show();
                     this.$('.searchResult').show();
-                    if (this.value.searchType == "dsl") {
+                    if (this.value.searchType == "dsl" || this.value.type === "dsl") {
                         this.ui.paginationDiv.show();
                     } else {
                         this.ui.paginationDiv.hide();
@@ -591,9 +627,7 @@ define(['require',
                         return that.offset;
                     }
                 });
-                if (this.offset > this.limit) {
-                    this.ui.nextData.attr('disabled', true);
-                }
+                this.previousClick = false;
                 this.fetchCollection();
             },
             onClickpreviousData: function() {
@@ -605,9 +639,7 @@ define(['require',
                         return that.offset;
                     }
                 });
-                if (this.offset <= that.limit) {
-                    this.ui.previousData.attr('disabled', true);
-                }
+                this.previousClick = true;
                 this.fetchCollection();
             },
         });
