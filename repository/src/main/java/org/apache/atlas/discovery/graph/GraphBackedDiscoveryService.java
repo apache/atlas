@@ -121,7 +121,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
     }
 
     public GremlinQueryResult evaluate(String dslQuery, QueryParams queryParams) throws DiscoveryException {
-        LOG.info("Executing dsl query={}", dslQuery);
+        LOG.debug("Executing dsl query={}", dslQuery);
         try {
             Either<Parsers.NoSuccess, Expressions.Expression> either = QueryParser.apply(dslQuery, queryParams);
             if (either.isRight()) {
@@ -164,7 +164,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
     @Override
     @GraphTransaction
     public List<Map<String, String>> searchByGremlin(String gremlinQuery) throws DiscoveryException {
-        LOG.info("Executing gremlin query={}", gremlinQuery);
+        LOG.debug("Executing gremlin query={}", gremlinQuery);
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName("gremlin-groovy");
 
