@@ -308,10 +308,9 @@ define(['require',
             renderFooterRecords: function(collectionState) {
                 var collState = collectionState;
                 var totalRecords = collState.totalRecords || 0;
-                var pageStartIndex = totalRecords ? (collState.currentPage * collState.pageSize) : 0;
+                var pageStartIndex = totalRecords ? (collState.currentPage * collState.pageSize) : 1;
                 var pageEndIndex = pageStartIndex + this.collection.length;
-
-                this.$('[data-id="r_footerRecords"]').html('Showing ' + (totalRecords ? pageStartIndex + 1 : 0) + ' to ' + pageEndIndex + ' of ' + totalRecords + ' entries');
+                this.$('[data-id="r_footerRecords"]').html('<h5>Showing ' + (totalRecords ? pageStartIndex + 1 : 0) + ' - ' + pageEndIndex + '</h5>');
                 return this;
             },
             /**

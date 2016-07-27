@@ -41,7 +41,8 @@ define(['require',
                 auditValue: "[data-id='auditValue']",
                 auditCreate: "[data-id='auditCreate']",
                 previousAuditData: "[data-id='previousAuditData']",
-                nextAuditData: "[data-id='nextAuditData']"
+                nextAuditData: "[data-id='nextAuditData']",
+                pageRecordText: "[data-id='pageRecordText']"
             },
             /** ui events hash */
             events: function() {
@@ -58,7 +59,7 @@ define(['require',
             initialize: function(options) {
                 _.extend(this, _.pick(options, 'globalVent', 'guid'));
                 this.entityCollection = new VEntityList();
-                this.count = 25;
+                this.count = 26;
                 this.entityCollection.url = "/api/atlas/entities/" + this.guid + "/audit";
                 this.entityCollection.modelAttrName = "events"
                 this.entityModel = new this.entityCollection.model();
@@ -76,6 +77,9 @@ define(['require',
                     filterOpts: {},
                     paginatorOpts: {}
                 };
+                this.currPage = 1;
+                // this.pageFrom = 1;
+                // this.pageTo = this.count;
             },
             onRender: function() {
                 $.extend(this.entityCollection.queryParams, { count: this.count });
@@ -85,6 +89,32 @@ define(['require',
                     previous: this.ui.previousAuditData
                 });
                 this.renderTableLayoutView();
+            },
+            getToOffset: function() {
+                var toOffset = 0;
+                if (this.entityCollection.models.length < this.count) {
+                    toOffset = ((this.currPage - 1) * (this.count - 1) + (this.entityCollection.models.length));
+                } else {
+                    toOffset = ((this.currPage - 1) * (this.count - 1) + (this.entityCollection.models.length - 1));
+                }
+                return toOffset;
+            },
+            renderOffset: function(options) {
+                var that = this;
+                if (options.nextClick) {
+                    options.previous.removeAttr("disabled");
+                    if (that.entityCollection.length != 0) {
+                        that.currPage++;
+                        that.ui.pageRecordText.html("Showing " + ((that.currPage - 1) * (that.count - 1) + 1) + " - " + that.getToOffset());
+                    }
+                }
+                if (options.previousClick) {
+                    options.next.removeAttr("disabled");
+                    if (that.currPage > 1 && that.entityCollection.models.length) {
+                        that.currPage--;
+                        that.ui.pageRecordText.html("Showing " + ((that.currPage - 1) * (that.count - 1) + 1) + " - " + that.getToOffset());
+                    }
+                }
             },
             fetchCollection: function(options) {
                 var that = this;
@@ -97,26 +127,23 @@ define(['require',
                 }
                 this.entityCollection.fetch({
                     success: function() {
-                        that.$('.fontLoader').hide();
-                        that.$('.auditTable').show();
-                        options.previous.attr('disabled', true);
-                        if (that.entityCollection.models.length <= 1) {
+                        if (that.entityCollection.models.length < that.count) {
+                            options.previous.attr('disabled', true);
                             options.next.attr('disabled', true);
                         }
-                        if (that.entityCollection.models.length == 1 && that.next == that.entityCollection.last().get('eventKey')) {
+                        if (!options.nextClick && !options.previousClick) {
+                            that.ui.pageRecordText.html("Showing " + ((that.currPage - 1) * (that.count - 1) + 1) + " - " + that.getToOffset());
+                        }
+                        that.$('.fontLoader').hide();
+                        that.$('.auditTable').show();
+                        that.renderOffset(options);
+                        if ((that.entityCollection.models.length < that.count && that.currPage == 1) && that.next == that.entityCollection.last().get('eventKey')) {
                             options.next.attr('disabled', true);
                             options.previous.removeAttr("disabled");
-                            that.entityCollection.reset();
                         } else {
                             if (that.entityCollection.models.length > 0) {
                                 that.next = that.entityCollection.last().get('eventKey');
-                                if (options.nextClick) {
-                                    options.previous.removeAttr("disabled");
-                                }
-                                if (options.previousClick) {
-                                    options.previous.removeAttr("disabled");
-                                }
-                                if (that.pervOld.length == 0) {
+                                if (that.pervOld.length === 0) {
                                     options.previous.attr('disabled', true);
                                 }
                             }
@@ -134,6 +161,9 @@ define(['require',
                         globalVent: that.globalVent,
                         columns: cols
                     })));
+                    if (!(that.entityCollection.models.length < that.count)) {
+                        that.RAuditTableLayoutView.$el.find('table tr').last().hide()
+                    }
                 });
             },
             getAuditTableColumns: function() {
