@@ -321,7 +321,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
                 if (coveredClauses.isEmpty()) isSorted=candidateSupportsSort;
                 coveredClauses.addAll(candidateSubcover);
 
-                log.info("Index chosen for query {} {} " , bestCandidate.isCompositeIndex() ? "COMPOSITE" : "MIXED", coveredClauses);
+                log.debug("Index chosen for query {} {} " , bestCandidate.isCompositeIndex() ? "COMPOSITE" : "MIXED", coveredClauses);
                 if (bestCandidate.isCompositeIndex()) {
                     jointQuery.add((CompositeIndexType)bestCandidate,
                         serializer.getQuery((CompositeIndexType)bestCandidate,(List<Object[]>)candidateSubcondition));
@@ -454,6 +454,4 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
             return true;
         }
     }
-
-
 }
