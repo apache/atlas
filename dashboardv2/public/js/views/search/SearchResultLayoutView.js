@@ -117,18 +117,13 @@ define(['require',
                 this.limit = 25;
                 this.firstFetch = true;
                 this.fetchList = 0;
-                if (options.value.searchType === "dsl" || options.value.type === "dsl") {
-                    pagination = false;
-                    this.offset = 0;
-                } else {
-                    pagination = true;
-                }
+                this.offset = 0;
                 this.commonTableOptions = {
                     collection: this.searchCollection,
                     includeFilter: false,
-                    includePagination: pagination,
+                    includePagination: false,
                     includePageSize: false,
-                    includeFooterRecords: pagination,
+                    includeFooterRecords: false,
                     includeSizeAbleColumns: false,
                     gridOpts: {
                         emptyText: 'No Record found!',
@@ -210,10 +205,8 @@ define(['require',
                 if (value) {
                     if (value.searchType) {
                         this.searchCollection.url = "/api/atlas/discovery/search/" + value.searchType;
-                        if (value.searchType === "dsl") {
-                            $.extend(this.searchCollection.queryParams, { limit: this.limit });
-                            this.offset = 0;
-                        }
+                        $.extend(this.searchCollection.queryParams, { limit: this.limit });
+                        this.offset = 0;
                     }
                     _.extend(this.searchCollection.queryParams, { 'query': value.query });
                 }
@@ -246,7 +239,6 @@ define(['require',
                             that.checkTableFetch();
                             that.offset = that.offset - that.limit;
                             if (that.firstFetch) {
-                                that.ui.paginationDiv.hide();
                                 that.renderTableLayoutView();
                             }
                         }
@@ -318,11 +310,6 @@ define(['require',
                     this.$('.fontLoader').hide();
                     this.$('.searchTable').show();
                     this.$('.searchResult').show();
-                    if (this.value.searchType == "dsl" || this.value.type === "dsl") {
-                        this.ui.paginationDiv.show();
-                    } else {
-                        this.ui.paginationDiv.hide();
-                    }
                 }
             },
             getEntityTableColumns: function() {
@@ -621,11 +608,9 @@ define(['require',
             onClicknextData: function() {
                 var that = this;
                 this.ui.previousData.removeAttr("disabled");
+                that.offset = that.offset + that.limit;
                 $.extend(this.searchCollection.queryParams, {
-                    offset: function() {
-                        that.offset = that.offset + that.limit;
-                        return that.offset;
-                    }
+                    offset: that.offset
                 });
                 this.previousClick = false;
                 this.fetchCollection();
@@ -633,11 +618,9 @@ define(['require',
             onClickpreviousData: function() {
                 var that = this;
                 this.ui.nextData.removeAttr("disabled");
+                that.offset = that.offset - that.limit;
                 $.extend(this.searchCollection.queryParams, {
-                    offset: function() {
-                        that.offset = that.offset - that.limit;
-                        return that.offset;
-                    }
+                    offset: that.offset
                 });
                 this.previousClick = true;
                 this.fetchCollection();
