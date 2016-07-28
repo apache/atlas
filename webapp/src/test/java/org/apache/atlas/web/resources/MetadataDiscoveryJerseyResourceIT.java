@@ -86,10 +86,10 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
 
         JSONArray results = response.getJSONArray(AtlasClient.RESULTS);
         Assert.assertNotNull(results);
-        assertEquals(results.length(), 1);
+        assertEquals(results.length(), 2);
 
         int numRows = response.getInt(AtlasClient.COUNT);
-        assertEquals(numRows, 1);
+        assertEquals(numRows, 2);
     }
 
     @Test
@@ -196,7 +196,7 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         assertEquals(response.getString("queryType"), "dsl");
     }
 
-    @Test
+    @Test(dependsOnMethods = "testSearchDSLLimits")
     public void testSearchUsingFullText() throws Exception {
         JSONObject response = serviceClient.searchByFullText(tagName, 10, 0);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
@@ -214,6 +214,32 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
 
         int numRows = response.getInt(AtlasClient.COUNT);
         assertEquals(numRows, 1);
+
+        //API works without limit and offset
+        String query = "dsl_test_type";
+        WebResource resource = service.path("api/atlas/discovery/search/fulltext").queryParam("query", query);
+        ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
+                                                .method(HttpMethod.GET, ClientResponse.class);
+        assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+        results = new JSONObject(clientResponse.getEntity(String.class)).getJSONArray(AtlasClient.RESULTS);
+        assertEquals(results.length(), 2);
+
+        //verify passed in limits and offsets are used
+        //higher limit and 0 offset returns all results
+        results = serviceClient.searchByFullText(query, 10, 0).getJSONArray(AtlasClient.RESULTS);
+        assertEquals(results.length(), 2);
+
+        //offset is used
+        results = serviceClient.searchByFullText(query, 10, 1).getJSONArray(AtlasClient.RESULTS);
+        assertEquals(results.length(), 1);
+
+        //limit is used
+        results = serviceClient.searchByFullText(query, 1, 0).getJSONArray(AtlasClient.RESULTS);
+        assertEquals(results.length(), 1);
+
+        //higher offset returns 0 results
+        results = serviceClient.searchByFullText(query, 1, 2).getJSONArray(AtlasClient.RESULTS);
+        assertEquals(results.length(), 0);
     }
 
     private void createTypes() throws Exception {

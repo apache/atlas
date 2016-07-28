@@ -91,7 +91,13 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
                 titanGraph.indexQuery(Constants.FULLTEXT_INDEX, graphQuery).vertices().iterator();
         JSONArray response = new JSONArray();
 
-        while (results.hasNext()) {
+        int index = 0;
+        while (results.hasNext() && index < queryParams.offset()) {
+            results.next();
+            index++;
+        }
+
+        while (results.hasNext() && response.length() < queryParams.limit()) {
             TitanIndexQuery.Result<Vertex> result = results.next();
             Vertex vertex = result.getElement();
 
