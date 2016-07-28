@@ -546,6 +546,23 @@ public class GraphBackedMetadataRepositoryTest {
         Assert.assertEquals(results.length(), 1);
         row = (JSONObject) results.get(0);
         Assert.assertEquals(row.get("typeName"), "Person");
+
+        //verify limit and offset
+        //higher limit should return all results
+        results = new JSONArray(discoveryService.searchByFullText("Department", queryParams));
+        assertEquals(results.length(), 5);
+
+        //smaller limit should return those many rows
+        results = new JSONArray(discoveryService.searchByFullText("Department", new QueryParams(2, 0)));
+        assertEquals(results.length(), 2);
+
+        //offset should offset the results
+        results = new JSONArray(discoveryService.searchByFullText("Department", new QueryParams(5, 2)));
+        assertEquals(results.length(), 3);
+
+        //higher offset shouldn't return any rows
+        results = new JSONArray(discoveryService.searchByFullText("Department", new QueryParams(2, 6)));
+        assertEquals(results.length(), 0);
     }
 
     private ITypedReferenceableInstance createHiveTableInstance(Referenceable databaseInstance) throws Exception {

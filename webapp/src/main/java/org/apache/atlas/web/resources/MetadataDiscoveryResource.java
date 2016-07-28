@@ -217,7 +217,6 @@ public class MetadataDiscoveryResource {
      * @param query search query.
      * @param limit number of rows to be returned in the result, used for pagination. maxlimit > limit > 0. -1 maps to atlas.search.defaultlimit property value
      * @param offset offset to the results returned, used for pagination. offset >= 0. -1 maps to offset 0
-     * NOTE: Pagination is not implemented currently for full text search, so limit and offset are not used
      * @return JSON representing the type and results.
      */
     @GET
