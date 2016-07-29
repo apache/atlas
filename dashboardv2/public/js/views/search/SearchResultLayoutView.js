@@ -317,53 +317,53 @@ define(['require',
                     col = {};
                 var responseData = this.searchCollection.responseData;
                 if (this.searchCollection.responseData) {
-                    if (responseData.dataType) {
-                        if (responseData.dataType.attributeDefinitions.length == 2 && responseData.dataType.attributeDefinitions[1].name == "instanceInfo") {
-                            return this.getFixedFullTextColumn();
-                        } else {
-                            if (responseData.dataType.typeName.indexOf('_temp') == -1) {
-                                return this.getFixedDslColumn();
-                            } else {
-                                var idFound = false;
-                                _.each(this.searchCollection.models, function(model) {
-                                    var modelJSON = model.toJSON();
-                                    var guid = "";
-                                    _.each(modelJSON, function(val, key) {
-                                        if (_.isObject(val) && val.id) {
-                                            model.set('id', val.id);
-                                            guid = val.id;
-                                        } else if (key === "id") {
-                                            model.set('id', val);
-                                            guid = val;
-                                        }
-                                    });
-                                    if (guid.length) {
-                                        idFound = true;
-                                        model.getEntity(guid, {
-                                            async: false,
-                                            success: function(data) {
-                                                if (data.definition) {
-                                                    if (data.definition.id && data.definition.values) {
-                                                        that.searchCollection.get(data.definition.id).set(data.definition.values);
-                                                        that.searchCollection.get(data.definition.id).set('$id$', data.definition.id);
-                                                        that.searchCollection.get(data.definition.id).set('$traits$', data.definition.traits);
-                                                    }
-                                                }
-                                            },
-                                            error: function(error, data, status) {},
-                                            complete: function() {}
-                                        });
-                                    }
-                                });
-                                if (idFound) {
-                                    return this.getFixedDslColumn();
-                                } else {
-                                    return this.getDaynamicColumn();
-                                }
-                            }
-                        }
+                    if (responseData.dataType && responseData.dataType.typeName.indexOf('_temp') == -1) {
+                        return this.getFixedDslColumn();
                     } else {
-                        return this.getFixedFullTextColumn();
+                        var idFound = false;
+                        _.each(this.searchCollection.models, function(model) {
+                            var modelJSON = model.toJSON();
+                            var guid = "";
+                            _.each(modelJSON, function(val, key) {
+                                if (_.isObject(val)) {
+                                    if (val.id) {
+                                        model.set('id', val.id);
+                                        guid = val.id;
+                                    } else if (val.guid) {
+                                        model.set('id', val.guid);
+                                        guid = val.guid;
+                                    }
+                                } else if (key === "id") {
+                                    model.set('id', val);
+                                    guid = val;
+                                } else if (key === "guid") {
+                                    model.set('id', val);
+                                    guid = val;
+                                }
+                            });
+                            if (guid.length) {
+                                idFound = true;
+                                model.getEntity(guid, {
+                                    async: false,
+                                    success: function(data) {
+                                        if (data.definition) {
+                                            if (data.definition.id && data.definition.values) {
+                                                that.searchCollection.get(data.definition.id).set(data.definition.values);
+                                                that.searchCollection.get(data.definition.id).set('$id$', data.definition.id);
+                                                that.searchCollection.get(data.definition.id).set('$traits$', data.definition.traits);
+                                            }
+                                        }
+                                    },
+                                    error: function(error, data, status) {},
+                                    complete: function() {}
+                                });
+                            }
+                        });
+                        if (idFound) {
+                            return this.getFixedDslColumn();
+                        } else {
+                            return this.getDaynamicColumn();
+                        }
                     }
                 }
             },
@@ -477,49 +477,6 @@ define(['require',
                 }
                 that.checkTableFetch();
                 return this.searchCollection.constructor.getTableCols(col, this.searchCollection);
-            },
-            getFixedFullTextColumn: function() {
-                var that = this;
-                return this.searchCollection.constructor.getTableCols({
-                    instanceInfo: {
-                        label: "Type Name",
-                        cell: "html",
-                        editable: false,
-                        sortable: false,
-                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                            fromRaw: function(rawValue, model) {
-                                var modelObject = model.toJSON();
-                                if (modelObject.$typeName$ && modelObject.instanceInfo) {
-                                    return '<a href="#!/detailPage/' + modelObject.instanceInfo.guid + '">' + modelObject.instanceInfo.typeName + '</a>';
-                                } else if (!modelObject.$typeName$) {
-                                    return '<a href="#!/detailPage/' + modelObject.guid + '">' + modelObject.typeName + '</a>';
-                                }
-                            }
-                        })
-                    },
-                    name: {
-                        label: "Name",
-                        cell: "html",
-                        editable: false,
-                        sortable: false,
-                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                            fromRaw: function(rawValue, model) {
-                                var modelObject = model.toJSON();
-                                if (modelObject.$typeName$ && modelObject.instanceInfo) {
-                                    var guid = model.toJSON().instanceInfo.guid;
-                                    var json = model.toJSON();
-                                    json['id'] = guid;
-                                    return CommonViewFunction.propertyTable({ 'notUsedKey': json }, that, true);
-                                } else if (!modelObject.$typeName$) {
-                                    var guid = model.toJSON().guid;
-                                    var json = model.toJSON();
-                                    json['id'] = guid;
-                                    return CommonViewFunction.propertyTable({ 'notUsedKey': json }, that, true);
-                                }
-                            }
-                        })
-                    }
-                }, this.searchCollection);
             },
             addTagModalView: function(e) {
                 var that = this;
