@@ -21,6 +21,7 @@ package org.apache.atlas.falcon.service;
 
 import org.apache.atlas.plugin.classloader.AtlasPluginClassLoader;
 import org.apache.falcon.FalconException;
+import org.apache.falcon.entity.store.ConfigurationStore;
 import org.apache.falcon.entity.v0.Entity;
 import org.apache.falcon.service.ConfigurationChangeListener;
 import org.apache.falcon.service.FalconService;
@@ -74,6 +75,9 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
 
         try {
             activatePluginClassLoader();
+
+            ConfigurationStore.get().registerListener(this);
+
             falconServiceImpl.init();
         } finally {
             deactivatePluginClassLoader();
@@ -92,6 +96,9 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
 
         try {
             activatePluginClassLoader();
+
+            ConfigurationStore.get().unregisterListener(this);
+
             falconServiceImpl.destroy();
         } finally {
             deactivatePluginClassLoader();

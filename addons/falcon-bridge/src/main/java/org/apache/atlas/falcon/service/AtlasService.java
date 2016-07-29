@@ -23,7 +23,6 @@ import org.apache.atlas.falcon.event.FalconEvent;
 import org.apache.atlas.falcon.hook.FalconHook;
 import org.apache.atlas.falcon.publisher.FalconEventPublisher;
 import org.apache.falcon.FalconException;
-import org.apache.falcon.entity.store.ConfigurationStore;
 import org.apache.falcon.entity.v0.Entity;
 import org.apache.falcon.entity.v0.EntityType;
 import org.apache.falcon.service.ConfigurationChangeListener;
@@ -51,13 +50,11 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
 
     @Override
     public void init() throws FalconException {
-        ConfigurationStore.get().registerListener(this);
         publisher = new FalconHook();
     }
 
     @Override
     public void destroy() throws FalconException {
-        ConfigurationStore.get().unregisterListener(this);
     }
 
     @Override
