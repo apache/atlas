@@ -353,6 +353,17 @@
             <organization>Hortonworks Inc.</organization>
             <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
         </developer>
+        <developer>
+            <id>kbhatt</id>
+            <name>Keval Bhatt</name>
+            <email>kbhatt@apache.org</email>
+            <timezone>+05:30</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Freestone Infotech</organization>
+            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
+        </developer>
     </developers>
 
     <properties>
