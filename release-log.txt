@@ -6,6 +6,7 @@ INCOMPATIBLE CHANGES:
 
 
 ALL CHANGES:
+ATLAS-1066 Falcon fails to post entity to Atlas due to kafka exception (mneethiraj via shwethags)
 ATLAS-1064 UI: Pagination for full text search results (Kalyanikashikar via shwethags)
 ATLAS-1006 Paginate full text search results (shwethags)
 ATLAS-1046 UI: Search pagination refinements (Kalyanikashikar via sumasai)

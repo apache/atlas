@@ -136,7 +136,7 @@ public class FalconHook extends AtlasHook implements FalconEventPublisher {
                 });
             }
         } catch (Throwable t) {
-            LOG.warn("Error in processing data {}", data);
+            LOG.warn("Error in processing data " + data, t);
         }
     }
 
