@@ -27,6 +27,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-861 1 table out of 50,000 tables is left unimported throwing exception during deserialization (sumasai via shwethags)
 ATLAS-1065 UI: Full text search view same as DSL's (kevalbhat18 via shwethags)
 ATLAS-1066 Falcon fails to post entity to Atlas due to kafka exception (mneethiraj via shwethags)
 ATLAS-1064 UI: Pagination for full text search results (Kalyanikashikar via shwethags)
