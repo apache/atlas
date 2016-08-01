@@ -23,27 +23,37 @@ import org.apache.atlas.repository.typestore.ITypeStore;
 import org.apache.atlas.repository.typestore.StoreBackedTypeCache;
 import org.apache.atlas.repository.typestore.StoreBackedTypeCacheTestModule;
 import org.apache.atlas.services.MetadataService;
+import org.apache.atlas.typesystem.TypesDef;
+import org.apache.atlas.typesystem.json.TypesSerialization;
+import org.apache.atlas.typesystem.types.AttributeDefinition;
+import org.apache.atlas.typesystem.types.ClassType;
+import org.apache.atlas.typesystem.types.DataTypes;
+import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
+import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.TypeSystem;
+import org.apache.atlas.typesystem.types.TypeUpdateException;
 import org.apache.atlas.typesystem.types.cache.TypeCache;
+import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 
 
 /**
- *  Verify MetadataService type lookup triggers StoreBackedTypeCache to load type from the store.
- *  StoreBackedTypeCacheTestModule Guice module uses Atlas configuration
- *  which has type cache implementation class set to {@link StoreBackedTypeCache}.
+ *  Verify MetadataService type operations trigger StoreBackedTypeCache to load non-cached types from the store.
+ *  StoreBackedTypeCacheTestModule Guice module sets Atlas configuration
+ *  to use {@link StoreBackedTypeCache} as the TypeCache implementation class.
  */
 @Guice(modules = StoreBackedTypeCacheTestModule.class)
-@Test(enabled = false)
 public class StoreBackedTypeCacheMetadataServiceTest
 {
     @Inject
@@ -55,13 +65,18 @@ public class StoreBackedTypeCacheMetadataServiceTest
     @Inject
     TypeCache typeCache;
 
+    private StoreBackedTypeCache storeBackedTypeCache;
+
     @Inject
     private GraphProvider<TitanGraph> graphProvider;
 
     private TypeSystem ts;
 
     @BeforeClass
-    public void setUp() throws Exception {
+    public void oneTimeSetup() throws Exception {
+        Assert.assertTrue(typeCache instanceof StoreBackedTypeCache);
+        storeBackedTypeCache = (StoreBackedTypeCache) typeCache;
+
         ts = TypeSystem.getInstance();
         ts.reset();
 
@@ -70,6 +85,10 @@ public class StoreBackedTypeCacheMetadataServiceTest
         TestUtils.createHiveTypes(ts);
         ImmutableList<String> typeNames = ts.getTypeNames();
         typeStore.store(ts, typeNames);
+    }
+
+    @BeforeMethod
+    public void setUp() throws Exception {
         ts.reset();
     }
 
@@ -91,16 +110,51 @@ public class StoreBackedTypeCacheMetadataServiceTest
         }
     }
 
-    public void testIt() throws Exception {
-        Assert.assertTrue(typeCache instanceof StoreBackedTypeCache);
-        StoreBackedTypeCache storeBackedCache = (StoreBackedTypeCache) typeCache;
-
+    @Test
+    public void testGetTypeDefinition() throws Exception {
         // Cache should be empty
-        Assert.assertFalse(storeBackedCache.isCachedInMemory("Manager"));
+        Assert.assertFalse(storeBackedTypeCache.isCachedInMemory("Manager"));
 
         // Type lookup on MetadataService should cause Manager type to be loaded from the type store
         // and cached.
         Assert.assertNotNull(metadataService.getTypeDefinition("Manager"));
-        Assert.assertTrue(storeBackedCache.isCachedInMemory("Manager"));
+        Assert.assertTrue(storeBackedTypeCache.isCachedInMemory("Manager"));
+    }
+
+    @Test
+    public void testValidUpdateType() throws Exception {
+        // Cache should be empty
+        Assert.assertFalse(storeBackedTypeCache.isCachedInMemory(TestUtils.TABLE_TYPE));
+
+        TypesDef typesDef = TestUtils.defineHiveTypes();
+        String json = TypesSerialization.toJson(typesDef);
+
+        // Update types with same definition, which should succeed.
+        metadataService.updateType(json);
+
+        // hive_table type should now be cached.
+        Assert.assertTrue(storeBackedTypeCache.isCachedInMemory(TestUtils.TABLE_TYPE));
+    }
+
+    @Test
+    public void testInvalidUpdateType() throws Exception {
+        // Cache should be empty
+        Assert.assertFalse(storeBackedTypeCache.isCachedInMemory(TestUtils.TABLE_TYPE));
+
+        HierarchicalTypeDefinition<ClassType> classTypeDef = TypesUtil.createClassTypeDef(TestUtils.TABLE_TYPE, ImmutableSet.<String>of(),
+            new AttributeDefinition("attr1", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null));
+        String json = TypesSerialization.toJson(classTypeDef, false);
+
+        // Try to update the type with disallowed changes.  Should fail with TypeUpdateException.
+        try {
+            metadataService.updateType(json);
+            Assert.fail(TypeUpdateException.class.getSimpleName() + " was expected but none thrown");
+        }
+        catch(TypeUpdateException e) {
+            // good
+        }
+
+        // hive_table type should now be cached.
+        Assert.assertTrue(storeBackedTypeCache.isCachedInMemory(TestUtils.TABLE_TYPE));
     }
 }

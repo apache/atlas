@@ -288,4 +288,10 @@ public class DefaultTypeCache implements TypeCache {
 
         types_.clear();
     }
+
+    @Override
+    public IDataType onTypeFault(String typeName) throws AtlasException {
+
+        return null;
+    }
 }

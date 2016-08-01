@@ -21,6 +21,7 @@ package org.apache.atlas.typesystem.types.cache;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.IDataType;
+import org.apache.atlas.typesystem.types.TypeSystem;
 
 import java.util.Collection;
 import java.util.Map;
@@ -137,4 +138,16 @@ public interface TypeCache {
      *
      */
     void clear();
+
+    /**
+     * Called when a type lookup request on {@link TypeSystem}
+     * fails because the type is not present in the runtime type information.
+     * Implementations can take action such as retrieving the requested type
+     * from some persistent storage.
+
+     * @param typeName
+     * @throws AtlasException
+     */
+    IDataType onTypeFault(String typeName) throws AtlasException;
+
 }
