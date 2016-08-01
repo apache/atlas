@@ -64,7 +64,7 @@ class TestMetadata(unittest.TestCase):
     self.assertTrue(configure_hbase_mock.called)
 
     if IS_WINDOWS:
-      calls = [call(['atlas_home\\hbase\\bin\\start-hbase.cmd', '--config', 'atlas_home\\hbase\\conf', 'start', 'master'], 'atlas_home\\logs', False, True),
+      calls = [call(['atlas_home\\hbase\\bin\\start-hbase.cmd', '--config', 'atlas_home\\hbase\\conf'], 'atlas_home\\logs', False, True),
                call(['atlas_home\\solr\\bin\\solr.cmd', 'start', '-z', 'localhost:9838', '-p', '9838'], 'atlas_home\\logs', False, True),
                call(['atlas_home\\solr\\bin\\solr.cmd', 'create', '-c', 'vertex_index', '-d', 'atlas_home\\solr\\server\\solr\\configsets\\basic_configs\\conf', '-shards', '1', '-replicationFactor', '1'], 'atlas_home\\logs', False, True),
                call(['atlas_home\\solr\\bin\\solr.cmd', 'create', '-c', 'edge_index', '-d', 'atlas_home\\solr\\server\\solr\\configsets\\basic_configs\\conf', '-shards', '1', '-replicationFactor', '1'], 'atlas_home\\logs', False, True),
@@ -130,7 +130,7 @@ class TestMetadata(unittest.TestCase):
     self.assertFalse(configure_hbase_mock.called)
 
     if IS_WINDOWS:
-      calls = [call(['atlas_home\\hbase\\bin\\start-hbase.cmd', '--config', 'atlas_home\\hbase\\conf', 'start', 'master'], 'atlas_home\\logs', False, True),
+      calls = [call(['atlas_home\\hbase\\bin\\start-hbase.cmd', '--config', 'atlas_home\\hbase\\conf'], 'atlas_home\\logs', False, True),
                call(['atlas_home\\solr\\bin\\solr.cmd', 'start', '-z', 'localhost:9838', '-p', '9838'], 'atlas_home\\logs', False, True),
                call(['atlas_home\\solr\\bin\\solr.cmd', 'create', '-c', 'vertex_index', '-d', 'atlas_home\\solr\\server\\solr\\configsets\\basic_configs\\conf', '-shards', '1', '-replicationFactor', '1'], 'atlas_home\\logs', False, True),
                call(['atlas_home\\solr\\bin\\solr.cmd', 'create', '-c', 'edge_index', '-d', 'atlas_home\\solr\\server\\solr\\configsets\\basic_configs\\conf', '-shards', '1', '-replicationFactor', '1'], 'atlas_home\\logs', False, True),
