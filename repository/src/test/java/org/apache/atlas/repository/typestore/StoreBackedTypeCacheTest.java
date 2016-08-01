@@ -49,7 +49,6 @@ import java.util.Map;
  * Unit test for {@link StoreBackedTypeCache}
  */
 @Guice(modules = RepositoryMetadataModule.class)
-@Test(enabled = false)
 public class StoreBackedTypeCacheTest {
 
     @Inject
@@ -106,6 +105,7 @@ public class StoreBackedTypeCacheTest {
         ts.reset();
     }
 
+    @Test
     public void testGetClassType() throws Exception {
         for (Map.Entry<String, ClassType> typeEntry : classTypesToTest.entrySet()) {
             // Not cached yet
@@ -122,20 +122,7 @@ public class StoreBackedTypeCacheTest {
         }
     }
 
-    public void testHasClassType() throws Exception {
-        for (Map.Entry<String, ClassType> typeEntry : classTypesToTest.entrySet()) {
-            // Not cached yet
-            Assert.assertFalse(typeCache.isCachedInMemory(typeEntry.getKey()));
-
-            // Calling has() should result in type and its dependencies
-            // loaded from the type store and added to the cache.
-            Assert.assertTrue(typeCache.has(typeEntry.getKey()));
-
-            // Verify the type is now cached in memory.
-            Assert.assertTrue(typeCache.isCachedInMemory(typeEntry.getKey()));
-        }
-    }
-
+    @Test
     public void testGetTraitType() throws Exception {
         ImmutableList<String> traitNames = ts.getTypeNamesByCategory(TypeCategory.TRAIT);
         for (String traitTypeName : traitNames) {
@@ -150,21 +137,6 @@ public class StoreBackedTypeCacheTest {
             TraitType cachedType = (TraitType)dataType;
             // Verify that get() also loaded and cached any dependencies of this type from the type store.
             verifyHierarchicalType(cachedType, ts.getDataType(TraitType.class, traitTypeName));
-        }
-    }
-
-    public void testHasTraitType() throws Exception {
-        ImmutableList<String> traitNames = ts.getTypeNamesByCategory(TypeCategory.TRAIT);
-        for (String traitTypeName : traitNames) {
-            // Not cached yet
-            Assert.assertFalse(typeCache.isCachedInMemory(traitTypeName));
-
-            // Calling has() should result in type and its dependencies
-            // loaded from the type store and added to the cache.
-            Assert.assertTrue(typeCache.has(traitTypeName));
-
-            // Verify the type is now cached.
-            Assert.assertTrue(typeCache.isCachedInMemory(traitTypeName));
         }
     }
 

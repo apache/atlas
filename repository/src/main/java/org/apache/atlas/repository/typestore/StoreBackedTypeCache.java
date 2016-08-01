@@ -106,12 +106,6 @@ public class StoreBackedTypeCache extends DefaultTypeCache {
         }
     }
 
-    @Override
-    public boolean has(String typeName) throws AtlasException {
-
-        return (get(typeName) != null);
-    }
-
     /**
      * Checks whether the specified type is cached in memory and does *not*
      * access the type store.  Used for testing.
@@ -124,21 +118,12 @@ public class StoreBackedTypeCache extends DefaultTypeCache {
     }
 
     /**
-     * Gets the requested type from the cache.
-     * This implementation will check the type store if the type is
-     * not already cached. If found in the type store, the type and
-     * any required super and attribute types are loaded from the type store, and
-     * added to the cache.
-     *
-     * @see org.apache.atlas.typesystem.types.cache.DefaultTypeCache#get(java.lang.String)
+     * Check the type store for the requested type. 
+     * If found in the type store, the type and any required super and attribute types
+     * are loaded from the type store, and added to the cache.
      */
     @Override
-    public IDataType get(String typeName) throws AtlasException {
-
-        IDataType type = super.get(typeName);
-        if (type != null) {
-            return type;
-        }
+    public IDataType onTypeFault(String typeName) throws AtlasException {
 
         // Type is not cached - check the type store.
         // Any super and attribute types needed by the requested type

@@ -148,7 +148,6 @@ public class TypeSystem {
     }
 
     public <T> T getDataType(Class<T> cls, String name) throws AtlasException {
-
         if (isCoreType(name)) {
             return cls.cast(coreTypes.get(name));
         }
@@ -177,6 +176,14 @@ public class TypeSystem {
         if (mapType != null) {
             IDataType dT =
                     defineMapType(getDataType(IDataType.class, mapType[0]), getDataType(IDataType.class, mapType[1]));
+            return cls.cast(dT);
+        }
+
+        /*
+         * Invoke cache callback to possibly obtain type from other storage.
+         */
+        IDataType dT = typeCache.onTypeFault(name);
+        if (dT != null) {
             return cls.cast(dT);
         }
 
@@ -599,8 +606,13 @@ public class TypeSystem {
         private void validateUpdateIsPossible() throws TypeUpdateException, AtlasException {
             //If the type is modified, validate that update can be done
             for (IDataType newType : transientTypes.values()) {
-                if (TypeSystem.this.isRegistered(newType.getName())) {
-                    IDataType oldType = TypeSystem.this.typeCache.get(newType.getName());
+                IDataType oldType = null;
+                try {
+                    oldType = TypeSystem.this.getDataType(IDataType.class, newType.getName());
+                } catch (TypeNotFoundException e) {
+                    LOG.debug("No existing type %s found - update OK", newType.getName());
+                }
+                if (oldType != null) {
                     oldType.validateUpdate(newType);
                 }
             }
