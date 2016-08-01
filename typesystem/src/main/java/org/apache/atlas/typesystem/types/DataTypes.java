@@ -22,17 +22,19 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.ISODateTimeFormat;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
-import java.text.ParseException;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
@@ -405,6 +407,8 @@ public class DataTypes {
             super(name, null);
         }
 
+        private static final DateTimeFormatter utcDateFormat = ISODateTimeFormat.dateTime();
+
         @Override
         public Date convert(Object val, Multiplicity m) throws AtlasException {
             if (val != null) {
@@ -412,8 +416,8 @@ public class DataTypes {
                     return (Date) val;
                 } else if (val instanceof String) {
                     try {
-                        return TypeSystem.getInstance().getDateFormat().parse((String) val);
-                    } catch (ParseException ne) {
+                        return utcDateFormat.parseDateTime((String)val).toDate();
+                    } catch (Exception ne) {
                         throw new ValueConversionException(this, val, ne);
                     }
                 } else if (val instanceof Number) {
@@ -427,7 +431,7 @@ public class DataTypes {
 
         @Override
         public void output(Date val, Appendable buf, String prefix, Set<Date> inProcess) throws AtlasException {
-            TypeUtils.outputVal(val == null ? "<null>" : TypeSystem.getInstance().getDateFormat().format(val), buf,
+            TypeUtils.outputVal(val == null ? "<null>" : utcDateFormat.print(new DateTime(val).withZone(DateTimeZone.UTC)), buf,
                     prefix);
         }
 

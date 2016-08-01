@@ -33,7 +33,9 @@ import org.testng.annotations.Test;
 import scala.actors.threadpool.Arrays;
 
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
@@ -45,6 +47,9 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class TypeSystemTest extends BaseTest {
+
+    public static final long TEST_DATE_IN_LONG = 1418265358440L;
+    public static final String TEST_DATE_STRING = "2014-12-11T02:35:58.440Z";
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -283,5 +288,21 @@ public class TypeSystemTest extends BaseTest {
         } catch(TypeExistsException e) {
             //expected
         }
+    }
+
+    @Test(expectedExceptions = ValueConversionException.class)
+    public void testConvertInvalidDate() throws Exception {
+       DataTypes.DATE_TYPE.convert("", Multiplicity.OPTIONAL);
+    }
+
+    @Test()
+    public void testConvertValidDate() throws Exception {
+        Date date = DataTypes.DATE_TYPE.convert(TEST_DATE_STRING, Multiplicity.OPTIONAL);
+        Assert.assertEquals(date, new Date(TEST_DATE_IN_LONG));
+
+
+        StringBuilder buf = new StringBuilder();
+        DataTypes.DATE_TYPE.output(new Date(TEST_DATE_IN_LONG), buf, "", new HashSet<Date>());
+        Assert.assertEquals(buf.toString(), TEST_DATE_STRING);
     }
 }
