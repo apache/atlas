@@ -367,7 +367,7 @@
         <developer>
             <id>dkantor</id>
             <name>Dave Kantor</name>
-            <email>dkantor@apache.com</email>
+            <email>dkantor@apache.org</email>
             <timezone>-5</timezone>
             <roles>
                 <role>committer</role>
