@@ -45,6 +45,9 @@
                     <skip>${skipDocs}</skip>
                     <dependencyDetailsEnabled>false</dependencyDetailsEnabled>
                     <dependencyLocationsEnabled>false</dependencyLocationsEnabled>
+                    <webAccessUrl>https://github.com/apache/incubator-atlas.git</webAccessUrl>
+                    <anonymousConnection>scm:git://git.apache.org/incubator-atlas.git</anonymousConnection>
+                    <developerConnection>scm:https://git-wip-us.apache.org/repos/asf/incubator-atlas.git</developerConnection>
                 </configuration>
                 <reportSets>
                     <reportSet>

@@ -18,6 +18,7 @@
 
 package org.apache.atlas.hive.bridge;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
@@ -25,6 +26,7 @@ import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.fs.model.FSDataModel;
 import org.apache.atlas.fs.model.FSDataTypes;
+import org.apache.atlas.hive.hook.HiveHook;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.typesystem.Referenceable;
@@ -272,58 +274,66 @@ public class HiveMetaStoreBridge {
         List<String> hiveTables = hiveClient.getAllTables(databaseName);
         LOG.info("Importing tables {} for db {}", hiveTables.toString(), databaseName);
         for (String tableName : hiveTables) {
-            try {
-                Table table = hiveClient.getTable(databaseName, tableName);
-                Referenceable tableReferenceable = registerTable(databaseReferenceable, table);
-                tablesImported++;
-                if (table.getTableType() == TableType.EXTERNAL_TABLE) {
-                    String tableQualifiedName = getTableQualifiedName(clusterName, table);
-                    Referenceable process = getProcessReference(tableQualifiedName);
-                    if (process == null) {
-                        LOG.info("Attempting to register create table process for {}", tableQualifiedName);
-                        Referenceable lineageProcess = new Referenceable(HiveDataTypes.HIVE_PROCESS.getName());
-                        ArrayList<Referenceable> sourceList = new ArrayList<>();
-                        ArrayList<Referenceable> targetList = new ArrayList<>();
-                        String tableLocation = table.getDataLocation().toString();
-                        Referenceable path = fillHDFSDataSet(tableLocation);
-                        String query = getCreateTableString(table, tableLocation);
-                        sourceList.add(path);
-                        targetList.add(tableReferenceable);
-                        lineageProcess.set("inputs", sourceList);
-                        lineageProcess.set("outputs", targetList);
-                        lineageProcess.set("userName", table.getOwner());
-                        lineageProcess.set("startTime", new Date(System.currentTimeMillis()));
-                        lineageProcess.set("endTime", new Date(System.currentTimeMillis()));
-                        lineageProcess.set("operationType", "CREATETABLE");
-                        lineageProcess.set("queryText", query);
-                        lineageProcess.set("queryId", query);
-                        lineageProcess.set("queryPlan", "{}");
-                        lineageProcess.set("clusterName", clusterName);
-                        List<String> recentQueries = new ArrayList<>(1);
-                        recentQueries.add(query);
-                        lineageProcess.set("recentQueries", recentQueries);
-                        lineageProcess.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableQualifiedName);
-                        lineageProcess.set(AtlasClient.NAME, query);
-                        registerInstance(lineageProcess);
-                    } else {
-                        LOG.info("Process {} is already registered", process.toString());
-                    }
-                }
-            } catch (Exception e) {
-                LOG.error("Import failed for hive_table {} ", tableName, e);
-                if (failOnError) {
-                    throw e;
-                }
-            }
+            int imported = importTable(databaseReferenceable, databaseName, tableName, failOnError);
+            tablesImported += imported;
         }
 
-        if ( tablesImported == hiveTables.size()) {
+        if (tablesImported == hiveTables.size()) {
             LOG.info("Successfully imported all {} tables from {} ", tablesImported, databaseName);
         } else {
-            LOG.error("Unable to import {} tables out of {} tables from {}", tablesImported, hiveTables.size(), databaseName);
+            LOG.error("Able to import {} tables out of {} tables from {}. Please check logs for import errors", tablesImported, hiveTables.size(), databaseName);
         }
 
         return tablesImported;
+    }
+
+    @VisibleForTesting
+    public int importTable(Referenceable databaseReferenceable, String databaseName, String tableName, final boolean failOnError) throws Exception {
+        try {
+            Table table = hiveClient.getTable(databaseName, tableName);
+            Referenceable tableReferenceable = registerTable(databaseReferenceable, table);
+            if (table.getTableType() == TableType.EXTERNAL_TABLE) {
+                String tableQualifiedName = getTableQualifiedName(clusterName, table);
+                Referenceable process = getProcessReference(tableQualifiedName);
+                if (process == null) {
+                    LOG.info("Attempting to register create table process for {}", tableQualifiedName);
+                    Referenceable lineageProcess = new Referenceable(HiveDataTypes.HIVE_PROCESS.getName());
+                    ArrayList<Referenceable> sourceList = new ArrayList<>();
+                    ArrayList<Referenceable> targetList = new ArrayList<>();
+                    String tableLocation = table.getDataLocation().toString();
+                    Referenceable path = fillHDFSDataSet(tableLocation);
+                    String query = getCreateTableString(table, tableLocation);
+                    sourceList.add(path);
+                    targetList.add(tableReferenceable);
+                    lineageProcess.set("inputs", sourceList);
+                    lineageProcess.set("outputs", targetList);
+                    lineageProcess.set("userName", table.getOwner());
+                    lineageProcess.set("startTime", new Date(System.currentTimeMillis()));
+                    lineageProcess.set("endTime", new Date(System.currentTimeMillis()));
+                    lineageProcess.set("operationType", "CREATETABLE");
+                    lineageProcess.set("queryText", query);
+                    lineageProcess.set("queryId", query);
+                    lineageProcess.set("queryPlan", "{}");
+                    lineageProcess.set("clusterName", clusterName);
+                    List<String> recentQueries = new ArrayList<>(1);
+                    recentQueries.add(query);
+                    lineageProcess.set("recentQueries", recentQueries);
+                    String processQualifiedName = getTableProcessQualifiedName(clusterName, table);
+                    lineageProcess.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, processQualifiedName);
+                    lineageProcess.set(AtlasClient.NAME, query);
+                    registerInstance(lineageProcess);
+                } else {
+                    LOG.info("Process {} is already registered", process.toString());
+                }
+            }
+            return 1;
+        } catch (Exception e) {
+            LOG.error("Import failed for hive_table {} ", tableName, e);
+            if (failOnError) {
+                throw e;
+            }
+            return 0;
+        }
     }
 
     /**
@@ -389,6 +399,12 @@ public class HiveMetaStoreBridge {
         return getTableQualifiedName(clusterName, table.getDbName(), table.getTableName(), table.isTemporary());
     }
 
+    public static String getTableProcessQualifiedName(String clusterName, Table table) {
+        String tableQualifiedName = getTableQualifiedName(clusterName, table);
+        Date createdTime = getTableCreatedTime(table);
+        return tableQualifiedName + HiveHook.SEP + createdTime.getTime();
+    }
+
     /**
      * Construct the qualified name used to uniquely identify a Table instance in Atlas.
      * @param clusterName Name of the cluster to which the Hive component belongs
@@ -412,6 +428,10 @@ public class HiveMetaStoreBridge {
         return createOrUpdateTableInstance(dbReference, null, hiveTable);
     }
 
+    private static Date getTableCreatedTime(Table table) {
+        return new Date(table.getTTable().getCreateTime() * MILLIS_CONVERT_FACTOR);
+    }
+
     private Referenceable createOrUpdateTableInstance(Referenceable dbReference, Referenceable tableReference,
                                                       final Table hiveTable) throws Exception {
         LOG.info("Importing objects from {}.{}", hiveTable.getDbName(), hiveTable.getTableName());
@@ -428,7 +448,7 @@ public class HiveMetaStoreBridge {
         Date createDate = new Date();
         if (hiveTable.getTTable() != null){
             try {
-                createDate = new Date(hiveTable.getTTable().getCreateTime() * MILLIS_CONVERT_FACTOR);
+                createDate = getTableCreatedTime(hiveTable);
                 LOG.debug("Setting create time to {} ", createDate);
                 tableReference.set(HiveDataModelGenerator.CREATE_TIME, createDate);
             } catch(Exception ne) {

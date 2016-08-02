@@ -80,7 +80,7 @@
     </mailingLists>
 
     <scm>
-        <connection>scm:git:https://github.com/apache/incubator-atlas.git</connection>
+        <connection>scm:git:git://git.apache.org/incubator-atlas.git</connection>
         <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-atlas.git</developerConnection>
         <tag>HEAD</tag>
         <url>https://github.com/apache/incubator-atlas.git</url>

@@ -21,7 +21,6 @@ package org.apache.atlas.hive.hook;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import kafka.security.auth.Write;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
@@ -90,7 +89,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     public static final String QUEUE_SIZE = CONF_PREFIX + "queueSize";
 
     public static final String HOOK_NUM_RETRIES = CONF_PREFIX + "numRetries";
-    static final String SEP = ":".intern();
+    public static final String SEP = ":".intern();
     static final String IO_SEP = "->".intern();
 
     private static final Map<String, HiveOperation> OPERATION_MAP = new HashMap<>();
@@ -216,7 +215,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             break;
 
         case CREATETABLE_AS_SELECT:
-
         case CREATEVIEW:
         case ALTERVIEW_AS:
         case LOAD:
@@ -244,9 +242,11 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         case ALTERTABLE_PARTCOLTYPE:
             handleEventOutputs(dgiBridge, event, Type.TABLE);
             break;
+
         case ALTERTABLE_RENAMECOL:
             renameColumn(dgiBridge, event);
             break;
+
         case ALTERTABLE_LOCATION:
             LinkedHashMap<Type, Referenceable> tablesUpdated = handleEventOutputs(dgiBridge, event, Type.TABLE);
             if (tablesUpdated != null && tablesUpdated.size() > 0) {
@@ -547,7 +547,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         return null;
     }
 
-    private Entity getEntityByType(Set<? extends Entity> entities, Type entityType) {
+    private static Entity getEntityByType(Set<? extends Entity> entities, Type entityType) {
         for (Entity entity : entities) {
             if (entity.getType() == entityType) {
                 return entity;
@@ -708,20 +708,14 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
             Referenceable processReferenceable = getProcessReferenceable(dgiBridge, event,
                 sortedIps, sortedOps, hiveInputsMap, hiveOutputsMap);
-            String tableQualifiedName = dgiBridge.getTableQualifiedName(dgiBridge.getClusterName(), hiveTable);
 
-            if (isCreateOp(event)){
-                LOG.info("Overriding process qualified name to {}", tableQualifiedName);
-                processReferenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableQualifiedName);
-            }
             entities.addAll(tables.values());
             entities.add(processReferenceable);
             event.addMessage(new HookNotification.EntityUpdateRequest(event.getUser(), entities));
         }
-
     }
 
-    private boolean isCreateOp(HiveEventContext hiveEvent) {
+    private static boolean isCreateOp(HiveEventContext hiveEvent) {
         if (HiveOperation.CREATETABLE.equals(hiveEvent.getOperation())
             || HiveOperation.CREATEVIEW.equals(hiveEvent.getOperation())
             || HiveOperation.ALTERVIEW_AS.equals(hiveEvent.getOperation())
@@ -733,11 +727,13 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     }
 
     private Referenceable getProcessReferenceable(HiveMetaStoreBridge dgiBridge, HiveEventContext hiveEvent,
-        final SortedSet<ReadEntity> sortedHiveInputs, final SortedSet<WriteEntity> sortedHiveOutputs, SortedMap<ReadEntity, Referenceable> source, SortedMap<WriteEntity, Referenceable> target) {
+        final SortedSet<ReadEntity> sortedHiveInputs, final SortedSet<WriteEntity> sortedHiveOutputs, SortedMap<ReadEntity, Referenceable> source, SortedMap<WriteEntity, Referenceable> target)
+            throws HiveException {
         Referenceable processReferenceable = new Referenceable(HiveDataTypes.HIVE_PROCESS.getName());
 
         String queryStr = lower(hiveEvent.getQueryStr());
-        processReferenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, getProcessQualifiedName(hiveEvent, sortedHiveInputs, sortedHiveOutputs, source, target));
+        processReferenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+                getProcessQualifiedName(dgiBridge, hiveEvent, sortedHiveInputs, sortedHiveOutputs, source, target));
 
         LOG.debug("Registering query: {}", queryStr);
         List<Referenceable> sourceList = new ArrayList<>(source.values());
@@ -770,8 +766,19 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     }
 
     @VisibleForTesting
-    static String getProcessQualifiedName(HiveEventContext eventContext, final SortedSet<ReadEntity> sortedHiveInputs, final SortedSet<WriteEntity> sortedHiveOutputs, SortedMap<ReadEntity, Referenceable> hiveInputsMap, SortedMap<WriteEntity, Referenceable> hiveOutputsMap) {
+    static String getProcessQualifiedName(HiveMetaStoreBridge dgiBridge, HiveEventContext eventContext,
+                                          final SortedSet<ReadEntity> sortedHiveInputs,
+                                          final SortedSet<WriteEntity> sortedHiveOutputs,
+                                          SortedMap<ReadEntity, Referenceable> hiveInputsMap,
+                                          SortedMap<WriteEntity, Referenceable> hiveOutputsMap) throws HiveException {
         HiveOperation op = eventContext.getOperation();
+        if (isCreateOp(eventContext)) {
+            Table outTable = getEntityByType(sortedHiveOutputs, Type.TABLE).getTable();
+            //refresh table
+            outTable = dgiBridge.hiveClient.getTable(outTable.getDbName(), outTable.getTableName());
+            return HiveMetaStoreBridge.getTableProcessQualifiedName(dgiBridge.getClusterName(), outTable);
+        }
+
         StringBuilder buffer = new StringBuilder(op.getOperationName());
 
         boolean ignoreHDFSPathsinQFName = ignoreHDFSPathsinQFName(op, sortedHiveInputs, sortedHiveOutputs);

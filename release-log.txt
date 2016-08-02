@@ -6,6 +6,7 @@ INCOMPATIBLE CHANGES:
 
 
 ALL CHANGES:
+ATLAS-965 Old lineage still exists after dropping tables and re-creating tables with same name. (shwethags via sumasai)
 ATLAS-1048 TestMetadata.py test in distro project fails on Windows (jnhagelb via shwethags)
 ATLAS-1026 StoreBackedTypeCache issues (dkantor via shwethags)
 ATLAS-861 1 table out of 50,000 tables is left unimported throwing exception during deserialization (sumasai via shwethags)
