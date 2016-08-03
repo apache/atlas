@@ -77,19 +77,15 @@ public abstract class BaseResourceIT {
     @BeforeClass
     public void setUp() throws Exception {
 
-        DefaultClientConfig config = new DefaultClientConfig();
-        Client client = Client.create(config);
         Configuration configuration = ApplicationProperties.get();
         baseUrl = configuration.getString(ATLAS_REST_ADDRESS, "http://localhost:21000/");
-        client.resource(UriBuilder.fromUri(baseUrl).build());
-
-        service = client.resource(UriBuilder.fromUri(baseUrl).build());
 
         if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
             serviceClient = new AtlasClient(new String[]{baseUrl}, new String[]{"admin", "admin"});
         } else {
             serviceClient = new AtlasClient(baseUrl);
         }
+        service = serviceClient.getResource();
     }
 
     protected void createType(TypesDef typesDef) throws Exception {

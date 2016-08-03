@@ -1,4 +1,4 @@
-/**
+    /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -73,6 +73,7 @@ import java.util.UUID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
+import org.apache.atlas.utils.AuthenticationUtil;
 
 
 /**
@@ -127,9 +128,13 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         entity.set("name", randomString());
         entity.set("description", randomString());
 
-        String user = "testuser";
-        UserGroupInformation ugi = UserGroupInformation.createRemoteUser(user);
-        AtlasClient localClient = new AtlasClient(ugi, null, baseUrl);
+        String user = "admin";
+        AtlasClient localClient = null;
+        if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
+            localClient = new AtlasClient(new String[]{baseUrl}, new String[]{"admin", "admin"});
+        } else {
+            localClient = new AtlasClient(baseUrl);
+        }
         String entityId = localClient.createEntity(entity).get(0);
 
         List<EntityAuditEvent> events = serviceClient.getEntityAuditEvents(entityId, (short) 10);

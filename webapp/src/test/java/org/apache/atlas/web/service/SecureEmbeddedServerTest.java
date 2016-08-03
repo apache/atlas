@@ -67,7 +67,7 @@ public class SecureEmbeddedServerTest extends SecureEmbeddedServerTestBase {
             };
             secureEmbeddedServer.server.start();
 
-            URL url = new URL("https://localhost:21443/api/atlas/admin/version");
+            URL url = new URL("https://localhost:21443/api/atlas/admin/status");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.connect();

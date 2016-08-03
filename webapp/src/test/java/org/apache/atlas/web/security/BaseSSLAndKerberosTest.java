@@ -40,7 +40,7 @@ public class BaseSSLAndKerberosTest extends BaseSecurityTest {
     protected Path jksPath;
     protected String providerUrl;
     protected File httpKeytabFile;
-    private File userKeytabFile;
+    protected File userKeytabFile;
 
     class TestSecureEmbeddedServer extends SecureEmbeddedServer {
 
@@ -98,7 +98,7 @@ public class BaseSSLAndKerberosTest extends BaseSecurityTest {
         File kdcWorkDir = startKDC();
 
         userKeytabFile = createKeytab(kdc, kdcWorkDir, "dgi", "dgi.keytab");
-        createKeytab(kdc, kdcWorkDir, "zookeeper", "dgi.keytab");
+        //createKeytab(kdc, kdcWorkDir, "zookeeper", "dgi.keytab");
         httpKeytabFile = createKeytab(kdc, kdcWorkDir, "HTTP", "spnego.service.keytab");
 
         // create a test user principal
