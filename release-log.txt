@@ -6,6 +6,7 @@ INCOMPATIBLE CHANGES:
 
 
 ALL CHANGES:
+ATLAS-1071 Regression - UI - Details Button under Audits Tab is not working.(kevalbhatt18 via sumasai)
 ATLAS-965 Old lineage still exists after dropping tables and re-creating tables with same name. (shwethags via sumasai)
 ATLAS-1048 TestMetadata.py test in distro project fails on Windows (jnhagelb via shwethags)
 ATLAS-1026 StoreBackedTypeCache issues (dkantor via shwethags)

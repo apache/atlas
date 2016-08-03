@@ -202,6 +202,13 @@ define(['require',
                             modal.$el.find('button.ok').attr("disabled", "true");
                         }
                     });
+                    modal.on('shownModal', function() {
+                        view.ui.parentTag.select2({
+                            multiple: true,
+                            placeholder: "Search Tags",
+                            allowClear: true
+                        });
+                    })
                     modal.on('ok', function() {
                         that.onCreateButton(view);
                     });

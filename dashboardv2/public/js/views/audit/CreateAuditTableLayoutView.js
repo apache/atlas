@@ -53,7 +53,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'globalVent', 'guid', 'model', 'action'));
+                _.extend(this, _.pick(options, 'globalVent', 'guid', 'entityModel', 'action'));
             },
             bindEvents: function() {},
             onRender: function() {
@@ -62,8 +62,8 @@ define(['require',
             auditTableGenerate: function() {
                 var that = this,
                     table = "";
-                if (this.model.get('details').search('{') >= 0) {
-                    var appendedString = "{" + this.model.get('details') + "}";
+                if (this.entityModel.get('details').search('{') >= 0) {
+                    var appendedString = "{" + this.entityModel.get('details') + "}";
                     var auditData = appendedString.split('"')[0].split(':')[0].split("{")[1];
                     var detailsObject = JSON.parse(appendedString.replace("{" + auditData + ":", '{"' + auditData + '":'))[auditData];
                     //Append string for JSON parse
@@ -84,7 +84,7 @@ define(['require',
                         }
                     }
                 } else if (this.action == Globals.auditAction.TAG_DELETE) {
-                    var appendedString = this.model.get('details').split(':');
+                    var appendedString = this.entityModel.get('details').split(':');
                     this.ui.auditHeaderValue.html('<th>Tag</th>');
                     this.ui.auditValue.html("<tr><td>" + appendedString[1] + "</td></tr>");
                 }

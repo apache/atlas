@@ -223,9 +223,10 @@ define(['require',
                     'modules/Modal',
                     'views/audit/CreateAuditTableLayoutView',
                 ], function(Modal, CreateAuditTableLayoutView) {
-                    var collectionModel = that.entityCollection.findWhere({ 'eventKey': $(e.currentTarget).data('modalid') });
+                    var eventModel = that.entityCollection.findWhere({ 'eventKey': $(e.currentTarget).data('modalid') }).toJSON(),
+                        collectionModel = new that.entityCollection.model(eventModel),
+                        view = new CreateAuditTableLayoutView({ guid: that.guid, entityModel: collectionModel, action: that.action });
                     that.action = $(e.target).data("action");
-                    var view = new CreateAuditTableLayoutView({ guid: that.guid, model: collectionModel, action: that.action });
                     var modal = new Modal({
                         title: that.action,
                         content: view,

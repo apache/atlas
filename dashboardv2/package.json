@@ -39,7 +39,7 @@
     "noty": "^2.3.8",
     "requirejs": "^2.1.16",
     "requirejs-text": "^2.0.12",
-    "select2": "^4.0.2",
+    "select2": "^4.0.3",
     "underscore": "^1.8.3"
   },
   "devDependencies": {
