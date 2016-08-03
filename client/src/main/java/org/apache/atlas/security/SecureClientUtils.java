@@ -211,4 +211,39 @@ public class SecureClientUtils {
         }
     }
 
+    public static URLConnectionClientHandler getUrlConnectionClientHandler() {
+        return new URLConnectionClientHandler(new HttpURLConnectionFactory() {
+            @Override
+            public HttpURLConnection getHttpURLConnection(URL url)
+                    throws IOException {
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+                if (connection instanceof HttpsURLConnection) {
+                    LOG.debug("Attempting to configure HTTPS connection using client "
+                            + "configuration");
+                    final SSLFactory factory;
+                    final SSLSocketFactory sf;
+                    final HostnameVerifier hv;
+
+                    try {
+                        Configuration conf = new Configuration();
+                        conf.addResource(conf.get(SSLFactory.SSL_CLIENT_CONF_KEY, SecurityProperties.SSL_CLIENT_PROPERTIES));
+                        UserGroupInformation.setConfiguration(conf);
+
+                        HttpsURLConnection c = (HttpsURLConnection) connection;
+                        factory = new SSLFactory(SSLFactory.Mode.CLIENT, conf);
+                        factory.init();
+                        sf = factory.createSSLSocketFactory();
+                        hv = factory.getHostnameVerifier();
+                        c.setSSLSocketFactory(sf);
+                        c.setHostnameVerifier(hv);
+                    } catch (Exception e) {
+                        LOG.info("Unable to configure HTTPS connection from "
+                                + "configuration.  Leveraging JDK properties.");
+                    }
+                }
+                return connection;
+            }
+        });
+    }
 }

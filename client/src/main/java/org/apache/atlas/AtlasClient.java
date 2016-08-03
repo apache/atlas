@@ -237,8 +237,12 @@ public class AtlasClient {
 
         URLConnectionClientHandler handler = null;
 
-        if ((!AuthenticationUtil.isKerberosAuthenticationEnabled()) && basicAuthUser!=null && basicAuthPassword!=null) {
-            handler = new URLConnectionClientHandler();
+        if ((!AuthenticationUtil.isKerberosAuthenticationEnabled()) && basicAuthUser != null && basicAuthPassword != null) {
+            if (clientConfig.getBoolean(TLS_ENABLED, false)) {
+                handler = SecureClientUtils.getUrlConnectionClientHandler();
+            } else {
+                handler = new URLConnectionClientHandler();
+            }
         } else {
             handler =
                     SecureClientUtils.getClientConnectionHandler(config, clientConfig, doAsUser, ugi);

@@ -41,6 +41,13 @@ import static org.apache.atlas.security.SecurityProperties.CERT_STORES_CREDENTIA
 import static org.apache.atlas.security.SecurityProperties.KEYSTORE_FILE_KEY;
 import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
 import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_FILE_KEY;
+import static org.apache.atlas.security.SecurityProperties.SSL_CLIENT_PROPERTIES;
+import static org.apache.atlas.security.SecurityProperties.CLIENT_AUTH_KEY;
+import static org.apache.atlas.security.SecurityProperties.SSL_CLIENT_PROPERTIES;
+import org.apache.commons.io.FileUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.atlas.AtlasException;
+import org.apache.hadoop.security.alias.CredentialProviderFactory;
 
 /**
  *
@@ -153,9 +160,79 @@ public class BaseSecurityTest {
         configuredProperties.copy(configuration);
 
         String persistDir = TestUtils.getTempDirectory();
+        configuredProperties.setProperty("atlas.authentication.method.file", "true");
+        configuredProperties.setProperty("atlas.authentication.method.file.filename", persistDir
+                + "/users-credentials");
+        configuredProperties.setProperty("atlas.auth.policy.file",persistDir
+                + "/policy-store.txt" );
         TestUtils.writeConfiguration(configuredProperties, persistDir + File.separator +
                 ApplicationProperties.APPLICATION_PROPERTIES);
+        setupUserCredential(persistDir);
+        setUpPolicyStore(persistDir);
         ApplicationProperties.forceReload();
         return persistDir;
+    }
+
+    public static void setupUserCredential(String tmpDir) throws Exception {
+
+        StringBuilder credentialFileStr = new StringBuilder(1024);
+        credentialFileStr.append("admin=ADMIN::8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918\n");
+        credentialFileStr.append("michael=DATA_SCIENTIST::95bfb24de17d285d734b9eaa9109bfe922adc85f20d2e5e66a78bddb4a4ebddb\n");
+        credentialFileStr.append("paul=DATA_STEWARD::e7c0dcf5f8a93e93791e9bac1ae454a691c1d2a902fc4256d489e96c1b9ac68c\n");
+        credentialFileStr.append("testuser=DATA_STEWARD::e7c0dcf5f8a93e93791e9bac1ae454a691c1d2a902fc4256d489e96c1b9ac68c\n");
+        File credentialFile = new File(tmpDir, "users-credentials");
+        FileUtils.write(credentialFile, credentialFileStr.toString());
+    }
+
+    public static void setUpPolicyStore(String tmpDir) throws Exception {
+        StringBuilder policyStr = new StringBuilder(1024);
+        policyStr.append("adminPolicy;;admin:rwud;;ROLE_ADMIN:rwud;;type:*,entity:*,operation:*\n");
+        policyStr.append("dataStewardPolicy;;testuser:rwud;;DATA_STEWARD:rwu;;type:*,entity:*,taxonomy:*,term:*\n");
+
+        File policyFile = new File(tmpDir, "policy-store.txt");
+        FileUtils.write(policyFile, policyStr.toString());
+    }
+
+    public static void persistSSLClientConfiguration(org.apache.commons.configuration.Configuration clientConfig)
+            throws AtlasException, IOException {
+        //trust settings
+        Configuration configuration = new Configuration(false);
+        File sslClientFile = getSSLClientFile();
+        if (!sslClientFile.exists()) {
+            configuration.set("ssl.client.truststore.type", "jks");
+            configuration.set("ssl.client.truststore.location", clientConfig.getString(TRUSTSTORE_FILE_KEY));
+            if (clientConfig.getBoolean(CLIENT_AUTH_KEY, false)) {
+                // need to get client key properties
+                configuration.set("ssl.client.keystore.location", clientConfig.getString(KEYSTORE_FILE_KEY));
+                configuration.set("ssl.client.keystore.type", "jks");
+            }
+            // add the configured credential provider
+            configuration.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH,
+                    clientConfig.getString(CERT_STORES_CREDENTIAL_PROVIDER_PATH));
+            String hostnameVerifier = clientConfig.getString(SSLFactory.SSL_HOSTNAME_VERIFIER_KEY);
+            if (hostnameVerifier != null) {
+                configuration.set(SSLFactory.SSL_HOSTNAME_VERIFIER_KEY, hostnameVerifier);
+            }
+
+            configuration.writeXml(new FileWriter(sslClientFile));
+        }
+    }
+
+    private static File getSSLClientFile() throws AtlasException {
+        File sslDir;
+        try {
+            String persistDir = null;
+            URL resource = BaseSecurityTest.class.getResource("/");
+            if (resource != null) {
+                persistDir = resource.toURI().getPath();
+            }
+            assert persistDir != null;
+            sslDir = new File(persistDir);
+
+            // LOG.info("ssl-client.xml will be created in {}", sslDir);
+        } catch (Exception e) {
+            throw new AtlasException("Failed to find client configuration directory", e);
+        }
+        return new File(sslDir, SSL_CLIENT_PROPERTIES);
     }
 }
