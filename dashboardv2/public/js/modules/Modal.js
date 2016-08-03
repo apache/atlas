@@ -198,7 +198,9 @@ define(function(require) {
             if (cb) {
                 self.on('ok', cb);
             }
-
+            $el.one('shown.bs.modal', function() {
+                self.trigger('shownModal');
+            });
             return this;
         },
 

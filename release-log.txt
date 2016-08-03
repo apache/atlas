@@ -27,6 +27,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-1071 Regression - UI - Details Button under Audits Tab is not working.(kevalbhatt18 via sumasai)
 ATLAS-965 Old lineage still exists after dropping tables and re-creating tables with same name. (shwethags via sumasai)
 ATLAS-1048 TestMetadata.py test in distro project fails on Windows (jnhagelb via shwethags)
 ATLAS-1026 StoreBackedTypeCache issues (dkantor via shwethags)

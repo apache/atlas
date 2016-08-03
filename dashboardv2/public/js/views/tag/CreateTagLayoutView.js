@@ -42,7 +42,7 @@ define(['require',
             /** ui selector cache */
             ui: {
                 tagName: "[data-id='tagName']",
-                parentTag: "[data-id='parentTag']",
+                parentTag: "[data-id='parentTagList']",
                 description: "[data-id='description']",
                 title: "[data-id='title']"
             },
@@ -74,17 +74,13 @@ define(['require',
                 }
             },
             tagCollectionList: function() {
+                var str = '',
+                    that = this;
                 this.ui.parentTag.empty();
-                var str = '';
-                for (var i = 0; i < this.tagCollection.fullCollection.models.length; i++) {
-                    var tags = this.tagCollection.fullCollection.models[i].get("tags");
-                    str += '<option>' + tags + '</option>';
-                    this.ui.parentTag.html(str);
-                }
-                this.ui.parentTag.select2({
-                    placeholder: "Search Tags",
-                    allowClear: true
+                this.tagCollection.each(function(val) {
+                    str += '<option>' + val.get("tags") + '</option>';
                 });
+                that.ui.parentTag.html(str);
             }
         });
     return CreateTagLayoutView;
