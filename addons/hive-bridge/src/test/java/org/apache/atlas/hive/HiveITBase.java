@@ -26,6 +26,7 @@ import org.apache.atlas.hive.hook.HiveHookIT;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.persistence.Id;
+import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.RandomStringUtils;
@@ -79,7 +80,11 @@ public class HiveITBase {
         SessionState.setCurrentSessionState(ss);
 
         Configuration configuration = ApplicationProperties.get();
-        atlasClient = new AtlasClient(configuration.getString(HiveMetaStoreBridge.ATLAS_ENDPOINT, DGI_URL));
+        if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
+            atlasClient = new AtlasClient(new String[]{configuration.getString(HiveMetaStoreBridge.ATLAS_ENDPOINT, DGI_URL)}, new String[]{"admin", "admin"});
+        } else {
+            atlasClient = new AtlasClient(configuration.getString(HiveMetaStoreBridge.ATLAS_ENDPOINT, DGI_URL));
+        }
 
         hiveMetaStoreBridge = new HiveMetaStoreBridge(configuration, conf, atlasClient);
         hiveMetaStoreBridge.registerHiveDataModel();

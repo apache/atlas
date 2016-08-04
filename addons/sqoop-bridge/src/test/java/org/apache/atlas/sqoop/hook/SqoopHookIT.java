@@ -26,6 +26,7 @@ import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.sqoop.model.SqoopDataModelGenerator;
 import org.apache.atlas.sqoop.model.SqoopDataTypes;
+import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.sqoop.SqoopJobDataPublisher;
@@ -48,7 +49,11 @@ public class SqoopHookIT {
     public void setUp() throws Exception {
         //Set-up sqoop session
         Configuration configuration = ApplicationProperties.get();
-        atlasClient = new AtlasClient(configuration.getString("atlas.rest.address"));
+        if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
+            atlasClient = new AtlasClient(new String[]{configuration.getString(HiveMetaStoreBridge.ATLAS_ENDPOINT)}, new String[]{"admin", "admin"});
+        } else {
+            atlasClient = new AtlasClient(configuration.getString(HiveMetaStoreBridge.ATLAS_ENDPOINT));
+        }
         registerDataModels(atlasClient);
     }
 
