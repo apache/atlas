@@ -93,8 +93,20 @@ public class MetadataDiscoveryResource {
         if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MetadataDiscoveryResource.search(" + query + ", " + limit + ", " + offset + ")");
         }
-        Response response = searchUsingQueryDSL(query, limit, offset);
-        if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+
+        boolean dslQueryFailed = false;
+        Response response = null;
+        try {
+            response = searchUsingQueryDSL(query, limit, offset);
+            if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+                dslQueryFailed = true;
+            }
+        } catch (Exception e) {
+            LOG.debug("Error while running DSL. Switching to fulltext for query {}", query, e);
+            dslQueryFailed = true;
+        }
+
+        if ( dslQueryFailed ) {
             response = searchUsingFullText(query, limit, offset);
         }
         AtlasPerfTracer.log(perf);
