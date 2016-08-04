@@ -196,6 +196,25 @@ public class MetadataDiscoveryJerseyResourceIT extends BaseResourceIT {
         assertEquals(response.getString("queryType"), "dsl");
     }
 
+    @Test
+    public void testSearchFullTextOnDSLFailure() throws Exception {
+        String query = "*";
+        WebResource resource = service.path("api/atlas/discovery/search").queryParam("query", query);
+
+        ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
+            .method(HttpMethod.GET, ClientResponse.class);
+        assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+
+        String responseAsString = clientResponse.getEntity(String.class);
+        Assert.assertNotNull(responseAsString);
+
+        JSONObject response = new JSONObject(responseAsString);
+        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
+
+        assertEquals(response.getString("query"), query);
+        assertEquals(response.getString("queryType"), "full-text");
+    }
+
     @Test(dependsOnMethods = "testSearchDSLLimits")
     public void testSearchUsingFullText() throws Exception {
         JSONObject response = serviceClient.searchByFullText(tagName, 10, 0);
