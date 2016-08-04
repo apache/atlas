@@ -31,6 +31,7 @@ import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.TypeUtils;
+import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.RandomStringUtils;
@@ -74,7 +75,11 @@ public class FalconHookIT {
     @BeforeClass
     public void setUp() throws Exception {
         Configuration atlasProperties = ApplicationProperties.get();
-        atlasClient = new AtlasClient(atlasProperties.getString("atlas.rest.address"));
+        if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
+            atlasClient = new AtlasClient(new String[]{atlasProperties.getString(HiveMetaStoreBridge.ATLAS_ENDPOINT)}, new String[]{"admin", "admin"});
+        } else {
+            atlasClient = new AtlasClient(atlasProperties.getString(HiveMetaStoreBridge.ATLAS_ENDPOINT));
+        }
 
         AtlasService service = new AtlasService();
         service.init();

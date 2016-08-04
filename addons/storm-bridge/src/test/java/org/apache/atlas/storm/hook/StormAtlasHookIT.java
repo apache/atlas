@@ -23,6 +23,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasServiceException;
+import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.storm.model.StormDataModel;
@@ -30,6 +31,7 @@ import org.apache.atlas.storm.model.StormDataTypes;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.TypesSerialization;
+import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.storm.ILocalCluster;
 import org.apache.storm.generated.StormTopology;
@@ -60,7 +62,11 @@ public class StormAtlasHookIT {
         LOG.info("Created a storm local cluster");
 
         Configuration configuration = ApplicationProperties.get();
-        atlasClient = new AtlasClient(configuration.getString("atlas.rest.address", ATLAS_URL));
+        if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
+            atlasClient = new AtlasClient(new String[]{configuration.getString(HiveMetaStoreBridge.ATLAS_ENDPOINT)}, new String[]{"admin", "admin"});
+        } else {
+            atlasClient = new AtlasClient(configuration.getString(HiveMetaStoreBridge.ATLAS_ENDPOINT));
+        }
         registerDataModel(new HiveDataModelGenerator());
     }
 
