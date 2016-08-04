@@ -104,34 +104,10 @@
     }
 }
 
-.termPopoverList {
-    color: #666;
-    padding: 0px 5px;
-    margin-bottom: 0px;
-    a {
-        color: #666;
-        padding: 5px;
-    }
-}
-
-.termPopover {
-    cursor: pointer;
-}
-
 .termMoveDiv {
     width: 550px;
     height: 200px;
     margin: 10px;
-}
-
-.tagPopoverList {
-    color: #666;
-    padding: 0px 5px;
-    margin-bottom: 0px;
-    a {
-        color: #666;
-        padding: 5px;
-    }
 }
 
 .toggleArrow {
@@ -141,12 +117,12 @@
     cursor: pointer;
 }
 
-.addTermDiable {
-    border-color: #FF0000 !important;
+.addTermDisable {
+    border-color: $red !important;
 }
 
 .alertTerm {
-    color: #FF0000 !important;
+    color: $red !important;
 }
 
 

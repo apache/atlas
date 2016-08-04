@@ -195,9 +195,12 @@ define(['require',
             },
             fetchCollection: function(value) {
                 var that = this;
+                if (value && (value.query === undefined || value.query === "")) {
+                    return;
+                }
                 this.$('.fontLoader').show();
                 this.$('.searchTable').hide();
-                that.$('.searchResult').hide();
+                this.$('.searchResult').hide();
                 if (Globals.searchApiCallRef) {
                     Globals.searchApiCallRef.abort();
                 }
@@ -208,7 +211,10 @@ define(['require',
                         $.extend(this.searchCollection.queryParams, { limit: this.limit });
                         this.offset = 0;
                     }
-                    _.extend(this.searchCollection.queryParams, { 'query': value.query });
+                    if (Utils.getUrlState.isTagTab()) {
+                        this.searchCollection.url = "/api/atlas/discovery/search/dsl";
+                    }
+                    _.extend(this.searchCollection.queryParams, { 'query': value.query.trim() });
                 }
                 Globals.searchApiCallRef = this.searchCollection.fetch({
                     success: function() {
@@ -239,7 +245,7 @@ define(['require',
                             that.checkTableFetch();
                             that.offset = that.offset - that.limit;
                             if (that.firstFetch) {
-                                that.renderTableLayoutView();
+                                that.startRenderTableProcess();
                             }
                         }
                         if (that.firstFetch) {
@@ -250,7 +256,7 @@ define(['require',
                         }
                         // checking length for not rendering the table
                         if (that.searchCollection.models.length) {
-                            that.renderTableLayoutView();
+                            that.startRenderTableProcess();
                         }
                         var resultData = 'Results for <b>' + that.searchCollection.queryParams.query + '</b>'
                         var multiAssignData = '<a href="javascript:void(0)" class="inputAssignTag multiSelect" style="display:none" data-id="addTerm"><i class="fa fa-folder-o"></i>' + " " + 'Assign Term</a>'
@@ -259,11 +265,14 @@ define(['require',
                     silent: true
                 });
             },
-            renderTableLayoutView: function() {
+            startRenderTableProcess: function() {
+                this.getEntityTableColumns();
+            },
+            renderTableLayoutView: function(col) {
                 var that = this,
                     count = 5;
                 require(['utils/TableLayout'], function(TableLayout) {
-                    var columns = new Backgrid.Columns(that.getEntityTableColumns());
+                    var columns = new Backgrid.Columns(col);
                     that.REntityTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
                         globalVent: that.globalVent,
                         columns: columns
@@ -295,9 +304,10 @@ define(['require',
                 var responseData = this.searchCollection.responseData;
                 if (this.searchCollection.responseData) {
                     if (responseData.dataType && responseData.dataType.typeName.indexOf('_temp') == -1) {
-                        return this.getFixedDslColumn();
+                        that.renderTableLayoutView(that.getFixedDslColumn())
                     } else {
-                        var idFound = false;
+                        var idFound = false,
+                            fetchResultCount = 0;
                         _.each(this.searchCollection.models, function(model) {
                             var modelJSON = model.toJSON();
                             var guid = "";
@@ -320,26 +330,36 @@ define(['require',
                             });
                             if (guid.length) {
                                 idFound = true;
+                                ++fetchResultCount;
                                 model.getEntity(guid, {
-                                    async: false,
                                     success: function(data) {
                                         if (data.definition) {
                                             if (data.definition.id && data.definition.values) {
-                                                that.searchCollection.get(data.definition.id).set(data.definition.values);
-                                                that.searchCollection.get(data.definition.id).set('$id$', data.definition.id);
-                                                that.searchCollection.get(data.definition.id).set('$traits$', data.definition.traits);
+                                                var id = "";
+                                                if (_.isObject(data.definition.id) && data.definition.id.id) {
+                                                    id = data.definition.id.id;
+                                                } else {
+                                                    id = data.definition.id;
+                                                }
+                                                that.searchCollection.get(id).set(data.definition.values);
+                                                that.searchCollection.get(id).set('$id$', data.definition.id);
+                                                that.searchCollection.get(id).set('$traits$', data.definition.traits);
                                             }
                                         }
+
                                     },
                                     error: function(error, data, status) {},
-                                    complete: function() {}
+                                    complete: function() {
+                                        --fetchResultCount;
+                                        if (fetchResultCount === 0) {
+                                            that.renderTableLayoutView(that.getFixedDslColumn())
+                                        }
+                                    }
                                 });
                             }
                         });
-                        if (idFound) {
-                            return this.getFixedDslColumn();
-                        } else {
-                            return this.getDaynamicColumn();
+                        if (idFound === false) {
+                            that.renderTableLayoutView(this.getDaynamicColumn())
                         }
                     }
                 }
@@ -371,11 +391,16 @@ define(['require',
                 var that = this,
                     nameCheck = 0,
                     col = {};
-                this.searchCollection.each(function(model) {
-                    if (model.get('name') || model.get('qualifiedName')) {
+                for (var i = 0; i < this.searchCollection.models.length; i++) {
+                    var model = this.searchCollection.models[i];
+                    if (model && (model.get('name') || model.get('qualifiedName'))) {
                         ++nameCheck
                     }
-                });
+                    if (model && model.get('$id$') === undefined) {
+                        i = i - 1;
+                        that.searchCollection.remove(model);
+                    }
+                }
                 if (Globals.taxonomy) {
                     col['Check'] = {
                         name: "selected",
@@ -542,7 +567,7 @@ define(['require',
                     var view = new AddTermToEntityLayoutView({
                         guid: guid,
                         multiple: multiple,
-                        callback: function(termName) {
+                        callback: function() {
                             that.fetchCollection();
                             that.arr = [];
                         },

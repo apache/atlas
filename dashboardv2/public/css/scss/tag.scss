@@ -105,16 +105,6 @@
     margin: 15px 0px;
 }
 
-.select2-container--default .select2-selection--multiple .select2-selection__choice {
-    background-color: #fff;
-    color: #9599a0;
-    border: 1px solid $tag_color;
-}
-
-.select2-container--default .select2-search--inline .select2-search__field {
-    color: #555;
-}
-
 .inputTag {
     display: inline-block;
     border: 1px $tag_color solid;
@@ -323,6 +313,14 @@ form-control .tagInpput {
 
 .multiSelect {
     float: right;
+}
+
+.multiSelectTag {
+    float: right;
+}
+
+.inputAssignTag.multiSelectTag {
+    margin-right: 10px;
 }
 
 .popover.popoverTag {

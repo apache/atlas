@@ -33,7 +33,23 @@ define(['require',
                 this.modelName = 'VSearch';
                 this.modelAttrName = 'results';
                 this.bindErrorEvents();
-            }
+            },
+            parseRecords: function(resp, options) {
+                this.responseData = {
+                    dataType: resp.dataType,
+                    query: resp.query,
+                    queryType: resp.queryType,
+                    requestId: resp.requestId
+                };
+                try {
+                    if (!this.modelAttrName) {
+                        throw new Error("this.modelAttrName not defined for " + this);
+                    }
+                    return _.reject(resp[this.modelAttrName], _.isNull);
+                } catch (e) {
+                    console.log(e);
+                }
+            },
         },
         //Static Class Members
         {
