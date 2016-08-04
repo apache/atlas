@@ -263,33 +263,10 @@ define(['require',
                 var that = this,
                     count = 5;
                 require(['utils/TableLayout'], function(TableLayout) {
-                    var columnCollection = Backgrid.Columns.extend({
-                        sortKey: "position",
-                        comparator: function(item) {
-                            return item.get(this.sortKey) || 999;
-                        },
-                        setPositions: function() {
-                            _.each(this.models, function(model, index) {
-                                if (model.get('name') == "name") {
-                                    model.set("position", 2, { silent: true });
-                                    model.set("label", "Name");
-                                } else if (model.get('name') == "description") {
-                                    model.set("position", 3, { silent: true });
-                                    model.set("label", "Description");
-                                } else if (model.get('name') == "owner") {
-                                    model.set("position", 4, { silent: true });
-                                    model.set("label", "Owner");
-                                }
-                            });
-                            return this;
-                        }
-                    });
-                    var columns = new columnCollection(that.getEntityTableColumns());
-                    columns.setPositions().sort();
+                    var columns = new Backgrid.Columns(that.getEntityTableColumns());
                     that.REntityTableLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
                         globalVent: that.globalVent,
-                        columns: columns,
-                        includeOrderAbleColumns: true
+                        columns: columns
                     })));
                     that.$('.searchResult').find(".inputAssignTag.multiSelect").hide();
                     that.renderBreadcrumb();
@@ -392,29 +369,91 @@ define(['require',
             },
             getFixedDslColumn: function() {
                 var that = this,
+                    nameCheck = 0,
                     col = {};
-                col['name'] = {
-                    label: "Name",
-                    cell: "html",
-                    editable: false,
-                    sortable: false,
-                    formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                        fromRaw: function(rawValue, model) {
-                            var nameHtml = "";
-                            if (model.get('$id$')) {
-                                nameHtml = '<a href="#!/detailPage/' + model.get('$id$').id + '">' + rawValue + '</a>';
-                            } else {
-                                nameHtml = '<a>' + rawValue + '</a>';
-                            }
-                            if (model.get('$id$') && model.get('$id$').state && Globals.entityStateReadOnly[model.get('$id$').state]) {
-                                nameHtml += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
-                                return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
-                            } else {
-                                return nameHtml;
-                            }
-                        }
-                    })
+                this.searchCollection.each(function(model) {
+                    if (model.get('name') || model.get('qualifiedName')) {
+                        ++nameCheck
+                    }
+                });
+                if (Globals.taxonomy) {
+                    col['Check'] = {
+                        name: "selected",
+                        label: "",
+                        cell: "select-row",
+                        headerCell: "select-all"
+                    };
                 }
+                if (nameCheck > 0) {
+                    col['name'] = {
+                        label: "Name",
+                        cell: "html",
+                        editable: false,
+                        sortable: false,
+                        className: "searchTableName",
+                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                            fromRaw: function(rawValue, model) {
+                                var nameHtml = "";
+                                if (rawValue === undefined) {
+                                    if (model.get('qualifiedName')) {
+                                        rawValue = model.get('qualifiedName');
+                                    } else if (model.get('$id$') && model.get('$id$').qualifiedName) {
+                                        rawValue = model.get('$id$').qualifiedName
+                                    } else {
+                                        return "";
+                                    }
+                                }
+                                if (model.get('$id$') && model.get('$id$').id) {
+                                    nameHtml = '<a href="#!/detailPage/' + model.get('$id$').id + '">' + rawValue + '</a>';
+                                } else {
+                                    nameHtml = '<a>' + rawValue + '</a>';
+                                }
+                                if (model.get('$id$') && model.get('$id$').state && Globals.entityStateReadOnly[model.get('$id$').state]) {
+                                    nameHtml += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
+                                    return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
+                                } else {
+                                    return nameHtml;
+                                }
+                            }
+                        })
+                    }
+                }
+                if (nameCheck === 0) {
+                    col['typeName'] = {
+                        label: "Type Name",
+                        cell: "html",
+                        editable: false,
+                        sortable: false,
+                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                            fromRaw: function(rawValue, model) {
+                                var nameHtml = "";
+                                if (rawValue === undefined) {
+                                    if (model.get('$id$') && model.get('$id$')['$typeName$']) {
+                                        rawValue = model.get('$id$')['$typeName$']
+                                    } else if (model.get('$typeName$')) {
+                                        rawValue = model.get('$typeName$');
+                                    } else if (model.get('typeName')) {
+                                        rawValue = model.get('typeName')
+                                    } else {
+                                        return "";
+                                    }
+                                }
+                                if (model.get('$id$') && model.get('$id$').id) {
+                                    nameHtml = '<a href="#!/detailPage/' + model.get('$id$').id + '">' + rawValue + '</a>';
+                                } else {
+                                    nameHtml = '<a>' + rawValue + '</a>';
+                                }
+                                if (model.get('$id$') && model.get('$id$').state && Globals.entityStateReadOnly[model.get('$id$').state]) {
+                                    nameHtml += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
+                                    return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
+                                } else {
+                                    return nameHtml;
+                                }
+                            }
+                        })
+                    }
+                }
+
                 col['description'] = {
                     label: "Description",
                     cell: "String",
@@ -446,13 +485,6 @@ define(['require',
                     })
                 };
                 if (Globals.taxonomy) {
-                    col['Check'] = {
-                        name: "selected",
-                        label: "",
-                        cell: "select-row",
-                        headerCell: "select-all",
-                        position: 1
-                    };
                     col['terms'] = {
                         label: "Terms",
                         cell: "Html",
