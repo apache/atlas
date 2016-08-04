@@ -127,72 +127,80 @@ public final class StormTopologyUtil {
     }
 
     public static Map<String, String> getFieldValues(Object instance,
-                                                     boolean prependClassName)
+                                                     boolean prependClassName,
+                                                     Set<Object> objectsToSkip)
     throws IllegalAccessException {
-        Class clazz = instance.getClass();
+        if (objectsToSkip == null) {
+            objectsToSkip = new HashSet<Object>();
+        }
+
         Map<String, String> output = new HashMap<>();
-        for (Class<?> c = clazz; c != null; c = c.getSuperclass()) {
-            Field[] fields = c.getDeclaredFields();
-            for (Field field : fields) {
-                if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
-                    continue;
-                }
 
-                String key;
-                if (prependClassName) {
-                    key = String.format("%s.%s", clazz.getSimpleName(), field.getName());
-                } else {
-                    key = field.getName();
-                }
+        if (objectsToSkip.add(instance)) {
+            Class clazz = instance.getClass();
+            for (Class<?> c = clazz; c != null; c = c.getSuperclass()) {
+                Field[] fields = c.getDeclaredFields();
+                for (Field field : fields) {
+                    if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
+                        continue;
+                    }
 
-                boolean accessible = field.isAccessible();
-                if (!accessible) {
-                    field.setAccessible(true);
-                }
-                Object fieldVal = field.get(instance);
-                if (fieldVal == null) {
-                    continue;
-                } else if (fieldVal.getClass().isPrimitive() ||
-                        isWrapperType(fieldVal.getClass())) {
-                    if (toString(fieldVal, false).isEmpty()) continue;
-                    output.put(key, toString(fieldVal, false));
-                } else if (isMapType(fieldVal.getClass())) {
-                    //TODO: check if it makes more sense to just stick to json
-                    // like structure instead of a flatten output.
-                    Map map = (Map) fieldVal;
-                    for (Object entry : map.entrySet()) {
-                        Object mapKey = ((Map.Entry) entry).getKey();
-                        Object mapVal = ((Map.Entry) entry).getValue();
+                    String key;
+                    if (prependClassName) {
+                        key = String.format("%s.%s", clazz.getSimpleName(), field.getName());
+                    } else {
+                        key = field.getName();
+                    }
 
-                        String keyStr = getString(mapKey, false);
-                        String valStr = getString(mapVal, false);
-                        if ((valStr == null) || (valStr.isEmpty())) {
-                            continue;
-                        } else {
-                            output.put(String.format("%s.%s", key, keyStr), valStr);
+                    boolean accessible = field.isAccessible();
+                    if (!accessible) {
+                        field.setAccessible(true);
+                    }
+                    Object fieldVal = field.get(instance);
+                    if (fieldVal == null) {
+                        continue;
+                    } else if (fieldVal.getClass().isPrimitive() ||
+                            isWrapperType(fieldVal.getClass())) {
+                        if (toString(fieldVal, false).isEmpty()) continue;
+                        output.put(key, toString(fieldVal, false));
+                    } else if (isMapType(fieldVal.getClass())) {
+                        //TODO: check if it makes more sense to just stick to json
+                        // like structure instead of a flatten output.
+                        Map map = (Map) fieldVal;
+                        for (Object entry : map.entrySet()) {
+                            Object mapKey = ((Map.Entry) entry).getKey();
+                            Object mapVal = ((Map.Entry) entry).getValue();
+
+                            String keyStr = getString(mapKey, false, objectsToSkip);
+                            String valStr = getString(mapVal, false, objectsToSkip);
+                            if ((valStr == null) || (valStr.isEmpty())) {
+                                continue;
+                            } else {
+                                output.put(String.format("%s.%s", key, keyStr), valStr);
+                            }
+                        }
+                    } else if (isCollectionType(fieldVal.getClass())) {
+                        //TODO check if it makes more sense to just stick to
+                        // json like structure instead of a flatten output.
+                        Collection collection = (Collection) fieldVal;
+                        if (collection.size() == 0) continue;
+                        String outStr = "";
+                        for (Object o : collection) {
+                            outStr += getString(o, false, objectsToSkip) + ",";
+                        }
+                        if (outStr.length() > 0) {
+                            outStr = outStr.substring(0, outStr.length() - 1);
+                        }
+                        output.put(key, String.format("%s", outStr));
+                    } else {
+                        Map<String, String> nestedFieldValues = getFieldValues(fieldVal, false, objectsToSkip);
+                        for (Map.Entry<String, String> entry : nestedFieldValues.entrySet()) {
+                            output.put(String.format("%s.%s", key, entry.getKey()), entry.getValue());
                         }
                     }
-                } else if (isCollectionType(fieldVal.getClass())) {
-                    //TODO check if it makes more sense to just stick to
-                    // json like structure instead of a flatten output.
-                    Collection collection = (Collection) fieldVal;
-                    if (collection.size()==0) continue;
-                    String outStr = "";
-                    for (Object o : collection) {
-                        outStr += getString(o, false) + ",";
+                    if (!accessible) {
+                        field.setAccessible(false);
                     }
-                    if (outStr.length() > 0) {
-                        outStr = outStr.substring(0, outStr.length() - 1);
-                    }
-                    output.put(key, String.format("%s", outStr));
-                } else {
-                    Map<String, String> nestedFieldValues = getFieldValues(fieldVal, false);
-                    for (Map.Entry<String, String> entry : nestedFieldValues.entrySet()) {
-                        output.put(String.format("%s.%s", key, entry.getKey()), entry.getValue());
-                    }
-                }
-                if (!accessible) {
-                    field.setAccessible(false);
                 }
             }
         }
@@ -200,13 +208,14 @@ public final class StormTopologyUtil {
     }
 
     private static String getString(Object instance,
-                                    boolean wrapWithQuote) throws IllegalAccessException {
+                                    boolean wrapWithQuote,
+                                    Set<Object> objectsToSkip) throws IllegalAccessException {
         if (instance == null) {
             return null;
         } else if (instance.getClass().isPrimitive() || isWrapperType(instance.getClass())) {
             return toString(instance, wrapWithQuote);
         } else {
-            return getString(getFieldValues(instance, false), wrapWithQuote);
+            return getString(getFieldValues(instance, false, objectsToSkip), wrapWithQuote);
         }
     }
 

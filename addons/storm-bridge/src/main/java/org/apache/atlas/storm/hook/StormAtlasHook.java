@@ -179,7 +179,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
     private Referenceable createDataSet(String name, String topologyOwner,
                                               Serializable instance,
                                               Map stormConf, List<Referenceable> dependentEntities) throws IllegalAccessException {
-        Map<String, String> config = StormTopologyUtil.getFieldValues(instance, true);
+        Map<String, String> config = StormTopologyUtil.getFieldValues(instance, true, null);
 
         String clusterName = null;
         Referenceable dataSetReferenceable;
@@ -298,7 +298,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
                 stormSpout.get_spout_object().get_serialized_java(), Serializable.class);
         spoutReferenceable.set("driverClass", instance.getClass().getName());
 
-        Map<String, String> flatConfigMap = StormTopologyUtil.getFieldValues(instance, true);
+        Map<String, String> flatConfigMap = StormTopologyUtil.getFieldValues(instance, true, null);
         spoutReferenceable.set("conf", flatConfigMap);
 
         return spoutReferenceable;
@@ -322,7 +322,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
                 stormBolt.get_bolt_object().get_serialized_java(), Serializable.class);
         boltReferenceable.set("driverClass", instance.getClass().getName());
 
-        Map<String, String> flatConfigMap = StormTopologyUtil.getFieldValues(instance, true);
+        Map<String, String> flatConfigMap = StormTopologyUtil.getFieldValues(instance, true, null);
         boltReferenceable.set("conf", flatConfigMap);
 
         return boltReferenceable;
