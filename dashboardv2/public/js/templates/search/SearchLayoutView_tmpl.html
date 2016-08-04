@@ -29,18 +29,12 @@
     </div>
     <div class="col-sm-12">
         <div class="form-group">
-            <input type="text" class="form-control" data-id="searchInput" placeholder="Search using a query string: e.g. sales_fact">
+            <div class="typeLOV">
+                <select data-id="typeLOV"></select>
+            </div>
+            <input type="text" class="form-control" data-id="searchInput" placeholder="Search using a query string: e.g. sales_fact" style="margin-top: 5px;">
         </div>
-        <!--  <div data-id="advanceSearchContainer">
-            <div class="form-group">
-                <select type="text" class="col-md-12 form-control tagListSelect" data-id="tagListInput" multiple></select>
-            </div>
-          <div class="form-group">
-                <select type="text" class="col-md-12 form-control" data-id="termListInput" multiple></select>
-            </div>
-        </div> -->
         <div class="clearAdvanceSearch" data-id="clearSearch">Clear</div>
-        <button class="btn btn-atlas advanceSearchBtn" data-id="searchBtn">Search</button>
+        <button class="btn btn-atlas advanceSearchBtn" data-id="searchBtn" disabled="disabled">Search</button>
     </div>
-</div>
-<div id="searchResult"></div>
+    <div id="searchResult"></div>

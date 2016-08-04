@@ -77,7 +77,7 @@ define(['require',
                 var str = '',
                     that = this;
                 this.ui.parentTag.empty();
-                this.tagCollection.each(function(val) {
+                this.tagCollection.fullCollection.each(function(val) {
                     str += '<option>' + val.get("tags") + '</option>';
                 });
                 that.ui.parentTag.html(str);

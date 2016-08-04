@@ -315,11 +315,13 @@ define(['require',
             termSearchData: function() {
                 var that = this;
                 var str = '<option></option>';
-                for (var j = 0; j < this.termCollection.models.length; j++) {
-                    var terms = this.termCollection.models[j].attributes.name;
-                    str += '<option>' + terms + '</option>';
-                    this.ui.searchTermInput.html(str);
+                this.termCollection.fullCollection.comparator = function(model) {
+                    return model.get('name');
                 }
+                this.termCollection.fullCollection.sort().each(function(model) {
+                    str += '<option>' + model.get('name') + '</option>';
+                });
+                this.ui.searchTermInput.html(str);
                 // this.ui.searchTermInput.setAttribute('data-href' : that.termCollection.url);
                 this.ui.searchTermInput.select2({
                     placeholder: "Search Term",
@@ -480,11 +482,11 @@ define(['require',
                     view.ui.termName.on('keyup', function() {
                         if (this.value.indexOf(' ') >= 0) {
                             modal.$el.find('button.ok').prop('disabled', true);
-                            view.ui.termName.addClass("addTermDiable");
+                            view.ui.termName.addClass("addTermDisable");
                             view.$('.alertTerm').show();
                         } else {
                             modal.$el.find('button.ok').prop('disabled', false);
-                            view.ui.termName.removeClass("addTermDiable");
+                            view.ui.termName.removeClass("addTermDisable");
                             view.$('.alertTerm').hide();
                         }
                     });
@@ -626,11 +628,11 @@ define(['require',
                     view.ui.termName.on('keyup', function() {
                         if (this.value.indexOf(' ') >= 0) {
                             modal.$el.find('button.ok').prop('disabled', true);
-                            view.ui.termName.addClass("addTermDiable");
+                            view.ui.termName.addClass("addTermDisable");
                             view.$('.alertTerm').show();
                         } else {
                             modal.$el.find('button.ok').prop('disabled', false);
-                            view.ui.termName.removeClass("addTermDiable");
+                            view.ui.termName.removeClass("addTermDisable");
                             view.$('.alertTerm').hide();
                         }
                     });
