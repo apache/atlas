@@ -6,6 +6,7 @@ INCOMPATIBLE CHANGES:
 
 
 ALL CHANGES:
+ATLAS-1089 Storm hook should handle cyclic references in topology object (mneethiraj via sumasai)
 ATLAS-1086 Build failure in hive-bridge after security fixes in ATLAS-762 (sumasai)
 ATLAS-1088 Fix /search api to default to fulltext on dsl failure (sumasai)
 ATLAS-762 Assertion in NegativeSSLAndKerberosTest.testUnsecuredClient needs to be hardened (nixonrodrigues via sumasai)
