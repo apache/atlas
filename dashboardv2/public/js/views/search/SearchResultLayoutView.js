@@ -54,7 +54,8 @@ define(['require',
                 paginationDiv: '[data-id="paginationDiv"]',
                 previousData: "[data-id='previousData']",
                 nextData: "[data-id='nextData']",
-                pageRecordText: "[data-id='pageRecordText']"
+                pageRecordText: "[data-id='pageRecordText']",
+                addAssignTag: "[data-id='addAssignTag']"
             },
 
             /** ui events hash */
@@ -82,8 +83,9 @@ define(['require',
                         }
                     }
                 };
-                events["click " + this.ui.addTag] = 'addTagModalView';
+                events["click " + this.ui.addTag] = 'checkedValue';
                 events["click " + this.ui.addTerm] = 'checkedValue';
+                events["click " + this.ui.addAssignTag] = 'checkedValue';
                 events["click " + this.ui.showMoreLess] = function(e) {
                     $(e.currentTarget).parents('tr').siblings().find("div.popover.popoverTag").hide();
                     $(e.currentTarget).parent().find("div.popover").toggle();
@@ -142,9 +144,11 @@ define(['require',
                     if (checked === true) {
                         model.set("isEnable", true);
                         this.$('.searchResult').find(".inputAssignTag.multiSelect").show();
+                        this.$('.searchResult').find(".inputAssignTag.multiSelectTag").show();
                     } else {
                         model.set("isEnable", false);
                         this.$('.searchResult').find(".inputAssignTag.multiSelect").hide();
+                        this.$('.searchResult').find(".inputAssignTag.multiSelectTag").hide();
                     }
                     this.arr = [];
                     this.searchCollection.find(function(item) {
@@ -259,8 +263,14 @@ define(['require',
                             that.startRenderTableProcess();
                         }
                         var resultData = 'Results for <b>' + that.searchCollection.queryParams.query + '</b>'
-                        var multiAssignData = '<a href="javascript:void(0)" class="inputAssignTag multiSelect" style="display:none" data-id="addTerm"><i class="fa fa-folder-o"></i>' + " " + 'Assign Term</a>'
-                        that.$('.searchResult').html(resultData + multiAssignData);
+                        var multiAssignDataTag = '<a href="javascript:void(0)" class="inputAssignTag multiSelectTag assignTag" style="display:none" data-id="addAssignTag"><i class="fa fa-plus"></i>' + " " + 'Assign Tag</a>'
+                        if (Globals.taxonomy) {
+                            var multiAssignDataTerm = '<a href="javascript:void(0)" class="inputAssignTag multiSelect" style="display:none" data-id="addTerm"><i class="fa fa-folder-o"></i>' + " " + 'Assign Term</a>'
+                            that.$('.searchResult').html(resultData + multiAssignDataTerm + multiAssignDataTag);
+                        } else {
+                            that.$('.searchResult').html(resultData + multiAssignDataTag);
+                        }
+
                     },
                     silent: true
                 });
@@ -277,6 +287,7 @@ define(['require',
                         globalVent: that.globalVent,
                         columns: columns
                     })));
+                    that.ui.paginationDiv.show();
                     that.$('.searchResult').find(".inputAssignTag.multiSelect").hide();
                     that.renderBreadcrumb();
                 });
@@ -401,14 +412,12 @@ define(['require',
                         that.searchCollection.remove(model);
                     }
                 }
-                if (Globals.taxonomy) {
-                    col['Check'] = {
-                        name: "selected",
-                        label: "",
-                        cell: "select-row",
-                        headerCell: "select-all"
-                    };
-                }
+                col['Check'] = {
+                    name: "selected",
+                    label: "",
+                    cell: "select-row",
+                    headerCell: "select-all"
+                };
                 if (nameCheck > 0) {
                     col['name'] = {
                         label: "Name",
@@ -535,13 +544,19 @@ define(['require',
                 that.checkTableFetch();
                 return this.searchCollection.constructor.getTableCols(col, this.searchCollection);
             },
-            addTagModalView: function(e) {
+            addTagModalView: function(guid, multiple) {
                 var that = this;
                 require(['views/tag/addTagModalView'], function(AddTagModalView) {
                     var view = new AddTagModalView({
-                        guid: that.$(e.currentTarget).data("guid"),
+                        guid: guid,
+                        multiple: multiple,
                         callback: function() {
                             that.fetchCollection();
+                            that.arr = [];
+                        },
+                        showLoader: function() {
+                            that.$('.fontLoader').show();
+                            that.$('.searchTable').hide();
                         }
                     });
                     // view.saveTagData = function() {
@@ -552,11 +567,21 @@ define(['require',
             checkedValue: function(e) {
                 var guid = "",
                     that = this;
-                if (this.arr && this.arr.length) {
-                    that.addTermModalView(guid, this.arr);
+                var multiSelectTag = $(e.currentTarget).hasClass('assignTag');
+                if (multiSelectTag) {
+                    if (this.arr && this.arr.length && multiSelectTag) {
+                        that.addTagModalView(guid, this.arr);
+                    } else {
+                        guid = that.$(e.currentTarget).data("guid");
+                        that.addTagModalView(guid);
+                    }
                 } else {
-                    guid = that.$(e.currentTarget).data("guid");
-                    that.addTermModalView(guid);
+                    if (this.arr && this.arr.length) {
+                        that.addTermModalView(guid, this.arr);
+                    } else {
+                        guid = that.$(e.currentTarget).data("guid");
+                        that.addTermModalView(guid);
+                    }
                 }
             },
             addTermModalView: function(guid, multiple) {

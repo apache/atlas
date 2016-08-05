@@ -27,6 +27,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-1090 UI: Multi-Select Tagging. (Kalyanikashikar via kevalbhatt)
 ATLAS-1092 Add Table.CreateTime to process qualified Name for all hive_process (sumasai via shwethags)
 ATLAS-1096 Modify HveMetaStoreBridge.import to use getEntity instead of DSL (sumasai via shwethags)
 ATLAS-1091 Improvement in DSL search functionality. (kevalbhatt)

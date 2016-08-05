@@ -45,7 +45,7 @@ define(['require',
          */
         initialize: function(options) {
             var that = this;
-            _.extend(this, _.pick(options, 'vent', 'modalCollection', 'guid', 'callback'));
+            _.extend(this, _.pick(options, 'vent', 'modalCollection', 'guid', 'callback', 'multiple', 'showLoader'));
             this.collection = new VTagList();
             this.commonCollection = new VCommonList();
             this.modal = new Modal({
@@ -55,10 +55,33 @@ define(['require',
                 cancelText: "Cancel",
                 allowCancel: true,
             }).open();
-            // var saveBtn = this.modal.$el.find('.btn-atlas');
-            // saveBtn[0].setAttribute('disabled', true);
             this.on('ok', function() {
-                that.saveTagData();
+                if (that.multiple) {
+                    for (var i = 0; i < that.multiple.length; i++) {
+                        if (i == 0) {
+                            that.showLoader();
+                        }
+                        var obj = {
+                            tagName: this.ui.addTagOptions.val(),
+                            guid: that.multiple[i].id.id
+                        }
+                        if (that.multiple.length - 1 == i) {
+                            obj['callback'] = function() {
+                                that.callback();
+                            }
+                        }
+
+                        that.saveTagData(obj);
+                    }
+                } else {
+                    that.saveTagData({
+                        tagName: that.ui.addTagOptions.val(),
+                        guid: that.guid,
+                        callback: function() {
+                            that.callback();
+                        }
+                    });
+                }
             });
             this.on('closeModal', function() {
                 this.modal.trigger('cancel');
@@ -120,32 +143,28 @@ define(['require',
                 }
             }
         },
-        saveTagData: function() {
+        saveTagData: function(options) {
             var that = this,
                 values = {};
             this.entityModel = new VEntity();
-            var names = this.$(".attrName");
-            names.each(function(i, item) {
-                var selection = $(item).data("key");
-                values[selection] = $(item).val();
-            });
+            var name = options.tagName;
             var tagName = this.ui.addTagOptions.val();
             var json = {
                 "jsonClass": "org.apache.atlas.typesystem.json.InstanceSerialization$_Struct",
-                "typeName": tagName,
+                "typeName": name,
                 "values": values
             };
-            that.entityModel.saveEntity(that.guid, {
+            that.entityModel.saveEntity(options.guid, {
                 data: JSON.stringify(json),
                 success: function(data) {
                     Utils.notifySuccess({
                         content: "Tag " + tagName + " has been added to entity"
                     });
-                    if (that.callback) {
-                        that.callback();
+                    if (options.callback) {
+                        options.callback();
                     }
-                    if (that.modalCollection) {
-                        that.modalCollection.fetch({ reset: true });
+                    if (options.modalCollection) {
+                        options.modalCollection.fetch({ reset: true });
                     }
                 },
                 error: function(error, data, status) {
@@ -157,6 +176,9 @@ define(['require',
                     Utils.notifyError({
                         content: message
                     });
+                    if (options.callback) {
+                        options.callback();
+                    }
                 },
                 complete: function() {}
             });
