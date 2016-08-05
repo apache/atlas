@@ -54,8 +54,6 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +70,6 @@ public class HiveMetaStoreBridge {
     public static final String HIVE_CLUSTER_NAME = "atlas.cluster.name";
     public static final String DEFAULT_CLUSTER_NAME = "primary";
     public static final String DESCRIPTION_ATTR = "description";
-    public static final String SEARCH_ENTRY_GUID_ATTR = "__guid";
 
     public static final String TEMP_TABLE_PREFIX = "_temp-";
 
@@ -214,30 +211,7 @@ public class HiveMetaStoreBridge {
         LOG.debug("Getting reference for database {}", databaseName);
         String typeName = HiveDataTypes.HIVE_DB.getName();
 
-        String dslQuery = getDatabaseDSLQuery(clusterName, databaseName, typeName);
-        return getEntityReferenceFromDSL(typeName, dslQuery);
-    }
-
-    static String getDatabaseDSLQuery(String clusterName, String databaseName, String typeName) {
-        return String.format("%s where %s = '%s' and %s = '%s'", typeName, AtlasClient.NAME,
-                databaseName.toLowerCase(), AtlasConstants.CLUSTER_NAME_ATTRIBUTE, clusterName);
-    }
-
-    private Referenceable getEntityReferenceFromDSL(String typeName, String dslQuery) throws Exception {
-        AtlasClient dgiClient = getAtlasClient();
-        JSONArray results = dgiClient.searchByDSL(dslQuery, 1, 0);
-        if (results.length() == 0) {
-            return null;
-        } else {
-            String guid;
-            JSONObject row = results.getJSONObject(0);
-            if (row.has("$id$")) {
-                guid = row.getJSONObject("$id$").getString("id");
-            } else {
-                guid = row.getJSONObject("_col_0").getString("id");
-            }
-            return new Referenceable(guid, typeName, null);
-        }
+        return getEntityReference(typeName, getDBQualifiedName(clusterName, databaseName));
     }
 
     /**
@@ -253,11 +227,16 @@ public class HiveMetaStoreBridge {
     private String getCreateTableString(Table table, String location){
         String colString = "";
         List<FieldSchema> colList = table.getAllCols();
-        for(FieldSchema col:colList){
-            colString += col.getName()  + " " + col.getType() + ",";
+        if ( colList != null) {
+            for (FieldSchema col : colList) {
+                colString += col.getName() + " " + col.getType() + ",";
+            }
+            if (colList.size() > 0) {
+                colString = colString.substring(0, colString.length() - 1);
+                colString = "(" + colString + ")";
+            }
         }
-        colString = colString.substring(0, colString.length() - 1);
-        String query = "create external table " + table.getTableName() + "(" + colString + ")" +
+        String query = "create external table " + table.getTableName() +  colString +
                 " location '" + location + "'";
         return query;
     }
@@ -293,7 +272,7 @@ public class HiveMetaStoreBridge {
             Table table = hiveClient.getTable(databaseName, tableName);
             Referenceable tableReferenceable = registerTable(databaseReferenceable, table);
             if (table.getTableType() == TableType.EXTERNAL_TABLE) {
-                String tableQualifiedName = getTableQualifiedName(clusterName, table);
+                String tableQualifiedName = getTableProcessQualifiedName(clusterName, table);
                 Referenceable process = getProcessReference(tableQualifiedName);
                 if (process == null) {
                     LOG.info("Attempting to register create table process for {}", tableQualifiedName);
@@ -347,25 +326,26 @@ public class HiveMetaStoreBridge {
         LOG.debug("Getting reference for table {}.{}", hiveTable.getDbName(), hiveTable.getTableName());
 
         String typeName = HiveDataTypes.HIVE_TABLE.getName();
-        String dslQuery = getTableDSLQuery(getClusterName(), hiveTable.getDbName(), hiveTable.getTableName(), typeName, hiveTable.isTemporary());
-        return getEntityReferenceFromDSL(typeName, dslQuery);
+        String tblQualifiedName = getTableQualifiedName(getClusterName(), hiveTable.getDbName(), hiveTable.getTableName());
+        return getEntityReference(typeName, tblQualifiedName);
+    }
+
+    private Referenceable getEntityReference(final String typeName, final String tblQualifiedName) throws AtlasServiceException {
+        AtlasClient dgiClient = getAtlasClient();
+        try {
+            return dgiClient.getEntity(typeName, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tblQualifiedName);
+        } catch (AtlasServiceException e) {
+            if(e.getStatus() == ClientResponse.Status.NOT_FOUND) {
+                return null;
+            }
+            throw e;
+        }
     }
 
     private Referenceable getProcessReference(String qualifiedName) throws Exception{
         LOG.debug("Getting reference for process {}", qualifiedName);
         String typeName = HiveDataTypes.HIVE_PROCESS.getName();
-        String dslQuery = getProcessDSLQuery(typeName, qualifiedName);
-        return getEntityReferenceFromDSL(typeName, dslQuery);
-    }
-
-    static String getProcessDSLQuery(String typeName, String qualifiedName) throws Exception{
-        String dslQuery = String.format("%s as t where qualifiedName = '%s'", typeName, qualifiedName);
-        return dslQuery;
-    }
-
-    static String getTableDSLQuery(String clusterName, String dbName, String tableName, String typeName, boolean isTemporary) {
-        String entityName = getTableQualifiedName(clusterName, dbName, tableName, isTemporary);
-        return String.format("%s as t where qualifiedName = '%s'", typeName, entityName);
+        return getEntityReference(typeName, qualifiedName);
     }
 
     /**

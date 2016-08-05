@@ -23,8 +23,10 @@ import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.typesystem.Referenceable;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.Database;
+import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Partition;
@@ -95,13 +97,13 @@ public class HiveMetaStoreBridgeTest {
         returnExistingDatabase(TEST_DB_NAME, atlasClient, CLUSTER_NAME);
 
         // return existing table
-        when(atlasClient.searchByDSL(HiveMetaStoreBridge.getTableDSLQuery(CLUSTER_NAME, TEST_DB_NAME, TEST_TABLE_NAME,
-                HiveDataTypes.HIVE_TABLE.getName(), false), 1, 0)).thenReturn(
-                getEntityReference("82e06b34-9151-4023-aa9d-b82103a50e77"));
+        when(atlasClient.getEntity(HiveDataTypes.HIVE_TABLE.getName(),
+            AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, TEST_DB_NAME, TEST_TABLE_NAME)))
+            .thenReturn(getEntityReference(HiveDataTypes.HIVE_TABLE.getName(), "82e06b34-9151-4023-aa9d-b82103a50e77"));
         when(atlasClient.getEntity("82e06b34-9151-4023-aa9d-b82103a50e77")).thenReturn(createTableReference());
-        String processQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, hiveTables.get(0));
-        when(atlasClient.searchByDSL(HiveMetaStoreBridge.getProcessDSLQuery(HiveDataTypes.HIVE_PROCESS.getName(),
-                processQualifiedName), 1, 0)).thenReturn(getEntityReference("82e06b34-9151-4023-aa9d-b82103a50e77"));
+        String processQualifiedName = HiveMetaStoreBridge.getTableProcessQualifiedName(CLUSTER_NAME, hiveTables.get(0));
+        when(atlasClient.getEntity(HiveDataTypes.HIVE_PROCESS.getName(),
+            AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, processQualifiedName)).thenReturn(getEntityReference(HiveDataTypes.HIVE_PROCESS.getName(), "82e06b34-9151-4023-aa9d-b82103a50e77"));
 
         HiveMetaStoreBridge bridge = new HiveMetaStoreBridge(CLUSTER_NAME, hiveClient, atlasClient);
         bridge.importHiveMetadata(true);
@@ -114,9 +116,10 @@ public class HiveMetaStoreBridgeTest {
 
     private void returnExistingDatabase(String databaseName, AtlasClient atlasClient, String clusterName)
             throws AtlasServiceException, JSONException {
-        when(atlasClient.searchByDSL(HiveMetaStoreBridge.getDatabaseDSLQuery(clusterName, databaseName,
-                HiveDataTypes.HIVE_DB.getName()), 1, 0)).thenReturn(
-                getEntityReference("72e06b34-9151-4023-aa9d-b82103a50e76"));
+        when(atlasClient.getEntity(
+            HiveDataTypes.HIVE_DB.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+            HiveMetaStoreBridge.getDBQualifiedName(clusterName, databaseName))).thenReturn(
+            getEntityReference(HiveDataTypes.HIVE_DB.getName(), "72e06b34-9151-4023-aa9d-b82103a50e76"));
     }
 
     private List<Table> setupTables(Hive hiveClient, String databaseName, String... tableNames) throws HiveException {
@@ -144,12 +147,12 @@ public class HiveMetaStoreBridgeTest {
 
         returnExistingDatabase(TEST_DB_NAME, atlasClient, CLUSTER_NAME);
 
-        when(atlasClient.searchByDSL(HiveMetaStoreBridge.getTableDSLQuery(CLUSTER_NAME, TEST_DB_NAME,
-            TEST_TABLE_NAME, HiveDataTypes.HIVE_TABLE.getName(), false), 1, 0)).thenReturn(
-            getEntityReference("82e06b34-9151-4023-aa9d-b82103a50e77"));
-        String processQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, hiveTable);
-        when(atlasClient.searchByDSL(HiveMetaStoreBridge.getProcessDSLQuery(HiveDataTypes.HIVE_PROCESS.getName(),
-                processQualifiedName), 1, 0)).thenReturn(getEntityReference("82e06b34-9151-4023-aa9d-b82103a50e77"));
+        when(atlasClient.getEntity(HiveDataTypes.HIVE_TABLE.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+            HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, TEST_DB_NAME, TEST_TABLE_NAME))).thenReturn(
+            getEntityReference(HiveDataTypes.HIVE_TABLE.getName(), "82e06b34-9151-4023-aa9d-b82103a50e77"));
+        String processQualifiedName = HiveMetaStoreBridge.getTableProcessQualifiedName(CLUSTER_NAME, hiveTable);
+        when(atlasClient.getEntity(HiveDataTypes.HIVE_PROCESS.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+                processQualifiedName)).thenReturn(getEntityReference(HiveDataTypes.HIVE_PROCESS.getName(), "82e06b34-9151-4023-aa9d-b82103a50e77"));
         when(atlasClient.getEntity("82e06b34-9151-4023-aa9d-b82103a50e77")).thenReturn(createTableReference());
 
         Partition partition = mock(Partition.class);
@@ -176,13 +179,13 @@ public class HiveMetaStoreBridgeTest {
         returnExistingDatabase(TEST_DB_NAME, atlasClient, CLUSTER_NAME);
         when(hiveClient.getTable(TEST_DB_NAME, TEST_TABLE_NAME)).thenThrow(new RuntimeException("Timeout while reading data from hive metastore"));
 
-        when(atlasClient.searchByDSL(HiveMetaStoreBridge.getTableDSLQuery(CLUSTER_NAME, TEST_DB_NAME,
-            table2Name, HiveDataTypes.HIVE_TABLE.getName(), false), 1, 0)).thenReturn(
-            getEntityReference("82e06b34-9151-4023-aa9d-b82103a50e77"));
+        when(atlasClient.getEntity(HiveDataTypes.HIVE_TABLE.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, TEST_DB_NAME,
+            table2Name))).thenReturn(
+            getEntityReference(HiveDataTypes.HIVE_TABLE.getName(), "82e06b34-9151-4023-aa9d-b82103a50e77"));
         when(atlasClient.getEntity("82e06b34-9151-4023-aa9d-b82103a50e77")).thenReturn(createTableReference());
-        String processQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, hiveTables.get(1));
-        when(atlasClient.searchByDSL(HiveMetaStoreBridge.getProcessDSLQuery(HiveDataTypes.HIVE_PROCESS.getName(),
-            processQualifiedName), 1, 0)).thenReturn(getEntityReference("82e06b34-9151-4023-aa9d-b82103a50e77"));
+        String processQualifiedName = HiveMetaStoreBridge.getTableProcessQualifiedName(CLUSTER_NAME, hiveTables.get(1));
+        when(atlasClient.getEntity(HiveDataTypes.HIVE_PROCESS.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+            processQualifiedName)).thenReturn(getEntityReference(HiveDataTypes.HIVE_PROCESS.getName(), "82e06b34-9151-4023-aa9d-b82103a50e77"));
 
         HiveMetaStoreBridge bridge = new HiveMetaStoreBridge(CLUSTER_NAME, hiveClient, atlasClient);
         try {
@@ -201,13 +204,13 @@ public class HiveMetaStoreBridgeTest {
         returnExistingDatabase(TEST_DB_NAME, atlasClient, CLUSTER_NAME);
         when(hiveClient.getTable(TEST_DB_NAME, TEST_TABLE_NAME)).thenThrow(new RuntimeException("Timeout while reading data from hive metastore"));
 
-        when(atlasClient.searchByDSL(HiveMetaStoreBridge.getTableDSLQuery(CLUSTER_NAME, TEST_DB_NAME,
-            table2Name, HiveDataTypes.HIVE_TABLE.getName(), false), 10, 0)).thenReturn(
-            getEntityReference("82e06b34-9151-4023-aa9d-b82103a50e77"));
+        when(atlasClient.getEntity(HiveDataTypes.HIVE_TABLE.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, TEST_DB_NAME,
+            table2Name))).thenReturn(
+            getEntityReference(HiveDataTypes.HIVE_TABLE.getName(), "82e06b34-9151-4023-aa9d-b82103a50e77"));
         when(atlasClient.getEntity("82e06b34-9151-4023-aa9d-b82103a50e77")).thenReturn(createTableReference());
         String processQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, hiveTables.get(1));
-        when(atlasClient.searchByDSL(HiveMetaStoreBridge.getProcessDSLQuery(HiveDataTypes.HIVE_PROCESS.getName(),
-            processQualifiedName), 10, 0)).thenReturn(getEntityReference("82e06b34-9151-4023-aa9d-b82103a50e77"));
+        when(atlasClient.getEntity(HiveDataTypes.HIVE_PROCESS.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+            processQualifiedName)).thenReturn(getEntityReference(HiveDataTypes.HIVE_PROCESS.getName(), "82e06b34-9151-4023-aa9d-b82103a50e77"));;
 
         HiveMetaStoreBridge bridge = new HiveMetaStoreBridge(CLUSTER_NAME, hiveClient, atlasClient);
         try {
@@ -218,8 +221,8 @@ public class HiveMetaStoreBridgeTest {
         }
     }
 
-    private JSONArray getEntityReference(String id) throws JSONException {
-        return new JSONArray(String.format("[{\"$id$\":{\"id\":\"%s\"}}]", id));
+    private Referenceable getEntityReference(String typeName, String id) throws JSONException {
+        return new Referenceable(id, typeName, null);
     }
 
     private Referenceable createTableReference() {
@@ -232,7 +235,12 @@ public class HiveMetaStoreBridgeTest {
     private Table createTestTable(String databaseName, String tableName) throws HiveException {
         Table table = new Table(databaseName, tableName);
         table.setInputFormatClass(TextInputFormat.class);
+        table.setFields(new ArrayList<FieldSchema>() {{
+            add(new FieldSchema("col1", "string", "comment1"));
+        }
+        });
         table.setTableType(TableType.EXTERNAL_TABLE);
+        table.setDataLocation(new Path("somehdfspath"));
         return table;
     }
 
