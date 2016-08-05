@@ -54,7 +54,7 @@ public class HiveMetastoreBridgeIT extends HiveITBase {
 
         int tableCount = atlasClient.listEntities(HiveDataTypes.HIVE_TABLE.getName()).size();
 
-        //Now import using import tool - should be no-op
+        //Now import using import tool - should be no-op. This also tests update since table exists
         hiveMetaStoreBridge.importTable(atlasClient.getEntity(dbId), DEFAULT_DB, tableName, true);
         String tableId2 = assertTableIsRegistered(DEFAULT_DB, tableName);
         assertEquals(tableId2, tableId);

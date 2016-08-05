@@ -45,9 +45,9 @@ object FSDataModel extends App {
             //Is a regular file or a directory. If true, it is a file else a directory
             "isFile" ~ (boolean, optional, indexed)
             //Is a symlink or not
-            "isSymlink" ~ (boolean, optional, indexed)
+            "isSymlink" ~ (boolean, optional)
             //Optional and may not be set for a directory
-            "fileSize" ~ (long, optional, indexed)
+            "fileSize" ~ (long, optional)
             "group" ~ (string, optional, indexed)
             "posixPermissions" ~ (FSDataTypes.FS_PERMISSIONS.toString, optional, indexed)
         }
@@ -66,7 +66,7 @@ object FSDataModel extends App {
             //Making cluster optional since path is already unique containing the namenode URI
             AtlasConstants.CLUSTER_NAME_ATTRIBUTE ~ (string, optional, indexed)
             "numberOfReplicas" ~ (int, optional, indexed)
-            "extendedAttributes" ~ (map(string, string), optional, indexed)
+            "extendedAttributes" ~ (map(string, string), optional)
         }
         //TODO - ACLs - https://hadoop.apache.org/docs/r2.7.1/hadoop-project-dist/hadoop-hdfs/HdfsPermissionsGuide.html#ACLs_Access_Control_Lists
     }

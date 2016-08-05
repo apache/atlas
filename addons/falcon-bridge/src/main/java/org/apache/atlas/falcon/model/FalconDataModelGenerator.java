@@ -97,7 +97,7 @@ public class FalconDataModelGenerator {
     private void createClusterEntityClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition(COLO, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
-                        null),
+                        false, true, null),
                 // map of tags
                 new AttributeDefinition(TAGS,
                         DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(), DataTypes.STRING_TYPE.getName()),
@@ -113,7 +113,7 @@ public class FalconDataModelGenerator {
     private void createFeedCreationEntityClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition(STOREDIN, FalconDataTypes.FALCON_CLUSTER.getName(), Multiplicity.REQUIRED,
-                        false, null)
+                        false, false, true, null)
         };
 
         HierarchicalTypeDefinition<ClassType> definition =
@@ -127,7 +127,7 @@ public class FalconDataModelGenerator {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 TypesUtil.createRequiredAttrDef(FREQUENCY, DataTypes.STRING_TYPE),
                 new AttributeDefinition(STOREDIN, FalconDataTypes.FALCON_CLUSTER.getName(), Multiplicity.REQUIRED,
-                        false, null),
+                        false, false, true, null),
                 new AttributeDefinition(GROUPS, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 // map of tags
                 new AttributeDefinition(TAGS,
@@ -156,12 +156,12 @@ public class FalconDataModelGenerator {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 TypesUtil.createRequiredAttrDef(FREQUENCY, DataTypes.STRING_TYPE),
                 new AttributeDefinition(RUNSON, FalconDataTypes.FALCON_CLUSTER.getName(), Multiplicity.REQUIRED,
-                        false, null),
+                        false, false, true, null),
                 // map of tags
                 new AttributeDefinition(TAGS,
                         DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(), DataTypes.STRING_TYPE.getName()),
                         Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition(PIPELINES, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition(PIPELINES, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, false, true, null),
                 // wf properties
                 new AttributeDefinition(WFPROPERTIES,
                         DataTypes.mapTypeName(DataTypes.STRING_TYPE.getName(), DataTypes.STRING_TYPE.getName()),

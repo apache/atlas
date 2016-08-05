@@ -81,7 +81,7 @@ class LineageQueryTest extends BaseGremlinTest {
                          |        },
                          |        "isComposite":false,
                          |        "isUnique":false,
-                         |        "isIndexable":true,
+                         |        "isIndexable":false,
                          |        "reverseAttributeName":null
                          |      },
                          |      {
@@ -94,7 +94,7 @@ class LineageQueryTest extends BaseGremlinTest {
                          |        },
                          |        "isComposite":false,
                          |        "isUnique":false,
-                         |        "isIndexable":true,
+                         |        "isIndexable":false,
                          |        "reverseAttributeName":null
                          |      },
                          |      {
@@ -107,7 +107,7 @@ class LineageQueryTest extends BaseGremlinTest {
                          |        },
                          |        "isComposite":false,
                          |        "isUnique":false,
-                         |        "isIndexable":true,
+                         |        "isIndexable":false,
                          |        "reverseAttributeName":null
                          |      },
                          |      {
@@ -120,7 +120,7 @@ class LineageQueryTest extends BaseGremlinTest {
                          |        },
                          |        "isComposite":false,
                          |        "isUnique":false,
-                         |        "isIndexable":true,
+                         |        "isIndexable":false,
                          |        "reverseAttributeName":null
                          |      }
                          |    ]
@@ -213,7 +213,7 @@ class LineageQueryTest extends BaseGremlinTest {
                           |        },
                           |        "isComposite":false,
                           |        "isUnique":false,
-                          |        "isIndexable":true,
+                          |        "isIndexable":false,
                           |        "reverseAttributeName":null
                           |      },
                           |      {
@@ -226,7 +226,7 @@ class LineageQueryTest extends BaseGremlinTest {
                           |        },
                           |        "isComposite":false,
                           |        "isUnique":false,
-                          |        "isIndexable":true,
+                          |        "isIndexable":false,
                           |        "reverseAttributeName":null
                           |      },
                           |      {
@@ -239,7 +239,7 @@ class LineageQueryTest extends BaseGremlinTest {
                           |        },
                           |        "isComposite":false,
                           |        "isUnique":false,
-                          |        "isIndexable":true,
+                          |        "isIndexable":false,
                           |        "reverseAttributeName":null
                           |      },
                           |      {
@@ -252,7 +252,7 @@ class LineageQueryTest extends BaseGremlinTest {
                           |        },
                           |        "isComposite":false,
                           |        "isUnique":false,
-                          |        "isIndexable":true,
+                          |        "isIndexable":false,
                           |        "reverseAttributeName":null
                           |      }
                           |    ]
@@ -365,7 +365,7 @@ class LineageQueryTest extends BaseGremlinTest {
         },
         "isComposite":false,
         "isUnique":false,
-        "isIndexable":true,
+        "isIndexable":false,
         "reverseAttributeName":null
       },
       {
@@ -378,7 +378,7 @@ class LineageQueryTest extends BaseGremlinTest {
         },
         "isComposite":false,
         "isUnique":false,
-        "isIndexable":true,
+        "isIndexable":false,
         "reverseAttributeName":null
       }
     ]
@@ -434,7 +434,7 @@ class LineageQueryTest extends BaseGremlinTest {
                           |        },
                           |        "isComposite":false,
                           |        "isUnique":false,
-                          |        "isIndexable":true,
+                          |        "isIndexable":false,
                           |        "reverseAttributeName":null
                           |      },
                           |      {
@@ -447,7 +447,7 @@ class LineageQueryTest extends BaseGremlinTest {
                           |        },
                           |        "isComposite":false,
                           |        "isUnique":false,
-                          |        "isIndexable":true,
+                          |        "isIndexable":false,
                           |        "reverseAttributeName":null
                           |      },
                           |      {
@@ -460,7 +460,7 @@ class LineageQueryTest extends BaseGremlinTest {
                           |        },
                           |        "isComposite":false,
                           |        "isUnique":false,
-                          |        "isIndexable":true,
+                          |        "isIndexable":false,
                           |        "reverseAttributeName":null
                           |      },
                           |      {
@@ -473,7 +473,7 @@ class LineageQueryTest extends BaseGremlinTest {
                           |        },
                           |        "isComposite":false,
                           |        "isUnique":false,
-                          |        "isIndexable":true,
+                          |        "isIndexable":false,
                           |        "reverseAttributeName":null
                           |      }
                           |    ]

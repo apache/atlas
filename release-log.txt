@@ -3,7 +3,7 @@ Apache Atlas Release Notes
 
 --trunk - unreleased
 INCOMPATIBLE CHANGES:
-
+ATLAS-1060 Add composite indexes for exact match performance improvements for all attributes (sumasai via shwethags)
 
 ALL CHANGES:
 ATLAS-1097 Fix a potential NPE issue flagged by Coverity scan (mneethiraj via shwethags)
