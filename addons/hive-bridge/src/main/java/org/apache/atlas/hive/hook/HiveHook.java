@@ -773,10 +773,14 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                                           SortedMap<WriteEntity, Referenceable> hiveOutputsMap) throws HiveException {
         HiveOperation op = eventContext.getOperation();
         if (isCreateOp(eventContext)) {
-            Table outTable = getEntityByType(sortedHiveOutputs, Type.TABLE).getTable();
-            //refresh table
-            outTable = dgiBridge.hiveClient.getTable(outTable.getDbName(), outTable.getTableName());
-            return HiveMetaStoreBridge.getTableProcessQualifiedName(dgiBridge.getClusterName(), outTable);
+            Entity entity = getEntityByType(sortedHiveOutputs, Type.TABLE);
+
+            if (entity != null) {
+                Table outTable = entity.getTable();
+                //refresh table
+                outTable = dgiBridge.hiveClient.getTable(outTable.getDbName(), outTable.getTableName());
+                return HiveMetaStoreBridge.getTableProcessQualifiedName(dgiBridge.getClusterName(), outTable);
+            }
         }
 
         StringBuilder buffer = new StringBuilder(op.getOperationName());
