@@ -112,14 +112,8 @@ define(['require',
                 this.listenTo(this.schemaCollection, 'backgrid:selected', function(model, checked) {
                     if (checked === true) {
                         model.set("isEnable", true);
-                        if (Globals.taxonomy) {
-                            this.$('.multiSelectTerm').show();
-                        }
-                        this.$('.multiSelectTag').show();
                     } else {
                         model.set("isEnable", false);
-                        this.$('.multiSelectTerm').hide();
-                        this.$('.multiSelectTag').hide();
                     }
                     this.arr = [];
                     var that = this;
@@ -132,6 +126,17 @@ define(['require',
                             });
                         }
                     });
+                    if (this.arr.length > 0) {
+                        if (Globals.taxonomy) {
+                            this.$('.multiSelectTerm').show();
+                        }
+                        this.$('.multiSelectTag').show();
+                    } else {
+                        if (Globals.taxonomy) {
+                            this.$('.multiSelectTerm').hide();
+                        }
+                        this.$('.multiSelectTag').hide();
+                    }
                 });
                 this.listenTo(this.schemaCollection, "error", function(value) {
                     $('.schemaTable').hide();

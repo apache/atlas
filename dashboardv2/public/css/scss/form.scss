@@ -31,9 +31,12 @@
     }
 }
 
-.sidebar-wrapper .form-control {
-    background-color: $white;
-    border: 1px $white solid;
+.sidebar-wrapper {
+    z-index: 9 !important;
+    .form-control {
+        background-color: $white;
+        border: 1px $white solid;
+    }
 }
 
 .well {

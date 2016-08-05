@@ -141,16 +141,12 @@ define(['require',
             bindEvents: function() {
                 var that = this;
                 this.listenTo(this.searchCollection, 'backgrid:selected', function(model, checked) {
+                    this.arr = [];
                     if (checked === true) {
                         model.set("isEnable", true);
-                        this.$('.searchResult').find(".inputAssignTag.multiSelect").show();
-                        this.$('.searchResult').find(".inputAssignTag.multiSelectTag").show();
                     } else {
                         model.set("isEnable", false);
-                        this.$('.searchResult').find(".inputAssignTag.multiSelect").hide();
-                        this.$('.searchResult').find(".inputAssignTag.multiSelectTag").hide();
                     }
-                    this.arr = [];
                     this.searchCollection.find(function(item) {
                         if (item.get('isEnable')) {
                             var term = [];
@@ -160,6 +156,13 @@ define(['require',
                             });
                         }
                     });
+                    if (this.arr.length > 0) {
+                        this.$('.searchResult').find(".inputAssignTag.multiSelect").show();
+                        this.$('.searchResult').find(".inputAssignTag.multiSelectTag").show();
+                    } else {
+                        this.$('.searchResult').find(".inputAssignTag.multiSelect").hide();
+                        this.$('.searchResult').find(".inputAssignTag.multiSelectTag").hide();
+                    }
                 });
                 this.listenTo(this.searchCollection, "error", function(value, responseData) {
                     this.$('.fontLoader').hide();

@@ -202,6 +202,9 @@ define(['require',
                     this.$('.typeLOV').hide();
                     this.type = "fulltext";
                 }
+                if (this.query[this.type].query !== Utils.getUrlState.getQueryParams().query && this.type == Utils.getUrlState.getQueryParams().searchType) {
+                    this.query[this.type].query = Utils.getUrlState.getQueryParams().query;
+                }
                 Utils.setUrl({
                     url: '#!/search/searchResult',
                     urlParams: {

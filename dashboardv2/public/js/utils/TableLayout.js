@@ -310,7 +310,7 @@ define(['require',
                 var totalRecords = collState.totalRecords || 0;
                 var pageStartIndex = totalRecords ? (collState.currentPage * collState.pageSize) : 0;
                 var pageEndIndex = pageStartIndex + this.collection.length;
-                this.$('[data-id="r_footerRecords"]').html('<h5>Showing ' + (totalRecords ? pageStartIndex + 1 : 1) + ' - ' + pageEndIndex + '</h5>');
+                this.$('[data-id="r_footerRecords"]').html('<h5>Showing ' + (totalRecords ? pageStartIndex + 1 : (this.collection.length === 0) ? 0 : 1) + ' - ' + pageEndIndex + '</h5>');
                 return this;
             },
             /**
