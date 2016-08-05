@@ -222,6 +222,10 @@
     cursor: pointer;
 }
 
+.popover {
+    z-index: 99;
+}
+
 .popover-content {
     ul {
         color: $dark_gray;
