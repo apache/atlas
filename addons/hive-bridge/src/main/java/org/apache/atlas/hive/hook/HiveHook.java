@@ -786,9 +786,9 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             LOG.debug("Ignoring HDFS paths in qualifiedName for {} {} ", op, eventContext.getQueryStr());
         }
 
-        addInputs(op, sortedHiveInputs, buffer, hiveInputsMap, ignoreHDFSPathsinQFName);
+        addInputs(dgiBridge, op, sortedHiveInputs, buffer, hiveInputsMap, ignoreHDFSPathsinQFName);
         buffer.append(IO_SEP);
-        addOutputs(op, sortedHiveOutputs, buffer, hiveOutputsMap, ignoreHDFSPathsinQFName);
+        addOutputs(dgiBridge, op, sortedHiveOutputs, buffer, hiveOutputsMap, ignoreHDFSPathsinQFName);
         LOG.info("Setting process qualified name to {}", buffer);
         return buffer.toString();
     }
@@ -815,7 +815,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         return false;
     }
 
-    private static void addInputs(HiveOperation op, SortedSet<ReadEntity> sortedInputs, StringBuilder buffer, final Map<ReadEntity, Referenceable> refs, final boolean ignoreHDFSPathsInQFName) {
+    private static void addInputs(HiveMetaStoreBridge hiveBridge, HiveOperation op, SortedSet<ReadEntity> sortedInputs, StringBuilder buffer, final Map<ReadEntity, Referenceable> refs, final boolean ignoreHDFSPathsInQFName) throws HiveException {
         if (refs != null) {
             if (sortedInputs != null) {
                 Set<String> dataSetsProcessed = new LinkedHashSet<>();
@@ -827,7 +827,12 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                             (Type.DFS_DIR.equals(input.getType()) || Type.LOCAL_DIR.equals(input.getType()))) {
                             LOG.debug("Skipping dfs dir input addition to process qualified name {} ", input.getName());
                         } else if (refs.containsKey(input)) {
-                            addDataset(buffer, refs.get(input));
+                            if ( input.getType() == Type.PARTITION || input.getType() == Type.TABLE) {
+                                final Date createTime = HiveMetaStoreBridge.getTableCreatedTime(hiveBridge.hiveClient.getTable(input.getTable().getDbName(), input.getTable().getTableName()));
+                                addDataset(buffer, refs.get(input), createTime.getTime());
+                            } else {
+                                addDataset(buffer, refs.get(input));
+                            }
                         }
                         dataSetsProcessed.add(input.getName().toLowerCase());
                     }
@@ -837,6 +842,12 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         }
     }
 
+    private static void addDataset(StringBuilder buffer, Referenceable ref, final long createTime) {
+        addDataset(buffer, ref);
+        buffer.append(SEP);
+        buffer.append(createTime);
+    }
+
     private static void addDataset(StringBuilder buffer, Referenceable ref) {
         buffer.append(SEP);
         String dataSetQlfdName = (String) ref.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME);
@@ -844,11 +855,11 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         buffer.append(dataSetQlfdName.toLowerCase().replaceAll("/", ""));
     }
 
-    private static void addOutputs(HiveOperation op, SortedSet<WriteEntity> sortedOutputs, StringBuilder buffer, final Map<WriteEntity, Referenceable> refs, final boolean ignoreHDFSPathsInQFName) {
+    private static void addOutputs(HiveMetaStoreBridge hiveBridge, HiveOperation op, SortedSet<WriteEntity> sortedOutputs, StringBuilder buffer, final Map<WriteEntity, Referenceable> refs, final boolean ignoreHDFSPathsInQFName) throws HiveException {
         if (refs != null) {
             Set<String> dataSetsProcessed = new LinkedHashSet<>();
             if (sortedOutputs != null) {
-                for (Entity output : sortedOutputs) {
+                for (WriteEntity output : sortedOutputs) {
                     final Entity entity = output;
                     if (!dataSetsProcessed.contains(output.getName().toLowerCase())) {
                         //HiveOperation.QUERY type encompasses INSERT, INSERT_OVERWRITE, UPDATE, DELETE, PATH_WRITE operations
@@ -860,7 +871,12 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                             (Type.DFS_DIR.equals(output.getType()) || Type.LOCAL_DIR.equals(output.getType()))) {
                             LOG.debug("Skipping dfs dir output addition to process qualified name {} ", output.getName());
                         } else if (refs.containsKey(output)) {
-                            addDataset(buffer, refs.get(output));
+                            if ( output.getType() == Type.PARTITION || output.getType() == Type.TABLE) {
+                                final Date createTime = HiveMetaStoreBridge.getTableCreatedTime(hiveBridge.hiveClient.getTable(output.getTable().getDbName(), output.getTable().getTableName()));
+                                addDataset(buffer, refs.get(output), createTime.getTime());
+                            } else {
+                                addDataset(buffer, refs.get(output));
+                            }
                         }
                         dataSetsProcessed.add(output.getName().toLowerCase());
                     }

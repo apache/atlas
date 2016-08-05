@@ -408,7 +408,7 @@ public class HiveMetaStoreBridge {
         return createOrUpdateTableInstance(dbReference, null, hiveTable);
     }
 
-    private static Date getTableCreatedTime(Table table) {
+    public static Date getTableCreatedTime(Table table) {
         return new Date(table.getTTable().getCreateTime() * MILLIS_CONVERT_FACTOR);
     }
 
