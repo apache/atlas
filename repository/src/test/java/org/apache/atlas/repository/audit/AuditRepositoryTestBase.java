@@ -18,6 +18,7 @@
 
 package org.apache.atlas.repository.audit;
 
+import junit.framework.Assert;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.commons.lang.RandomStringUtils;
@@ -88,7 +89,7 @@ public class AuditRepositoryTestBase {
         assertEquals(events.size(), 0);
     }
 
-    private void assertEventEquals(EntityAuditEvent actual, EntityAuditEvent expected) {
+    protected void assertEventEquals(EntityAuditEvent actual, EntityAuditEvent expected) {
         if (expected != null) {
             assertNotNull(actual);
         }

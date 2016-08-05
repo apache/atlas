@@ -6,6 +6,7 @@ INCOMPATIBLE CHANGES:
 ATLAS-1060 Add composite indexes for exact match performance improvements for all attributes (sumasai via shwethags)
 
 ALL CHANGES:
+ATLAS-1087 Provide an option to turn off persisting entity definition in audits (sumasai, shwethags)
 ATLAS-1097 Fix a potential NPE issue flagged by Coverity scan (mneethiraj via shwethags)
 ATLAS-1090 UI: Multi-Select Tagging. (Kalyanikashikar via kevalbhatt)
 ATLAS-1092 Add Table.CreateTime to process qualified Name for all hive_process (sumasai via shwethags)

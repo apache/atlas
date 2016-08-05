@@ -19,6 +19,7 @@
 package org.apache.atlas.repository.audit;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.EntityAuditEvent;
 import org.apache.commons.configuration.Configuration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
@@ -27,6 +28,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 public class HBaseBasedAuditRepositoryTest extends AuditRepositoryTestBase {
@@ -36,7 +38,7 @@ public class HBaseBasedAuditRepositoryTest extends AuditRepositoryTestBase {
     public void setup() throws Exception {
         eventRepository = new HBaseBasedAuditRepository();
         HBaseTestUtils.startCluster();
-        ((HBaseBasedAuditRepository)eventRepository).start();
+        ((HBaseBasedAuditRepository) eventRepository).start();
 
         Configuration properties = ApplicationProperties.get();
         String tableNameStr = properties.getString(HBaseBasedAuditRepository.CONFIG_TABLE_NAME,
@@ -46,7 +48,7 @@ public class HBaseBasedAuditRepositoryTest extends AuditRepositoryTestBase {
 
     @AfterClass
     public void teardown() throws Exception {
-        ((HBaseBasedAuditRepository)eventRepository).stop();
+        ((HBaseBasedAuditRepository) eventRepository).stop();
         HBaseTestUtils.stopCluster();
     }
 
@@ -55,5 +57,11 @@ public class HBaseBasedAuditRepositoryTest extends AuditRepositoryTestBase {
         Connection connection = HBaseTestUtils.getConnection();
         Admin admin = connection.getAdmin();
         assertTrue(admin.tableExists(tableName));
+    }
+
+    @Override
+    protected void assertEventEquals(EntityAuditEvent actual, EntityAuditEvent expected) {
+        super.assertEventEquals(actual, expected);
+        assertNull(actual.getEntityDefinition());
     }
 }

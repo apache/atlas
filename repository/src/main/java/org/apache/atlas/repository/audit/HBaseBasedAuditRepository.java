@@ -74,12 +74,23 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
 
     private static final String FIELD_SEPARATOR = ":";
 
+    public static final String CONFIG_PERSIST_ENTITY_DEFINITION = CONFIG_PREFIX + ".persistEntityDefinition";
+
     public static final byte[] COLUMN_FAMILY = Bytes.toBytes("dt");
     public static final byte[] COLUMN_ACTION = Bytes.toBytes("action");
     public static final byte[] COLUMN_DETAIL = Bytes.toBytes("detail");
     public static final byte[] COLUMN_USER = Bytes.toBytes("user");
     public static final byte[] COLUMN_DEFINITION = Bytes.toBytes("def");
 
+    private static boolean persistEntityDefinition;
+
+    static {
+        try {
+            persistEntityDefinition = ApplicationProperties.get().getBoolean(CONFIG_PERSIST_ENTITY_DEFINITION, false);
+        } catch (AtlasException e) {
+            throw new RuntimeException(e);
+        }
+    }
     private TableName tableName;
     private Connection connection;
 
@@ -111,7 +122,9 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
                 addColumn(put, COLUMN_ACTION, event.getAction());
                 addColumn(put, COLUMN_USER, event.getUser());
                 addColumn(put, COLUMN_DETAIL, event.getDetails());
-                addColumn(put, COLUMN_DEFINITION, event.getEntityDefinitionString());
+                if (persistEntityDefinition) {
+                    addColumn(put, COLUMN_DEFINITION, event.getEntityDefinitionString());
+                }
                 puts.add(put);
             }
             table.put(puts);
@@ -185,7 +198,12 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
                 event.setUser(getResultString(result, COLUMN_USER));
                 event.setAction(EntityAuditEvent.EntityAuditAction.valueOf(getResultString(result, COLUMN_ACTION)));
                 event.setDetails(getResultString(result, COLUMN_DETAIL));
-                event.setEntityDefinition(getResultString(result, COLUMN_DEFINITION));
+                if (persistEntityDefinition) {
+                    String colDef = getResultString(result, COLUMN_DEFINITION);
+                    if (colDef != null) {
+                        event.setEntityDefinition(colDef);
+                    }
+                }
                 events.add(event);
             }
             LOG.info("Got events for entity id {}, starting timestamp {}, #records {}", entityId, startKey, events.size());
@@ -199,7 +217,11 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
     }
 
     private String getResultString(Result result, byte[] columnName) {
-        return Bytes.toString(result.getValue(COLUMN_FAMILY, columnName));
+        byte[] rawValue = result.getValue(COLUMN_FAMILY, columnName);
+        if ( rawValue != null) {
+            return Bytes.toString(rawValue);
+        }
+        return null;
     }
 
     private EntityAuditEvent fromKey(byte[] keyBytes) {
