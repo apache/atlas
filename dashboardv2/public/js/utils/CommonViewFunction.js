@@ -449,12 +449,12 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
             }
         });
         if (model.get('$id$')) {
-            addTag += '<a href="javascript:void(0)" data-id="addTag" class="inputTagAdd" data-guid="' + model.get('$id$').id + '" ><i class="fa fa-plus"></i></a>';
+            addTag += '<a href="javascript:void(0)" data-id="addTag" class="inputTagAdd assignTag" data-guid="' + model.get('$id$').id + '" ><i class="fa fa-plus"></i></a>';
         } else {
-            addTag += '<a href="javascript:void(0)" data-id="addTag" class="inputTagAdd"><i style="right:0" class="fa fa-plus"></i></a>';
+            addTag += '<a href="javascript:void(0)" data-id="addTag" class="inputTagAdd assignTag"><i style="right:0" class="fa fa-plus"></i></a>';
         }
         if (count > 1) {
-            addTag += '<div data-id="showMoreLess" class="inputTagAdd tagDetailPopover"><i class="fa fa-ellipsis-h" aria-hidden="true"></i></div>'
+            addTag += '<div data-id="showMoreLess" class="inputTagAdd assignTag tagDetailPopover"><i class="fa fa-ellipsis-h" aria-hidden="true"></i></div>'
         }
         return '<div class="tagList">' + atags + addTag + '<div class="popover popoverTag bottom" style="display:none"><div class="arrow"></div><div class="popover-content popoverContainer">' + popTag + '</div></div></div>';
     }

@@ -44,13 +44,15 @@ define(['require',
                 addTag: "[data-id='addTag']",
                 addTerm: '[data-id="addTerm"]',
                 showMoreLess: '[data-id="showMoreLess"]',
-                showMoreLessTerm: '[data-id="showMoreLessTerm"]'
+                showMoreLessTerm: '[data-id="showMoreLessTerm"]',
+                addAssignTag: "[data-id='addAssignTag']"
             },
             /** ui events hash */
             events: function() {
                 var events = {};
-                events["click " + this.ui.addTag] = 'addTagModalView';
+                events["click " + this.ui.addTag] = 'checkedValue';
                 events["click " + this.ui.addTerm] = 'checkedValue';
+                events["click " + this.ui.addAssignTag] = 'checkedValue';
                 events["click " + this.ui.tagClick] = function(e) {
                     if (e.target.nodeName.toLocaleLowerCase() == "i") {
                         this.onClickTagCross(e);
@@ -110,10 +112,14 @@ define(['require',
                 this.listenTo(this.schemaCollection, 'backgrid:selected', function(model, checked) {
                     if (checked === true) {
                         model.set("isEnable", true);
-                        this.$('.multiSelect').show();
+                        if (Globals.taxonomy) {
+                            this.$('.multiSelectTerm').show();
+                        }
+                        this.$('.multiSelectTag').show();
                     } else {
                         model.set("isEnable", false);
-                        this.$('.multiSelect').hide();
+                        this.$('.multiSelectTerm').hide();
+                        this.$('.multiSelectTag').hide();
                     }
                     this.arr = [];
                     var that = this;
@@ -127,11 +133,6 @@ define(['require',
                         }
                     });
                 });
-                this.listenTo(this.schemaCollection, "reset", function(value) {
-                    this.renderTableLayoutView();
-                    $('.schemaTable').show();
-                    this.$('.fontLoader').hide();
-                }, this);
                 this.listenTo(this.schemaCollection, "error", function(value) {
                     $('.schemaTable').hide();
                     this.$('.fontLoader').hide();
@@ -139,7 +140,7 @@ define(['require',
             },
             onRender: function() {
                 var that = this;
-                this.schemaCollection.fetch({ reset: true });
+                this.fetchCollection();
                 this.renderTableLayoutView();
                 $('body').click(function(e) {
                     var iconEvnt = e.target.nodeName;
@@ -152,8 +153,16 @@ define(['require',
                 });
             },
             fetchCollection: function() {
+                var that = this;
                 this.$('.fontLoader').show();
-                this.schemaCollection.fetch({ reset: true });
+                this.schemaCollection.fetch({
+                    success: function() {
+                        that.renderTableLayoutView();
+                        $('.schemaTable').show();
+                        that.$('.fontLoader').hide();
+                    },
+                    silent: true
+                });
             },
             renderTableLayoutView: function() {
                 var that = this,
@@ -170,7 +179,8 @@ define(['require',
                         globalVent: that.globalVent,
                         columns: columns
                     })));
-                    that.$('.multiSelect').hide();
+                    that.$('.multiSelectTerm').hide();
+                    that.$('.multiSelectTag').hide();
                     that.renderBreadcrumb();
                 });
             },
@@ -226,15 +236,13 @@ define(['require',
                             })
                         };
                     });
-                    if (Globals.taxonomy) {
-                        col['Check'] = {
-                            name: "selected",
-                            label: "",
-                            cell: "select-row",
-                            headerCell: "select-all",
-                            position: 1
-                        };
-                    }
+                    col['Check'] = {
+                        name: "selected",
+                        label: "",
+                        cell: "select-row",
+                        headerCell: "select-all",
+                        position: 1
+                    };
                     col['tag'] = {
                         label: "Tags",
                         cell: "Html",
@@ -275,23 +283,36 @@ define(['require',
                 }
                 var guid = "",
                     that = this;
-                if (this.arr && this.arr.length) {
-                    that.addTermModalView(guid, this.arr);
+                var multiSelectTag = $(e.currentTarget).hasClass('assignTag');
+                if (multiSelectTag) {
+                    if (this.arr && this.arr.length && multiSelectTag) {
+                        that.addTagModalView(guid, this.arr);
+                    } else {
+                        guid = that.$(e.currentTarget).data("guid");
+                        that.addTagModalView(guid);
+                    }
                 } else {
-                    guid = that.$(e.currentTarget).data("guid");
-                    that.addTermModalView(guid);
+                    if (this.arr && this.arr.length) {
+                        that.addTermModalView(guid, this.arr);
+                    } else {
+                        guid = that.$(e.currentTarget).data("guid");
+                        that.addTermModalView(guid);
+                    }
                 }
             },
-            addTagModalView: function(e) {
-                if (e) {
-                    e.stopPropagation();
-                }
+            addTagModalView: function(guid, multiple) {
                 var that = this;
                 require(['views/tag/addTagModalView'], function(AddTagModalView) {
                     var view = new AddTagModalView({
-                        guid: that.$(e.currentTarget).data("guid"),
+                        guid: guid,
+                        multiple: multiple,
                         callback: function() {
                             that.fetchCollection();
+                            that.arr = [];
+                        },
+                        showLoader: function() {
+                            that.$('.fontLoader').show();
+                            that.$('.searchTable').hide();
                         }
                     });
                     // view.saveTagData = function() {
