@@ -185,15 +185,14 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
     private void createSuperTypes() throws AtlasException {
         HierarchicalTypeDefinition<ClassType> referenceableType = TypesUtil
                 .createClassTypeDef(AtlasClient.REFERENCEABLE_SUPER_TYPE, ImmutableSet.<String>of(),
-                        TypesUtil.createUniqueRequiredAttrDef(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
-                                DataTypes.STRING_TYPE));
+                 new AttributeDefinition(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, true, true, null));
         createType(referenceableType);
 
         HierarchicalTypeDefinition<ClassType> assetType = TypesUtil
                 .createClassTypeDef(AtlasClient.ASSET_TYPE, ImmutableSet.<String>of(),
-                        TypesUtil.createRequiredAttrDef(AtlasClient.NAME, DataTypes.STRING_TYPE),
+                        new AttributeDefinition(AtlasClient.NAME, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, false, true, null),
                         TypesUtil.createOptionalAttrDef(AtlasClient.DESCRIPTION, DataTypes.STRING_TYPE),
-                        TypesUtil.createOptionalAttrDef(AtlasClient.OWNER, DataTypes.STRING_TYPE));
+                        new AttributeDefinition(AtlasClient.OWNER, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, false, true, null));
         createType(assetType);
 
         HierarchicalTypeDefinition<ClassType> infraType = TypesUtil

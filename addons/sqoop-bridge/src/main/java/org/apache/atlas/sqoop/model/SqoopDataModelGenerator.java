@@ -119,13 +119,13 @@ public class SqoopDataModelGenerator {
     private void createSqoopDbStoreClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition(DB_STORE_TYPE,
-                        DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                        DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, false, true, null),
                 new AttributeDefinition(DB_STORE_USAGE,
                         DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition(STORE_URI,
                         DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition(SOURCE,
-                        DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null)
+                        DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, false, true, null)
         };
 
         HierarchicalTypeDefinition<ClassType> definition =
@@ -139,12 +139,12 @@ public class SqoopDataModelGenerator {
     private void createSqoopProcessClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition(OPERATION,
-                        DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                        DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, false, true, null),
                 new AttributeDefinition(CMD_LINE_OPTS, STRING_MAP_TYPE.getName(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition(START_TIME, DataTypes.DATE_TYPE.getName(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition(END_TIME, DataTypes.DATE_TYPE.getName(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition(USER,
-                        DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
+                        DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, false, true, null),
         };
 
         HierarchicalTypeDefinition<ClassType> definition =

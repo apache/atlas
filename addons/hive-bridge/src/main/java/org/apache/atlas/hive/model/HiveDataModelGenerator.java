@@ -204,7 +204,7 @@ public class HiveDataModelGenerator {
     private void createDBClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
                 new AttributeDefinition(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
-                        null),
+                        false, true, null),
                 new AttributeDefinition(LOCATION, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
                 new AttributeDefinition(HiveDataModelGenerator.PARAMETERS, STRING_MAP_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
@@ -220,7 +220,7 @@ public class HiveDataModelGenerator {
 
     private void createColumnClass() throws AtlasException {
         AttributeDefinition[] attributeDefinitions = new AttributeDefinition[]{
-                new AttributeDefinition("type", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, null),
+                new AttributeDefinition("type", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, false, true, null),
                 new AttributeDefinition(COMMENT, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 //Making this optional since this is an incompatible change
                 //Reverse attribute to 'columns' in Table
@@ -258,7 +258,7 @@ public class HiveDataModelGenerator {
                 new AttributeDefinition(HiveDataModelGenerator.TABLE_TYPE_ATTR, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false,
                         null),
                 new AttributeDefinition("temporary", DataTypes.BOOLEAN_TYPE.getName(), Multiplicity.OPTIONAL, false,
-                        null),};
+                        false, true, null),};
         HierarchicalTypeDefinition<ClassType> definition =
                 new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_TABLE.getName(), null,
                     ImmutableSet.of(AtlasClient.DATA_SET_SUPER_TYPE), attributeDefinitions);
@@ -271,9 +271,9 @@ public class HiveDataModelGenerator {
                 new AttributeDefinition("startTime", DataTypes.DATE_TYPE.getName(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("endTime", DataTypes.DATE_TYPE.getName(), Multiplicity.REQUIRED, false, null),
                 new AttributeDefinition("userName", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
-                        null),
+                        false, true, null),
                 new AttributeDefinition("operationType", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
-                        null),
+                        false, true, null),
                 new AttributeDefinition("queryText", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,
                         null),
                 new AttributeDefinition("queryPlan", DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false,

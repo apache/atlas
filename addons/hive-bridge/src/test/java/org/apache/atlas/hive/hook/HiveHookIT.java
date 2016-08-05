@@ -1502,7 +1502,7 @@ public class HiveHookIT extends HiveITBase {
         final String fmtQuery = "alter database %s set OWNER %s %s";
         String query = String.format(fmtQuery, dbName, "USER", owner);
 
-        runCommand(query);
+        runCommandWithDelay(query, 1000);
 
         assertDatabaseIsRegistered(dbName, new AssertPredicate() {
             @Override

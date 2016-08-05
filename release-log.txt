@@ -3,6 +3,7 @@ Apache Atlas Release Notes
 
 --Release 0.7-incubating
 INCOMPATIBLE CHANGES:
+ATLAS-1060 Add composite indexes for exact match performance improvements for all attributes (sumasai via shwethags)
 ATLAS-822 Type updates - don't allow updating supertypes ( shwethags via sumasai )
 ATLAS-698 Remove Rexster Graph API (svimal2106 via shwethags)
 ATLAS-844 Remove titan berkeley and elastic search jars if hbase/solr based profiles are chosen (yhemanth via shwethags)

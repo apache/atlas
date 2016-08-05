@@ -78,7 +78,7 @@ class GremlinTest extends BaseGremlinTest {
                       |                },
                       |                "isComposite": false,
                       |                "isUnique": false,
-                      |                "isIndexable": true,
+                      |                "isIndexable": false,
                       |                "reverseAttributeName": null
                       |            },
                       |            {
@@ -91,7 +91,7 @@ class GremlinTest extends BaseGremlinTest {
                       |                },
                       |                "isComposite": false,
                       |                "isUnique": false,
-                      |                "isIndexable": true,
+                      |                "isIndexable": false,
                       |                "reverseAttributeName": null
                       |            },
                       |            {
@@ -104,7 +104,7 @@ class GremlinTest extends BaseGremlinTest {
                       |                 },
                       |                "isComposite": false,
                       |               "isUnique": false,
-                      |               "isIndexable": true,
+                      |               "isIndexable": false,
                       |               "reverseAttributeName": null
                       |
                       |            },
@@ -118,7 +118,7 @@ class GremlinTest extends BaseGremlinTest {
                       |                },
                       |               "isComposite": false,
                       |               "isUnique": false,
-                      |               "isIndexable": true,
+                      |               "isIndexable": false,
                       |               "reverseAttributeName": null
                       |            }
                       |            ]
@@ -174,7 +174,7 @@ class GremlinTest extends BaseGremlinTest {
                       |                },
                       |                "isComposite": false,
                       |                "isUnique": false,
-                      |                "isIndexable": true,
+                      |                "isIndexable": false,
                       |                "reverseAttributeName": null
                       |            },
                       |            {
@@ -187,7 +187,7 @@ class GremlinTest extends BaseGremlinTest {
                       |                },
                       |                "isComposite": false,
                       |                "isUnique": false,
-                      |                "isIndexable": true,
+                      |                "isIndexable": false,
                       |                "reverseAttributeName": null
                       |            },
                       |            {
@@ -200,7 +200,7 @@ class GremlinTest extends BaseGremlinTest {
                       |                },
                       |                "isComposite": false,
                       |                "isUnique": false,
-                      |                "isIndexable": true,
+                      |                "isIndexable": false,
                       |                "reverseAttributeName": null
                       |            },
                       |            {
@@ -213,7 +213,7 @@ class GremlinTest extends BaseGremlinTest {
                       |                },
                       |               "isComposite": false,
                       |               "isUnique": false,
-                      |               "isIndexable": true,
+                      |               "isIndexable": false,
                       |               "reverseAttributeName": null
                       |            }
                       |        ]
@@ -253,7 +253,7 @@ class GremlinTest extends BaseGremlinTest {
                       |                },
                       |                "isComposite": false,
                       |                "isUnique": false,
-                      |                "isIndexable": true,
+                      |                "isIndexable": false,
                       |                "reverseAttributeName": null
                       |            },
                       |            {
@@ -266,7 +266,7 @@ class GremlinTest extends BaseGremlinTest {
                       |                },
                       |                "isComposite": false,
                       |                "isUnique": false,
-                      |                "isIndexable": true,
+                      |                "isIndexable": false,
                       |                "reverseAttributeName": null
                       |            },
                       |            {
@@ -279,7 +279,7 @@ class GremlinTest extends BaseGremlinTest {
                       |                },
                       |                "isComposite": false,
                       |                "isUnique": false,
-                      |                "isIndexable": true,
+                      |                "isIndexable": false,
                       |                "reverseAttributeName": null
                       |            },
                       |            {
@@ -292,7 +292,7 @@ class GremlinTest extends BaseGremlinTest {
                       |                },
                       |               "isComposite": false,
                       |               "isUnique": false,
-                      |               "isIndexable": true,
+                      |               "isIndexable": false,
                       |               "reverseAttributeName": null
                       |            }
                       |        ]
@@ -331,7 +331,7 @@ class GremlinTest extends BaseGremlinTest {
                       |                },
                       |                "isComposite": false,
                       |                "isUnique": false,
-                      |                "isIndexable": true,
+                      |                "isIndexable": false,
                       |                "reverseAttributeName": null
                       |            },
                       |            {
@@ -344,7 +344,7 @@ class GremlinTest extends BaseGremlinTest {
                       |                },
                       |                "isComposite": false,
                       |                "isUnique": false,
-                      |                "isIndexable": true,
+                      |                "isIndexable": false,
                       |                "reverseAttributeName": null
                       |            }
                       |        ]
@@ -380,7 +380,7 @@ class GremlinTest extends BaseGremlinTest {
                       |        },
                       |        "isComposite":false,
                       |        "isUnique":false,
-                      |        "isIndexable":true,
+                      |        "isIndexable":false,
                       |        "reverseAttributeName":null
                       |      },
                       |      {
@@ -393,7 +393,7 @@ class GremlinTest extends BaseGremlinTest {
                       |        },
                       |        "isComposite":false,
                       |        "isUnique":false,
-                      |        "isIndexable":true,
+                      |        "isIndexable":false,
                       |        "reverseAttributeName":null
                       |      },
                       |      {
@@ -406,7 +406,7 @@ class GremlinTest extends BaseGremlinTest {
                       |        },
                       |        "isComposite":false,
                       |        "isUnique":false,
-                      |        "isIndexable":true,
+                      |        "isIndexable":false,
                       |        "reverseAttributeName":null
                       |      },
                       |      {
@@ -419,7 +419,7 @@ class GremlinTest extends BaseGremlinTest {
                       |        },
                       |        "isComposite":false,
                       |        "isUnique":false,
-                      |        "isIndexable":true,
+                      |        "isIndexable":false,
                       |        "reverseAttributeName":null
                       |      }
                       |    ]
@@ -516,7 +516,7 @@ class GremlinTest extends BaseGremlinTest {
                       |        },
                       |        "isComposite":false,
                       |        "isUnique":false,
-                      |        "isIndexable":true,
+                      |        "isIndexable":false,
                       |        "reverseAttributeName":null
                       |      },
                       |      {
@@ -529,7 +529,7 @@ class GremlinTest extends BaseGremlinTest {
                       |        },
                       |        "isComposite":false,
                       |        "isUnique":false,
-                      |        "isIndexable":true,
+                      |        "isIndexable":false,
                       |        "reverseAttributeName":null
                       |      },
                       |      {
@@ -542,7 +542,7 @@ class GremlinTest extends BaseGremlinTest {
                       |        },
                       |        "isComposite":false,
                       |        "isUnique":false,
-                      |        "isIndexable":true,
+                      |        "isIndexable":false,
                       |        "reverseAttributeName":null
                       |      },
                       |      {
@@ -555,7 +555,7 @@ class GremlinTest extends BaseGremlinTest {
                       |        },
                       |        "isComposite":false,
                       |        "isUnique":false,
-                      |        "isIndexable":true,
+                      |        "isIndexable":false,
                       |        "reverseAttributeName":null
                       |      }
                       |    ]
@@ -606,7 +606,7 @@ class GremlinTest extends BaseGremlinTest {
                       |        },
                       |        "isComposite":false,
                       |        "isUnique":false,
-                      |        "isIndexable":true,
+                      |        "isIndexable":false,
                       |        "reverseAttributeName":null
                       |      },
                       |      {
@@ -619,7 +619,7 @@ class GremlinTest extends BaseGremlinTest {
                       |        },
                       |        "isComposite":false,
                       |        "isUnique":false,
-                      |        "isIndexable":true,
+                      |        "isIndexable":false,
                       |        "reverseAttributeName":null
                       |      },
                       |      {
@@ -632,7 +632,7 @@ class GremlinTest extends BaseGremlinTest {
                       |        },
                       |        "isComposite":false,
                       |        "isUnique":false,
-                      |        "isIndexable":true,
+                      |        "isIndexable":false,
                       |        "reverseAttributeName":null
                       |      },
                       |      {
@@ -645,7 +645,7 @@ class GremlinTest extends BaseGremlinTest {
                       |        },
                       |        "isComposite":false,
                       |        "isUnique":false,
-                      |        "isIndexable":true,
+                      |        "isIndexable":false,
                       |        "reverseAttributeName":null
                       |      }
                       |    ]
@@ -781,7 +781,7 @@ class GremlinTest extends BaseGremlinTest {
   @Test def testArith {
     val r = QueryProcessor.evaluate(_class("DB").where(id("name").`=`(string("Reporting"))).
       select(id("name"), id("createTime") + int(1)), g, gp)
-    validateJson(r, "{\n  \"query\":\"DB where (name = \\\"Reporting\\\") as _src1 select _src1.name as _src1.name, (_src1.createTime + 1) as (_src1.createTime + 1)\",\n  \"dataType\":{\n    \"typeName\":\"__tempQueryResultStruct3\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"_src1.name\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"(_src1.createTime + 1)\",\n        \"dataTypeName\":\"int\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"__tempQueryResultStruct3\",\n      \"(_src1.createTime + 1)\":1501,\n      \"_src1.name\":\"Reporting\"\n    }\n  ]\n}")
+    validateJson(r, "{\n  \"query\":\"DB where (name = \\\"Reporting\\\") as _src1 select _src1.name as _src1.name, (_src1.createTime + 1) as (_src1.createTime + 1)\",\n  \"dataType\":{\n    \"typeName\":\"__tempQueryResultStruct3\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"_src1.name\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":false,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"(_src1.createTime + 1)\",\n        \"dataTypeName\":\"int\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":false,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"__tempQueryResultStruct3\",\n      \"(_src1.createTime + 1)\":1501,\n      \"_src1.name\":\"Reporting\"\n    }\n  ]\n}")
   }
 
   @Test def testComparisonLogical {
@@ -806,7 +806,7 @@ class GremlinTest extends BaseGremlinTest {
                       |                },
                       |                "isComposite": false,
                       |                "isUnique": false,
-                      |                "isIndexable": true,
+                      |                "isIndexable": false,
                       |                "reverseAttributeName": null
                       |            },
                       |            {
@@ -819,7 +819,7 @@ class GremlinTest extends BaseGremlinTest {
                       |                },
                       |                "isComposite": false,
                       |                "isUnique": false,
-                      |                "isIndexable": true,
+                      |                "isIndexable": false,
                       |                "reverseAttributeName": null
                       |            },
                       |            {
@@ -832,7 +832,7 @@ class GremlinTest extends BaseGremlinTest {
                       |                },
                       |                "isComposite": false,
                       |                "isUnique": false,
-                      |                "isIndexable": true,
+                      |                "isIndexable": false,
                       |                "reverseAttributeName": null
                       |            },
                       |            {
@@ -845,7 +845,7 @@ class GremlinTest extends BaseGremlinTest {
                       |                },
                       |               "isComposite": false,
                       |               "isUnique": false,
-                      |               "isIndexable": true,
+                      |               "isIndexable": false,
                       |               "reverseAttributeName": null
                       |            }
                       |        ]
@@ -872,7 +872,7 @@ class GremlinTest extends BaseGremlinTest {
         where((isTrait("Dimension"))).
         select(id("db1").field("name").as("dbName"), id("tab").field("name").as("tabName")), g, gp
     )
-    validateJson(r, "{\n  \"query\":\"DB as db1 where (name = \\\"Sales\\\") Table as tab where DB as db1 where (name = \\\"Sales\\\") Table as tab is Dimension as _src1 select db1.name as dbName, tab.name as tabName\",\n  \"dataType\":{\n    \"typeName\":\"__tempQueryResultStruct5\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"dbName\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"tabName\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"__tempQueryResultStruct5\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"product_dim\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct5\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"time_dim\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct5\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"customer_dim\"\n    }\n  ]\n}")
+    validateJson(r, "{\n  \"query\":\"DB as db1 where (name = \\\"Sales\\\") Table as tab where DB as db1 where (name = \\\"Sales\\\") Table as tab is Dimension as _src1 select db1.name as dbName, tab.name as tabName\",\n  \"dataType\":{\n    \"typeName\":\"__tempQueryResultStruct5\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"dbName\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":false,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"tabName\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":false,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"__tempQueryResultStruct5\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"product_dim\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct5\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"time_dim\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct5\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"customer_dim\"\n    }\n  ]\n}")
   }
 
   @Test def testJoinAndSelect2 {
@@ -881,7 +881,7 @@ class GremlinTest extends BaseGremlinTest {
         .or(id("name").`=`(string("Reporting")))).field("Table").as("tab")
         .select(id("db1").field("name").as("dbName"), id("tab").field("name").as("tabName")), g, gp
     )
-    validateJson(r, "{\n  \"query\":\"DB as db1 where (db1.createTime > 0) or (name = \\\"Reporting\\\") Table as tab select db1.name as dbName, tab.name as tabName\",\n  \"dataType\":{\n    \"typeName\":\"__tempQueryResultStruct6\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"dbName\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"tabName\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"__tempQueryResultStruct6\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"sales_fact\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct6\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"product_dim\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct6\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"time_dim\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct6\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"customer_dim\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct6\",\n      \"dbName\":\"Reporting\",\n      \"tabName\":\"sales_fact_daily_mv\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct6\",\n      \"dbName\":\"Reporting\",\n      \"tabName\":\"sales_fact_monthly_mv\"\n    }\n  ]\n}")
+    validateJson(r, "{\n  \"query\":\"DB as db1 where (db1.createTime > 0) or (name = \\\"Reporting\\\") Table as tab select db1.name as dbName, tab.name as tabName\",\n  \"dataType\":{\n    \"typeName\":\"__tempQueryResultStruct6\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"dbName\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":false,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"tabName\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":false,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"__tempQueryResultStruct6\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"sales_fact\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct6\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"product_dim\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct6\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"time_dim\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct6\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"customer_dim\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct6\",\n      \"dbName\":\"Reporting\",\n      \"tabName\":\"sales_fact_daily_mv\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct6\",\n      \"dbName\":\"Reporting\",\n      \"tabName\":\"sales_fact_monthly_mv\"\n    }\n  ]\n}")
   }
 
   @Test def testJoinAndSelect3 {
@@ -891,7 +891,7 @@ class GremlinTest extends BaseGremlinTest {
         .or(id("db1").hasField("owner"))).field("Table").as("tab")
         .select(id("db1").field("name").as("dbName"), id("tab").field("name").as("tabName")), g, gp
     )
-    validateJson(r, "{\n  \"query\":\"DB as db1 where (db1.createTime > 0) and (db1.name = \\\"Reporting\\\") or db1 has owner Table as tab select db1.name as dbName, tab.name as tabName\",\n  \"dataType\":{\n    \"typeName\":\"__tempQueryResultStruct7\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"dbName\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"tabName\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"__tempQueryResultStruct7\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"sales_fact\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct7\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"product_dim\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct7\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"time_dim\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct7\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"customer_dim\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct7\",\n      \"dbName\":\"Reporting\",\n      \"tabName\":\"sales_fact_daily_mv\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct7\",\n      \"dbName\":\"Reporting\",\n      \"tabName\":\"sales_fact_monthly_mv\"\n    }\n  ]\n}")
+    validateJson(r, "{\n  \"query\":\"DB as db1 where (db1.createTime > 0) and (db1.name = \\\"Reporting\\\") or db1 has owner Table as tab select db1.name as dbName, tab.name as tabName\",\n  \"dataType\":{\n    \"typeName\":\"__tempQueryResultStruct7\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"dbName\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":false,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"tabName\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":false,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"__tempQueryResultStruct7\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"sales_fact\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct7\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"product_dim\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct7\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"time_dim\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct7\",\n      \"dbName\":\"Sales\",\n      \"tabName\":\"customer_dim\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct7\",\n      \"dbName\":\"Reporting\",\n      \"tabName\":\"sales_fact_daily_mv\"\n    },\n    {\n      \"$typeName$\":\"__tempQueryResultStruct7\",\n      \"dbName\":\"Reporting\",\n      \"tabName\":\"sales_fact_monthly_mv\"\n    }\n  ]\n}")
   }
 
   @Test def testJoinAndSelect4 {
@@ -900,7 +900,7 @@ class GremlinTest extends BaseGremlinTest {
         where((isTrait("Dimension"))).
         select(id("db1").as("dbO"), id("tab").field("name").as("tabName")), g, gp
     )
-    validateJson(r, "{\n  \"query\":\"DB as db1 where (name = \\\"Sales\\\") Table as tab where DB as db1 where (name = \\\"Sales\\\") Table as tab is Dimension as _src1 select db1 as dbO, tab.name as tabName\",\n  \"dataType\":{\n    \"typeName\":\"\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"dbO\",\n        \"dataTypeName\":\"DB\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"tabName\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":true,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"\",\n      \"dbO\":{\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"tabName\":\"product_dim\"\n    },\n    {\n      \"$typeName$\":\"\",\n      \"dbO\":{\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"tabName\":\"time_dim\"\n    },\n    {\n      \"$typeName$\":\"\",\n      \"dbO\":{\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"tabName\":\"customer_dim\"\n    }\n  ]\n}")
+    validateJson(r, "{\n  \"query\":\"DB as db1 where (name = \\\"Sales\\\") Table as tab where DB as db1 where (name = \\\"Sales\\\") Table as tab is Dimension as _src1 select db1 as dbO, tab.name as tabName\",\n  \"dataType\":{\n    \"typeName\":\"\",\n    \"attributeDefinitions\":[\n      {\n        \"name\":\"dbO\",\n        \"dataTypeName\":\"DB\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":false,\n        \"reverseAttributeName\":null\n      },\n      {\n        \"name\":\"tabName\",\n        \"dataTypeName\":\"string\",\n        \"multiplicity\":{\n          \"lower\":0,\n          \"upper\":1,\n          \"isUnique\":false\n        },\n        \"isComposite\":false,\n        \"isUnique\":false,\n        \"isIndexable\":false,\n        \"reverseAttributeName\":null\n      }\n    ]\n  },\n  \"rows\":[\n    {\n      \"$typeName$\":\"\",\n      \"dbO\":{\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"tabName\":\"product_dim\"\n    },\n    {\n      \"$typeName$\":\"\",\n      \"dbO\":{\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"tabName\":\"time_dim\"\n    },\n    {\n      \"$typeName$\":\"\",\n      \"dbO\":{\n        \"$typeName$\":\"DB\",\n        \"version\":0\n      },\n      \"tabName\":\"customer_dim\"\n    }\n  ]\n}")
   }
 
   @Test def testArrayComparision {
@@ -924,7 +924,7 @@ class GremlinTest extends BaseGremlinTest {
                       |        },
                       |        "isComposite":false,
                       |        "isUnique":false,
-                      |        "isIndexable":true,
+                      |        "isIndexable":false,
                       |        "reverseAttributeName":null
                       |      }
                       |    ]
@@ -963,7 +963,7 @@ class GremlinTest extends BaseGremlinTest {
         |  },
         |    "isComposite":false,
         |    "isUnique":false,
-        |    "isIndexable":true,
+        |    "isIndexable":false,
         |    "reverseAttributeName":null
         |  }
         |    ]
@@ -1003,7 +1003,7 @@ class GremlinTest extends BaseGremlinTest {
                       |        },
                       |        "isComposite":false,
                       |        "isUnique":false,
-                      |        "isIndexable":true,
+                      |        "isIndexable":false,
                       |        "reverseAttributeName":null
                       |      },
                       |      {
@@ -1016,7 +1016,7 @@ class GremlinTest extends BaseGremlinTest {
                       |        },
                       |        "isComposite":false,
                       |        "isUnique":false,
-                      |        "isIndexable":true,
+                      |        "isIndexable":false,
                       |        "reverseAttributeName":null
                       |      }
                       |    ]

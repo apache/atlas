@@ -38,7 +38,7 @@ public final class AttributeDefinition {
 
     public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
             String reverseAttributeName) {
-        this(name, dataTypeName, multiplicity, isComposite, false, true, reverseAttributeName);
+        this(name, dataTypeName, multiplicity, isComposite, false, false, reverseAttributeName);
 
     }
 
