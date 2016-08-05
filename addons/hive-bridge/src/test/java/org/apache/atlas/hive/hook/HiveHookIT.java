@@ -544,13 +544,25 @@ public class HiveHookIT extends HiveITBase {
         Referenceable processRef1 = validateProcess(event, expectedInputs, outputs);
 
         //Test sorting of tbl names
-        SortedSet<String> sortedTblNames = new TreeSet<>();
-        sortedTblNames.add(getQualifiedTblName(inputTable1Name));
-        sortedTblNames.add(getQualifiedTblName(inputTable2Name));
+        SortedSet<String> sortedTblNames = new TreeSet<String>();
+        sortedTblNames.add(inputTable1Name.toLowerCase());
+        sortedTblNames.add(inputTable2Name.toLowerCase());
 
-        //Verify sorted orer of inputs in qualified name
-        Assert.assertEquals(Joiner.on(SEP).join("QUERY", sortedTblNames.first(), sortedTblNames.last()) + IO_SEP + SEP + Joiner.on(SEP).join(WriteEntity.WriteType.INSERT.name(), getQualifiedTblName(insertTableName))
-            , processRef1.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME));
+        //Verify sorted order of inputs in qualified name
+        Assert.assertEquals(
+            processRef1.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME),
+
+            Joiner.on(SEP).join("QUERY",
+                getQualifiedTblName(sortedTblNames.first()),
+                HiveMetaStoreBridge.getTableCreatedTime(hiveMetaStoreBridge.hiveClient.getTable(DEFAULT_DB, sortedTblNames.first())).getTime(),
+                getQualifiedTblName(sortedTblNames.last()),
+                HiveMetaStoreBridge.getTableCreatedTime(hiveMetaStoreBridge.hiveClient.getTable(DEFAULT_DB, sortedTblNames.last())).getTime())
+                + IO_SEP + SEP
+                + Joiner.on(SEP).
+                join(WriteEntity.WriteType.INSERT.name(),
+                    getQualifiedTblName(insertTableName),
+                    HiveMetaStoreBridge.getTableCreatedTime(hiveMetaStoreBridge.hiveClient.getTable(DEFAULT_DB, insertTableName)).getTime())
+            );
 
         //Rerun same query. Should result in same process
         runCommandWithDelay(query, 1000);
