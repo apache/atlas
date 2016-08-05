@@ -22,6 +22,6 @@ package org.apache.atlas.repository.graphdb;
  */
 public enum AtlasEdgeDirection {
     IN,
-    OUT, 
+    OUT,
     BOTH
 }

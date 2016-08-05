@@ -75,9 +75,12 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
         // bind the ITypeStore interface to an implementation
         bind(ITypeStore.class).to(GraphBackedTypeStore.class).asEagerSingleton();
 
+        //GraphBackedSearchIndexer must be an eager singleton to force the search index creation to happen before
+        //we try to restore the type system (otherwise we'll end up running queries
+        //before we have any indices during the initial graph setup)
         Multibinder<TypesChangeListener> typesChangeListenerBinder =
                 Multibinder.newSetBinder(binder(), TypesChangeListener.class);
-        typesChangeListenerBinder.addBinding().to(GraphBackedSearchIndexer.class);
+        typesChangeListenerBinder.addBinding().to(GraphBackedSearchIndexer.class).asEagerSingleton();
 
         // bind the MetadataService interface to an implementation
         bind(MetadataService.class).to(DefaultMetadataService.class).asEagerSingleton();

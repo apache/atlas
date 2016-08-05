@@ -18,48 +18,62 @@
 
 package org.apache.atlas.repository.graphdb;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.typesystem.types.Multiplicity;
 
 /**
  * Management interface for a graph
- * 
+ *
  */
 public interface AtlasGraphManagement {
 
+    public static final Set<String> MULTIPLICITY_MANY_PROPERTY_KEYS =
+            Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(
+                    Constants.SUPER_TYPES_PROPERTY_KEY,
+                    Constants.TRAIT_NAMES_PROPERTY_KEY )));
+
+
     /**
      * Checks whether a property with the given key has been defined in the graph schema.
-     * 
+     *
      * @param key
      * @return
      */
     boolean containsPropertyKey(String key);
 
     /**
-     * Creates a mixed Vertex index for the graph 
-     * 
+     * Creates a mixed Vertex index for the graph
+     *
      * @param index the name of the index to create
      * @param backingIndex the name of the backing index to use
      */
     void buildMixedVertexIndex(String index, String backingIndex);
-    
-    
+
+
     /**
-     * Creates a mixed Edge index for the graph 
-     * 
+     * Creates a mixed Edge index for the graph
+     *
      * @param index the name of the index to create
      * @param backingIndex the name of the backing index to use
      */
     void buildMixedEdgeIndex(String index, String backingIndex);
 
-    
+
     /**
-     * Creates a full text index for the given property 
-     * 
+     * Creates a full text index for the given property
+     *
      * @param  indexName the name of the index to create
-     * @param propertyKey the name of the property
+     * @param propertyKey full text property to index
      * @param backingIndex the name of the backing index to use
      */
-    void createFullTextIndex(String indexName, String propertyKey, String backingIndex);
+    void createFullTextIndex(String indexName, AtlasPropertyKey propertyKey, String backingIndex);
 
     /**
      * Rolls back the changes that have been made to the management system.
@@ -73,26 +87,44 @@ public interface AtlasGraphManagement {
     void commit();
 
     /**
-     * Creates a composite index for the given property.
-     * 
-     * @param propertyName name of the property being indexed
-     * @param propertyClass the java class of the property value(s)
-     * @param multiplicity the multiplicity of the property
-     * @param isUnique whether the property values must be unique
+     * @param propertyName
+     * @param propertyClass
+     * @param cardinality
+     * @return
      */
-    void createCompositeIndex(String propertyName, Class propertyClass, Multiplicity multiplicity,
-            boolean isUnique);
-    
+    AtlasPropertyKey makePropertyKey(String propertyName, Class propertyClass, Multiplicity multiplicity);
+
     /**
-     * Creates an index for a property.
-     * 
-     * @param propertyName name of the property being indexed
-     * @param vertexIndexName name of the index to create
-     * @param propertyClass the java class of the property value(s)
-     * @param multiplicity the multiplicity of the property
+     * @param propertyKey
+     * @return
      */
-    void createBackingIndex(String propertyName, String vertexIndexName, Class propertyClass,
-            Multiplicity multiplicity);
+    AtlasPropertyKey getPropertyKey(String propertyName);
+
+    /**
+     * Creates a composite index for the graph.
+     *
+     * @param propertyName
+     * @param propertyKey
+     * @param isUnique
+     */
+    void createCompositeIndex(String propertyName, AtlasPropertyKey propertyKey, boolean isUnique);
+
+    /**
+     * Adds a property key to the given index in the graph.
+     *
+     * @param vertexIndex
+     * @param propertyKey
+     */
+    void addIndexKey(String vertexIndex, AtlasPropertyKey propertyKey);
+
+    /**
+     * Looks up the index with the specified name in the graph.  Returns null if
+     * there is no index with the given name.
+     *
+     * @param edgeIndex
+     * @return
+     */
+    AtlasGraphIndex getGraphIndex(String indexName);
 
 
 }

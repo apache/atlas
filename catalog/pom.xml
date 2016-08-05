@@ -30,7 +30,12 @@
     <description>Apache Atlas Business Catalog Module</description>
     <name>Apache Atlas Business Catalog</name>
     <packaging>jar</packaging>
-
+    
+    <properties>
+        <tinkerpop.version>2.6.0</tinkerpop.version>
+        <titan.version>0.5.4</titan.version>
+    </properties>
+    
     <dependencies>
         <dependency>
             <groupId>org.apache.atlas</groupId>
@@ -82,11 +87,13 @@
         <dependency>
             <groupId>com.tinkerpop.blueprints</groupId>
             <artifactId>blueprints-core</artifactId>
+            <version>${tinkerpop.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.tinkerpop.gremlin</groupId>
             <artifactId>gremlin-java</artifactId>
+            <version>${tinkerpop.version}</version>
         </dependency>
 
         <!-- testing -->

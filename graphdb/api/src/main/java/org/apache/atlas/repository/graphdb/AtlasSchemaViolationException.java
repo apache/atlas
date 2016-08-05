@@ -22,7 +22,7 @@ package org.apache.atlas.repository.graphdb;
  *
  */
 public class AtlasSchemaViolationException extends RuntimeException {
-    
+
     public AtlasSchemaViolationException(Throwable cause) {
         super(cause);
     }

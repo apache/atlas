@@ -18,18 +18,14 @@
 
 package org.apache.atlas.repository.graph;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanProperty;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.blueprints.Graph;
-import com.tinkerpop.blueprints.GraphQuery;
-import com.tinkerpop.blueprints.Vertex;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.repository.Constants;
@@ -44,17 +40,23 @@ import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.HierarchicalType;
 import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.TypeSystem;
+import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.TitanProperty;
+import com.thinkaurelius.titan.core.TitanVertex;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.blueprints.Graph;
+import com.tinkerpop.blueprints.GraphQuery;
+import com.tinkerpop.blueprints.Vertex;
 
 /**
  * Utility class for graph operations.
@@ -295,7 +297,7 @@ public final class GraphHelper {
 
     /**
      * Remove the specified edge from the graph.
-     * 
+     *
      * @param edge
      */
     public void removeEdge(Edge edge) {
@@ -304,10 +306,10 @@ public final class GraphHelper {
         titanGraph.removeEdge(edge);
         LOG.info("Removed {}", edgeString);
     }
-    
+
     /**
      * Remove the specified vertex from the graph.
-     * 
+     *
      * @param vertex
      */
     public void removeVertex(Vertex vertex) {
@@ -488,4 +490,17 @@ public final class GraphHelper {
         }
         return key;
     }
+    public static AttributeInfo getAttributeInfoForSystemAttributes(String field) {
+        switch (field) {
+        case Constants.STATE_PROPERTY_KEY:
+        case Constants.GUID_PROPERTY_KEY:
+            return TypesUtil.newAttributeInfo(field, DataTypes.STRING_TYPE);
+
+        case Constants.TIMESTAMP_PROPERTY_KEY:
+        case Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY:
+            return TypesUtil.newAttributeInfo(field, DataTypes.LONG_TYPE);
+        }
+        return null;
+    }
+
 }

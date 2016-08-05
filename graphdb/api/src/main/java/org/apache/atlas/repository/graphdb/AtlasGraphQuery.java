@@ -18,8 +18,14 @@
 
 package org.apache.atlas.repository.graphdb;
 
+import java.util.Collection;
+import java.util.List;
+
+import org.apache.atlas.AtlasException;
+
 /**
- * Represents a query against the graph.
+ * Represents a query against the graph within the context of the
+ * current transaction.
  *
  * @param <V> vertex class used by the graph
  * @param <E> edge class used by the graph
@@ -27,10 +33,10 @@ package org.apache.atlas.repository.graphdb;
 public interface AtlasGraphQuery<V,E> {
 
     /**
-     * Adds a predicate that the returned elements must have the specified 
+     * Adds a predicate that the returned vertices must have the specified
      * property and that one of the values of the property must be the
      * given value.
-     * 
+     *
      * @param propertyKey
      * @param value
      * @return
@@ -38,34 +44,73 @@ public interface AtlasGraphQuery<V,E> {
     AtlasGraphQuery<V,E> has(String propertyKey, Object value);
 
     /**
-     * Executes the query and returns the matching vertices.
-     * @return
-     */
-    Iterable<AtlasVertex<V, E>> vertices();
-
-    
-    /**
-     * Executes the query and returns the matching edges.
-     * @return
-     */
-    Iterable<AtlasEdge<V, E>> edges();
-
-    
-
-    /**
-     * Adds a predicate that the returned elements must have the specified 
-     * property and that its value matches the criterion specified.
-     * 
+     * Adds a predicate that the returned vertices must have the specified
+     * property and that one of the value of the property must be in
+     * the specified list of values.
+     *
      * @param propertyKey
      * @param value
      * @return
      */
-    AtlasGraphQuery<V,E> has(String propertyKey, ComparisionOperator compMethod, Object value);
+    AtlasGraphQuery<V,E> in(String propertyKey, Collection<? extends Object> values);
+
+
+    /**
+     * Executes the query and returns the matching vertices.
+     * @return
+     * @throws AtlasException
+     */
+    Iterable<AtlasVertex<V, E>> vertices();
+
+
+    /**
+     * Adds a predicate that the returned vertices must have the specified
+     * property and that its value matches the criterion specified.
+     *
+     * @param propertyKey
+     * @param value
+     * @return
+     */
+    AtlasGraphQuery<V,E> has(String propertyKey, ComparisionOperator compMethod, Object values);
+
+    /**
+     * Adds a predicate that the vertices returned must satisfy the
+     * conditions in at least one of the child queries provided.
+     *
+     * @param childQueries
+     * @return
+     */
+    AtlasGraphQuery<V,E> or(List<AtlasGraphQuery<V,E>> childQueries);
+
+    /**
+     * Creates a child query that can be used to add "or" conditions
+     *
+     * @return
+     */
+    AtlasGraphQuery<V,E> createChildQuery();
+
 
     public static enum ComparisionOperator {
         GREATER_THAN_EQUAL,
         EQUAL,
-        LESS_THAN_EQUAL
+        LESS_THAN_EQUAL,
+        NOT_EQUAL
     }
+
+    /**
+     * Adds all of the predicates that have been added to this query to the
+     * specified query.
+     * @param otherQuery
+     * @return
+     */
+    AtlasGraphQuery<V, E> addConditionsFrom(AtlasGraphQuery<V, E> otherQuery);
+
+    /**
+     * Whether or not this is a child query
+     * 
+     * @return
+     */
+    boolean isChildQuery();
+
 
 }

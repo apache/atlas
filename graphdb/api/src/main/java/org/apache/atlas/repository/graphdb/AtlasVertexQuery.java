@@ -19,33 +19,33 @@
 package org.apache.atlas.repository.graphdb;
 
 /**
- * A query against a particular vertex. 
+ * A query against a particular vertex.
  *
  * @param <V> vertex class used by the graph
- * @param <E> edge class used by the graph 
+ * @param <E> edge class used by the graph
  */
-public interface AtlasVertexQuery<V,E> {
+public interface AtlasVertexQuery<V, E> {
 
     /**
      * Specifies the edge direction that should be query
-     * 
+     *
      * @param queryDirection
      * @return
      */
-    AtlasVertexQuery<V,E> direction(AtlasEdgeDirection queryDirection);
+    AtlasVertexQuery<V, E> direction(AtlasEdgeDirection queryDirection);
 
     /**
      * Returns the vertices that satisfy the query condition.
-     * 
+     *
      * @return
      */
-    Iterable<AtlasVertex<V,E>> vertices();
+    Iterable<AtlasVertex<V, E>> vertices();
 
     /**
      * Returns the incident edges that satisfy the query condition.
      * @return
      */
-    Iterable<AtlasEdge<V,E>> edges();
+    Iterable<AtlasEdge<V, E>> edges();
 
     /**
      * Returns the number of elements that match the query.

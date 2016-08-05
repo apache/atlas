@@ -23,22 +23,28 @@ package org.apache.atlas.repository.graphdb;
  * @param <V> vertex class used by the graph database
  * @param <E> edge class used by the graph database
  */
-public interface GraphDatabase<V,E> {
-    
+public interface GraphDatabase<V, E> {
+
     /**
      * Returns whether the graph has been loaded.
      * @return
      */
-    boolean isGraphLoaded(); 
-    
+    boolean isGraphLoaded();
+
     /**
      * Gets the graph, loading it if it has not been loaded already
      * @return
      */
-    AtlasGraph<V,E> getGraph();
-    
+    AtlasGraph<V, E> getGraph();
+
     /**
-     * Unloads the graph (used testing)
+     * Sets things up so that getGraph() will return a graph that can be used for running 
+     * tests.
      */
-    void unloadGraph();    
+    void initializeTestGraph();
+
+    /**
+     * Removes the test graph that was created.
+     */
+    void removeTestGraph();
 }

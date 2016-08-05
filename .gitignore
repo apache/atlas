@@ -30,6 +30,7 @@ core*.dmp
 .cache
 .classpath
 .project
+.checkstyle
 
 .settings
 .externalToolBuilders

@@ -434,7 +434,8 @@
 
         <titan.storage.backend>berkeleyje</titan.storage.backend>
         <titan.index.backend>elasticsearch</titan.index.backend>
-	    <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
+        <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
+        <atlas.surefire.options></atlas.surefire.options>
     </properties>
 
     <profiles>
@@ -446,10 +447,10 @@
             </activation>
             <properties>
                 <titan.storage.backend>hbase</titan.storage.backend>
-                <titan.index.backend>solr5</titan.index.backend>
+                <titan.index.backend>solr</titan.index.backend>
                 <solr.zk.address>localhost:9983</solr.zk.address>
                 <titan.storage.hostname>localhost</titan.storage.hostname>
-		        <entity.repository.impl>org.apache.atlas.repository.audit.HBaseBasedAuditRepository</entity.repository.impl>
+                <entity.repository.impl>org.apache.atlas.repository.audit.HBaseBasedAuditRepository</entity.repository.impl>
             </properties>
         </profile>
 
@@ -487,7 +488,6 @@
         <module>notification</module>
         <module>client</module>
         <module>graphdb</module>
-        <module>titan</module>
         <module>repository</module>
         <module>authorization</module>
         <module>catalog</module>
@@ -683,6 +683,11 @@
                 </exclusions>
             </dependency>
 
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-auth</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
@@ -874,58 +879,7 @@
             </dependency>
 
             <!-- Graph DB -->
-            <dependency>
-                <groupId>com.tinkerpop.blueprints</groupId>
-                <artifactId>blueprints-core</artifactId>
-                <version>${tinkerpop.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.thinkaurelius.titan</groupId>
-                <artifactId>titan-core</artifactId>
-                <version>${titan.version}</version>
-                <exclusions>
-                    <!-- rexster does not work with servlet-api -->
-                    <exclusion>
-                        <groupId>com.tinkerpop.rexster</groupId>
-                        <artifactId>rexster-core</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.tinkerpop.rexster</groupId>
-                        <artifactId>rexster-server</artifactId>
-                    </exclusion>
-                    <!-- asm 4.0 does not work with jersey asm 3.1 -->
-                    <exclusion>
-                        <groupId>com.tinkerpop</groupId>
-                        <artifactId>frames</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.esotericsoftware.reflectasm</groupId>
-                        <artifactId>reflectasm</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.ow2.asm</groupId>
-                        <artifactId>asm</artifactId>
-                    </exclusion>
-                    <exclusion> <!-- GPL license imported from ganglia -->
-                        <groupId>org.acplt</groupId>
-                        <artifactId>oncrpc</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>com.thinkaurelius.titan</groupId>
-                <artifactId>titan-berkeleyje</artifactId>
-                <version>${titan.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.thinkaurelius.titan</groupId>
-                <artifactId>titan-hbase</artifactId>
-                <version>${titan.version}</version>
-            </dependency>
-
+            
             <dependency>
                 <groupId>org.apache.hbase</groupId>
                 <artifactId>hbase-client</artifactId>
@@ -980,12 +934,6 @@
             </dependency>
 
             <dependency>
-                <groupId>com.thinkaurelius.titan</groupId>
-                <artifactId>titan-es</artifactId>
-                <version>${titan.version}</version>
-            </dependency>
-
-            <dependency>
                 <groupId>com.vividsolutions</groupId>
                 <artifactId>jts</artifactId>
                 <version>1.13</version>
@@ -1016,6 +964,10 @@
                         <artifactId>*</artifactId>
                         <groupId>org.apache.lucene</groupId>
                     </exclusion>
+                    <exclusion>
+                        <artifactId>*</artifactId>
+                        <groupId>org.apache.hadoop</groupId>
+                    </exclusion>                    
                 </exclusions>
             </dependency>
 
@@ -1023,19 +975,6 @@
                 <groupId>org.apache.solr</groupId>
                 <artifactId>solr-solrj</artifactId>
                 <version>${solr.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.thinkaurelius.titan</groupId>
-                <artifactId>titan-lucene</artifactId>
-                <version>${titan.version}</version>
-                <!--<scope>test</scope>-->
-            </dependency>
-
-            <dependency>
-                <groupId>com.tinkerpop.gremlin</groupId>
-                <artifactId>gremlin-java</artifactId>
-                <version>${tinkerpop.version}</version>
             </dependency>
 
             <!--  atlas modules -->
@@ -1055,7 +994,13 @@
 
             <dependency>
                 <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-titan</artifactId>
+                <artifactId>atlas-graphdb-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-graphdb-titan0</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -1576,6 +1521,14 @@
                     </configuration>
                 </plugin>
 
+		<plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-remote-resources-plugin</artifactId>
+                    <version>1.5</version>
+                    <configuration>
+                        <excludeGroupIds>org.restlet.jee</excludeGroupIds>                       
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -1628,7 +1581,7 @@
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}
                         -Dhadoop.tmp.dir="${project.build.directory}/tmp-hadoop-${user.name}"
-                        -Xmx1024m -XX:MaxPermSize=512m -Djava.net.preferIPv4Stack=true
+                        -Xmx1024m -XX:MaxPermSize=512m -Djava.net.preferIPv4Stack=true ${atlas.surefire.options}
                     </argLine>
                     <skip>${skipUTs}</skip>
                 </configuration>
@@ -1654,7 +1607,7 @@
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}
                         -Dhadoop.tmp.dir="${project.build.directory}/tmp-hadoop-${user.name}"
-                        -Xmx1024m -XX:MaxPermSize=512m
+                        -Xmx1024m -XX:MaxPermSize=512m ${atlas.surefire.options}
                     </argLine>
                     <skip>${skipITs}</skip>
                     <parallel>none</parallel>
@@ -1727,7 +1680,11 @@
                     <useEclipseDefaultExcludes>true</useEclipseDefaultExcludes>
                     <excludeSubProjects>true</excludeSubProjects>
                     <excludes>
+                        <exclude>**/dependency-reduced-pom.xml</exclude>
+                        <exclude>.reviewboardrc</exclude>
                         <exclude>3party-licenses/**</exclude>
+                        <exclude>**/.cache-main</exclude>
+                        <exclude>**/.checkstyle</exclude>
                         <exclude>*.txt</exclude>
                         <exclude>**/*.json</exclude>
                         <exclude>.pc/**</exclude>
