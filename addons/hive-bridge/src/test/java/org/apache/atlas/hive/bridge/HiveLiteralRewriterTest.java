@@ -26,11 +26,12 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+@Test(enabled = false)
 public class HiveLiteralRewriterTest {
 
     private HiveConf conf;
 
-    @BeforeClass
+    @BeforeClass(enabled = false)
     public void setup() {
         conf = new HiveConf();
         conf.addResource("/hive-site.xml");
@@ -39,7 +40,7 @@ public class HiveLiteralRewriterTest {
         conf.set("hive.lock.manager", "org.apache.hadoop.hive.ql.lockmgr.EmbeddedLockManager");
     }
 
-    @Test
+    @Test(enabled=false)
     public void testLiteralRewrite() throws RewriteException {
         HiveHook.HiveEventContext ctx = new HiveHook.HiveEventContext();
         ctx.setQueryStr("insert into table testTable partition(dt='2014-01-01') select * from test1 where dt = '2014-01-01'" +
