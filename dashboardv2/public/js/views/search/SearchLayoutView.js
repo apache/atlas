@@ -40,7 +40,8 @@ define(['require',
                 searchType: 'input[name="queryType"]',
                 searchBtn: '[data-id="searchBtn"]',
                 clearSearch: '[data-id="clearSearch"]',
-                typeLov: '[data-id="typeLOV"]'
+                typeLov: '[data-id="typeLOV"]',
+                refreshBtn: '[data-id="refreshBtn"]'
             },
             /** ui events hash */
             events: function() {
@@ -60,6 +61,7 @@ define(['require',
                 events["click " + this.ui.searchBtn] = 'findSearchResult';
                 events["click " + this.ui.clearSearch] = 'clearSearchData';
                 events["change " + this.ui.typeLov] = 'onChangeTypeList';
+                events["click " + this.ui.refreshBtn] = 'onRefreshButton';
                 return events;
             },
             /**
@@ -105,6 +107,9 @@ define(['require',
                 $.extend(this.typecollection.queryParams, { type: 'CLASS' });
                 this.typecollection.fetch({ reset: true });
             },
+            onRefreshButton: function() {
+                this.fetchCollection();
+            },
             manualRender: function(paramObj) {
                 this.setValues(paramObj);
             },
@@ -121,11 +126,15 @@ define(['require',
                 that.ui.typeLov.html(str);
             },
             onChangeTypeList: function(e) {
+                var that = this;
                 if (this.ui.typeLov.select2('val') !== "") {
                     this.ui.searchBtn.removeAttr("disabled");
                 } else if (this.ui.searchInput.val() === "") {
                     this.ui.searchBtn.attr("disabled", "true");
                 }
+                setTimeout(function() {
+                    that.ui.searchInput.focus();
+                }, 0);
             },
             setValues: function(paramObj) {
                 var arr = [],
@@ -152,14 +161,21 @@ define(['require',
                                 this.ui.typeLov.val(typeList).trigger('change');
                             } else {
                                 this.ui.typeLov.val(typeList);
+                                setTimeout(function() {
+                                    that.ui.searchInput.focus();
+                                }, 0);
                             }
                             this.ui.searchInput.val(query.join(" "));
                         } else {
                             this.ui.searchInput.val(this.value.query);
+                            setTimeout(function() {
+                                that.ui.searchInput.focus();
+                            }, 0);
                         }
-                        this.ui.searchBtn.removeAttr("disabled");
+                        if (this.ui.searchBtn.val() !== "" || this.ui.typeLov.val() !== "") {
+                            this.ui.searchBtn.removeAttr("disabled");
+                        }
                     }
-
                 }
                 this.bindEvents(arr);
             },
@@ -202,7 +218,7 @@ define(['require',
                     this.$('.typeLOV').hide();
                     this.type = "fulltext";
                 }
-                if (this.query[this.type].query !== Utils.getUrlState.getQueryParams().query && this.type == Utils.getUrlState.getQueryParams().searchType) {
+                if (Utils.getUrlState.getQueryParams() && this.query[this.type].query !== Utils.getUrlState.getQueryParams().query && this.type == Utils.getUrlState.getQueryParams().searchType) {
                     this.query[this.type].query = Utils.getUrlState.getQueryParams().query;
                 }
                 Utils.setUrl({

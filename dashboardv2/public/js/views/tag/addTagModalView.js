@@ -57,6 +57,7 @@ define(['require',
             }).open();
             this.on('ok', function() {
                 if (that.multiple) {
+                    that.asyncFetchCounter = 0;
                     for (var i = 0; i < that.multiple.length; i++) {
                         if (i == 0) {
                             that.showLoader();
@@ -65,21 +66,13 @@ define(['require',
                             tagName: this.ui.addTagOptions.val(),
                             guid: that.multiple[i].id.id
                         }
-                        if (that.multiple.length - 1 == i) {
-                            obj['callback'] = function() {
-                                that.callback();
-                            }
-                        }
-
                         that.saveTagData(obj);
                     }
                 } else {
+                    that.asyncFetchCounter = 0;
                     that.saveTagData({
                         tagName: that.ui.addTagOptions.val(),
-                        guid: that.guid,
-                        callback: function() {
-                            that.callback();
-                        }
+                        guid: that.guid
                     });
                 }
             });
@@ -146,6 +139,7 @@ define(['require',
         saveTagData: function(options) {
             var that = this,
                 values = {};
+            ++this.asyncFetchCounter;
             this.entityModel = new VEntity();
             var name = options.tagName;
             var tagName = this.ui.addTagOptions.val();
@@ -160,9 +154,6 @@ define(['require',
                     Utils.notifySuccess({
                         content: "Tag " + tagName + " has been added to entity"
                     });
-                    if (options.callback) {
-                        options.callback();
-                    }
                     if (options.modalCollection) {
                         options.modalCollection.fetch({ reset: true });
                     }
@@ -176,11 +167,13 @@ define(['require',
                     Utils.notifyError({
                         content: message
                     });
-                    if (options.callback) {
-                        options.callback();
-                    }
                 },
-                complete: function() {}
+                complete: function() {
+                    --that.asyncFetchCounter;
+                    if (that.callback && that.asyncFetchCounter === 0) {
+                        that.callback();
+                    }
+                }
             });
         },
     });

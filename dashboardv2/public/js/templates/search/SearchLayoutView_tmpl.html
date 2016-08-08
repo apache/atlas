@@ -17,13 +17,16 @@
 <div class="row row-margin-bottom">
     <div class="col-sm-12" style="margin:15px 0px;">
         <div class="row">
-            <div class="col-md-12">
+            <div class="col-md-6">
                 <span class="pull-left">Text</span>
                 <label class="switch pull-left">
                     <input type="checkbox" name="queryType" value="text">
                     <div class="slider round"></div>
                 </label>
                 <span class="pull-left">DSL</span>
+            </div>
+            <div class="col-md-6">
+                <button class="btn btn-atlasAction btn-atlas pull-right typeLOV" title="Refresh" data-id="refreshBtn"><i class="fa fa-refresh"></i></button>
             </div>
         </div>
     </div>
@@ -32,7 +35,9 @@
             <div class="typeLOV">
                 <select data-id="typeLOV"></select>
             </div>
-            <input type="text" class="form-control" data-id="searchInput" placeholder="Search using a query string: e.g. sales_fact" style="margin-top: 5px;">
+            <div class="searchInputClick">
+                <input type="text" class="form-control"  data-id="searchInput" placeholder="Search using a query string: e.g. sales_fact" style="margin-top: 5px;">
+            </div>
         </div>
         <div class="clearAdvanceSearch" data-id="clearSearch">Clear</div>
         <button class="btn btn-atlas advanceSearchBtn" data-id="searchBtn" disabled="disabled">Search</button>

@@ -63,7 +63,7 @@ define(['require',
                 this.bindEvents();
                 this.fetchGraphData();
                 this.data = {};
-                this.fetchList = 0;
+                this.asyncFetchCounter = 0;
             },
             bindEvents: function() {
                 this.listenTo(this.inputCollection, 'reset', function() {
@@ -141,8 +141,8 @@ define(['require',
                             }
                         }
                     }
-                    --that.fetchList;
-                    if (that.fetchList <= 0) {
+                    --that.asyncFetchCounter;
+                    if (that.asyncFetchCounter === 0) {
                         if (that.edgesAndvertices) {
                             that.createGraph(that.edgesAndvertices, that.startingPoint);
                         } else if (this.outputState && !that.edgesAndvertices) {
@@ -152,7 +152,7 @@ define(['require',
                 }
 
                 function fetchLoadProcess(id) {
-                    ++that.fetchList;
+                    ++that.asyncFetchCounter;
                     that.entityModel.getEntity(id, {
                         success: function(data) {
                             addValueInObject(data);
@@ -227,7 +227,7 @@ define(['require',
                         }
                     }
                 });
-                if (this.fetchList <= 0) {
+                if (this.asyncFetchCounter <= 0) {
                     if (this.edgesAndvertices) {
                         this.createGraph(that.edgesAndvertices, this.startingPoint);
                     } else if (this.outputState && !this.edgesAndvertices) {

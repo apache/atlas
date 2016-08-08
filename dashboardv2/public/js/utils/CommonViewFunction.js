@@ -458,21 +458,19 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
         }
         return '<div class="tagList">' + atags + addTag + '<div class="popover popoverTag bottom" style="display:none"><div class="arrow"></div><div class="popover-content popoverContainer">' + popTag + '</div></div></div>';
     }
-    CommonViewFunction.saveTermToAsset = function(options) {
+    CommonViewFunction.saveTermToAsset = function(options, that) {
         require(['models/VCatalog'], function(Vcatalog) {
             var VCatalog = new Vcatalog();
             var name = options.termName;
             VCatalog.url = function() {
                 return "api/atlas/v1/entities/" + options.guid + "/tags/" + name;
             };
+            ++that.asyncFetchCounter;
             VCatalog.save(null, {
                 success: function(data) {
                     Utils.notifySuccess({
                         content: "Term " + name + Messages.addTermToEntitySuccessMessage
                     });
-                    if (options.callback) {
-                        options.callback();
-                    }
                     if (options.collection) {
                         options.collection.fetch({ reset: true });
                     }
@@ -483,12 +481,14 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                         Utils.notifyError({
                             content: data.message || data.msgDesc
                         });
-                        if (options.callback) {
-                            options.callback();
-                        }
                     }
                 },
-                complete: function() {}
+                complete: function() {
+                    --that.asyncFetchCounter
+                    if (that.callback && that.asyncFetchCounter === 0) {
+                        that.callback(); // It will call to parent of parent Callback i.e callback of searchLayoutView
+                    }
+                }
             });
         })
     }
