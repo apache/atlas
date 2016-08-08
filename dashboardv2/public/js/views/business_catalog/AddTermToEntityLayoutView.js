@@ -61,6 +61,7 @@ define(['require',
                     allowCancel: true,
                 }).open();
                 this.on('ok', function() {
+                    that.asyncFetchCounter = 0;
                     if (that.multiple) {
                         for (var i = 0; i < that.multiple.length; i++) {
                             if (i == 0) {
@@ -70,23 +71,14 @@ define(['require',
                                 termName: this.modal.$el.find('.taxonomyTree li.active a').data('name').split("`").join(""),
                                 guid: that.multiple[i].id.id
                             }
-                            if (that.multiple.length - 1 == i) {
-                                obj['callback'] = function() {
-                                    that.callback();
-                                }
-                            }
-                            // if (that.multiple[i].model.get("$traits$") && !that.multiple[i].model.get("$traits$")[obj.termName]) {
-                            CommonViewFunction.saveTermToAsset(obj);
-                            // / }
+                            CommonViewFunction.saveTermToAsset(obj, that);
                         }
                     } else {
+                        that.asyncFetchCounter = 0;
                         CommonViewFunction.saveTermToAsset({
                             termName: this.modal.$el.find('.taxonomyTree li.active a').data('name').split("`").join(""),
-                            guid: this.guid,
-                            callback: function() {
-                                that.callback();
-                            }
-                        });
+                            guid: this.guid
+                        }, that);
                     }
                 });
                 this.on('closeModal', function() {

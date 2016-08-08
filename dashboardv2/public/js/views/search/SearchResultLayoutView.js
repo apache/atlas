@@ -118,7 +118,7 @@ define(['require',
                 this.searchCollection = new VSearchList();
                 this.limit = 25;
                 this.firstFetch = true;
-                this.fetchList = 0;
+                this.asyncFetchCounter = 0;
                 this.offset = 0;
                 this.commonTableOptions = {
                     collection: this.searchCollection,
@@ -202,7 +202,7 @@ define(['require',
             },
             fetchCollection: function(value) {
                 var that = this;
-                if (value && (value.query === undefined || value.query === "")) {
+                if (value && (value.query === undefined || value.query.trim() === "")) {
                     return;
                 }
                 this.$('.fontLoader').show();
@@ -305,7 +305,7 @@ define(['require',
                 });
             },
             checkTableFetch: function() {
-                if (this.fetchList <= 0) {
+                if (this.asyncFetchCounter <= 0) {
                     this.$('div[data-id="r_tableSpinner"]').removeClass('show')
                     this.$('.fontLoader').hide();
                     this.$('.searchTable').show();
@@ -344,7 +344,7 @@ define(['require',
                             });
                             if (guid.length) {
                                 idFound = true;
-                                ++fetchResultCount;
+                                ++that.asyncFetchCounter;
                                 model.getEntity(guid, {
                                     success: function(data) {
                                         if (data.definition) {
@@ -364,8 +364,8 @@ define(['require',
                                     },
                                     error: function(error, data, status) {},
                                     complete: function() {
-                                        --fetchResultCount;
-                                        if (fetchResultCount === 0) {
+                                        --that.asyncFetchCounter;
+                                        if (that.asyncFetchCounter === 0) {
                                             that.renderTableLayoutView(that.getFixedDslColumn())
                                         }
                                     }
