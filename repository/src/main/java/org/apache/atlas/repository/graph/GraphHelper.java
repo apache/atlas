@@ -131,8 +131,10 @@ public final class GraphHelper {
     }
 
     public Edge getOrCreateEdge(Vertex outVertex, Vertex inVertex, String edgeLabel) {
-        Iterable<Edge> edges = inVertex.getEdges(Direction.IN, edgeLabel);
-        for (Edge edge : edges) {
+        Iterator<Edge> edges = GraphHelper.getAdjacentEdgesByLabel(inVertex, Direction.IN, edgeLabel);
+
+        while (edges.hasNext()) {
+            Edge edge = edges.next();
             if (edge.getVertex(Direction.OUT).getId().toString().equals(outVertex.getId().toString())) {
                 Id.EntityState edgeState = getState(edge);
                 if (edgeState == null || edgeState == Id.EntityState.ACTIVE) {
@@ -193,12 +195,47 @@ public final class GraphHelper {
         return vertex;
     }
 
-    public static Iterator<Edge> getOutGoingEdgesByLabel(Vertex instanceVertex, String edgeLabel) {
+    //In some cases of parallel APIs, the edge is added, but get edge by label doesn't return the edge. ATLAS-1104
+    //So traversing all the edges
+    public static Iterator<Edge> getAdjacentEdgesByLabel(Vertex instanceVertex, Direction direction, final String edgeLabel) {
         LOG.debug("Finding edges for {} with label {}", string(instanceVertex), edgeLabel);
         if(instanceVertex != null && edgeLabel != null) {
-            return instanceVertex.getEdges(Direction.OUT, edgeLabel).iterator();
+            final Iterator<Edge> iterator = instanceVertex.getEdges(direction).iterator();
+            return new Iterator<Edge>() {
+                private Edge edge = null;
+
+                @Override
+                public boolean hasNext() {
+                    while (edge == null && iterator.hasNext()) {
+                        Edge localEdge = iterator.next();
+                        if (localEdge.getLabel().equals(edgeLabel)) {
+                            edge = localEdge;
+                        }
+                    }
+                    return edge != null;
+                }
+
+                @Override
+                public Edge next() {
+                    if (hasNext()) {
+                        Edge localEdge = edge;
+                        edge = null;
+                        return localEdge;
+                    }
+                    return null;
+                }
+
+                @Override
+                public void remove() {
+                    throw new IllegalStateException("Not handled");
+                }
+            };
         }
         return null;
+    }
+
+    public static Iterator<Edge> getOutGoingEdgesByLabel(Vertex instanceVertex, String edgeLabel) {
+        return getAdjacentEdgesByLabel(instanceVertex, Direction.OUT, edgeLabel);
     }
 
     /**
@@ -209,7 +246,7 @@ public final class GraphHelper {
      * @return
      */
     public static Edge getEdgeForLabel(Vertex vertex, String edgeLabel) {
-        Iterator<Edge> iterator = GraphHelper.getOutGoingEdgesByLabel(vertex, edgeLabel);
+        Iterator<Edge> iterator = GraphHelper.getAdjacentEdgesByLabel(vertex, Direction.OUT, edgeLabel);
         Edge latestDeletedEdge = null;
         long latestDeletedEdgeTime = Long.MIN_VALUE;
 

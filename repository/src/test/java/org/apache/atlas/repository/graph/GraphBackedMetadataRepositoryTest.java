@@ -23,6 +23,8 @@ import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.tinkerpop.blueprints.Compare;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.atlas.GraphTransaction;
@@ -66,11 +68,16 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createUniqueRequiredAttrDef;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
+import static org.testng.Assert.assertTrue;
 
 /**
  * GraphBackedMetadataRepository test
@@ -124,6 +131,67 @@ public class GraphBackedMetadataRepositoryTest {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    @Test
+    //In some cases of parallel APIs, the edge is added, but get edge by label doesn't return the edge. ATLAS-1104
+    public void testConcurrentCalls() throws Exception {
+        Referenceable dbInstance = new Referenceable(TestUtils.DATABASE_TYPE);
+        dbInstance.set("name", randomString());
+        dbInstance.set("description", "foo database");
+        final String id1 = createEntity(dbInstance).get(0);
+
+        dbInstance.set("name", randomString());
+        final String id2 = createEntity(dbInstance).get(0);
+
+        TraitType piiType = typeSystem.getDataType(TraitType.class, TestUtils.PII);
+        final ITypedStruct trait = piiType.convert(new Struct(TestUtils.PII), Multiplicity.REQUIRED);
+
+        ExecutorService executor = Executors.newFixedThreadPool(3);
+        List<Future<Object>> futures = new ArrayList<>();
+        futures.add(executor.submit(new Callable<Object>() {
+            @Override
+            public Object call() throws Exception {
+                repositoryService.addTrait(id1, trait);
+                return null;
+            }
+        }));
+        futures.add(executor.submit(new Callable<Object>() {
+            @Override
+            public Object call() throws Exception {
+                repositoryService.addTrait(id2, trait);
+                return null;
+            }
+        }));
+        futures.add(executor.submit(new Callable<Object>() {
+            @Override
+            public Object call() throws Exception {
+                return discoveryService.searchByDSL(TestUtils.TABLE_TYPE, new QueryParams(10, 0));
+            }
+        }));
+
+        for (Future future : futures) {
+            future.get();
+        }
+        executor.shutdown();
+
+        boolean validated1 = assertEdge(id1);
+        boolean validated2 = assertEdge(id2);
+        assertNotEquals(validated1, validated2);
+    }
+
+    private boolean assertEdge(String id) throws Exception {
+        TitanGraph graph = graphProvider.get();
+        Vertex vertex = graph.query().has(Constants.GUID_PROPERTY_KEY, id).vertices().iterator().next();
+        Iterable<Edge> edges =
+                vertex.getEdges(Direction.OUT, TestUtils.DATABASE_TYPE + "." + TestUtils.PII);
+        if(!edges.iterator().hasNext()) {
+            repositoryService.deleteTrait(id, TestUtils.PII);
+            List<String> traits = repositoryService.getTraitNames(id);
+            assertTrue(traits.isEmpty());
+            return true;
+        }
+        return false;
     }
 
     @Test

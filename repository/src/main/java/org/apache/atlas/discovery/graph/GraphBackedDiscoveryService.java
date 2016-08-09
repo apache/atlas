@@ -18,10 +18,12 @@
 
 package org.apache.atlas.discovery.graph;
 
+import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanIndexQuery;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.GraphTransaction;
@@ -58,6 +60,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Graph backed implementation of Search.
@@ -204,10 +207,12 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
                         oRow.put(k.toString(), v.toString());
                     }
                 } else if (r instanceof TitanVertex) {
-                    Iterable<TitanProperty> ps = ((TitanVertex) r).getProperties();
+                    TitanVertex vertex = (TitanVertex) r;
+                    oRow.put("id", vertex.getId().toString());
+                    Iterable<TitanProperty> ps = vertex.getProperties();
                     for (TitanProperty tP : ps) {
                         String pName = tP.getPropertyKey().getName();
-                        Object pValue = ((TitanVertex) r).getProperty(pName);
+                        Object pValue = vertex.getProperty(pName);
                         if (pValue != null) {
                             oRow.put(pName, pValue.toString());
                         }
@@ -215,6 +220,16 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
 
                 } else if (r instanceof String) {
                     oRow.put("", r.toString());
+                } else if (r instanceof TitanEdge) {
+                    TitanEdge edge = (TitanEdge) r;
+                    oRow.put("id", edge.getId().toString());
+                    oRow.put("label", edge.getLabel());
+                    oRow.put("inVertex", edge.getVertex(Direction.IN).getId().toString());
+                    oRow.put("outVertex", edge.getVertex(Direction.OUT).getId().toString());
+                    Set<String> propertyKeys = edge.getPropertyKeys();
+                    for (String propertyKey : propertyKeys) {
+                        oRow.put(propertyKey, edge.getProperty(propertyKey).toString());
+                    }
                 } else {
                     throw new DiscoveryException(String.format("Cannot process result %s", o.toString()));
                 }

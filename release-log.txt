@@ -28,6 +28,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-1104 Get outgoing edges by label doesn't work in some cases (shwethags)
 ATLAS-1105 Disable HiveLiteralRewriterTest since its not used currently (sumasai)
 ATLAS-1103 : UI: Search type list is not refreshed (Kalyanikashikar via sumasai)
 ATLAS-1099 UI : multiple tag assign button hides wrongly (Kalyanikashikar via sumasai)
