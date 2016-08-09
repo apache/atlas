@@ -18,23 +18,37 @@
 
 package org.apache.atlas.repository.graph;
 
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.tinkerpop.blueprints.Edge;
-import org.apache.atlas.RepositoryMetadataModule;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Guice;
-import org.testng.annotations.Test;
-
-import javax.inject.Inject;
-
-import java.util.Iterator;
-
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import javax.inject.Inject;
+
+import org.apache.atlas.RepositoryMetadataModule;
+import org.apache.atlas.TestUtils;
+import org.apache.atlas.repository.graph.GraphHelper.VertexInfo;
+import org.apache.atlas.typesystem.ITypedReferenceableInstance;
+import org.apache.atlas.typesystem.types.TypeSystem;
+import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Guice;
+import org.testng.annotations.Test;
+
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.core.util.TitanCleanup;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Vertex;
 
 @Guice(modules = RepositoryMetadataModule.class)
 public class GraphHelperTest {
@@ -55,6 +69,65 @@ public class GraphHelperTest {
                 {"\n\r", "\n\r"},
                 {null, null}
         };
+    }
+
+    @Inject
+    private GraphBackedMetadataRepository repositoryService;
+
+    private TypeSystem typeSystem;
+
+    @BeforeClass
+    public void setUp() throws Exception {
+        typeSystem = TypeSystem.getInstance();
+        typeSystem.reset();
+
+        new GraphBackedSearchIndexer(graphProvider);
+
+        TestUtils.defineDeptEmployeeTypes(typeSystem);
+    }
+
+    @AfterClass
+    public void tearDown() throws Exception {
+        TypeSystem.getInstance().reset();
+        try {
+            //TODO - Fix failure during shutdown while using BDB
+            graphProvider.get().shutdown();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            TitanCleanup.clear(graphProvider.get());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testGetCompositeGuidsAndVertices() throws Exception {
+        ITypedReferenceableInstance hrDept = TestUtils.createDeptEg1(typeSystem);
+        List<String> createdGuids = repositoryService.createEntities(hrDept);
+        String deptGuid = null;
+        Set<String> expectedGuids = new HashSet<>();
+
+        for (String guid : createdGuids) {
+            ITypedReferenceableInstance entityDefinition = repositoryService.getEntityDefinition(guid);
+            expectedGuids.add(guid);
+            if (entityDefinition.getId().getTypeName().equals(TestUtils.DEPARTMENT_TYPE)) {
+                deptGuid = guid;
+            }
+        }
+        Vertex deptVertex = GraphHelper.getInstance().getVertexForGUID(deptGuid);
+        Set<VertexInfo> compositeVertices = GraphHelper.getCompositeVertices(deptVertex);
+        HashMap<String, VertexInfo> verticesByGuid = new HashMap<>();
+        for (VertexInfo vertexInfo: compositeVertices) {
+            verticesByGuid.put(vertexInfo.getGuid(), vertexInfo);
+        }
+
+        // Verify compositeVertices has entries for all expected guids.
+        Assert.assertEquals(compositeVertices.size(), expectedGuids.size());
+        for (String expectedGuid : expectedGuids) {
+            Assert.assertTrue(verticesByGuid.containsKey(expectedGuid));
+        }
     }
 
     @Test(dataProvider = "encodeDecodeTestData")

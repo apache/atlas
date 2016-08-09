@@ -25,6 +25,7 @@ import com.tinkerpop.blueprints.Vertex;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graph.GraphHelper.VertexInfo;
 import org.apache.atlas.typesystem.exception.NullRequiredAttributeException;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.AttributeInfo;
@@ -38,8 +39,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import static org.apache.atlas.repository.graph.GraphHelper.EDGE_LABEL_PREFIX;
 import static org.apache.atlas.repository.graph.GraphHelper.string;
@@ -60,24 +64,42 @@ public abstract class DeleteHandler {
     }
 
     /**
-     * Deletes the entity vertex - deletes the traits and all the references
-     * @param instanceVertex
+     * Deletes the specified entity vertices.
+     * Deletes any traits, composite entities, and structs owned by each entity.
+     * Also deletes all the references from/to the entity.
+     *
+     * @param instanceVertices
      * @throws AtlasException
      */
-    public void deleteEntity(Vertex instanceVertex) throws AtlasException {
-        RequestContext requestContext = RequestContext.get();
-        String guid = GraphHelper.getIdFromVertex(instanceVertex);
-        Id.EntityState state = GraphHelper.getState(instanceVertex);
-        if (requestContext.getDeletedEntityIds().contains(guid) || state == Id.EntityState.DELETED) {
-            LOG.debug("Skipping deleting {} as its already deleted", guid);
-            return;
-        }
-        String typeName = GraphHelper.getTypeName(instanceVertex);
-        requestContext.recordEntityDelete(guid, typeName);
+    public void deleteEntities(List<Vertex> instanceVertices) throws AtlasException {
+       RequestContext requestContext = RequestContext.get();
 
-        deleteAllTraits(instanceVertex);
+       Set<Vertex> deletionCandidateVertices = new HashSet<>();
 
-        deleteTypeVertex(instanceVertex, false);
+       for (Vertex instanceVertex : instanceVertices) {
+            String guid = GraphHelper.getIdFromVertex(instanceVertex);
+            Id.EntityState state = GraphHelper.getState(instanceVertex);
+            if (requestContext.getDeletedEntityIds().contains(guid) || state == Id.EntityState.DELETED) {
+                   LOG.debug("Skipping deletion of {} as it is already deleted", guid);
+                   continue;
+            }
+
+           // Get GUIDs and vertices for all deletion candidates.
+           Set<VertexInfo> compositeVertices = GraphHelper.getCompositeVertices(instanceVertex);
+
+           // Record all deletion candidate GUIDs in RequestContext
+           // and gather deletion candidate vertices.
+           for (VertexInfo vertexInfo : compositeVertices) {
+               requestContext.recordEntityDelete(vertexInfo.getGuid(), vertexInfo.getTypeName());
+               deletionCandidateVertices.add(vertexInfo.getVertex());
+           }
+       }
+
+       // Delete traits and vertices.
+       for (Vertex deletionCandidateVertex : deletionCandidateVertices) {
+           deleteAllTraits(deletionCandidateVertex);
+           deleteTypeVertex(deletionCandidateVertex, false);
+       }
     }
 
     protected abstract void deleteEdge(Edge edge, boolean force) throws AtlasException;
@@ -96,7 +118,7 @@ public abstract class DeleteHandler {
             break;
 
         case CLASS:
-            deleteEntity(instanceVertex);
+            deleteEntities(Collections.singletonList(instanceVertex));
             break;
 
         default:
@@ -280,7 +302,7 @@ public abstract class DeleteHandler {
             } else {
                 // Cannot unset a required attribute.
                 throw new NullRequiredAttributeException("Cannot unset required attribute " + GraphHelper.getQualifiedFieldName(type, attributeName) +
-                    " on " + string(outVertex) + " edge = " + edgeLabel);
+                    " on " + GraphHelper.getVertexDetails(outVertex) + " edge = " + edgeLabel);
             }
             break;
 
@@ -306,7 +328,7 @@ public abstract class DeleteHandler {
                             throw new NullRequiredAttributeException(
                                     "Cannot remove array element from required attribute " +
                                             GraphHelper.getQualifiedFieldName(type, attributeName) + " on "
-                                            + string(outVertex) + " " + string(elementEdge));
+                                            + GraphHelper.getVertexDetails(outVertex) + " " + GraphHelper.getEdgeDetails(elementEdge));
                         }
 
                         if (shouldUpdateReverseAttribute) {
@@ -344,7 +366,7 @@ public abstract class DeleteHandler {
                                 // Deleting this entry would violate the attribute's lower bound.
                                 throw new NullRequiredAttributeException(
                                         "Cannot remove map entry " + keyPropertyName + " from required attribute " +
-                                                GraphHelper.getQualifiedFieldName(type, attributeName) + " on " + string(outVertex) + " " + string(mapEdge));
+                                                GraphHelper.getQualifiedFieldName(type, attributeName) + " on " + GraphHelper.getVertexDetails(outVertex) + " " + GraphHelper.getEdgeDetails(mapEdge));
                             }
 
                             if (shouldUpdateReverseAttribute) {
@@ -367,8 +389,8 @@ public abstract class DeleteHandler {
             break;
 
         default:
-            throw new IllegalStateException("There can't be an edge from " + string(outVertex) + " to "
-                    + string(inVertex) + " with attribute name " + attributeName + " which is not class/array/map attribute");
+            throw new IllegalStateException("There can't be an edge from " + GraphHelper.getVertexDetails(outVertex) + " to "
+                    + GraphHelper.getVertexDetails(inVertex) + " with attribute name " + attributeName + " which is not class/array/map attribute");
         }
 
         if (edge != null) {

@@ -19,6 +19,7 @@
 package org.apache.atlas.repository.graph;
 
 import com.tinkerpop.blueprints.Vertex;
+
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.TestUtils;
@@ -28,6 +29,7 @@ import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.persistence.Id;
+import org.apache.atlas.typesystem.persistence.Id.EntityState;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.testng.Assert;
 
@@ -213,5 +215,18 @@ public class GraphBackedRepositorySoftDeleteTest extends GraphBackedMetadataRepo
     @Override
     protected void assertTestDeleteTargetOfMultiplicityRequiredReference() throws Exception {
         // No-op - it's ok that no exception was thrown if soft deletes are enabled.
+    }
+
+    @Override
+    protected void assertTestLowerBoundsIgnoredOnDeletedEntities(List<ITypedReferenceableInstance> employees) {
+
+        Assert.assertEquals(employees.size(), 4, "References to deleted employees should not have been disconnected with soft deletes enabled");
+    }
+
+    @Override
+    protected void assertTestLowerBoundsIgnoredOnCompositeDeletedEntities(String hrDeptGuid) throws Exception {
+
+        ITypedReferenceableInstance hrDept = repositoryService.getEntityDefinition(hrDeptGuid);
+        Assert.assertEquals(hrDept.getId().getState(), EntityState.DELETED);
     }
 }

@@ -184,4 +184,22 @@ public class GraphBackedRepositoryHardDeleteTest extends GraphBackedMetadataRepo
         Assert.fail("Lower bound on attribute Manager.subordinates was not enforced - " +
             NullRequiredAttributeException.class.getSimpleName() + " was expected but none thrown");
     }
+
+    @Override
+    protected void assertTestLowerBoundsIgnoredOnDeletedEntities(List<ITypedReferenceableInstance> employees) {
+
+        Assert.assertEquals(employees.size(), 1, "References to deleted employees were not disconnected");
+    }
+
+    @Override
+    protected void assertTestLowerBoundsIgnoredOnCompositeDeletedEntities(String hrDeptGuid) throws Exception {
+
+        try {
+            repositoryService.getEntityDefinition(hrDeptGuid);
+            Assert.fail(EntityNotFoundException.class.getSimpleName() + " was expected but none thrown");
+        }
+        catch (EntityNotFoundException e) {
+            // good
+        }
+    }
 }

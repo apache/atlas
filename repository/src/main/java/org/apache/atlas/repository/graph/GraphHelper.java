@@ -21,9 +21,11 @@ package org.apache.atlas.repository.graph;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.Stack;
 import java.util.UUID;
 
 import org.apache.atlas.AtlasException;
@@ -37,6 +39,7 @@ import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
+import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.atlas.typesystem.types.HierarchicalType;
 import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.TypeSystem;
@@ -449,6 +452,139 @@ public final class GraphHelper {
         return result;
     }
 
+    /**
+     * Guid and Vertex combo
+     */
+    public static class VertexInfo {
+        private String guid;
+        private Vertex vertex;
+        private String typeName;
+
+        public VertexInfo(String guid, Vertex vertex, String typeName) {
+            this.guid = guid;
+            this.vertex = vertex;
+            this.typeName = typeName;
+        }
+
+        public String getGuid() {
+            return guid;
+        }
+        public Vertex getVertex() {
+            return vertex;
+        }
+        public String getTypeName() {
+            return typeName;
+        }
+
+        @Override
+        public int hashCode() {
+
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((guid == null) ? 0 : guid.hashCode());
+            result = prime * result + ((vertex == null) ? 0 : vertex.hashCode());
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (!(obj instanceof VertexInfo))
+                return false;
+            VertexInfo other = (VertexInfo)obj;
+            if (guid == null) {
+                if (other.guid != null)
+                    return false;
+            } else if (!guid.equals(other.guid))
+                return false;
+            return true;
+        }
+    }
+
+    /**
+     * Get the GUIDs and vertices for all composite entities owned/contained by the specified root entity vertex.
+     * The graph is traversed from the root entity through to the leaf nodes of the containment graph.
+     *
+     * @param entityVertex the root entity vertex
+     * @return set of VertexInfo for all composite entities
+     * @throws AtlasException
+     */
+    public static Set<VertexInfo> getCompositeVertices(Vertex entityVertex) throws AtlasException {
+        Set<VertexInfo> result = new HashSet<>();
+        Stack<Vertex> vertices = new Stack<>();
+        vertices.push(entityVertex);
+        while (vertices.size() > 0) {
+            Vertex vertex = vertices.pop();
+            String typeName = GraphHelper.getTypeName(vertex);
+            String guid = GraphHelper.getIdFromVertex(vertex);
+            Id.EntityState state = GraphHelper.getState(vertex);
+            if (state == Id.EntityState.DELETED) {
+                //If the reference vertex is marked for deletion, skip it
+                continue;
+            }
+            result.add(new VertexInfo(guid, vertex, typeName));
+            ClassType classType = typeSystem.getDataType(ClassType.class, typeName);
+            for (AttributeInfo attributeInfo : classType.fieldMapping().fields.values()) {
+                if (!attributeInfo.isComposite) {
+                    continue;
+                }
+                String edgeLabel = GraphHelper.getEdgeLabel(classType, attributeInfo);
+                switch (attributeInfo.dataType().getTypeCategory()) {
+                    case CLASS:
+                        Edge edge = GraphHelper.getEdgeForLabel(vertex, edgeLabel);
+                        if (edge != null && GraphHelper.getState(edge) == Id.EntityState.ACTIVE) {
+                            Vertex compositeVertex = edge.getVertex(Direction.IN);
+                            vertices.push(compositeVertex);
+                        }
+                        break;
+                    case ARRAY:
+                        IDataType elementType = ((DataTypes.ArrayType) attributeInfo.dataType()).getElemType();
+                        DataTypes.TypeCategory elementTypeCategory = elementType.getTypeCategory();
+                        if (elementTypeCategory != TypeCategory.CLASS) {
+                            continue;
+                        }
+                        Iterator<Edge> edges = GraphHelper.getOutGoingEdgesByLabel(vertex, edgeLabel);
+                        if (edges != null) {
+                            while (edges.hasNext()) {
+                                edge = edges.next();
+                                if (edge != null && GraphHelper.getState(edge) == Id.EntityState.ACTIVE) {
+                                    Vertex compositeVertex = edge.getVertex(Direction.IN);
+                                    vertices.push(compositeVertex);
+                                }
+                            }
+                        }
+                        break;
+                    case MAP:
+                        DataTypes.MapType mapType = (DataTypes.MapType) attributeInfo.dataType();
+                        DataTypes.TypeCategory valueTypeCategory = mapType.getValueType().getTypeCategory();
+                        if (valueTypeCategory != TypeCategory.CLASS) {
+                            continue;
+                        }
+                        String propertyName = GraphHelper.getQualifiedFieldName(classType, attributeInfo.name);
+                        List<String> keys = vertex.getProperty(propertyName);
+                        if (keys != null) {
+                            for (String key : keys) {
+                                String mapEdgeLabel = GraphHelper.getQualifiedNameForMapKey(edgeLabel, key);
+                                edge = GraphHelper.getEdgeForLabel(vertex, mapEdgeLabel);
+                                if (edge != null && GraphHelper.getState(edge) == Id.EntityState.ACTIVE) {
+                                    Vertex compositeVertex = edge.getVertex(Direction.IN);
+                                    vertices.push(compositeVertex);
+                                }
+                            }
+                        }
+                        break;
+                    default:
+                        continue;
+                }
+            }
+        }
+        return result;
+    }
+
     public static void dumpToLog(final Graph graph) {
         LOG.debug("*******************Graph Dump****************************");
         LOG.debug("Vertices of {}", graph);
@@ -472,25 +608,36 @@ public final class GraphHelper {
             return "vertex[null]";
         } else {
             if (LOG.isDebugEnabled()) {
-                return String.format("vertex[id=%s type=%s guid=%s]", vertex.getId().toString(), getTypeName(vertex),
-                        getIdFromVertex(vertex));
+                return getVertexDetails(vertex);
             } else {
                 return String.format("vertex[id=%s]", vertex.getId().toString());
             }
         }
     }
 
+    public static String getVertexDetails(Vertex vertex) {
+
+        return String.format("vertex[id=%s type=%s guid=%s]", vertex.getId().toString(), getTypeName(vertex),
+                getIdFromVertex(vertex));
+    }
+
+
     public static String string(Edge edge) {
         if(edge == null) {
             return "edge[null]";
         } else {
             if (LOG.isDebugEnabled()) {
-                return String.format("edge[id=%s label=%s from %s -> to %s]", edge.getId().toString(), edge.getLabel(),
-                        string(edge.getVertex(Direction.OUT)), string(edge.getVertex(Direction.IN)));
+                return getEdgeDetails(edge);
             } else {
                 return String.format("edge[id=%s]", edge.getId().toString());
             }
         }
+    }
+
+    public static String getEdgeDetails(Edge edge) {
+
+        return String.format("edge[id=%s label=%s from %s -> to %s]", edge.getId().toString(), edge.getLabel(),
+                string(edge.getVertex(Direction.OUT)), string(edge.getVertex(Direction.IN)));
     }
 
     @VisibleForTesting

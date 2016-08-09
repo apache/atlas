@@ -331,7 +331,8 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         if (guids == null || guids.size() == 0) {
             throw new IllegalArgumentException("guids must be non-null and non-empty");
         }
-        
+
+        List<Vertex> vertices = new ArrayList<>(guids.size());
         for (String guid : guids) {
             if (guid == null) {
                 LOG.warn("deleteEntities: Ignoring null guid");
@@ -339,16 +340,22 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             }
             try {
                 Vertex instanceVertex = graphHelper.getVertexForGUID(guid);
-                deleteHandler.deleteEntity(instanceVertex);
+                vertices.add(instanceVertex);
             } catch (EntityNotFoundException e) {
                 // Entity does not exist - treat as non-error, since the caller
                 // wanted to delete the entity and it's already gone.
                 LOG.info("Deletion request ignored for non-existent entity with guid " + guid);
                 continue;
-            } catch (AtlasException e) {
-                throw new RepositoryException(e);
             }
         }
+
+        try {
+            deleteHandler.deleteEntities(vertices);
+        }
+        catch (AtlasException e) {
+            throw new RepositoryException(e);
+        }
+
         RequestContext requestContext = RequestContext.get();
         return new AtlasClient.EntityResult(requestContext.getCreatedEntityIds(),
                 requestContext.getUpdatedEntityIds(), requestContext.getDeletedEntityIds());
