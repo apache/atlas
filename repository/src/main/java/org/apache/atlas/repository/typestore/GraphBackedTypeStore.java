@@ -282,7 +282,7 @@ public class GraphBackedTypeStore implements ITypeStore {
 
     private ImmutableSet<String> getSuperTypes(Vertex vertex) {
         Set<String> superTypes = new HashSet<>();
-        Iterator<Edge> edges = vertex.getEdges(Direction.OUT, SUPERTYPE_EDGE_LABEL).iterator();
+        Iterator<Edge> edges = GraphHelper.getOutGoingEdgesByLabel(vertex, SUPERTYPE_EDGE_LABEL);
         while (edges.hasNext()) {
             Edge edge = edges.next();
             superTypes.add((String) edge.getVertex(Direction.IN).getProperty(Constants.TYPENAME_PROPERTY_KEY));

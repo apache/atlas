@@ -18,12 +18,29 @@
 
 package org.apache.atlas.repository.graph;
 
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.TitanVertex;
+import com.tinkerpop.blueprints.Edge;
+import org.apache.atlas.RepositoryMetadataModule;
 import org.testng.annotations.DataProvider;
+import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.assertEquals;
+import javax.inject.Inject;
 
+import java.util.Iterator;
+
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
+
+@Guice(modules = RepositoryMetadataModule.class)
 public class GraphHelperTest {
+    @Inject
+    private GraphProvider<TitanGraph> graphProvider;
+
     @DataProvider(name = "encodeDecodeTestData")
     private Object[][] createTestData() {
         return new Object[][]{
@@ -47,5 +64,23 @@ public class GraphHelperTest {
 
         String decodedStr = GraphHelper.decodePropertyKey(encodedStr);
         assertEquals(decodedStr, str);
+    }
+
+    @Test
+    public void testGetOutgoingEdgesByLabel() throws Exception {
+        TitanGraph graph = graphProvider.get();
+        TitanVertex v1 = graph.addVertex();
+        TitanVertex v2 = graph.addVertex();
+
+        v1.addEdge("l1", v2);
+        v1.addEdge("l2", v2);
+
+        Iterator<Edge> iterator = GraphHelper.getOutGoingEdgesByLabel(v1, "l1");
+        assertTrue(iterator.hasNext());
+        assertTrue(iterator.hasNext());
+        assertNotNull(iterator.next());
+        assertNull(iterator.next());
+        assertFalse(iterator.hasNext());
+        assertFalse(iterator.hasNext());
     }
 }

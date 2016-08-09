@@ -44,6 +44,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -295,7 +296,9 @@ public final class GraphToTypedInstanceMapper {
         TraitType traitType, ITypedStruct traitInstance) throws AtlasException {
         String relationshipLabel = GraphHelper.getTraitLabel(typedInstanceTypeName, traitName);
         LOG.debug("Finding edge for {} -> label {} ", instanceVertex, relationshipLabel);
-        for (Edge edge : instanceVertex.getEdges(Direction.OUT, relationshipLabel)) {
+        Iterator<Edge> edgeIterator = GraphHelper.getOutGoingEdgesByLabel(instanceVertex, relationshipLabel);
+        while (edgeIterator.hasNext()) {
+            Edge edge = edgeIterator.next();
             final Vertex traitInstanceVertex = edge.getVertex(Direction.IN);
             if (traitInstanceVertex != null) {
                 LOG.debug("Found trait instance vertex {}, mapping to instance {} ", traitInstanceVertex,
