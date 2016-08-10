@@ -6,6 +6,7 @@ INCOMPATIBLE CHANGES:
 ATLAS-1060 Add composite indexes for exact match performance improvements for all attributes (sumasai via shwethags)
 
 ALL CHANGES:
+ATLAS-1108 In Atlas HA mode , import-hive.sh in Passive instance fails. (ayubkhan via sumasai)
 ATLAS-991 Lower bound checking not always disabled for entities being deleted (dkantor)
 ATLAS-1104 Get outgoing edges by label doesn't work in some cases (shwethags)
 ATLAS-1106 Fix Build failure due to wrong version in graphdb/common pom (sumasai)
