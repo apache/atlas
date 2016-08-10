@@ -634,12 +634,15 @@ public class HiveMetaStoreBridge {
     public static void main(String[] args) throws Exception {
 
         Configuration atlasConf = ApplicationProperties.get();
-        String atlasEndpoint = atlasConf.getString(ATLAS_ENDPOINT, DEFAULT_DGI_URL);
+        String[] atlasEndpoint = atlasConf.getStringArray(ATLAS_ENDPOINT);
+        if (atlasEndpoint == null){
+            atlasEndpoint = new String[]{DEFAULT_DGI_URL};
+        }
         AtlasClient atlasClient;
 
         if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
             String[] basicAuthUsernamePassword = AuthenticationUtil.getBasicAuthenticationInput();
-            atlasClient = new AtlasClient(new String[]{atlasEndpoint}, basicAuthUsernamePassword);
+            atlasClient = new AtlasClient(atlasEndpoint, basicAuthUsernamePassword);
         } else {
             UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
             atlasClient = new AtlasClient(ugi, ugi.getShortUserName(), atlasEndpoint);
