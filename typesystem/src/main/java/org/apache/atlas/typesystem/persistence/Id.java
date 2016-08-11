@@ -33,6 +33,7 @@ import java.security.MessageDigest;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class Id implements ITypedReferenceableInstance {
     public enum EntityState {
@@ -43,6 +44,7 @@ public class Id implements ITypedReferenceableInstance {
     public final String typeName;
     public final int version;
     public EntityState state;
+    private static AtomicLong s_nextId = new AtomicLong(System.nanoTime());
 
     public Id(String id, int version, String typeName, String state) {
         id       = ParamChecker.notEmpty(id, "id");
@@ -71,7 +73,7 @@ public class Id implements ITypedReferenceableInstance {
     }
 
     public Id(String typeName) {
-        this("" + (-System.nanoTime()), 0, typeName);
+        this("" + Id.nextNegativeLong(), 0, typeName);
     }
 
     public boolean isUnassigned() {
@@ -293,5 +295,17 @@ public class Id implements ITypedReferenceableInstance {
         digester.update(typeName.getBytes(Charset.forName("UTF-8")));
         byte[] digest = digester.digest();
         return MD5Utils.toString(digest);
+    }
+
+    private static long nextNegativeLong() {
+        long ret = s_nextId.getAndDecrement();
+
+        if (ret > 0) {
+          ret *= -1;
+        } else if (ret == 0) {
+          ret = Long.MIN_VALUE;
+        }
+
+        return ret;
     }
 }
