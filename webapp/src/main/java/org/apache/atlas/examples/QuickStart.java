@@ -81,13 +81,13 @@ public class QuickStart {
 
     @VisibleForTesting
     static void runQuickstart(String[] args, String[] basicAuthUsernamePassword) throws Exception {
-        String baseUrl = getServerUrl(args);
+        String[] urls = getServerUrl(args);
         QuickStart quickStart;
 
         if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
-            quickStart = new QuickStart(baseUrl, basicAuthUsernamePassword);
+            quickStart = new QuickStart(urls, basicAuthUsernamePassword);
         } else {
-            quickStart = new QuickStart(baseUrl);
+            quickStart = new QuickStart(urls);
         }
 
         // Shows how to create types in Atlas for your meta model
@@ -100,19 +100,19 @@ public class QuickStart {
         quickStart.search();
     }
 
-    static String getServerUrl(String[] args) throws AtlasException {
+    static String[] getServerUrl(String[] args) throws AtlasException {
         if (args.length > 0) {
-            return args[0];
+            return args[0].split(",");
         }
 
         Configuration configuration = ApplicationProperties.get();
-        String baseUrl = configuration.getString(ATLAS_REST_ADDRESS);
-        if (baseUrl == null) {
+        String[] urls = configuration.getStringArray(ATLAS_REST_ADDRESS);
+        if (urls == null || urls.length == 0) {
             System.out.println("Usage: quick_start.py <atlas endpoint of format <http/https>://<atlas-fqdn>:<atlas port> like http://localhost:21000>");
             System.exit(-1);
         }
 
-        return baseUrl;
+        return urls;
     }
 
     static final String DATABASE_TYPE = "DB";
@@ -128,13 +128,11 @@ public class QuickStart {
 
     private final AtlasClient metadataServiceClient;
 
-    QuickStart(String baseUrl,String[] basicAuthUsernamePassword) {
-        String[] urls = baseUrl.split(",");
+    QuickStart(String[] urls,String[] basicAuthUsernamePassword) {
         metadataServiceClient = new AtlasClient(urls,basicAuthUsernamePassword);
     }
 
-    QuickStart(String baseUrl) throws AtlasException {
-        String[] urls = baseUrl.split(",");
+    QuickStart(String[] urls) throws AtlasException {
         metadataServiceClient = new AtlasClient(urls);
     }
 

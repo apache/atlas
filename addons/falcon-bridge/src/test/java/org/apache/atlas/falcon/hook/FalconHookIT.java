@@ -76,9 +76,9 @@ public class FalconHookIT {
     public void setUp() throws Exception {
         Configuration atlasProperties = ApplicationProperties.get();
         if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
-            atlasClient = new AtlasClient(new String[]{atlasProperties.getString(HiveMetaStoreBridge.ATLAS_ENDPOINT)}, new String[]{"admin", "admin"});
+            atlasClient = new AtlasClient(atlasProperties.getStringArray(HiveMetaStoreBridge.ATLAS_ENDPOINT), new String[]{"admin", "admin"});
         } else {
-            atlasClient = new AtlasClient(atlasProperties.getString(HiveMetaStoreBridge.ATLAS_ENDPOINT));
+            atlasClient = new AtlasClient(atlasProperties.getStringArray(HiveMetaStoreBridge.ATLAS_ENDPOINT));
         }
 
         AtlasService service = new AtlasService();

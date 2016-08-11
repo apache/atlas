@@ -635,8 +635,8 @@ public class HiveMetaStoreBridge {
 
         Configuration atlasConf = ApplicationProperties.get();
         String[] atlasEndpoint = atlasConf.getStringArray(ATLAS_ENDPOINT);
-        if (atlasEndpoint == null){
-            atlasEndpoint = new String[]{DEFAULT_DGI_URL};
+        if (atlasEndpoint == null || atlasEndpoint.length == 0){
+            atlasEndpoint = new String[] { DEFAULT_DGI_URL };
         }
         AtlasClient atlasClient;
 

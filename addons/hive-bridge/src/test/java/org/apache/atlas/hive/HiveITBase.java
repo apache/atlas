@@ -80,10 +80,16 @@ public class HiveITBase {
         SessionState.setCurrentSessionState(ss);
 
         Configuration configuration = ApplicationProperties.get();
+
+        String[] atlasEndPoint = configuration.getStringArray(HiveMetaStoreBridge.ATLAS_ENDPOINT);
+        if (atlasEndPoint == null || atlasEndPoint.length == 0) {
+            atlasEndPoint = new String[] { DGI_URL };
+        }
+
         if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
-            atlasClient = new AtlasClient(new String[]{configuration.getString(HiveMetaStoreBridge.ATLAS_ENDPOINT, DGI_URL)}, new String[]{"admin", "admin"});
+            atlasClient = new AtlasClient(atlasEndPoint, new String[]{"admin", "admin"});
         } else {
-            atlasClient = new AtlasClient(configuration.getString(HiveMetaStoreBridge.ATLAS_ENDPOINT, DGI_URL));
+            atlasClient = new AtlasClient(atlasEndPoint);
         }
 
         hiveMetaStoreBridge = new HiveMetaStoreBridge(configuration, conf, atlasClient);

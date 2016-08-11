@@ -50,7 +50,6 @@ import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.lang.RandomStringUtils;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -131,9 +130,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         String user = "admin";
         AtlasClient localClient = null;
         if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
-            localClient = new AtlasClient(new String[]{baseUrl}, new String[]{"admin", "admin"});
+            localClient = new AtlasClient(atlasUrls, new String[]{"admin", "admin"});
         } else {
-            localClient = new AtlasClient(baseUrl);
+            localClient = new AtlasClient(atlasUrls);
         }
         String entityId = localClient.createEntity(entity).get(0);
 
