@@ -95,8 +95,12 @@ define(['require',
             }, this);
         },
         tagsCollection: function() {
+            this.collection.fullCollection.comparator = function(model) {
+                return model.get('tags').toLowerCase();
+            }
+
             var str = '<option selected="selected" disabled="disabled">-- Select a tag from the dropdown list --</option>';
-            _.each(this.collection.fullCollection.models, function(obj, key) {
+            this.collection.fullCollection.sort().each(function(obj, key) {
                 str += '<option>' + obj.get('tags') + '</option>';
             });
             this.ui.addTagOptions.html(str);

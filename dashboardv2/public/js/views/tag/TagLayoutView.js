@@ -51,11 +51,7 @@ define(['require',
             events: function() {
                 var events = {};
                 events["click " + this.ui.createTag] = 'onClickCreateTag';
-                /* events["dblclick " + this.ui.tags] = function(e) {
-                     this.onTagList(e, true);
-                 }*/
                 events["click " + this.ui.tags] = 'onTagList';
-                // events["click " + this.ui.referesh] = 'refereshClick';
                 events["keyup " + this.ui.offLineSearchTag] = 'offlineSearchTag';
                 events["click " + this.ui.deleteTerm] = 'onDeleteTerm';
                 events['click ' + this.ui.refreshTag] = 'fetchCollections';
@@ -69,7 +65,6 @@ define(['require',
                 _.extend(this, _.pick(options, 'globalVent', 'tag'));
                 this.tagCollection = new VTagList();
                 this.collection = new Backbone.Collection();
-
                 this.json = {
                     "enumTypes": [],
                     "traitTypes": [],
@@ -157,16 +152,18 @@ define(['require',
             tagsAndTypeGenerator: function(collection, searchString) {
                 var that = this,
                     str = '';
-                _.each(this[collection].fullCollection.models, function(model) {
-                    var tagName = model.get("tags");
+                that.tagCollection.fullCollection.comparator = function(model) {
+                    return model.get('tags').toLowerCase();
+                }
+                that.tagCollection.fullCollection.sort().each(function(model) {
                     if (searchString) {
-                        if (tagName.search(new RegExp(searchString, "i")) != -1) {
-                            str = '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + tagName + '"  data-name="`' + tagName + '`" >' + tagName + '</a></li>' + str;
+                        if (model.get('tags').search(new RegExp(searchString, "i")) != -1) {
+                            str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + model.get('tags') + '"  data-name="`' + model.get('tags') + '`" >' + model.get('tags') + '</a></li>';
                         } else {
                             return;
                         }
                     } else {
-                        str = '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + tagName + '"  data-name="`' + tagName + '`">' + tagName + '</a></li>' + str;
+                        str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + model.get('tags') + '"  data-name="`' + model.get('tags') + '`">' + model.get('tags') + '</a></li>';
                     }
                 });
                 this.ui.tagsParent.empty().html(str);
