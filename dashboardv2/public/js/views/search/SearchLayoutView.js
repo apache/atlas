@@ -118,7 +118,7 @@ define(['require',
                 this.ui.typeLov.empty();
                 var str = '<option></option>';
                 this.typecollection.fullCollection.comparator = function(model) {
-                    return model.get('tags');
+                    return model.get('tags').toLowerCase();
                 }
                 this.typecollection.fullCollection.sort().each(function(model) {
                     str += '<option>' + model.get("tags") + '</option>';

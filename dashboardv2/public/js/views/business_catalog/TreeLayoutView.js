@@ -403,7 +403,10 @@ define(['require',
                 }
 
                 function createTerm() {
-                    _.each(that.childCollection.fullCollection.models, function(model, key) {
+                    that.childCollection.fullCollection.comparator = function(model) {
+                        return model.get('name').toLowerCase();
+                    }
+                    that.childCollection.fullCollection.sort().each(function(model, key) {
                         var name = Utils.checkTagOrTerm(model.get('name'), true);
                         var hrefUrl = "/api" + model.get('href').split("/api")[1];
                         if (name.name) {
