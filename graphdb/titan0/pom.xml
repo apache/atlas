@@ -165,9 +165,10 @@
                             <filters>
                                 <filter>
                                     <artifact>com.thinkaurelius.titan:titan-core</artifact>
-                                    <!-- force use of our custom LocalLockMediator implementation -->
+                                    <!-- force use of our custom titan class implementations -->
                                     <excludes>
-                                        <exclude>com/thinkaurelius/titan/diskstorage/locking/LocalLockMediator*</exclude>
+                                        <exclude>com/thinkaurelius/titan/diskstorage/locking/LocalLockMediator.class</exclude>
+                                        <exclude>com/thinkaurelius/titan/graphdb/query/graph/GraphCentricQueryBuilder.class</exclude>
                                     </excludes>
                                 </filter>
 
