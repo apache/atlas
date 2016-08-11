@@ -28,6 +28,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-1108: updated references to atlas.rest.address to handle multiple URLs
 ATLAS-1112 Hive table GET response from atlas server had duplicate column entries ( ayubkhan, mneethiraj via sumasai)
 ATLAS-1108 In Atlas HA mode , import-hive.sh in Passive instance fails. (ayubkhan via sumasai)
 ATLAS-1104 Get outgoing edges by label doesn't work in some cases (shwethags)

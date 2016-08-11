@@ -60,20 +60,23 @@ public class AtlasAdminClient {
     private int run(String[] args) throws AtlasException {
         CommandLine commandLine = parseCommandLineOptions(args);
         Configuration configuration = ApplicationProperties.get();
-        String atlasServerUri = configuration.getString(
-                AtlasConstants.ATLAS_REST_ADDRESS_KEY, AtlasConstants.DEFAULT_ATLAS_REST_ADDRESS);
+        String[] atlasServerUri = configuration.getStringArray(AtlasConstants.ATLAS_REST_ADDRESS_KEY);
+
+        if (atlasServerUri == null || atlasServerUri.length == 0) {
+            atlasServerUri = new String[] { AtlasConstants.DEFAULT_ATLAS_REST_ADDRESS };
+        }
 
         AtlasClient atlasClient = null;
         if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
             String[] basicAuthUsernamePassword = AuthenticationUtil.getBasicAuthenticationInput();
-            atlasClient = new AtlasClient(new String[]{atlasServerUri}, basicAuthUsernamePassword);
+            atlasClient = new AtlasClient(atlasServerUri, basicAuthUsernamePassword);
         } else {
-            atlasClient = new AtlasClient(atlasServerUri, null, null);
+            atlasClient = new AtlasClient(atlasServerUri, null);
         }
         return handleCommand(commandLine, atlasServerUri, atlasClient);
     }
 
-    private int handleCommand(CommandLine commandLine, String atlasServerUri, AtlasClient atlasClient) {
+    private int handleCommand(CommandLine commandLine, String[] atlasServerUri, AtlasClient atlasClient) {
         int cmdStatus = PROGRAM_ERROR_STATUS;
         if (commandLine.hasOption(STATUS.getOpt())) {
             try {

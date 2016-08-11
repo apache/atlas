@@ -50,9 +50,9 @@ public class SqoopHookIT {
         //Set-up sqoop session
         Configuration configuration = ApplicationProperties.get();
         if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
-            atlasClient = new AtlasClient(new String[]{configuration.getString(HiveMetaStoreBridge.ATLAS_ENDPOINT)}, new String[]{"admin", "admin"});
+            atlasClient = new AtlasClient(configuration.getStringArray(HiveMetaStoreBridge.ATLAS_ENDPOINT), new String[]{"admin", "admin"});
         } else {
-            atlasClient = new AtlasClient(configuration.getString(HiveMetaStoreBridge.ATLAS_ENDPOINT));
+            atlasClient = new AtlasClient(configuration.getStringArray(HiveMetaStoreBridge.ATLAS_ENDPOINT));
         }
         registerDataModels(atlasClient);
     }

@@ -21,9 +21,7 @@ package org.apache.atlas.web.resources;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.api.client.config.DefaultClientConfig;
 import kafka.consumer.ConsumerTimeoutException;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
@@ -58,7 +56,6 @@ import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 
-import javax.ws.rs.core.UriBuilder;
 import java.util.List;
 
 /**
@@ -72,18 +69,22 @@ public abstract class BaseResourceIT {
     protected AtlasClient serviceClient;
     public static final Logger LOG = LoggerFactory.getLogger(BaseResourceIT.class);
     protected static final int MAX_WAIT_TIME = 60000;
-    protected String baseUrl;
+    protected String[] atlasUrls;
 
     @BeforeClass
     public void setUp() throws Exception {
 
         Configuration configuration = ApplicationProperties.get();
-        baseUrl = configuration.getString(ATLAS_REST_ADDRESS, "http://localhost:21000/");
+        atlasUrls = configuration.getStringArray(ATLAS_REST_ADDRESS);
+
+        if (atlasUrls == null || atlasUrls.length == 0) {
+            atlasUrls = new String[] { "http://localhost:21000/" };
+        }
 
         if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
-            serviceClient = new AtlasClient(new String[]{baseUrl}, new String[]{"admin", "admin"});
+            serviceClient = new AtlasClient(atlasUrls, new String[]{"admin", "admin"});
         } else {
-            serviceClient = new AtlasClient(baseUrl);
+            serviceClient = new AtlasClient(atlasUrls);
         }
         service = serviceClient.getResource();
     }
