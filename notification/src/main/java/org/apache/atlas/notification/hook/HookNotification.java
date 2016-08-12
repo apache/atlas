@@ -156,7 +156,7 @@ public class HookNotification implements JsonDeserializer<HookNotification.HookN
             }
         }
 
-        public List<Referenceable> getEntities() throws JSONException {
+        public List<Referenceable> getEntities() {
             return entities;
         }
 

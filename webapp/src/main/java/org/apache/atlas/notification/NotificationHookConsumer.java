@@ -24,6 +24,7 @@ import com.google.inject.Singleton;
 import kafka.consumer.ConsumerTimeoutException;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.LocalAtlasClient;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
@@ -46,11 +47,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Singleton
 public class NotificationHookConsumer implements Service, ActiveStateChangeHandler {
     private static final Logger LOG = LoggerFactory.getLogger(NotificationHookConsumer.class);
+    private static Logger FAILED_LOG = LoggerFactory.getLogger("FAILED");
+
     private static final String THREADNAME_PREFIX = NotificationHookConsumer.class.getSimpleName();
 
     public static final String CONSUMER_THREADS_PROPERTY = "atlas.notification.hook.numthreads";
+    public static final String CONSUMER_RETRIES_PROPERTY = "atlas.notification.hook.maxretries";
+    public static final String CONSUMER_FAILEDCACHESIZE_PROPERTY = "atlas.notification.hook.failedcachesize";
+
     public static final int SERVER_READY_WAIT_TIME_MS = 1000;
     private final LocalAtlasClient atlasClient;
+    private final int maxRetries;
+    private final int failedMsgCacheSize;
 
     private NotificationInterface notificationInterface;
     private ExecutorService executors;
@@ -58,20 +66,23 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private List<HookConsumer> consumers;
 
     @Inject
-    public NotificationHookConsumer(NotificationInterface notificationInterface, LocalAtlasClient atlasClient) {
+    public NotificationHookConsumer(NotificationInterface notificationInterface, LocalAtlasClient atlasClient)
+            throws AtlasException {
         this.notificationInterface = notificationInterface;
         this.atlasClient = atlasClient;
+        this.applicationProperties = ApplicationProperties.get();
+
+        maxRetries = applicationProperties.getInt(CONSUMER_RETRIES_PROPERTY, 3);
+        failedMsgCacheSize = applicationProperties.getInt(CONSUMER_FAILEDCACHESIZE_PROPERTY, 20);
+
     }
 
     @Override
     public void start() throws AtlasException {
-        Configuration configuration = ApplicationProperties.get();
-        startInternal(configuration, null);
+        startInternal(applicationProperties, null);
     }
 
-    void startInternal(Configuration configuration,
-                       ExecutorService executorService) {
-        this.applicationProperties = configuration;
+    void startInternal(Configuration configuration, ExecutorService executorService) {
         if (consumers == null) {
             consumers = new ArrayList<>();
         }
@@ -103,16 +114,16 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     @Override
     public void stop() {
         //Allow for completion of outstanding work
-        notificationInterface.close();
         try {
+            stopConsumerThreads();
             if (executors != null) {
-                stopConsumerThreads();
-                executors.shutdownNow();
+                executors.shutdown();
                 if (!executors.awaitTermination(5000, TimeUnit.MILLISECONDS)) {
                     LOG.error("Timed out waiting for consumer threads to shut down, exiting uncleanly");
                 }
                 executors = null;
             }
+            notificationInterface.close();
         } catch (InterruptedException e) {
             LOG.error("Failure in shutting down consumers");
         }
@@ -160,6 +171,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     class HookConsumer implements Runnable {
         private final NotificationConsumer<HookNotification.HookNotificationMessage> consumer;
         private final AtomicBoolean shouldRun = new AtomicBoolean(false);
+        private List<HookNotification.HookNotificationMessage> failedMessages = new ArrayList<>();
 
         public HookConsumer(NotificationConsumer<HookNotification.HookNotificationMessage> consumer) {
             this.consumer = consumer;
@@ -193,45 +205,71 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         }
 
         @VisibleForTesting
-        void handleMessage(HookNotification.HookNotificationMessage message) {
-            atlasClient.setUser(message.getUser());
-            try {
-                switch (message.getType()) {
-                case ENTITY_CREATE:
-                    HookNotification.EntityCreateRequest createRequest =
+        void handleMessage(HookNotification.HookNotificationMessage message) throws
+            AtlasServiceException, AtlasException {
+            for (int numRetries = 0; numRetries < maxRetries; numRetries++) {
+                LOG.debug("Running attempt {}", numRetries);
+                try {
+                    atlasClient.setUser(message.getUser());
+                    switch (message.getType()) {
+                    case ENTITY_CREATE:
+                        HookNotification.EntityCreateRequest createRequest =
                             (HookNotification.EntityCreateRequest) message;
-                    atlasClient.createEntity(createRequest.getEntities());
-                    break;
+                        atlasClient.createEntity(createRequest.getEntities());
+                        break;
 
-                case ENTITY_PARTIAL_UPDATE:
-                    HookNotification.EntityPartialUpdateRequest partialUpdateRequest =
+                    case ENTITY_PARTIAL_UPDATE:
+                        HookNotification.EntityPartialUpdateRequest partialUpdateRequest =
                             (HookNotification.EntityPartialUpdateRequest) message;
-                    atlasClient.updateEntity(partialUpdateRequest.getTypeName(),
+                        atlasClient.updateEntity(partialUpdateRequest.getTypeName(),
                             partialUpdateRequest.getAttribute(),
                             partialUpdateRequest.getAttributeValue(), partialUpdateRequest.getEntity());
-                    break;
+                        break;
 
-                case ENTITY_DELETE:
-                    HookNotification.EntityDeleteRequest deleteRequest =
-                        (HookNotification.EntityDeleteRequest) message;
-                    atlasClient.deleteEntity(deleteRequest.getTypeName(),
-                        deleteRequest.getAttribute(),
-                        deleteRequest.getAttributeValue());
-                    break;
+                    case ENTITY_DELETE:
+                        HookNotification.EntityDeleteRequest deleteRequest =
+                            (HookNotification.EntityDeleteRequest) message;
+                        atlasClient.deleteEntity(deleteRequest.getTypeName(),
+                            deleteRequest.getAttribute(),
+                            deleteRequest.getAttributeValue());
+                        break;
 
-                case ENTITY_FULL_UPDATE:
-                    HookNotification.EntityUpdateRequest updateRequest =
+                    case ENTITY_FULL_UPDATE:
+                        HookNotification.EntityUpdateRequest updateRequest =
                             (HookNotification.EntityUpdateRequest) message;
-                    atlasClient.updateEntities(updateRequest.getEntities());
-                    break;
+                        atlasClient.updateEntities(updateRequest.getEntities());
+                        break;
 
-                default:
-                    throw new IllegalStateException("Unhandled exception!");
+                    default:
+                        throw new IllegalStateException("Unhandled exception!");
+                    }
+
+                    break;
+                } catch (Throwable e) {
+                    LOG.warn("Error handling message", e);
+                    if (numRetries == (maxRetries - 1)) {
+                        LOG.warn("Max retries exceeded for message {}", message, e);
+                        failedMessages.add(message);
+                        if (failedMessages.size() >= failedMsgCacheSize) {
+                            recordFailedMessages();
+                        }
+                        return;
+                    }
                 }
-            } catch (Exception e) {
-                //todo handle failures
-                LOG.warn("Error handling message {}", message, e);
             }
+            commit();
+        }
+
+        private void recordFailedMessages() {
+            //logging failed messages
+            for (HookNotification.HookNotificationMessage message : failedMessages) {
+                FAILED_LOG.error("[DROPPED_NOTIFICATION] " + AbstractNotification.getMessageJson(message));
+            }
+            failedMessages.clear();
+        }
+
+        private void commit() {
+            recordFailedMessages();
             consumer.commit();
         }
 
@@ -260,6 +298,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         public void stop() {
             shouldRun.set(false);
+            consumer.close();
         }
     }
 }

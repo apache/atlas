@@ -41,7 +41,7 @@ public class Services {
     public void start() {
         try {
             for (Service service : services) {
-                LOG.debug("Starting service {}", service.getClass().getName());
+                LOG.info("Starting service {}", service.getClass().getName());
                 service.start();
             }
         } catch (Exception e) {
@@ -51,7 +51,7 @@ public class Services {
 
     public void stop() {
         for (Service service : services) {
-            LOG.debug("Stopping service {}", service.getClass().getName());
+            LOG.info("Stopping service {}", service.getClass().getName());
             try {
                 service.stop();
             } catch (Throwable e) {
