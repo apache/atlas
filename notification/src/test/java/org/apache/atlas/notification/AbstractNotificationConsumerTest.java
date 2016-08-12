@@ -262,6 +262,11 @@ public class AbstractNotificationConsumerTest {
         public void commit() {
             // do nothing.
         }
+
+        @Override
+        public void close() {
+            //do nothing
+        }
     }
 
     private static final class TestDeserializer<T> extends VersionedMessageDeserializer<T> {

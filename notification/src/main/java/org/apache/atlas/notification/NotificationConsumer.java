@@ -52,4 +52,6 @@ public interface NotificationConsumer<T> {
      * restart.
      */
     void commit();
+
+    void close();
 }

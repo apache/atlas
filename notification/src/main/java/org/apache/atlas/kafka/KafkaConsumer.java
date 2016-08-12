@@ -96,4 +96,9 @@ public class KafkaConsumer<T> extends AbstractNotificationConsumer<T> {
             LOG.debug("Committed offset: {}", lastSeenOffset);
         }
     }
+
+    @Override
+    public void close() {
+        consumerConnector.shutdown();
+    }
 }

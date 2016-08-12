@@ -155,8 +155,11 @@ public class GuiceServletConfig extends GuiceServletContextListener {
 
     @Override
     public void contextDestroyed(ServletContextEvent servletContextEvent) {
-        super.contextDestroyed(servletContextEvent);
+        LOG.info("Starting servlet context destroy");
         if(injector != null) {
+            //stop services
+            stopServices();
+
             TypeLiteral<GraphProvider<TitanGraph>> graphProviderType = new TypeLiteral<GraphProvider<TitanGraph>>() {};
             Provider<GraphProvider<TitanGraph>> graphProvider = injector.getProvider(Key.get(graphProviderType));
             final Graph graph = graphProvider.get().get();
@@ -166,14 +169,12 @@ public class GuiceServletConfig extends GuiceServletContextListener {
             } catch(Throwable t) {
                 LOG.warn("Error while shutting down graph", t);
             }
-
-            //stop services
-            stopServices();
         }
+        super.contextDestroyed(servletContextEvent);
     }
 
     protected void stopServices() {
-        LOG.debug("Stopping services");
+        LOG.info("Stopping services");
         Services services = injector.getInstance(Services.class);
         services.stop();
     }

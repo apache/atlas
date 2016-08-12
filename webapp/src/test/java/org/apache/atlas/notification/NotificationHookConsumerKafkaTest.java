@@ -21,11 +21,13 @@ package org.apache.atlas.notification;
 import com.google.inject.Inject;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.LocalAtlasClient;
 import org.apache.atlas.kafka.KafkaNotification;
 import org.apache.atlas.notification.hook.HookNotification;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.commons.lang.RandomStringUtils;
+import org.testng.Assert;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Guice;
@@ -54,7 +56,6 @@ public class NotificationHookConsumerKafkaTest {
 
     @Test
     public void testConsumerConsumesNewMessageWithAutoCommitDisabled() throws AtlasException, InterruptedException {
-
         produceMessage(new HookNotification.EntityCreateRequest("test_user1", createEntity()));
 
         NotificationConsumer<HookNotification.HookNotificationMessage> consumer =
@@ -68,7 +69,6 @@ public class NotificationHookConsumerKafkaTest {
         consumeOneMessage(consumer, hookConsumer);
         verify(localAtlasClient).setUser("test_user1");
 
-
         // produce another message, and make sure it moves ahead. If commit succeeded, this would work.
         produceMessage(new HookNotification.EntityCreateRequest("test_user2", createEntity()));
         consumeOneMessage(consumer, hookConsumer);
@@ -77,10 +77,8 @@ public class NotificationHookConsumerKafkaTest {
         kafkaNotification.close();
     }
 
-    @Test
-    public void testConsumerRemainsAtSameMessageWithAutoCommitEnabled()
-            throws NotificationException, InterruptedException {
-
+    @Test(dependsOnMethods = "testConsumerConsumesNewMessageWithAutoCommitDisabled")
+    public void testConsumerRemainsAtSameMessageWithAutoCommitEnabled() throws Exception {
         produceMessage(new HookNotification.EntityCreateRequest("test_user3", createEntity()));
 
         NotificationConsumer<HookNotification.HookNotificationMessage> consumer =
@@ -114,7 +112,14 @@ public class NotificationHookConsumerKafkaTest {
         while (!consumer.hasNext()) {
             Thread.sleep(1000);
         }
-        hookConsumer.handleMessage(consumer.next());
+
+        try {
+            hookConsumer.handleMessage(consumer.next());
+        } catch (AtlasServiceException e) {
+            Assert.fail("Consumer failed with exception ", e);
+        } catch (AtlasException e) {
+            Assert.fail("Consumer failed with exception ", e);
+        }
     }
 
     Referenceable createEntity() {

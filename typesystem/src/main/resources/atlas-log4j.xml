@@ -57,6 +57,19 @@
     </logger>
     -->
 
+    <appender name="FAILED" class="org.apache.log4j.DailyRollingFileAppender">
+        <param name="File" value="${atlas.log.dir}/failed.log"/>
+        <param name="Append" value="true"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%d %m"/>
+        </layout>
+    </appender>
+
+    <logger name="FAILED" additivity="false">
+        <level value="info"/>
+        <appender-ref ref="AUDIT"/>
+    </logger>
+
     <logger name="com.thinkaurelius.titan" additivity="false">
         <level value="info"/>
         <appender-ref ref="console"/>

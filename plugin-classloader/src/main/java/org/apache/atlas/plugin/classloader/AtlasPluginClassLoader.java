@@ -75,16 +75,16 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
 
     @Override
     public Class<?> findClass(String name) throws ClassNotFoundException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasPluginClassLoader.findClass(" + name + ")");
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("==> AtlasPluginClassLoader.findClass(" + name + ")");
         }
 
         Class<?> ret = null;
 
         try {
             // first try to find the class in pluginClassloader
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("AtlasPluginClassLoader.findClass(" + name + "): calling pluginClassLoader.findClass()");
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("AtlasPluginClassLoader.findClass(" + name + "): calling pluginClassLoader.findClass()");
             }
 
             ret = super.findClass(name);
@@ -93,8 +93,8 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
             MyClassLoader savedClassLoader = getComponentClassLoader();
 
             if (savedClassLoader != null) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug(
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace(
                             "AtlasPluginClassLoader.findClass(" + name + "): calling componentClassLoader.findClass()");
                 }
 
@@ -102,8 +102,8 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
             }
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasPluginClassLoader.findClass(" + name + "): " + ret);
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("<== AtlasPluginClassLoader.findClass(" + name + "): " + ret);
         }
 
         return ret;
@@ -111,16 +111,16 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
 
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasPluginClassLoader.loadClass(" + name + ")");
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("==> AtlasPluginClassLoader.loadClass(" + name + ")");
         }
 
         Class<?> ret = null;
 
         try {
             // first try to load the class from pluginClassloader
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("AtlasPluginClassLoader.loadClass(" + name + "): calling pluginClassLoader.loadClass()");
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("AtlasPluginClassLoader.loadClass(" + name + "): calling pluginClassLoader.loadClass()");
             }
 
             ret = super.loadClass(name);
@@ -129,8 +129,8 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
             MyClassLoader savedClassLoader = getComponentClassLoader();
 
             if (savedClassLoader != null) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug(
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace(
                             "AtlasPluginClassLoader.loadClass(" + name + "): calling componentClassLoader.loadClass()");
                 }
 
@@ -138,8 +138,8 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
             }
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasPluginClassLoader.loadClass(" + name + "): " + ret);
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("<== AtlasPluginClassLoader.loadClass(" + name + "): " + ret);
         }
 
         return ret;
