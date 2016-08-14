@@ -373,6 +373,17 @@
             <organization>IBM Corporation</organization>
             <!--<organizationUrl>http://www.ibm.com</organizationUrl>-->
         </developer>
+        <developer>
+            <id>darshankumar</id>
+            <name>Darshan Kumar</name>
+            <email>darshankumar@apache.org</email>
+            <timezone>+05:30</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>MPR</organization>
+            <!--<organizationUrl>http://www.ibm.com</organizationUrl>-->
+        </developer>
     </developers>
 
     <properties>
