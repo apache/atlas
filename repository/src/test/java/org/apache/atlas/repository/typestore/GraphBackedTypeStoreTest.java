@@ -223,7 +223,7 @@ public class GraphBackedTypeStoreTest {
 
     private int countOutgoingEdges(Vertex typeVertex, String edgeLabel) {
 
-        Iterator<Edge> outGoingEdgesByLabel = GraphHelper.getOutGoingEdgesByLabel(typeVertex, edgeLabel);
+        Iterator<Edge> outGoingEdgesByLabel = GraphHelper.getInstance().getOutGoingEdgesByLabel(typeVertex, edgeLabel);
         int edgeCount = 0;
         for (Iterator<Edge> iterator = outGoingEdgesByLabel; iterator.hasNext();) {
             iterator.next();
