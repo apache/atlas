@@ -136,7 +136,7 @@ public abstract class DeleteHandler {
                 DataTypes.TypeCategory elementTypeCategory = elementType.getTypeCategory();
                 if (elementTypeCategory == DataTypes.TypeCategory.STRUCT ||
                         elementTypeCategory == DataTypes.TypeCategory.CLASS) {
-                    Iterator<Edge> edges = GraphHelper.getOutGoingEdgesByLabel(instanceVertex, edgeLabel);
+                    Iterator<Edge> edges = graphHelper.getOutGoingEdgesByLabel(instanceVertex, edgeLabel);
                     if (edges != null) {
                         while (edges.hasNext()) {
                             Edge edge = edges.next();
@@ -206,7 +206,7 @@ public abstract class DeleteHandler {
 
     public void deleteEdgeReference(Vertex outVertex, String edgeLabel, DataTypes.TypeCategory typeCategory,
                                     boolean isComposite) throws AtlasException {
-        Edge edge = GraphHelper.getEdgeForLabel(outVertex, edgeLabel);
+        Edge edge = graphHelper.getEdgeForLabel(outVertex, edgeLabel);
         if (edge != null) {
             deleteEdgeReference(edge, typeCategory, isComposite, false);
         }
@@ -273,7 +273,7 @@ public abstract class DeleteHandler {
         case CLASS:
             //If its class attribute, its the only edge between two vertices
             if (attributeInfo.multiplicity.nullAllowed()) {
-                edge = GraphHelper.getEdgeForLabel(outVertex, edgeLabel);
+                edge = graphHelper.getEdgeForLabel(outVertex, edgeLabel);
                 if (shouldUpdateReverseAttribute) {
                     GraphHelper.setProperty(outVertex, propertyName, null);
                 }

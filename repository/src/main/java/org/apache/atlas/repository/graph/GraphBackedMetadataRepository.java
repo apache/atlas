@@ -267,7 +267,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         try {
             final String entityTypeName = GraphHelper.getTypeName(instanceVertex);
             String relationshipLabel = GraphHelper.getTraitLabel(entityTypeName, traitNameToBeDeleted);
-            Edge edge = GraphHelper.getEdgeForLabel(instanceVertex, relationshipLabel);
+            Edge edge = graphHelper.getEdgeForLabel(instanceVertex, relationshipLabel);
             if(edge != null) {
                 deleteHandler.deleteEdgeReference(edge, DataTypes.TypeCategory.TRAIT, false, true);
 

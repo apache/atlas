@@ -30,9 +30,11 @@ import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedInstance;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
@@ -63,18 +65,48 @@ public final class GraphHelper {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphHelper.class);
     public static final String EDGE_LABEL_PREFIX = "__";
+    public static final String RETRY_COUNT = "atlas.graph.storage.num.retries";
+    public static final String RETRY_DELAY = "atlas.graph.storage.retry.sleeptime.ms";
 
     private static final TypeSystem typeSystem = TypeSystem.getInstance();
 
-    private static final GraphHelper INSTANCE = new GraphHelper(TitanGraphProvider.getGraphInstance());
+    private static volatile GraphHelper INSTANCE;
 
     private TitanGraph titanGraph;
+    private static int maxRetries;
+    public static long retrySleepTimeMillis;
 
-    private GraphHelper(TitanGraph titanGraph) {
+    @VisibleForTesting
+    GraphHelper(TitanGraph titanGraph) {
         this.titanGraph = titanGraph;
+        try {
+            maxRetries = ApplicationProperties.get().getInt(RETRY_COUNT, 3);
+            retrySleepTimeMillis = ApplicationProperties.get().getLong(RETRY_DELAY, 1000);
+        } catch (AtlasException e) {
+            LOG.error("Could not load configuration. Setting to default value for " + RETRY_COUNT, e);
+        }
     }
 
     public static GraphHelper getInstance() {
+        if ( INSTANCE == null) {
+            synchronized (GraphHelper.class) {
+                if (INSTANCE == null) {
+                    INSTANCE = new GraphHelper(TitanGraphProvider.getGraphInstance());
+                }
+            }
+        }
+        return INSTANCE;
+    }
+
+    @VisibleForTesting
+    static GraphHelper getInstance(TitanGraph graph) {
+        if ( INSTANCE == null) {
+            synchronized (GraphHelper.class) {
+                if (INSTANCE == null) {
+                    INSTANCE = new GraphHelper(graph);
+                }
+            }
+        }
         return INSTANCE;
     }
 
@@ -130,19 +162,41 @@ public final class GraphHelper {
         return edge;
     }
 
-    public Edge getOrCreateEdge(Vertex outVertex, Vertex inVertex, String edgeLabel) {
-        Iterator<Edge> edges = GraphHelper.getAdjacentEdgesByLabel(inVertex, Direction.IN, edgeLabel);
+    public Edge getOrCreateEdge(Vertex outVertex, Vertex inVertex, String edgeLabel) throws RepositoryException {
+        for (int numRetries = 0; numRetries < maxRetries; numRetries++) {
+            try {
+                LOG.debug("Running edge creation attempt {}", numRetries);
+                Iterator<Edge> edges = getAdjacentEdgesByLabel(inVertex, Direction.IN, edgeLabel);
 
-        while (edges.hasNext()) {
-            Edge edge = edges.next();
-            if (edge.getVertex(Direction.OUT).getId().toString().equals(outVertex.getId().toString())) {
-                Id.EntityState edgeState = getState(edge);
-                if (edgeState == null || edgeState == Id.EntityState.ACTIVE) {
-                    return edge;
+                while (edges.hasNext()) {
+                    Edge edge = edges.next();
+                    if (edge.getVertex(Direction.OUT).getId().toString().equals(outVertex.getId().toString())) {
+                        Id.EntityState edgeState = getState(edge);
+                        if (edgeState == null || edgeState == Id.EntityState.ACTIVE) {
+                            return edge;
+                        }
+                    }
+                }
+
+                return addEdge(outVertex, inVertex, edgeLabel);
+            } catch (Exception e) {
+                LOG.warn(String.format("Exception while trying to create edge from %s to %s with label %s. Retrying",
+                        vertexString(outVertex), vertexString(inVertex), edgeLabel), e);
+                if (numRetries == (maxRetries - 1)) {
+                    LOG.error("Max retries exceeded for edge creation {} {} {} ", outVertex, inVertex, edgeLabel, e);
+                    throw new RepositoryException("Edge creation failed after retries", e);
+                }
+
+                try {
+                    LOG.info("Retrying with delay of {} ms ", retrySleepTimeMillis);
+                    Thread.sleep(retrySleepTimeMillis);
+                } catch(InterruptedException ie) {
+                    LOG.warn("Retry interrupted during edge creation ");
+                    throw new RepositoryException("Retry interrupted during edge creation", ie);
                 }
             }
         }
-        return addEdge(outVertex, inVertex, edgeLabel);
+        return null;
     }
 
 
@@ -197,7 +251,7 @@ public final class GraphHelper {
 
     //In some cases of parallel APIs, the edge is added, but get edge by label doesn't return the edge. ATLAS-1104
     //So traversing all the edges
-    public static Iterator<Edge> getAdjacentEdgesByLabel(Vertex instanceVertex, Direction direction, final String edgeLabel) {
+    public Iterator<Edge> getAdjacentEdgesByLabel(Vertex instanceVertex, Direction direction, final String edgeLabel) {
         LOG.debug("Finding edges for {} with label {}", string(instanceVertex), edgeLabel);
         if(instanceVertex != null && edgeLabel != null) {
             final Iterator<Edge> iterator = instanceVertex.getEdges(direction).iterator();
@@ -234,7 +288,7 @@ public final class GraphHelper {
         return null;
     }
 
-    public static Iterator<Edge> getOutGoingEdgesByLabel(Vertex instanceVertex, String edgeLabel) {
+    public Iterator<Edge> getOutGoingEdgesByLabel(Vertex instanceVertex, String edgeLabel) {
         return getAdjacentEdgesByLabel(instanceVertex, Direction.OUT, edgeLabel);
     }
 
@@ -245,8 +299,8 @@ public final class GraphHelper {
      * @param edgeLabel
      * @return
      */
-    public static Edge getEdgeForLabel(Vertex vertex, String edgeLabel) {
-        Iterator<Edge> iterator = GraphHelper.getAdjacentEdgesByLabel(vertex, Direction.OUT, edgeLabel);
+    public Edge getEdgeForLabel(Vertex vertex, String edgeLabel) {
+        Iterator<Edge> iterator = getAdjacentEdgesByLabel(vertex, Direction.OUT, edgeLabel);
         Edge latestDeletedEdge = null;
         long latestDeletedEdgeTime = Long.MIN_VALUE;
 

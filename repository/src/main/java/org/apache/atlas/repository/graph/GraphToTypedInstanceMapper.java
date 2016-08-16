@@ -163,7 +163,7 @@ public final class GraphToTypedInstanceMapper {
 
         Edge edge;
         if (edgeId == null) {
-            edge = GraphHelper.getEdgeForLabel(instanceVertex, relationshipLabel);
+            edge = graphHelper.getEdgeForLabel(instanceVertex, relationshipLabel);
         } else {
             edge = graphHelper.getEdgeByEdgeId(instanceVertex, relationshipLabel, edgeId);
         }
@@ -269,7 +269,7 @@ public final class GraphToTypedInstanceMapper {
 
         Edge edge;
         if (edgeId == null) {
-            edge = GraphHelper.getEdgeForLabel(instanceVertex, relationshipLabel);
+            edge = graphHelper.getEdgeForLabel(instanceVertex, relationshipLabel);
         } else {
             edge = graphHelper.getEdgeByEdgeId(instanceVertex, relationshipLabel, edgeId);
         }
@@ -296,7 +296,7 @@ public final class GraphToTypedInstanceMapper {
         TraitType traitType, ITypedStruct traitInstance) throws AtlasException {
         String relationshipLabel = GraphHelper.getTraitLabel(typedInstanceTypeName, traitName);
         LOG.debug("Finding edge for {} -> label {} ", instanceVertex, relationshipLabel);
-        Iterator<Edge> edgeIterator = GraphHelper.getOutGoingEdgesByLabel(instanceVertex, relationshipLabel);
+        Iterator<Edge> edgeIterator = graphHelper.getOutGoingEdgesByLabel(instanceVertex, relationshipLabel);
         while (edgeIterator.hasNext()) {
             Edge edge = edgeIterator.next();
             final Vertex traitInstanceVertex = edge.getVertex(Direction.IN);

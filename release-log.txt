@@ -53,6 +53,7 @@ ATLAS-1129 Remove notification failed logs on retry and add sleep between retrie
 ATLAS-1126 Fix NPE in getSchema calls (sumasai)
 ATLAS-1125 Enable compression on hbase audit table (shwethags via sumasai)
 ATLAS-1121 NPE while submitting topology in StormHook (ayubkhan via sumasai)
+ATLAS-1119 Add retries for edge label creation (sumasai via shwethags)
 ATLAS-1111 Data loss is observed when atlas is restarted while hive_table metadata ingestion into kafka topic is in-progress(shwethags via sumasai)
 ATLAS-1108: updated references to atlas.rest.address to handle multiple URLs
 ATLAS-1112 Hive table GET response from atlas server had duplicate column entries ( ayubkhan, mneethiraj via sumasai)

@@ -211,9 +211,9 @@ public final class TypedInstanceToGraphMapper {
 
             case STRUCT:
             case CLASS:
-                String edgeLabel = GraphHelper.getEdgeLabel(typedInstance, attributeInfo);
+                String edgeLabel = graphHelper.getEdgeLabel(typedInstance, attributeInfo);
 
-                Edge currentEdge = GraphHelper.getEdgeForLabel(instanceVertex, edgeLabel);
+                Edge currentEdge = graphHelper.getEdgeForLabel(instanceVertex, edgeLabel);
                 String newEdgeId = addOrUpdateReference(instanceVertex, attributeInfo, attributeInfo.dataType(),
                         attrValue, currentEdge, edgeLabel, operation);
 

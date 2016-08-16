@@ -75,7 +75,7 @@ public class GraphHelperTest {
         v1.addEdge("l1", v2);
         v1.addEdge("l2", v2);
 
-        Iterator<Edge> iterator = GraphHelper.getOutGoingEdgesByLabel(v1, "l1");
+        Iterator<Edge> iterator = GraphHelper.getInstance().getOutGoingEdgesByLabel(v1, "l1");
         assertTrue(iterator.hasNext());
         assertTrue(iterator.hasNext());
         assertNotNull(iterator.next());
