@@ -125,7 +125,7 @@ object HiveTitanSample {
             if (traits.isDefined) {
                 traits.get foreach { t =>
                     t.toGSon(vertices, edges)
-                    addEdge(t, s"${this.getClass.getSimpleName}.${t.getClass.getSimpleName}", edges)
+                    addEdge(t, s"${t.getClass.getSimpleName}", edges)
                 }
             }
         }

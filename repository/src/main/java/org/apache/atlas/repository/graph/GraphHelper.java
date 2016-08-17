@@ -433,7 +433,7 @@ public final class GraphHelper {
     }
 
     public static String getTraitLabel(String typeName, String attrName) {
-        return typeName + "." + attrName;
+        return attrName;
     }
 
     public static List<String> getTraitNames(Vertex entityVertex) {

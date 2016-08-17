@@ -43,6 +43,7 @@ import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
 import org.apache.atlas.typesystem.exception.TraitNotFoundException;
 import org.apache.atlas.typesystem.persistence.Id;
+import org.apache.atlas.typesystem.types.AttributeDefinition;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
@@ -77,6 +78,7 @@ import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeD
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createUniqueRequiredAttrDef;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 /**
@@ -136,31 +138,35 @@ public class GraphBackedMetadataRepositoryTest {
     @Test
     //In some cases of parallel APIs, the edge is added, but get edge by label doesn't return the edge. ATLAS-1104
     public void testConcurrentCalls() throws Exception {
-        Referenceable dbInstance = new Referenceable(TestUtils.DATABASE_TYPE);
-        dbInstance.set("name", randomString());
-        dbInstance.set("description", "foo database");
-        final String id1 = createEntity(dbInstance).get(0);
+        final HierarchicalTypeDefinition<ClassType> refType =
+                createClassTypeDef(randomString(), ImmutableSet.<String>of());
+        HierarchicalTypeDefinition<ClassType> type =
+                createClassTypeDef(randomString(), ImmutableSet.<String>of(),
+                        new AttributeDefinition("ref", refType.typeName, Multiplicity.OPTIONAL, true, null));
+        typeSystem.defineClassType(refType);
+        typeSystem.defineClassType(type);
 
-        dbInstance.set("name", randomString());
-        final String id2 = createEntity(dbInstance).get(0);
+        String refId1 = createEntity(new Referenceable(refType.typeName)).get(0);
+        String refId2 = createEntity(new Referenceable(refType.typeName)).get(0);
 
-        TraitType piiType = typeSystem.getDataType(TraitType.class, TestUtils.PII);
-        final ITypedStruct trait = piiType.convert(new Struct(TestUtils.PII), Multiplicity.REQUIRED);
+        final Referenceable instance1 = new Referenceable(type.typeName);
+        instance1.set("ref", new Referenceable(refId1, refType.typeName, null));
+
+        final Referenceable instance2 = new Referenceable(type.typeName);
+        instance2.set("ref", new Referenceable(refId2, refType.typeName, null));
 
         ExecutorService executor = Executors.newFixedThreadPool(3);
         List<Future<Object>> futures = new ArrayList<>();
         futures.add(executor.submit(new Callable<Object>() {
             @Override
             public Object call() throws Exception {
-                repositoryService.addTrait(id1, trait);
-                return null;
+                return createEntity(instance1).get(0);
             }
         }));
         futures.add(executor.submit(new Callable<Object>() {
             @Override
             public Object call() throws Exception {
-                repositoryService.addTrait(id2, trait);
-                return null;
+                return createEntity(instance2).get(0);
             }
         }));
         futures.add(executor.submit(new Callable<Object>() {
@@ -170,25 +176,23 @@ public class GraphBackedMetadataRepositoryTest {
             }
         }));
 
-        for (Future future : futures) {
-            future.get();
-        }
+        String id1 = (String) futures.get(0).get();
+        String id2 = (String) futures.get(1).get();
+        futures.get(2).get();
         executor.shutdown();
 
-        boolean validated1 = assertEdge(id1);
-        boolean validated2 = assertEdge(id2);
-        assertNotEquals(validated1, validated2);
+        boolean validated1 = assertEdge(id1, type.typeName);
+        boolean validated2 = assertEdge(id2, type.typeName);
+        assertTrue(validated1 | validated2);
     }
 
-    private boolean assertEdge(String id) throws Exception {
+    private boolean assertEdge(String id, String typeName) throws Exception {
         TitanGraph graph = graphProvider.get();
         Vertex vertex = graph.query().has(Constants.GUID_PROPERTY_KEY, id).vertices().iterator().next();
-        Iterable<Edge> edges =
-                vertex.getEdges(Direction.OUT, TestUtils.DATABASE_TYPE + "." + TestUtils.PII);
-        if(!edges.iterator().hasNext()) {
-            repositoryService.deleteTrait(id, TestUtils.PII);
-            List<String> traits = repositoryService.getTraitNames(id);
-            assertTrue(traits.isEmpty());
+        Iterable<Edge> edges = vertex.getEdges(Direction.OUT, Constants.INTERNAL_PROPERTY_KEY_PREFIX + typeName + ".ref");
+        if (!edges.iterator().hasNext()) {
+            ITypedReferenceableInstance entity = repositoryService.getEntityDefinition(id);
+            assertNotNull(entity.get("ref"));
             return true;
         }
         return false;
@@ -237,7 +241,7 @@ public class GraphBackedMetadataRepositoryTest {
     public void testGetTraitLabel() throws Exception {
         Assert.assertEquals(
                 repositoryService.getTraitLabel(typeSystem.getDataType(ClassType.class, TestUtils.TABLE_TYPE),
-                        TestUtils.CLASSIFICATION), TestUtils.TABLE_TYPE + "." + TestUtils.CLASSIFICATION);
+                        TestUtils.CLASSIFICATION), TestUtils.CLASSIFICATION);
     }
 
     @Test
