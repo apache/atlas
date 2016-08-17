@@ -203,7 +203,7 @@ object GraphPersistenceStrategy1 extends GraphPersistenceStrategies {
 
     val fieldPrefixInSelect = "it"
 
-    def traitLabel(cls: IDataType[_], traitName: String) = s"${cls.getName}.$traitName"
+    def traitLabel(cls: IDataType[_], traitName: String) = s"$traitName"
 
     def fieldNameInVertex(dataType: IDataType[_], aInfo: AttributeInfo) = GraphHelper.getQualifiedFieldName(dataType, aInfo.name)
 
