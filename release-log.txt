@@ -3,6 +3,8 @@ Apache Atlas Release Notes
 
 --Release 0.7-incubating
 INCOMPATIBLE CHANGES:
+ATLAS-675 Storm Hook should use timetsamps as Date type instead of Long (ayubkhan via sumasai)
+ATLAS-1122 Change trait edge labels to have trait name alone (sumasai)
 ATLAS-1060 Add composite indexes for exact match performance improvements for all attributes (sumasai via shwethags)
 ATLAS-822 Type updates - don't allow updating supertypes ( shwethags via sumasai )
 ATLAS-698 Remove Rexster Graph API (svimal2106 via shwethags)
@@ -29,7 +31,6 @@ ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmy
 
 ALL CHANGES:
 ATLAS-1125 Enable compression on hbase audit table (shwethags via sumasai)
-ATLAS-1122 Change trait edge labels to have trait name alone (sumasai)
 ATLAS-1121 NPE while submitting topology in StormHook (ayubkhan via sumasai)
 ATLAS-1111 Data loss is observed when atlas is restarted while hive_table metadata ingestion into kafka topic is in-progress(shwethags via sumasai)
 ATLAS-1108: updated references to atlas.rest.address to handle multiple URLs

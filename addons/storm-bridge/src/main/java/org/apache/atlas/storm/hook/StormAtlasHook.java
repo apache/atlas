@@ -45,6 +45,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Date;
 
 /**
  * StormAtlasHook sends storm topology metadata information to Atlas
@@ -117,7 +118,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
             owner = ANONYMOUS_OWNER;
         }
         topologyReferenceable.set(AtlasClient.OWNER, owner);
-        topologyReferenceable.set("startTime", System.currentTimeMillis());
+        topologyReferenceable.set("startTime", new Date(System.currentTimeMillis()));
         topologyReferenceable.set(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, getClusterName(stormConf));
 
         return topologyReferenceable;

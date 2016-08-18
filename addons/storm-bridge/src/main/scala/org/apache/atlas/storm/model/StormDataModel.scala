@@ -45,8 +45,8 @@ object StormDataModel extends App {
          */
         _class(StormDataTypes.STORM_TOPOLOGY.getName, List(AtlasClient.PROCESS_SUPER_TYPE)) {
             "id" ~ (string, required, indexed, unique)
-            "startTime" ~ long
-            "endTime" ~ long
+            "startTime" ~ date
+            "endTime" ~ date
             "conf" ~ (map(string, string), optional)
             "clusterName" ~ (string, optional, indexed)
 
