@@ -48,6 +48,7 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
     private static final String BASE_URI = "api/atlas/lineage/hive/table/";
     private String salesFactTable;
     private String salesMonthlyTable;
+    private String salesDBName;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -209,8 +210,18 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
         Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
     }
 
+    @Test
+    public void testSchemaForDB() throws Exception {
+        WebResource resource = service.path(BASE_URI).path(salesDBName).path("schema");
+
+        ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
+            .method(HttpMethod.GET, ClientResponse.class);
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
+    }
+
     private void setupInstances() throws Exception {
-        Id salesDB = database("Sales" + randomString(), "Sales Database", "John ETL",
+        salesDBName = "Sales" + randomString();
+        Id salesDB = database(salesDBName, "Sales Database", "John ETL",
                 "hdfs://host:8000/apps/warehouse/sales");
 
         List<Referenceable> salesFactColumns = ImmutableList

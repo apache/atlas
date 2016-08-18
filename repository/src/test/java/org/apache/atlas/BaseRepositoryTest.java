@@ -101,6 +101,7 @@ public class BaseRepositoryTest {
     private static final String STORAGE_DESC_TYPE = "StorageDesc";
     private static final String VIEW_TYPE = "View";
     private static final String PARTITION_TYPE = "hive_partition";
+    protected static final String DATASET_SUBTYPE = "dataset_subtype";
 
     TypesDef createTypeDefinitions() {
         HierarchicalTypeDefinition<ClassType> dbClsDef = TypesUtil
@@ -156,7 +157,10 @@ public class BaseRepositoryTest {
             new HierarchicalTypeDefinition<>(ClassType.class, PARTITION_TYPE, null, null,
                 attributeDefinitions);
 
-        HierarchicalTypeDefinition<TraitType> dimTraitDef = TypesUtil.createTraitTypeDef("Dimension", null);
+        HierarchicalTypeDefinition<ClassType> datasetSubTypeClsDef = TypesUtil
+            .createClassTypeDef(DATASET_SUBTYPE, ImmutableSet.of("DataSet"));
+
+                HierarchicalTypeDefinition < TraitType > dimTraitDef = TypesUtil.createTraitTypeDef("Dimension", null);
 
         HierarchicalTypeDefinition<TraitType> factTraitDef = TypesUtil.createTraitTypeDef("Fact", null);
 
@@ -172,7 +176,7 @@ public class BaseRepositoryTest {
 
         return TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
             ImmutableList.of(dimTraitDef, factTraitDef, piiTraitDef, metricTraitDef, etlTraitDef, jdbcTraitDef, logTraitDef),
-            ImmutableList.of(dbClsDef, storageDescClsDef, columnClsDef, tblClsDef, loadProcessClsDef, viewClsDef, partClsDef));
+            ImmutableList.of(dbClsDef, storageDescClsDef, columnClsDef, tblClsDef, loadProcessClsDef, viewClsDef, partClsDef, datasetSubTypeClsDef));
     }
 
     AttributeDefinition attrDef(String name, IDataType dT) {
@@ -280,6 +284,8 @@ public class BaseRepositoryTest {
             ImmutableList.of(loggingFactMonthly), "create table as select ", "plan", "id", "graph", "ETL");
 
         partition(new ArrayList() {{ add("2015-01-01"); }}, salesFactDaily);
+
+        datasetSubType("dataSetSubTypeInst1", "testOwner");
     }
 
     Id database(String name, String description, String owner, String locationUri, String... traitNames)
@@ -377,6 +383,15 @@ public class BaseRepositoryTest {
         referenceable.set("values", values);
         referenceable.set("table", table);
         ClassType clsType = TypeSystem.getInstance().getDataType(ClassType.class, PARTITION_TYPE);
+        return createInstance(referenceable, clsType);
+    }
+
+    Id datasetSubType(final String name, String owner) throws Exception {
+        Referenceable referenceable = new Referenceable(DATASET_SUBTYPE);
+        referenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
+        referenceable.set(AtlasClient.NAME, name);
+        referenceable.set("owner", owner);
+        ClassType clsType = TypeSystem.getInstance().getDataType(ClassType.class, DATASET_SUBTYPE);
         return createInstance(referenceable, clsType);
     }
     private Id createInstance(Referenceable referenceable, ClassType clsType) throws Exception {

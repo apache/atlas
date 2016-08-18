@@ -28,6 +28,7 @@ import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
+import org.apache.atlas.typesystem.exception.SchemaNotFoundException;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.commons.collections.ArrayStack;
@@ -310,6 +311,12 @@ public class DataSetLineageServiceTest extends BaseRepositoryTest {
             assertNotNull(row.getString("dataType"));
             Assert.assertEquals(row.getString("$typeName$"), "hive_column");
         }
+    }
+
+    @Test(expectedExceptions = SchemaNotFoundException.class)
+    public void testGetSchemaForDBEntity() throws Exception {
+        String dbId = getEntityId(DATASET_SUBTYPE, "name", "dataSetSubTypeInst1");
+        JSONObject results = new JSONObject(lineageService.getSchemaForEntity(dbId));
     }
 
     @DataProvider(name = "invalidArgumentsProvider")

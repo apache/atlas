@@ -90,7 +90,7 @@ public class DataSetLineageResource {
 
             return Response.ok(response).build();
         } catch (EntityNotFoundException e) {
-            LOG.error("table entity not found for {}", tableName, e);
+            LOG.error("table entity not found for {}", tableName);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get lineage inputs graph for table {}", tableName, e);
@@ -130,7 +130,7 @@ public class DataSetLineageResource {
 
             return Response.ok(response).build();
         } catch (EntityNotFoundException e) {
-            LOG.error("table entity not found for {}", tableName, e);
+            LOG.error("table entity not found for {}", tableName);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get lineage outputs graph for table {}", tableName, e);
@@ -170,7 +170,7 @@ public class DataSetLineageResource {
 
             return Response.ok(response).build();
         } catch (EntityNotFoundException e) {
-            LOG.error("table entity not found for {}", tableName, e);
+            LOG.error("table entity not found for {}", tableName);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get schema for table {}", tableName, e);
