@@ -3,6 +3,7 @@ Apache Atlas Release Notes
 
 --Release 0.7-incubating
 INCOMPATIBLE CHANGES:
+ATLAS-674 Falcon Hook should use timestamps instead of long(ayubkhan via sumasai)
 ATLAS-675 Storm Hook should use timetsamps as Date type instead of Long (ayubkhan via sumasai)
 ATLAS-1122 Change trait edge labels to have trait name alone (sumasai)
 ATLAS-1060 Add composite indexes for exact match performance improvements for all attributes (sumasai via shwethags)

@@ -28,13 +28,11 @@ import java.util.Date;
 public class FalconEvent {
     protected String user;
     protected OPERATION operation;
-    protected long timestamp;
     protected Entity entity;
 
-    public FalconEvent(String doAsUser, OPERATION falconOperation, long timestamp, Entity entity) {
+    public FalconEvent(String doAsUser, OPERATION falconOperation, Entity entity) {
         this.user = doAsUser;
         this.operation = falconOperation;
-        this.timestamp = timestamp;
         this.entity = entity;
     }
 
@@ -53,10 +51,6 @@ public class FalconEvent {
 
     public OPERATION getOperation() {
         return operation;
-    }
-
-    public Date getTimestamp() {
-        return new Date(timestamp);
     }
 
     public Entity getEntity() {
