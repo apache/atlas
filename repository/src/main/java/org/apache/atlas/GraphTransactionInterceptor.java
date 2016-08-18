@@ -22,6 +22,8 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.atlas.repository.graph.GraphProvider;
+import org.apache.atlas.typesystem.exception.EntityNotFoundException;
+import org.apache.atlas.typesystem.exception.SchemaNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,8 +47,20 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
             return response;
         } catch (Throwable t) {
             titanGraph.rollback();
-            LOG.error("graph rollback due to exception ", t);
+
+            if (logException(t)) {
+                LOG.error("graph rollback due to exception ", t);
+            } else {
+                LOG.error("graph rollback due to exception " + t.getClass().getSimpleName() + ":" + t.getMessage());
+            }
             throw t;
         }
+    }
+
+    boolean logException(Throwable t) {
+        if ((t instanceof SchemaNotFoundException) || (t instanceof EntityNotFoundException)) {
+            return false;
+        }
+        return true;
     }
 }

@@ -736,7 +736,7 @@ public final class GraphHelper {
 
         case Constants.TIMESTAMP_PROPERTY_KEY:
         case Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY:
-            return TypesUtil.newAttributeInfo(field, DataTypes.LONG_TYPE);
+            return TypesUtil.newAttributeInfo(field, DataTypes.DATE_TYPE);
         }
         return null;
     }

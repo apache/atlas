@@ -162,6 +162,31 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
         rows = results.getJSONArray("rows");
         assertNotNull(rows);
         assertEquals(rows.length(), 1);
+
+        final String testTs = "\"2011-11-01T02:35:58.440Z\"";
+        dslQuery = "Department where " + Constants.TIMESTAMP_PROPERTY_KEY + " > " + testTs;
+        jsonResults = searchByDSL(dslQuery);
+        assertNotNull(jsonResults);
+
+        results = new JSONObject(jsonResults);
+        assertEquals(results.length(), 3);
+
+        rows = results.getJSONArray("rows");
+        assertNotNull(rows);
+        assertEquals(rows.length(), 1);
+
+
+        dslQuery = "Department where " + Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY + " > " + testTs;
+        jsonResults = searchByDSL(dslQuery);
+        assertNotNull(jsonResults);
+
+        results = new JSONObject(jsonResults);
+        assertEquals(results.length(), 3);
+
+        rows = results.getJSONArray("rows");
+        assertNotNull(rows);
+        assertEquals(rows.length(), 1);
+
     }
 
     @Test
