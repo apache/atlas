@@ -74,7 +74,7 @@ public final class Constants {
 
         case TIMESTAMP_PROPERTY_KEY:
         case MODIFICATION_TIMESTAMP_PROPERTY_KEY:
-            return TypesUtil.newAttributeInfo(field, DataTypes.LONG_TYPE);
+            return TypesUtil.newAttributeInfo(field, DataTypes.DATE_TYPE);
         }
         return null;
     }
