@@ -30,6 +30,7 @@ import org.apache.falcon.service.FalconService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 /**
  * Atlas service to publish Falcon events
  */
@@ -124,7 +125,7 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
 
         try {
             FalconEvent event =
-                    new FalconEvent(EventUtil.getUser(), operation, System.currentTimeMillis(), entity);
+                    new FalconEvent(EventUtil.getUser(), operation, entity);
             FalconEventPublisher.Data data = new FalconEventPublisher.Data(event);
             publisher.publish(data);
         } catch (Exception ex) {
