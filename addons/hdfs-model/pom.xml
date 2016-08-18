@@ -71,14 +71,6 @@
             <artifactId>testng</artifactId>
         </dependency>
 
-        <!-- to bring up atlas server for integration tests -->
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-webapp</artifactId>
-            <type>war</type>
-            <scope>test</scope>
-        </dependency>
-
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-repository</artifactId>

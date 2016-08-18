@@ -33,6 +33,7 @@ import org.apache.atlas.query.QueryParams;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.graph.GraphProvider;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
+import org.apache.atlas.typesystem.exception.SchemaNotFoundException;
 import org.apache.atlas.typesystem.persistence.ReferenceableInstance;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.configuration.Configuration;
@@ -172,11 +173,15 @@ public class DataSetLineageService implements LineageService {
         return getSchemaForId(datasetInstance.getTypeName(), datasetInstance.getId()._getId());
     }
 
-    private String getSchemaForId(String typeName, String guid) throws DiscoveryException {
-        final String schemaQuery =
-                String.format(propertiesConf.getString(DATASET_SCHEMA_QUERY_PREFIX + typeName), guid);
-        int limit = AtlasProperties.getProperty(AtlasProperties.AtlasProperty.SEARCH_MAX_LIMIT);
-        return discoveryService.searchByDSL(schemaQuery, new QueryParams(limit, 0));
+    private String getSchemaForId(String typeName, String guid) throws DiscoveryException, SchemaNotFoundException {
+        String configName = DATASET_SCHEMA_QUERY_PREFIX + typeName;
+        if (propertiesConf.getString(configName) != null) {
+            final String schemaQuery =
+                String.format(propertiesConf.getString(configName), guid);
+            int limit = AtlasProperties.getProperty(AtlasProperties.AtlasProperty.SEARCH_MAX_LIMIT);
+            return discoveryService.searchByDSL(schemaQuery, new QueryParams(limit, 0));
+        }
+        throw new SchemaNotFoundException("Schema is not configured for type " + typeName + ". Configure " + configName);
     }
 
     @Override
@@ -218,5 +223,4 @@ public class DataSetLineageService implements LineageService {
         ReferenceableInstance referenceable = (ReferenceableInstance)queryResult.rows().apply(0);
         return referenceable.getTypeName();
     }
-
 }

@@ -22,6 +22,7 @@ import org.apache.atlas.AtlasClient;
 import org.apache.atlas.discovery.DiscoveryException;
 import org.apache.atlas.discovery.LineageService;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
+import org.apache.atlas.typesystem.exception.SchemaNotFoundException;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.codehaus.jettison.json.JSONObject;
@@ -83,7 +84,7 @@ public class LineageResource {
 
             return Response.ok(response).build();
         } catch (EntityNotFoundException e) {
-            LOG.error("entity not found for guid={}", guid, e);
+            LOG.error("entity not found for guid={}", guid);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get lineage inputs graph for entity  guid={}", guid, e);
@@ -122,7 +123,7 @@ public class LineageResource {
 
             return Response.ok(response).build();
         } catch (EntityNotFoundException e) {
-            LOG.error("table entity not found for {}", guid, e);
+            LOG.error("table entity not found for {}", guid);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get lineage outputs graph for entity guid={}", guid, e);
@@ -160,8 +161,11 @@ public class LineageResource {
             response.put(AtlasClient.RESULTS, new JSONObject(jsonResult));
 
             return Response.ok(response).build();
+        } catch (SchemaNotFoundException e) {
+            LOG.error("schema not found for {}", guid);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (EntityNotFoundException e) {
-            LOG.error("table entity not found for {}", guid, e);
+            LOG.error("table entity not found for {}", guid);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
         } catch (DiscoveryException | IllegalArgumentException e) {
             LOG.error("Unable to get schema for entity guid={}", guid, e);

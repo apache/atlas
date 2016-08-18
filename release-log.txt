@@ -9,6 +9,7 @@ ATLAS-1122 Change trait edge labels to have trait name alone (sumasai)
 ATLAS-1060 Add composite indexes for exact match performance improvements for all attributes (sumasai via shwethags)
 
 ALL CHANGES:
+ATLAS-1126 Fix NPE in getSchema calls (sumasai)
 ATLAS-1125 Enable compression on hbase audit table (shwethags via sumasai)
 ATLAS-1121 NPE while submitting topology in StormHook (ayubkhan via sumasai)
 ATLAS-1119 Add retries for edge label creation (sumasai via shwethags)

@@ -80,10 +80,10 @@ public class HBaseBasedAuditRepository implements Service, EntityAuditRepository
     public static final String CONFIG_PERSIST_ENTITY_DEFINITION = CONFIG_PREFIX + ".persistEntityDefinition";
 
     public static final byte[] COLUMN_FAMILY = Bytes.toBytes("dt");
-    public static final byte[] COLUMN_ACTION = Bytes.toBytes("action");
-    public static final byte[] COLUMN_DETAIL = Bytes.toBytes("detail");
-    public static final byte[] COLUMN_USER = Bytes.toBytes("user");
-    public static final byte[] COLUMN_DEFINITION = Bytes.toBytes("def");
+    public static final byte[] COLUMN_ACTION = Bytes.toBytes("a");
+    public static final byte[] COLUMN_DETAIL = Bytes.toBytes("d");
+    public static final byte[] COLUMN_USER = Bytes.toBytes("u");
+    public static final byte[] COLUMN_DEFINITION = Bytes.toBytes("f");
 
     private static boolean persistEntityDefinition;
 
