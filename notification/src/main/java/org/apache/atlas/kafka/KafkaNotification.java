@@ -241,7 +241,6 @@ public class KafkaNotification extends AbstractNotification implements Service {
                 LOG.debug("Sent message for topic - {}, partition - {}, offset - {}", response.topic(),
                     response.partition(), response.offset());
             } catch (Exception e) {
-                LOG.warn("Could not send message - {}", context.getMessage(), e);
                 lastFailureException = e;
                 failedMessages.add(context.getMessage());
             }
