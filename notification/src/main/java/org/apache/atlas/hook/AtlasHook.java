@@ -54,6 +54,8 @@ public abstract class AtlasHook {
 
     private static boolean logFailedMessages;
     private static FailedMessagesLogger failedMessagesLogger;
+    private static int notificationRetryInterval;
+    public static final String ATLAS_NOTIFICATION_RETRY_INTERVAL = "atlas.notification.hook.retry.interval";
 
     public static final String ATLAS_NOTIFICATION_FAILED_MESSAGES_FILENAME_KEY =
             "atlas.notification.failed.messages.filename";
@@ -76,6 +78,7 @@ public abstract class AtlasHook {
             failedMessagesLogger.init();
         }
 
+        notificationRetryInterval = atlasProperties.getInt(ATLAS_NOTIFICATION_RETRY_INTERVAL, 1000);
         Injector injector = Guice.createInjector(new NotificationModule());
         notifInterface = injector.getInstance(NotificationInterface.class);
 
@@ -128,7 +131,14 @@ public abstract class AtlasHook {
             } catch (Exception e) {
                 numRetries++;
                 if (numRetries < maxRetries) {
-                    LOG.info("Failed to notify atlas for entity {}. Retrying", message, e);
+                    LOG.error("Notification send retry failed");
+                    try {
+                        LOG.info("Sleeping for {} ms before retry", notificationRetryInterval);
+                        Thread.sleep(notificationRetryInterval);
+                    } catch (InterruptedException ie){
+                        LOG.error("Notification hook thread sleep interrupted");
+                    }
+
                 } else {
                     if (shouldLogFailedMessages && e instanceof NotificationException) {
                         List<String> failedMessages = ((NotificationException) e).getFailedMessages();

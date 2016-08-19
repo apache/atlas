@@ -54,11 +54,13 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     public static final String CONSUMER_THREADS_PROPERTY = "atlas.notification.hook.numthreads";
     public static final String CONSUMER_RETRIES_PROPERTY = "atlas.notification.hook.maxretries";
     public static final String CONSUMER_FAILEDCACHESIZE_PROPERTY = "atlas.notification.hook.failedcachesize";
+    public static final String CONSUMER_RETRY_INTERVAL="atlas.notification.consumer.retry.interval";
 
     public static final int SERVER_READY_WAIT_TIME_MS = 1000;
     private final LocalAtlasClient atlasClient;
     private final int maxRetries;
     private final int failedMsgCacheSize;
+    private final int consumerRetryInterval;
 
     private NotificationInterface notificationInterface;
     private ExecutorService executors;
@@ -74,6 +76,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         maxRetries = applicationProperties.getInt(CONSUMER_RETRIES_PROPERTY, 3);
         failedMsgCacheSize = applicationProperties.getInt(CONSUMER_FAILEDCACHESIZE_PROPERTY, 20);
+        consumerRetryInterval = applicationProperties.getInt(CONSUMER_RETRY_INTERVAL, 500);
 
     }
 
@@ -246,7 +249,14 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                     break;
                 } catch (Throwable e) {
-                    LOG.warn("Error handling message", e);
+                    LOG.warn("Error handling message" + e.getMessage());
+                    try{
+                        LOG.info("Sleeping for {} ms before retry", consumerRetryInterval);
+                        Thread.sleep(consumerRetryInterval);
+                    }catch (InterruptedException ie){
+                        LOG.error("Notification consumer thread sleep interrupted");
+                    }
+
                     if (numRetries == (maxRetries - 1)) {
                         LOG.warn("Max retries exceeded for message {}", message, e);
                         failedMessages.add(message);
