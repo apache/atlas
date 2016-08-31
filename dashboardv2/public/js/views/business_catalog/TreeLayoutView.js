@@ -317,7 +317,7 @@ define(['require',
                 var str = '<option></option>';
                 this.termCollection.fullCollection.comparator = function(model) {
                     return model.get('name');
-                }
+                };
                 this.termCollection.fullCollection.sort().each(function(model) {
                     str += '<option>' + model.get('name') + '</option>';
                 });
@@ -344,7 +344,7 @@ define(['require',
                 });
             },
             selectFirstElement: function() {
-                var dataURL = this.$('.taxonomyTree').find('li[data-id="Parent"]').find("a").data('href')
+                var dataURL = this.$('.taxonomyTree').find('li[data-id="Parent"]').find("a").data('href');
                 if (dataURL) {
                     this.url = dataURL;
                     if (this.viewBased) {
@@ -386,10 +386,11 @@ define(['require',
                         }
                         var name = Utils.checkTagOrTerm(model.get('name'), true);
                         if (name.name) {
+                              // data-name="<space>'<tagName>'"  Space is required for DSL search Input 
                             if (that.viewBased) {
-                                parentLi = '<div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i><i class="fa fa-ellipsis-h termPopover"></i></div><i class="fa fa-angle-right toggleArrow" data-id="expandArrow" data-href="' + hrefUrl + '"></i><a href="javascript:void(0)" data-href="' + hrefUrl + '" data-name="`' + model.get('name') + '`">' + name.name + '</a>';
+                                parentLi = '<div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i><i class="fa fa-ellipsis-h termPopover"></i></div><i class="fa fa-angle-right toggleArrow" data-id="expandArrow" data-href="' + hrefUrl + '"></i><a href="javascript:void(0)" data-href="' + hrefUrl + '" data-name=" `' + model.get('name') + '`">' + name.name + '</a>';
                             } else {
-                                parentLi = '<div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i></div><i class="fa fa-angle-right toggleArrow" data-id="expandArrow" data-href="' + hrefUrl + '"></i><a href="javascript:void(0)" data-href="' + hrefUrl + '" data-name="`' + model.get('name') + '`">' + name.name + '</a>';
+                                parentLi = '<div class="tools"><i class="fa fa-refresh fa-spin-custom taxanomyloader"></i></div><i class="fa fa-angle-right toggleArrow" data-id="expandArrow" data-href="' + hrefUrl + '"></i><a href="javascript:void(0)" data-href="' + hrefUrl + '" data-name=" `' + model.get('name') + '`">' + name.name + '</a>';
                             }
                         }
                     });
@@ -405,7 +406,7 @@ define(['require',
                 function createTerm() {
                     that.childCollection.fullCollection.comparator = function(model) {
                         return model.get('name').toLowerCase();
-                    }
+                    };
                     that.childCollection.fullCollection.sort().each(function(model, key) {
                         var name = Utils.checkTagOrTerm(model.get('name'), true);
                         var hrefUrl = "/api" + model.get('href').split("/api")[1];

@@ -154,16 +154,17 @@ define(['require',
                     str = '';
                 that.tagCollection.fullCollection.comparator = function(model) {
                     return model.get('tags').toLowerCase();
-                }
+                };
                 that.tagCollection.fullCollection.sort().each(function(model) {
                     if (searchString) {
                         if (model.get('tags').search(new RegExp(searchString, "i")) != -1) {
-                            str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + model.get('tags') + '"  data-name="`' + model.get('tags') + '`" >' + model.get('tags') + '</a></li>';
+                            // data-name="<space>'<tagName>'"  Space is required for DSL search Input 
+                            str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + model.get('tags') + '"  data-name=" `' + model.get('tags') + '`" >' + model.get('tags') + '</a></li>';
                         } else {
                             return;
                         }
                     } else {
-                        str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + model.get('tags') + '"  data-name="`' + model.get('tags') + '`">' + model.get('tags') + '</a></li>';
+                        str += '<li class="parent-node" data-id="tags"><div class="tools"><i class="fa fa-ellipsis-h tagPopover"></i></div><a href="#!/tag/tagAttribute/' + model.get('tags') + '"  data-name=" `' + model.get('tags') + '`">' + model.get('tags') + '</a></li>';
                     }
                 });
                 this.ui.tagsParent.empty().html(str);
@@ -205,7 +206,7 @@ define(['require',
                             placeholder: "Search Tags",
                             allowClear: true
                         });
-                    })
+                    });
                     modal.on('ok', function() {
                         that.onCreateButton(view);
                     });
