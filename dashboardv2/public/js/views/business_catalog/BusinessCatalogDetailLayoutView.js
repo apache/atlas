@@ -109,7 +109,8 @@ define(['require',
                         this.ui.description.hide();
                     }
                     if (createdDate) {
-                        this.ui.createDate.html('<strong> Date Created: </strong> ' + new Date(createdDate));
+                        var splitDate = createdDate.split(":");
+                        this.ui.createDate.html('<strong> Date Created: </strong> ' + splitDate[0] + " " + splitDate[1] + ":" + splitDate[2] + ":" + splitDate[3] + " (GMT)");
                     }
                 }, this);
             },
