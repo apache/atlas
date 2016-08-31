@@ -45,6 +45,8 @@
 .modal-body {
     position: relative;
     padding: 15px;
+    max-height: 400px;
+    overflow: auto;
 }
 
 .cancel {
