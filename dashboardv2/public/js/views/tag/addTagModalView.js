@@ -48,6 +48,7 @@ define(['require',
             _.extend(this, _.pick(options, 'vent', 'modalCollection', 'guid', 'callback', 'multiple', 'showLoader'));
             this.collection = new VTagList();
             this.commonCollection = new VCommonList();
+            this.asyncAttrFetchCounter = 0;
             this.modal = new Modal({
                 title: 'Add Tag',
                 content: this,
@@ -56,6 +57,14 @@ define(['require',
                 allowCancel: true,
             }).open();
             this.on('ok', function() {
+                var tagName = this.ui.addTagOptions.val();
+                var tagAttributes = {};
+                var tagAttributeNames = this.$(".attrName");
+                tagAttributeNames.each(function(i, item) {
+                    var selection = $(item).data("key");
+                    tagAttributes[selection] = $(item).val();
+                });
+
                 if (that.multiple) {
                     that.asyncFetchCounter = 0;
                     for (var i = 0; i < that.multiple.length; i++) {
@@ -63,7 +72,8 @@ define(['require',
                             that.showLoader();
                         }
                         var obj = {
-                            tagName: this.ui.addTagOptions.val(),
+                            tagName: tagName,
+                            tagAttributes: tagAttributes,
                             guid: that.multiple[i].id.id
                         }
                         that.saveTagData(obj);
@@ -71,7 +81,8 @@ define(['require',
                 } else {
                     that.asyncFetchCounter = 0;
                     that.saveTagData({
-                        tagName: that.ui.addTagOptions.val(),
+                        tagName: tagName,
+                        tagAttributes: tagAttributes,
                         guid: that.guid
                     });
                 }
@@ -91,7 +102,12 @@ define(['require',
                 this.tagsCollection();
             }, this);
             this.listenTo(this.commonCollection, 'reset', function() {
+                --this.asyncAttrFetchCounter
                 this.subAttributeData();
+            }, this);
+            this.listenTo(this.commonCollection, 'error', function() {
+                --this.asyncAttrFetchCounter
+                this.$('.attrLoader').hide();
             }, this);
         },
         tagsCollection: function() {
@@ -114,45 +130,60 @@ define(['require',
             var saveBtn = this.modal.$el.find('.btn-success');
             saveBtn.prop("disabled", false);
             var tagname = this.ui.addTagOptions.val();
+            this.hideAttributeBox();
             this.fetchTagSubData(tagname);
         },
         fetchTagSubData: function(tagname) {
             this.commonCollection.url = "/api/atlas/types/" + tagname;
             this.commonCollection.modelAttrName = 'definition';
+            ++this.asyncAttrFetchCounter
             this.commonCollection.fetch({ reset: true });
+        },
+        showAttributeBox: function() {
+            if (this.asyncAttrFetchCounter === 0) {
+                this.$('.attrLoader').hide();
+                if (this.ui.tagAttribute.children().length !== 0) {
+                    this.ui.tagAttribute.parent().show();
+                }
+            }
+        },
+        hideAttributeBox: function() {
+            this.ui.tagAttribute.children().empty();
+            this.ui.tagAttribute.parent().hide();
+            this.$('.attrLoader').show();
         },
         subAttributeData: function() {
             if (this.commonCollection.models[0] && this.commonCollection.models[0].attributes && this.commonCollection.models[0].attributes.traitTypes[0].attributeDefinitions) {
-                var strAttribute = '<p>Tag Attributes(optional)</p>' +
-                    '<p class="tagAttributeLabel">Add attribute values for this tag</p>';
                 for (var i = 0; i < this.commonCollection.models[0].attributes.traitTypes[0].attributeDefinitions.length; i++) {
                     var attribute = this.commonCollection.models[0].attributes.traitTypes[0].attributeDefinitions;
-                    this.ui.tagAttribute.show();
-                    strAttribute += '<div class="form-group"><label>' + attribute[i].name + '</label>' +
+                    var strAttribute = '<div class="form-group"><label>' + attribute[i].name + '</label>' +
                         '<input type="text" class="form-control attributeInputVal attrName" data-key="' + attribute[i].name + '" ></input></div>';
-                    this.ui.tagAttribute.html(strAttribute);
+                    this.ui.tagAttribute.append(strAttribute);
                 }
                 if (this.commonCollection.models[0].attributes.traitTypes[0].superTypes.length > 0) {
                     for (var j = 0; j < this.commonCollection.models[0].attributes.traitTypes[0].superTypes.length; j++) {
                         var superTypeAttr = this.commonCollection.models[0].attributes.traitTypes[0].superTypes[j];
                         this.fetchTagSubData(superTypeAttr);
                     }
+                } else {
+                    this.showAttributeBox();
                 }
+            } else {
+                this.showAttributeBox();
             }
         },
         saveTagData: function(options) {
-            var that = this,
-                values = {};
+            var that = this;
             ++this.asyncFetchCounter;
             this.entityModel = new VEntity();
-            var name = options.tagName;
-            var tagName = this.ui.addTagOptions.val();
-            var json = {
-                "jsonClass": "org.apache.atlas.typesystem.json.InstanceSerialization$_Struct",
-                "typeName": name,
-                "values": values
-            };
-            that.entityModel.saveEntity(options.guid, {
+            var tagName = options.tagName,
+                tagAttributes = options.tagAttributes,
+                json = {
+                    "jsonClass": "org.apache.atlas.typesystem.json.InstanceSerialization$_Struct",
+                    "typeName": tagName,
+                    "values": tagAttributes
+                };
+            this.entityModel.saveEntity(options.guid, {
                 data: JSON.stringify(json),
                 success: function(data) {
                     Utils.notifySuccess({
