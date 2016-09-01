@@ -31,6 +31,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-772 Ordering of columns is not maintained in schema query response, where as hive table entity response maintains the ordering (sarath.kum4r@gmail.com via kevalbhatt)
 ATLAS-1140 All the tag's attributes are not seen while applying a tag to entity (kevalbhatt)
 ATLAS-1141 UI-Issue - Tag with spaces, when searched, then it is wrongly set in search textbox. (Kalyanikashikar via kevalbhatt)
 ATLAS-1129 Remove notification failed logs on retry and add sleep between retries (svimal2106 via sumasai)
