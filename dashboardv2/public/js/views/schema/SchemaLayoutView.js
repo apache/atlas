@@ -98,6 +98,7 @@ define(['require',
                     includePagination: true,
                     includePageSize: false,
                     includeFooterRecords: true,
+                    includeOrderAbleColumns: true,
                     gridOpts: {
                         className: "table table-hover backgrid table-quickMenu",
                         emptyText: 'No records found!'
@@ -177,12 +178,29 @@ define(['require',
                         sortKey: "position",
                         comparator: function(item) {
                             return item.get(this.sortKey) || 999;
+                        },
+                        setPositions: function() {
+                            _.each(this.models, function(model, index) {
+                                if (model.get('name') == "name") {
+                                    model.set("position", 2, { silent: true });
+                                    model.set("label", "Name");
+                                } else if (model.get('name') == "description") {
+                                    model.set("position", 3, { silent: true });
+                                    model.set("label", "Description");
+                                } else if (model.get('name') == "owner") {
+                                    model.set("position", 4, { silent: true });
+                                    model.set("label", "Owner");
+                                }
+                            });
+                            return this;
                         }
                     });
                     var columns = new columnCollection(that.getSchemaTableColumns());
+                    columns.setPositions().sort();
                     that.RTagLayoutView.show(new TableLayout(_.extend({}, that.commonTableOptions, {
                         globalVent: that.globalVent,
-                        columns: columns
+                        columns: columns,
+                        includeOrderAbleColumns: true
                     })));
                     that.$('.multiSelectTerm').hide();
                     that.$('.multiSelectTag').hide();
@@ -199,86 +217,126 @@ define(['require',
                 });
             },
             getSchemaTableColumns: function() {
-                var that = this;
-                var col = {};
-                if (this.schemaCollection.keyList) {
-                    _.each(this.schemaCollection.keyList, function(obj, key) {
-                        col[obj.name] = {
-                            cell: "Html",
-                            editable: false,
-                            sortable: false,
-                            orderable: true,
-                            formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                                fromRaw: function(rawValue, model) {
-                                    if (model) {
-                                        if (!_.isArray(rawValue) && _.isObject(rawValue)) {
-                                            if (rawValue.id) {
-                                                return '<div><a href="#!/detailPage/' + rawValue.id + '">' + rawValue.$typeName$ + '</a></div>';
-                                            } else {
-                                                return rawValue.$typeName$;
-                                            }
-                                        } else if (_.isArray(rawValue)) {
-                                            var links = "";
-                                            _.each(rawValue, function(val, key) {
-                                                if (val.id) {
-                                                    links += '<div><a href="#!/detailPage/' + val.id + '">' + val.$typeName$ + '</a></div>';
-                                                } else {
-                                                    links += '<div>' + val.$typeName$ + '</div>';
-                                                }
-                                            });
-                                            return links;
-
-                                        } else if (model.get('$id$') && model.get('$id$').id && model.get('name') == rawValue) {
-                                            return '<div><a href="#!/detailPage/' + model.get('$id$').id + '">' + rawValue + '</a></div>';
-                                        } else {
-                                            return rawValue;
-                                        }
-                                    } else {
-                                        return rawValue;
-                                    }
-
-                                }
-                            })
-                        };
-                    });
-                    col['Check'] = {
-                        name: "selected",
-                        label: "",
-                        cell: "select-row",
-                        headerCell: "select-all",
-                        position: 1
-                    };
-                    col['tag'] = {
-                        label: "Tags",
-                        cell: "Html",
+                var that = this,
+                    col = {},
+                    nameCheck = false,
+                    modelJSON = this.schemaCollection.toJSON()[0];
+                for (var i = 0; i < this.schemaCollection.models.length; i++) {
+                    var model = this.schemaCollection.models[i];
+                    if (model && (model.get('name') || model.get('qualifiedName'))) {
+                        nameCheck = true;
+                    }
+                }
+                if (nameCheck === true) {
+                    col['name'] = {
+                        label: "Name",
+                        cell: "html",
                         editable: false,
                         sortable: false,
-                        className: 'searchTag',
+                        className: "searchTableName",
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                return CommonViewFunction.tagForTable(model);
+                                var nameHtml = "";
+                                if (rawValue === undefined) {
+                                    if (model.get('qualifiedName')) {
+                                        rawValue = model.get('qualifiedName');
+                                    } else if (model.get('$id$') && model.get('$id$').qualifiedName) {
+                                        rawValue = model.get('$id$').qualifiedName;
+                                    } else {
+                                        return "";
+                                    }
+                                }
+                                if (model.get('$id$') && model.get('$id$').id) {
+                                    nameHtml = '<a href="#!/detailPage/' + model.get('$id$').id + '">' + rawValue + '</a>';
+                                } else {
+                                    nameHtml = '<a>' + rawValue + '</a>';
+                                }
+                                if (model.get('$id$') && model.get('$id$').state && Globals.entityStateReadOnly[model.get('$id$').state]) {
+                                    nameHtml += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
+                                    return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
+                                } else {
+                                    return nameHtml;
+                                }
                             }
                         })
                     };
-                    if (Globals.taxonomy) {
-                        col['terms'] = {
-                            label: "Terms",
-                            cell: "Html",
-                            editable: false,
-                            sortable: false,
-                            orderable: true,
-                            className: 'searchTerm',
-                            formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
-                                fromRaw: function(rawValue, model) {
-                                    var returnObject = CommonViewFunction.termTableBreadcrumbMaker(model, "schema");
-                                    if (returnObject.object) {
-                                        that.bradCrumbList.push(returnObject.object);
+                };
+                _.keys(modelJSON).map(function(key) {
+                    if (key.indexOf("$") == -1) {
+                        if (!(key === "qualifiedName" || key === "name")) {
+                            col[key] = {
+                                cell: "Html",
+                                editable: false,
+                                sortable: false,
+                                orderable: true,
+                                formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                                    fromRaw: function(rawValue, model) {
+                                        if (model) {
+                                            if (!_.isArray(rawValue) && _.isObject(rawValue)) {
+                                                if (rawValue.id) {
+                                                    return '<div><a href="#!/detailPage/' + rawValue.id + '">' + rawValue.$typeName$ + '</a></div>';
+                                                } else {
+                                                    return rawValue.$typeName$;
+                                                }
+                                            } else if (_.isArray(rawValue)) {
+                                                var links = "";
+                                                _.each(rawValue, function(val, key) {
+                                                    if (val.id) {
+                                                        links += '<div><a href="#!/detailPage/' + val.id + '">' + val.$typeName$ + '</a></div>';
+                                                    } else {
+                                                        links += '<div>' + val.$typeName$ + '</div>';
+                                                    }
+                                                });
+                                                return links;
+                                            } else {
+                                                return rawValue;
+                                            }
+                                        } else {
+                                            return rawValue;
+                                        }
                                     }
-                                    return returnObject.html;
-                                }
-                            })
-                        };
+                                })
+                            };
+                        }
                     }
+                });
+                col['Check'] = {
+                    name: "selected",
+                    label: "",
+                    cell: "select-row",
+                    headerCell: "select-all",
+                    position: 1
+                };
+                col['tag'] = {
+                    label: "Tags",
+                    cell: "Html",
+                    editable: false,
+                    sortable: false,
+                    className: 'searchTag',
+                    formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                        fromRaw: function(rawValue, model) {
+                            return CommonViewFunction.tagForTable(model);
+                        }
+                    })
+                };
+                if (Globals.taxonomy) {
+                    col['terms'] = {
+                        label: "Terms",
+                        cell: "Html",
+                        editable: false,
+                        sortable: false,
+                        orderable: true,
+                        className: 'searchTerm',
+                        formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
+                            fromRaw: function(rawValue, model) {
+                                var returnObject = CommonViewFunction.termTableBreadcrumbMaker(model, "schema");
+                                if (returnObject.object) {
+                                    that.bradCrumbList.push(returnObject.object);
+                                }
+                                return returnObject.html;
+                            }
+                        })
+                    };
                 }
                 return this.schemaCollection.constructor.getTableCols(col, this.schemaCollection);
             },

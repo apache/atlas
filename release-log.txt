@@ -10,6 +10,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1147 UI: column name doesn't show up in schema tab for hive table (Kalyanikashikar via kevalbhatt)
 ATLAS-772 Ordering of columns is not maintained in schema query response, where as hive table entity response maintains the ordering (sarath.kum4r@gmail.com via kevalbhatt)
 ATLAS-1140 All the tag's attributes are not seen while applying a tag to entity (kevalbhatt)
 ATLAS-1141 UI-Issue - Tag with spaces, when searched, then it is wrongly set in search textbox. (Kalyanikashikar via kevalbhatt)
