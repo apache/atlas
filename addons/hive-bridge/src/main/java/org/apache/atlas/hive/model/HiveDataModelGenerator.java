@@ -64,6 +64,7 @@ public class HiveDataModelGenerator {
     public static final String COMMENT = "comment";
     public static final String PARAMETERS = "parameters";
     public static final String COLUMNS = "columns";
+    public static final String POSITION = "position";
     public static final String PART_COLS = "partitionKeys";
     public static final String TABLE_ALIAS_LIST = "aliases";
 
@@ -224,7 +225,8 @@ public class HiveDataModelGenerator {
                 new AttributeDefinition(COMMENT, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
                 //Making this optional since this is an incompatible change
                 //Reverse attribute to 'columns' in Table
-                new AttributeDefinition(TABLE, HiveDataTypes.HIVE_TABLE.getName(), Multiplicity.OPTIONAL, false, COLUMNS),};
+                new AttributeDefinition(TABLE, HiveDataTypes.HIVE_TABLE.getName(), Multiplicity.OPTIONAL, false, COLUMNS),
+                new AttributeDefinition(POSITION, DataTypes.INT_TYPE.getName(), Multiplicity.OPTIONAL, false, false, false, null)};
 
         HierarchicalTypeDefinition<ClassType> definition =
                 new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_COLUMN.getName(), null,

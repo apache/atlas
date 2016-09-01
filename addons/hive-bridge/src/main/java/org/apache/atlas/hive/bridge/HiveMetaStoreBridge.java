@@ -576,7 +576,7 @@ public class HiveMetaStoreBridge {
 
     public List<Referenceable> getColumns(List<FieldSchema> schemaList, Referenceable tableReference) throws Exception {
         List<Referenceable> colList = new ArrayList<>();
-
+        int columnPosition = 0;
         for (FieldSchema fs : schemaList) {
             LOG.debug("Processing field " + fs);
             Referenceable colReferenceable = new Referenceable(HiveDataTypes.HIVE_COLUMN.getName());
@@ -585,8 +585,10 @@ public class HiveMetaStoreBridge {
             colReferenceable.set(AtlasClient.NAME, fs.getName());
             colReferenceable.set(AtlasClient.OWNER, tableReference.get(AtlasClient.OWNER));
             colReferenceable.set("type", fs.getType());
+            colReferenceable.set(HiveDataModelGenerator.POSITION, columnPosition++);
             colReferenceable.set(HiveDataModelGenerator.COMMENT, fs.getComment());
             colReferenceable.set(HiveDataModelGenerator.TABLE, tableReference.getId());
+
 
             colList.add(colReferenceable);
         }
