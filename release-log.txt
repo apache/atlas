@@ -4,12 +4,13 @@ Apache Atlas Release Notes
 --trunk - unreleased
 INCOMPATIBLE CHANGES:
 ATLAS-674 Falcon Hook should use timestamps instead of long(ayubkhan via sumasai)
-ATLAS-675 Storm Hook should use timetsamps as Date type instead of Long (ayubkhan via sumasai)
+ATLAS-675 Storm Hook should use timestamps as Date type instead of Long (ayubkhan via sumasai)
 ATLAS-1122 Change trait edge labels to have trait name alone (sumasai)
 ATLAS-1060 Add composite indexes for exact match performance improvements for all attributes (sumasai via shwethags)
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1154 Errors in Eclipse with web.xml (davidrad via dkantor)
 ATLAS-1147 UI: column name doesn't show up in schema tab for hive table (Kalyanikashikar via kevalbhatt)
 ATLAS-772 Ordering of columns is not maintained in schema query response, where as hive table entity response maintains the ordering (sarath.kum4r@gmail.com via kevalbhatt)
 ATLAS-1140 All the tag's attributes are not seen while applying a tag to entity (kevalbhatt)
