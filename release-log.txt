@@ -31,6 +31,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-1098 Atlas allows creation of tag with name "isa" which causes exceptions during search (apoorvnaik via kevalbhatt)
 ATLAS-1160 Update Atlas hive hook to read configuration from atlas-application.properties instead of hive-site.xml (mneethiraj via kevalbhatt)
 ATLAS-1154 Errors in Eclipse with web.xml (davidrad via dkantor)
 ATLAS-1147 UI: column name doesn't show up in schema tab for hive table (Kalyanikashikar via kevalbhatt)
