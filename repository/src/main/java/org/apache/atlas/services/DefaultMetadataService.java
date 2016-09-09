@@ -33,6 +33,8 @@ import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.listener.TypesChangeListener;
+import org.apache.atlas.query.QueryKeywords;
+import org.apache.atlas.query.QueryParser;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
@@ -64,12 +66,14 @@ import org.apache.atlas.typesystem.types.ValueConversionException;
 import org.apache.atlas.typesystem.types.cache.TypeCache;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.utils.ParamChecker;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.collection.Set;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -240,6 +244,9 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
         typeDefinition = ParamChecker.notEmpty(typeDefinition, "type definition");
         TypesDef typesDef = validateTypeDefinition(typeDefinition);
 
+        // Also validate if the types being created are not keywords
+        validateIfNotKeyword(typesDef);
+
         try {
             final TypeSystem.TransientTypeSystem transientTypeSystem = typeSystem.createTransientTypeSystem(typesDef, isUpdate);
             final Map<String, IDataType> typesAdded = transientTypeSystem.getTypesAdded();
@@ -282,6 +289,55 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
         } catch (Exception e) {
             LOG.error("Unable to deserialize json={}", typeDefinition, e);
             throw new IllegalArgumentException("Unable to deserialize json " + typeDefinition, e);
+        }
+    }
+
+    private void validateIfNotKeyword(TypesDef typesDef) throws AtlasException {
+        List<EnumTypeDefinition> enumDefs = typesDef.enumTypesAsJavaList();
+        List<StructTypeDefinition> structDefs = typesDef.structTypesAsJavaList();
+        List<HierarchicalTypeDefinition<ClassType>> classDefs = typesDef.classTypesAsJavaList();
+        List<HierarchicalTypeDefinition<TraitType>> traitDefs = typesDef.traitTypesAsJavaList();
+
+        // QueryParser has it's own set of keywords that should be avoided
+        Set<String> keywords = QueryParser.keywordCache().keySet();
+        boolean keywordCacheNotEmpty = null != keywords && !keywords.isEmpty();
+
+        if (keywordCacheNotEmpty) {
+            if (CollectionUtils.isNotEmpty(enumDefs)) {
+                // Check if any enum name is a keyword
+                for (EnumTypeDefinition enumDef : enumDefs) {
+                    if (keywords.contains(enumDef.name)) {
+                        throw new AtlasException("Enum definition name \"" + enumDef.name + "\" is a keyword");
+                    }
+                }
+            }
+
+            if (CollectionUtils.isNotEmpty(classDefs)){
+                // Check if any class name is a keyword
+                for (HierarchicalTypeDefinition<ClassType> classDef : classDefs) {
+                    if (keywords.contains(classDef.typeName)) {
+                        throw new AtlasException("Class definition name \"" + classDef.typeName + "\" is a keyword");
+                    }
+                }
+            }
+
+            if (CollectionUtils.isNotEmpty(structDefs)){
+                // Check if any struct name is a keyword
+                for (StructTypeDefinition structDef : structDefs) {
+                    if (keywords.contains(structDef.typeName)) {
+                        throw new AtlasException("StructType definition name \"" + structDef.typeName + "\" is a keyword");
+                    }
+                }
+            }
+
+            if (CollectionUtils.isNotEmpty(traitDefs)){
+                // Check if any trait name is a keyword
+                for (HierarchicalTypeDefinition<TraitType> traitDef : traitDefs) {
+                    if (keywords.contains(traitDef.typeName)) {
+                        throw new AtlasException("TraitType definition name \"" + traitDef.typeName + "\" is a keyword");
+                    }
+                }
+            }
         }
     }
 
