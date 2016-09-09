@@ -97,7 +97,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     // wait time determines how long we wait before we exit the jvm on
     // shutdown. Pending requests after that will not be sent.
     private static final int WAIT_TIME = 3;
-    private static ExecutorService executor;
+    private static ExecutorService executor = null;
 
     private static final int minThreadsDefault = 1;
     private static final int maxThreadsDefault = 5;
@@ -110,28 +110,32 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         try {
             // initialize the async facility to process hook calls. We don't
             // want to do this inline since it adds plenty of overhead for the query.
-            int minThreads = atlasProperties.getInt(MIN_THREADS, minThreadsDefault);
-            int maxThreads = atlasProperties.getInt(MAX_THREADS, maxThreadsDefault);
-            long keepAliveTime = atlasProperties.getLong(KEEP_ALIVE_TIME, keepAliveTimeDefault);
-            int queueSize = atlasProperties.getInt(QUEUE_SIZE, queueSizeDefault);
+            boolean isSync = atlasProperties.getBoolean(CONF_SYNC, Boolean.FALSE);
 
-            executor = new ThreadPoolExecutor(minThreads, maxThreads, keepAliveTime, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>(queueSize),
-                new ThreadFactoryBuilder().setNameFormat("Atlas Logger %d").build());
+            if(!isSync) {
+                int minThreads = atlasProperties.getInt(MIN_THREADS, minThreadsDefault);
+                int maxThreads = atlasProperties.getInt(MAX_THREADS, maxThreadsDefault);
+                long keepAliveTime = atlasProperties.getLong(KEEP_ALIVE_TIME, keepAliveTimeDefault);
+                int queueSize = atlasProperties.getInt(QUEUE_SIZE, queueSizeDefault);
 
-            Runtime.getRuntime().addShutdownHook(new Thread() {
-                @Override
-                public void run() {
-                    try {
-                        executor.shutdown();
-                        executor.awaitTermination(WAIT_TIME, TimeUnit.SECONDS);
-                        executor = null;
-                    } catch (InterruptedException ie) {
-                        LOG.info("Interrupt received in shutdown.");
+                executor = new ThreadPoolExecutor(minThreads, maxThreads, keepAliveTime, TimeUnit.MILLISECONDS,
+                        new LinkedBlockingQueue<Runnable>(queueSize),
+                        new ThreadFactoryBuilder().setNameFormat("Atlas Logger %d").build());
+
+                Runtime.getRuntime().addShutdownHook(new Thread() {
+                    @Override
+                    public void run() {
+                        try {
+                            executor.shutdown();
+                            executor.awaitTermination(WAIT_TIME, TimeUnit.SECONDS);
+                            executor = null;
+                        } catch (InterruptedException ie) {
+                            LOG.info("Interrupt received in shutdown.");
+                        }
+                        // shutdown client
                     }
-                    // shutdown client
-                }
-            });
+                });
+            }
 
             setupOperationMap();
         } catch (Exception e) {
@@ -174,8 +178,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             event.setQueryStartTime(hookContext.getQueryPlan().getQueryStartTime());
             event.setQueryType(hookContext.getQueryPlan().getQueryPlan().getQueryType());
 
-            boolean sync = conf.get(CONF_SYNC, "false").equals("true");
-            if (sync) {
+            if (executor == null) {
                 fireAndForget(event);
             } else {
                 executor.submit(new Runnable() {
