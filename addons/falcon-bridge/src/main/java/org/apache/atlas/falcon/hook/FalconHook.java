@@ -21,6 +21,7 @@ package org.apache.atlas.falcon.hook;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.falcon.bridge.FalconBridge;
 import org.apache.atlas.falcon.event.FalconEvent;
 import org.apache.atlas.falcon.publisher.FalconEventPublisher;
@@ -32,6 +33,7 @@ import org.apache.atlas.typesystem.Referenceable;
 import org.apache.falcon.entity.store.ConfigurationStore;
 import org.apache.falcon.entity.v0.feed.Feed;
 import org.apache.falcon.entity.v0.process.Process;
+import org.apache.hadoop.util.ShutdownHookManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,19 +92,23 @@ public class FalconHook extends AtlasHook implements FalconEventPublisher {
                     new LinkedBlockingQueue<Runnable>(queueSize),
                     new ThreadFactoryBuilder().setNameFormat("Atlas Logger %d").build());
 
-            Runtime.getRuntime().addShutdownHook(new Thread() {
+            ShutdownHookManager.get().addShutdownHook(new Thread() {
                 @Override
                 public void run() {
                     try {
+                        LOG.info("==> Shutdown of Atlas Falcon Hook");
+
                         executor.shutdown();
                         executor.awaitTermination(WAIT_TIME, TimeUnit.SECONDS);
                         executor = null;
                     } catch (InterruptedException ie) {
                         LOG.info("Interrupt received in shutdown.");
+                    } finally {
+                        LOG.info("<== Shutdown of Atlas Falcon Hook");
                     }
                     // shutdown client
                 }
-            });
+            }, AtlasConstants.ATLAS_SHUTDOWN_HOOK_PRIORITY);
 
             STORE = ConfigurationStore.get();
 

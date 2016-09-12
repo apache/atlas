@@ -131,9 +131,9 @@ public abstract class AtlasHook {
             } catch (Exception e) {
                 numRetries++;
                 if (numRetries < maxRetries) {
-                    LOG.error("Notification send retry failed");
+                    LOG.error("Failed to send notification - attempt #" + numRetries + "; error=" + e.getMessage());
                     try {
-                        LOG.info("Sleeping for {} ms before retry", notificationRetryInterval);
+                        LOG.debug("Sleeping for {} ms before retry", notificationRetryInterval);
                         Thread.sleep(notificationRetryInterval);
                     } catch (InterruptedException ie){
                         LOG.error("Notification hook thread sleep interrupted");
