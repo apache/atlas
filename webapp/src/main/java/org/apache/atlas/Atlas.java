@@ -30,6 +30,7 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.util.ShutdownHookManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,16 +53,20 @@ public final class Atlas {
     private static EmbeddedServer server;
 
     static {
-        Runtime.getRuntime().addShutdownHook(new Thread() {
+        ShutdownHookManager.get().addShutdownHook(new Thread() {
             @Override
             public void run() {
                 try {
+                    LOG.info("==> Shutdown of Atlas");
+
                     shutdown();
                 } catch (Exception e) {
-                    LOG.debug("Failed to shutdown", e);
+                    LOG.error("Failed to shutdown", e);
+                } finally {
+                    LOG.info("<== Shutdown of Atlas");
                 }
             }
-        });
+        }, AtlasConstants.ATLAS_SHUTDOWN_HOOK_PRIORITY);
     }
 
     private static void shutdown() {

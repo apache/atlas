@@ -50,6 +50,7 @@ import org.apache.hadoop.hive.ql.metadata.Partition;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.util.ShutdownHookManager;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,19 +123,23 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                         new LinkedBlockingQueue<Runnable>(queueSize),
                         new ThreadFactoryBuilder().setNameFormat("Atlas Logger %d").build());
 
-                Runtime.getRuntime().addShutdownHook(new Thread() {
+                ShutdownHookManager.get().addShutdownHook(new Thread() {
                     @Override
                     public void run() {
                         try {
+                            LOG.info("==> Shutdown of Atlas Hive Hook");
+
                             executor.shutdown();
                             executor.awaitTermination(WAIT_TIME, TimeUnit.SECONDS);
                             executor = null;
                         } catch (InterruptedException ie) {
                             LOG.info("Interrupt received in shutdown.");
+                        } finally {
+                            LOG.info("<== Shutdown of Atlas Hive Hook");
                         }
                         // shutdown client
                     }
-                });
+                }, AtlasConstants.ATLAS_SHUTDOWN_HOOK_PRIORITY);
             }
 
             setupOperationMap();
