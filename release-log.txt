@@ -10,6 +10,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1133 Jetty Server start doesn't throw exception when user-credential.properties file is not found (nixonrodrigues,svimal2106 via kevalbhatt)
 ATLAS-1149 Changes to UI to sort the hive table schema based on "position" attribute of hive_column (Kalyanikashikar via kevalbhatt)
 ATLAS-1162 Register shutdown hooks with Hadoop's ShutdownHookManager, instead of directly with Java Runtime (mneethiraj via sumasai)
 ATLAS-1098 Atlas allows creation of tag with name "isa" which causes exceptions during search (apoorvnaik via kevalbhatt)

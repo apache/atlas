@@ -489,6 +489,23 @@
                     <testClassesDirectory>${project.build.directory}/../../webapp/target/test-classes/</testClassesDirectory>
                     <useTestClasspath>true</useTestClasspath>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.eclipse.jetty</groupId>
+                        <artifactId>jetty-jsp</artifactId>
+                        <version>${jetty.version}</version>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>javax.servlet</groupId>
+                                <artifactId>*</artifactId>
+                            </exclusion>
+                            <exclusion>
+                                <groupId>org.glassfish</groupId>
+                                <artifactId>javax.el</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                </dependencies>
                 <executions>
                     <execution>
                         <id>start-jetty</id>
