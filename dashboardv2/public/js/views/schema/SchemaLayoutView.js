@@ -163,6 +163,7 @@ define(['require',
                 this.$('.fontLoader').show();
                 this.schemaCollection.fetch({
                     success: function() {
+                        that.schemaCollection.sortByKey('position');
                         that.renderTableLayoutView();
                         $('.schemaTable').show();
                         that.$('.fontLoader').hide();
@@ -263,7 +264,7 @@ define(['require',
                 };
                 _.keys(modelJSON).map(function(key) {
                     if (key.indexOf("$") == -1) {
-                        if (!(key === "qualifiedName" || key === "name")) {
+                        if (!(key === "qualifiedName" || key === "name" || key === "position")) {
                             col[key] = {
                                 cell: "Html",
                                 editable: false,

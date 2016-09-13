@@ -58,7 +58,11 @@ define(['require',
             entityTableGenerate: function() {
                 var that = this,
                     valueObject = this.collectionObject[0].values,
-                    table = CommonViewFunction.propertyTable(valueObject, this);
+                    valueSorted = _.sortBy(valueObject.columns, function(val) {
+                        return val.values.position
+                    });
+                valueObject.columns = valueSorted;
+                var table = CommonViewFunction.propertyTable(valueObject, this);
                 that.ui.detailValue.append(table);
             }
         });
