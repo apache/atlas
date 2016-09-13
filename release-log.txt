@@ -31,6 +31,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-1149 Changes to UI to sort the hive table schema based on "position" attribute of hive_column (Kalyanikashikar via kevalbhatt)
 ATLAS-1162 Register shutdown hooks with Hadoop's ShutdownHookManager, instead of directly with Java Runtime (mneethiraj via sumasai)
 ATLAS-1098 Atlas allows creation of tag with name "isa" which causes exceptions during search (apoorvnaik via kevalbhatt)
 ATLAS-1160 Update Atlas hive hook to read configuration from atlas-application.properties instead of hive-site.xml (mneethiraj via kevalbhatt)

@@ -33,7 +33,9 @@ define(['require',
              * @constructs
              */
 
-            initialize: function() {},
+            initialize: function() {
+                this.sort_key = 'id';
+            },
             bindErrorEvents: function() {
                 this.bind("error", Utils.defaultErrorHandler);
             },
@@ -47,6 +49,15 @@ define(['require',
             },
             ajaxStart: function(model, ajaxObj, collectionObj) {},
             ajaxComplete: function(model, ajaxObj, collectionObj) {},
+            comparator: function(key, value) {
+                key = key.get(this.sort_key);
+                value = value.get(this.sort_key);
+                return key > value ? 1 : key < value ? -1 : 0;
+            },
+            sortByKey: function(sortKey) {
+                this.sort_key = sortKey;
+                this.sort();
+            },
             /**
              * state required for the PageableCollection
              */
