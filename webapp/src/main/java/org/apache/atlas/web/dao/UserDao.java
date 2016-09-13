@@ -72,8 +72,8 @@ public class UserDao {
             }
 
         } catch (IOException | AtlasException e) {
-            LOG.error("Error while reading user.properties file, filepath="
-                    + PROPERTY_FILE_PATH, e);
+            LOG.error("Error while reading user.properties file, filepath=" + PROPERTY_FILE_PATH, e);
+            throw new RuntimeException(e);
         } finally {
             if(inStr != null) {
                 try {

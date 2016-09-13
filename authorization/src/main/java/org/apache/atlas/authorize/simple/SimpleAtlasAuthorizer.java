@@ -113,6 +113,7 @@ public final class SimpleAtlasAuthorizer implements AtlasAuthorizer {
             if (LOG.isErrorEnabled()) {
                 LOG.error("SimpleAtlasAuthorizer could not be initialized properly due to : ", e);
             }
+            throw new RuntimeException(e);
         }
     }
 
