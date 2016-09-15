@@ -236,7 +236,7 @@ atlas.server.ha.zookeeper.session.timeout.ms=20000
 # Specify the scheme and the identity to be used for setting up ACLs on nodes created in Zookeeper for HA.
 # The format of these options is <scheme>:<identity>. For more information refer to http://zookeeper.apache.org/doc/r3.2.2/zookeeperProgrammers.html#sc_ZooKeeperAccessControl.
 # The 'acl' option allows to specify a scheme, identity pair to setup an ACL for.
-atlas.server.ha.zookeeper.acl=auth:sasl:client@comany.com
+atlas.server.ha.zookeeper.acl=sasl:client@comany.com
 # The 'auth' option specifies the authentication that should be used for connecting to Zookeeper.
 atlas.server.ha.zookeeper.auth=sasl:client@company.com
 
