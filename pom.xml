@@ -91,7 +91,7 @@
             <id>venkatesh</id>
             <name>Venkatesh Seetharam</name>
             <email>venkatesh@apache.org</email>
-            <timezone>-8</timezone>
+            <timezone>America/Los_Angeles</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
@@ -103,7 +103,7 @@
             <id>rhbutani</id>
             <name>Harish Butani</name>
             <email>rhbutani@apache.org</email>
-            <timezone>-8</timezone>
+            <timezone>America/Los_Angeles</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
@@ -115,7 +115,7 @@
             <id>shwethags</id>
             <name>Shwetha GS</name>
             <email>shwethags@apache.org</email>
-            <timezone>+05:30</timezone>
+            <timezone>Asia/Kolkata</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
@@ -127,7 +127,7 @@
             <id>jmaron</id>
             <name>Jon Maron</name>
             <email>jmaron@hortonworks.com</email>
-            <timezone>-5</timezone>
+            <timezone>America/New_York</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
@@ -139,7 +139,7 @@
             <id>AAhn</id>
             <name>Andrew Ahn</name>
             <email>aahn@hortonworks.com</email>
-            <timezone>-8</timezone>
+            <timezone>America/Los_Angeles</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
@@ -151,7 +151,7 @@
             <id>dkaspar</id>
             <name>David Kaspar</name>
             <email>dkaspar@merck.com</email>
-            <timezone>+1</timezone>
+            <timezone>Europe/Berlin</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
@@ -163,7 +163,7 @@
             <id>ilasek</id>
             <name>Ivo Lasek</name>
             <email>ilasek@merck.com</email>
-            <timezone>+1</timezone>
+            <timezone>Europe/Berlin</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
@@ -175,7 +175,7 @@
             <id>dfusaro</id>
             <name>Dennis Fusaro</name>
             <email>dfusaro@aetna.com</email>
-            <timezone>-5</timezone>
+            <timezone>America/New_York</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
@@ -187,7 +187,7 @@
             <id>chyzer</id>
             <name>Chris Hyzer</name>
             <email>chyzer@aetna.com</email>
-            <timezone>-5</timezone>
+            <timezone>America/New_York</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
@@ -199,7 +199,7 @@
             <id>dmarkwat</id>
             <name>Daniel Markwat</name>
             <email>dmarkwat@aetna.com</email>
-            <timezone>-5</timezone>
+            <timezone>America/New_York</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
@@ -211,7 +211,7 @@
             <id>gsenia</id>
             <name>Greg Senia</name>
             <email>gsenia@aetna.com</email>
-            <timezone>-5</timezone>
+            <timezone>America/New_York</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
@@ -223,7 +223,7 @@
             <id>james</id>
             <name>James Vollmer</name>
             <email>james@target.com</email>
-            <timezone>-6</timezone>
+            <timezone>America/Denver</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
@@ -235,7 +235,7 @@
             <id>adossett</id>
             <name>Aaron Dossett</name>
             <email>adossett@target.com</email>
-            <timezone>-6</timezone>
+            <timezone>America/Denver</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
@@ -247,7 +247,7 @@
             <id>mschussler</id>
             <name>Mitch Schussler</name>
             <email>mschussler@apache.org</email>
-            <timezone>-5</timezone>
+            <timezone>America/New_York</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
@@ -259,7 +259,7 @@
             <id>vavasarala</id>
             <name>Viswanath Avasarala</name>
             <email>vavasarala@slb.com</email>
-            <timezone>-6</timezone>
+            <timezone>America/Denver</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
@@ -271,7 +271,7 @@
             <id>avarma</id>
             <name>Anil Varma</name>
             <email>avarma@slb.com</email>
-            <timezone>-6</timezone>
+            <timezone>America/Denver</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
@@ -283,7 +283,7 @@
             <id>bstortz</id>
             <name>Barbara Stortz</name>
             <email>bstortz@sap.com</email>
-            <timezone>-8</timezone>
+            <timezone>America/Los_Angeles</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
@@ -295,7 +295,7 @@
             <id>sriksun</id>
             <name>Srikanth Sundarrajan</name>
             <email>sriksun@apache.org</email>
-            <timezone>+05:30</timezone>
+            <timezone>Asia/Kolkata</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
@@ -307,7 +307,7 @@
             <id>ssuresh</id>
             <name>Suresh Srinivas</name>
             <email>ssuresh@apache.org</email>
-            <timezone>-8</timezone>
+            <timezone>America/Los_Angeles</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
@@ -319,7 +319,7 @@
             <id>vranganathan</id>
             <name>Venkat Ranganathan</name>
             <email>venkatrangan@apache.org</email>
-            <timezone>-8</timezone>
+            <timezone>America/Los_Angeles</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
@@ -331,7 +331,7 @@
             <id>sumasai</id>
             <name>Suma Shivaprasad</name>
             <email>sumasai@apache.org</email>
-            <timezone>-8</timezone>
+            <timezone>America/Los_Angeles</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
@@ -343,7 +343,7 @@
             <id>yhemanth</id>
             <name>Hemanth Yamijala</name>
             <email>yhemanth@apache.org</email>
-            <timezone>+05:30</timezone>
+            <timezone>Asia/Kolkata</timezone>
             <roles>
                 <role>committer</role>
                 <role>PPMC</role>
@@ -355,18 +355,17 @@
             <id>kbhatt</id>
             <name>Keval Bhatt</name>
             <email>kbhatt@apache.org</email>
-            <timezone>+05:30</timezone>
+            <timezone>Asia/Kolkata</timezone>
             <roles>
                 <role>committer</role>
             </roles>
             <organization>Freestone Infotech</organization>
-            <!--<organizationUrl>http://www.hortonworks.com</organizationUrl>-->
         </developer>
         <developer>
             <id>dkantor</id>
             <name>Dave Kantor</name>
             <email>dkantor@apache.org</email>
-            <timezone>-5</timezone>
+            <timezone>America/New_York</timezone>
             <roles>
                 <role>committer</role>
             </roles>
@@ -377,12 +376,21 @@
             <id>darshankumar</id>
             <name>Darshan Kumar</name>
             <email>darshankumar@apache.org</email>
-            <timezone>+05:30</timezone>
+            <timezone>Asia/Kolkata</timezone>
             <roles>
                 <role>committer</role>
             </roles>
             <organization>MPR</organization>
-            <!--<organizationUrl>http://www.ibm.com</organizationUrl>-->
+        </developer>
+        <developer>
+            <id>tbeerbower</id>
+            <name>Tom Beerbower</name>
+            <email>tbeerbower@apache.org</email>
+            <timezone>America/New_York</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization></organization>
         </developer>
     </developers>
 
