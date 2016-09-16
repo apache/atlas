@@ -100,8 +100,6 @@ public class AtlasClient {
     public static final String URI_NAME_LINEAGE = "lineage/hive/table";
     public static final String URI_LINEAGE = "lineage/";
     public static final String URI_TRAITS = "traits";
-    public static final String TRAIT_DEFINITIONS = "traitDefinitions";
-
 
     public static final String QUERY = "query";
     public static final String LIMIT = "limit";
@@ -494,8 +492,6 @@ public class AtlasClient {
         ADD_TRAITS(BASE_URI + URI_ENTITY, HttpMethod.POST, Response.Status.CREATED),
         DELETE_TRAITS(BASE_URI + URI_ENTITY, HttpMethod.DELETE, Response.Status.OK),
         LIST_TRAITS(BASE_URI + URI_ENTITY, HttpMethod.GET, Response.Status.OK),
-        GET_ALL_TRAIT_DEFINITIONS(BASE_URI + URI_ENTITY, HttpMethod.GET, Response.Status.OK),
-        GET_TRAIT_DEFINITION(BASE_URI + URI_ENTITY, HttpMethod.GET, Response.Status.OK),
 
         //Search operations
         SEARCH(BASE_URI + URI_SEARCH, HttpMethod.GET, Response.Status.OK),
@@ -989,33 +985,6 @@ public class AtlasClient {
     public List<String> listTraits(final String guid) throws AtlasServiceException {
         JSONObject jsonResponse = callAPI(API.LIST_TRAITS, null, guid, URI_TRAITS);
         return extractResults(jsonResponse, AtlasClient.RESULTS, new ExtractOperation<String, String>());
-    }
-
-    /**
-     * Get all trait definitions for an entity
-     * @param guid GUID of the entity
-     * @return List<String> trait definitions of the traits associated to the entity
-     * @throws AtlasServiceException
-     */
-    public List<String> listTraitDefinitions(final String guid) throws AtlasServiceException{
-        JSONObject jsonResponse = callAPI(API.GET_ALL_TRAIT_DEFINITIONS, null, guid, TRAIT_DEFINITIONS);
-        return extractResults(jsonResponse, AtlasClient.RESULTS, new ExtractOperation<String, String>());
-    }
-
-    /**
-     * Get trait definition for a given entity and traitname
-     * @param guid GUID of the entity
-     * @param traitname
-     * @return trait definition
-     * @throws AtlasServiceException
-     */
-    public String getTraitDefinition(final String guid, final String traitName) throws AtlasServiceException{
-        JSONObject jsonResponse = callAPI(API.GET_TRAIT_DEFINITION, null, guid, TRAIT_DEFINITIONS, traitName);
-        try {
-            return jsonResponse.getString(AtlasClient.RESULTS);
-        }catch (JSONException e){
-            throw new AtlasServiceException(API.GET_TRAIT_DEFINITION, e);
-        }
     }
 
     protected class ExtractOperation<T, U> {
