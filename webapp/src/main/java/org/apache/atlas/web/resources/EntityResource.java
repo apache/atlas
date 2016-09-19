@@ -25,6 +25,7 @@ import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.services.MetadataService;
+import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.exception.EntityExistsException;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
@@ -632,6 +633,88 @@ public class EntityResource {
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (Throwable e) {
             LOG.error("Unable to get trait names for entity {}", guid, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Fetches the trait definitions of all the traits associated to the given entity
+     * @param guid globally unique identifier for the entity
+     */
+    @GET
+    @Path("{guid}/traitDefinitions")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response getTraitDefinitionsForEntity(@PathParam("guid") String guid){
+        AtlasPerfTracer perf = null;
+        try {
+            if(AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.getTraitDefinitionsForEntity(" + guid + ")");
+            }
+            LOG.debug("Fetching all trait definitions for entity={}", guid);
+            final String entityDefinition = metadataService.getEntityDefinition(guid);
+
+            Referenceable entity = InstanceSerialization.fromJsonReferenceable(entityDefinition, true);
+            JSONArray traits = new JSONArray();
+            for (String traitName : entity.getTraits()) {
+                IStruct trait = entity.getTrait(traitName);
+                traits.put(new JSONObject(InstanceSerialization.toJson(trait, true)));
+            }
+
+            JSONObject response = new JSONObject();
+            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
+            response.put(AtlasClient.RESULTS, traits);
+            response.put(AtlasClient.COUNT, traits.length());
+
+            return Response.ok(response).build();
+        } catch (EntityNotFoundException e){
+            LOG.error("An entity with GUID={} does not exist", guid, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
+        } catch (AtlasException | IllegalArgumentException e) {
+            LOG.error("Unable to get trait definitions for entity {}", guid, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (Throwable e) {
+            LOG.error("Unable to get trait definitions for entity {}", guid, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+
+    }
+
+    /**
+     * Fetches the trait definition for an entity given its guid and trait name
+     *
+     * @param guid globally unique identifier for the entity
+     * @param traitName name of the trait
+     */
+    @GET
+    @Path("{guid}/traitDefinitions/{traitName}")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public Response getTraitDefinitionForEntity(@PathParam("guid") String guid, @PathParam("traitName") String traitName){
+        AtlasPerfTracer perf = null;
+        try {
+            if(AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.getTraitDefinitionForEntity(" + guid + ", " + traitName + ")");
+            }
+            LOG.debug("Fetching trait definition for entity {} and trait name {}", guid, traitName);
+            final IStruct traitDefinition = metadataService.getTraitDefinition(guid, traitName);
+
+            JSONObject response = new JSONObject();
+            response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
+            response.put(AtlasClient.RESULTS, new JSONObject(InstanceSerialization.toJson(traitDefinition, true)));
+
+            return Response.ok(response).build();
+
+        } catch (EntityNotFoundException e){
+            LOG.error("An entity with GUID={} does not exist", guid, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.NOT_FOUND));
+        } catch (AtlasException | IllegalArgumentException e) {
+            LOG.error("Unable to get trait definition for entity {} and trait {}", guid, traitName, e);
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
+        } catch (Throwable e) {
+            LOG.error("Unable to get trait definition for entity {} and trait {}", guid, traitName, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         } finally {
             AtlasPerfTracer.log(perf);

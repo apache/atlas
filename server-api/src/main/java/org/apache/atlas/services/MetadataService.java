@@ -26,6 +26,7 @@ import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
+import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.types.cache.TypeCache;
 import org.codehaus.jettison.json.JSONObject;
 
@@ -213,7 +214,7 @@ public interface MetadataService {
      * @return
      * @throws AtlasException
      */
-    String getTraitDefinition(String guid, String traitName) throws AtlasException;
+    IStruct getTraitDefinition(String guid, String traitName) throws AtlasException;
 
     /**
      * Deletes a given trait from an existing entity represented by a guid.
