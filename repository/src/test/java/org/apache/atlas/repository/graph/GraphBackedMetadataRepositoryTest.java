@@ -188,7 +188,7 @@ public class GraphBackedMetadataRepositoryTest {
 
     private boolean assertEdge(String id, String typeName) throws Exception {
         TitanGraph graph = graphProvider.get();
-        Vertex vertex = graph.query().has(Constants.GUID_PROPERTY_KEY, id).vertices().iterator().next();
+        Vertex vertex = (Vertex)graph.query().has(Constants.GUID_PROPERTY_KEY, id).vertices().iterator().next();
         Iterable<Edge> edges = vertex.getEdges(Direction.OUT, Constants.INTERNAL_PROPERTY_KEY_PREFIX + typeName + ".ref");
         if (!edges.iterator().hasNext()) {
             ITypedReferenceableInstance entity = repositoryService.getEntityDefinition(id);

@@ -33,6 +33,10 @@ import org.apache.atlas.query.Expressions._
 case class GremlinQueryResult(query: String,
                               resultDataType: IDataType[_],
                               rows: List[_]) {
+    def this(query: String,resultDataType: IDataType[_]) {
+      this(query,resultDataType,List.empty)
+    }
+  
     def toJson = JsonHelper.toJson(this)
 }
 
