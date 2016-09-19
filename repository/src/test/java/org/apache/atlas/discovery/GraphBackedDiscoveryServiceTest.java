@@ -368,6 +368,9 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
                 {"Metric", 9},
                 {"PII", 8},
                 {"`Log Data`", 4},
+                // Not sure what the expected rows should be, but since we didn't assign or do anything with the created
+                // I assume it'll be zero
+                {"`isa`", 0},
 
                 /* Lineage queries are fired through ClosureQuery and are tested through HiveLineageJerseyResourceIt in webapp module.
                    Commenting out the below queries since DSL to Gremlin parsing/translation fails with lineage queries when there are array types

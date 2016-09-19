@@ -174,8 +174,11 @@ public class BaseRepositoryTest {
 
         HierarchicalTypeDefinition<TraitType> logTraitDef = TypesUtil.createTraitTypeDef("Log Data", null);
 
+        HierarchicalTypeDefinition<TraitType> isaKeywordTraitDef = TypesUtil.createTraitTypeDef("isa", null);
+
         return TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
-            ImmutableList.of(dimTraitDef, factTraitDef, piiTraitDef, metricTraitDef, etlTraitDef, jdbcTraitDef, logTraitDef),
+            ImmutableList.of(dimTraitDef, factTraitDef, piiTraitDef, metricTraitDef, etlTraitDef, jdbcTraitDef, logTraitDef,
+                    isaKeywordTraitDef),
             ImmutableList.of(dbClsDef, storageDescClsDef, columnClsDef, tblClsDef, loadProcessClsDef, viewClsDef, partClsDef, datasetSubTypeClsDef));
     }
 

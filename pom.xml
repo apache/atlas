@@ -1782,7 +1782,7 @@
                         <exclude>**/users-credentials.properties</exclude>
                         <exclude>**/public/css/animate.min.css</exclude>
                         <exclude>**/public/css/bootstrap-sidebar.css</exclude>
-                        <exclude>**/public/js/require-handlebars-plugin/**</exclude>
+                        <exclude>**/public/js/external_lib/**</exclude>
                         <exclude>**/node_modules/**</exclude>
                         <!-- All the npm plugins are copied here, so exclude it -->
                         <exclude>**/public/js/libs/**</exclude>
