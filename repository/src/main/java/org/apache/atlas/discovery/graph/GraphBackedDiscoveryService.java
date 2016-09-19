@@ -150,8 +150,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
         //If the final limit is 0, don't launch the query, return with 0 rows
         if (validatedExpression instanceof Expressions.LimitExpression
                 && ((Integer)((Expressions.LimitExpression) validatedExpression).limit().rawValue()) == 0) {
-            return new GremlinQueryResult(dslQuery, validatedExpression.dataType(),
-                    scala.collection.immutable.List.empty());
+            return new GremlinQueryResult(dslQuery, validatedExpression.dataType());
         }
 
         GremlinQuery gremlinQuery = new GremlinTranslator(validatedExpression, graphPersistenceStrategy).translate();
