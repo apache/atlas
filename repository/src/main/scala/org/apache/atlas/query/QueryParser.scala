@@ -387,6 +387,7 @@ class QueryLexer(val keywords: Seq[String], val delims: Seq[String]) extends Std
                 | floatConstant ^^ FloatLiteral
                 | dubConstant ^^ DoubleLiteral
                 | identifier ^^ processIdent
+                | quotedIdentifier ^^ Identifier
                 | string ^^ StringLit
                 | EofCh ^^^ EOF
                 | '\'' ~> failure("unclosed string literal")
@@ -398,10 +399,11 @@ class QueryLexer(val keywords: Seq[String], val delims: Seq[String]) extends Std
 
     override def identChar = letter | elem('_')
 
-    def identifier = identChar ~ (identChar | digit).* ^^ { case first ~ rest => (first :: rest).mkString} |
-        '`' ~> chrExcept('`', '\n', EofCh).* <~ '`' ^^ {
-            _ mkString ""
-        }
+    def identifier = identChar ~ (identChar | digit).* ^^ { case first ~ rest => (first :: rest).mkString}
+
+    def quotedIdentifier = '`' ~> chrExcept('`', '\n', EofCh).* <~ '`' ^^ {
+      _ mkString ""
+    }
 
     override def whitespace: Parser[Any] =
         (whitespaceChar
