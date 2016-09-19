@@ -22,7 +22,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Provider;
-
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
@@ -33,7 +32,6 @@ import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.listener.TypesChangeListener;
-import org.apache.atlas.query.QueryKeywords;
 import org.apache.atlas.query.QueryParser;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.RepositoryException;
@@ -77,7 +75,6 @@ import scala.collection.Set;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -701,12 +698,12 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
     }
 
     @Override
-    public String getTraitDefinition(String guid, final String traitName) throws AtlasException {
+    public IStruct getTraitDefinition(String guid, final String traitName) throws AtlasException {
         guid = ParamChecker.notEmpty(guid, "entity id");
 
         final ITypedReferenceableInstance instance = repository.getEntityDefinition(guid);
         IStruct struct = instance.getTrait(traitName);
-        return InstanceSerialization.toJson(struct, true);
+        return struct;
     }
 
     /**

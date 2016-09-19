@@ -269,10 +269,9 @@ public class DefaultMetadataServiceTest {
         assertEquals(traits.get(0), PII);
 
         //getTrait
-        String traitDefinition = metadataService.getTraitDefinition(id, PII);
-        Struct traitResult = InstanceSerialization.fromJsonStruct(traitDefinition, true);
-        Assert.assertNotNull(traitResult);
-        assertEquals(traitResult.getValuesMap().size(), 0);
+        IStruct traitDefinition = metadataService.getTraitDefinition(id, PII);
+        Assert.assertNotNull(traitDefinition);
+        assertEquals(traitDefinition.getValuesMap().size(), 0);
 
         //delete trait
         metadataService.deleteTrait(id, PII);

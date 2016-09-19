@@ -87,6 +87,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     private final String TABLE_NAME = "table" + randomString();
     private static final String ENTITIES = "api/atlas/entities";
     private static final String TRAITS = "traits";
+    private static final String TRAIT_DEFINITION = "traitDefinitions";
 
     private Referenceable tableInstance;
     private Id tableId;
@@ -524,6 +525,37 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
         assertEntityAudit(guid, EntityAuditEvent.EntityAuditAction.TAG_ADD);
+    }
+
+    @Test(dependsOnMethods = "testSubmitEntity")
+    public void testgetTraitDefinitionForEntity() throws Exception{
+        traitName = "PII_Trait" + randomString();
+        HierarchicalTypeDefinition<TraitType> piiTrait =
+                TypesUtil.createTraitTypeDef(traitName, ImmutableSet.<String>of());
+        String traitDefinitionAsJSON = TypesSerialization$.MODULE$.toJson(piiTrait, true);
+        LOG.debug("traitDefinitionAsJSON = " + traitDefinitionAsJSON);
+        createType(traitDefinitionAsJSON);
+
+        Struct traitInstance = new Struct(traitName);
+        String traitInstanceAsJSON = InstanceSerialization.toJson(traitInstance, true);
+        LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
+
+        final String guid = tableId._getId();
+        ClientResponse clientResponse =
+                service.path(ENTITIES).path(guid).path(TRAITS).accept(Servlets.JSON_MEDIA_TYPE)
+                        .type(Servlets.JSON_MEDIA_TYPE)
+                        .method(HttpMethod.POST, ClientResponse.class, traitInstanceAsJSON);
+        Assert.assertEquals(clientResponse.getStatus(), Response.Status.CREATED.getStatusCode());
+
+        Struct traitDef = serviceClient.getTraitDefinition(guid, traitName);
+        System.out.println(traitDef.toString());
+        JSONObject responseAsJSON = new JSONObject(InstanceSerialization.toJson(traitDef, true));
+        Assert.assertEquals(responseAsJSON.get("typeName"), traitName);
+
+
+        List<Struct> allTraitDefs = serviceClient.listTraitDefinitions(guid);
+        System.out.println(allTraitDefs.toString());
+        Assert.assertEquals(allTraitDefs.size(), 9);
     }
 
     @Test(dependsOnMethods = "testAddTrait")
