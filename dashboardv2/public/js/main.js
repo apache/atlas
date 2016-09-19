@@ -48,6 +48,9 @@ require.config({
             deps: ['underscore', 'jquery'],
             exports: 'Backbone'
         },
+        'jquery-ui': {
+            deps: ['jquery'],
+        },
         asBreadcrumbs: {
             deps: ['jquery'],
             exports: 'asBreadcrumbs'
@@ -120,13 +123,14 @@ require.config({
         'tmpl': 'templates',
         'noty': 'libs/noty/js/jquery.noty.packaged.min',
         'requirejs.text': 'libs/requirejs-text/text',
-        'handlebars': 'require-handlebars-plugin/js/handlebars',
-        'json2': 'require-handlebars-plugin/js/json2',
-        'hbs': 'require-handlebars-plugin/js/hbs',
-        'i18nprecompile': 'require-handlebars-plugin/js/i18nprecompile',
+        'handlebars': 'external_lib/require-handlebars-plugin/js/handlebars',
+        'json2': 'external_lib/require-handlebars-plugin/js/json2',
+        'hbs': 'external_lib/require-handlebars-plugin/js/hbs',
+        'i18nprecompile': 'external_lib/require-handlebars-plugin/js/i18nprecompile',
         'dagreD3': 'libs/dagre-d3/dagre-d3.min',
         'select2': 'libs/select2/select2.min',
-        'backgrid-select-all': 'libs/backgrid-select-all/backgrid-select-all.min'
+        'backgrid-select-all': 'libs/backgrid-select-all/backgrid-select-all.min',
+        'jquery-ui': 'external_lib/jquery-ui/jquery-ui.min',
     },
 
     /**

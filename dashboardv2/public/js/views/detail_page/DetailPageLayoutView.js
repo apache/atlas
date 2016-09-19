@@ -142,9 +142,13 @@ define(['require',
                             if (!this.name && collectionJSON[0].values.qualifiedName) {
                                 this.name = collectionJSON[0].values.qualifiedName;
                             }
+                            if (this.name && collectionJSON[0].typeName) {
+                                this.name = this.name + ' (' + collectionJSON[0].typeName + ')';
+                            }
                             if (!this.name && collectionJSON[0].typeName) {
                                 this.name = collectionJSON[0].typeName;
                             }
+
                             if (!this.name && this.id) {
                                 this.name = this.id;
                             }
@@ -153,7 +157,7 @@ define(['require',
                                 this.ui.title.show();
                                 var titleName = '<span>' + this.name + '</span>';
                                 if (this.readOnly) {
-                                    titleName += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i> Deleted</button>'
+                                    titleName += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i> Deleted</button>';
                                 }
                                 this.ui.title.html(titleName);
                             } else {

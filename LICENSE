@@ -232,4 +232,7 @@ WTFPL License.  For details, see 3party-licenses/require-handlebars-plugin-LICEN
 
 This product bundles json2.js (https://github.com/douglascrockford/JSON-js -
 Public Domain license) by Douglas Crockford
+
+This product bundles jQuery-ui.js, which is available under
+MIT License. For details, see 3party-licenses/jQuery-ui-LICENSE
 =======================================================================

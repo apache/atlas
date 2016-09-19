@@ -24,7 +24,8 @@ define(['require',
     'utils/Utils',
     'dagreD3',
     'd3-tip',
-    'utils/Globals'
+    'utils/Globals',
+    'jquery-ui'
 ], function(require, Backbone, LineageLayoutViewtmpl, VLineageList, VEntity, Utils, dagreD3, d3Tip, Globals) {
     'use strict';
 
@@ -64,6 +65,7 @@ define(['require',
                 this.fetchGraphData();
                 this.data = {};
                 this.asyncFetchCounter = 0;
+
             },
             bindEvents: function() {
                 this.listenTo(this.inputCollection, 'reset', function() {
@@ -82,7 +84,15 @@ define(['require',
                 }, this);
             },
             onRender: function() {
+                var that = this;
                 this.$('.fontLoader').show();
+                this.$(".resize-graph").resizable({
+                    handles: ' s',
+                    minHeight: 355,
+                    stop: function(event, ui) {
+                        that.$('svg').height(($(this).height() - 5))
+                    },
+                });
                 this.g = new dagreD3.graphlib.Graph()
                     .setGraph({
                         nodesep: 50,
@@ -114,8 +124,15 @@ define(['require',
                     if (data && data.definition) {
                         if (data.definition.values) {
                             var values = data.definition.values;
-                            obj['label'] = values.name.trunc(20);
+                            obj['label'] = values.name;
+
                             obj['toolTiplabel'] = values.name;
+                            if (data.definition.typeName) {
+                                var temp = obj['label'] + ' (' + data.definition.typeName + ')'
+                                obj['label'] = temp;
+                                obj['toolTiplabel'] = temp;
+                            }
+                            obj['label'] = obj['label'].trunc(18);
                             obj['id'] = data.GUID;
                             if (values.queryText) {
                                 obj['queryText'] = values.queryText;
@@ -176,8 +193,14 @@ define(['require',
                     _.each(uniquNode, function(val, key) {
                         var obj = {};
                         if (vertices[val] && vertices[val].values) {
-                            obj['label'] = vertices[val].values.name.trunc(20);
+                            obj['label'] = vertices[val].values.name;
                             obj['toolTiplabel'] = vertices[val].values.name;
+                            if (vertices[val].values.vertexId && vertices[val].values.vertexId.values && vertices[val].values.vertexId.values.typeName) {
+                                var temp = obj['label'] + ' (' + vertices[val].values.vertexId.values.typeName + ')';
+                                obj['label'] = temp;
+                                obj['toolTiplabel'] = temp;
+                            }
+                            obj['label'] = obj['label'].trunc(18);
                             obj['id'] = val;
                             obj['class'] = "type-TOP";
                             obj['shape'] = "img";
