@@ -36,6 +36,10 @@ import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.audit.HBaseBasedAuditRepository;
 import org.apache.atlas.repository.audit.HBaseTestUtils;
 import org.apache.atlas.repository.graph.GraphProvider;
+import org.apache.atlas.services.AtlasTypeAttributePatch;
+import org.apache.atlas.services.AtlasTypePatch;
+import org.apache.atlas.services.AtlasTypePatch.PatchData;
+import org.apache.atlas.services.DefaultMetadataService;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
@@ -111,7 +115,6 @@ public class DefaultMetadataServiceTest {
     private Referenceable table;
 
     private Id tableId;
-    
     private final String NAME = "name";
 
 
@@ -1092,6 +1095,43 @@ public class DefaultMetadataServiceTest {
     }
 
     @Test
+    public void testPatchFrameworkForTypeUpdate() throws AtlasException, JSONException {
+        String typeName = "test_type_" + RandomStringUtils.randomAlphanumeric(10);
+        HierarchicalTypeDefinition<ClassType> typeDef = TypesUtil.createClassTypeDef(typeName, ImmutableSet.<String>of(),
+                TypesUtil.createUniqueRequiredAttrDef("type_attr1", DataTypes.STRING_TYPE));
+
+        TypesDef typesDef = new TypesDef(typeDef, false);
+        metadataService.createType(TypesSerialization.toJson(typesDef));
+
+        AtlasTypeAttributePatch patch = new AtlasTypeAttributePatch((DefaultMetadataService) metadataService, TypeSystem.getInstance());
+        AttributeDefinition[] attrDefs = new AttributeDefinition[]{
+                new AttributeDefinition("type_attr2", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null),
+                new AttributeDefinition("type_attr3", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null)};
+
+        // Testing add attribute patch
+        AtlasTypePatch.PatchData addAttributePatch = new PatchData("ADD_ATTRIBUTE", typeName, "1.0", "2.0", null, attrDefs);
+        TypesDef newAttrTypesDef = patch.updateTypesDef(typesDef, addAttributePatch);
+        metadataService.updateType(TypesSerialization.toJson(newAttrTypesDef));
+        TypesDef addedTypesDef = TypesSerialization.fromJson(metadataService.getTypeDefinition(typeName));
+
+        // test added attributes and update version to 2.0
+        assertEquals(addedTypesDef.classTypes().head().attributeDefinitions.length, 3);
+        assertEquals(addedTypesDef.classTypes().head().typeVersion, "2.0");
+
+        // Testing update attribute patch
+        AttributeDefinition[] updateAttrDef = new AttributeDefinition[]{
+                new AttributeDefinition("type_attr1", DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, null)};
+        AtlasTypePatch.PatchData updateAttributePatch = new PatchData("UPDATE_ATTRIBUTE", typeName, "2.0", "3.0", null, updateAttrDef);
+        TypesDef updateAttrTypesDef = patch.updateTypesDef(addedTypesDef, updateAttributePatch);
+        metadataService.updateType(TypesSerialization.toJson(updateAttrTypesDef));
+        TypesDef updatedTypesDef = TypesSerialization.fromJson(metadataService.getTypeDefinition(typeName));
+
+        // test update attribute to optional and update version to 3.0
+        assertEquals(updatedTypesDef.classTypes().head().attributeDefinitions[0].multiplicity, Multiplicity.OPTIONAL);
+        assertEquals(updatedTypesDef.classTypes().head().typeVersion, "3.0");
+    }
+
+    @Test
     public void testAuditEventsInvalidParams() throws Exception {
         //entity id can't be null
         try {
@@ -1178,7 +1218,7 @@ public class DefaultMetadataServiceTest {
                 deletedEntities.add(entity.getId()._getId());
             }
         }
-        
+
         public List<String> getDeletedEntities() {
             return deletedEntities;
         }

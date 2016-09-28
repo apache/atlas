@@ -20,6 +20,7 @@ package org.apache.atlas.typesystem.types;
 
 import com.google.common.collect.ImmutableSortedMap;
 
+import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
 
 import java.io.IOException;
@@ -30,12 +31,22 @@ abstract class AbstractDataType<T> implements IDataType<T> {
 
     public final String name;
     public final String description;
-    
+    public final String version;
+
     public AbstractDataType(String name, String description) {
 
         super();
         this.name = name;
         this.description = description;
+        this.version = AtlasConstants.DEFAULT_TYPE_VERSION;
+    }
+
+    public AbstractDataType(String name, String description, String version) {
+
+        super();
+        this.name = name;
+        this.description = description;
+        this.version = version;
     }
 
     protected T convertNull(Multiplicity m) throws AtlasException {
@@ -98,6 +109,11 @@ abstract class AbstractDataType<T> implements IDataType<T> {
     @Override
     public String getDescription() {
         return description;
+    }
+
+    @Override
+    public String getVersion() {
+        return version;
     }
 }
 

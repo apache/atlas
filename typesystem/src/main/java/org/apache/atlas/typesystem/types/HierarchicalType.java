@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.UnmodifiableIterator;
 
+import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.persistence.DownCastStructInstance;
@@ -70,7 +71,12 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
      */
     HierarchicalType(TypeSystem typeSystem, Class<ST> superTypeClass, String name, String description, ImmutableSet<String> superTypes,
             int numFields) {
-        super(name, description);
+        this( typeSystem, superTypeClass, name, description, AtlasConstants.DEFAULT_TYPE_VERSION, superTypes, numFields);
+    }
+
+    HierarchicalType(TypeSystem typeSystem, Class<ST> superTypeClass, String name, String description, String version, ImmutableSet<String> superTypes,
+                     int numFields) {
+        super(name, description, version);
         this.typeSystem = typeSystem;
         this.superTypeClass = superTypeClass;
         this.fieldMapping = null;
@@ -86,7 +92,12 @@ public abstract class HierarchicalType<ST extends HierarchicalType, T> extends A
     }
     HierarchicalType(TypeSystem typeSystem, Class<ST> superTypeClass, String name, String description, ImmutableSet<String> superTypes,
             AttributeInfo... fields) throws AtlasException {
-        super(name, description);
+        this(typeSystem, superTypeClass, name, description, AtlasConstants.DEFAULT_TYPE_VERSION, superTypes, fields);
+    }
+
+    HierarchicalType(TypeSystem typeSystem, Class<ST> superTypeClass, String name, String description, String version, ImmutableSet<String> superTypes,
+                     AttributeInfo... fields) throws AtlasException {
+        super(name, description, version);
         this.typeSystem = typeSystem;
         this.superTypeClass = superTypeClass;
         Pair<FieldMapping, ImmutableMap<String, String>> p = constructFieldMapping(superTypes, fields);

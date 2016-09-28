@@ -20,6 +20,7 @@ package org.apache.atlas.typesystem.types;
 
 import com.google.common.collect.ImmutableSet;
 
+import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IStruct;
 import org.apache.atlas.typesystem.ITypedStruct;
@@ -37,14 +38,23 @@ public class TraitType extends HierarchicalType<TraitType, IStruct>
     private final TypedStructHandler handler;
 
     TraitType(TypeSystem typeSystem, String name, String description, ImmutableSet<String> superTraits, int numFields) {
-        super(typeSystem, TraitType.class, name, description, superTraits, numFields);
+        this(typeSystem, name, description, AtlasConstants.DEFAULT_TYPE_VERSION, superTraits, numFields);
+    }
+
+    TraitType(TypeSystem typeSystem, String name, String description, String version, ImmutableSet<String> superTraits, int numFields) {
+        super(typeSystem, TraitType.class, name, description, version, superTraits, numFields);
         handler = null;
         infoToNameMap = null;
     }
 
     TraitType(TypeSystem typeSystem, String name, String description, ImmutableSet<String> superTraits, AttributeInfo... fields)
     throws AtlasException {
-        super(typeSystem, TraitType.class, name, description, superTraits, fields);
+        this(typeSystem, name, description, AtlasConstants.DEFAULT_TYPE_VERSION, superTraits, fields);
+    }
+
+    TraitType(TypeSystem typeSystem, String name, String description, String version, ImmutableSet<String> superTraits, AttributeInfo... fields)
+            throws AtlasException {
+        super(typeSystem, TraitType.class, name, description, version, superTraits, fields);
         handler = new TypedStructHandler(this);
         infoToNameMap = TypeUtils.buildAttrInfoToNameMap(fieldMapping);
     }

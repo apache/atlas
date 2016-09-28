@@ -19,6 +19,7 @@
 package org.apache.atlas.typesystem.types;
 
 import org.apache.atlas.utils.ParamChecker;
+import org.apache.atlas.AtlasConstants;
 
 import java.util.Arrays;
 
@@ -26,16 +27,22 @@ public final class EnumTypeDefinition {
 
     public final String name;
     public final String description;
+    public final String version;
     public final EnumValue[] enumValues;
 
     public EnumTypeDefinition(String name, EnumValue... enumValues) {
-        this(name, null, enumValues);
+        this(name, null, AtlasConstants.DEFAULT_TYPE_VERSION, enumValues);
     }
 
     public EnumTypeDefinition(String name, String description, EnumValue... enumValues) {
+        this(name, description, AtlasConstants.DEFAULT_TYPE_VERSION, enumValues);
+    }
+
+    public EnumTypeDefinition(String name, String description, String version, EnumValue... enumValues) {
         this.name = ParamChecker.notEmpty(name, "Enum type name");
         this.description = description;
         this.enumValues = ParamChecker.notNullElements(enumValues, "Enum values");
+        this.version = version;
     }
 
     @Override

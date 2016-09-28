@@ -20,6 +20,7 @@ package org.apache.atlas.typesystem.types;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
+import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
 import scala.math.BigInt;
 
@@ -33,11 +34,15 @@ public class EnumType extends AbstractDataType<EnumValue> {
     public final ImmutableMap<Integer, EnumValue> ordinalMap;
 
     protected EnumType(TypeSystem typeSystem, String name, EnumValue... values) {
-       this(typeSystem, name, null, values);
+        this(typeSystem, name, null, values);
     }
 
     protected EnumType(TypeSystem typeSystem, String name, String description, EnumValue... values) {
-        super(name, description);
+        this(typeSystem, name, description, AtlasConstants.DEFAULT_TYPE_VERSION, values);
+    }
+
+    protected EnumType(TypeSystem typeSystem, String name, String description, String version, EnumValue... values) {
+        super(name, description, version);
         this.typeSystem = typeSystem;
         ImmutableMap.Builder<String, EnumValue> b1 = new ImmutableMap.Builder();
         ImmutableMap.Builder<Integer, EnumValue> b2 = new ImmutableMap.Builder();

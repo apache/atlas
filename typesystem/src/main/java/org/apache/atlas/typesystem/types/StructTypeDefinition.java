@@ -18,6 +18,7 @@
 
 package org.apache.atlas.typesystem.types;
 
+import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.utils.ParamChecker;
 
 import java.util.Arrays;
@@ -26,9 +27,15 @@ public class StructTypeDefinition {
 
     public final String typeName;
     public final String typeDescription;//optional field
+    public final String typeVersion;
     public final AttributeDefinition[] attributeDefinitions;
 
     protected StructTypeDefinition(String typeName, String typeDescription, boolean validate,
+                                   AttributeDefinition... attributeDefinitions) {
+        this(typeName, typeDescription, AtlasConstants.DEFAULT_TYPE_VERSION, validate, attributeDefinitions);
+    }
+
+    protected StructTypeDefinition(String typeName, String typeDescription, String typeVersion, boolean validate,
                                    AttributeDefinition... attributeDefinitions) {
         this.typeName = ParamChecker.notEmpty(typeName, "Struct type name");
         this.typeDescription = typeDescription;
@@ -36,18 +43,28 @@ public class StructTypeDefinition {
             ParamChecker.notNullElements(attributeDefinitions, "Attribute definitions");
         }
         this.attributeDefinitions = attributeDefinitions;
+        this.typeVersion = typeVersion;
     }
 
     public StructTypeDefinition(String typeName, AttributeDefinition[] attributeDefinitions) {
-        this(typeName, null, attributeDefinitions);
+        this(typeName, null, AtlasConstants.DEFAULT_TYPE_VERSION,  attributeDefinitions);
     }
 
     public StructTypeDefinition(String typeName, String typeDescription,
         AttributeDefinition[] attributeDefinitions) {
+
+        this(typeName, typeDescription, AtlasConstants.DEFAULT_TYPE_VERSION,  attributeDefinitions);
+    }
+
+    public StructTypeDefinition(String typeName, String typeDescription, String typeVersion,
+                                AttributeDefinition[] attributeDefinitions) {
         this.typeName = ParamChecker.notEmpty(typeName, "Struct type name");
         this.typeDescription = typeDescription;
+        this.typeVersion = typeVersion;
         this.attributeDefinitions = ParamChecker.notNullElements(attributeDefinitions, "Attribute definitions");
     }
+
+
 
     @Override
     public boolean equals(Object o) {

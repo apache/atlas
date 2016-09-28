@@ -21,6 +21,7 @@ package org.apache.atlas.typesystem.json
 import java.text.SimpleDateFormat
 import com.google.common.collect.ImmutableList
 import org.apache.atlas.AtlasException
+import org.apache.atlas.AtlasConstants
 import org.apache.atlas.typesystem.TypesDef
 import org.apache.atlas.typesystem.types.DataTypes.{ArrayType, MapType, TypeCategory}
 import org.apache.atlas.typesystem.types._
@@ -131,28 +132,28 @@ object TypesSerialization {
 
     private def convertEnumTypeToEnumTypeDef(et: EnumType) = {
         val eVals: Seq[EnumValue] = et.valueMap.values().toSeq
-        new EnumTypeDefinition(et.name, et.description, eVals: _*)
+        new EnumTypeDefinition(et.name, et.description, et.version, eVals: _*)
     }
 
     private def convertStructTypeToStructDef(st: StructType): StructTypeDefinition = {
 
         val aDefs: Iterable[AttributeDefinition] =
             st.fieldMapping.fields.values().map(convertAttributeInfoToAttributeDef(_))
-        new StructTypeDefinition(st.name, st.description, aDefs.toArray)
+        new StructTypeDefinition(st.name, st.description, st.version, aDefs.toArray)
     }
 
     private def convertTraitTypeToHierarchicalTypeDefinition(tt: TraitType): HierarchicalTypeDefinition[TraitType] = {
 
         val aDefs: Iterable[AttributeDefinition] =
             tt.immediateAttrs.map(convertAttributeInfoToAttributeDef(_))
-        new HierarchicalTypeDefinition[TraitType](classOf[TraitType], tt.name, tt.description, tt.superTypes, aDefs.toArray)
+        new HierarchicalTypeDefinition[TraitType](classOf[TraitType], tt.name, tt.description, tt.version, tt.superTypes, aDefs.toArray)
     }
 
     private def convertClassTypeToHierarchicalTypeDefinition(tt: ClassType): HierarchicalTypeDefinition[ClassType] = {
 
         val aDefs: Iterable[AttributeDefinition] =
             tt.immediateAttrs.map(convertAttributeInfoToAttributeDef(_))
-        new HierarchicalTypeDefinition[ClassType](classOf[ClassType], tt.name, tt.description, tt.superTypes, aDefs.toArray)
+        new HierarchicalTypeDefinition[ClassType](classOf[ClassType], tt.name, tt.description, tt.version, tt.superTypes, aDefs.toArray)
     }
 
     def convertToTypesDef(ts: TypeSystem, export: IDataType[_] => Boolean): TypesDef = {
@@ -229,25 +230,35 @@ trait TypeHelpers {
     HierarchicalTypeDefinition[TraitType] = {
         createTraitTypeDef(name, None, superTypes, attrDefs:_*)
     }
-    
+
     def createTraitTypeDef(name: String, description: Option[String], superTypes: Seq[String], attrDefs: AttributeDefinition*):
     HierarchicalTypeDefinition[TraitType] = {
-        val sts = ImmutableSet.copyOf(superTypes.toArray)
-        return new HierarchicalTypeDefinition[TraitType](classOf[TraitType], name, description.getOrElse(null),
-            sts, attrDefs.toArray)
+        createTraitTypeDef(name, None, AtlasConstants.DEFAULT_TYPE_VERSION, superTypes, attrDefs:_*)
+    }
+
+    def createTraitTypeDef(name: String, description: Option[String], version: String,superTypes: Seq[String], attrDefs: AttributeDefinition*):
+    HierarchicalTypeDefinition[TraitType] = {
+      val sts = ImmutableSet.copyOf(superTypes.toArray)
+      return new HierarchicalTypeDefinition[TraitType](classOf[TraitType], name, description.getOrElse(null),
+        sts, attrDefs.toArray)
     }
 
     def createClassTypeDef(name: String, superTypes: Seq[String], attrDefs: AttributeDefinition*):
     HierarchicalTypeDefinition[ClassType] = {
          createClassTypeDef( name, None, superTypes, attrDefs:_*)
     }
-    
+
     def createClassTypeDef(name: String, description: Option[String], superTypes: Seq[String], attrDefs: AttributeDefinition*):
     HierarchicalTypeDefinition[ClassType] = {
-        val sts = ImmutableSet.copyOf(superTypes.toArray)
-        return new HierarchicalTypeDefinition[ClassType](classOf[ClassType], name, description.getOrElse(null),
-            sts, attrDefs.toArray)
+      createClassTypeDef( name, None, None, superTypes, attrDefs:_*)
     }
+
+    def createClassTypeDef(name: String, description: Option[String], version: Option[String], superTypes: Seq[String], attrDefs: AttributeDefinition*):
+    HierarchicalTypeDefinition[ClassType] = {
+      val sts = ImmutableSet.copyOf(superTypes.toArray)
+      return new HierarchicalTypeDefinition[ClassType](classOf[ClassType], name, description.getOrElse(null), AtlasConstants.DEFAULT_TYPE_VERSION, sts, attrDefs.toArray)
+    }
+
 
     @throws(classOf[AtlasException])
     def defineClassType(ts: TypeSystem, classDef: HierarchicalTypeDefinition[ClassType]): ClassType = {

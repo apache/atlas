@@ -153,6 +153,8 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
             restoreTypeSystem();
         }
 
+        AtlasPatchHandler.handlePatches(this, typeSystem);
+
         maxAuditResults = configuration.getShort(CONFIG_MAX_AUDIT_RESULTS, DEFAULT_MAX_AUDIT_RESULTS);
     }
 

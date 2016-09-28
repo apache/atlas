@@ -21,34 +21,41 @@ package org.apache.atlas.typesystem.types;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
+import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.classification.InterfaceAudience;
+import org.apache.atlas.utils.ParamChecker;
 
 public class HierarchicalTypeDefinition<T extends HierarchicalType> extends StructTypeDefinition {
 
     public final ImmutableSet<String> superTypes;
     public final String hierarchicalMetaTypeName;
 
-    /**
-     * Used for json deserialization only.
-     * not intended public consumption
-     * @param hierarchicalMetaTypeName
-     * @param typeName
-     * @param typeDescription
-     * @param superTypes
-     * @param attributeDefinitions
-     * @throws ClassNotFoundException
-     */
-    @InterfaceAudience.Private
-    public HierarchicalTypeDefinition(String hierarchicalMetaTypeName, String typeName, String typeDescription, String[] superTypes,
-            AttributeDefinition[] attributeDefinitions) throws ClassNotFoundException {
-        this((Class<T>) Class.forName(hierarchicalMetaTypeName), typeName, typeDescription, ImmutableSet.copyOf(superTypes),
+    public HierarchicalTypeDefinition(Class<T> hierarchicalMetaType, String typeName, String typeDescription, ImmutableSet<String> superTypes,
+            AttributeDefinition[] attributeDefinitions) {
+        this(hierarchicalMetaType, typeName, typeDescription, AtlasConstants.DEFAULT_TYPE_VERSION, superTypes,
                 attributeDefinitions);
     }
 
-    public HierarchicalTypeDefinition(Class<T> hierarchicalMetaType, String typeName, String typeDescription, ImmutableSet<String> superTypes,
-        AttributeDefinition[] attributeDefinitions) {
-        super(typeName, typeDescription, false, attributeDefinitions);
-        hierarchicalMetaTypeName = hierarchicalMetaType.getName();
+    // Used only for de-serializing JSON String to typedef.
+    public HierarchicalTypeDefinition( String hierarchicalMetaTypeName, String typeName, String typeDescription, String typeVersion, String[] superTypes, AttributeDefinition[] attributeDefinitions) throws ClassNotFoundException {
+        this((Class<T>) Class.forName(hierarchicalMetaTypeName), typeName, typeDescription, typeVersion, ImmutableSet.copyOf(superTypes), attributeDefinitions);
+    }
+    // Used only for de-serializing JSON String to typedef (no typeVersion).
+    public HierarchicalTypeDefinition( String hierarchicalMetaTypeName, String typeName, String typeDescription, String[] superTypes, AttributeDefinition[] attributeDefinitions) throws ClassNotFoundException {
+        this((Class<T>) Class.forName(hierarchicalMetaTypeName), typeName, typeDescription, AtlasConstants.DEFAULT_TYPE_VERSION, ImmutableSet.copyOf(superTypes), attributeDefinitions);
+    }
+    // Used only for serializing typedef to JSON String.
+    public HierarchicalTypeDefinition( String hierarchicalMetaTypeName, String typeName, String typeDescription, String typeVersion, ImmutableSet<String> superTypes, AttributeDefinition[] attributeDefinitions, String typeDef) throws ClassNotFoundException {
+        this((Class<T>) Class.forName(hierarchicalMetaTypeName), typeName, typeDescription, typeVersion, superTypes, attributeDefinitions);
+    }
+    // Used only for serializing typedef to JSON String (no typeVersion).
+    public HierarchicalTypeDefinition( String hierarchicalMetaTypeName, String typeName, String typeDescription, ImmutableSet<String> superTypes, AttributeDefinition[] attributeDefinitions, String typeDef) throws ClassNotFoundException {
+        this((Class<T>) Class.forName(hierarchicalMetaTypeName), typeName, typeDescription, AtlasConstants.DEFAULT_TYPE_VERSION, superTypes, attributeDefinitions);
+    }
+
+    public HierarchicalTypeDefinition(Class<T> hierarchicalMetaType, String typeName, String typeDescription, String typeVersion, ImmutableSet<String> superTypes, AttributeDefinition[] attributeDefinitions) {
+        super(typeName, typeDescription, typeVersion, false, attributeDefinitions);
+        this.hierarchicalMetaTypeName = hierarchicalMetaType.getName();
         this.superTypes = superTypes == null ? ImmutableSet.<String>of() : superTypes;
     }
 

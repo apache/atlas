@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.IReferenceableInstance;
 import org.apache.atlas.typesystem.IStruct;
@@ -51,13 +52,22 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
     public final Map<AttributeInfo, List<String>> infoToNameMap;
 
     ClassType(TypeSystem typeSystem, String name, String description, ImmutableSet<String> superTypes, int numFields) {
-        super(typeSystem, ClassType.class, name, description, superTypes, numFields);
+        this(typeSystem, name, description, AtlasConstants.DEFAULT_TYPE_VERSION, superTypes, numFields);
+    }
+
+    ClassType(TypeSystem typeSystem, String name, String description, String version, ImmutableSet<String> superTypes, int numFields) {
+        super(typeSystem, ClassType.class, name, description, version, superTypes, numFields);
         infoToNameMap = null;
     }
 
     ClassType(TypeSystem typeSystem, String name, String description, ImmutableSet<String> superTypes, AttributeInfo... fields)
     throws AtlasException {
-        super(typeSystem, ClassType.class, name, description, superTypes, fields);
+        this(typeSystem, name, description, AtlasConstants.DEFAULT_TYPE_VERSION, superTypes, fields);
+    }
+
+    ClassType(TypeSystem typeSystem, String name, String description, String version, ImmutableSet<String> superTypes, AttributeInfo... fields)
+            throws AtlasException {
+        super(typeSystem, ClassType.class, name, description, version, superTypes, fields);
         infoToNameMap = TypeUtils.buildAttrInfoToNameMap(fieldMapping);
     }
 

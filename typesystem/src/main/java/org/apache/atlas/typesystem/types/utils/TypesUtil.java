@@ -33,6 +33,7 @@ import org.apache.atlas.typesystem.types.IDataType;
 import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
+import org.apache.atlas.AtlasConstants;
 
 import org.apache.atlas.typesystem.types.TypeSystem;
 import scala.collection.JavaConversions;
@@ -76,6 +77,11 @@ public class TypesUtil {
 
     public static HierarchicalTypeDefinition<TraitType> createTraitTypeDef(String name, String description,
         ImmutableSet<String> superTypes, AttributeDefinition... attrDefs) {
+        return createTraitTypeDef(name, description, AtlasConstants.DEFAULT_TYPE_VERSION, superTypes, attrDefs);
+    }
+
+    public static HierarchicalTypeDefinition<TraitType> createTraitTypeDef(String name, String description, String version,
+        ImmutableSet<String> superTypes, AttributeDefinition... attrDefs) {
         return new HierarchicalTypeDefinition<>(TraitType.class, name, description, superTypes, attrDefs);
     }
 
@@ -93,6 +99,11 @@ public class TypesUtil {
     }
 
     public static HierarchicalTypeDefinition<ClassType> createClassTypeDef(String name, String description,
+        ImmutableSet<String> superTypes, AttributeDefinition... attrDefs) {
+        return createClassTypeDef(name, description, AtlasConstants.DEFAULT_TYPE_VERSION, superTypes, attrDefs);
+    }
+
+    public static HierarchicalTypeDefinition<ClassType> createClassTypeDef(String name, String description, String version,
         ImmutableSet<String> superTypes, AttributeDefinition... attrDefs) {
         return new HierarchicalTypeDefinition<>(ClassType.class, name, description, superTypes, attrDefs);
     }
