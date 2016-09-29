@@ -354,7 +354,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
         var li = "";
         if (options.urlList) {
             _.each(options.urlList, function(object) {
-                li += '<li><a href="javascript:void(0)" class="link" data-href="/api/atlas/v1/taxonomies/' + object.href + '">' + object.value + '</a></li>';
+                li += '<li><a class="link" href="#!/taxonomy/detailCatalog/api/atlas/v1/taxonomies/' + object.href + '?load=true">' + object.value + '</a></li>';
             });
         }
         if (options.scope) {
@@ -363,29 +363,27 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
             options.scope.asBreadcrumbs({
                 namespace: 'breadcrumb',
                 overflow: "left",
-                dropicon: "fa fa-ellipsis-h",
                 responsive: false,
-                dropdown: function() {
-                    return '<div class=\"dropdown\">' +
-                        '<a href=\"javascript:void(0);\" class=\"' + this.namespace + '-toggle\" data-toggle=\"dropdown\"><i class=\"' + this.dropicon + '\"</i></a>' +
-                        '<ul class=\"' + this.namespace + '-menu dropdown-menu popover popoverTerm bottom arrowPosition \" ><div class="arrow"></div></ul>' +
-                        '</div>';
-                },
-                dropdownContent: function(a) {
-                    return '<li><a class="link" href="javascript:void(0)" data-href="' + a.find('a').data('href') + '" class="dropdown-item">' + a.text() + "</a></li>";
+                toggleIconClass: 'fa fa-ellipsis-h',
+                dropdown: function(classes) {
+                    const dropdownClass = 'dropdown';
+                    let dropdownMenuClass = 'dropdown-menu popover popoverTerm bottom arrowPosition';
+
+                    if (this.options.overflow === 'right') {
+                        dropdownMenuClass += ' dropdown-menu-right';
+                    }
+
+                    return `<li class="${dropdownClass} ${classes.dropdownClass}">
+                              <a href="javascript:void(0);" class="${classes.toggleClass}" data-toggle="dropdown">
+                                <i class="${classes.toggleIconClass}"></i>
+                              </a>
+                              <ul class="${dropdownMenuClass} ${classes.dropdownMenuClass}">
+                                <div class="arrow"></div>
+                              </ul>
+                            </li>`;
                 }
             });
         }
-        options.scope.find('li a.link').click(function() {
-            Utils.setUrl({
-                url: "#!/taxonomy/detailCatalog" + $(this).data('href') + "?load=true",
-                mergeBrowserUrl: false,
-                trigger: true,
-                updateTabState: function() {
-                    return { taxonomyUrl: this.url, stateChanged: false };
-                }
-            });
-        });
     }
     CommonViewFunction.termTableBreadcrumbMaker = function(model) {
         var traits = model.get('$traits$'),

@@ -19,21 +19,6 @@
 define(['require', 'backgrid', 'asBreadcrumbs'], function(require) {
     'use strict';
 
-    $.asBreadcrumbs.prototype.generateChildrenInfo = function() {
-        var self = this;
-        this.$children.each(function() {
-            var $this = $(this);
-            self.childrenInfo.push({
-                $this: $this,
-                outerWidth: $this.outerWidth(),
-                $content: $(self.options.dropdownContent($this))
-            });
-        });
-        if (this.options.overflow === "left") {
-            this.childrenInfo.reverse();
-        }
-        this.childrenLength = this.childrenInfo.length;
-    };
     String.prototype.trunc = String.prototype.trunc ||
         function(n) {
             return (this.length > n) ? this.substr(0, n - 1) + '...' : this;
