@@ -23,6 +23,8 @@ import org.apache.atlas.TestUtils;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.typesystem.types.TypeSystem;
+import org.apache.atlas.typesystem.types.TypeUtils;
+import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -55,17 +57,6 @@ public class ReservedTypesRegistrarTest {
     }
 
     @Test
-    public void testRegisterFirstChecksClassTypeIsRegistered() throws AtlasException {
-        ReservedTypesRegistrar reservedTypesRegistrar = new ReservedTypesRegistrar();
-        TypesDef typesDef = TestUtils.defineHiveTypes();
-        String typesJson = TypesSerialization.toJson(typesDef);
-        reservedTypesRegistrar.registerType(typeSystem, metadataService, "/some/file/model.json", typesJson);
-        InOrder inOrder = inOrder(typeSystem, metadataService);
-        inOrder.verify(typeSystem).isRegistered(typesDef.classTypesAsJavaList().get(0).typeName);
-        inOrder.verify(metadataService).createType(typesJson);
-    }
-
-    @Test
     public void testRegisterCreatesTypesUsingMetadataService() throws AtlasException {
         ReservedTypesRegistrar reservedTypesRegistrar = new ReservedTypesRegistrar();
         TypesDef typesDef = TestUtils.defineHiveTypes();
@@ -90,12 +81,23 @@ public class ReservedTypesRegistrarTest {
     }
 
     @Test
-    public void testShouldNotRegisterIfTypeIsAlreadyRegistered() throws AtlasException {
+    public void testCreateAndUpdateType() throws AtlasException{
         ReservedTypesRegistrar reservedTypesRegistrar = new ReservedTypesRegistrar();
-        TypesDef typesDef = TestUtils.defineHiveTypes();
+        TypesDef typesDef = TestUtils.simpleType();
         String typesJson = TypesSerialization.toJson(typesDef);
-        when(typeSystem.isRegistered(typesDef.classTypesAsJavaList().get(0).typeName)).thenReturn(true);
         reservedTypesRegistrar.registerType(typeSystem, metadataService, "/some/file/model.json", typesJson);
-        verifyZeroInteractions(metadataService);
+        verify(metadataService).createType(typesJson);
+
+        //test update simple type
+        TypesDef updatedTypesDef = TestUtils.simpleTypeUpdated();
+        String updatedTypesJson = TypesSerialization.toJson(updatedTypesDef);
+        TypesDef simpleTypeUpdatedDiff = TestUtils.simpleTypeUpdatedDiff();
+        String simpleTypeUpdatedDiffJson = TypesSerialization.toJson(simpleTypeUpdatedDiff);
+        when(typeSystem.isRegistered("h_type")).thenReturn(true);
+        when(typeSystem.isRegistered("t_type")).thenReturn(true);
+        when(typeSystem.isRegistered("s_type")).thenReturn(true);
+        when(typeSystem.isRegistered("e_type")).thenReturn(true);
+        reservedTypesRegistrar.registerType(typeSystem, metadataService, "/some/file/model.json", updatedTypesJson);
+        verify(metadataService).createType(simpleTypeUpdatedDiffJson);
     }
 }

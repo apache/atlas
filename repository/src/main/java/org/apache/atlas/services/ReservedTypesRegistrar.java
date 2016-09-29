@@ -18,12 +18,12 @@
 
 package org.apache.atlas.services;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.TypesSerialization;
-import org.apache.atlas.typesystem.types.ClassType;
-import org.apache.atlas.typesystem.types.HierarchicalTypeDefinition;
-import org.apache.atlas.typesystem.types.TypeSystem;
+import org.apache.atlas.typesystem.types.*;
+import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,8 +31,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 
 public class ReservedTypesRegistrar implements IBootstrapTypesRegistrar {
 
@@ -81,13 +83,46 @@ public class ReservedTypesRegistrar implements IBootstrapTypesRegistrar {
             LOG.error("Error while deserializing JSON in {}", typeDefName);
             throw new ReservedTypesRegistrationException("Error while deserializing JSON in " + typeDefName, e);
         }
-        HierarchicalTypeDefinition<ClassType> classDef = typesDef.classTypesAsJavaList().get(0);
-        if (!typeSystem.isRegistered(classDef.typeName)) {
-            metadataService.createType(typeDefJSON);
-            LOG.info("Registered types in {}", typeDefName);
-        } else {
-            LOG.warn("class {} already registered, ignoring types in {}", classDef.typeName,
-                    typeDefName);
+        List<HierarchicalTypeDefinition<ClassType>> createClassDefList = new ArrayList<>();
+        List<HierarchicalTypeDefinition<TraitType>> createTraitDefList = new ArrayList<>();
+        List<EnumTypeDefinition> createEnumDefList = new ArrayList<>();
+        List<StructTypeDefinition> createStructDefList = new ArrayList<>();
+
+        for(HierarchicalTypeDefinition<ClassType> classTypeDef:typesDef.classTypesAsJavaList()){
+            if(!typeSystem.isRegistered(classTypeDef.typeName)){
+                LOG.debug("ClassType {} is not registered. Adding to create type list", classTypeDef.typeName);
+                createClassDefList.add(classTypeDef);
+            }
+        }
+
+        for(HierarchicalTypeDefinition<TraitType> traitTypeDef:typesDef.traitTypesAsJavaList()){
+            if(!typeSystem.isRegistered(traitTypeDef.typeName)){
+                LOG.debug("TraitType {} is not registered. Adding to create type list", traitTypeDef.typeName);
+                createTraitDefList.add(traitTypeDef);
+            }
+        }
+
+        for(StructTypeDefinition structTypeDef:typesDef.structTypesAsJavaList()){
+            if(!typeSystem.isRegistered(structTypeDef.typeName)){
+                LOG.debug("StructType {} is not registered. Adding to create type list", structTypeDef.typeName);
+                createStructDefList.add(structTypeDef);
+            }
+        }
+
+        for(EnumTypeDefinition enumTypeDef:typesDef.enumTypesAsJavaList()){
+            if(!typeSystem.isRegistered(enumTypeDef.name)){
+                LOG.debug("EnumType {} is not registered. Adding to create type list", enumTypeDef.name);
+                createEnumDefList.add(enumTypeDef);
+            }
+        }
+
+        TypesDef createTypes = TypesUtil.getTypesDef(ImmutableList.copyOf(createEnumDefList), ImmutableList.copyOf(createStructDefList),
+                ImmutableList.copyOf(createTraitDefList), ImmutableList.copyOf(createClassDefList));
+
+        String createTypeJSON = TypesSerialization.toJson(createTypes);
+        if(createTypeJSON != null) {
+            metadataService.createType(createTypeJSON);
+            LOG.info("Created types definition JSON {}", createTypeJSON);
         }
     }
 }

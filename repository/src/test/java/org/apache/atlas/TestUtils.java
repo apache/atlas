@@ -239,6 +239,55 @@ public final class TestUtils {
 
     public static final String NAME = "name";
 
+    public static TypesDef simpleType(){
+        HierarchicalTypeDefinition<ClassType> superTypeDefinition =
+                createClassTypeDef("h_type", ImmutableSet.<String>of(),
+                        createOptionalAttrDef("attr", DataTypes.STRING_TYPE));
+
+        StructTypeDefinition structTypeDefinition = new StructTypeDefinition("s_type", "structType",
+                new AttributeDefinition[]{createRequiredAttrDef("name", DataTypes.STRING_TYPE)});
+
+        HierarchicalTypeDefinition<TraitType> traitTypeDefinition =
+                createTraitTypeDef("t_type", "traitType", ImmutableSet.<String>of());
+
+        EnumValue values[] = {new EnumValue("ONE", 1),};
+
+        EnumTypeDefinition enumTypeDefinition = new EnumTypeDefinition("e_type", "enumType", values);
+        return TypesUtil.getTypesDef(ImmutableList.of(enumTypeDefinition), ImmutableList.of(structTypeDefinition),
+                ImmutableList.of(traitTypeDefinition), ImmutableList.of(superTypeDefinition));
+    }
+
+    public static TypesDef simpleTypeUpdated(){
+        HierarchicalTypeDefinition<ClassType> superTypeDefinition =
+                createClassTypeDef("h_type", ImmutableSet.<String>of(),
+                        createOptionalAttrDef("attr", DataTypes.STRING_TYPE));
+
+        HierarchicalTypeDefinition<ClassType> newSuperTypeDefinition =
+                createClassTypeDef("new_h_type", ImmutableSet.<String>of(),
+                        createOptionalAttrDef("attr", DataTypes.STRING_TYPE));
+
+        StructTypeDefinition structTypeDefinition = new StructTypeDefinition("s_type", "structType",
+                new AttributeDefinition[]{createRequiredAttrDef("name", DataTypes.STRING_TYPE)});
+
+        HierarchicalTypeDefinition<TraitType> traitTypeDefinition =
+                createTraitTypeDef("t_type", "traitType", ImmutableSet.<String>of());
+
+        EnumValue values[] = {new EnumValue("ONE", 1),};
+
+        EnumTypeDefinition enumTypeDefinition = new EnumTypeDefinition("e_type", "enumType", values);
+        return TypesUtil.getTypesDef(ImmutableList.of(enumTypeDefinition), ImmutableList.of(structTypeDefinition),
+                ImmutableList.of(traitTypeDefinition), ImmutableList.of(superTypeDefinition, newSuperTypeDefinition));
+    }
+
+    public static TypesDef simpleTypeUpdatedDiff() {
+        HierarchicalTypeDefinition<ClassType> newSuperTypeDefinition =
+                createClassTypeDef("new_h_type", ImmutableSet.<String>of(),
+                        createOptionalAttrDef("attr", DataTypes.STRING_TYPE));
+
+        return TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
+                ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(), ImmutableList.of(newSuperTypeDefinition));
+    }
+
     public static TypesDef defineHiveTypes() {
         String _description = "_description";
         HierarchicalTypeDefinition<ClassType> superTypeDefinition =
