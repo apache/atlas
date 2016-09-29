@@ -368,6 +368,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                 dropdown: function(classes) {
                     var dropdownClass = 'dropdown';
                     var dropdownMenuClass = 'dropdown-menu popover popoverTerm bottom arrowPosition';
+
                     if (this.options.overflow === 'right') {
                         dropdownMenuClass += ' dropdown-menu-right';
                     }
