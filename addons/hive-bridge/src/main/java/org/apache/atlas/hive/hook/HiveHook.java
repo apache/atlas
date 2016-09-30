@@ -24,6 +24,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
+import org.apache.atlas.hive.bridge.ColumnLineageUtils;
 import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.hook.AtlasHook;
@@ -39,6 +40,7 @@ import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.ql.QueryPlan;
 import org.apache.hadoop.hive.ql.exec.ExplainTask;
 import org.apache.hadoop.hive.ql.exec.Task;
+import org.apache.hadoop.hive.ql.hooks.*;
 import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.hooks.Entity.Type;
 import org.apache.hadoop.hive.ql.hooks.ExecuteWithHookContext;
@@ -54,6 +56,7 @@ import org.apache.hadoop.util.ShutdownHookManager;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -182,6 +185,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             event.setQueryStr(hookContext.getQueryPlan().getQueryStr());
             event.setQueryStartTime(hookContext.getQueryPlan().getQueryStartTime());
             event.setQueryType(hookContext.getQueryPlan().getQueryPlan().getQueryType());
+            event.setLineageInfo(hookContext.getLinfo());
 
             if (executor == null) {
                 fireAndForget(event);
@@ -616,7 +620,21 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
             if (source.size() > 0 || target.size() > 0) {
                 Referenceable processReferenceable = getProcessReferenceable(dgiBridge, event, sortedHiveInputs, sortedHiveOutputs, source, target);
-                entities.add(processReferenceable);
+                // setup Column Lineage
+                List<Referenceable> sourceList = new ArrayList<>(source.values());
+                List<Referenceable> targetList = new ArrayList<>(target.values());
+                List<Referenceable> colLineageProcessInstances = new ArrayList<>();
+                try {
+                    Map<String, Referenceable> columnQNameToRef =
+                            ColumnLineageUtils.buildColumnReferenceableMap(sourceList, targetList);
+                    colLineageProcessInstances = createColumnLineageProcessInstances(processReferenceable,
+                            event.lineageInfo,
+                            columnQNameToRef);
+                }catch (Exception e){
+                    LOG.warn("Column lineage process setup failed with exception {}", e);
+                }
+                colLineageProcessInstances.add(0, processReferenceable);
+                entities.addAll(colLineageProcessInstances);
                 event.addMessage(new HookNotification.EntityUpdateRequest(event.getUser(), new ArrayList<>(entities)));
             } else {
                 LOG.info("Skipped query {} since it has no getInputs() or resulting getOutputs()", event.getQueryStr());
@@ -771,6 +789,51 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         processReferenceable.set("endTime", new Date(System.currentTimeMillis()));
         //TODO set queryGraph
         return processReferenceable;
+    }
+
+
+    private List<Referenceable> createColumnLineageProcessInstances(
+            Referenceable processRefObj,
+            Map<String, List<ColumnLineageUtils.HiveColumnLineageInfo>> lineageInfo,
+            Map<String, Referenceable> columnQNameToRef
+    ) {
+        List<Referenceable> l = new ArrayList<>();
+        for(Map.Entry<String, List<ColumnLineageUtils.HiveColumnLineageInfo>> e :
+                lineageInfo.entrySet()) {
+            Referenceable destCol = columnQNameToRef.get(e.getKey());
+            if (destCol == null ) {
+                LOG.debug("Couldn't find output Column {}", e.getKey());
+                continue;
+            }
+            List<Referenceable> outRef = new ArrayList<>();
+            outRef.add(destCol);
+            List<Referenceable> inputRefs = new ArrayList<>();
+            for(ColumnLineageUtils.HiveColumnLineageInfo cLI : e.getValue()) {
+                Referenceable srcCol = columnQNameToRef.get(cLI.inputColumn);
+                if (srcCol == null ) {
+                    LOG.debug("Couldn't find input Column {}", cLI.inputColumn);
+                    continue;
+                }
+                inputRefs.add(srcCol);
+            }
+
+            if (inputRefs.size() > 0 ) {
+                Referenceable r = new Referenceable(HiveDataTypes.HIVE_COLUMN_LINEAGE.getName());
+                r.set("name", processRefObj.get(AtlasClient.NAME) + ":" + outRef.get(0).get(AtlasClient.NAME));
+                r.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, processRefObj.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME) + ":" + outRef.get(0).get(AtlasClient.NAME));
+                r.set("inputs", inputRefs);
+                r.set("outputs", outRef);
+                r.set("query", processRefObj);
+                r.set("depenendencyType", e.getValue().get(0).depenendencyType);
+                r.set("expression", e.getValue().get(0).expr);
+                l.add(r);
+            }
+            else{
+                LOG.debug("No input references found for lineage of column {}", destCol.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME));
+            }
+        }
+
+        return l;
     }
 
     @VisibleForTesting
@@ -930,6 +993,8 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         private String queryStr;
         private Long queryStartTime;
 
+        public Map<String, List<ColumnLineageUtils.HiveColumnLineageInfo>> lineageInfo;
+
         private List<HookNotification.HookNotificationMessage> messages = new ArrayList<>();
 
         private String queryType;
@@ -976,6 +1041,15 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
         public void setQueryType(String queryType) {
             this.queryType = queryType;
+        }
+
+        public void setLineageInfo(LineageInfo lineageInfo){
+            try {
+                this.lineageInfo = ColumnLineageUtils.buildLineageMap(lineageInfo);
+                LOG.debug("Column Lineage Map => {} ", this.lineageInfo.entrySet());
+            }catch (Exception e){
+                LOG.warn("Column Lineage Map build failed with exception {}", e);
+            }
         }
 
         public Set<ReadEntity> getInputs() {

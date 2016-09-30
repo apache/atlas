@@ -45,6 +45,7 @@ import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
@@ -54,18 +55,7 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 
 import static org.apache.atlas.AtlasClient.NAME;
 import static org.apache.atlas.hive.hook.HiveHook.IO_SEP;
@@ -320,6 +310,7 @@ public class HiveHookIT extends HiveITBase {
 
         assertProcessIsRegistered(constructEvent(query, HiveOperation.CREATETABLE_AS_SELECT, readEntities, writeEntities));
         assertTableIsRegistered(DEFAULT_DB, ctasTableName);
+
     }
 
     private HiveHook.HiveEventContext constructEvent(String query, HiveOperation op, Set<ReadEntity> inputs, Set<WriteEntity> outputs) {
@@ -1116,6 +1107,83 @@ public class HiveHookIT extends HiveITBase {
         );
     }
 
+    /*
+    The test is disabled by default
+    Reason : Atlas uses Hive version 1.2.x and the Hive patch HIVE-13112 which enables column level lineage is not
+    committed in Hive version 1.2.x
+    This test will fail if the lineage information is not available from Hive
+    Once the patch for HIVE-13112 is committed to Hive branch 1.2.x, the test can be enabled
+    Please track HIVE-14706 to know the status of column lineage availability in latest Hive versions i.e 2.1.x
+     */
+    @Test(enabled = false)
+    public void testColumnLevelLineage() throws Exception {
+        String sourceTable = "table" + random();
+        runCommand("create table " + sourceTable + "(a int, b int)");
+        String sourceTableGUID = assertTableIsRegistered(DEFAULT_DB, sourceTable);
+        String a_guid = assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, sourceTable), "a"));
+        String b_guid = assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, sourceTable), "b"));
+
+        String ctasTableName = "table" + random();
+        String query = "create table " + ctasTableName + " as " +
+                        "select sum(a+b) as a, count(*) as b from " + sourceTable;
+        runCommand(query);
+
+        String dest_a_guid = assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, ctasTableName), "a"));
+        String dest_b_guid = assertColumnIsRegistered(HiveMetaStoreBridge.getColumnQualifiedName(HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, DEFAULT_DB, ctasTableName), "b"));
+
+        final Set<ReadEntity> inputs = getInputs(sourceTable, Entity.Type.TABLE);
+        final Set<WriteEntity> outputs = getOutputs(ctasTableName, Entity.Type.TABLE);
+        HiveHook.HiveEventContext event = constructEvent(query, HiveOperation.CREATETABLE_AS_SELECT, inputs, outputs);
+        assertProcessIsRegistered(event);
+        assertTableIsRegistered(DEFAULT_DB, ctasTableName);
+
+        String processQName = sortEventsAndGetProcessQualifiedName(event);
+
+        List<String> aLineageInputs = Arrays.asList(a_guid, b_guid);
+        String aLineageProcessName = processQName + ":" + "a";
+        LOG.debug("Searching for column lineage process {} ", aLineageProcessName);
+        String guid = assertEntityIsRegistered(HiveDataTypes.HIVE_COLUMN_LINEAGE.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, aLineageProcessName, null);
+        List<Id> processInputs = (List<Id>) atlasClient.getEntity(guid).get("inputs");
+        List<String> processInputsAsString = new ArrayList<>();
+        for(Id input: processInputs){
+            processInputsAsString.add(input._getId());
+        }
+        Collections.sort(processInputsAsString);
+        Collections.sort(aLineageInputs);
+        Assert.assertEquals(processInputsAsString, aLineageInputs);
+
+        List<String> bLineageInputs = Arrays.asList(sourceTableGUID);
+        String bLineageProcessName = processQName + ":" + "b";
+        LOG.debug("Searching for column lineage process {} ", bLineageProcessName);
+        String guid1 = assertEntityIsRegistered(HiveDataTypes.HIVE_COLUMN_LINEAGE.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, bLineageProcessName, null);
+        List<Id> bProcessInputs = (List<Id>) atlasClient.getEntity(guid1).get("inputs");
+        List<String> bProcessInputsAsString = new ArrayList<>();
+        for(Id input: bProcessInputs){
+            bProcessInputsAsString.add(input._getId());
+        }
+        Collections.sort(bProcessInputsAsString);
+        Collections.sort(bLineageInputs);
+        Assert.assertEquals(bProcessInputsAsString, bLineageInputs);
+
+        //Test lineage API response
+        JSONObject response = atlasClient.getInputGraphForEntity(dest_a_guid);
+        JSONObject vertices = response.getJSONObject("values").getJSONObject("vertices");
+        JSONObject dest_a_val = (JSONObject) vertices.get(dest_a_guid);
+        JSONObject src_a_val = (JSONObject) vertices.get(a_guid);
+        JSONObject src_b_val = (JSONObject) vertices.get(b_guid);
+        Assert.assertNotNull(dest_a_val);
+        Assert.assertNotNull(src_a_val);
+        Assert.assertNotNull(src_b_val);
+
+
+        JSONObject b_response = atlasClient.getInputGraphForEntity(dest_b_guid);
+        JSONObject b_vertices = b_response.getJSONObject("values").getJSONObject("vertices");
+        JSONObject b_val = (JSONObject) b_vertices.get(dest_b_guid);
+        JSONObject src_tbl_val = (JSONObject) b_vertices.get(sourceTableGUID);
+        Assert.assertNotNull(b_val);
+        Assert.assertNotNull(src_tbl_val);
+    }
+
     @Test
     public void testTruncateTable() throws Exception {
         String tableName = createTable(false);
@@ -1620,19 +1688,22 @@ public class HiveHookIT extends HiveITBase {
         }
     }
 
+    private String sortEventsAndGetProcessQualifiedName(final HiveHook.HiveEventContext event) throws HiveException{
+        SortedSet<ReadEntity> sortedHiveInputs = event.getInputs() == null ? null : new TreeSet<ReadEntity>(entityComparator);
+        SortedSet<WriteEntity> sortedHiveOutputs = event.getOutputs() == null ? null : new TreeSet<WriteEntity>(entityComparator);
+
+        if ( event.getInputs() != null) {
+            sortedHiveInputs.addAll(event.getInputs());
+        }
+        if ( event.getOutputs() != null) {
+            sortedHiveOutputs.addAll(event.getOutputs());
+        }
+        return getProcessQualifiedName(hiveMetaStoreBridge, event, sortedHiveInputs, sortedHiveOutputs, getSortedProcessDataSets(event.getInputs()), getSortedProcessDataSets(event.getOutputs()));
+    }
+
     private String assertProcessIsRegistered(final HiveHook.HiveEventContext event) throws Exception {
         try {
-            SortedSet<ReadEntity> sortedHiveInputs = event.getInputs() == null ? null : new TreeSet<ReadEntity>(entityComparator);
-            SortedSet<WriteEntity> sortedHiveOutputs = event.getOutputs() == null ? null : new TreeSet<WriteEntity>(entityComparator);
-
-            if ( event.getInputs() != null) {
-                sortedHiveInputs.addAll(event.getInputs());
-            }
-            if ( event.getOutputs() != null) {
-                sortedHiveOutputs.addAll(event.getOutputs());
-            }
-
-            String processQFName = getProcessQualifiedName(hiveMetaStoreBridge, event, sortedHiveInputs, sortedHiveOutputs, getSortedProcessDataSets(event.getInputs()), getSortedProcessDataSets(event.getOutputs()));
+            String processQFName = sortEventsAndGetProcessQualifiedName(event);
             LOG.debug("Searching for process with query {}", processQFName);
             return assertEntityIsRegistered(HiveDataTypes.HIVE_PROCESS.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, processQFName, new AssertPredicate() {
                 @Override

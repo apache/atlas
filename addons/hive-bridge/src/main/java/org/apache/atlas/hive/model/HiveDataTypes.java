@@ -42,7 +42,8 @@ public enum HiveDataTypes {
     HIVE_INDEX,
     HIVE_ROLE,
     HIVE_TYPE,
-    HIVE_PROCESS
+    HIVE_PROCESS,
+    HIVE_COLUMN_LINEAGE
     // HIVE_VIEW,
     ;
 
