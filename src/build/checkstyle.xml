@@ -115,7 +115,9 @@
             <property name="max" value="120"/>
         </module>
         <module name="MethodLength"/>
-        <module name="ParameterNumber"/>
+        <module name="ParameterNumber">
+            <property name="tokens" value="METHOD_DEF"/>
+        </module>
         <module name="OuterTypeNumber"/>
 
         <!-- Checks for whitespace                               -->

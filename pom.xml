@@ -429,6 +429,7 @@
         <javax.servlet.version>3.1.0</javax.servlet.version>
         <!-- Needed for hooks -->
         <aopalliance.version>1.0</aopalliance.version>
+        <codehaus.jackson.version>1.9.13</codehaus.jackson.version>
         <commons-conf.version>1.10</commons-conf.version>
         <commons-collections.version>3.2.2</commons-collections.version>
         <commons-logging.version>1.1.3</commons-logging.version>
@@ -501,6 +502,7 @@
     </profiles>
 
     <modules>
+        <module>intg</module>
         <module>common</module>
         <module>typesystem</module>
         <module>server-api</module>
@@ -997,6 +999,12 @@
             </dependency>
 
             <!--  atlas modules -->
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-intg</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.apache.atlas</groupId>
                 <artifactId>atlas-typesystem</artifactId>
