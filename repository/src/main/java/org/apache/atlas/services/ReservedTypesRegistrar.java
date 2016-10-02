@@ -68,7 +68,10 @@ public class ReservedTypesRegistrar implements IBootstrapTypesRegistrar {
                 String typeDefJSON = new String(Files.readAllBytes(typeDefFile.toPath()), StandardCharsets.UTF_8);
                 registerType(typeSystem, metadataService, typeDefFile.getAbsolutePath(), typeDefJSON);
             } catch (IOException e) {
-                e.printStackTrace();
+                LOG.error("error while registering types in file " + typeDefFile.getAbsolutePath(), e);
+            } catch (AtlasException e) {
+                LOG.error("error while registering types in file " + typeDefFile.getAbsolutePath(), e);
+                throw e;
             }
         }
 
@@ -119,10 +122,12 @@ public class ReservedTypesRegistrar implements IBootstrapTypesRegistrar {
         TypesDef createTypes = TypesUtil.getTypesDef(ImmutableList.copyOf(createEnumDefList), ImmutableList.copyOf(createStructDefList),
                 ImmutableList.copyOf(createTraitDefList), ImmutableList.copyOf(createClassDefList));
 
-        String createTypeJSON = TypesSerialization.toJson(createTypes);
-        if(createTypeJSON != null) {
-            metadataService.createType(createTypeJSON);
-            LOG.info("Created types definition JSON {}", createTypeJSON);
+        if (! createTypes.isEmpty()) {
+            String createTypeJSON = TypesSerialization.toJson(createTypes);
+            if (createTypeJSON != null) {
+                metadataService.createType(createTypeJSON);
+                LOG.info("Created types definition JSON {}", createTypeJSON);
+            }
         }
     }
 }
