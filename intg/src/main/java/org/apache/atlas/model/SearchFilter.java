@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.api;
+package org.apache.atlas.model;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,12 +26,15 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * Generic filter, to specify search criteria using name/value pairs.
  */
 @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown=true)
+@XmlRootElement
 public class SearchFilter {
     /**
      * to specify whether the result should be sorted? If yes, whether asc or desc.

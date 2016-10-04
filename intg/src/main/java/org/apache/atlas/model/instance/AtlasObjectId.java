@@ -18,8 +18,14 @@
 package org.apache.atlas.model.instance;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlSeeAlso;
+
+import org.apache.atlas.model.PList;
+import org.apache.atlas.model.SearchFilter.SortType;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
@@ -32,6 +38,7 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown=true)
+@XmlRootElement
 public class AtlasObjectId  implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -128,5 +135,31 @@ public class AtlasObjectId  implements Serializable {
     @Override
     public String toString() {
         return toString(new StringBuilder()).toString();
+    }
+
+
+    /**
+     * REST serialization friendly list.
+     */
+    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown=true)
+    @XmlRootElement
+    @XmlSeeAlso(AtlasObjectId.class)
+    public static class AtlasObjectIds extends PList<AtlasObjectId> {
+        private static final long serialVersionUID = 1L;
+
+        public AtlasObjectIds() {
+            super();
+        }
+
+        public AtlasObjectIds(List<AtlasObjectId> list) {
+            super(list);
+        }
+
+        public AtlasObjectIds(List list, long startIndex, int pageSize, long totalCount,
+                              SortType sortType, String sortBy) {
+            super(list, startIndex, pageSize, totalCount, sortType, sortBy);
+        }
     }
 }

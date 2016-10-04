@@ -25,6 +25,11 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
 
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlSeeAlso;
+
+import org.apache.atlas.model.PList;
+import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.util.StringUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
@@ -40,6 +45,7 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown=true)
+@XmlRootElement
 public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -226,6 +232,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
     @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
     @JsonSerialize(include= JsonSerialize.Inclusion.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown=true)
+    @XmlRootElement
     public static class AtlasAttributeDef implements Serializable {
         private static final long serialVersionUID = 1L;
 
@@ -396,6 +403,32 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         @Override
         public String toString() {
             return toString(new StringBuilder()).toString();
+        }
+    }
+
+
+    /**
+     * REST serialization friendly list.
+     */
+    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown=true)
+    @XmlRootElement
+    @XmlSeeAlso(AtlasStructDef.class)
+    public static class AtlasStructDefs extends PList<AtlasStructDef> {
+        private static final long serialVersionUID = 1L;
+
+        public AtlasStructDefs() {
+            super();
+        }
+
+        public AtlasStructDefs(List<AtlasStructDef> list) {
+            super(list);
+        }
+
+        public AtlasStructDefs(List list, long startIndex, int pageSize, long totalCount,
+                               SortType sortType, String sortBy) {
+            super(list, startIndex, pageSize, totalCount, sortType, sortBy);
         }
     }
 }

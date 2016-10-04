@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.api;
+package org.apache.atlas.model;
 
 import java.util.List;
 
@@ -25,14 +25,17 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
-import org.apache.atlas.api.SearchFilter.SortType;
+import org.apache.atlas.model.SearchFilter.SortType;
+
+import javax.xml.bind.annotation.XmlRootElement;
 
 /**
- * Paged-list, for returning search results.
+ * Paginated-list, for returning search results.
  */
 @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown=true)
+@XmlRootElement
 public class PList<T> implements java.io.Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -46,6 +49,10 @@ public class PList<T> implements java.io.Serializable {
     public PList() {
     }
 
+    public PList(List<T> list) {
+        this(list, 0, list.size(), list.size(), SortType.NONE, null);
+    }
+
     public PList(List<T> list, long startIndex, int pageSize, long totalCount, SortType sortType, String sortBy) {
         setList(list);
         setStartIndex(startIndex);
@@ -55,13 +62,9 @@ public class PList<T> implements java.io.Serializable {
         setSortBy(sortBy);
     }
 
-    public List<T> getList() {
-        return list;
-    }
+    public void setList(List<T> list) { this.list = list; }
 
-    public void setList(List<T> list) {
-        this.list = list;
-    }
+    public List<T> getList() { return this.list; }
 
     public long getStartIndex() {
         return startIndex;
@@ -109,13 +112,13 @@ public class PList<T> implements java.io.Serializable {
             sb = new StringBuilder();
         }
 
-        sb.append("PList<T>{");
-        sb.append("list='").append((list == null ? "null" : ("size:" + list.size()))).append('\'');
+        sb.append("PList{");
+        sb.append("listSize=").append((list == null ? 0 : list.size()));
         sb.append(", startIndex=").append(startIndex);
         sb.append(", pageSize=").append(pageSize);
         sb.append(", totalCount=").append(totalCount);
         sb.append(", sortType=").append(sortType);
-        sb.append(", version=").append(sortBy);
+        sb.append(", sortBy=").append(sortBy);
         sb.append('}');
 
         return sb;

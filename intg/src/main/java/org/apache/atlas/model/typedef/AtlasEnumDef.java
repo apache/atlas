@@ -20,6 +20,11 @@ package org.apache.atlas.model.typedef;
 import java.io.Serializable;
 import java.util.*;
 
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlSeeAlso;
+
+import org.apache.atlas.model.PList;
+import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.util.StringUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
@@ -35,6 +40,7 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown=true)
+@XmlRootElement
 public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -240,6 +246,7 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
     @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
     @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown=true)
+    @XmlRootElement
     public static class AtlasEnumElementDef implements Serializable {
         private static final long serialVersionUID = 1L;
 
@@ -330,6 +337,32 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
         @Override
         public String toString() {
             return toString(new StringBuilder()).toString();
+        }
+    }
+
+
+    /**
+     * REST serialization friendly list.
+     */
+    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown=true)
+    @XmlRootElement
+    @XmlSeeAlso(AtlasEnumDef.class)
+    public static class AtlasEnumDefs extends PList<AtlasEnumDef> {
+        private static final long serialVersionUID = 1L;
+
+        public AtlasEnumDefs() {
+            super();
+        }
+
+        public AtlasEnumDefs(List<AtlasEnumDef> list) {
+            super(list);
+        }
+
+        public AtlasEnumDefs(List list, long startIndex, int pageSize, long totalCount,
+                             SortType sortType, String sortBy) {
+            super(list, startIndex, pageSize, totalCount, sortType, sortBy);
         }
     }
 }

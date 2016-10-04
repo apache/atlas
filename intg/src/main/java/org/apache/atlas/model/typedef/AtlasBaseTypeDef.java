@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 
+import javax.xml.bind.annotation.XmlRootElement;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
@@ -38,6 +40,7 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown=true)
+@XmlRootElement
 public abstract class AtlasBaseTypeDef implements java.io.Serializable {
     private static final long serialVersionUID = 1L;
 

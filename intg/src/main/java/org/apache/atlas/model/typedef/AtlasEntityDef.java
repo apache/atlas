@@ -22,6 +22,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlSeeAlso;
+
+import org.apache.atlas.model.PList;
+import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.commons.collections.CollectionUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -36,6 +41,7 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown=true)
+@XmlRootElement
 public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -162,5 +168,31 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
     @Override
     public String toString() {
         return toString(new StringBuilder()).toString();
+    }
+
+
+    /**
+     * REST serialization friendly list.
+     */
+    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown=true)
+    @XmlRootElement
+    @XmlSeeAlso(AtlasEntityDef.class)
+    public static class AtlasEntityDefs extends PList<AtlasEntityDef> {
+        private static final long serialVersionUID = 1L;
+
+        public AtlasEntityDefs() {
+            super();
+        }
+
+        public AtlasEntityDefs(List<AtlasEntityDef> list) {
+            super(list);
+        }
+
+        public AtlasEntityDefs(List list, long startIndex, int pageSize, long totalCount,
+                               SortType sortType, String sortBy) {
+            super(list, startIndex, pageSize, totalCount, sortType, sortBy);
+        }
     }
 }

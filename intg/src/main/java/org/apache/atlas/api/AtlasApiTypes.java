@@ -19,10 +19,15 @@ package org.apache.atlas.api;
 
 
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
+import org.apache.atlas.model.typedef.AtlasClassificationDef.AtlasClassificationDefs;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasEntityDef.AtlasEntityDefs;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
+import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumDefs;
 import org.apache.atlas.model.typedef.AtlasStructDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasStructDefs;
 
 /**
  * API to work with CRUD of Atlas types - enum/struct/classification/entity.
@@ -42,7 +47,7 @@ public interface AtlasApiTypes {
 
     void deleteEnumDefByGuid(String guid) throws AtlasBaseException;
 
-    PList<AtlasEnumDef> searchEnumDefs(SearchFilter filter) throws AtlasBaseException;
+    AtlasEnumDefs searchEnumDefs(SearchFilter filter) throws AtlasBaseException;
 
 
     AtlasStructDef createStructDef(AtlasStructDef structDef) throws AtlasBaseException;
@@ -59,7 +64,7 @@ public interface AtlasApiTypes {
 
     void deleteStructDefByGuid(String guid) throws AtlasBaseException;
 
-    PList<AtlasStructDef> searchStructDefs(SearchFilter filter) throws AtlasBaseException;
+    AtlasStructDefs searchStructDefs(SearchFilter filter) throws AtlasBaseException;
 
 
     AtlasClassificationDef createClassificationDef(AtlasClassificationDef classificationDef) throws AtlasBaseException;
@@ -78,7 +83,7 @@ public interface AtlasApiTypes {
 
     void deleteClassificationDefByGuid(String guid) throws AtlasBaseException;
 
-    PList<AtlasClassificationDef> searchClassificationDefs(SearchFilter filter) throws AtlasBaseException;
+    AtlasClassificationDefs searchClassificationDefs(SearchFilter filter) throws AtlasBaseException;
 
 
     AtlasEntityDef createEntityDef(AtlasEntityDef entityDef) throws AtlasBaseException;
@@ -95,5 +100,5 @@ public interface AtlasApiTypes {
 
     void deleteEntityDefByGuid(String guid) throws AtlasBaseException;
 
-    PList<AtlasEntityDef> searchEntityDefs(SearchFilter filter) throws AtlasBaseException;
+    AtlasEntityDefs searchEntityDefs(SearchFilter filter) throws AtlasBaseException;
 }

@@ -21,8 +21,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntities;
 import org.apache.atlas.model.instance.AtlasObjectId;
 
 /**
@@ -39,7 +41,7 @@ public interface AtlasApiEntities {
 
     void deleteEntity(AtlasObjectId objId) throws AtlasBaseException;
 
-    PList<AtlasEntity> searchEntities(SearchFilter filter) throws AtlasBaseException;
+    AtlasEntities searchEntities(SearchFilter filter) throws AtlasBaseException;
 
 
     void addEntityClassification(AtlasObjectId entityId, AtlasClassification classification) throws AtlasBaseException;

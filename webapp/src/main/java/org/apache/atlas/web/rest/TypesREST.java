@@ -27,12 +27,15 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 
-import org.apache.atlas.api.PList;
-import org.apache.atlas.api.SearchFilter;
+import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
+import org.apache.atlas.model.typedef.AtlasClassificationDef.AtlasClassificationDefs;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasEntityDef.AtlasEntityDefs;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
+import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumDefs;
 import org.apache.atlas.model.typedef.AtlasStructDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasStructDefs;
 import org.apache.atlas.web.util.Servlets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,8 +117,8 @@ public class TypesREST {
     @GET
     @Path("/enumdef")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public PList<AtlasEnumDef> searchEnumDefs(@Context HttpServletRequest request) throws Exception {
-        PList<AtlasEnumDef> ret = null;
+    public AtlasEnumDefs searchEnumDefs(@Context HttpServletRequest request) throws Exception {
+        AtlasEnumDefs ret = null;
 
         // TODO: SearchFilter filter = getSearchFilter(request);
         // TODO: ret = store.searchEnumDefs(filter);
@@ -196,8 +199,8 @@ public class TypesREST {
     @GET
     @Path("/structdef")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public PList<AtlasStructDef> searchStructDefs(@Context HttpServletRequest request) throws Exception {
-        PList<AtlasStructDef> ret = null;
+    public AtlasStructDefs searchStructDefs(@Context HttpServletRequest request) throws Exception {
+        AtlasStructDefs ret = null;
 
         // TODO: SearchFilter filter = getSearchFilter(request);
         // TODO: ret = store.searchStructDefs(filter);
@@ -278,8 +281,8 @@ public class TypesREST {
     @GET
     @Path("/classificationdef")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public PList<AtlasClassificationDef> searchClassificationDefs(SearchFilter filter) throws Exception {
-        PList<AtlasClassificationDef> ret = null;
+    public AtlasClassificationDefs searchClassificationDefs(SearchFilter filter) throws Exception {
+        AtlasClassificationDefs ret = null;
 
         // TODO: SearchFilter filter = getSearchFilter(request);
         // TODO: ret = store.searchClassificationDefs(filter);
@@ -360,8 +363,8 @@ public class TypesREST {
     @GET
     @Path("/entitydef")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public PList<AtlasEntityDef> searchEntityDefs(SearchFilter filter) throws Exception {
-        PList<AtlasEntityDef> ret = null;
+    public AtlasEntityDefs searchEntityDefs(SearchFilter filter) throws Exception {
+        AtlasEntityDefs ret = null;
 
         // TODO: SearchFilter filter = getSearchFilter(request);
         // TODO: ret = store.searchEntityDefs(filter);

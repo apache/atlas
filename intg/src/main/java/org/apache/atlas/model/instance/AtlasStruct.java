@@ -23,8 +23,14 @@ import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlSeeAlso;
+
+import org.apache.atlas.model.PList;
+import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
@@ -40,6 +46,7 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown=true)
+@XmlRootElement
 public class AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -153,6 +160,32 @@ public class AtlasStruct implements Serializable {
     @Override
     public String toString() {
         return toString(new StringBuilder()).toString();
+    }
+
+
+    /**
+     * REST serialization friendly list.
+     */
+    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown=true)
+    @XmlRootElement
+    @XmlSeeAlso(AtlasStruct.class)
+    public static class AtlasStructs extends PList<AtlasStruct> {
+        private static final long serialVersionUID = 1L;
+
+        public AtlasStructs() {
+            super();
+        }
+
+        public AtlasStructs(List<AtlasStruct> list) {
+            super(list);
+        }
+
+        public AtlasStructs(List list, long startIndex, int pageSize, long totalCount,
+                            SortType sortType, String sortBy) {
+            super(list, startIndex, pageSize, totalCount, sortType, sortBy);
+        }
     }
 
 
