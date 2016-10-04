@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1206 Atlas UI not working with IE or Chrome on Windows OS in Kerberos mode (nixonrodrigues via sumasai)
 ATLAS-1205 Improve atlas build time (shwethags)
 ATLAS-1203 'Invalid type definition' due to no new types to be created at startup (mneethiraj via shwethags)
 ATLAS-1171 Structured, high-level public APIs (mneethiraj via shwethags)
