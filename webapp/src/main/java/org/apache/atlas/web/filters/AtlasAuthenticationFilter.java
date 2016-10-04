@@ -69,6 +69,8 @@ import java.net.UnknownHostException;
 import java.security.Principal;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.servlet.http.Cookie;
 
 /**
@@ -84,6 +86,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
     private SignerSecretProvider secretProvider;
     public final boolean isKerberos = AuthenticationUtil.isKerberosAuthenticationEnabled();
     private boolean isInitializedByTomcat;
+    private Set<Pattern> browserUserAgents;
 
     public AtlasAuthenticationFilter() {
         try {
@@ -148,7 +151,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
     @Override
     public void initializeSecretProvider(FilterConfig filterConfig)
             throws ServletException {
-        LOG.debug("AtlasAuthenticationFilter :: initializeSecretProvider "+filterConfig);
+        LOG.debug("AtlasAuthenticationFilter :: initializeSecretProvider " + filterConfig);
         secretProvider = (SignerSecretProvider) filterConfig.getServletContext().
                 getAttribute(AuthenticationFilter.SIGNER_SECRET_PROVIDER_ATTRIBUTE);
         if (secretProvider == null) {
@@ -230,6 +233,14 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
 
         LOG.debug(" AuthenticationFilterConfig: {}", config);
 
+        String agents = configuration.getString(AtlasCSRFPreventionFilter.BROWSER_USER_AGENT_PARAM, AtlasCSRFPreventionFilter.BROWSER_USER_AGENTS_DEFAULT);
+
+        if (agents == null) {
+            agents = AtlasCSRFPreventionFilter.BROWSER_USER_AGENTS_DEFAULT;
+        }
+
+        parseBrowserUserAgents(agents);
+
         return config;
     }
 
@@ -296,11 +307,16 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
 
 
         try {
-            String authHeader = httpRequest.getHeader("Authorization");
-            if (authHeader != null && authHeader.startsWith("Basic")) {
-                filterChain.doFilter(request, response);
-            } else if (isKerberos) {
-                doKerberosAuth(request, response, filterChainWrapper);
+            Authentication existingAuth = SecurityContextHolder.getContext().getAuthentication();
+            if (existingAuth == null) {
+                String authHeader = httpRequest.getHeader("Authorization");
+                if (authHeader != null && authHeader.startsWith("Basic")) {
+                    filterChain.doFilter(request, response);
+                } else if (isKerberos) {
+                    doKerberosAuth(request, response, filterChainWrapper, filterChain);
+                } else {
+                    filterChain.doFilter(request, response);
+                }
             } else {
                 filterChain.doFilter(request, response);
             }
@@ -327,7 +343,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
      * @throws IOException thrown if an IO error occurred.
      * @throws ServletException thrown if a processing error occurred.
      */
-    public void doKerberosAuth(ServletRequest request, ServletResponse response, FilterChain filterChain)
+    public void doKerberosAuth(ServletRequest request, ServletResponse response, FilterChain filterChainWrapper ,FilterChain filterChain )
             throws IOException, ServletException {
         boolean unauthorizedResponse = true;
         int errCode = HttpServletResponse.SC_UNAUTHORIZED;
@@ -389,7 +405,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
                                 getCookiePath(), token.getExpires(), isHttps);
                     }
 
-                   filterChain.doFilter(httpRequest, httpResponse);
+                    filterChainWrapper.doFilter(httpRequest, httpResponse);
                 }
             } else {
                 unauthorizedResponse = false;
@@ -412,22 +428,25 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
                     errCode = HttpServletResponse.SC_FORBIDDEN;
                 }
                 if (authenticationEx == null) { // added this code for atlas error handling and fallback
-                    boolean chk = true;
-                    Collection<String> headerNames = httpResponse.getHeaderNames();
-                    for (String headerName : headerNames) {
-                        String value = httpResponse.getHeader(headerName);
-                        if (headerName.equalsIgnoreCase("Set-Cookie") && value.startsWith("JSESSIONID")) {
-                            chk = false;
-                            break;
+                    if (isBrowser(httpRequest.getHeader("User-Agent"))) {
+                        filterChain.doFilter(request, response);
+                    } else {
+                        boolean chk = true;
+                        Collection<String> headerNames = httpResponse.getHeaderNames();
+                        for (String headerName : headerNames) {
+                            String value = httpResponse.getHeader(headerName);
+                            if (headerName.equalsIgnoreCase("Set-Cookie") && value.startsWith("JSESSIONID")) {
+                                chk = false;
+                                break;
+                            }
+                        }
+                        String authHeader = httpRequest.getHeader("Authorization");
+                        if (authHeader == null && chk) {
+                            filterChain.doFilter(request, response);
+                        } else if (authHeader != null && authHeader.startsWith("Basic")) {
+                            filterChain.doFilter(request, response);
                         }
                     }
-                    String authHeader = httpRequest.getHeader("Authorization");
-                    if (authHeader == null && chk) {
-                        filterChain.doFilter(request, response);
-                    } else if (authHeader != null && authHeader.startsWith("Basic")) {
-                        filterChain.doFilter(request, response);
-                    }
-
                 } else {
                     httpResponse.sendError(errCode, authenticationEx.getMessage());
                 }
@@ -548,6 +567,29 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
             }
         }
         return token;
+    }
+
+    void parseBrowserUserAgents(String userAgents) {
+        String[] agentsArray = userAgents.split(",");
+        browserUserAgents = new HashSet<Pattern>();
+        for (String patternString : agentsArray) {
+            browserUserAgents.add(Pattern.compile(patternString));
+        }
+    }
+
+    boolean isBrowser(String userAgent) {
+        if (userAgent == null) {
+            return false;
+        }
+        if (browserUserAgents != null) {
+            for (Pattern pattern : browserUserAgents) {
+                Matcher matcher = pattern.matcher(userAgent);
+                if (matcher.matches()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
 }
