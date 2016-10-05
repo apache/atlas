@@ -30,6 +30,7 @@ ATLAS-409 Atlas will not import avro tables with schema read from a file (dosset
 ATLAS-379 Create sqoop and falcon metadata addons (venkatnrangan,bvellanki,sowmyaramesh via shwethags)
 
 ALL CHANGES:
+ATLAS-1215 Atlas UI not working in firefox due to fix in ATLAS-1199 (kevalbhatt)
 ATLAS-1199 Atlas UI not loading after fresh build due to jquery-asBreadcrumbs plugin upgrade (kevalbhatt via shwethags)
 ATLAS-1206 Atlas UI not working with IE or Chrome on Windows OS in Kerberos mode (nixonrodrigues via sumasai)
 ATLAS-1155 Errors in Eclipse when I bring in the latest code (davidrad via shwethags)
