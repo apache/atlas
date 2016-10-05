@@ -366,8 +366,8 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                 responsive: false,
                 toggleIconClass: 'fa fa-ellipsis-h',
                 dropdown: function(classes) {
-                    const dropdownClass = 'dropdown';
-                    let dropdownMenuClass = 'dropdown-menu popover popoverTerm bottom arrowPosition';
+                    var dropdownClass = 'dropdown';
+                    var dropdownMenuClass = 'dropdown-menu popover popoverTerm bottom arrowPosition';
 
                     if (this.options.overflow === 'right') {
                         dropdownMenuClass += ' dropdown-menu-right';
