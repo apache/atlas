@@ -1,3 +1,4 @@
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -19,8 +20,9 @@
 define(['require',
     'backbone',
     'hbs!tmpl/tag/createTagLayoutView_tmpl',
-    'utils/Utils'
-], function(require, Backbone, CreateTagLayoutViewTmpl, Utils) {
+    'utils/Utils',
+    'platform'
+], function(require, Backbone, CreateTagLayoutViewTmpl, Utils, platform) {
 
     var CreateTagLayoutView = Backbone.Marionette.LayoutView.extend(
         /** @lends CreateTagLayoutView */
@@ -81,6 +83,15 @@ define(['require',
                     str += '<option>' + val.get("tags") + '</option>';
                 });
                 that.ui.parentTag.html(str);
+                console.log(platform);
+                // IE9 support
+                if (platform.name === "IE") {
+                    that.ui.parentTag.select2({
+                        multiple: true,
+                        placeholder: "Search Tags",
+                        allowClear: true
+                    });
+                }
             }
         });
     return CreateTagLayoutView;

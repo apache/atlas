@@ -70,7 +70,7 @@ define(['require',
                             var obj = {
                                 termName: this.modal.$el.find('.taxonomyTree li.active a').data('name').split("`").join(""),
                                 guid: that.multiple[i].id.id
-                            }
+                            };
                             CommonViewFunction.saveTermToAsset(obj, that);
                         }
                     } else {

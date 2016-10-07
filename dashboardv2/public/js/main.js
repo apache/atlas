@@ -18,14 +18,14 @@
 
 require.config({
     /* starting point for application */
-    hbs: {
-        disableI18n: true, // This disables the i18n helper and doesn't require the json i18n files (e.g. en_us.json)
-        helperPathCallback: // Callback to determine the path to look for helpers
+    'hbs': {
+        'disableI18n': true, // This disables the i18n helper and doesn't require the json i18n files (e.g. en_us.json)
+        'helperPathCallback': // Callback to determine the path to look for helpers
             function(name) { // ('/template/helpers/'+name by default)
             return 'modules/Helpers';
         },
-        templateExtension: 'html', // Set the extension automatically appended to templates
-        compileOptions: {} // options object which is passed to Handlebars compiler
+        'templateExtension': 'html', // Set the extension automatically appended to templates
+        'compileOptions': {} // options object which is passed to Handlebars compiler
     },
     /**
      * Requested as soon as the loader has processed the configuration. It does
@@ -34,72 +34,75 @@ require.config({
      * as part of a config block.
      * @type {Array} An array of dependencies to load.
      */
-    deps: ['marionette'],
+    'deps': ['marionette'],
 
     /**
      * The number of seconds to wait before giving up on loading a script.
      * @default 7 seconds
      * @type {Number}
      */
-    waitSeconds: 30,
+    'waitSeconds': 30,
 
-    shim: {
-        backbone: {
-            deps: ['underscore', 'jquery'],
-            exports: 'Backbone'
+    'shim': {
+        'backbone': {
+            'deps': ['underscore', 'jquery'],
+            'exports': 'Backbone'
         },
         'jquery-ui': {
-            deps: ['jquery'],
+            'deps': ['jquery']
         },
-        asBreadcrumbs: {
-            deps: ['jquery'],
-            exports: 'asBreadcrumbs'
+        'asBreadcrumbs': {
+            'deps': ['jquery'],
+            'exports': 'asBreadcrumbs'
         },
-        bootstrap: {
-            deps: ['jquery'],
-            exports: 'jquery'
+        'bootstrap': {
+            'deps': ['jquery'],
+            'exports': 'jquery'
         },
-        underscore: {
-            exports: '_'
+        'underscore': {
+            'exports': '_'
         },
-        marionette: {
-            deps: ['backbone']
+        'marionette': {
+            'deps': ['backbone']
         },
-        backgrid: {
-            deps: ['backbone'],
-            exports: 'Backgrid'
+        'backgrid': {
+            'deps': ['backbone'],
+            'exports': 'Backgrid'
         },
         'backgrid-paginator': {
-            deps: ['backbone', 'backgrid']
+            'deps': ['backbone', 'backgrid']
         },
         'backgrid-filter': {
-            deps: ['backbone', 'backgrid']
+            'deps': ['backbone', 'backgrid']
         },
         'backgrid-orderable': {
-            deps: ['backbone', 'backgrid'],
+            'deps': ['backbone', 'backgrid'],
         },
         'backgrid-sizeable': {
-            deps: ['backbone', 'backgrid'],
+            'deps': ['backbone', 'backgrid'],
         },
         'backgrid-select-all': {
-            deps: ['backbone', 'backgrid']
+            'deps': ['backbone', 'backgrid']
         },
-        hbs: {
-            deps: ['underscore', 'handlebars']
+        'hbs': {
+            'deps': ['underscore', 'handlebars']
         },
-        d3: {
-            exports: 'd3'
+        'd3': {
+            'exports': ['d3']
         },
         'd3-tip': {
-            deps: ['d3'],
-            exports: 'd3-tip'
+            'deps': ['d3'],
+            'exports': ['d3-tip']
         },
-        noty: {
-            deps: ['jquery'],
+        'dagreD3': {
+            'deps': ['d3'],
+            'exports': ['dagreD3']
         },
-        dagreD3: {
-            deps: ['d3'],
-            exports: 'dagreD3'
+        'pnotify': {
+            'exports': ['pnotify']
+        },
+        'jquery-placeholder': {
+            'deps': ['jquery']
         }
     },
 
@@ -121,7 +124,6 @@ require.config({
         'd3': 'libs/d3/d3.min',
         'd3-tip': 'libs/d3/index',
         'tmpl': 'templates',
-        'noty': 'libs/noty/js/jquery.noty.packaged.min',
         'requirejs.text': 'libs/requirejs-text/text',
         'handlebars': 'external_lib/require-handlebars-plugin/js/handlebars',
         'json2': 'external_lib/require-handlebars-plugin/js/json2',
@@ -130,7 +132,11 @@ require.config({
         'dagreD3': 'libs/dagre-d3/dagre-d3.min',
         'select2': 'libs/select2/select2.min',
         'backgrid-select-all': 'libs/backgrid-select-all/backgrid-select-all.min',
+        'moment': 'libs/moment/js/moment.min',
         'jquery-ui': 'external_lib/jquery-ui/jquery-ui.min',
+        'pnotify': 'external_lib/pnotify.custom.min',
+        'jquery-placeholder': 'libs/jquery-placeholder/js/jquery.placeholder',
+        'platform': 'libs/platform/platform'
     },
 
     /**
@@ -139,7 +145,7 @@ require.config({
      * To get timely, correct error triggers in IE, force a define/shim export.
      * @type {Boolean}
      */
-    enforceDefine: false
+    'enforceDefine': false
 });
 
 require(['App',

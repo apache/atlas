@@ -373,14 +373,14 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Glob
                         dropdownMenuClass += ' dropdown-menu-right';
                     }
 
-                    return `<li class="${dropdownClass} ${classes.dropdownClass}">
-                              <a href="javascript:void(0);" class="${classes.toggleClass}" data-toggle="dropdown">
-                                <i class="${classes.toggleIconClass}"></i>
-                              </a>
-                              <ul class="${dropdownMenuClass} ${classes.dropdownMenuClass}">
-                                <div class="arrow"></div>
-                              </ul>
-                            </li>`;
+                    return '<li class="' + dropdownClass + ' ' + classes.dropdownClass + '">' +
+                        '<a href="javascript:void(0);" class="' + classes.toggleClass + '" data-toggle="dropdown">' +
+                        '<i class="' + classes.toggleIconClass + '"></i>' +
+                        '</a>' +
+                        '<ul class="' + dropdownMenuClass + ' ' + classes.dropdownMenuClass + '">' +
+                        '<div class="arrow"></div>' +
+                        '</ul>' +
+                        '</li>';
                 }
             });
         }

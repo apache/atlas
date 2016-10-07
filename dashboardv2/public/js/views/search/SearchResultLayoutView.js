@@ -62,10 +62,10 @@ define(['require',
             events: function() {
                 var events = {};
                 events["click " + this.ui.tagClick] = function(e) {
+                    var scope = $(e.currentTarget);
                     if (e.target.nodeName.toLocaleLowerCase() == "i") {
                         this.onClickTagCross(e);
                     } else {
-                        var scope = $(e.currentTarget);
                         if (scope.hasClass('term')) {
                             var url = scope.data('href').split(".").join("/terms/");
                             Globals.saveApplicationState.tabState.stateChanged = false;
@@ -76,7 +76,7 @@ define(['require',
                             });
                         } else {
                             Utils.setUrl({
-                                url: '#!/tag/tagAttribute/' + e.currentTarget.text,
+                                url: '#!/tag/tagAttribute/' + scope.text(),
                                 mergeBrowserUrl: false,
                                 trigger: true
                             });
@@ -265,10 +265,10 @@ define(['require',
                         if (that.searchCollection.models.length) {
                             that.startRenderTableProcess();
                         }
-                        var resultData = 'Results for <b>' + that.searchCollection.queryParams.query + '</b>'
-                        var multiAssignDataTag = '<a href="javascript:void(0)" class="inputAssignTag multiSelectTag assignTag" style="display:none" data-id="addAssignTag"><i class="fa fa-plus"></i>' + " " + 'Assign Tag</a>'
+                        var resultData = 'Results for <b>' + that.searchCollection.queryParams.query + '</b>';
+                        var multiAssignDataTag = '<a href="javascript:void(0)" class="inputAssignTag multiSelectTag assignTag" style="display:none" data-id="addAssignTag"><i class="fa fa-plus"></i>' + " " + 'Assign Tag</a>';
                         if (Globals.taxonomy) {
-                            var multiAssignDataTerm = '<a href="javascript:void(0)" class="inputAssignTag multiSelect" style="display:none" data-id="addTerm"><i class="fa fa-folder-o"></i>' + " " + 'Assign Term</a>'
+                            var multiAssignDataTerm = '<a href="javascript:void(0)" class="inputAssignTag multiSelect" style="display:none" data-id="addTerm"><i class="fa fa-folder-o"></i>' + " " + 'Assign Term</a>';
                             that.$('.searchResult').html(resultData + multiAssignDataTerm + multiAssignDataTag);
                         } else {
                             that.$('.searchResult').html(resultData + multiAssignDataTag);
@@ -306,7 +306,7 @@ define(['require',
             },
             checkTableFetch: function() {
                 if (this.asyncFetchCounter <= 0) {
-                    this.$('div[data-id="r_tableSpinner"]').removeClass('show')
+                    this.$('div[data-id="r_tableSpinner"]').removeClass('show');
                     this.$('.fontLoader').hide();
                     this.$('.searchTable').show();
                     this.$('.searchResult').show();
@@ -318,7 +318,7 @@ define(['require',
                 var responseData = this.searchCollection.responseData;
                 if (this.searchCollection.responseData) {
                     if (responseData.dataType && responseData.dataType.typeName.indexOf('_temp') == -1) {
-                        that.renderTableLayoutView(that.getFixedDslColumn())
+                        that.renderTableLayoutView(that.getFixedDslColumn());
                     } else {
                         var idFound = false,
                             fetchResultCount = 0;
@@ -356,24 +356,25 @@ define(['require',
                                                     id = data.definition.id;
                                                 }
                                                 that.searchCollection.get(id).set(data.definition.values);
-                                                that.searchCollection.get(id).set('$id$', data.definition.id);
-                                                that.searchCollection.get(id).set('$traits$', data.definition.traits);
+                                                that.searchCollection.get(id).set({
+                                                    '$id$': data.definition.id,
+                                                    '$traits$': data.definition.traits
+                                                });
                                             }
                                         }
-
                                     },
                                     error: function(error, data, status) {},
                                     complete: function() {
                                         --that.asyncFetchCounter;
                                         if (that.asyncFetchCounter === 0) {
-                                            that.renderTableLayoutView(that.getFixedDslColumn())
+                                            that.renderTableLayoutView(that.getFixedDslColumn());
                                         }
                                     }
                                 });
                             }
                         });
                         if (idFound === false) {
-                            that.renderTableLayoutView(this.getDaynamicColumn())
+                            that.renderTableLayoutView(this.getDaynamicColumn());
                         }
                     }
                 }
@@ -408,7 +409,7 @@ define(['require',
                 for (var i = 0; i < this.searchCollection.models.length; i++) {
                     var model = this.searchCollection.models[i];
                     if (model && (model.get('name') || model.get('qualifiedName'))) {
-                        ++nameCheck
+                        ++nameCheck;
                     }
                     if (model && model.get('$id$') === undefined) {
                         i = i - 1;
@@ -435,7 +436,7 @@ define(['require',
                                     if (model.get('qualifiedName')) {
                                         rawValue = model.get('qualifiedName');
                                     } else if (model.get('$id$') && model.get('$id$').qualifiedName) {
-                                        rawValue = model.get('$id$').qualifiedName
+                                        rawValue = model.get('$id$').qualifiedName;
                                     } else {
                                         return "";
                                     }
@@ -446,14 +447,14 @@ define(['require',
                                     nameHtml = '<a>' + rawValue + '</a>';
                                 }
                                 if (model.get('$id$') && model.get('$id$').state && Globals.entityStateReadOnly[model.get('$id$').state]) {
-                                    nameHtml += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
+                                    nameHtml += '<button type="button" title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
                                     return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
                                 } else {
                                     return nameHtml;
                                 }
                             }
                         })
-                    }
+                    };
                 }
                 if (nameCheck === 0) {
                     col['typeName'] = {
@@ -466,11 +467,11 @@ define(['require',
                                 var nameHtml = "";
                                 if (rawValue === undefined) {
                                     if (model.get('$id$') && model.get('$id$')['$typeName$']) {
-                                        rawValue = model.get('$id$')['$typeName$']
+                                        rawValue = model.get('$id$')['$typeName$'];
                                     } else if (model.get('$typeName$')) {
                                         rawValue = model.get('$typeName$');
                                     } else if (model.get('typeName')) {
-                                        rawValue = model.get('typeName')
+                                        rawValue = model.get('typeName');
                                     } else {
                                         return "";
                                     }
@@ -481,14 +482,14 @@ define(['require',
                                     nameHtml = '<a>' + rawValue + '</a>';
                                 }
                                 if (model.get('$id$') && model.get('$id$').state && Globals.entityStateReadOnly[model.get('$id$').state]) {
-                                    nameHtml += '<button title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
+                                    nameHtml += '<button type="button" title="Deleted" class="btn btn-atlasAction btn-atlas deleteBtn"><i class="fa fa-trash"></i></button>';
                                     return '<div class="readOnly readOnlyLink">' + nameHtml + '</div>';
                                 } else {
                                     return nameHtml;
                                 }
                             }
                         })
-                    }
+                    };
                 }
 
                 col['description'] = {
@@ -496,13 +497,13 @@ define(['require',
                     cell: "String",
                     editable: false,
                     sortable: false
-                }
+                };
                 col['owner'] = {
                     label: "Owner",
                     cell: "String",
                     editable: false,
                     sortable: false
-                }
+                };
                 col['tag'] = {
                     label: "Tags",
                     cell: "Html",
@@ -666,7 +667,7 @@ define(['require',
                 });
                 this.previousClick = true;
                 this.fetchCollection();
-            },
+            }
         });
     return SearchResultLayoutView;
 });

@@ -58,7 +58,7 @@ button:focus {
 /* Login Page */
 
 .login-pane {
-    margin-top: 50px;
+    /*margin-top: 50px;*/
     background: #323544;
     color: #eee;
     padding: 15px;
@@ -106,7 +106,10 @@ button:focus {
 /* Login Page */
 
 .login-pane {
-    margin-top: 35%;
+    top: 25%;
+    width: 40%;
+    left: 30%;
+    position: fixed;
     background: #323544;
     color: #eee;
     padding: 15px;

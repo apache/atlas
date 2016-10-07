@@ -38,8 +38,11 @@
 }
 
 .login-pane {
-    margin-top: 50px;
-    margin-top: 35%;
+    top: 25%;
+    width: 40%;
+    left: 30%;
+    position: fixed;
+    padding: 15px;
     background: $color_tuna_approx;
     color: $color_gallery_approx;
     padding: 15px;

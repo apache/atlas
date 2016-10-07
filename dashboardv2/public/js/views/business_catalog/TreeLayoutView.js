@@ -258,7 +258,7 @@ define(['require',
                 if (isParent) {
                     this.parentCollection.url = this.url;
                     this.parentCollection.fullCollection.reset(undefined, { silent: true });
-                    this.parentCollection.fetch({ reset: true });
+                    this.parentCollection.fetch({ reset: true,cache:true });
                 } else {
                     this.childCollection.url = this.url + "?hierarchy/path:.";
                     this.childCollection.fullCollection.reset(undefined, { silent: true });
@@ -614,7 +614,8 @@ define(['require',
                 ], function(AddTermLayoutView, Modal) {
                     var view = new AddTermLayoutView({
                         url: "/api/atlas/v1/taxonomies",
-                        model: new that.parentCollection.model()
+                        model: new that.parentCollection.model(),
+                        defaultTerm:true
                     });
                     var modal = new Modal({
                         title: 'Taxonomy',
@@ -628,7 +629,6 @@ define(['require',
                     modal.on('ok', function() {
                         that.saveDefaultTaxonomy(view);
                     });
-                    view.ui.termName.attr("placeholder", "Enter Taxonomy Name");
                     view.ui.termName.on('keyup', function() {
                         if (this.value.indexOf(' ') >= 0) {
                             modal.$el.find('button.ok').prop('disabled', true);

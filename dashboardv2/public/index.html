@@ -15,10 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 -->
-
 <!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
 <!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
 <!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 7]>
+    <script src="js/external_lib/es5-shim.min.js"></script>
+    <script src="js/external_lib/respond.min.js"></script>
+<![endif]-->
 <!--[if gt IE 8]><!-->
 <html class="no-js">
 <!--<![endif]-->
@@ -26,6 +29,7 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8; Cache-Control: no-cache" />
     <title>Atlas</title>
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width">
@@ -45,6 +49,7 @@
     <link rel="stylesheet" type="text/css" href="js/external_lib/jquery-ui/jquery-ui.min.css">
     <link href="css/bootstrap-sidebar.css" rel="stylesheet">
     <link href="js/libs/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+    <link href="js/external_lib/pnotify.custom.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
 </head>
 

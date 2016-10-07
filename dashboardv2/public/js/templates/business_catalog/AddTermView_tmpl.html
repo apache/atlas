@@ -17,8 +17,13 @@
 <form name="tagDefinitionform" class="css-form" onsubmit="return false;">
     <!-- <h4 style="margin-bottom:30px">Add Term</h4> -->
     <div class="form-group">
+    	{{#if defaultTerm}}
+    	<input class="form-control" data-id="termName" placeholder="Enter Taxonomy Name" autofocus>
+        <p class='alertTerm' style='display:none'>Taxonomy name should not have spaces</p>
+    	{{else}}
         <input class="form-control" data-id="termName" placeholder="Name(Required)" autofocus>
-        <p class='alertTerm' style='display:none'>Term name should not have spaces</p>
+         <p class='alertTerm' style='display:none'>Term name should not have spaces</p>
+        {{/if}}
     </div>
     <div class="form-group">
         <textarea class="form-control" data-id="termDetail" placeholder="Description"></textarea>

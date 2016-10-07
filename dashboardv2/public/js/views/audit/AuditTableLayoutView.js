@@ -61,7 +61,7 @@ define(['require',
                 this.entityCollection = new VEntityList();
                 this.count = 26;
                 this.entityCollection.url = "/api/atlas/entities/" + this.guid + "/audit";
-                this.entityCollection.modelAttrName = "events"
+                this.entityCollection.modelAttrName = "events";
                 this.entityModel = new this.entityCollection.model();
                 this.pervOld = [];
                 this.commonTableOptions = {
@@ -162,7 +162,7 @@ define(['require',
                         columns: cols
                     })));
                     if (!(that.entityCollection.models.length < that.count)) {
-                        that.RAuditTableLayoutView.$el.find('table tr').last().hide()
+                        that.RAuditTableLayoutView.$el.find('table tr').last().hide();
                     }
                 });
             },
@@ -193,7 +193,6 @@ define(['require',
                         sortable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                that.detailBtnDisable = false;
                                 if (Globals.auditAction[rawValue]) {
                                     return Globals.auditAction[rawValue];
                                 } else {
@@ -209,7 +208,7 @@ define(['require',
                         sortable: false,
                         formatter: _.extend({}, Backgrid.CellFormatter.prototype, {
                             fromRaw: function(rawValue, model) {
-                                return '<div class="label label-success auditDetailBtn" data-id="auditCreate" data-action="' + Globals.auditAction[model.attributes.action] + '" disabled="' + that.detailBtnDisable + '" data-modalId="' + model.get('eventKey') + '">Detail</div>';
+                                return '<div class="label label-success auditDetailBtn" data-id="auditCreate" data-action="' + Globals.auditAction[model.attributes.action] + '" data-modalId="' + model.get('eventKey') + '">Detail</div>';
                             }
                         })
                     },
@@ -238,7 +237,7 @@ define(['require',
                     });
                     view.$el.on('click', 'td a', function() {
                         modal.trigger('cancel');
-                    })
+                    });
                 });
             },
             onClickNextAuditData: function() {
@@ -246,7 +245,7 @@ define(['require',
                 this.ui.previousAuditData.removeAttr("disabled");
                 $.extend(this.entityCollection.queryParams, {
                     startKey: function() {
-                        return that.next
+                        return that.next;
                     }
                 });
                 this.fetchCollection({
@@ -260,7 +259,7 @@ define(['require',
                 this.ui.nextAuditData.removeAttr("disabled");
                 $.extend(this.entityCollection.queryParams, {
                     startKey: function() {
-                        return that.pervOld.pop()
+                        return that.pervOld.pop();
                     }
                 });
                 this.fetchCollection({
