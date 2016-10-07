@@ -16,25 +16,25 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Globals'], function(require, Globals) {
+define(['require', 'utils/Globals', 'pnotify'], function(require, Globals, pnotify) {
     'use strict';
 
     var Utils = {};
     var prevNetworkErrorTime = 0;
-    require(['noty'], function() {
-        $.extend($.noty.defaults, {
-            timeout: 5000,
-            layout: "topRight",
-            theme: "relax",
-            closeWith: ['click', 'button'],
-            animation: {
-                open: 'animated flipInX',
-                close: 'animated flipOutX',
-                easing: 'swing',
-                speed: 500
-            }
+
+    Utils.escapeHtml = function(string) {
+        var entityMap = {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': '&quot;',
+            "'": '&#39;',
+            "/": '&#x2F;'
+        };
+        return String(string).replace(/[&<>"'\/]/g, function(s) {
+            return entityMap[s];
         });
-    });
+    }
     Utils.generateUUID = function() {
         var d = new Date().getTime();
         if (window.performance && typeof window.performance.now === "function") {
@@ -48,30 +48,34 @@ define(['require', 'utils/Globals'], function(require, Globals) {
         return uuid;
     };
 
+    var notify = function(options) {
+        new pnotify(_.extend({ icon: true, hide: true, delay: 3000,remove:true }, options));
+    }
     Utils.notifyInfo = function(options) {
-        noty({
-            type: "information",
-            text: "<i class='fa fa-exclamation-circle'></i> " + (options.content || "Info message.")
+        notify({
+            type: "info",
+            text: options.content || "Info message."
         });
     };
+
     Utils.notifyWarn = function(options) {
-        noty({
-            type: "warning",
-            text: "<i class='fa fa-times-circle'></i> " + (options.content || "Info message.")
+        notify({
+            type: "notice",
+            text: options.content || "Info message."
         });
     };
 
     Utils.notifyError = function(options) {
-        noty({
+        notify({
             type: "error",
-            text: "<i class='fa fa-times-circle'></i> " + (options.content || "Error occurred.")
+            text: options.content || "Error occurred."
         });
     };
 
     Utils.notifySuccess = function(options) {
-        noty({
+        notify({
             type: "success",
-            text: "<i class='fa fa-check-circle-o'></i> " + (options.content || "Error occurred.")
+            text: options.content || "Error occurred."
         });
     };
     Utils.defaultErrorHandler = function(model, error) {

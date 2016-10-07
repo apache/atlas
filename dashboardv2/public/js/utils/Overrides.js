@@ -16,8 +16,21 @@
  * limitations under the License.
  */
 
-define(['require', 'backgrid', 'asBreadcrumbs'], function(require) {
+define(['require', 'marionette', 'backgrid', 'asBreadcrumbs', 'jquery-placeholder'], function(require) {
     'use strict';
+
+    Backbone.$.ajaxSetup({
+        cache: false
+    });
+
+    // For placeholder support 
+    if (!('placeholder' in HTMLInputElement.prototype)) {
+        var originalRender = Backbone.Marionette.LayoutView.prototype.render;
+        Backbone.Marionette.LayoutView.prototype.render = function() {
+            originalRender.apply(this, arguments);
+            this.$('input, textarea').placeholder();
+        }
+    }
 
     String.prototype.trunc = String.prototype.trunc ||
         function(n) {

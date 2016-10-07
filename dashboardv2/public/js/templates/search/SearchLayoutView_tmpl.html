@@ -20,13 +20,13 @@
             <div class="col-md-6">
                 <span class="pull-left">Text</span>
                 <label class="switch pull-left">
-                    <input type="checkbox" name="queryType" value="text">
-                    <div class="slider round"></div>
-                </label>
+                   <input type="checkbox" class="switch-input" name="queryType" value="text"/>
+                   <span class="switch-slider"></span>
+                 </label>
                 <span class="pull-left">DSL</span>
             </div>
             <div class="col-md-6">
-                <button class="btn btn-atlasAction btn-atlas pull-right typeLOV" title="Refresh" data-id="refreshBtn"><i class="fa fa-refresh"></i></button>
+                <button type="button" class="btn btn-atlasAction btn-atlas pull-right typeLOV" title="Refresh" data-id="refreshBtn"><i class="fa fa-refresh"></i></button>
             </div>
         </div>
     </div>
@@ -36,10 +36,10 @@
                 <select data-id="typeLOV"></select>
             </div>
             <div class="searchInputClick">
-                <input type="text" class="form-control"  data-id="searchInput" placeholder="Search using a query string: e.g. sales_fact" style="margin-top: 5px;">
+                <input type="text" class="form-control" data-id="searchInput" placeholder="Search using a query string: e.g. sales_fact" style="margin-top: 5px;">
             </div>
         </div>
         <div class="clearAdvanceSearch" data-id="clearSearch">Clear</div>
-        <button class="btn btn-atlas advanceSearchBtn" data-id="searchBtn" disabled="disabled">Search</button>
+        <button type="button" class="btn btn-atlas advanceSearchBtn" data-id="searchBtn" disabled="disabled">Search</button>
     </div>
     <div id="searchResult"></div>

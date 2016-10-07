@@ -125,10 +125,12 @@ module.exports = function(grunt) {
                     'jquery-asBreadcrumbs/js': 'jquery-asBreadcrumbs/dist/jquery-asBreadcrumbs.min.js',
                     'd3': 'd3/d3.min.js',
                     'd3/': 'd3-tip/index.js',
-                    'noty/js': 'noty/js/noty/packaged/jquery.noty.packaged.min.js',
                     'dagre-d3': 'dagre-d3/dist/dagre-d3.min.js',
                     'select2': 'select2/dist/js/select2.min.js',
-                    'backgrid-select-all': 'backgrid-select-all/backgrid-select-all.min.js'
+                    'backgrid-select-all': 'backgrid-select-all/backgrid-select-all.min.js',
+                    'moment/js': 'moment/min/moment.min.js',
+                    'jquery-placeholder/js': 'jquery-placeholder/jquery.placeholder.js',
+                    'platform': 'platform/platform.js'
                 }
             },
             css: {
@@ -171,9 +173,10 @@ module.exports = function(grunt) {
                     'jquery-asBreadcrumbs': 'jquery-asBreadcrumbs/LICENSE',
                     'd3': 'd3/LICENSE',
                     'd3/': 'd3-tip/LICENSE',
-                    'noty': 'noty/LICENSE.txt',
                     'dagre-d3': 'dagre-d3/LICENSE',
-                    'backgrid-select-all': 'backgrid-select-all/LICENSE-MIT'
+                    'backgrid-select-all': 'backgrid-select-all/LICENSE-MIT',
+                    'jquery-placeholder': 'jquery-placeholder/LICENSE.txt',
+                    'platform/': 'platform/LICENSE'
                 }
             }
         },

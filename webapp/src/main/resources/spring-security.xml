@@ -33,6 +33,7 @@
     <security:http pattern="/img/**" security="none" />
     <security:http pattern="/libs/**" security="none" />
     <security:http pattern="/js/**" security="none" />
+    <security:http pattern="/ieerror.html" security="none" />
     <security:http pattern="/api/atlas/admin/status" security="none" />
 
     <security:http disable-url-rewriting="true"

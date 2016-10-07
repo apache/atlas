@@ -31,6 +31,12 @@ define(['require',
 
             template: AddTermViewTmpl,
 
+            templateHelpers: function() {
+                return {
+                    defaultTerm: this.defaultTerm
+                };
+            },
+
             /** Layout sub regions */
             regions: {},
             /** ui selector cache */
@@ -48,7 +54,7 @@ define(['require',
              * @constructs
              */
             initialize: function(options) {
-                _.extend(this, _.pick(options, 'url', 'model'));
+                _.extend(this, _.pick(options, 'url', 'model','defaultTerm'));
             },
             bindEvents: function() {},
             onRender: function() {}
