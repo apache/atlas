@@ -455,6 +455,7 @@
         <titan.storage.backend>berkeleyje</titan.storage.backend>
         <titan.index.backend>elasticsearch</titan.index.backend>
         <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
+	<graphdb.backend.impl>org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase</graphdb.backend.impl>
         <atlas.surefire.options></atlas.surefire.options>
     </properties>
 
@@ -900,6 +901,57 @@
             </dependency>
 
             <!-- Graph DB -->
+            <dependency>
+                <groupId>com.tinkerpop.blueprints</groupId>
+                <artifactId>blueprints-core</artifactId>
+                <version>${tinkerpop.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.thinkaurelius.titan</groupId>
+                <artifactId>titan-core</artifactId>
+                <version>${titan.version}</version>
+                <exclusions>
+                    <!-- rexster does not work with servlet-api -->
+                    <exclusion>
+                        <groupId>com.tinkerpop.rexster</groupId>
+                        <artifactId>rexster-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.tinkerpop.rexster</groupId>
+                        <artifactId>rexster-server</artifactId>
+                    </exclusion>
+                    <!-- asm 4.0 does not work with jersey asm 3.1 -->
+                    <exclusion>
+                        <groupId>com.tinkerpop</groupId>
+                        <artifactId>frames</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.esotericsoftware.reflectasm</groupId>
+                        <artifactId>reflectasm</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.ow2.asm</groupId>
+                        <artifactId>asm</artifactId>
+                    </exclusion>
+                    <exclusion> <!-- GPL license imported from ganglia -->
+                        <groupId>org.acplt</groupId>
+                        <artifactId>oncrpc</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>com.thinkaurelius.titan</groupId>
+                <artifactId>titan-berkeleyje</artifactId>
+                <version>${titan.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.thinkaurelius.titan</groupId>
+                <artifactId>titan-hbase</artifactId>
+                <version>${titan.version}</version>
+            </dependency>
             
             <dependency>
                 <groupId>org.apache.hbase</groupId>
@@ -953,6 +1005,7 @@
                     </exclusion>
                 </exclusions>
             </dependency>
+
 
             <dependency>
                 <groupId>com.vividsolutions</groupId>
@@ -1027,12 +1080,6 @@
 
             <dependency>
                 <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-graphdb-titan0</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
                 <artifactId>atlas-server-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -1082,6 +1129,17 @@
                 <version>${project.version}</version>
                 <type>war</type>
             </dependency>
+
+	    <!-- use titan 0.5.4 by default -->
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-graphdb-impls</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
+		  <!-- exclusions should be added here for all of the non-titan0 
+                 implementations -->
+                <scope>test</scope>
+	    </dependency>
 
             <dependency>
                 <groupId>org.apache.atlas</groupId>
@@ -1653,9 +1711,12 @@
                     <excludeSubProjects>true</excludeSubProjects>
                     <excludes>
                         <exclude>**/dependency-reduced-pom.xml</exclude>
+			<exclude>**/javax.script.ScriptEngineFactory</exclude>
                         <exclude>.reviewboardrc</exclude>
                         <exclude>3party-licenses/**</exclude>
+                        <exclude>**/.cache</exclude>
                         <exclude>**/.cache-main</exclude>
+                        <exclude>**/.cache-tests</exclude>
                         <exclude>**/.checkstyle</exclude>
                         <exclude>*.txt</exclude>
                         <exclude>**/*.json</exclude>

@@ -18,12 +18,11 @@
 
 package org.apache.atlas.catalog.query;
 
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.tinkerpop.blueprints.Compare;
-import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.gremlin.java.GremlinPipeline;
-import com.tinkerpop.pipes.Pipe;
-import com.tinkerpop.pipes.filter.PropertyFilterPipe;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.atlas.catalog.Request;
 import org.apache.atlas.catalog.VertexWrapper;
 import org.apache.atlas.catalog.definition.ResourceDefinition;
@@ -31,13 +30,15 @@ import org.apache.atlas.catalog.exception.ResourceNotFoundException;
 import org.apache.atlas.catalog.projection.Projection;
 import org.apache.atlas.catalog.projection.ProjectionResult;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graph.TitanGraphProvider;
+import org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase;
 import org.apache.atlas.typesystem.persistence.Id;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.tinkerpop.blueprints.Compare;
+import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.gremlin.java.GremlinPipeline;
+import com.tinkerpop.pipes.Pipe;
+import com.tinkerpop.pipes.filter.PropertyFilterPipe;
 
 /**
  * Base Query implementation.
@@ -167,7 +168,7 @@ public abstract class BaseQuery implements AtlasQuery {
     //todo: abstract
     // Underlying method is synchronized and caches the graph in a static field
     protected TitanGraph getGraph() {
-        return TitanGraphProvider.getGraphInstance();
+        return Titan0GraphDatabase.getGraphInstance();
     }
 
     protected VertexWrapper wrapVertex(Vertex v) {

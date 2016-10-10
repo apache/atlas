@@ -20,7 +20,7 @@ package org.apache.atlas.repository.graphdb.titan.query.expr;
 import org.apache.atlas.repository.graphdb.titan.query.NativeTitanGraphQuery;
 
 /**
- * Represents a predicate in an AndExpression
+ * Represents a predicate in an AndExpression.
  */
 public interface QueryPredicate {
 

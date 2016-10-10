@@ -19,14 +19,15 @@
 package org.apache.atlas.repository.graphdb.titan0;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.typesystem.types.Multiplicity;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -36,73 +37,47 @@ import org.testng.annotations.BeforeClass;
  */
 public abstract class AbstractGraphDatabaseTest {
 
-    private static class RunnableWrapper implements Runnable {
-        private final Runnable r;
-        private Throwable exceptionThrown_ = null;
-
-        private RunnableWrapper(Runnable r) {
-            this.r = r;
-        }
-
-        @Override
-        public void run() {
-            try {
-                r.run();
-            }
-            catch(Throwable e) {
-                exceptionThrown_ = e;
-            }
-
-        }
-
-        public Throwable getExceptionThrown() {
-            return exceptionThrown_;
-        }
-    }
-
     protected static final String WEIGHT_PROPERTY = "weight";
     protected static final String TRAIT_NAMES = Constants.TRAIT_NAMES_PROPERTY_KEY;
-    protected static final String typeProperty = "__type";
-    protected static final String typeSystem = "typeSystem";
+    protected static final String TYPE_PROPERTY_NAME = "__type";
+    protected static final String TYPESYSTEM = "TYPESYSTEM";
 
-    /**
-     *
-     */
     private static final String BACKING_INDEX_NAME = "backing";
 
-    private AtlasGraph<?,?> graph = null;
+    private AtlasGraph<?, ?> graph = null;
+
+
+    public AbstractGraphDatabaseTest() {
+       super();
+    }
+
+    @BeforeClass
+    public static void createIndices() {
+        Titan0GraphDatabase db = new Titan0GraphDatabase();
+        AtlasGraphManagement mgmt = db.getGraph().getManagementSystem();
+
+        if (mgmt.getGraphIndex(BACKING_INDEX_NAME) == null) {
+            mgmt.createVertexIndex(BACKING_INDEX_NAME, Constants.BACKING_INDEX,
+                    Collections.<AtlasPropertyKey>emptyList());
+        }
+        mgmt.makePropertyKey("age13", Integer.class, AtlasCardinality.SINGLE);
+
+        createIndices(mgmt, "name", String.class, false, AtlasCardinality.SINGLE);
+        createIndices(mgmt, WEIGHT_PROPERTY, Integer.class, false, AtlasCardinality.SINGLE);
+        createIndices(mgmt, "size15", String.class, false, AtlasCardinality.SINGLE);
+        createIndices(mgmt, "typeName", String.class, false, AtlasCardinality.SINGLE);
+        createIndices(mgmt, "__type", String.class, false, AtlasCardinality.SINGLE);
+        createIndices(mgmt, Constants.GUID_PROPERTY_KEY, String.class, true, AtlasCardinality.SINGLE);
+        createIndices(mgmt, Constants.TRAIT_NAMES_PROPERTY_KEY, String.class, false, AtlasCardinality.SET);
+        createIndices(mgmt, Constants.SUPER_TYPES_PROPERTY_KEY, String.class, false, AtlasCardinality.SET);
+        mgmt.commit();
+    }
 
     @AfterMethod
     public void commitGraph() {
         //force any pending actions to be committed so we can be sure they don't cause errors.
         pushChangesAndFlushCache();
-        graph.commit();
-    }
-    protected <V, E> void pushChangesAndFlushCache() {
-        AtlasGraph<V, E> graph = getGraph();
-        graph.commit();
-    }
-
-
-    @BeforeClass
-    public static void createIndices() {
-        Titan0Database db = new Titan0Database();
-        AtlasGraphManagement mgmt = db.getGraph().getManagementSystem();
-
-        if(mgmt.getGraphIndex(BACKING_INDEX_NAME) == null) {
-            mgmt.buildMixedVertexIndex(BACKING_INDEX_NAME, Constants.BACKING_INDEX);
-        }
-        mgmt.makePropertyKey("age13",Integer.class, Multiplicity.OPTIONAL);
-
-        createIndices(mgmt, "name", String.class, false, Multiplicity.REQUIRED);
-        createIndices(mgmt, WEIGHT_PROPERTY, Integer.class, false, Multiplicity.OPTIONAL);
-        createIndices(mgmt, "size15", String.class, false, Multiplicity.REQUIRED);
-        createIndices(mgmt, "typeName", String.class, false, Multiplicity.REQUIRED);
-        createIndices(mgmt, "__type", String.class, false, Multiplicity.REQUIRED);
-        createIndices(mgmt, Constants.GUID_PROPERTY_KEY, String.class, true, Multiplicity.REQUIRED);
-        createIndices(mgmt, Constants.TRAIT_NAMES_PROPERTY_KEY, String.class, false, Multiplicity.SET);
-        createIndices(mgmt, Constants.SUPER_TYPES_PROPERTY_KEY, String.class, false, Multiplicity.SET);
-        mgmt.commit();
+        getGraph().commit();
     }
 
     @AfterClass
@@ -112,32 +87,31 @@ public abstract class AbstractGraphDatabaseTest {
 
     }
 
+    protected <V, E> void pushChangesAndFlushCache() {
+        getGraph().commit();
+    }
+
     private static void createIndices(AtlasGraphManagement management, String propertyName, Class propertyClass,
-            boolean isUnique, Multiplicity cardinality) {
+            boolean isUnique, AtlasCardinality cardinality) {
 
-
-
-        if(management.containsPropertyKey(propertyName)) {
+        if (management.containsPropertyKey(propertyName)) {
             //index was already created
             return;
         }
 
         AtlasPropertyKey key = management.makePropertyKey(propertyName, propertyClass, cardinality);
         try {
-            if(propertyClass != Integer.class) {
-                management.addIndexKey(BACKING_INDEX_NAME, key);
+            if (propertyClass != Integer.class) {
+                management.addVertexIndexKey(BACKING_INDEX_NAME, key);
             }
-        }
-        catch(Throwable t) {
+        } catch(Throwable t) {
             //ok
             t.printStackTrace();
         }
         try {
-            //if(propertyClass != Integer.class) {
-            management.createCompositeIndex(propertyName, key, isUnique);
-            //}
-        }
-        catch(Throwable t) {
+            management.createExactMatchIndex(propertyName, isUnique, Collections.singletonList(key));
+
+        } catch(Throwable t) {
             //ok
             t.printStackTrace();
         }
@@ -145,19 +119,14 @@ public abstract class AbstractGraphDatabaseTest {
 
     }
 
-    /**
-     *
-     */
-    public AbstractGraphDatabaseTest() {
-        super();
-    }
 
 
-    protected final <V,E> AtlasGraph<V, E> getGraph() {
-        if(graph == null) {
+
+    protected final <V, E> AtlasGraph<V, E> getGraph() {
+        if (graph == null) {
             graph = new Titan0Graph();
         }
-        return (AtlasGraph<V,E>)graph;
+        return (AtlasGraph<V, E>)graph;
     }
 
     protected Titan0Graph getTitan0Graph() {
@@ -166,23 +135,23 @@ public abstract class AbstractGraphDatabaseTest {
     }
 
 
-    protected List<AtlasVertex> newVertices_ = new ArrayList<>();
+    protected List<AtlasVertex> newVertices = new ArrayList<>();
 
-    protected final <V, E> AtlasVertex<V, E> createVertex(AtlasGraph<V, E> graph) {
-        AtlasVertex<V,E> vertex = graph.addVertex();
-        newVertices_.add(vertex);
+    protected final <V, E> AtlasVertex<V, E> createVertex(AtlasGraph<V, E> theGraph) {
+        AtlasVertex<V, E> vertex = theGraph.addVertex();
+        newVertices.add(vertex);
         return vertex;
     }
 
     @AfterMethod
     public void removeVertices() {
-        for(AtlasVertex vertex : newVertices_) {
-            if(vertex.exists()) {
+        for(AtlasVertex vertex : newVertices) {
+            if (vertex.exists()) {
                 getGraph().removeVertex(vertex);
             }
         }
         getGraph().commit();
-        newVertices_.clear();
+        newVertices.clear();
     }
     protected void runSynchronouslyInNewThread(final Runnable r) throws Throwable {
 
@@ -191,10 +160,32 @@ public abstract class AbstractGraphDatabaseTest {
         th.start();
         th.join();
         Throwable ex = wrapper.getExceptionThrown();
-        if(ex != null) {
+        if (ex != null) {
             throw ex;
         }
     }
 
+    private static final class RunnableWrapper implements Runnable {
+        private final Runnable r;
+        private Throwable exceptionThrown = null;
+
+        private RunnableWrapper(Runnable r) {
+            this.r = r;
+        }
+
+        @Override
+        public void run() {
+            try {
+                r.run();
+            } catch(Throwable e) {
+                exceptionThrown = e;
+            }
+
+        }
+
+        public Throwable getExceptionThrown() {
+            return exceptionThrown;
+        }
+    }
 
 }

@@ -17,9 +17,9 @@
  */
 package org.apache.atlas.repository.graphdb.titan0;
 
+import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
-import org.apache.atlas.typesystem.types.Multiplicity;
 
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.PropertyKey;
@@ -63,17 +63,18 @@ public final class TitanObjectFactory {
      * @param multiplicity
      * @return
      */
-    public static Cardinality createCardinality(Multiplicity multiplicity) {
+    public static Cardinality createCardinality(AtlasCardinality cardinality) {
+        switch(cardinality) {
 
-        if (multiplicity == Multiplicity.OPTIONAL || multiplicity == Multiplicity.REQUIRED) {
+        case SINGLE:
             return Cardinality.SINGLE;
-        } else if (multiplicity == Multiplicity.COLLECTION) {
+        case LIST:
             return Cardinality.LIST;
-        } else if (multiplicity == Multiplicity.SET) {
+        case SET:
             return Cardinality.SET;
+        default:
+            throw new IllegalStateException("Unrecognized cardinality: " + cardinality);
         }
-        // default to LIST as this is the most forgiving
-        return Cardinality.LIST;
     }
 
     public static PropertyKey createPropertyKey(AtlasPropertyKey key) {

@@ -19,7 +19,6 @@ package org.apache.atlas.repository.graphdb;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.List;
 import java.util.Set;
 
 import javax.script.ScriptException;
@@ -27,7 +26,7 @@ import javax.script.ScriptException;
 import org.apache.atlas.typesystem.types.IDataType;
 
 /**
- * Represents a graph
+ * Represents a graph.
  *
  * @param <V> vertex implementation class
  * @param <E> edge implementation class
@@ -35,7 +34,7 @@ import org.apache.atlas.typesystem.types.IDataType;
 public interface AtlasGraph<V, E> {
 
     /**
-     * Adds an edge to the graph
+     * Adds an edge to the graph.
      *
      * @param outVertex
      * @param inVertex
@@ -45,14 +44,14 @@ public interface AtlasGraph<V, E> {
     AtlasEdge<V, E> addEdge(AtlasVertex<V, E> outVertex, AtlasVertex<V, E> inVertex, String label);
 
     /**
-     * Adds a vertex to the graph
+     * Adds a vertex to the graph.
      *
      * @return
      */
     AtlasVertex<V, E> addVertex();
 
     /**
-     * Removes the specified edge from the graph
+     * Removes the specified edge from the graph.
      *
      * @param edge
      */
@@ -136,18 +135,21 @@ public interface AtlasGraph<V, E> {
     Iterable<AtlasVertex<V, E>> getVertices(String key, Object value);
 
     /**
-     * Creates a graph query
+     * Creates a graph query.
+     *
      * @return
      */
     AtlasGraphQuery<V, E> query();
 
     /**
-     * Creates an index query
+     * Creates an index query.
      *
      * @param indexName index name
      * @param queryString the query
      *
-     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html">Elastic Search Reference</a> for query syntax
+     * @see <a
+     * href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html">
+     * Elastic Search Reference</a> for query syntax
      */
     AtlasIndexQuery<V, E> indexQuery(String indexName, String queryString);
 
@@ -176,14 +178,14 @@ public interface AtlasGraph<V, E> {
     /**
      * Deletes all data in the graph.  May or may not delete
      * the indices, depending on the what the underlying graph supports.
-     * 
+     *
      * For testing only.
-     * 
+     *
      */
     void clear();
 
     /**
-     * Converts the graph to gson and writes it to the specified stream
+     * Converts the graph to gson and writes it to the specified stream.
      *
      * @param os
      * @throws IOException
@@ -192,59 +194,6 @@ public interface AtlasGraph<V, E> {
 
     //the following methods insulate Atlas from the details
     //of the interaction with Gremlin
-
-
-    /**
-     *
-     * When we construct Gremlin select queries, the information we request
-     * is grouped by the vertex the information is coming from.  Each vertex
-     * is assigned a column name which uniquely identifies it.  The queries
-     * are specially formatted so that the value associated with each of
-     * these column names is an array with the various things we need
-     * about that particular vertex.  The query evaluator creates a mapping
-     * that knows what index each bit of information is stored at within
-     * this array.
-     * <p/>
-     * When we execute a Gremlin query, the exact java objects we get
-     * back vary depending on whether Gremlin 2 or Gremlin 3 is being used.
-     * This method takes as input a raw row result that was obtained by
-     * executing a Gremlin query and extracts the value that was found
-     * at the given index in the array for the given column name.
-     * <p/>
-     * If the value found is a vertex or edge, it is automatically converted
-     * to an AtlasVertex/AtlasEdge.
-     *
-     * @param rowValue the raw row value that was returned by Gremin
-     * @param colName the column name to use
-     * @param idx the index of the value within the column to retrieve.
-     *
-     */
-    Object getGremlinColumnValue(Object rowValue, String colName, int idx);
-
-    /**
-     * When Gremlin queries are executed, they return
-     * Vertex and Edge objects that are specific to the underlying
-     * graph database.  This method provides a way to convert these
-     * objects back into the AtlasVertex/AtlasEdge objects that
-     * Atlas requires.
-     *
-     * @param rawValue the value that was obtained from Gremlin
-     * @return either an AtlasEdge, an AtlasVertex, or the original
-     * value depending on whether the rawValue represents an edge,
-     * vertex, or something else.
-     *
-     */
-    Object convertGremlinValue(Object rawValue);
-
-    /**
-     * Gremlin 2 and Gremlin 3 represent the results of "path"
-     * queries differently.  This method takes as input the
-     * path from Gremlin and returns the list of objects in the path.
-     *
-     * @param rawValue
-     * @return
-     */
-    List<Object> convertPathQueryResultToList(Object rawValue);
 
     /**
      * This method is used in the generation of queries.  It is used to
@@ -256,7 +205,7 @@ public interface AtlasGraph<V, E> {
      * @return
      */
     String generatePersisentToLogicalConversionExpression(String valueExpr, IDataType<?> type);
-     
+
     /**
      * Indicates whether or not stored values with the specified type need to be converted
      * within generated gremlin queries before they can be compared with literal values.
@@ -292,7 +241,7 @@ public interface AtlasGraph<V, E> {
      * @return
      */
     String getInitialIndexedPredicate();
-    
+
     /**
      * As an optimization, a graph database implementation may want to retrieve additional
      * information about the query results.  For example, in the IBM Graph implementation,
@@ -303,12 +252,25 @@ public interface AtlasGraph<V, E> {
     String getOutputTransformationPredicate(boolean isSelect, boolean isPath);
 
     /**
-     * Executes a gremlin query, returns an object with the raw
-     * result.
+     * Executes a Gremlin script, returns an object with the result.
      *
      * @param gremlinQuery
+     * @param isPath whether this is a path query
+     *
+     * @return the result from executing the script
+     *
+     * @throws ScriptException
+     */
+    Object executeGremlinScript(String query, boolean isPath) throws ScriptException;
+
+    /**
+     * Convenience method to check whether the given property is
+     * a multi-property.
+     *
+     * @param name
      * @return
      */
-    Object executeGremlinScript(String gremlinQuery) throws ScriptException;
+    boolean isMultiProperty(String name);
+
 
 }

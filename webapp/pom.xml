@@ -35,6 +35,7 @@
         <projectBaseDir>${project.basedir}/..</projectBaseDir>
         <debug.jetty.daemon>true</debug.jetty.daemon>
         <packages.to.exclude />
+        <log4j.configuration.url>file://${project.build.directory}/../../distro/src/conf/atlas-log4j.xml</log4j.configuration.url>
     </properties>
 
     <profiles>
@@ -85,6 +86,18 @@
                 <packages.to.exclude>WEB-INF/lib/je-*.jar</packages.to.exclude>
             </properties>
         </profile>
+
+        <profile>
+            <id>Windows</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <properties>
+                <log4j.configuration.url>file:/${project.build.directory}/../../distro/src/conf/atlas-log4j.xml</log4j.configuration.url>                
+            </properties>
+        </profile>    
     </profiles>
 
     <dependencies>
@@ -101,11 +114,6 @@
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-repository</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-graphdb-titan0</artifactId>
         </dependency>
 
         <dependency>
@@ -146,6 +154,12 @@
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-catalog</artifactId>
+        </dependency>
+
+        <dependency>
+          <groupId>org.apache.atlas</groupId>
+          <artifactId>atlas-graphdb-impls</artifactId>
+          <type>pom</type>
         </dependency>
 
         <!-- supports simple auth handler -->
@@ -455,7 +469,7 @@
                     <systemProperties>
                         <systemProperty>
                             <name>log4j.configuration</name>
-                            <value>file://${project.build.directory}/../../distro/src/conf/atlas-log4j.xml</value>
+                            <value>${log4j.configuration.url}</value>
                         </systemProperty>
                         <systemProperty>
                             <name>atlas.log.file</name>

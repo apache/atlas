@@ -44,7 +44,7 @@ public interface AtlasIndexQuery<V, E> {
     public interface Result<V, E> {
 
         /**
-         * Gets the vertex for this result
+         * Gets the vertex for this result.
          */
         AtlasVertex<V, E> getVertex();
 

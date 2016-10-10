@@ -17,51 +17,51 @@
  */
 package org.apache.atlas.repository.graph;
 
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import org.apache.atlas.repository.RepositoryException;
-import org.mockito.MockitoAnnotations;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
-
-import java.util.Iterator;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
+
+import java.util.Iterator;
+
+import org.apache.atlas.repository.RepositoryException;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.mockito.MockitoAnnotations;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 public class GraphHelperMockTest {
 
     private GraphHelper graphHelperInstance;
 
-    private TitanGraph graph;
+    private AtlasGraph graph;
 
     @BeforeClass
     public void setup() {
         MockitoAnnotations.initMocks(this);
-        graph = mock(TitanGraph.class);
+        graph = mock(AtlasGraph.class);
         graphHelperInstance = GraphHelper.getInstance(graph);
     }
 
     @Test(expectedExceptions = RepositoryException.class)
     public void testGetOrCreateEdgeLabelWithMaxRetries() throws Exception {
         final String edgeLabel = "testLabel";
-        TitanVertex v1 = mock(TitanVertex.class);
-        TitanVertex v2 = mock(TitanVertex.class);
+        AtlasVertex v1 = mock(AtlasVertex.class);
+        AtlasVertex v2 = mock(AtlasVertex.class);
 
-        Iterable noEdgesIterable = new Iterable<Edge>() {
+        Iterable noEdgesIterable = new Iterable<AtlasEdge>() {
             @Override
-            public Iterator<Edge> iterator() {
-                return new Iterator<Edge>() {
+            public Iterator<AtlasEdge> iterator() {
+                return new Iterator<AtlasEdge>() {
                     @Override
                     public boolean hasNext() {
                         return false;
                     }
 
                     @Override
-                    public Edge next() {
+                    public AtlasEdge next() {
                         return null;
                     }
 
@@ -71,33 +71,33 @@ public class GraphHelperMockTest {
                 };
             }
         };
-        when(v2.getEdges(Direction.IN)).thenReturn(noEdgesIterable);
-        when(v1.getEdges(Direction.OUT)).thenReturn(noEdgesIterable);
+        when(v2.getEdges(AtlasEdgeDirection.IN)).thenReturn(noEdgesIterable);
+        when(v1.getEdges(AtlasEdgeDirection.OUT)).thenReturn(noEdgesIterable);
 
         when(v1.getId()).thenReturn(new String("1234"));
         when(v2.getId()).thenReturn(new String("5678"));
-        when(graph.addEdge(null, v1, v2, edgeLabel)).thenThrow(new RuntimeException("Unique property constraint violated"));
+        when(graph.addEdge(v1, v2, edgeLabel)).thenThrow(new RuntimeException("Unique property constraint violated"));
         graphHelperInstance.getOrCreateEdge(v1, v2, edgeLabel);
     }
 
     @Test
     public void testGetOrCreateEdgeLabelWithRetries() throws Exception {
         final String edgeLabel = "testLabel";
-        TitanVertex v1 = mock(TitanVertex.class);
-        TitanVertex v2 = mock(TitanVertex.class);
-        Edge edge = mock(Edge.class);
+        AtlasVertex v1 = mock(AtlasVertex.class);
+        AtlasVertex v2 = mock(AtlasVertex.class);
+        AtlasEdge edge = mock(AtlasEdge.class);
 
-        Iterable noEdgesIterable = new Iterable<Edge>() {
+        Iterable noEdgesIterable = new Iterable<AtlasEdge>() {
             @Override
-            public Iterator<Edge> iterator() {
-                return new Iterator<Edge>() {
+            public Iterator<AtlasEdge> iterator() {
+                return new Iterator<AtlasEdge>() {
                     @Override
                     public boolean hasNext() {
                         return false;
                     }
 
                     @Override
-                    public Edge next() {
+                    public AtlasEdge next() {
                         return null;
                     }
 
@@ -107,15 +107,15 @@ public class GraphHelperMockTest {
                 };
             }
         };
-        when(v2.getEdges(Direction.IN)).thenReturn(noEdgesIterable);
-        when(v1.getEdges(Direction.OUT)).thenReturn(noEdgesIterable);
+        when(v2.getEdges(AtlasEdgeDirection.IN)).thenReturn(noEdgesIterable);
+        when(v1.getEdges(AtlasEdgeDirection.OUT)).thenReturn(noEdgesIterable);
 
         when(v1.getId()).thenReturn(new String("v1"));
         when(v2.getId()).thenReturn(new String("v2"));
         when(edge.getId()).thenReturn(new String("edge"));
-        when(graph.addEdge(null, v1, v2, edgeLabel))
+        when(graph.addEdge(v1, v2, edgeLabel))
                 .thenThrow(new RuntimeException("Unique property constraint violated")).thenReturn(edge);
-        Edge redge = graphHelperInstance.getOrCreateEdge(v1, v2, edgeLabel);
+        AtlasEdge redge = graphHelperInstance.getOrCreateEdge(v1, v2, edgeLabel);
         assertEquals(edge, redge);
     }
 }

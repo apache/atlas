@@ -32,20 +32,20 @@ import java.util.List;
  */
 public class OrCondition {
 
-    private List<AndCondition> children_;
+    private List<AndCondition> children;
 
     public OrCondition() {
         this(true);
     }
 
     private OrCondition(List<AndCondition> children) {
-        children_ = children;
+        this.children = children;
     }
 
     public OrCondition(boolean addInitialTerm) {
-        children_ = new ArrayList<AndCondition>();
+        this.children = new ArrayList<AndCondition>();
         if (addInitialTerm) {
-            children_.add(new AndCondition());
+            children.add(new AndCondition());
         }
     }
 
@@ -58,18 +58,18 @@ public class OrCondition {
      */
     public void andWith(QueryPredicate predicate) {
 
-        for (AndCondition child : children_) {
+        for (AndCondition child : children) {
             child.andWith(predicate);
         }
     }
 
     public List<AndCondition> getAndTerms() {
-        return children_;
+        return children;
     }
 
     /**
-     * Updates this OrCondition in place so that it  matches vertices that satisfy the current
-     * OrCondition AND that satisfy the provided OrCondition
+     * Updates this OrCondition in place so that it matches vertices that satisfy the current
+     * OrCondition AND that satisfy the provided OrCondition.
      *
      * @param other
      */
@@ -98,30 +98,30 @@ public class OrCondition {
 
         List<AndCondition> expandedExpressionChildren = new ArrayList<AndCondition>();
         for (AndCondition otherExprTerm : other.getAndTerms()) {
-            for (AndCondition currentExpr : children_) {
+            for (AndCondition currentExpr : children) {
                 AndCondition currentAndConditionCopy = currentExpr.copy();
                 currentAndConditionCopy.andWith(otherExprTerm.getTerms());
                 expandedExpressionChildren.add(currentAndConditionCopy);
             }
         }
-        children_ = expandedExpressionChildren;
+        children = expandedExpressionChildren;
     }
 
     /**
-     * Updates this OrCondition in place so that it  matches vertices that satisfy the current
-     * OrCondition OR that satisfy the provided OrCondition
+     * Updates this OrCondition in place so that it matches vertices that satisfy the current
+     * OrCondition OR that satisfy the provided OrCondition.
      *
      * @param other
      */
     public void orWith(OrCondition other) {
-        children_.addAll(other.getAndTerms());
+        children.addAll(other.getAndTerms());
     }
 
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
         builder.append("OrCondition [andExprs=");
-        Iterator<AndCondition> it = children_.iterator();
+        Iterator<AndCondition> it = children.iterator();
         while (it.hasNext()) {
             AndCondition andExpr = it.next();
             builder.append(andExpr.toString());

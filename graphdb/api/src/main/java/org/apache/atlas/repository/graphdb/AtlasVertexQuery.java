@@ -27,7 +27,7 @@ package org.apache.atlas.repository.graphdb;
 public interface AtlasVertexQuery<V, E> {
 
     /**
-     * Specifies the edge direction that should be query
+     * Specifies the edge direction that should be query.
      *
      * @param queryDirection
      * @return

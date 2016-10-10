@@ -17,15 +17,15 @@
  */
 package org.apache.atlas;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.util.TitanCleanup;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import javax.inject.Inject;
 
 import org.apache.atlas.repository.MetadataRepository;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
-import org.apache.atlas.repository.graph.GraphProvider;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
@@ -45,11 +45,9 @@ import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.testng.annotations.Guice;
 
-import javax.inject.Inject;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 /**
  *  Base Class to set up hive types and instances for tests
@@ -63,29 +61,21 @@ public class BaseRepositoryTest {
     @Inject
     protected MetadataRepository repository;
 
-    @Inject
-    protected GraphProvider<TitanGraph> graphProvider;
+   
 
     protected void setUp() throws Exception {
+        //force graph initialization / built in type registration
+        TestUtils.getGraph();
         setUpTypes();
-        new GraphBackedSearchIndexer(graphProvider);
-        RequestContext.createContext();
+        new GraphBackedSearchIndexer();
+        TestUtils.resetRequestContext();
         setupInstances();
-        TestUtils.dumpGraph(graphProvider.get());
+        TestUtils.dumpGraph(TestUtils.getGraph());
     }
-
+    
     protected void tearDown() throws Exception {
         TypeSystem.getInstance().reset();
-        try {
-            graphProvider.get().shutdown();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        try {
-            TitanCleanup.clear(graphProvider.get());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        AtlasGraphProvider.cleanup();
     }
 
     private void setUpTypes() throws Exception {

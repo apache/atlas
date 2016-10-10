@@ -18,7 +18,7 @@
 
 package org.apache.atlas.repository.graph;
 
-import com.tinkerpop.blueprints.Vertex;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
@@ -99,7 +99,7 @@ public class GraphBackedRepositoryHardDeleteTest extends GraphBackedMetadataRepo
     }
 
     @Override
-    protected void assertVerticesDeleted(List<Vertex> vertices) {
+    protected void assertVerticesDeleted(List<AtlasVertex> vertices) {
         assertEquals(vertices.size(), 0);
     }
 
@@ -171,10 +171,10 @@ public class GraphBackedRepositoryHardDeleteTest extends GraphBackedMetadataRepo
         assertNull(mapOwnerInstance.get("map"));
         assertNull(mapOwnerInstance.get("biMap"));
 
-        Vertex mapOwnerVertex = GraphHelper.getInstance().getVertexForGUID(mapOwnerGuid);
-        Object object = mapOwnerVertex.getProperty("MapOwner.map.value1");
+        AtlasVertex mapOwnerVertex = GraphHelper.getInstance().getVertexForGUID(mapOwnerGuid);
+        Object object = mapOwnerVertex.getProperty("MapOwner.map.value1", String.class);
         assertNull(object);
-        object = mapOwnerVertex.getProperty("MapOwner.biMap.value1");
+        object = mapOwnerVertex.getProperty("MapOwner.biMap.value1", String.class);
         assertNull(object);
     }
 

@@ -26,25 +26,24 @@ import org.apache.atlas.repository.graphdb.titan.query.NativeTitanGraphQuery;
  */
 public class HasPredicate implements QueryPredicate {
 
-    private String propertyName_;
-    private ComparisionOperator op_;
-    private Object value_;
+    private String propertyName;
+    private ComparisionOperator op;
+    private Object value;
 
     public HasPredicate(String propertyName, ComparisionOperator op, Object value) {
         super();
-        propertyName_ = propertyName;
-        op_ = op;
-        value_ = value;
+        this.propertyName = propertyName;
+        this.op = op;
+        this.value = value;
     }
 
     @Override
     public void addTo(NativeTitanGraphQuery query) {
-        query.has(propertyName_, op_, value_);
+        query.has(propertyName, op, value);
     }
 
     @Override
     public String toString() {
-        return "HasTerm [propertyName_=" + propertyName_ + ", op_=" + op_ + ", value_=" + value_ + "]";
+        return "HasTerm [propertyName=" + propertyName + ", op=" + op + ", value=" + value + "]";
     }
-
 }

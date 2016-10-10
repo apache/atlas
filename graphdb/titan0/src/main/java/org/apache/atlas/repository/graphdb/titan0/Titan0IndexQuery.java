@@ -59,7 +59,7 @@ public class Titan0IndexQuery implements AtlasIndexQuery<Titan0Vertex, Titan0Edg
     private final class ResultImpl implements AtlasIndexQuery.Result<Titan0Vertex, Titan0Edge> {
         private TitanIndexQuery.Result<Vertex> wrappedResult;
 
-        public ResultImpl(TitanIndexQuery.Result<Vertex> source) {
+        ResultImpl(TitanIndexQuery.Result<Vertex> source) {
             wrappedResult = source;
         }
 

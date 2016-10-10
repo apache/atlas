@@ -18,7 +18,7 @@
 package org.apache.atlas.service;
 
 import org.apache.atlas.TestUtils;
-import org.apache.atlas.repository.graph.GraphProvider;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.typestore.ITypeStore;
 import org.apache.atlas.repository.typestore.StoreBackedTypeCache;
 import org.apache.atlas.repository.typestore.StoreBackedTypeCacheTestModule;
@@ -44,8 +44,6 @@ import org.testng.annotations.Test;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.util.TitanCleanup;
 
 
 /**
@@ -66,9 +64,6 @@ public class StoreBackedTypeCacheMetadataServiceTest
     TypeCache typeCache;
 
     private StoreBackedTypeCache storeBackedTypeCache;
-
-    @Inject
-    private GraphProvider<TitanGraph> graphProvider;
 
     private TypeSystem ts;
 
@@ -94,22 +89,10 @@ public class StoreBackedTypeCacheMetadataServiceTest
 
     @AfterClass
     public void tearDown() throws Exception {
-        ts.reset();
-        try {
-            graphProvider.get().shutdown();
-        }
-        catch(Exception e) {
-            e.printStackTrace();
-        }
-
-        try {
-            TitanCleanup.clear(graphProvider.get());
-        }
-        catch(Exception e) {
-            e.printStackTrace();
-        }
+        TypeSystem.getInstance().reset();
+        AtlasGraphProvider.cleanup();
     }
-
+    
     @Test
     public void testGetTypeDefinition() throws Exception {
         // Cache should be empty

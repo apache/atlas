@@ -20,6 +20,7 @@ package org.apache.atlas.repository.typestore;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RepositoryMetadataModule;
+import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.commons.configuration.Configuration;
 
 
@@ -32,7 +33,7 @@ public class StoreBackedTypeCacheTestModule extends RepositoryMetadataModule {
     protected Configuration getConfiguration() {
         try {
             Configuration configuration = ApplicationProperties.get();
-            configuration.setProperty(RepositoryMetadataModule.TYPE_CACHE_IMPLEMENTATION_PROPERTY,
+            configuration.setProperty(AtlasRepositoryConfiguration.TYPE_CACHE_IMPLEMENTATION_PROPERTY,
                     StoreBackedTypeCache.class.getName());
             return configuration;
         } catch (AtlasException e) {

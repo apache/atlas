@@ -18,10 +18,9 @@
 
 package org.apache.atlas.query
 
-import javax.script.{Bindings, ScriptEngine, ScriptEngineManager}
+
 import org.apache.atlas.query.Expressions._
-import com.thinkaurelius.titan.core.TitanGraph
-import com.tinkerpop.pipes.util.structures.Row
+import org.apache.atlas.repository.graphdb.AtlasGraph
 import org.apache.atlas.query.TypeUtils.ResultWithPathStruct
 import org.apache.atlas.typesystem.json._
 import org.apache.atlas.typesystem.types._
@@ -40,80 +39,108 @@ case class GremlinQueryResult(query: String,
     def toJson = JsonHelper.toJson(this)
 }
 
-class GremlinEvaluator(qry: GremlinQuery, persistenceStrategy: GraphPersistenceStrategies, g: TitanGraph) {
+class GremlinEvaluator(qry: GremlinQuery, persistenceStrategy: GraphPersistenceStrategies, g: AtlasGraph[_,_]) {
 
-    val manager: ScriptEngineManager = new ScriptEngineManager
-    val engine: ScriptEngine = manager.getEngineByName("gremlin-groovy")
-    val bindings: Bindings = engine.createBindings
-    bindings.put("g", g)
-
-    /**
+   /**
      *
      * @param gResultObj is the object returned from gremlin. This must be a List
      * @param qryResultObj is the object constructed for the output w/o the Path.
      * @return a ResultWithPathStruct
      */
-    def addPathStruct(gResultObj : AnyRef, qryResultObj : Any) : Any = {
-      if ( !qry.isPathExpresion) {
-        qryResultObj
-      } else {
-        import scala.collection.JavaConversions._
-        import scala.collection.JavaConverters._
-        val iPaths = gResultObj.asInstanceOf[java.util.List[AnyRef]].init
+    def addPathStruct(gResultObj: AnyRef, qryResultObj: Any): Any = {
+        if (!qry.isPathExpression) {
+            qryResultObj
+        } else {
+            import scala.collection.JavaConversions._
+            import scala.collection.JavaConverters._
+            
+            val iPaths = gResultObj.asInstanceOf[java.util.List[AnyRef]].init
 
-        val oPaths = iPaths.map { p =>
-          persistenceStrategy.constructInstance(TypeSystem.getInstance().getIdType.getStructType, p)
-        }.toList.asJava
-        val sType = qry.expr.dataType.asInstanceOf[StructType]
-        val sInstance = sType.createInstance()
-        sInstance.set(ResultWithPathStruct.pathAttrName, oPaths)
-        sInstance.set(ResultWithPathStruct.resultAttrName, qryResultObj)
-        sInstance
-      }
+            val oPaths = iPaths.map { value =>
+                persistenceStrategy.constructInstance(TypeSystem.getInstance().getIdType.getStructType, value)
+            }.toList.asJava
+            val sType = qry.expr.dataType.asInstanceOf[StructType]
+            val sInstance = sType.createInstance()
+            sInstance.set(ResultWithPathStruct.pathAttrName, oPaths)
+            sInstance.set(ResultWithPathStruct.resultAttrName, qryResultObj)
+            sInstance
+        }
     }
 
-    def instanceObject(v : AnyRef) : AnyRef = {
-      if ( qry.isPathExpresion ) {
-        import scala.collection.JavaConversions._
-        v.asInstanceOf[java.util.List[AnyRef]].last
-      } else {
-        v
-      }
+    def instanceObject(v: AnyRef): AnyRef = {
+        if (qry.isPathExpression) {
+            import scala.collection.JavaConversions._
+            v.asInstanceOf[java.util.List[AnyRef]].last
+        } else {
+            v
+        }
     }
 
     def evaluate(): GremlinQueryResult = {
         import scala.collection.JavaConversions._
+         val debug:Boolean = false
         val rType = qry.expr.dataType
-        val oType = if (qry.isPathExpresion) qry.expr.children(0).dataType else rType
-        val rawRes = engine.eval(qry.queryStr, bindings)
+        val oType = if (qry.isPathExpression) {
+            qry.expr.children(0).dataType
+        }
+        else {
+            rType
+        }
+        val rawRes = g.executeGremlinScript(qry.queryStr, qry.isPathExpression);
+        if(debug) {
+            println(" rawRes " +rawRes)
+        }
         if (!qry.hasSelectList) {
             val rows = rawRes.asInstanceOf[java.util.List[AnyRef]].map { v =>
-                val iV = instanceObject(v)
-                val o = persistenceStrategy.constructInstance(oType, iV)
-              addPathStruct(v, o)
+                val instObj = instanceObject(v)
+                val o = persistenceStrategy.constructInstance(oType, instObj)
+                addPathStruct(v, o)
             }
             GremlinQueryResult(qry.expr.toString, rType, rows.toList)
         } else {
             val sType = oType.asInstanceOf[StructType]
             val rows = rawRes.asInstanceOf[java.util.List[AnyRef]].map { r =>
-              val rV = instanceObject(r).asInstanceOf[Row[java.util.List[AnyRef]]]
+                val rV = instanceObject(r)
                 val sInstance = sType.createInstance()
                 val selObj = SelectExpressionHelper.extractSelectExpression(qry.expr)
-                if (selObj.isDefined)
-                {
+                if (selObj.isDefined) {
                     val selExpr = selObj.get.asInstanceOf[Expressions.SelectExpression]
-                        selExpr.selectListWithAlias.foreach { aE =>
+                    selExpr.selectListWithAlias.foreach { aE =>
                         val cName = aE.alias
                         val (src, idx) = qry.resultMaping(cName)
-                        val v = rV.getColumn(src).get(idx)
+                        val v = getColumnValue(rV, src, idx)
                         sInstance.set(cName, persistenceStrategy.constructInstance(aE.dataType, v))
                     }
-                }
-              addPathStruct(r, sInstance)
+                }               
+                addPathStruct(r, sInstance)
             }
             GremlinQueryResult(qry.expr.toString, rType, rows.toList)
         }
 
+    }
+    
+    private def getColumnValue(rowValue: AnyRef, colName: String, idx: Integer) : AnyRef  = {
+
+        var rawColumnValue: AnyRef = null;
+        if(rowValue.isInstanceOf[java.util.Map[_,_]]) {
+            val columnsMap = rowValue.asInstanceOf[java.util.Map[String,AnyRef]];
+            rawColumnValue = columnsMap.get(colName);
+        }
+        else {
+            //when there is only one column, result does not come back as a map
+            rawColumnValue = rowValue;
+        }
+
+        var value : AnyRef = null;
+        if(rawColumnValue.isInstanceOf[java.util.List[_]] && idx >= 0) {
+            val arr = rawColumnValue.asInstanceOf[java.util.List[AnyRef]];
+            value = arr.get(idx);
+        }
+        else {
+            value = rawColumnValue;
+        }
+
+        return value;
     }
 }
 

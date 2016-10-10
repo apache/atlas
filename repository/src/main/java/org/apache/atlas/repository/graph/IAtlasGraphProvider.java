@@ -15,36 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.repository.graphdb;
+
+package org.apache.atlas.repository.graph;
+
+import org.apache.atlas.repository.RepositoryException;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 
 /**
- * Represents a graph database.
- *
- * @param <V> vertex class used by the graph database
- * @param <E> edge class used by the graph database
+ * Provides a mechanism to control what graph is used in various places.  This
+ * allows the graph to be mocked out during unit testing and be initialized
+ * lazily.
  */
-public interface GraphDatabase<V, E> {
-
-    /**
-     * Returns whether the graph has been loaded.
-     * @return
-     */
-    boolean isGraphLoaded();
-
-    /**
-     * Gets the graph, loading it if it has not been loaded already.
-     * @return
-     */
-    AtlasGraph<V, E> getGraph();
-
-    /**
-     * Sets things up so that getGraph() will return a graph that can be used for running
-     * tests.
-     */
-    void initializeTestGraph();
-
-    /**
-     * Removes the test graph that was created.
-     */
-    void cleanup();
+public interface IAtlasGraphProvider {
+    
+    AtlasGraph get() throws RepositoryException;
 }

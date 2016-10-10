@@ -31,17 +31,17 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
  * @param <V>
  * @param <E>
  */
-public interface NativeTitanGraphQuery<V,E> {
+public interface NativeTitanGraphQuery<V, E> {
 
     /**
-     * Executes the graph query
+     * Executes the graph query.
      * @return
      */
-    Iterable<AtlasVertex<V,E>> vertices();
+    Iterable<AtlasVertex<V, E>> vertices();
 
 
     /**
-     * Adds an in condition to the query
+     * Adds an in condition to the query.
      *
      * @param propertyName
      * @param values
@@ -49,7 +49,7 @@ public interface NativeTitanGraphQuery<V,E> {
     void in(String propertyName, Collection<? extends Object> values);
 
     /**
-     * Adds a has condition to the query
+     * Adds a has condition to the query.
      *
      * @param propertyName
      * @param op

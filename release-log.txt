@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-694  Update Atlas code to use graph abstraction layer (jnhagelb via sumasai)
 ATLAS-1215 Atlas UI not working in firefox due to fix in ATLAS-1199 (kevalbhatt)
 ATLAS-1171 Structured, high-level public APIs - Fix JAXB issues with PList, SearchFilter (mneethiraj via sumasai)
 ATLAS-1206 Atlas UI not working with IE or Chrome on Windows OS in Kerberos mode (nixonrodrigues via sumasai)
@@ -50,7 +51,7 @@ ATLAS-1104 Get outgoing edges by label doesn't work in some cases (shwethags)
 ATLAS-1106 Fix Build failure due to wrong version in graphdb/common pom (sumasai)
 ATLAS-1105 Disable HiveLiteralRewriterTest since its not used currently (sumasai)
 ATLAS-1103 : UI: Search type list is not refreshed (Kalyanikashikar via sumasai)
-ATLAS-693 Titan 0.5.4 implementation of the graph db abstraction {jnhagelb via dkantor)
+ATLAS-693 Titan 0.5.4 implementation of the graph db abstraction (jnhagelb via dkantor)
 ATLAS-1099 UI : multiple tag assign button hides wrongly (Kalyanikashikar via sumasai)
 ATLAS-1087 Provide an option to turn off persisting entity definition in audits (sumasai, shwethags)
 ATLAS-1097 Fix a potential NPE issue flagged by Coverity scan (mneethiraj via shwethags)

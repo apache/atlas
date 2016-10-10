@@ -37,7 +37,7 @@ public class Titan0DatabaseValidationTest {
         // First get Instance
         graph = new Titan0Graph();
         configuration = ApplicationProperties.getSubsetConfiguration(ApplicationProperties.get(),
-                Titan0Database.GRAPH_PREFIX);
+                Titan0GraphDatabase.GRAPH_PREFIX);
     }
 
     @AfterClass
@@ -58,15 +58,15 @@ public class Titan0DatabaseValidationTest {
     @Test
     public void testValidate() throws AtlasException {
         try {
-            Titan0Database.validateIndexBackend(configuration);
+            Titan0GraphDatabase.validateIndexBackend(configuration);
         } catch (Exception e) {
             Assert.fail("Unexpected exception ", e);
         }
 
         // Change backend
-        configuration.setProperty(Titan0Database.INDEX_BACKEND_CONF, Titan0Database.INDEX_BACKEND_LUCENE);
+        configuration.setProperty(Titan0GraphDatabase.INDEX_BACKEND_CONF, Titan0GraphDatabase.INDEX_BACKEND_LUCENE);
         try {
-            Titan0Database.validateIndexBackend(configuration);
+            Titan0GraphDatabase.validateIndexBackend(configuration);
             Assert.fail("Expected exception");
         } catch (Exception e) {
             Assert.assertEquals(e.getMessage(),

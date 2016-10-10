@@ -18,7 +18,9 @@
 
 package org.apache.atlas.discovery;
 
-import com.thinkaurelius.titan.core.TitanGraph;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
@@ -31,7 +33,8 @@ import org.apache.atlas.query.InputLineageClosureQuery;
 import org.apache.atlas.query.OutputLineageClosureQuery;
 import org.apache.atlas.query.QueryParams;
 import org.apache.atlas.repository.MetadataRepository;
-import org.apache.atlas.repository.graph.GraphProvider;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
 import org.apache.atlas.typesystem.exception.SchemaNotFoundException;
 import org.apache.atlas.typesystem.persistence.ReferenceableInstance;
@@ -39,12 +42,10 @@ import org.apache.atlas.utils.ParamChecker;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import scala.Option;
 import scala.Some;
 import scala.collection.immutable.List;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Hive implementation of Lineage service interface.
@@ -80,14 +81,14 @@ public class DataSetLineageService implements LineageService {
     }
 
 
-    private final TitanGraph titanGraph;
+    private final AtlasGraph graph;
     private final DefaultGraphPersistenceStrategy graphPersistenceStrategy;
     private final GraphBackedDiscoveryService discoveryService;
 
     @Inject
-    DataSetLineageService(GraphProvider<TitanGraph> graphProvider, MetadataRepository metadataRepository,
+    DataSetLineageService(MetadataRepository metadataRepository,
                           GraphBackedDiscoveryService discoveryService) throws DiscoveryException {
-        this.titanGraph = graphProvider.get();
+        this.graph = AtlasGraphProvider.getGraphInstance();
         this.graphPersistenceStrategy = new DefaultGraphPersistenceStrategy(metadataRepository);
         this.discoveryService = discoveryService;
     }
@@ -136,7 +137,7 @@ public class DataSetLineageService implements LineageService {
                 inputsQuery = new InputLineageClosureQuery(AtlasClient.DATA_SET_SUPER_TYPE, SELECT_INSTANCE_GUID,
                 guid, HIVE_PROCESS_TYPE_NAME,
                 HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME, Option.empty(),
-                SELECT_ATTRIBUTES, true, graphPersistenceStrategy, titanGraph);
+                SELECT_ATTRIBUTES, true, graphPersistenceStrategy, graph);
         return inputsQuery.graph().toInstanceJson();
     }
 
@@ -153,7 +154,7 @@ public class DataSetLineageService implements LineageService {
         OutputLineageClosureQuery outputsQuery =
                 new OutputLineageClosureQuery(AtlasClient.DATA_SET_SUPER_TYPE, SELECT_INSTANCE_GUID, guid, HIVE_PROCESS_TYPE_NAME,
                         HIVE_PROCESS_INPUT_ATTRIBUTE_NAME, HIVE_PROCESS_OUTPUT_ATTRIBUTE_NAME, Option.empty(),
-                        SELECT_ATTRIBUTES, true, graphPersistenceStrategy, titanGraph);
+                        SELECT_ATTRIBUTES, true, graphPersistenceStrategy, graph);
         return outputsQuery.graph().toInstanceJson();
     }
 

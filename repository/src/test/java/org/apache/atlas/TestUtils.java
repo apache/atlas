@@ -18,12 +18,36 @@
 
 package org.apache.atlas;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.tinkerpop.blueprints.util.io.graphson.GraphSONWriter;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createStructTypeDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createTraitTypeDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createUniqueRequiredAttrDef;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.atlas.listener.EntityChangeListener;
+import org.apache.atlas.listener.TypesChangeListener;
+import org.apache.atlas.repository.MetadataRepository;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.GraphHelper;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.typestore.GraphBackedTypeStore;
+import org.apache.atlas.repository.typestore.ITypeStore;
+import org.apache.atlas.services.DefaultMetadataService;
 import org.apache.atlas.services.MetadataService;
+import org.apache.atlas.services.ReservedTypesRegistrar;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.TypesDef;
@@ -40,25 +64,18 @@ import org.apache.atlas.typesystem.types.Multiplicity;
 import org.apache.atlas.typesystem.types.StructTypeDefinition;
 import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.TypeSystem;
+import org.apache.atlas.typesystem.types.cache.DefaultTypeCache;
+import org.apache.atlas.typesystem.types.cache.TypeCache;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
+import org.apache.atlas.util.AtlasRepositoryConfiguration;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.RandomStringUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.testng.Assert;
 
-import java.io.File;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createStructTypeDef;
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createTraitTypeDef;
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createUniqueRequiredAttrDef;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.inject.Provider;
 
 /**
  * Test utility class.
@@ -73,16 +90,30 @@ public final class TestUtils {
     /**
      * Dumps the graph in GSON format in the path returned.
      *
-     * @param titanGraph handle to graph
+     * @param graph handle to graph
      * @return path to the dump file
      * @throws Exception
      */
-    public static String dumpGraph(TitanGraph titanGraph) throws Exception {
+    public static String dumpGraph(AtlasGraph<?,?> graph) throws Exception {
         File tempFile = File.createTempFile("graph", ".gson");
         System.out.println("tempFile.getPath() = " + tempFile.getPath());
-        GraphSONWriter.outputGraph(titanGraph, tempFile.getPath());
+        GraphHelper.dumpToLog(graph);
+        FileOutputStream os = null;
+        try {
+            os = new FileOutputStream(tempFile);
+            graph.exportToGson(os);
+        }
+        finally {
+            if(os != null) {
+                try {
+                    os.close();
+                }
+                catch(IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
 
-        GraphHelper.dumpToLog(titanGraph);
         return tempFile.getPath();
     }
 
@@ -468,5 +499,45 @@ public final class TestUtils {
             return guids.get(guids.size() - 1);
         }
         return null;
+    }
+    
+    public static void resetRequestContext() {      
+        RequestContext.createContext();
+    }
+    
+    public static void setupGraphProvider(MetadataRepository repo) throws AtlasException {
+        TypeCache typeCache = null;
+        try {
+            typeCache = AtlasRepositoryConfiguration.getTypeCache().newInstance();
+        }
+        catch(Throwable t) {
+            typeCache = new DefaultTypeCache();
+        }
+        final GraphBackedSearchIndexer indexer = new GraphBackedSearchIndexer();
+        Provider<TypesChangeListener> indexerProvider = new Provider<TypesChangeListener>() {
+
+            @Override
+            public TypesChangeListener get() {
+                return indexer;
+            }
+        };
+
+        Configuration config = ApplicationProperties.get();
+        ITypeStore typeStore = new GraphBackedTypeStore();
+        DefaultMetadataService defaultMetadataService = new DefaultMetadataService(repo,
+                typeStore,
+                new ReservedTypesRegistrar(),
+                Collections.singletonList(indexerProvider),
+                new ArrayList<Provider<EntityChangeListener>>(), TypeSystem.getInstance(), config, typeCache);
+
+        //commit the created types
+        getGraph().commit();
+
+    }
+    
+    public static AtlasGraph getGraph() {
+
+        return AtlasGraphProvider.getGraphInstance();
+       
     }
 }

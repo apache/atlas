@@ -41,35 +41,35 @@ import com.google.common.collect.Collections2;
 
 
 /**
- * Tests for Titan0GraphQuery
+ * Tests for Titan0GraphQuery.
  */
 @Test
 public class GraphQueryTest extends AbstractGraphDatabaseTest {
 
 
     @Test
-    public <V,E> void testQueryThatCannotRunInMemory() throws AtlasException {
-        AtlasGraph<V,E> graph = getGraph();
-        AtlasVertex<V,E> v1 = createVertex(graph);
+    public <V, E> void testQueryThatCannotRunInMemory() throws AtlasException {
+        AtlasGraph<V, E> graph = getGraph();
+        AtlasVertex<V, E> v1 = createVertex(graph);
 
         v1.setProperty("name", "Fred");
         v1.setProperty("size15", "15");
 
-        AtlasVertex<V,E> v2 = createVertex(graph);
+        AtlasVertex<V, E> v2 = createVertex(graph);
         v2.setProperty("name", "Fred");
 
-        AtlasVertex<V,E> v3 = createVertex(graph);
+        AtlasVertex<V, E> v3 = createVertex(graph);
         v3.setProperty("size15", "15");
 
         graph.commit();
 
-        AtlasVertex<V,E> v4 = createVertex(graph);
+        AtlasVertex<V, E> v4 = createVertex(graph);
         v4.setProperty("name", "Fred");
         v4.setProperty("size15", "15");
 
         AtlasGraphQuery q = graph.query();
         q.has("name", ComparisionOperator.NOT_EQUAL, "George");
-        q.has("size15","15");
+        q.has("size15", "15");
         graph.commit();
         pause(); //pause to let the index get updated
 
@@ -81,49 +81,49 @@ public class GraphQueryTest extends AbstractGraphDatabaseTest {
     public  void testCombinationOfAndsAndOrs() throws AtlasException {
         Titan0Graph graph = getTitan0Graph();
 
-        AtlasVertex<Titan0Vertex,Titan0Edge> v1 = createVertex(graph);
+        AtlasVertex<Titan0Vertex, Titan0Edge> v1 = createVertex(graph);
 
         v1.setProperty("name", "Fred");
         v1.setProperty("size15", "15");
         v1.setProperty("typeName", "Person");
 
-        AtlasVertex<Titan0Vertex,Titan0Edge> v2 = createVertex(graph);
+        AtlasVertex<Titan0Vertex, Titan0Edge> v2 = createVertex(graph);
         v2.setProperty("name", "George");
         v2.setProperty("size15", "16");
         v2.setProperty("typeName", "Person");
 
-        AtlasVertex<Titan0Vertex,Titan0Edge> v3 = createVertex(graph);
+        AtlasVertex<Titan0Vertex, Titan0Edge> v3 = createVertex(graph);
         v3.setProperty("name", "Jane");
         v3.setProperty("size15", "17");
         v3.setProperty("typeName", "Person");
 
 
-        AtlasVertex<Titan0Vertex,Titan0Edge> v4 = createVertex(graph);
+        AtlasVertex<Titan0Vertex, Titan0Edge> v4 = createVertex(graph);
         v4.setProperty("name", "Bob");
         v4.setProperty("size15", "18");
         v4.setProperty("typeName", "Person");
 
-        AtlasVertex<Titan0Vertex,Titan0Edge> v5 = createVertex(graph);
+        AtlasVertex<Titan0Vertex, Titan0Edge> v5 = createVertex(graph);
         v5.setProperty("name", "Julia");
         v5.setProperty("size15", "19");
         v5.setProperty("typeName", "Manager");
 
 
         AtlasGraphQuery q = getGraphQuery();
-        q.has("typeName","Person");
+        q.has("typeName", "Person");
         //initially match
         AtlasGraphQuery inner1a = q.createChildQuery();
         AtlasGraphQuery inner1b = q.createChildQuery();
-        inner1a.has("name","Fred");
-        inner1b.has("name","Jane");
+        inner1a.has("name", "Fred");
+        inner1b.has("name", "Jane");
         q.or(toList(inner1a, inner1b));
 
 
         AtlasGraphQuery inner2a = q.createChildQuery();
         AtlasGraphQuery inner2b = q.createChildQuery();
         AtlasGraphQuery inner2c = q.createChildQuery();
-        inner2a.has("size15","18");
-        inner2b.has("size15","15");
+        inner2a.has("size15", "18");
+        inner2b.has("size15", "15");
         inner2c.has("size15", "16");
         q.or(toList(inner2a, inner2b, inner2c));
 
@@ -137,36 +137,36 @@ public class GraphQueryTest extends AbstractGraphDatabaseTest {
     public  void testWithinStep() throws AtlasException {
         Titan0Graph graph = getTitan0Graph();
 
-        AtlasVertex<Titan0Vertex,Titan0Edge> v1 = createVertex(graph);
+        AtlasVertex<Titan0Vertex, Titan0Edge> v1 = createVertex(graph);
 
         v1.setProperty("name", "Fred");
         v1.setProperty("size15", "15");
         v1.setProperty("typeName", "Person");
 
-        AtlasVertex<Titan0Vertex,Titan0Edge> v2 = createVertex(graph);
+        AtlasVertex<Titan0Vertex, Titan0Edge> v2 = createVertex(graph);
         v2.setProperty("name", "George");
         v2.setProperty("size15", "16");
         v2.setProperty("typeName", "Person");
 
-        AtlasVertex<Titan0Vertex,Titan0Edge> v3 = createVertex(graph);
+        AtlasVertex<Titan0Vertex, Titan0Edge> v3 = createVertex(graph);
         v3.setProperty("name", "Jane");
         v3.setProperty("size15", "17");
         v3.setProperty("typeName", "Person");
 
 
-        AtlasVertex<Titan0Vertex,Titan0Edge> v4 = createVertex(graph);
+        AtlasVertex<Titan0Vertex, Titan0Edge> v4 = createVertex(graph);
         v4.setProperty("name", "Bob");
         v4.setProperty("size15", "18");
         v4.setProperty("typeName", "Person");
 
-        AtlasVertex<Titan0Vertex,Titan0Edge> v5 = createVertex(graph);
+        AtlasVertex<Titan0Vertex, Titan0Edge> v5 = createVertex(graph);
         v5.setProperty("name", "Julia");
         v5.setProperty("size15", "19");
         v5.setProperty("typeName", "Manager");
 
 
         AtlasGraphQuery q = getGraphQuery();
-        q.has("typeName","Person");
+        q.has("typeName", "Person");
         //initially match
         q.in("name", toList("Fred", "Jane"));
         q.in("size15", toList("18", "15", "16"));
@@ -181,43 +181,44 @@ public class GraphQueryTest extends AbstractGraphDatabaseTest {
     public  void testWithinStepWhereGraphIsStale() throws AtlasException {
         Titan0Graph graph = getTitan0Graph();
 
-        AtlasVertex<Titan0Vertex,Titan0Edge> v1 = createVertex(graph);
+        AtlasVertex<Titan0Vertex, Titan0Edge> v1 = createVertex(graph);
 
         v1.setProperty("name", "Fred");
         v1.setProperty("size15", "15");
         v1.setProperty("typeName", "Person");
 
-        AtlasVertex<Titan0Vertex,Titan0Edge> v2 = createVertex(graph);
+        AtlasVertex<Titan0Vertex, Titan0Edge> v2 = createVertex(graph);
         v2.setProperty("name", "George");
         v2.setProperty("size15", "16");
         v2.setProperty("typeName", "Person");
 
-        AtlasVertex<Titan0Vertex,Titan0Edge> v3 = createVertex(graph);
+        AtlasVertex<Titan0Vertex, Titan0Edge> v3 = createVertex(graph);
         v3.setProperty("name", "Jane");
         v3.setProperty("size15", "17");
         v3.setProperty("typeName", "Person");
 
 
-        AtlasVertex<Titan0Vertex,Titan0Edge> v4 = createVertex(graph);
+        AtlasVertex<Titan0Vertex, Titan0Edge> v4 = createVertex(graph);
         v4.setProperty("name", "Bob");
         v4.setProperty("size15", "18");
         v4.setProperty("typeName", "Person");
 
-        AtlasVertex<Titan0Vertex,Titan0Edge> v5 = createVertex(graph);
+        AtlasVertex<Titan0Vertex, Titan0Edge> v5 = createVertex(graph);
         v5.setProperty("name", "Julia");
         v5.setProperty("size15", "19");
         v5.setProperty("typeName", "Manager");
 
 
         AtlasGraphQuery q = getGraphQuery();
-        q.has("typeName","Person");
+        q.has("typeName", "Person");
         //initially match
         q.in("name", toList("Fred", "Jane"));
 
         graph.commit();
         pause(); //let the index update
         assertQueryMatches(q, v1, v3);
-        v3.setProperty("name", "Janet"); //make v3 no longer match the query.  Within step should filter out the vertex since it no longer matches.
+      //make v3 no longer match the query.  Within step should filter out the vertex since it no longer matches.
+        v3.setProperty("name", "Janet");
         assertQueryMatches(q, v1);
     }
 
@@ -226,24 +227,24 @@ public class GraphQueryTest extends AbstractGraphDatabaseTest {
         Titan0Graph graph = getTitan0Graph();
 
 
-        AtlasVertex<Titan0Vertex,Titan0Edge> v1 = createVertex(graph);
+        AtlasVertex<Titan0Vertex, Titan0Edge> v1 = createVertex(graph);
 
         v1.setProperty("name", "Fred");
         v1.setProperty("size15", "15");
 
-        AtlasVertex<Titan0Vertex,Titan0Edge> v2 = createVertex(graph);
+        AtlasVertex<Titan0Vertex, Titan0Edge> v2 = createVertex(graph);
         v2.setProperty("name", "Fred");
 
-        AtlasVertex<Titan0Vertex,Titan0Edge> v3 = createVertex(graph);
+        AtlasVertex<Titan0Vertex, Titan0Edge> v3 = createVertex(graph);
         v3.setProperty("size15", "15");
 
         graph.commit();
 
-        AtlasVertex<Titan0Vertex,Titan0Edge> v4 = createVertex(graph);
+        AtlasVertex<Titan0Vertex, Titan0Edge> v4 = createVertex(graph);
         v4.setProperty("name", "Fred");
         v4.setProperty("size15", "15");
 
-        AtlasVertex<Titan0Vertex,Titan0Edge> v5 = createVertex(graph);
+        AtlasVertex<Titan0Vertex, Titan0Edge> v5 = createVertex(graph);
         v5.setProperty("name", "George");
         v5.setProperty("size15", "16");
 
@@ -261,29 +262,29 @@ public class GraphQueryTest extends AbstractGraphDatabaseTest {
 
 
     @Test
-    public <V,E> void testQueryMatchesAddedVertices() throws AtlasException {
-        AtlasGraph<V,E> graph = getGraph();
+    public <V, E> void testQueryMatchesAddedVertices() throws AtlasException {
+        AtlasGraph<V, E> graph = getGraph();
 
-        AtlasVertex<V,E> v1 = createVertex(graph);
+        AtlasVertex<V, E> v1 = createVertex(graph);
 
         v1.setProperty("name", "Fred");
         v1.setProperty("size15", "15");
 
-        AtlasVertex<V,E> v2 = createVertex(graph);
+        AtlasVertex<V, E> v2 = createVertex(graph);
         v2.setProperty("name", "Fred");
 
-        AtlasVertex<V,E> v3 = createVertex(graph);
+        AtlasVertex<V, E> v3 = createVertex(graph);
         v3.setProperty("size15", "15");
 
         graph.commit();
 
-        AtlasVertex<V,E> v4 = createVertex(graph);
+        AtlasVertex<V, E> v4 = createVertex(graph);
         v4.setProperty("name", "Fred");
         v4.setProperty("size15", "15");
 
         AtlasGraphQuery q = getGraphQuery();
         q.has("name", "Fred");
-        q.has("size15","15");
+        q.has("size15", "15");
 
         assertQueryMatches(q, v1, v4);
         graph.commit();
@@ -293,21 +294,21 @@ public class GraphQueryTest extends AbstractGraphDatabaseTest {
 
 
     @Test
-    public <V,E> void testQueryDoesNotMatchRemovedVertices() throws AtlasException {
-        AtlasGraph<V,E> graph = getGraph();
+    public <V, E> void testQueryDoesNotMatchRemovedVertices() throws AtlasException {
+        AtlasGraph<V, E> graph = getGraph();
 
-        AtlasVertex<V,E> v1 = createVertex(graph);
+        AtlasVertex<V, E> v1 = createVertex(graph);
 
         v1.setProperty("name", "Fred");
         v1.setProperty("size15", "15");
 
-        AtlasVertex<V,E> v2 = createVertex(graph);
+        AtlasVertex<V, E> v2 = createVertex(graph);
         v2.setProperty("name", "Fred");
 
-        AtlasVertex<V,E> v3 = createVertex(graph);
+        AtlasVertex<V, E> v3 = createVertex(graph);
         v3.setProperty("size15", "15");
 
-        AtlasVertex<V,E> v4 = createVertex(graph);
+        AtlasVertex<V, E> v4 = createVertex(graph);
         v4.setProperty("name", "Fred");
         v4.setProperty("size15", "15");
 
@@ -317,7 +318,7 @@ public class GraphQueryTest extends AbstractGraphDatabaseTest {
 
         AtlasGraphQuery q = getGraphQuery();
         q.has("name", "Fred");
-        q.has("size15","15");
+        q.has("size15", "15");
 
         assertQueryMatches(q, v4);
         graph.commit();
@@ -326,28 +327,28 @@ public class GraphQueryTest extends AbstractGraphDatabaseTest {
     }
 
     @Test
-    public <V,E> void testQueryDoesNotMatchUncommittedAddedAndRemovedVertices() throws AtlasException {
-        AtlasGraph<V,E> graph = getGraph();
+    public <V, E> void testQueryDoesNotMatchUncommittedAddedAndRemovedVertices() throws AtlasException {
+        AtlasGraph<V, E> graph = getGraph();
 
-        AtlasVertex<V,E> v1 = createVertex(graph);
+        AtlasVertex<V, E> v1 = createVertex(graph);
 
         v1.setProperty("name", "Fred");
         v1.setProperty("size15", "15");
 
-        AtlasVertex<V,E> v2 = createVertex(graph);
+        AtlasVertex<V, E> v2 = createVertex(graph);
         v2.setProperty("name", "Fred");
 
-        AtlasVertex<V,E> v3 = createVertex(graph);
+        AtlasVertex<V, E> v3 = createVertex(graph);
         v3.setProperty("size15", "15");
 
-        AtlasVertex<V,E> v4 = createVertex(graph);
+        AtlasVertex<V, E> v4 = createVertex(graph);
         v4.setProperty("name", "Fred");
         v4.setProperty("size15", "15");
 
 
         AtlasGraphQuery q = getGraphQuery();
         q.has("name", "Fred");
-        q.has("size15","15");
+        q.has("size15", "15");
 
         assertQueryMatches(q, v1, v4);
 
@@ -362,20 +363,20 @@ public class GraphQueryTest extends AbstractGraphDatabaseTest {
 
 
     @Test
-    public <V,E> void testQueryResultsReflectPropertyAdd() throws AtlasException {
-        AtlasGraph<V,E> graph = getGraph();
+    public <V, E> void testQueryResultsReflectPropertyAdd() throws AtlasException {
+        AtlasGraph<V, E> graph = getGraph();
 
-        AtlasVertex<V,E> v1 = createVertex(graph);
+        AtlasVertex<V, E> v1 = createVertex(graph);
         v1.setProperty("name", "Fred");
         v1.setProperty("size15", "15");
         v1.addProperty(TRAIT_NAMES, "trait1");
         v1.addProperty(TRAIT_NAMES, "trait2");
 
-        AtlasVertex<V,E> v2 = createVertex(graph);
+        AtlasVertex<V, E> v2 = createVertex(graph);
         v2.setProperty("name", "Fred");
         v2.addProperty(TRAIT_NAMES, "trait1");
 
-        AtlasVertex<V,E> v3 = createVertex(graph);
+        AtlasVertex<V, E> v3 = createVertex(graph);
         v3.setProperty("size15", "15");
         v3.addProperty(TRAIT_NAMES, "trait2");
 
@@ -409,22 +410,25 @@ public class GraphQueryTest extends AbstractGraphDatabaseTest {
 
     }
 
-    private <V,E >void assertQueryMatches(AtlasGraphQuery expr, AtlasVertex... expectedResults) throws AtlasException {
+    private <V, E> void assertQueryMatches(AtlasGraphQuery expr, AtlasVertex... expectedResults) throws AtlasException {
 
         //getGraph().commit();
         Collection<AtlasVertex<Titan0Vertex, Titan0Edge>> temp = toList(expr.vertices());
         //filter out vertices from previous test executions
-        Collection<AtlasVertex<Titan0Vertex, Titan0Edge>> result = Collections2.filter(temp, new Predicate<AtlasVertex<Titan0Vertex, Titan0Edge>>() {
+        Collection<AtlasVertex<Titan0Vertex, Titan0Edge>> result =
+                Collections2.filter(temp, new Predicate<AtlasVertex<Titan0Vertex, Titan0Edge>>() {
 
-            @Override
-            public boolean apply(AtlasVertex<Titan0Vertex, Titan0Edge> input) {
-                return newVertices_.contains(input);
-            }
+                    @Override
+                    public boolean apply(AtlasVertex<Titan0Vertex, Titan0Edge> input) {
+                        return newVertices.contains(input);
+                    }
 
-        });
-        assertEquals("Expected/found result sizes differ.  Expected: " + Arrays.asList(expectedResults).toString() +", found: " + result, expectedResults.length, result.size());
+                });
+        String errorMessage = "Expected/found result sizes differ.  Expected: "
+                + Arrays.asList(expectedResults).toString() +", found: " + result;
+        assertEquals(errorMessage, expectedResults.length, result.size());
 
-        for(AtlasVertex<V,E> v : expectedResults) {
+        for(AtlasVertex<V, E> v : expectedResults) {
             assertTrue(result.contains(v));
         }
     }
@@ -432,7 +436,7 @@ public class GraphQueryTest extends AbstractGraphDatabaseTest {
     private static List<Object> toList(Object...objects) {
         return Arrays.asList(objects);
     }
-    
+
     private AtlasGraphQuery<Titan0Vertex, Titan0Edge> getGraphQuery() {
         return getTitan0Graph().query();
     }
@@ -440,8 +444,8 @@ public class GraphQueryTest extends AbstractGraphDatabaseTest {
     private void pause() {
         try {
             Thread.sleep(5000);
+        } catch(InterruptedException e) {
+           //ignore
         }
-        catch(InterruptedException e)
-        {}
     }
 }

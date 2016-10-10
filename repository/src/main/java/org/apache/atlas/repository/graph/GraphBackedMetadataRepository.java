@@ -18,13 +18,12 @@
 
 package org.apache.atlas.repository.graph;
 
-import com.google.common.base.Preconditions;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.GraphQuery;
-import com.tinkerpop.blueprints.Vertex;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.GraphTransaction;
@@ -32,6 +31,10 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.RepositoryException;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.exception.EntityExistsException;
@@ -46,10 +49,9 @@ import org.apache.atlas.typesystem.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import com.google.common.base.Preconditions;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 
 /**
  * An implementation backed by a Graph database provided
@@ -64,16 +66,16 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
 
     private static final GraphHelper graphHelper = GraphHelper.getInstance();
 
-    private final TitanGraph titanGraph;
+    private final AtlasGraph graph;
 
     private DeleteHandler deleteHandler;
 
     private GraphToTypedInstanceMapper graphToInstanceMapper;
 
     @Inject
-    public GraphBackedMetadataRepository(GraphProvider<TitanGraph> graphProvider, DeleteHandler deleteHandler) {
-        this.titanGraph = graphProvider.get();
-        graphToInstanceMapper = new GraphToTypedInstanceMapper(titanGraph);
+    public GraphBackedMetadataRepository(DeleteHandler deleteHandler) {
+        this.graph = AtlasGraphProvider.getGraphInstance();
+        graphToInstanceMapper = new GraphToTypedInstanceMapper(graph);
         this.deleteHandler = deleteHandler;
     }
 
@@ -148,7 +150,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     public ITypedReferenceableInstance getEntityDefinition(String guid) throws RepositoryException, EntityNotFoundException {
         LOG.debug("Retrieving entity with guid={}", guid);
 
-        Vertex instanceVertex = graphHelper.getVertexForGUID(guid);
+        AtlasVertex instanceVertex = graphHelper.getVertexForGUID(guid);
 
         try {
             return graphToInstanceMapper.mapGraphToTypedInstance(guid, instanceVertex);
@@ -164,7 +166,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         LOG.debug("Retrieving entity with type={} and {}={}", entityType, attribute, value);
         IDataType type = typeSystem.getDataType(IDataType.class, entityType);
         String propertyKey = getFieldNameInVertex(type, attribute);
-        Vertex instanceVertex = graphHelper.findVertex(propertyKey, value,
+        AtlasVertex instanceVertex = graphHelper.findVertex(propertyKey, value,
                 Constants.ENTITY_TYPE_PROPERTY_KEY, entityType,
                 Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
 
@@ -176,15 +178,15 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     @GraphTransaction
     public List<String> getEntityList(String entityType) throws RepositoryException {
         LOG.debug("Retrieving entity list for type={}", entityType);
-        GraphQuery query = titanGraph.query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, entityType);
-        Iterator<Vertex> results = query.vertices().iterator();
+        AtlasGraphQuery query = graph.query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, entityType);
+        Iterator<AtlasVertex> results = query.vertices().iterator();
         if (!results.hasNext()) {
             return Collections.emptyList();
         }
 
         ArrayList<String> entityList = new ArrayList<>();
         while (results.hasNext()) {
-            Vertex vertex = results.next();
+            AtlasVertex vertex = results.next();
             entityList.add(GraphHelper.getIdFromVertex(vertex));
         }
 
@@ -202,7 +204,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     @GraphTransaction
     public List<String> getTraitNames(String guid) throws AtlasException {
         LOG.debug("Retrieving trait names for entity={}", guid);
-        Vertex instanceVertex = graphHelper.getVertexForGUID(guid);
+        AtlasVertex instanceVertex = graphHelper.getVertexForGUID(guid);
         return GraphHelper.getTraitNames(instanceVertex);
     }
 
@@ -222,7 +224,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         LOG.debug("Adding a new trait={} for entity={}", traitName, guid);
 
         try {
-            Vertex instanceVertex = graphHelper.getVertexForGUID(guid);
+            AtlasVertex instanceVertex = graphHelper.getVertexForGUID(guid);
 
             // add the trait instance as a new vertex
             final String typeName = GraphHelper.getTypeName(instanceVertex);
@@ -256,7 +258,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     public void deleteTrait(String guid, String traitNameToBeDeleted) throws TraitNotFoundException, EntityNotFoundException, RepositoryException {
         LOG.debug("Deleting trait={} from entity={}", traitNameToBeDeleted, guid);
         
-        Vertex instanceVertex = graphHelper.getVertexForGUID(guid);
+        AtlasVertex instanceVertex = graphHelper.getVertexForGUID(guid);
 
         List<String> traitNames = GraphHelper.getTraitNames(instanceVertex);
         if (!traitNames.contains(traitNameToBeDeleted)) {
@@ -267,7 +269,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         try {
             final String entityTypeName = GraphHelper.getTypeName(instanceVertex);
             String relationshipLabel = GraphHelper.getTraitLabel(entityTypeName, traitNameToBeDeleted);
-            Edge edge = graphHelper.getEdgeForLabel(instanceVertex, relationshipLabel);
+            AtlasEdge edge = graphHelper.getEdgeForLabel(instanceVertex, relationshipLabel);
             if(edge != null) {
                 deleteHandler.deleteEdgeReference(edge, DataTypes.TypeCategory.TRAIT, false, true);
 
@@ -281,7 +283,7 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
     }
 
     
-    private void updateTraits(Vertex instanceVertex, List<String> traitNames) {
+    private void updateTraits(AtlasVertex instanceVertex, List<String> traitNames) {
         // remove the key
         instanceVertex.removeProperty(Constants.TRAIT_NAMES_PROPERTY_KEY);
 
@@ -332,14 +334,14 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
             throw new IllegalArgumentException("guids must be non-null and non-empty");
         }
 
-        List<Vertex> vertices = new ArrayList<>(guids.size());
+        List<AtlasVertex> vertices = new ArrayList<>(guids.size());
         for (String guid : guids) {
             if (guid == null) {
                 LOG.warn("deleteEntities: Ignoring null guid");
                 continue;
             }
             try {
-                Vertex instanceVertex = graphHelper.getVertexForGUID(guid);
+                AtlasVertex instanceVertex = graphHelper.getVertexForGUID(guid);
                 vertices.add(instanceVertex);
             } catch (EntityNotFoundException e) {
                 // Entity does not exist - treat as non-error, since the caller
@@ -359,5 +361,9 @@ public class GraphBackedMetadataRepository implements MetadataRepository {
         RequestContext requestContext = RequestContext.get();
         return new AtlasClient.EntityResult(requestContext.getCreatedEntityIds(),
                 requestContext.getUpdatedEntityIds(), requestContext.getDeletedEntityIds());
+    }
+
+    public AtlasGraph getGraph() {
+        return AtlasGraphProvider.getGraphInstance();
     }
 }

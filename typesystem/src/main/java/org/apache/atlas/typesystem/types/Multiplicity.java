@@ -41,6 +41,11 @@ public final class Multiplicity {
         this.isUnique = isUnique;
     }
 
+    public boolean isMany() {
+        return upper > 1;
+    }
+
+    
     public boolean nullAllowed() {
         return lower == 0;
     }

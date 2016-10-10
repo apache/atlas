@@ -28,7 +28,8 @@ import org.apache.atlas.repository.graphdb.titan0.Titan0Vertex;
 /**
  * Titan 0.5.4 implementation of AtlasGraphQuery.
  */
-public class Titan0GraphQuery extends TitanGraphQuery<Titan0Vertex,Titan0Edge> implements NativeTitanQueryFactory<Titan0Vertex,Titan0Edge> {
+public class Titan0GraphQuery extends TitanGraphQuery<Titan0Vertex, Titan0Edge>
+    implements NativeTitanQueryFactory<Titan0Vertex, Titan0Edge> {
 
     public Titan0GraphQuery(Titan0Graph graph, boolean isChildQuery) {
         super(graph, isChildQuery);
@@ -40,17 +41,17 @@ public class Titan0GraphQuery extends TitanGraphQuery<Titan0Vertex,Titan0Edge> i
 
     @Override
     public AtlasGraphQuery<Titan0Vertex, Titan0Edge> createChildQuery() {
-        return new Titan0GraphQuery((Titan0Graph)graph_, true);
+        return new Titan0GraphQuery((Titan0Graph)graph, true);
     }
 
     @Override
-    protected NativeTitanQueryFactory<Titan0Vertex,Titan0Edge> getQueryFactory() {
+    protected NativeTitanQueryFactory<Titan0Vertex, Titan0Edge> getQueryFactory() {
         return this;
     }
 
 
     @Override
     public NativeTitanGraphQuery<Titan0Vertex, Titan0Edge> createNativeTitanQuery() {
-        return new NativeTitan0GraphQuery((Titan0Graph)graph_);
+        return new NativeTitan0GraphQuery((Titan0Graph)graph);
     }
 }

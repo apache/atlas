@@ -18,36 +18,33 @@
 
 package org.apache.atlas.repository.graph;
 
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.IndexException;
 import org.apache.atlas.repository.RepositoryException;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.commons.configuration.Configuration;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-
-public class GraphBackedSearchIndexerMockTest {
+public class GraphBackedSearchIndexerMockTest implements IAtlasGraphProvider {
 
     @Mock
     private Configuration configuration;
 
     @Mock
-    private GraphProvider<TitanGraph> graphProvider;
+    private AtlasGraph graph;
 
     @Mock
-    private TitanGraph titanGraph;
-
-    @Mock
-    private TitanManagement titanManagement;
+    private AtlasGraphManagement management;
 
     @BeforeMethod
     public void setup() {
@@ -56,26 +53,24 @@ public class GraphBackedSearchIndexerMockTest {
 
     @Test
     public void testSearchIndicesAreInitializedOnConstructionWhenHAIsDisabled() throws IndexException, RepositoryException {
-        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(false);
-        when(graphProvider.get()).thenReturn(titanGraph);
-        when(titanGraph.getManagementSystem()).thenReturn(titanManagement);
-        when(titanManagement.containsPropertyKey(Constants.VERTEX_TYPE_PROPERTY_KEY)).thenReturn(true);
+        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(false);        
+        when(graph.getManagementSystem()).thenReturn(management);
+        when(management.containsPropertyKey(Constants.VERTEX_TYPE_PROPERTY_KEY)).thenReturn(true);
 
-        GraphBackedSearchIndexer graphBackedSearchIndexer = new GraphBackedSearchIndexer(graphProvider, configuration);
+        GraphBackedSearchIndexer graphBackedSearchIndexer = new GraphBackedSearchIndexer(this, configuration);
 
-        verify(titanManagement).containsPropertyKey(Constants.VERTEX_TYPE_PROPERTY_KEY);
+        verify(management).containsPropertyKey(Constants.VERTEX_TYPE_PROPERTY_KEY);
     }
 
     @Test
     public void testSearchIndicesAreNotInitializedOnConstructionWhenHAIsEnabled() throws IndexException, RepositoryException {
         when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
         when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-        when(graphProvider.get()).thenReturn(titanGraph);
-        when(titanGraph.getManagementSystem()).thenReturn(titanManagement);
-        when(titanManagement.containsPropertyKey(Constants.VERTEX_TYPE_PROPERTY_KEY)).thenReturn(true);
+        when(graph.getManagementSystem()).thenReturn(management);
+        when(management.containsPropertyKey(Constants.VERTEX_TYPE_PROPERTY_KEY)).thenReturn(true);
 
-        new GraphBackedSearchIndexer(graphProvider, configuration);
-        verifyZeroInteractions(titanManagement);
+        new GraphBackedSearchIndexer(this, configuration);
+        verifyZeroInteractions(management);
 
     }
 
@@ -83,13 +78,18 @@ public class GraphBackedSearchIndexerMockTest {
     public void testIndicesAreReinitializedWhenServerBecomesActive() throws AtlasException {
         when(configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
         when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
-        when(graphProvider.get()).thenReturn(titanGraph);
-        when(titanGraph.getManagementSystem()).thenReturn(titanManagement);
-        when(titanManagement.containsPropertyKey(Constants.VERTEX_TYPE_PROPERTY_KEY)).thenReturn(true);
+        when(graph.getManagementSystem()).thenReturn(management);
+        when(management.containsPropertyKey(Constants.VERTEX_TYPE_PROPERTY_KEY)).thenReturn(true);
 
-        GraphBackedSearchIndexer graphBackedSearchIndexer = new GraphBackedSearchIndexer(graphProvider, configuration);
+        GraphBackedSearchIndexer graphBackedSearchIndexer = new GraphBackedSearchIndexer(this, configuration);
         graphBackedSearchIndexer.instanceIsActive();
 
-        verify(titanManagement).containsPropertyKey(Constants.VERTEX_TYPE_PROPERTY_KEY);
+        verify(management).containsPropertyKey(Constants.VERTEX_TYPE_PROPERTY_KEY);
     }
+    
+
+    @Override
+      public AtlasGraph get() {
+          return graph;
+      }
 }

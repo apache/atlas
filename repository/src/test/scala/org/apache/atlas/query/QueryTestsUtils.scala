@@ -22,10 +22,8 @@ import java.io.File
 import javax.script.{Bindings, ScriptEngine, ScriptEngineManager}
 
 import com.google.common.collect.ImmutableList
-import com.thinkaurelius.titan.core.{TitanFactory, TitanGraph}
-import com.tinkerpop.blueprints.Vertex
+import org.apache.atlas.repository.graphdb.AtlasVertex
 import com.typesafe.config.{Config, ConfigFactory}
-import org.apache.atlas.repository.graph.TitanGraphProvider
 import org.apache.atlas.typesystem.types._
 import org.apache.commons.configuration.{Configuration, ConfigurationException, MapConfiguration}
 import org.apache.commons.io.FileUtils
@@ -34,6 +32,13 @@ import org.json.JSONObject
 import org.skyscreamer.jsonassert.JSONAssert
 
 import scala.util.Random
+import org.apache.atlas.repository.MetadataRepository
+import org.apache.atlas.repository.graphdb.AtlasGraph
+import org.apache.atlas.repository.graph.AtlasGraphProvider
+import java.net.URL
+import org.apache.atlas.repository.graph.GraphBackedSearchIndexer
+import org.apache.atlas.typesystem.TypesDef
+import org.apache.atlas.typesystem.ITypedReferenceableInstance
 
 
 trait GraphUtils {
@@ -52,12 +57,12 @@ trait GraphUtils {
     }
 
 
-    def titanGraph(conf: Configuration) = {
+    def graph(conf: Configuration) = {
         try {
-            val g = TitanFactory.open(conf)
+            val g = AtlasGraphProvider.getGraphInstance
             val mgmt = g.getManagementSystem
-            val typname = mgmt.makePropertyKey("typeName").dataType(classOf[String]).make()
-            mgmt.buildIndex("byTypeName", classOf[Vertex]).addKey(typname).buildCompositeIndex()
+            val typname = mgmt.makePropertyKey("typeName", classOf[String], null);
+            mgmt.createExactMatchIndex("byTypeName", false, List(typname));
             mgmt.commit()
             g
         } catch {
@@ -68,7 +73,21 @@ trait GraphUtils {
 
 object QueryTestsUtils extends GraphUtils {
 
-    def setupTypes: Unit = {
+     def setupTypesAndIndices() : Unit = {
+        val indexer = new GraphBackedSearchIndexer();
+        val typesDef : TypesDef = defineTypes;
+        val newTypes = TypeSystem.getInstance.defineTypes(typesDef);
+        indexer.onAdd(newTypes.values());        
+    }
+     
+     def setupTypes: Unit = {
+        
+        val types : TypesDef = defineTypes;
+        TypeSystem.getInstance.defineTypes(types);
+    }
+    
+     
+    def defineTypes: TypesDef = {
         def attrDef(name: String, dT: IDataType[_],
                     m: Multiplicity = Multiplicity.OPTIONAL,
                     isComposite: Boolean = false,
@@ -144,35 +163,28 @@ object QueryTestsUtils extends GraphUtils {
         def jdbcTraitDef = new HierarchicalTypeDefinition[TraitType](classOf[TraitType], "JdbcAccess", null, null,
             Array[AttributeDefinition]())
 
-        TypeSystem.getInstance().defineTypes(ImmutableList.of[EnumTypeDefinition],
-            ImmutableList.of[StructTypeDefinition](hiveOrderDef),
-            ImmutableList.of[HierarchicalTypeDefinition[TraitType]](dimTraitDef, piiTraitDef,
+        TypesDef(Seq[EnumTypeDefinition](),
+           Seq[StructTypeDefinition](hiveOrderDef),
+            Seq[HierarchicalTypeDefinition[TraitType]](dimTraitDef, piiTraitDef,
                 metricTraitDef, etlTraitDef, jdbcTraitDef),
-            ImmutableList.of[HierarchicalTypeDefinition[ClassType]](dbClsDef, storageDescClsDef, columnClsDef, tblClsDef,
+            Seq[HierarchicalTypeDefinition[ClassType]](dbClsDef, storageDescClsDef, columnClsDef, tblClsDef,
                 partitionClsDef, loadProcessClsDef, viewClsDef))
-
-        ()
     }
 
-    def setupTestGraph(gp: TitanGraphProvider): TitanGraph = {
-        var conf = TitanGraphProvider.getConfiguration
-        conf.setProperty("storage.directory",
-            conf.getString("storage.directory") + "/../graph-data/" + RandomStringUtils.randomAlphanumeric(10))
-        val g = TitanFactory.open(conf)
-        val manager: ScriptEngineManager = new ScriptEngineManager
-        val engine: ScriptEngine = manager.getEngineByName("gremlin-groovy")
-        val bindings: Bindings = engine.createBindings
-        bindings.put("g", g)
+    def setupTestGraph(repo : MetadataRepository): AtlasGraph[_,_] = {
 
-        val hiveGraphFile = FileUtils.getTempDirectory().getPath + File.separator + System.nanoTime() + ".gson"
-        HiveTitanSample.writeGson(hiveGraphFile)
-        bindings.put("hiveGraphFile", hiveGraphFile)
-
-        engine.eval("g.loadGraphSON(hiveGraphFile)", bindings)
+        val g = AtlasGraphProvider.getGraphInstance();
+        val entities = HiveTitanSample.getEntitiesToCreate();
+        repo.createEntities(entities:_*)   
+        g.commit();
         g
     }
+    
+   
 
 }
+
+
 
 trait BaseGremlinTest {
   val STRUCT_NAME_REGEX = (TypeUtils.TEMP_STRUCT_NAME_PREFIX + "\\d+").r

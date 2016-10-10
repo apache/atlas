@@ -25,8 +25,8 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -35,6 +35,9 @@ import javax.inject.Inject;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.graph.GraphHelper.VertexInfo;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.testng.Assert;
@@ -44,16 +47,9 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.core.util.TitanCleanup;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Vertex;
-
 @Guice(modules = RepositoryMetadataModule.class)
 public class GraphHelperTest {
-    @Inject
-    private GraphProvider<TitanGraph> graphProvider;
+
 
     @DataProvider(name = "encodeDecodeTestData")
     private Object[][] createTestData() {
@@ -81,25 +77,14 @@ public class GraphHelperTest {
         typeSystem = TypeSystem.getInstance();
         typeSystem.reset();
 
-        new GraphBackedSearchIndexer(graphProvider);
+        new GraphBackedSearchIndexer();
 
         TestUtils.defineDeptEmployeeTypes(typeSystem);
     }
 
     @AfterClass
-    public void tearDown() throws Exception {
-        TypeSystem.getInstance().reset();
-        try {
-            //TODO - Fix failure during shutdown while using BDB
-            graphProvider.get().shutdown();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        try {
-            TitanCleanup.clear(graphProvider.get());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    public void tearDown() {
+        AtlasGraphProvider.cleanup();
     }
 
     @Test
@@ -116,7 +101,7 @@ public class GraphHelperTest {
                 deptGuid = guid;
             }
         }
-        Vertex deptVertex = GraphHelper.getInstance().getVertexForGUID(deptGuid);
+        AtlasVertex deptVertex = GraphHelper.getInstance().getVertexForGUID(deptGuid);
         Set<VertexInfo> compositeVertices = GraphHelper.getInstance().getCompositeVertices(deptVertex);
         HashMap<String, VertexInfo> verticesByGuid = new HashMap<>();
         for (VertexInfo vertexInfo: compositeVertices) {
@@ -141,14 +126,13 @@ public class GraphHelperTest {
 
     @Test
     public void testGetOutgoingEdgesByLabel() throws Exception {
-        TitanGraph graph = graphProvider.get();
-        TitanVertex v1 = graph.addVertex();
-        TitanVertex v2 = graph.addVertex();
+        AtlasGraph graph = TestUtils.getGraph();
+        AtlasVertex v1 = graph.addVertex();
+        AtlasVertex v2 = graph.addVertex();
+        graph.addEdge(v1, v2, "l1");
+        graph.addEdge(v1, v2, "l2");
 
-        v1.addEdge("l1", v2);
-        v1.addEdge("l2", v2);
-
-        Iterator<Edge> iterator = GraphHelper.getInstance().getOutGoingEdgesByLabel(v1, "l1");
+        Iterator<AtlasEdge> iterator = GraphHelper.getInstance().getOutGoingEdgesByLabel(v1, "l1");
         assertTrue(iterator.hasNext());
         assertTrue(iterator.hasNext());
         assertNotNull(iterator.next());

@@ -18,8 +18,10 @@
 
 package org.apache.atlas.hive.bridge;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.sun.jersey.api.client.ClientResponse;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConstants;
@@ -57,9 +59,8 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import com.google.common.annotations.VisibleForTesting;
+import com.sun.jersey.api.client.ClientResponse;
 
 /**
  * A Bridge Utility that imports metadata from the Hive Meta Store

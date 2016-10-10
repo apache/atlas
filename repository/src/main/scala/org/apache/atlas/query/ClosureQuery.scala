@@ -20,7 +20,7 @@ package org.apache.atlas.query
 
 import java.util
 
-import com.thinkaurelius.titan.core.TitanGraph
+import org.apache.atlas.repository.graphdb.AtlasGraph
 import org.apache.atlas.query.Expressions._
 import org.apache.atlas.typesystem.ITypedStruct
 import org.apache.atlas.typesystem.json.{InstanceSerialization, Serialization}
@@ -116,7 +116,7 @@ trait ClosureQuery {
   def withPath : Boolean
 
   def persistenceStrategy: GraphPersistenceStrategies
-  def g: TitanGraph
+  def g: AtlasGraph[_,_]
 
   def pathExpr : Expressions.Expression = {
     closureRelation.tail.foldLeft(closureRelation.head.toExpr)((b,a) => b.field(a.toFieldName))
@@ -184,8 +184,8 @@ trait ClosureQuery {
      * foreach resultRow
      *   for each Path entry
      *     add an entry in the edges Map
-     *   add an entry for the Src Vertex to the vertex Map
-     *   add an entry for the Dest Vertex to the vertex Map
+     *   add an entry for the Src AtlasVertex to the vertex Map
+     *   add an entry for the Dest AtlasVertex to the vertex Map
      */
     res.rows.map(_.asInstanceOf[StructInstance]).foreach { r =>
 
@@ -207,7 +207,7 @@ trait ClosureQuery {
         }
         currVertex = nextVertex
       }
-      val vertex = r.get(TypeUtils.ResultWithPathStruct.resultAttrName)
+      val AtlasVertex = r.get(TypeUtils.ResultWithPathStruct.resultAttrName)
       vertices.put(id(srcVertex), vertexStruct(srcVertex,
         r.get(TypeUtils.ResultWithPathStruct.resultAttrName).asInstanceOf[ITypedStruct],
         s"${SRC_PREFIX}_"))
@@ -242,6 +242,7 @@ trait SingleInstanceClosureQuery[T] extends ClosureQuery {
   }
 }
 
+import scala.language.existentials;
 /**
  * A ClosureQuery to compute '''Lineage''' for Hive tables. Assumes the Lineage relation is captured in a ''CTAS''
  * type, and the table relations are captured as attributes from a CTAS instance to Table instances.
@@ -266,7 +267,7 @@ case class InputLineageClosureQuery(tableTypeName : String,
                                     selectAttributes : Option[List[String]],
                                     withPath : Boolean,
                                     persistenceStrategy: GraphPersistenceStrategies,
-                                    g: TitanGraph
+                                    g: AtlasGraph[_,_]
                         ) extends SingleInstanceClosureQuery[String] {
 
   val closureType : String = tableTypeName
@@ -306,7 +307,7 @@ case class OutputLineageClosureQuery(tableTypeName : String,
                                      selectAttributes : Option[List[String]],
                                      withPath : Boolean,
                                      persistenceStrategy: GraphPersistenceStrategies,
-                                     g: TitanGraph
+                                     g: AtlasGraph[_,_]
                              ) extends SingleInstanceClosureQuery[String] {
 
   val closureType : String = tableTypeName

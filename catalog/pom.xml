@@ -60,6 +60,18 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-graphdb-api</artifactId>
+        </dependency>
+
+	<!-- for now, catalog can only be used with Titan 0.5.4 -->
+	<dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-graphdb-titan0</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
         </dependency>

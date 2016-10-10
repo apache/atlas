@@ -18,7 +18,7 @@
 
 package org.apache.atlas.repository.graph;
 
-import com.thinkaurelius.titan.core.TitanGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.setup.SetupException;
 import org.apache.atlas.setup.SetupStep;
@@ -41,7 +41,7 @@ public class GraphSchemaInitializer implements SetupStep {
         LOG.info("Initializing graph schema backend.");
         try {
             // The implementation of this method internally creates the schema.
-            TitanGraphProvider.getGraphInstance();
+            AtlasGraphProvider.getGraphInstance();
             LOG.info("Completed initializing graph schema backend.");
         } catch (Exception e) {
             LOG.error("Could not initialize graph schema backend due to exception, {}", e.getMessage(), e);

@@ -19,8 +19,14 @@ package org.apache.atlas.repository.graphdb.titan0;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.script.Bindings;
@@ -42,9 +48,13 @@ import org.apache.atlas.utils.IteratorToIterableAdapter;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.SchemaViolationException;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanIndexQuery;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -58,8 +68,25 @@ import com.tinkerpop.pipes.util.structures.Row;
  */
 public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
 
-    public Titan0Graph() {
+    private final Set<String> multiProperties;
 
+    public Titan0Graph() {
+        //determine multi-properties once at startup
+        TitanManagement mgmt = null;
+        try {
+            mgmt = Titan0GraphDatabase.getGraphInstance().getManagementSystem();
+            Iterable<PropertyKey> keys = mgmt.getRelationTypes(PropertyKey.class);
+            multiProperties = Collections.synchronizedSet(new HashSet<String>());
+            for(PropertyKey key : keys) {
+                if (key.getCardinality() != Cardinality.SINGLE) {
+                    multiProperties.add(key.getName());
+                }
+            }
+        } finally {
+            if (mgmt != null) {
+                mgmt.rollback();
+            }
+        }
     }
 
     @Override
@@ -73,6 +100,7 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
             throw new AtlasSchemaViolationException(e);
         }
     }
+
 
     @Override
     public AtlasGraphQuery<Titan0Vertex, Titan0Edge> query() {
@@ -134,7 +162,7 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
 
     @Override
     public AtlasGraphManagement getManagementSystem() {
-        return new Titan0DatabaseManager(getGraph().getManagementSystem());
+        return new Titan0GraphManagement(this, getGraph().getManagementSystem());
     }
 
     @Override
@@ -170,20 +198,31 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
         return wrapVertices(result);
     }
 
-    @Override
-    public Object getGremlinColumnValue(Object rowValue, String colName, int idx) {
-        Row<List> rV = (Row<List>) rowValue;
-        Object value = rV.getColumn(colName).get(idx);
-        return convertGremlinValue(value);
-    }
+    private Object convertGremlinValue(Object rawValue) {
 
-    @Override
-    public Object convertGremlinValue(Object rawValue) {
         if (rawValue instanceof Vertex) {
             return GraphDbObjectFactory.createVertex(this, (Vertex) rawValue);
-        }
-        if (rawValue instanceof Edge) {
+        } else if (rawValue instanceof Edge) {
             return GraphDbObjectFactory.createEdge(this, (Edge) rawValue);
+        } else if (rawValue instanceof Row) {
+            Row rowValue = (Row)rawValue;
+            Map<String, Object> result = new HashMap<>(rowValue.size());
+            List<String> columnNames = rowValue.getColumnNames();
+            for(int i = 0; i < rowValue.size(); i++) {
+                String key = columnNames.get(i);
+                Object value = convertGremlinValue(rowValue.get(i));
+                result.put(key, value);
+            }
+            return result;
+        } else if (rawValue instanceof List) {
+            return Lists.transform((List)rawValue, new Function<Object, Object>() {
+                @Override
+                public Object apply(Object input) {
+                    return convertGremlinValue(input);
+                }
+            });
+        } else if (rawValue instanceof Collection) {
+            throw new UnsupportedOperationException("Unhandled collection type: " + rawValue.getClass());
         }
         return rawValue;
     }
@@ -194,10 +233,10 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
         return GremlinVersion.TWO;
     }
 
-    @Override
-    public List<Object> convertPathQueryResultToList(Object rawValue) {
+    private List<Object> convertPathQueryResultToList(Object rawValue) {
         return (List<Object>) rawValue;
     }
+
 
     @Override
     public void clear() {
@@ -211,7 +250,7 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
 
     private TitanGraph getGraph() {
         // return the singleton instance of the graph in the plugin
-        return Titan0Database.getGraphInstance();
+        return Titan0GraphDatabase.getGraphInstance();
     }
 
     @Override
@@ -219,15 +258,24 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
         GraphSONWriter.outputGraph(getGraph(), os);
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * org.apache.atlas.repository.graphdb.AtlasGraph#executeGremlinScript(java.
-     * lang.String)
-     */
     @Override
-    public Object executeGremlinScript(String gremlinQuery) throws ScriptException {
+    public Object executeGremlinScript(String query, boolean isPath) throws ScriptException {
+
+        Object result = executeGremlinScript(query);
+        if (isPath) {
+            List<Object> path = convertPathQueryResultToList(result);
+
+            List<Object> convertedResult = new ArrayList<>(path.size());
+            for(Object o : path) {
+                convertedResult.add(convertGremlinValue(o));
+            }
+            return convertedResult;
+        } else {
+            return convertGremlinValue(result);
+        }
+    }
+
+    private Object executeGremlinScript(String gremlinQuery) throws ScriptException {
 
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName("gremlin-groovy");
@@ -297,5 +345,15 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
                 return GraphDbObjectFactory.createEdge(Titan0Graph.this, input);
             }
         });
+    }
+
+
+    @Override
+    public boolean isMultiProperty(String propertyName) {
+        return multiProperties.contains(propertyName);
+    }
+
+    public void addMultiProperties(Set<String> names) {
+        multiProperties.addAll(names);
     }
 }

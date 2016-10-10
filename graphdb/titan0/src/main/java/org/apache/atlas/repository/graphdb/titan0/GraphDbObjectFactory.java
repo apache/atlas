@@ -18,9 +18,11 @@
 
 package org.apache.atlas.repository.graphdb.titan0;
 
+import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
 import org.apache.atlas.repository.graphdb.titan0.query.Titan0GraphQuery;
 
+import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.tinkerpop.blueprints.Edge;
@@ -39,8 +41,8 @@ public final class GraphDbObjectFactory {
     /**
      * Creates a Titan0Edge that corresponds to the given Gremlin Edge.
      *
-     * @param source
-     * @return
+     * @param graph The graph the edge should be created in
+     * @param source The gremlin edge
      */
     public static Titan0Edge createEdge(Titan0Graph graph, Edge source) {
 
@@ -52,9 +54,8 @@ public final class GraphDbObjectFactory {
 
     /**
      * Creates a Titan0GraphQuery that corresponds to the given GraphQuery.
-     * @param source
      *
-     * @return
+     * @param graph the graph that is being quried
      */
     public static Titan0GraphQuery createQuery(Titan0Graph graph) {
 
@@ -64,8 +65,8 @@ public final class GraphDbObjectFactory {
     /**
      * Creates a Titan0Vertex that corresponds to the given Gremlin Vertex.
      *
-     * @param source
-     * @return
+     * @param graph The graph that contains the vertex
+     * @param source the Gremlin vertex
      */
     public static Titan0Vertex createVertex(Titan0Graph graph, Vertex source) {
 
@@ -76,8 +77,8 @@ public final class GraphDbObjectFactory {
     }
 
     /**
-     * @param propertyKey
-     * @return
+     * @param propertyKey The Gremlin propertyKey.
+     *
      */
     public static Titan0PropertyKey createPropertyKey(PropertyKey propertyKey) {
         if (propertyKey == null) {
@@ -87,7 +88,7 @@ public final class GraphDbObjectFactory {
     }
 
     /**
-     * @param index
+     * @param index The gremlin index.
      * @return
      */
     public static AtlasGraphIndex createGraphIndex(TitanGraphIndex index) {
@@ -95,6 +96,22 @@ public final class GraphDbObjectFactory {
             return null;
         }
         return new Titan0GraphIndex(index);
+    }
+
+    /**
+     * Converts a Multiplicity to a Cardinality.
+     *
+     * @param cardinality
+     * @return
+     */
+    public static AtlasCardinality createCardinality(Cardinality cardinality) {
+
+        if (cardinality == Cardinality.SINGLE) {
+            return AtlasCardinality.SINGLE;
+        } else if (cardinality == Cardinality.LIST) {
+            return AtlasCardinality.LIST;
+        }
+        return AtlasCardinality.SET;
     }
 
 }

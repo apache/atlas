@@ -123,9 +123,10 @@ public interface AtlasElement {
 
 
     /**
-     * Creates a Jettison JSONObject from this Element
+     * Creates a Jettison JSONObject from this Element.
      *
-     * @param propertyKeys The property keys at the root of the element to serialize.  If null, then all keys are serialized.
+     * @param propertyKeys The property keys at the root of the element to serialize.
+     *  If null, then all keys are serialized.
      */
     JSONObject toJson(Set<String> propertyKeys) throws JSONException;
 
@@ -156,7 +157,7 @@ public interface AtlasElement {
      *
      * @return
      */
-    public String getIdForDisplay();
+    String getIdForDisplay();
 
     /**
      * Whether or not an id has been assigned yet for this Element.  This can happen if the element has been created

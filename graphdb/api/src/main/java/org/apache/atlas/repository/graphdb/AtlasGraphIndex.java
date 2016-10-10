@@ -21,7 +21,7 @@ package org.apache.atlas.repository.graphdb;
 import java.util.Set;
 
 /**
- * Represents a graph index on the database
+ * Represents a graph index on the database.
  */
 public interface AtlasGraphIndex {
 
@@ -39,14 +39,14 @@ public interface AtlasGraphIndex {
     boolean isCompositeIndex();
 
     /**
-     * Indicates if the index applies to edges
+     * Indicates if the index applies to edges.
      *
      * @return
      */
     boolean isEdgeIndex();
 
     /**
-     * Indicates if the index applies to vertices
+     * Indicates if the index applies to vertices.
      *
      * @return
      */

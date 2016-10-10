@@ -30,10 +30,12 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -43,7 +45,6 @@ import org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
-import org.apache.atlas.typesystem.types.Multiplicity;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
@@ -57,16 +58,16 @@ public class Titan0DatabaseTest {
 
     private <V, E> AtlasGraph<V, E> getGraph() {
         if (atlasGraph == null) {
-            Titan0Database db = new Titan0Database();
+            Titan0GraphDatabase db = new Titan0GraphDatabase();
             atlasGraph = db.getGraph();
             AtlasGraphManagement mgmt = atlasGraph.getManagementSystem();
             // create the index (which defines these properties as being mult
             // many)
-            for (String propertyName : AtlasGraphManagement.MULTIPLICITY_MANY_PROPERTY_KEYS) {
+            for (String propertyName : new String[]{"__superTypeNames", "__traitNames"}) {
                 AtlasPropertyKey propertyKey = mgmt.getPropertyKey(propertyName);
                 if (propertyKey == null) {
-                    propertyKey = mgmt.makePropertyKey(propertyName, String.class, Multiplicity.SET);
-                    mgmt.createCompositeIndex(propertyName, propertyKey, false);
+                    propertyKey = mgmt.makePropertyKey(propertyName, String.class, AtlasCardinality.SET);
+                    mgmt.createExactMatchIndex(propertyName, false, Collections.singletonList(propertyKey));
                 }
             }
             mgmt.commit();

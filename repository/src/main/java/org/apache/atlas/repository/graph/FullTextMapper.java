@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.repository.graph;
 
-import com.tinkerpop.blueprints.Vertex;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.ITypedInstance;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
@@ -49,7 +49,7 @@ public class FullTextMapper {
         instanceCache = new HashMap<>();
     }
 
-    public String mapRecursive(Vertex instanceVertex, boolean followReferences) throws AtlasException {
+    public String mapRecursive(AtlasVertex instanceVertex, boolean followReferences) throws AtlasException {
         String guid = GraphHelper.getIdFromVertex(instanceVertex);
         ITypedReferenceableInstance typedReference;
         if (instanceCache.containsKey(guid)) {
@@ -121,7 +121,7 @@ public class FullTextMapper {
         case CLASS:
             if (followReferences) {
                 String refGuid = ((ITypedReferenceableInstance) value).getId()._getId();
-                Vertex refVertex = graphHelper.getVertexForGUID(refGuid);
+                AtlasVertex refVertex = graphHelper.getVertexForGUID(refGuid);
                 return mapRecursive(refVertex, false);
             }
             break;

@@ -17,14 +17,15 @@
  */
 package org.apache.atlas.repository.typestore;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.util.TitanCleanup;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.inject.Inject;
+
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RepositoryMetadataModule;
 import org.apache.atlas.TestUtils;
-import org.apache.atlas.repository.graph.GraphProvider;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
@@ -40,9 +41,8 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import javax.inject.Inject;
-import java.util.HashMap;
-import java.util.Map;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 
 /**
@@ -50,9 +50,6 @@ import java.util.Map;
  */
 @Guice(modules = RepositoryMetadataModule.class)
 public class StoreBackedTypeCacheTest {
-
-    @Inject
-    private GraphProvider<TitanGraph> graphProvider;
 
     @Inject
     private ITypeStore typeStore;
@@ -64,8 +61,15 @@ public class StoreBackedTypeCacheTest {
 
     private Map<String, ClassType> classTypesToTest = new HashMap<>();
 
+    @Inject
+    public StoreBackedTypeCacheTest() {
+    }
+
     @BeforeClass
     public void setUp() throws Exception {
+        //force graph to be initialized up front
+        TestUtils.getGraph();
+
         ts = TypeSystem.getInstance();
         ts.reset();
         ts.setTypeCache(typeCache);
@@ -75,7 +79,7 @@ public class StoreBackedTypeCacheTest {
         TestUtils.createHiveTypes(ts);
         ImmutableList<String> typeNames = ts.getTypeNames();
         typeStore.store(ts, typeNames);
-
+        
         ClassType type = ts.getDataType(ClassType.class, "Manager");
         classTypesToTest.put("Manager", type);
         type = ts.getDataType(ClassType.class, TestUtils.TABLE_TYPE);
@@ -85,24 +89,12 @@ public class StoreBackedTypeCacheTest {
     @AfterClass
     public void tearDown() throws Exception {
         ts.reset();
-        try {
-            graphProvider.get().shutdown();
-        }
-        catch(Exception e) {
-            e.printStackTrace();
-        }
-
-        try {
-            TitanCleanup.clear(graphProvider.get());
-        }
-        catch(Exception e) {
-            e.printStackTrace();
-        }
+        AtlasGraphProvider.cleanup();
     }
 
     @BeforeMethod
     public void setupTestMethod() throws Exception {
-        ts.reset();
+        typeCache.clear();
     }
 
     @Test

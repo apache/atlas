@@ -84,51 +84,51 @@ import org.slf4j.LoggerFactory;
  *
  *
  */
-public abstract class TitanGraphQuery<V,E> implements AtlasGraphQuery<V, E> {
+public abstract class TitanGraphQuery<V, E> implements AtlasGraphQuery<V, E> {
 
-    private final Logger LOG = LoggerFactory.getLogger(TitanGraphQuery.class);
-    protected final AtlasGraph<V,E> graph_;
-    private final OrCondition queryCondition_ = new OrCondition();
-    private final boolean isChildQuery_;
+    private static final Logger LOG = LoggerFactory.getLogger(TitanGraphQuery.class);
+    protected final AtlasGraph<V, E> graph;
+    private final OrCondition queryCondition = new OrCondition();
+    private final boolean isChildQuery;
     protected abstract NativeTitanQueryFactory<V, E> getQueryFactory();
 
     /**
-     * Creates a TitanGraphQuery
+     * Creates a TitanGraphQuery.
      *
      * @param graph
      */
-    public TitanGraphQuery(AtlasGraph<V,E> graph) {
-        graph_ = graph;
-        isChildQuery_ = false;
+    public TitanGraphQuery(AtlasGraph<V, E> graph) {
+        this.graph = graph;
+        this.isChildQuery = false;
     }
 
     /**
-     * Creates a TitanGraphQuery
+     * Creates a TitanGraphQuery.
      *
      * @param graph
      * @param isChildQuery
      */
-    public TitanGraphQuery(AtlasGraph<V,E> graph, boolean isChildQuery) {
-        graph_ = graph;
-        isChildQuery_ = isChildQuery;
+    public TitanGraphQuery(AtlasGraph<V, E> graph, boolean isChildQuery) {
+        this.graph = graph;
+        this.isChildQuery = isChildQuery;
     }
 
     @Override
     public AtlasGraphQuery<V, E> has(String propertyKey, Object value) {
-        queryCondition_.andWith(new HasPredicate(propertyKey, ComparisionOperator.EQUAL, value));
+        queryCondition.andWith(new HasPredicate(propertyKey, ComparisionOperator.EQUAL, value));
         return this;
     }
 
     @Override
     public Iterable<AtlasVertex<V, E>> vertices() {
-        LOG.debug("Executing: " );
-        LOG.debug(queryCondition_.toString());
+        LOG.debug("Executing: ");
+        LOG.debug(queryCondition.toString());
         //compute the overall result by unioning the results from all of the
         //AndConditions together.
         Set<AtlasVertex<V, E>> result = new HashSet<>();
-        for(AndCondition andExpr : queryCondition_.getAndTerms()) {
-            NativeTitanGraphQuery<V,E> andQuery = andExpr.create(getQueryFactory());
-            for(AtlasVertex<V,E> vertex : andQuery.vertices()) {
+        for(AndCondition andExpr : queryCondition.getAndTerms()) {
+            NativeTitanGraphQuery<V, E> andQuery = andExpr.create(getQueryFactory());
+            for(AtlasVertex<V, E> vertex : andQuery.vertices()) {
                 result.add(vertex);
             }
         }
@@ -138,14 +138,14 @@ public abstract class TitanGraphQuery<V,E> implements AtlasGraphQuery<V, E> {
     @Override
     public AtlasGraphQuery<V, E> has(String propertyKey, ComparisionOperator operator,
             Object value) {
-        queryCondition_.andWith(new HasPredicate(propertyKey, operator, value));
+        queryCondition.andWith(new HasPredicate(propertyKey, operator, value));
         return this;
     }
 
 
     @Override
     public AtlasGraphQuery<V, E> in(String propertyKey, Collection<? extends Object> values) {
-        queryCondition_.andWith(new InPredicate(propertyKey, values));
+        queryCondition.andWith(new InPredicate(propertyKey, values));
         return this;
     }
 
@@ -159,31 +159,31 @@ public abstract class TitanGraphQuery<V,E> implements AtlasGraphQuery<V, E> {
         OrCondition overallChildQuery = new OrCondition(false);
 
         for(AtlasGraphQuery<V, E> atlasChildQuery : childQueries) {
-            if(! atlasChildQuery.isChildQuery()) {
+            if (!atlasChildQuery.isChildQuery()) {
                 throw new IllegalArgumentException(atlasChildQuery + " is not a child query");
             }
-            TitanGraphQuery<V,E> childQuery = (TitanGraphQuery<V,E>)atlasChildQuery;
+            TitanGraphQuery<V, E> childQuery = (TitanGraphQuery<V, E>)atlasChildQuery;
             overallChildQuery.orWith(childQuery.getOrCondition());
         }
 
-        queryCondition_.andWith(overallChildQuery);
+        queryCondition.andWith(overallChildQuery);
         return this;
     }
 
     private OrCondition getOrCondition() {
-        return queryCondition_;
+        return queryCondition;
     }
 
     @Override
     public AtlasGraphQuery<V, E> addConditionsFrom(AtlasGraphQuery<V, E> otherQuery) {
 
         TitanGraphQuery<V, E> childQuery = (TitanGraphQuery<V, E>)otherQuery;
-        queryCondition_.andWith(childQuery.getOrCondition());
+        queryCondition.andWith(childQuery.getOrCondition());
         return this;
     }
 
     @Override
     public boolean isChildQuery() {
-        return isChildQuery_;
+        return isChildQuery;
     }
 }

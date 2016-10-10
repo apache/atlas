@@ -20,23 +20,38 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <artifactId>apache-atlas</artifactId>
         <groupId>org.apache.atlas</groupId>
+        <artifactId>atlas-graphdb</artifactId>
         <version>0.8-incubating-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
-
-    <artifactId>atlas-graphdb</artifactId>
-    <description>Apache Atlas Graph Database Projects</description>
-    <name>Apache Atlas Graph Database Projects</name>
+    <artifactId>atlas-graphdb-impls</artifactId>
+    <!-- Convenience dependency project that allows
+    the dependency on the correct implementation class
+    to be configured through profiles.  In implementation
+    specific profiles, the dependency on this project
+    should be configured to exclude all but the
+    proper dependency
+    -->
+    
+    <description>Apache Atlas Graph Database Implementation Dependencies</description>
+    <name>Apache Atlas Graph Database Implementation Dependencies</name>
     <packaging>pom</packaging>
-    <properties>
-        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
-    </properties>
 
-    <modules>
-        <module>api</module>
-        <module>titan0</module>
-        <module>common</module>
-        <module>graphdb-impls</module>
-    </modules>
+    <dependencies>
+      
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-graphdb-titan0</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+	<!-- Additional dependencies should be added here
+	as more implementations are introduced.  In the
+	profile corresponding to the implementation in 
+	the root pom.xml, all dependencies except for
+	that one should be excluded. -->
+
+    </dependencies>
+
 </project>

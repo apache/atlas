@@ -24,11 +24,11 @@ package org.apache.atlas.repository.graphdb.titan.query;
  * @param <V>
  * @param <E>
  */
-public interface NativeTitanQueryFactory<V,E> {
+public interface NativeTitanQueryFactory<V, E> {
 
     /**
-     * Creates a NativeTitanGraphQuery
+     * Creates a NativeTitanGraphQuery.
      * @return
      */
-    NativeTitanGraphQuery<V,E> createNativeTitanQuery();
+    NativeTitanGraphQuery<V, E> createNativeTitanQuery();
 }

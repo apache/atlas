@@ -22,7 +22,6 @@ import java.util.Collection;
 
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
-import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasSchemaViolationException;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.AtlasVertexQuery;
@@ -62,7 +61,7 @@ public class Titan0Vertex extends Titan0Element<Vertex> implements AtlasVertex<T
     @Override
     public <T> T getProperty(String propertyName, Class<T> clazz) {
 
-        if (AtlasGraphManagement.MULTIPLICITY_MANY_PROPERTY_KEYS.contains(propertyName)) {
+        if (graph.isMultiProperty(propertyName)) {
             // throw exception in this case to be consistent with Titan 1.0.0
             // behavior.
             throw new IllegalStateException();
@@ -78,7 +77,7 @@ public class Titan0Vertex extends Titan0Element<Vertex> implements AtlasVertex<T
             // For consistency with Titan 1.0.0, treat sets of multiplicity many
             // properties as adds. Handle this here since this is an uncommon
             // occurrence.
-            if (AtlasGraphManagement.MULTIPLICITY_MANY_PROPERTY_KEYS.contains(propertyName)) {
+            if (graph.isMultiProperty(propertyName)) {
                 addProperty(propertyName, value);
             } else {
                 throw e;

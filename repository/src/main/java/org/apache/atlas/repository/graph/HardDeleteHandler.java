@@ -19,8 +19,8 @@
 package org.apache.atlas.repository.graph;
 
 import com.google.inject.Inject;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Vertex;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.typesystem.types.TypeSystem;
 
@@ -32,12 +32,12 @@ public class HardDeleteHandler extends DeleteHandler {
     }
 
     @Override
-    protected void _deleteVertex(Vertex instanceVertex, boolean force) {
+    protected void _deleteVertex(AtlasVertex instanceVertex, boolean force) {
         graphHelper.removeVertex(instanceVertex);
     }
 
     @Override
-    protected void deleteEdge(Edge edge, boolean force) throws AtlasException {
+    protected void deleteEdge(AtlasEdge edge, boolean force) throws AtlasException {
         graphHelper.removeEdge(edge);
     }
 }

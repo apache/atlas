@@ -56,49 +56,55 @@ public class NotificationHookConsumerKafkaTest {
 
     @Test
     public void testConsumerConsumesNewMessageWithAutoCommitDisabled() throws AtlasException, InterruptedException {
-        produceMessage(new HookNotification.EntityCreateRequest("test_user1", createEntity()));
-
-        NotificationConsumer<HookNotification.HookNotificationMessage> consumer =
-                createNewConsumer(kafkaNotification, false);
-        LocalAtlasClient localAtlasClient = mock(LocalAtlasClient.class);
-        NotificationHookConsumer notificationHookConsumer =
-                new NotificationHookConsumer(kafkaNotification, localAtlasClient);
-        NotificationHookConsumer.HookConsumer hookConsumer =
-                notificationHookConsumer.new HookConsumer(consumer);
-
-        consumeOneMessage(consumer, hookConsumer);
-        verify(localAtlasClient).setUser("test_user1");
-
-        // produce another message, and make sure it moves ahead. If commit succeeded, this would work.
-        produceMessage(new HookNotification.EntityCreateRequest("test_user2", createEntity()));
-        consumeOneMessage(consumer, hookConsumer);
-        verify(localAtlasClient).setUser("test_user2");
-
-        kafkaNotification.close();
+        try {
+            produceMessage(new HookNotification.EntityCreateRequest("test_user1", createEntity()));
+    
+            NotificationConsumer<HookNotification.HookNotificationMessage> consumer =
+                    createNewConsumer(kafkaNotification, false);
+            LocalAtlasClient localAtlasClient = mock(LocalAtlasClient.class);
+            NotificationHookConsumer notificationHookConsumer =
+                    new NotificationHookConsumer(kafkaNotification, localAtlasClient);
+            NotificationHookConsumer.HookConsumer hookConsumer =
+                    notificationHookConsumer.new HookConsumer(consumer);
+    
+            consumeOneMessage(consumer, hookConsumer);
+            verify(localAtlasClient).setUser("test_user1");
+    
+            // produce another message, and make sure it moves ahead. If commit succeeded, this would work.
+            produceMessage(new HookNotification.EntityCreateRequest("test_user2", createEntity()));
+            consumeOneMessage(consumer, hookConsumer);
+            verify(localAtlasClient).setUser("test_user2");
+        }
+        finally {
+            kafkaNotification.close();
+        }
     }
 
     @Test(dependsOnMethods = "testConsumerConsumesNewMessageWithAutoCommitDisabled")
     public void testConsumerRemainsAtSameMessageWithAutoCommitEnabled() throws Exception {
-        produceMessage(new HookNotification.EntityCreateRequest("test_user3", createEntity()));
-
-        NotificationConsumer<HookNotification.HookNotificationMessage> consumer =
-                createNewConsumer(kafkaNotification, true);
-        LocalAtlasClient localAtlasClient = mock(LocalAtlasClient.class);
-        NotificationHookConsumer notificationHookConsumer =
-                new NotificationHookConsumer(kafkaNotification, localAtlasClient);
-        NotificationHookConsumer.HookConsumer hookConsumer =
-                notificationHookConsumer.new HookConsumer(consumer);
-
-        consumeOneMessage(consumer, hookConsumer);
-        verify(localAtlasClient).setUser("test_user3");
-
-        // produce another message, but this will not be consumed, as commit code is not executed in hook consumer.
-        produceMessage(new HookNotification.EntityCreateRequest("test_user4", createEntity()));
-
-        consumeOneMessage(consumer, hookConsumer);
-        verify(localAtlasClient).setUser("test_user3");
-
-        kafkaNotification.close();
+        try {
+            produceMessage(new HookNotification.EntityCreateRequest("test_user3", createEntity()));
+    
+            NotificationConsumer<HookNotification.HookNotificationMessage> consumer =
+                    createNewConsumer(kafkaNotification, true);
+            LocalAtlasClient localAtlasClient = mock(LocalAtlasClient.class);
+            NotificationHookConsumer notificationHookConsumer =
+                    new NotificationHookConsumer(kafkaNotification, localAtlasClient);
+            NotificationHookConsumer.HookConsumer hookConsumer =
+                    notificationHookConsumer.new HookConsumer(consumer);
+    
+            consumeOneMessage(consumer, hookConsumer);
+            verify(localAtlasClient).setUser("test_user3");
+    
+            // produce another message, but this will not be consumed, as commit code is not executed in hook consumer.
+            produceMessage(new HookNotification.EntityCreateRequest("test_user4", createEntity()));
+    
+            consumeOneMessage(consumer, hookConsumer);
+            verify(localAtlasClient).setUser("test_user3");
+        }
+        finally {
+            kafkaNotification.close();
+        }
     }
 
     NotificationConsumer<HookNotification.HookNotificationMessage> createNewConsumer(
@@ -126,6 +132,7 @@ public class NotificationHookConsumerKafkaTest {
         final Referenceable entity = new Referenceable(AtlasClient.DATA_SET_SUPER_TYPE);
         entity.set("name", "db" + randomString());
         entity.set("description", randomString());
+        entity.set("qualifiedName", randomString());
         return entity;
     }
 

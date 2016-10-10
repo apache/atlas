@@ -18,16 +18,22 @@
 
 package org.apache.atlas.repository.graph;
 
-import com.google.inject.Inject;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Vertex;
+import static junit.framework.Assert.assertTrue;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+
+import java.util.Arrays;
+import java.util.Set;
+
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RepositoryMetadataModule;
+import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
+import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
+import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
 import org.apache.atlas.typesystem.types.EnumType;
@@ -39,115 +45,133 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import java.util.Arrays;
-
-import static junit.framework.Assert.assertTrue;
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
+import com.google.inject.Inject;
 
 @Guice(modules = RepositoryMetadataModule.class)
 public class GraphBackedSearchIndexerTest {
 
-    @Inject
-    private GraphProvider<TitanGraph> graphProvider;
-
+ 
     @Inject
     private GraphBackedSearchIndexer graphBackedSearchIndexer;
 
     @Test
     public void verifySystemMixedIndexes() {
-        TitanGraph titanGraph = graphProvider.get();
-        TitanManagement managementSystem = titanGraph.getManagementSystem();
-
-        TitanGraphIndex vertexIndex = managementSystem.getGraphIndex(Constants.VERTEX_INDEX);
-        assertNotNull(vertexIndex);
-        assertTrue(vertexIndex.isMixedIndex());
-        assertTrue(Vertex.class.isAssignableFrom(vertexIndex.getIndexedElement()));
-
-        TitanGraphIndex edgeIndex = managementSystem.getGraphIndex(Constants.EDGE_INDEX);
-        assertNotNull(edgeIndex);
-        assertTrue(edgeIndex.isMixedIndex());
-        assertTrue(Edge.class.isAssignableFrom(edgeIndex.getIndexedElement()));
-
-        verifyVertexIndexContains(managementSystem, Constants.STATE_PROPERTY_KEY);
+        AtlasGraph graph = TestUtils.getGraph();
+        AtlasGraphManagement managementSystem = graph.getManagementSystem();
+        try {
+            AtlasGraphIndex vertexIndex = managementSystem.getGraphIndex(Constants.VERTEX_INDEX);
+            assertNotNull(vertexIndex);
+            assertTrue(vertexIndex.isMixedIndex());
+            assertFalse(vertexIndex.isEdgeIndex());
+            assertTrue(vertexIndex.isVertexIndex());
+            
+            AtlasGraphIndex edgeIndex = managementSystem.getGraphIndex(Constants.EDGE_INDEX);
+            assertNotNull(edgeIndex);
+            assertTrue(edgeIndex.isMixedIndex());
+            assertTrue(edgeIndex.isEdgeIndex());
+            assertFalse(edgeIndex.isVertexIndex());
+           
+    
+            verifyVertexIndexContains(managementSystem, Constants.STATE_PROPERTY_KEY);
+        }
+        finally {
+            managementSystem.rollback();
+        }
     }
 
     @Test
     public void verifySystemCompositeIndexes() {
-        TitanGraph titanGraph = graphProvider.get();
-        TitanManagement managementSystem = titanGraph.getManagementSystem();
-
-        verifySystemCompositeIndex(managementSystem, Constants.GUID_PROPERTY_KEY, true);
-        verifyVertexIndexContains(managementSystem, Constants.GUID_PROPERTY_KEY);
-
-        verifySystemCompositeIndex(managementSystem, Constants.ENTITY_TYPE_PROPERTY_KEY, false);
-        verifyVertexIndexContains(managementSystem, Constants.ENTITY_TYPE_PROPERTY_KEY);
-
-        verifySystemCompositeIndex(managementSystem, Constants.SUPER_TYPES_PROPERTY_KEY, false);
-        verifyVertexIndexContains(managementSystem, Constants.SUPER_TYPES_PROPERTY_KEY);
-
-        verifySystemCompositeIndex(managementSystem, Constants.TRAIT_NAMES_PROPERTY_KEY, false);
-        verifyVertexIndexContains(managementSystem, Constants.TRAIT_NAMES_PROPERTY_KEY);
+        AtlasGraph graph = TestUtils.getGraph();
+        AtlasGraphManagement managementSystem = graph.getManagementSystem();
+        try {
+            verifySystemCompositeIndex(managementSystem, Constants.GUID_PROPERTY_KEY, true);
+            verifyVertexIndexContains(managementSystem, Constants.GUID_PROPERTY_KEY);
+    
+            verifySystemCompositeIndex(managementSystem, Constants.ENTITY_TYPE_PROPERTY_KEY, false);
+            verifyVertexIndexContains(managementSystem, Constants.ENTITY_TYPE_PROPERTY_KEY);
+    
+            verifySystemCompositeIndex(managementSystem, Constants.SUPER_TYPES_PROPERTY_KEY, false);
+            verifyVertexIndexContains(managementSystem, Constants.SUPER_TYPES_PROPERTY_KEY);
+    
+            verifySystemCompositeIndex(managementSystem, Constants.TRAIT_NAMES_PROPERTY_KEY, false);
+            verifyVertexIndexContains(managementSystem, Constants.TRAIT_NAMES_PROPERTY_KEY);
+        }
+        finally {
+            managementSystem.rollback();
+        }
     }
 
     @Test
     public void verifyFullTextIndex() {
-        TitanGraph titanGraph = graphProvider.get();
-        TitanManagement managementSystem = titanGraph.getManagementSystem();
-
-        TitanGraphIndex fullTextIndex = managementSystem.getGraphIndex(Constants.FULLTEXT_INDEX);
+        AtlasGraph graph = TestUtils.getGraph();
+        AtlasGraphManagement managementSystem = graph.getManagementSystem();
+        try {
+        AtlasGraphIndex fullTextIndex = managementSystem.getGraphIndex(Constants.FULLTEXT_INDEX);
         assertTrue(fullTextIndex.isMixedIndex());
 
         Arrays.asList(fullTextIndex.getFieldKeys()).contains(
                 managementSystem.getPropertyKey(Constants.ENTITY_TEXT_PROPERTY_KEY));
+        }
+        finally {
+            managementSystem.rollback();
+        }
     }
 
     @Test
     public void verifyTypeStoreIndexes() {
-        TitanGraph titanGraph = graphProvider.get();
-        TitanManagement managementSystem = titanGraph.getManagementSystem();
-
-        verifySystemCompositeIndex(managementSystem, Constants.TYPENAME_PROPERTY_KEY, true);
-        verifyVertexIndexContains(managementSystem, Constants.TYPENAME_PROPERTY_KEY);
-
-        verifySystemCompositeIndex(managementSystem, Constants.VERTEX_TYPE_PROPERTY_KEY, false);
-        verifyVertexIndexContains(managementSystem, Constants.VERTEX_TYPE_PROPERTY_KEY);
+        AtlasGraph graph = TestUtils.getGraph();
+        AtlasGraphManagement managementSystem = graph.getManagementSystem();
+        try {
+            verifySystemCompositeIndex(managementSystem, Constants.TYPENAME_PROPERTY_KEY, true);
+            verifyVertexIndexContains(managementSystem, Constants.TYPENAME_PROPERTY_KEY);
+    
+            verifySystemCompositeIndex(managementSystem, Constants.VERTEX_TYPE_PROPERTY_KEY, false);
+            verifyVertexIndexContains(managementSystem, Constants.VERTEX_TYPE_PROPERTY_KEY);
+        }
+        finally {
+            managementSystem.rollback();
+        }
+        
     }
 
     @Test
     public void verifyUserDefinedTypeIndex() throws AtlasException {
-        TitanGraph titanGraph = graphProvider.get();
-        TitanManagement managementSystem = titanGraph.getManagementSystem();
-
-        TypeSystem typeSystem = TypeSystem.getInstance();
-
-        String enumName = "randomEnum" + RandomStringUtils.randomAlphanumeric(10);
-        EnumType managedType = typeSystem.defineEnumType(enumName, new EnumValue("randomEnumValue", 0));
-
-        HierarchicalTypeDefinition<ClassType> databaseTypeDefinition =
-                createClassTypeDef("Database", "Database type description", null,
-                        TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
-                        TypesUtil.createRequiredAttrDef("managedType", managedType));
-
-        ClassType databaseType = typeSystem.defineClassType(databaseTypeDefinition);
-        graphBackedSearchIndexer.onAdd(Arrays.asList(databaseType));
-
-        verifySystemCompositeIndex(managementSystem, "Database.name" + Constants.ENTITY_TYPE_PROPERTY_KEY, false);
-        verifyVertexIndexContains(managementSystem, "Database.name" + Constants.ENTITY_TYPE_PROPERTY_KEY);
-        verifySystemCompositeIndex(managementSystem, "Database.name" + Constants.SUPER_TYPES_PROPERTY_KEY, false);
-
-        verifyVertexIndexContains(managementSystem, "Database.managedType");
+        AtlasGraph graph = TestUtils.getGraph();
+        AtlasGraphManagement managementSystem = graph.getManagementSystem();
+        try {
+            TypeSystem typeSystem = TypeSystem.getInstance();
+    
+            String enumName = "randomEnum" + RandomStringUtils.randomAlphanumeric(10);
+            EnumType managedType = typeSystem.defineEnumType(enumName, new EnumValue("randomEnumValue", 0));
+    
+            HierarchicalTypeDefinition<ClassType> databaseTypeDefinition =
+                    createClassTypeDef("Database", "Database type description", null,
+                            TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE),
+                            TypesUtil.createRequiredAttrDef("managedType", managedType));
+                
+            ClassType databaseType = typeSystem.defineClassType(databaseTypeDefinition);
+            graphBackedSearchIndexer.onAdd(Arrays.asList(databaseType));
+    
+            verifySystemCompositeIndex(managementSystem, "Database.name" + Constants.ENTITY_TYPE_PROPERTY_KEY, false);
+            verifyVertexIndexContains(managementSystem, "Database.name" + Constants.ENTITY_TYPE_PROPERTY_KEY);
+            verifySystemCompositeIndex(managementSystem, "Database.name" + Constants.SUPER_TYPES_PROPERTY_KEY, false);
+    
+            verifyVertexIndexContains(managementSystem, "Database.managedType");
+        }
+        finally {
+            //search indexer uses its own titan management transaction
+            managementSystem.rollback();
+        }
     }
 
-    private void verifyVertexIndexContains(TitanManagement managementSystem, String indexName) {
-        TitanGraphIndex vertexIndex = managementSystem.getGraphIndex(Constants.VERTEX_INDEX);
-        PropertyKey[] fieldKeys = vertexIndex.getFieldKeys();
+    private void verifyVertexIndexContains(AtlasGraphManagement managementSystem, String indexName) {
+        AtlasGraphIndex vertexIndex = managementSystem.getGraphIndex(Constants.VERTEX_INDEX);
+        Set<AtlasPropertyKey> fieldKeys = vertexIndex.getFieldKeys();
         Arrays.asList(fieldKeys).contains(managementSystem.getPropertyKey(indexName));
     }
 
-    private void verifySystemCompositeIndex(TitanManagement managementSystem, String indexName, boolean isUnique) {
-        TitanGraphIndex systemIndex = managementSystem.getGraphIndex(indexName);
+    private void verifySystemCompositeIndex(AtlasGraphManagement managementSystem, String indexName, boolean isUnique) {
+        AtlasGraphIndex systemIndex = managementSystem.getGraphIndex(indexName);
         assertNotNull(systemIndex);
         assertTrue(systemIndex.isCompositeIndex());
         if (isUnique) {

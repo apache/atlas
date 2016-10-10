@@ -27,23 +27,23 @@ import org.apache.atlas.repository.graphdb.titan.query.NativeTitanGraphQuery;
  */
 public class InPredicate implements QueryPredicate {
 
-    private String propertyName_;
-    private Collection<? extends Object> values_;
+    private String propertyName;
+    private Collection<? extends Object> values;
 
     public InPredicate(String propertyName, Collection<? extends Object> values) {
         super();
-        propertyName_ = propertyName;
-        values_ = values;
+        this.propertyName = propertyName;
+        this.values = values;
     }
 
     @Override
     public void addTo(NativeTitanGraphQuery query) {
-        query.in(propertyName_, values_);
+        query.in(propertyName, values);
     }
 
     @Override
     public String toString() {
-        return "InPredicate [propertyName_=" + propertyName_ + ", values_=" + values_ + "]";
+        return "InPredicate [propertyName=" + propertyName + ", values=" + values + "]";
     }
 
 }

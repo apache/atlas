@@ -21,8 +21,6 @@ package org.apache.atlas.repository.graphdb;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.atlas.AtlasException;
-
 /**
  * Represents a query against the graph within the context of the
  * current transaction.
@@ -30,7 +28,7 @@ import org.apache.atlas.AtlasException;
  * @param <V> vertex class used by the graph
  * @param <E> edge class used by the graph
  */
-public interface AtlasGraphQuery<V,E> {
+public interface AtlasGraphQuery<V, E> {
 
     /**
      * Adds a predicate that the returned vertices must have the specified
@@ -41,7 +39,7 @@ public interface AtlasGraphQuery<V,E> {
      * @param value
      * @return
      */
-    AtlasGraphQuery<V,E> has(String propertyKey, Object value);
+    AtlasGraphQuery<V, E> has(String propertyKey, Object value);
 
     /**
      * Adds a predicate that the returned vertices must have the specified
@@ -52,7 +50,7 @@ public interface AtlasGraphQuery<V,E> {
      * @param value
      * @return
      */
-    AtlasGraphQuery<V,E> in(String propertyKey, Collection<? extends Object> values);
+    AtlasGraphQuery<V, E> in(String propertyKey, Collection<? extends Object> values);
 
 
     /**
@@ -71,7 +69,7 @@ public interface AtlasGraphQuery<V,E> {
      * @param value
      * @return
      */
-    AtlasGraphQuery<V,E> has(String propertyKey, ComparisionOperator compMethod, Object values);
+    AtlasGraphQuery<V, E> has(String propertyKey, ComparisionOperator compMethod, Object values);
 
     /**
      * Adds a predicate that the vertices returned must satisfy the
@@ -80,17 +78,20 @@ public interface AtlasGraphQuery<V,E> {
      * @param childQueries
      * @return
      */
-    AtlasGraphQuery<V,E> or(List<AtlasGraphQuery<V,E>> childQueries);
+    AtlasGraphQuery<V, E> or(List<AtlasGraphQuery<V, E>> childQueries);
 
     /**
-     * Creates a child query that can be used to add "or" conditions
+     * Creates a child query that can be used to add "or" conditions.
      *
      * @return
      */
-    AtlasGraphQuery<V,E> createChildQuery();
+    AtlasGraphQuery<V, E> createChildQuery();
 
 
-    public static enum ComparisionOperator {
+    /**
+     * Comparison operators that can be used in an AtlasGraphQuery.
+     */
+    enum ComparisionOperator {
         GREATER_THAN_EQUAL,
         EQUAL,
         LESS_THAN_EQUAL,
@@ -106,8 +107,8 @@ public interface AtlasGraphQuery<V,E> {
     AtlasGraphQuery<V, E> addConditionsFrom(AtlasGraphQuery<V, E> otherQuery);
 
     /**
-     * Whether or not this is a child query
-     * 
+     * Whether or not this is a child query.
+     *
      * @return
      */
     boolean isChildQuery();

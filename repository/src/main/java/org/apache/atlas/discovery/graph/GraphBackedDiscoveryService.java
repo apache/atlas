@@ -18,13 +18,17 @@
 
 package org.apache.atlas.discovery.graph;
 
-import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanIndexQuery;
-import com.thinkaurelius.titan.core.TitanProperty;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Vertex;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.script.ScriptException;
+
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.discovery.DiscoveryException;
@@ -39,28 +43,20 @@ import org.apache.atlas.query.QueryParser;
 import org.apache.atlas.query.QueryProcessor;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.MetadataRepository;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphHelper;
-import org.apache.atlas.repository.graph.GraphProvider;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import scala.util.Either;
 import scala.util.parsing.combinator.Parsers;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.script.Bindings;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Graph backed implementation of Search.
@@ -70,19 +66,19 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphBackedDiscoveryService.class);
 
-    private final TitanGraph titanGraph;
+    private final AtlasGraph graph;
     private final DefaultGraphPersistenceStrategy graphPersistenceStrategy;
 
     public final static String SCORE = "score";
 
     @Inject
-    GraphBackedDiscoveryService(GraphProvider<TitanGraph> graphProvider, MetadataRepository metadataRepository)
+    GraphBackedDiscoveryService(MetadataRepository metadataRepository)
     throws DiscoveryException {
-        this.titanGraph = graphProvider.get();
+        this.graph = AtlasGraphProvider.getGraphInstance();
         this.graphPersistenceStrategy = new DefaultGraphPersistenceStrategy(metadataRepository);
     }
 
-    //Refer http://s3.thinkaurelius.com/docs/titan/0.5.4/index-backends.html for indexed query
+    //For titan 0.5.4, refer to http://s3.thinkaurelius.com/docs/titan/0.5.4/index-backends.html for indexed query
     //http://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query
     // .html#query-string-syntax for query syntax
     @Override
@@ -90,8 +86,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
     public String searchByFullText(String query, QueryParams queryParams) throws DiscoveryException {
         String graphQuery = String.format("v.\"%s\":(%s)", Constants.ENTITY_TEXT_PROPERTY_KEY, query);
         LOG.debug("Full text query: {}", graphQuery);
-        Iterator<TitanIndexQuery.Result<Vertex>> results =
-                titanGraph.indexQuery(Constants.FULLTEXT_INDEX, graphQuery).vertices().iterator();
+        Iterator<AtlasIndexQuery.Result<?, ?>> results =graph.indexQuery(Constants.FULLTEXT_INDEX, graphQuery).vertices();
         JSONArray response = new JSONArray();
 
         int index = 0;
@@ -101,8 +96,9 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
         }
 
         while (results.hasNext() && response.length() < queryParams.limit()) {
-            TitanIndexQuery.Result<Vertex> result = results.next();
-            Vertex vertex = result.getElement();
+            
+            AtlasIndexQuery.Result<?,?> result = results.next();
+            AtlasVertex<?,?> vertex = result.getVertex();
 
             JSONObject row = new JSONObject();
             String guid = GraphHelper.getIdFromVertex(vertex);
@@ -157,7 +153,7 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
         LOG.debug("Query = {}", validatedExpression);
         LOG.debug("Expression Tree = {}", validatedExpression.treeString());
         LOG.debug("Gremlin Query = {}", gremlinQuery.queryStr());
-        return new GremlinEvaluator(gremlinQuery, graphPersistenceStrategy, titanGraph).evaluate();
+        return new GremlinEvaluator(gremlinQuery, graphPersistenceStrategy, graph).evaluate();
     }
 
     /**
@@ -173,72 +169,59 @@ public class GraphBackedDiscoveryService implements DiscoveryService {
     @GraphTransaction
     public List<Map<String, String>> searchByGremlin(String gremlinQuery) throws DiscoveryException {
         LOG.debug("Executing gremlin query={}", gremlinQuery);
-        ScriptEngineManager manager = new ScriptEngineManager();
-        ScriptEngine engine = manager.getEngineByName("gremlin-groovy");
-
-        if(engine == null) {
-            throw new DiscoveryException("gremlin-groovy: engine not found");
-        }
-
-        Bindings bindings = engine.createBindings();
-        bindings.put("g", titanGraph);
-
         try {
-            Object o = engine.eval(gremlinQuery, bindings);
+            Object o = graph.executeGremlinScript(gremlinQuery, false);
             return extractResult(o);
         } catch (ScriptException se) {
             throw new DiscoveryException(se);
         }
     }
-
+    
     private List<Map<String, String>> extractResult(final Object o) throws DiscoveryException {
         List<Map<String, String>> result = new ArrayList<>();
         if (o instanceof List) {
             List l = (List) o;
-            for (Object r : l) {
-
+            
+            for (Object value : l) {
                 Map<String, String> oRow = new HashMap<>();
-                if (r instanceof Map) {
-                    @SuppressWarnings("unchecked") Map<Object, Object> iRow = (Map) r;
+                if (value instanceof Map) {
+                    @SuppressWarnings("unchecked") Map<Object, Object> iRow = (Map) value;
                     for (Map.Entry e : iRow.entrySet()) {
                         Object k = e.getKey();
                         Object v = e.getValue();
                         oRow.put(k.toString(), v.toString());
                     }
-                } else if (r instanceof TitanVertex) {
-                    TitanVertex vertex = (TitanVertex) r;
-                    oRow.put("id", vertex.getId().toString());
-                    Iterable<TitanProperty> ps = vertex.getProperties();
-                    for (TitanProperty tP : ps) {
-                        String pName = tP.getPropertyKey().getName();
-                        Object pValue = vertex.getProperty(pName);
-                        if (pValue != null) {
-                            oRow.put(pName, pValue.toString());
+                } else if (value instanceof AtlasVertex) {
+                    AtlasVertex<?,?> vertex = (AtlasVertex<?,?>)value;
+                    for (String key : vertex.getPropertyKeys()) {
+                        Object propertyValue = GraphHelper.getProperty(vertex,  key);
+                        if (propertyValue != null) {
+                            oRow.put(key, propertyValue.toString());
                         }
                     }
-
-                } else if (r instanceof String) {
-                    oRow.put("", r.toString());
-                } else if (r instanceof TitanEdge) {
-                    TitanEdge edge = (TitanEdge) r;
+   
+                } else if (value instanceof String) {
+                    oRow.put("", value.toString());
+                } else if(value instanceof AtlasEdge) {
+                    AtlasEdge edge = (AtlasEdge) value;
                     oRow.put("id", edge.getId().toString());
                     oRow.put("label", edge.getLabel());
-                    oRow.put("inVertex", edge.getVertex(Direction.IN).getId().toString());
-                    oRow.put("outVertex", edge.getVertex(Direction.OUT).getId().toString());
-                    Set<String> propertyKeys = edge.getPropertyKeys();
-                    for (String propertyKey : propertyKeys) {
-                        oRow.put(propertyKey, edge.getProperty(propertyKey).toString());
+                    oRow.put("inVertex", edge.getInVertex().getId().toString());
+                    oRow.put("outVertex", edge.getOutVertex().getId().toString());
+                    for (String propertyKey : edge.getPropertyKeys()) {
+                        oRow.put(propertyKey, GraphHelper.getProperty(edge, propertyKey).toString());
                     }
                 } else {
-                    throw new DiscoveryException(String.format("Cannot process result %s", o.toString()));
+                    throw new DiscoveryException(String.format("Cannot process result %s", String.valueOf(value)));
                 }
-
+    
                 result.add(oRow);
             }
-        } else {
+        }
+        else {
             result.add(new HashMap<String, String>() {{
                 put("result", o.toString());
-            }});
+            }}); 
         }
         return result;
     }

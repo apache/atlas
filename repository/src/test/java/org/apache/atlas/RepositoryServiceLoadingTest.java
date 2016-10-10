@@ -18,13 +18,10 @@
 
 package org.apache.atlas;
 
-import com.thinkaurelius.titan.core.TitanGraph;
-import org.apache.atlas.repository.graph.GraphProvider;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.testng.Assert;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
-
-import javax.inject.Inject;
 
 /**
  * Unit test for Guice injector service loading
@@ -35,12 +32,8 @@ import javax.inject.Inject;
 @Guice(modules = RepositoryMetadataModule.class)
 public class RepositoryServiceLoadingTest {
 
-    @Inject
-    private GraphProvider<TitanGraph> graphProvider;
-
     @Test
     public void testGetGraphService() throws Exception {
-        Assert.assertNotNull(graphProvider);
-        Assert.assertNotNull(graphProvider.get());
+        Assert.assertNotNull(AtlasGraphProvider.getGraphInstance());
     }
 }

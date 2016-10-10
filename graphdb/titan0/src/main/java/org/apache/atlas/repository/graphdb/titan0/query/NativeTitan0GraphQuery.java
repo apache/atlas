@@ -22,7 +22,7 @@ import java.util.Collection;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.titan.query.NativeTitanGraphQuery;
-import org.apache.atlas.repository.graphdb.titan0.Titan0Database;
+import org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase;
 import org.apache.atlas.repository.graphdb.titan0.Titan0Edge;
 import org.apache.atlas.repository.graphdb.titan0.Titan0Graph;
 import org.apache.atlas.repository.graphdb.titan0.Titan0Vertex;
@@ -34,30 +34,30 @@ import com.tinkerpop.blueprints.Compare;
 
 /**
  * Titan 0.5.4 implementation of NativeTitanGraphQuery.
- * 
+ *
  * @author jeff
  *
  */
-public class NativeTitan0GraphQuery implements NativeTitanGraphQuery<Titan0Vertex,Titan0Edge> {
+public class NativeTitan0GraphQuery implements NativeTitanGraphQuery<Titan0Vertex, Titan0Edge> {
 
-    private Titan0Graph graph_;
-    private TitanGraphQuery<?> query_;
+    private Titan0Graph graph;
+    private TitanGraphQuery<?> query;
 
     public NativeTitan0GraphQuery(Titan0Graph graph) {
-        query_ = Titan0Database.getGraphInstance().query();
-        graph_ = graph;
+        query = Titan0GraphDatabase.getGraphInstance().query();
+        this.graph = graph;
     }
 
     @Override
-    public Iterable<AtlasVertex<Titan0Vertex,Titan0Edge>> vertices() {
-        Iterable it = query_.vertices();
-        return graph_.wrapVertices(it);
+    public Iterable<AtlasVertex<Titan0Vertex, Titan0Edge>> vertices() {
+        Iterable it = query.vertices();
+        return graph.wrapVertices(it);
     }
 
 
     @Override
     public void in(String propertyName, Collection<? extends Object> values) {
-        query_.has(propertyName, Contain.IN, values);
+        query.has(propertyName, Contain.IN, values);
 
     }
 
@@ -66,7 +66,7 @@ public class NativeTitan0GraphQuery implements NativeTitanGraphQuery<Titan0Verte
 
         Compare c = getGremlinPredicate(op);
         TitanPredicate pred = TitanPredicate.Converter.convert(c);
-        query_.has(propertyName, pred, value);
+        query.has(propertyName, pred, value);
     }
 
     private Compare getGremlinPredicate(ComparisionOperator op) {

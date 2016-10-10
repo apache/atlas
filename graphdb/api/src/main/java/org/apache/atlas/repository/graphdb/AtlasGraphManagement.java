@@ -18,27 +18,13 @@
 
 package org.apache.atlas.repository.graphdb;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
-import org.apache.atlas.AtlasException;
-import org.apache.atlas.repository.Constants;
-import org.apache.atlas.typesystem.types.Multiplicity;
+import java.util.List;
 
 /**
- * Management interface for a graph
+ * Management interface for a graph.
  *
  */
 public interface AtlasGraphManagement {
-
-    public static final Set<String> MULTIPLICITY_MANY_PROPERTY_KEYS =
-            Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(
-                    Constants.SUPER_TYPES_PROPERTY_KEY,
-                    Constants.TRAIT_NAMES_PROPERTY_KEY )));
-
 
     /**
      * Checks whether a property with the given key has been defined in the graph schema.
@@ -49,25 +35,7 @@ public interface AtlasGraphManagement {
     boolean containsPropertyKey(String key);
 
     /**
-     * Creates a mixed Vertex index for the graph
-     *
-     * @param index the name of the index to create
-     * @param backingIndex the name of the backing index to use
-     */
-    void buildMixedVertexIndex(String index, String backingIndex);
-
-
-    /**
-     * Creates a mixed Edge index for the graph
-     *
-     * @param index the name of the index to create
-     * @param backingIndex the name of the backing index to use
-     */
-    void buildMixedEdgeIndex(String index, String backingIndex);
-
-
-    /**
-     * Creates a full text index for the given property
+     * Creates a full text index for the given property.
      *
      * @param  indexName the name of the index to create
      * @param propertyKey full text property to index
@@ -92,7 +60,7 @@ public interface AtlasGraphManagement {
      * @param cardinality
      * @return
      */
-    AtlasPropertyKey makePropertyKey(String propertyName, Class propertyClass, Multiplicity multiplicity);
+    AtlasPropertyKey makePropertyKey(String propertyName, Class propertyClass, AtlasCardinality cardinality);
 
     /**
      * @param propertyKey
@@ -107,15 +75,7 @@ public interface AtlasGraphManagement {
      * @param propertyKey
      * @param isUnique
      */
-    void createCompositeIndex(String propertyName, AtlasPropertyKey propertyKey, boolean isUnique);
-
-    /**
-     * Adds a property key to the given index in the graph.
-     *
-     * @param vertexIndex
-     * @param propertyKey
-     */
-    void addIndexKey(String vertexIndex, AtlasPropertyKey propertyKey);
+    void createExactMatchIndex(String propertyName, boolean isUnique, List<AtlasPropertyKey> propertyKeys);
 
     /**
      * Looks up the index with the specified name in the graph.  Returns null if
@@ -126,5 +86,28 @@ public interface AtlasGraphManagement {
      */
     AtlasGraphIndex getGraphIndex(String indexName);
 
+    /**
+     * Creates a mixed Vertex index for the graph.
+     *
+     * @param index the name of the index to create
+     * @param backingIndex the name of the backing index to use
+     */
+    void createVertexIndex(String name, String backingIndex, List<AtlasPropertyKey> propertyKeys);
+
+    /**
+     * Adds a property key to the given index in the graph.
+     *
+     * @param vertexIndex
+     * @param propertyKey
+     */
+    void addVertexIndexKey(String vertexIndex, AtlasPropertyKey propertyKey);
+
+    /**
+     * Creates a mixed Edge index for the graph.
+     *
+     * @param index the name of the index to create
+     * @param backingIndex the name of the backing index to use
+     */
+    void createEdgeIndex(String index, String backingIndex);
 
 }

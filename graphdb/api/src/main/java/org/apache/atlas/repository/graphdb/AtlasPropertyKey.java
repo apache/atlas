@@ -19,12 +19,12 @@
 package org.apache.atlas.repository.graphdb;
 
 /**
- * Represent a property key
+ * Represent a property key.
  *
- * @param <V> vertex class used by the graph
- * @param <E> edge class used by the graph
  */
 public interface AtlasPropertyKey {
 
     String getName();
+
+    AtlasCardinality getCardinality();
 }

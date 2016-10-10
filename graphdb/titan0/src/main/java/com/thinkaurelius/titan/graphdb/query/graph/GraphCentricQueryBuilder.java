@@ -31,8 +31,6 @@ import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.*;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
-import com.thinkaurelius.titan.util.datastructures.Interval;
-import com.thinkaurelius.titan.util.datastructures.PointInterval;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.slf4j.Logger;
@@ -151,14 +149,14 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
 
     @Override
     public GraphCentricQueryBuilder orderBy(String key, Order order) {
-        Preconditions.checkArgument(tx.containsPropertyKey(key),"Provided key does not exist: %s",key);
+        Preconditions.checkArgument(tx.containsPropertyKey(key), "Provided key does not exist: %s", key);
         return orderBy(tx.getPropertyKey(key), order);
     }
 
     @Override
     public GraphCentricQueryBuilder orderBy(PropertyKey key, Order order) {
-        Preconditions.checkArgument(key!=null && order!=null,"Need to specify and key and an order");
-        Preconditions.checkArgument(Comparable.class.isAssignableFrom(key.getDataType()),
+        Preconditions.checkArgument(key!=null && order!=null, "Need to specify and key and an order");
+        Preconditions.checkArgument(Comparable.class.isAssignableFrom(key.getDataType()), 
             "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.getName(), key.getDataType());
         Preconditions.checkArgument(key.getCardinality()== Cardinality.SINGLE, "Ordering is undefined on multi-valued key [%s]", key.getName());
         Preconditions.checkArgument(!orders.containsKey(key));
@@ -190,7 +188,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
     }
 
     private QueryDescription describe(ElementCategory category) {
-        return new StandardQueryDescription(1,constructQuery(category));
+        return new StandardQueryDescription(1, constructQuery(category));
     }
 
     public QueryDescription describeForVertices() {
@@ -235,13 +233,13 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
 
         //Compile all indexes that cover at least one of the query conditions
         final Set<IndexType> indexCandidates = new HashSet<IndexType>();
-        ConditionUtil.traversal(conditions,new Predicate<Condition<TitanElement>>() {
+        ConditionUtil.traversal(conditions, new Predicate<Condition<TitanElement>>() {
             @Override
             public boolean apply(@Nullable Condition<TitanElement> condition) {
                 if (condition instanceof PredicateCondition) {
-                    RelationType type = ((PredicateCondition<RelationType,TitanElement>)condition).getKey();
+                    RelationType type = ((PredicateCondition<RelationType, TitanElement>)condition).getKey();
                     Preconditions.checkArgument(type!=null && type.isPropertyKey());
-                    Iterables.addAll(indexCandidates,Iterables.filter(((InternalRelationType) type).getKeyIndexes(), new Predicate<IndexType>() {
+                    Iterables.addAll(indexCandidates, Iterables.filter(((InternalRelationType) type).getKeyIndexes(), new Predicate<IndexType>() {
                         @Override
                         public boolean apply(@Nullable IndexType indexType) {
                             return indexType.getElement()==resultType;
@@ -275,12 +273,12 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
                 //Check that this index actually applies in case of a schema constraint
                 if (index.hasSchemaTypeConstraint()) {
                     TitanSchemaType type = index.getSchemaTypeConstraint();
-                    Map.Entry<Condition,Collection<Object>> equalCon = getEqualityConditionValues(conditions,ImplicitKey.LABEL);
+                    Map.Entry<Condition, Collection<Object>> equalCon = getEqualityConditionValues(conditions, ImplicitKey.LABEL);
                     if (equalCon==null) continue;
                     Collection<Object> labels = equalCon.getValue();
                     assert labels.size()>=1;
                     if (labels.size()>1) {
-                        log.warn("The query optimizer currently does not support multiple label constraints in query: {}",this);
+                        log.warn("The query optimizer currently does not support multiple label constraints in query: {}", this);
                         continue;
                     }
                     if (!type.getName().equals((String)Iterables.getOnlyElement(labels))) continue;
@@ -288,11 +286,11 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
                 }
 
                 if (index.isCompositeIndex()) {
-                    subcondition = indexCover((CompositeIndexType) index,conditions,subcover);
+                    subcondition = indexCover((CompositeIndexType) index, conditions, subcover);
                 } else {
-                    subcondition = indexCover((MixedIndexType) index,conditions,serializer,subcover);
+                    subcondition = indexCover((MixedIndexType) index, conditions, serializer, subcover);
                     if (coveredClauses.isEmpty() && !supportsSort
-                        && indexCoversOrder((MixedIndexType)index,orders)) supportsSort=true;
+                        && indexCoversOrder((MixedIndexType)index, orders)) supportsSort=true;
                 }
                 if (subcondition==null) continue;
                 assert !subcover.isEmpty();
@@ -323,11 +321,11 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
 
                 log.debug("Index chosen for query {} {} " , bestCandidate.isCompositeIndex() ? "COMPOSITE" : "MIXED", coveredClauses);
                 if (bestCandidate.isCompositeIndex()) {
-                    jointQuery.add((CompositeIndexType)bestCandidate,
-                        serializer.getQuery((CompositeIndexType)bestCandidate,(List<Object[]>)candidateSubcondition));
+                    jointQuery.add((CompositeIndexType)bestCandidate, 
+                        serializer.getQuery((CompositeIndexType)bestCandidate, (List<Object[]>)candidateSubcondition));
                 } else {
-                    jointQuery.add((MixedIndexType)bestCandidate,
-                        serializer.getQuery((MixedIndexType)bestCandidate,(Condition)candidateSubcondition,orders));
+                    jointQuery.add((MixedIndexType)bestCandidate, 
+                        serializer.getQuery((MixedIndexType)bestCandidate, (Condition)candidateSubcondition, orders));
                 }
             } else {
                 break;
@@ -371,45 +369,45 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
         Set<Condition> coveredClauses = new HashSet<Condition>(fields.length);
         List<Object[]> indexCovers = new ArrayList<Object[]>(4);
 
-        constructIndexCover(indexValues,0,fields,condition,indexCovers,coveredClauses);
+        constructIndexCover(indexValues, 0, fields, condition, indexCovers, coveredClauses);
         if (!indexCovers.isEmpty()) {
             covered.addAll(coveredClauses);
             return indexCovers;
         } else return null;
     }
 
-    private static void constructIndexCover(Object[] indexValues, int position, IndexField[] fields,
-        Condition<TitanElement> condition,
+    private static void constructIndexCover(Object[] indexValues, int position, IndexField[] fields, 
+        Condition<TitanElement> condition, 
         List<Object[]> indexCovers, Set<Condition> coveredClauses) {
         if (position>=fields.length) {
             indexCovers.add(indexValues);
         } else {
             IndexField field = fields[position];
-            Map.Entry<Condition,Collection<Object>> equalCon = getEqualityConditionValues(condition,field.getFieldKey());
+            Map.Entry<Condition, Collection<Object>> equalCon = getEqualityConditionValues(condition, field.getFieldKey());
             if (equalCon!=null) {
                 coveredClauses.add(equalCon.getKey());
                 assert equalCon.getValue().size()>0;
                 for (Object value : equalCon.getValue()) {
-                    Object[] newValues = Arrays.copyOf(indexValues,fields.length);
+                    Object[] newValues = Arrays.copyOf(indexValues, fields.length);
                     newValues[position]=value;
-                    constructIndexCover(newValues,position+1,fields,condition,indexCovers,coveredClauses);
+                    constructIndexCover(newValues, position+1, fields, condition, indexCovers, coveredClauses);
                 }
             } else return;
         }
 
     }
 
-    private static final Map.Entry<Condition,Collection<Object>> getEqualityConditionValues(Condition<TitanElement> condition, RelationType type) {
+    private static final Map.Entry<Condition, Collection<Object>> getEqualityConditionValues(Condition<TitanElement> condition, RelationType type) {
         for (Condition c : condition.getChildren()) {
             if (c instanceof Or) {
-                Map.Entry<RelationType,Collection> orEqual = QueryUtil.extractOrCondition((Or)c);
+                Map.Entry<RelationType, Collection> orEqual = QueryUtil.extractOrCondition((Or)c);
                 if (orEqual!=null && orEqual.getKey().equals(type) && !orEqual.getValue().isEmpty()) {
-                    return new AbstractMap.SimpleImmutableEntry(c,orEqual.getValue());
+                    return new AbstractMap.SimpleImmutableEntry(c, orEqual.getValue());
                 }
             } else if (c instanceof PredicateCondition) {
                 PredicateCondition<RelationType, TitanRelation> atom = (PredicateCondition)c;
                 if (atom.getKey().equals(type) && atom.getPredicate()==Cmp.EQUAL && atom.getValue()!=null) {
-                    return new AbstractMap.SimpleImmutableEntry(c,ImmutableList.of(atom.getValue()));
+                    return new AbstractMap.SimpleImmutableEntry(c, ImmutableList.of(atom.getValue()));
                 }
             }
 
@@ -417,13 +415,13 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
         return null;
     }
 
-    public static final Condition<TitanElement> indexCover(final MixedIndexType index, Condition<TitanElement> condition,
+    public static final Condition<TitanElement> indexCover(final MixedIndexType index, Condition<TitanElement> condition, 
         final IndexSerializer indexInfo, final Set<Condition> covered) {
         assert QueryUtil.isQueryNormalForm(condition);
         assert condition instanceof And;
         And<TitanElement> subcondition = new And<TitanElement>(condition.numChildren());
         for (Condition<TitanElement> subclause : condition.getChildren()) {
-            if (coversAll(index,subclause,indexInfo)) {
+            if (coversAll(index, subclause, indexInfo)) {
                 subcondition.add(subclause);
                 covered.add(subclause);
             }
@@ -446,10 +444,10 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
                 if (fields[i].getFieldKey().equals(key)) match = fields[i];
             }
             if (match==null) return false;
-            return indexInfo.supports(index,match,atom.getPredicate());
+            return indexInfo.supports(index, match, atom.getPredicate());
         } else {
             for (Condition<TitanElement> child : condition.getChildren()) {
-                if (!coversAll(index,child,indexInfo)) return false;
+                if (!coversAll(index, child, indexInfo)) return false;
             }
             return true;
         }

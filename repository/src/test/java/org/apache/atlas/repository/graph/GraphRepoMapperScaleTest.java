@@ -18,18 +18,23 @@
 
 package org.apache.atlas.repository.graph;
 
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanIndexQuery;
-import com.thinkaurelius.titan.core.util.TitanCleanup;
-import com.tinkerpop.blueprints.Compare;
-import com.tinkerpop.blueprints.GraphQuery;
-import com.tinkerpop.blueprints.Predicate;
-import com.tinkerpop.blueprints.Vertex;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+
+import javax.inject.Inject;
+
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RepositoryMetadataModule;
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestUtils;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator;
+import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
@@ -45,20 +50,12 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-
 @Test
 @Guice(modules = RepositoryMetadataModule.class)
 public class GraphRepoMapperScaleTest {
 
     private static final String DATABASE_NAME = "foo";
     private static final String TABLE_NAME = "bar";
-
-    @Inject
-    GraphProvider<TitanGraph> graphProvider;
 
     @Inject
     private GraphBackedMetadataRepository repositoryService;
@@ -73,6 +70,9 @@ public class GraphRepoMapperScaleTest {
     @BeforeClass
     @GraphTransaction
     public void setUp() throws Exception {
+        //force up front graph initialization
+        TestUtils.getGraph();
+        searchIndexer = new GraphBackedSearchIndexer(new AtlasGraphProvider(), ApplicationProperties.get());
         //Make sure we can cleanup the index directory
         Collection<IDataType> typesAdded = TestUtils.createHiveTypes(typeSystem);
         searchIndexer.onAdd(typesAdded);
@@ -80,23 +80,13 @@ public class GraphRepoMapperScaleTest {
 
     @BeforeMethod
     public void setupContext() {
-        RequestContext.createContext();
+        TestUtils.resetRequestContext();
     }
 
     @AfterClass
     public void tearDown() throws Exception {
         TypeSystem.getInstance().reset();
-        try {
-            //TODO - Fix failure during shutdown while using BDB
-            graphProvider.get().shutdown();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        try {
-            TitanCleanup.clear(graphProvider.get());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        AtlasGraphProvider.cleanup();
     }
 
     @Test
@@ -130,7 +120,7 @@ public class GraphRepoMapperScaleTest {
 
         searchWithOutIndex("hive_table.name", "bar-999");
         searchWithIndex("hive_table.name", "bar-999");
-        searchWithIndex("hive_table.created", Compare.GREATER_THAN_EQUAL, TestUtils.TEST_DATE_IN_LONG, 1000);
+        searchWithIndex("hive_table.created", ComparisionOperator.GREATER_THAN_EQUAL, TestUtils.TEST_DATE_IN_LONG, 1000);
 
         for (int index = 500; index < 600; index++) {
             searchWithIndex("hive_table.name", "bar-" + index);
@@ -140,12 +130,13 @@ public class GraphRepoMapperScaleTest {
     }
 
     private void searchWithOutIndex(String key, String value) {
-        TitanGraph graph = graphProvider.get();
+        AtlasGraph graph = TestUtils.getGraph();
         long start = System.currentTimeMillis();
         int count = 0;
         try {
-            GraphQuery query = graph.query().has(key, Compare.EQUAL, value);
-            for (Vertex ignored : query.vertices()) {
+            AtlasGraphQuery query = graph.query().has(key, ComparisionOperator.EQUAL, value);
+            Iterable<AtlasVertex> result = query.vertices();
+            for (AtlasVertex ignored : result) {
                 count++;
             }
         } finally {
@@ -154,29 +145,33 @@ public class GraphRepoMapperScaleTest {
         }
     }
 
+
     private void searchWithIndex(String key, String value) {
-        TitanGraph graph = graphProvider.get();
+        AtlasGraph graph = TestUtils.getGraph();
         long start = System.currentTimeMillis();
         int count = 0;
         try {
             String queryString = "v.\"" + key + "\":(" + value + ")";
-            TitanIndexQuery query = graph.indexQuery(Constants.VERTEX_INDEX, queryString);
-            for (TitanIndexQuery.Result<Vertex> ignored : query.vertices()) {
+            AtlasIndexQuery query = graph.indexQuery(Constants.VERTEX_INDEX, queryString);
+            Iterator<AtlasIndexQuery.Result> result = query.vertices();
+            while(result.hasNext()) {
+                result.next();
                 count++;
             }
         } finally {
             System.out.println("Search on [" + key + "=" + value + "] returned results: " + count + ", took " + (
-                System.currentTimeMillis() - start) + " ms");
+                    System.currentTimeMillis() - start) + " ms");
         }
     }
-
-    private void  searchWithIndex(String key, Predicate searchPredicate, Object value, int expectedResults) {
-        TitanGraph graph = graphProvider.get();
+    
+    private void searchWithIndex(String key, ComparisionOperator op, Object value, int expectedResults) {
+        AtlasGraph graph = TestUtils.getGraph();
         long start = System.currentTimeMillis();
         int count = 0;
         try {
-            GraphQuery query = graph.query().has(key, searchPredicate, value);
-            for (Vertex ignored : query.vertices()) {
+            AtlasGraphQuery query = graph.query().has(key, op, value);
+            Iterable<AtlasVertex> itrble = query.vertices();
+            for (AtlasVertex ignored : itrble) {
                 count++;
             }
         } finally {

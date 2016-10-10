@@ -42,9 +42,9 @@ import com.thinkaurelius.titan.diskstorage.solr.Solr5Index;
 /**
  * Titan 0.5.4 implementation of GraphDatabase.
  */
-public class Titan0Database implements GraphDatabase<Titan0Vertex, Titan0Edge> {
+public class Titan0GraphDatabase implements GraphDatabase<Titan0Vertex, Titan0Edge> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Titan0Database.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Titan0GraphDatabase.class);
 
     /**
      * Constant for the configuration property that indicates the prefix.
@@ -57,7 +57,8 @@ public class Titan0Database implements GraphDatabase<Titan0Vertex, Titan0Edge> {
 
     public static final String INDEX_BACKEND_ES = "elasticsearch";
 
-    private static volatile TitanGraph graphInstance;
+    private static volatile Titan0Graph atlasGraphInstance = null;
+    private static volatile TitanGraph graphInstance = null;
 
     public static Configuration getConfiguration() throws AtlasException {
         Configuration configProperties = ApplicationProperties.get();
@@ -102,7 +103,7 @@ public class Titan0Database implements GraphDatabase<Titan0Vertex, Titan0Edge> {
 
     public static TitanGraph getGraphInstance() {
         if (graphInstance == null) {
-            synchronized (Titan0Database.class) {
+            synchronized (Titan0GraphDatabase.class) {
                 if (graphInstance == null) {
                     Configuration config;
                     try {
@@ -112,6 +113,7 @@ public class Titan0Database implements GraphDatabase<Titan0Vertex, Titan0Edge> {
                     }
 
                     graphInstance = TitanFactory.open(config);
+                    atlasGraphInstance = new Titan0Graph();
                     validateIndexBackend(config);
                 }
             }
@@ -121,7 +123,7 @@ public class Titan0Database implements GraphDatabase<Titan0Vertex, Titan0Edge> {
 
     public static void unload() {
 
-        synchronized (Titan0Database.class) {
+        synchronized (Titan0GraphDatabase.class) {
             if (graphInstance == null) {
                 return;
             }
@@ -167,7 +169,7 @@ public class Titan0Database implements GraphDatabase<Titan0Vertex, Titan0Edge> {
         // force graph loading up front to avoid bootstrapping
         // issues
         getGraphInstance();
-        return new Titan0Graph();
+        return atlasGraphInstance;
     }
 
     @Override
@@ -178,27 +180,25 @@ public class Titan0Database implements GraphDatabase<Titan0Vertex, Titan0Edge> {
 
     @Override
     public void initializeTestGraph() {
-        
+
        //nothing to do
     }
 
     @Override
-    public void removeTestGraph() {
+    public void cleanup() {
         try {
             getGraphInstance().shutdown();
-        }
-        catch(Throwable t) {
+        } catch(Throwable t) {
             LOG.warn("Could not shutdown test TitanGraph", t);
             t.printStackTrace();
         }
 
         try {
             TitanCleanup.clear(getGraphInstance());
-        }
-        catch(Throwable t) {
+        } catch(Throwable t) {
             LOG.warn("Could not clear test TitanGraph", t);
             t.printStackTrace();
         }
     }
-    
+
 }

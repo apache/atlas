@@ -18,7 +18,7 @@
 package org.apache.atlas.repository.graphdb;
 
 /**
- * Represents a Vertex
+ * Represents a Vertex.
  *
  * @param <V> vertex class used by the graph
  * @param <E> edge class used by the graph

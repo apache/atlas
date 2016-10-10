@@ -18,10 +18,11 @@
 
 package org.apache.atlas.fs.model;
 
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.util.TitanCleanup;
+import javax.inject.Inject;
+
 import org.apache.atlas.RepositoryMetadataModule;
-import org.apache.atlas.repository.graph.GraphProvider;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.typesystem.TypesDef;
 import org.apache.atlas.typesystem.json.TypesSerialization;
@@ -33,10 +34,9 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
+
 import scala.Enumeration;
 import scala.collection.Iterator;
-
-import javax.inject.Inject;
 
 @Test
 @Guice(modules = RepositoryMetadataModule.class)
@@ -48,9 +48,6 @@ public class HDFSModelTest {
     @Inject
     private MetadataService metadataService;
 
-    @Inject
-    private GraphProvider<TitanGraph> graphProvider;
-
     @BeforeClass
     public void setUp() throws Exception {
     }
@@ -58,17 +55,7 @@ public class HDFSModelTest {
     @AfterClass
     public void tearDown() throws Exception {
         TypeSystem.getInstance().reset();
-        try {
-            //TODO - Fix failure during shutdown while using BDB
-            graphProvider.get().shutdown();
-        } catch(Exception e) {
-            e.printStackTrace();
-        }
-        try {
-            TitanCleanup.clear(graphProvider.get());
-        } catch(Exception e) {
-            e.printStackTrace();
-        }
+        AtlasGraphProvider.cleanup();
     }
 
     @Test

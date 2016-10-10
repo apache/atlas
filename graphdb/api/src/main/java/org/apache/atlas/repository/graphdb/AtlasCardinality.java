@@ -15,13 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.atlas.repository.graphdb;
 
-package org.apache.atlas.repository.graph;
+/**
+ * Enumeration of vertex property cardinalities.
+ *
+ */
+public enum AtlasCardinality {
+    SINGLE(false),
+    LIST(true),
+    SET(true);
 
-import com.google.inject.throwingproviders.CheckedProvider;
-import com.tinkerpop.blueprints.Graph;
-
-public interface GraphProvider<T extends Graph> extends CheckedProvider<T> {
-    @Override
-    T get();
+    private boolean isMany;
+    AtlasCardinality(boolean isMany) {
+        this.isMany = isMany;
+    }
+    public boolean isMany() {
+        return isMany;
+    }
 }

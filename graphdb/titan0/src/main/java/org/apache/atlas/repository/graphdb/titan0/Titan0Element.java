@@ -72,7 +72,20 @@ public class Titan0Element<T extends Element> implements AtlasElement {
 
     @Override
     public <U> U getProperty(String propertyName, Class<U> clazz) {
-        return (U)convert(wrappedElement.getProperty(propertyName), clazz);
+
+        Object rawValue = wrappedElement.getProperty(propertyName);
+
+        if (rawValue == null) {
+            return null;
+        }
+        if (AtlasEdge.class == clazz) {
+            return (U)graph.getEdge(rawValue.toString());
+        }
+        if (AtlasVertex.class == clazz) {
+            return (U)graph.getVertex(rawValue.toString());
+        }
+        return (U)rawValue;
+
     }
 
     /**
@@ -136,7 +149,7 @@ public class Titan0Element<T extends Element> implements AtlasElement {
 
     @Override
     public boolean equals(Object other) {
-        if(other == null) {
+        if (other == null) {
             return false;
         }
         if (other.getClass() != getClass()) {
@@ -154,9 +167,8 @@ public class Titan0Element<T extends Element> implements AtlasElement {
     @Override
     public boolean exists() {
         try {
-            return ! ((TitanElement)wrappedElement).isRemoved();
-        }
-        catch(IllegalStateException e) {
+            return !((TitanElement)wrappedElement).isRemoved();
+        } catch(IllegalStateException e) {
             return false;
         }
 
@@ -192,18 +204,6 @@ public class Titan0Element<T extends Element> implements AtlasElement {
         return getId().toString();
     }
 
-    private <T> T convert(Object propertyValue, Class<T> clazz) {
-        if(propertyValue == null) {
-            return null;
-        }
-        if(AtlasEdge.class.isAssignableFrom(clazz)) {
-            return (T)graph.getEdge(propertyValue.toString());
-        }
-        if(AtlasVertex.class.isAssignableFrom(clazz)) {
-            return (T)graph.getVertex(propertyValue.toString());
-        }
-        return (T)propertyValue;
-    }
 
 
     @Override
@@ -211,14 +211,13 @@ public class Titan0Element<T extends Element> implements AtlasElement {
 
         List<String> value = getListProperty(propertyName);
 
-        if(value == null) {
+        if (value == null) {
             return null;
         }
 
-        if(AtlasEdge.class.isAssignableFrom(elementType)) {
+        if (AtlasEdge.class == elementType) {
 
-
-            return (List<V>)Lists.transform(value, new Function<String,AtlasEdge>(){
+            return (List<V>)Lists.transform(value, new Function<String, AtlasEdge>(){
 
                 @Override
                 public AtlasEdge apply(String input) {
@@ -227,9 +226,9 @@ public class Titan0Element<T extends Element> implements AtlasElement {
             });
         }
 
-        if(AtlasVertex.class.isAssignableFrom(elementType)) {
+        if (AtlasVertex.class == elementType) {
 
-            return (List<V>)Lists.transform(value, new Function<String,AtlasVertex>(){
+            return (List<V>)Lists.transform(value, new Function<String, AtlasVertex>(){
 
                 @Override
                 public AtlasVertex apply(String input) {

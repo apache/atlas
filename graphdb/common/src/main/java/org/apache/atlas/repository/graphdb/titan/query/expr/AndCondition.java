@@ -32,27 +32,27 @@ import org.apache.atlas.repository.graphdb.titan.query.NativeTitanQueryFactory;
  */
 public class AndCondition {
 
-    private List<QueryPredicate> children_ = new ArrayList<>();
+    private List<QueryPredicate> children = new ArrayList<>();
 
     public AndCondition() {
 
     }
 
     /**
-     * Adds a query predicate that must be met by vertices
+     * Adds a query predicate that must be met by vertices.
      * @param predicate
      */
     public void andWith(QueryPredicate predicate) {
-        children_.add(predicate);
+        children.add(predicate);
     }
 
     /**
-     * Adds multiple predicates that much be met by the vertices
+     * Adds multiple predicates that much be met by the vertices.
      *
      * @param predicates
      */
     public void andWith(List<QueryPredicate> predicates) {
-        children_.addAll(predicates);
+        children.addAll(predicates);
     }
 
     /**
@@ -62,17 +62,17 @@ public class AndCondition {
      */
     public AndCondition copy() {
         AndCondition builder = new AndCondition();
-        builder.children_.addAll(children_);
+        builder.children.addAll(children);
         return builder;
     }
 
     /**
-     * Gets the query predicates
+     * Gets the query predicates.
      *
      * @return
      */
     public List<QueryPredicate> getTerms() {
-        return children_;
+        return children;
     }
 
     /**
@@ -81,9 +81,9 @@ public class AndCondition {
      * @param graph
      * @return
      */
-    public <V,E> NativeTitanGraphQuery<V, E> create(NativeTitanQueryFactory<V,E> factory) {
+    public <V, E> NativeTitanGraphQuery<V, E> create(NativeTitanQueryFactory<V, E> factory) {
         NativeTitanGraphQuery<V, E> query = factory.createNativeTitanQuery();
-        for (QueryPredicate predicate : children_) {
+        for (QueryPredicate predicate : children) {
             predicate.addTo(query);
         }
         return query;
@@ -91,6 +91,6 @@ public class AndCondition {
 
     @Override
     public String toString() {
-        return "AndExpr [predicates=" + children_ + "]";
+        return "AndExpr [predicates=" + children + "]";
     }
 }

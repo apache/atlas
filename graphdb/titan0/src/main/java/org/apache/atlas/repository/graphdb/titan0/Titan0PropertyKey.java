@@ -18,6 +18,7 @@
 
 package org.apache.atlas.repository.graphdb.titan0;
 
+import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
 
 import com.thinkaurelius.titan.core.PropertyKey;
@@ -51,6 +52,11 @@ public class Titan0PropertyKey implements AtlasPropertyKey {
     }
 
     @Override
+    public AtlasCardinality getCardinality() {
+        return GraphDbObjectFactory.createCardinality(wrappedPropertyKey.getCardinality());
+    }
+
+    @Override
     public boolean equals(Object other) {
         if (!(other instanceof Titan0PropertyKey)) {
             return false;
@@ -65,5 +71,12 @@ public class Titan0PropertyKey implements AtlasPropertyKey {
         result = 37 * result + wrappedPropertyKey.hashCode();
         return result;
     }
+
+    @Override
+    public String toString() {
+        return wrappedPropertyKey.getName();
+    }
+
+
 
 }

@@ -17,11 +17,10 @@
 
 package org.apache.atlas;
 
-import com.google.inject.Inject;
-import com.thinkaurelius.titan.core.TitanGraph;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
-import org.apache.atlas.repository.graph.GraphProvider;
+import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
 import org.apache.atlas.typesystem.exception.SchemaNotFoundException;
 import org.slf4j.Logger;
@@ -29,30 +28,27 @@ import org.slf4j.LoggerFactory;
 
 public class GraphTransactionInterceptor implements MethodInterceptor {
     private static final Logger LOG = LoggerFactory.getLogger(GraphTransactionInterceptor.class);
-    private TitanGraph titanGraph;
-
-    @Inject
-    GraphProvider<TitanGraph> graphProvider;
+    private AtlasGraph graph;
 
     @Override
     public Object invoke(MethodInvocation invocation) throws Throwable {
-        if (titanGraph == null) {
-            titanGraph = graphProvider.get();
+        
+        if (graph == null) {
+            graph = AtlasGraphProvider.getGraphInstance();
         }
 
         try {
             Object response = invocation.proceed();
-            titanGraph.commit();
+            graph.commit();
             LOG.info("graph commit");
             return response;
         } catch (Throwable t) {
-            titanGraph.rollback();
-
             if (logException(t)) {
                 LOG.error("graph rollback due to exception ", t);
             } else {
                 LOG.error("graph rollback due to exception " + t.getClass().getSimpleName() + ":" + t.getMessage());
             }
+            graph.rollback();
             throw t;
         }
     }

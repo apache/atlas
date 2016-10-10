@@ -18,7 +18,7 @@
 
 package org.apache.atlas.repository.graph;
 
-import com.tinkerpop.blueprints.Vertex;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
@@ -116,9 +116,9 @@ public class GraphBackedRepositorySoftDeleteTest extends GraphBackedMetadataRepo
     }
 
     @Override
-    protected void assertVerticesDeleted(List<Vertex> vertices) {
-        for (Vertex vertex : vertices) {
-            assertEquals(vertex.getProperty(Constants.STATE_PROPERTY_KEY), Id.EntityState.DELETED.name());
+    protected void assertVerticesDeleted(List<AtlasVertex> vertices) {
+        for (AtlasVertex vertex : vertices) {
+            assertEquals(GraphHelper.getSingleValuedProperty(vertex, Constants.STATE_PROPERTY_KEY, String.class), Id.EntityState.DELETED.name());
         }
     }
 

@@ -19,7 +19,7 @@
 package org.apache.atlas.repository.graphdb;
 
 /**
- * Represent an edge in the graph
+ * Represent an edge in the graph.
  *
  * @param <V> vertex class used by the graph
  * @param <E> edge class used by the graph
@@ -27,14 +27,14 @@ package org.apache.atlas.repository.graphdb;
 public interface AtlasEdge<V, E> extends AtlasElement {
 
     /**
-     * Gets the incoming vertex for this edge
+     * Gets the incoming vertex for this edge.
      * @param in
      * @return
      */
     AtlasVertex<V, E> getInVertex();
 
     /**
-     * Gets the outgoing vertex for this edge
+     * Gets the outgoing vertex for this edge.
      *
      * @param in
      * @return
@@ -55,6 +55,6 @@ public interface AtlasEdge<V, E> extends AtlasElement {
      *
      * @return
      */
-    public E getE();
+    E getE();
 
 }
