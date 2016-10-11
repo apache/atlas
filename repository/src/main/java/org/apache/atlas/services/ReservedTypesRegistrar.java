@@ -65,8 +65,10 @@ public class ReservedTypesRegistrar implements IBootstrapTypesRegistrar {
 
         for (File typeDefFile : typeDefFiles) {
             try {
-                String typeDefJSON = new String(Files.readAllBytes(typeDefFile.toPath()), StandardCharsets.UTF_8);
-                registerType(typeSystem, metadataService, typeDefFile.getAbsolutePath(), typeDefJSON);
+                if (typeDefFile.isFile()) {
+                    String typeDefJSON = new String(Files.readAllBytes(typeDefFile.toPath()), StandardCharsets.UTF_8);
+                    registerType(typeSystem, metadataService, typeDefFile.getAbsolutePath(), typeDefJSON);
+                }
             } catch (IOException e) {
                 LOG.error("error while registering types in file " + typeDefFile.getAbsolutePath(), e);
             } catch (AtlasException e) {

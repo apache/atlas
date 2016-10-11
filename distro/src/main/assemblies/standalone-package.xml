@@ -173,6 +173,12 @@
             <directory>../notification/target/dependency/hook</directory>
             <outputDirectory>hook</outputDirectory>
         </fileSet>
+
+        <!-- for patches -->
+        <fileSet>
+            <directory>../addons/hive-bridge/src/patches</directory>
+            <outputDirectory>models/patches</outputDirectory>
+        </fileSet>
     </fileSets>
 
     <files>

@@ -229,7 +229,7 @@ public class HiveDataModelGenerator {
                 new AttributeDefinition(POSITION, DataTypes.INT_TYPE.getName(), Multiplicity.OPTIONAL, false, false, false, null)};
 
         HierarchicalTypeDefinition<ClassType> definition =
-                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_COLUMN.getName(), null,
+                new HierarchicalTypeDefinition<>(ClassType.class, HiveDataTypes.HIVE_COLUMN.getName(), null, "1.1",
                     ImmutableSet.of(AtlasClient.DATA_SET_SUPER_TYPE), attributeDefinitions);
         classTypeDefinitions.put(HiveDataTypes.HIVE_COLUMN.getName(), definition);
         LOG.debug("Created definition for " + HiveDataTypes.HIVE_COLUMN.getName());
