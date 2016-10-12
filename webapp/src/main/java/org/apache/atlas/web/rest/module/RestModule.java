@@ -21,10 +21,6 @@ import com.google.inject.AbstractModule;
 
 import org.apache.atlas.type.AtlasTypeRegistry;
 
-/**
- * @author anaik
- */
-
 public class RestModule extends AbstractModule {
     @Override
     protected void configure() {
