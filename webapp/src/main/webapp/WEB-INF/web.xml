@@ -27,7 +27,7 @@
     <context-param>
         <param-name>guice.packages</param-name>
         <param-value>
-            org.apache.atlas.web.resources,org.apache.atlas.web.params
+            org.apache.atlas.web.resources,org.apache.atlas.web.params,org.apache.atlas.web.rest
         </param-value>
     </context-param>
   

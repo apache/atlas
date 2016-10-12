@@ -26,6 +26,8 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
 /**
@@ -35,7 +37,12 @@ import javax.xml.bind.annotation.XmlRootElement;
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown=true)
 @XmlRootElement
+@XmlAccessorType(XmlAccessType.PROPERTY)
 public class SearchFilter {
+    public static final String PARAM_TYPE = "type";
+    public static final String PARAM_SUPERTYPE = "supertype";
+    public static final String PARAM_NOT_SUPERTYPE = "notSupertype";
+
     /**
      * to specify whether the result should be sorted? If yes, whether asc or desc.
      */

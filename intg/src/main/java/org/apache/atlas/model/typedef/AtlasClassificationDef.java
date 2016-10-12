@@ -17,11 +17,12 @@
  */
 package org.apache.atlas.model.typedef;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
@@ -42,6 +43,7 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown=true)
 @XmlRootElement
+@XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasClassificationDef extends AtlasStructDef implements java.io.Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -94,9 +96,9 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
         }
 
         if (CollectionUtils.isEmpty(superTypes)) {
-            this.superTypes = Collections.emptySet();
+            this.superTypes = new HashSet<String>();
         } else {
-            this.superTypes = Collections.unmodifiableSet(new HashSet<String>(superTypes));
+            this.superTypes = new HashSet<String>(superTypes);
         }
     }
 
@@ -112,7 +114,7 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
 
             s.add(typeName);
 
-            this.superTypes = Collections.unmodifiableSet(s);
+            this.superTypes = s;
         }
     }
 
@@ -124,7 +126,7 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
 
             s.remove(typeName);
 
-            this.superTypes = Collections.unmodifiableSet(s);
+            this.superTypes = s;
         }
     }
 
@@ -181,6 +183,7 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
     @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown=true)
     @XmlRootElement
+    @XmlAccessorType(XmlAccessType.PROPERTY)
     @XmlSeeAlso(AtlasClassificationDef.class)
     public static class AtlasClassificationDefs extends PList<AtlasClassificationDef> {
         private static final long serialVersionUID = 1L;

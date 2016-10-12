@@ -21,6 +21,8 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
@@ -39,6 +41,7 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown=true)
 @XmlRootElement
+@XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasObjectId  implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -145,6 +148,7 @@ public class AtlasObjectId  implements Serializable {
     @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown=true)
     @XmlRootElement
+    @XmlAccessorType(XmlAccessType.PROPERTY)
     @XmlSeeAlso(AtlasObjectId.class)
     public static class AtlasObjectIds extends PList<AtlasObjectId> {
         private static final long serialVersionUID = 1L;

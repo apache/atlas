@@ -20,6 +20,8 @@ package org.apache.atlas.model.typedef;
 import java.io.Serializable;
 import java.util.*;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
@@ -41,6 +43,7 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown=true)
 @XmlRootElement
+@XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -101,7 +104,7 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
         }
 
         if (CollectionUtils.isEmpty(elementDefs)) {
-            this.elementDefs = Collections.emptyList();
+            this.elementDefs = new ArrayList<AtlasEnumElementDef>();
         } else {
             // if multiple elements with same value are present, keep only the last entry
             List<AtlasEnumElementDef> tmpList       = new ArrayList<AtlasEnumElementDef>(elementDefs.size());
@@ -124,7 +127,7 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
             }
             Collections.reverse(tmpList);
 
-            this.elementDefs = Collections.unmodifiableList(tmpList);
+            this.elementDefs = tmpList;
         }
     }
 
@@ -154,7 +157,7 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
         }
         tmpList.add(new AtlasEnumElementDef(elementDef));
 
-        this.elementDefs = Collections.unmodifiableList(tmpList);
+        this.elementDefs = tmpList;
     }
 
     public void removeElement(String elemValue) {
@@ -171,7 +174,7 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
                 }
             }
 
-            this.elementDefs = Collections.unmodifiableList(tmpList);
+            this.elementDefs = tmpList;
         }
     }
 
@@ -247,6 +250,7 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
     @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown=true)
     @XmlRootElement
+    @XmlAccessorType(XmlAccessType.PROPERTY)
     public static class AtlasEnumElementDef implements Serializable {
         private static final long serialVersionUID = 1L;
 
@@ -348,6 +352,7 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
     @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown=true)
     @XmlRootElement
+    @XmlAccessorType(XmlAccessType.PROPERTY)
     @XmlSeeAlso(AtlasEnumDef.class)
     public static class AtlasEnumDefs extends PList<AtlasEnumDef> {
         private static final long serialVersionUID = 1L;

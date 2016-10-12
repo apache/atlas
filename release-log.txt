@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1223 Type REST API v2 implementation (apoorvnaik via sumasai)
 ATLAS-1210 patch file to add "position" attribute to hive_column type (sarath.kum4r@gmail.com via sumasai)
 ATLAS-694  Update Atlas code to use graph abstraction layer (jnhagelb via sumasai)
 ATLAS-1215 Atlas UI not working in firefox due to fix in ATLAS-1199 (kevalbhatt)

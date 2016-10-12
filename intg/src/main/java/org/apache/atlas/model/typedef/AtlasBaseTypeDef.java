@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import org.apache.commons.collections.CollectionUtils;
@@ -41,6 +43,7 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown=true)
 @XmlRootElement
+@XmlAccessorType(XmlAccessType.PROPERTY)
 public abstract class AtlasBaseTypeDef implements java.io.Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -238,7 +241,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
             sb = new StringBuilder();
         }
 
-        sb.append(", AtlasBaseTypeDef{");
+        sb.append("AtlasBaseTypeDef{");
         sb.append("guid='").append(guid).append('\'');
         sb.append(", createdBy='").append(createdBy).append('\'');
         sb.append(", updatedBy='").append(updatedBy).append('\'');

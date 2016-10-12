@@ -15,8 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.api;
-
+package org.apache.atlas.store;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
@@ -28,12 +27,25 @@ import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumDefs;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasStructDefs;
+import org.apache.atlas.model.typedef.AtlasTypesDef;
+
+import java.util.List;
 
 /**
- * API to work with CRUD of Atlas types - enum/struct/classification/entity.
+ * Interface to persistence store of TypeDef
  */
-public interface AtlasApiTypes {
+public interface AtlasTypeDefStore {
+    void init() throws AtlasBaseException;
+
+    /***********************/
+    /** EnumDef operation **/
+    /***********************/
+
     AtlasEnumDef createEnumDef(AtlasEnumDef enumDef) throws AtlasBaseException;
+
+    List<AtlasEnumDef> createEnumDefs(List<AtlasEnumDef> atlasEnumDefs) throws AtlasBaseException;
+
+    List<AtlasEnumDef> getAllEnumDefs() throws AtlasBaseException;
 
     AtlasEnumDef getEnumDefByName(String name) throws AtlasBaseException;
 
@@ -49,8 +61,14 @@ public interface AtlasApiTypes {
 
     AtlasEnumDefs searchEnumDefs(SearchFilter filter) throws AtlasBaseException;
 
-
+    /*************************/
+    /** StructDef operation **/
+    /*************************/
     AtlasStructDef createStructDef(AtlasStructDef structDef) throws AtlasBaseException;
+
+    List<AtlasStructDef> createStructDefs(List<AtlasStructDef> structDefs) throws AtlasBaseException;
+
+    List<AtlasStructDef> getAllStructDefs() throws AtlasBaseException;
 
     AtlasStructDef getStructDefByName(String name) throws AtlasBaseException;
 
@@ -67,17 +85,24 @@ public interface AtlasApiTypes {
     AtlasStructDefs searchStructDefs(SearchFilter filter) throws AtlasBaseException;
 
 
+    /*********************************/
+    /** ClassificationDef operation **/
+    /*********************************/
     AtlasClassificationDef createClassificationDef(AtlasClassificationDef classificationDef) throws AtlasBaseException;
+
+    List<AtlasClassificationDef> createClassificationDefs(List<AtlasClassificationDef> classificationDefs) throws AtlasBaseException;
+
+    List<AtlasClassificationDef> getAllClassificationDefs() throws AtlasBaseException;
 
     AtlasClassificationDef getClassificationDefByName(String name) throws AtlasBaseException;
 
     AtlasClassificationDef getClassificationDefByGuid(String guid) throws AtlasBaseException;
 
     AtlasClassificationDef updateClassificationDefByName(String name, AtlasClassificationDef classificationDef)
-        throws AtlasBaseException;
+            throws AtlasBaseException;
 
     AtlasClassificationDef updateClassificationDefByGuid(String guid, AtlasClassificationDef classificationDef)
-        throws AtlasBaseException;
+            throws AtlasBaseException;
 
     void deleteClassificationDefByName(String name) throws AtlasBaseException;
 
@@ -86,19 +111,34 @@ public interface AtlasApiTypes {
     AtlasClassificationDefs searchClassificationDefs(SearchFilter filter) throws AtlasBaseException;
 
 
-    AtlasEntityDef createEntityDef(AtlasEntityDef entityDef) throws AtlasBaseException;
+    /*************************/
+    /** EntityDef operation **/
+    /*************************/
+    AtlasEntityDef createEntityDefs(AtlasEntityDef entityDef) throws AtlasBaseException;
+
+    List<AtlasEntityDef> createEntityDefs(List<AtlasEntityDef> entityDefs) throws AtlasBaseException;
+
+    List<AtlasEntityDef> getAllEntityDefs() throws AtlasBaseException;
 
     AtlasEntityDef getEntityDefByName(String name) throws AtlasBaseException;
 
-    AtlasEntityDef getEntityDefByIdByGuid(String guid) throws AtlasBaseException;
+    AtlasEntityDef getEntityDefByGuid(String guid) throws AtlasBaseException;
 
     AtlasEntityDef updateEntityDefByName(String name, AtlasEntityDef entityDef) throws AtlasBaseException;
 
     AtlasEntityDef updateEntityDefByGuid(String guid, AtlasEntityDef entityDef) throws AtlasBaseException;
 
-    void deleteEntityDef(String name) throws AtlasBaseException;
+    void deleteEntityDefByName(String name) throws AtlasBaseException;
 
     void deleteEntityDefByGuid(String guid) throws AtlasBaseException;
 
     AtlasEntityDefs searchEntityDefs(SearchFilter filter) throws AtlasBaseException;
+
+    /***** Bulk Operations *****/
+
+    AtlasTypesDef createTypesDef(AtlasTypesDef atlasTypesDef) throws AtlasBaseException;
+
+    AtlasTypesDef updateTypesDef(AtlasTypesDef atlasTypesDef) throws AtlasBaseException;
+
+    AtlasTypesDef searchTypesDef(SearchFilter searchFilter) throws AtlasBaseException;
 }

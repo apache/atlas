@@ -18,6 +18,11 @@
 
 package org.apache.atlas;
 
+import com.google.inject.Binder;
+import com.google.inject.Singleton;
+import com.google.inject.matcher.Matchers;
+import com.google.inject.multibindings.Multibinder;
+
 import org.aopalliance.intercept.MethodInterceptor;
 import org.apache.atlas.discovery.DataSetLineageService;
 import org.apache.atlas.discovery.DiscoveryService;
@@ -31,6 +36,7 @@ import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.graph.DeleteHandler;
 import org.apache.atlas.repository.graph.GraphBackedMetadataRepository;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
+import org.apache.atlas.repository.store.graph.v1.AtlasTypeDefGraphStoreV1;
 import org.apache.atlas.repository.typestore.GraphBackedTypeStore;
 import org.apache.atlas.repository.typestore.ITypeStore;
 import org.apache.atlas.service.Service;
@@ -38,16 +44,12 @@ import org.apache.atlas.services.DefaultMetadataService;
 import org.apache.atlas.services.IBootstrapTypesRegistrar;
 import org.apache.atlas.services.MetadataService;
 import org.apache.atlas.services.ReservedTypesRegistrar;
+import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.TypeSystemProvider;
 import org.apache.atlas.typesystem.types.cache.TypeCache;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.commons.configuration.Configuration;
-
-import com.google.inject.Binder;
-import com.google.inject.Singleton;
-import com.google.inject.matcher.Matchers;
-import com.google.inject.multibindings.Multibinder;
 
 /**
  * Guice module for Repository module.
@@ -65,6 +67,7 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
 
         // bind the ITypeStore interface to an implementation
         bind(ITypeStore.class).to(GraphBackedTypeStore.class).asEagerSingleton();
+        bind(AtlasTypeDefStore.class).to(AtlasTypeDefGraphStoreV1.class).asEagerSingleton();
 
         //GraphBackedSearchIndexer must be an eager singleton to force the search index creation to happen before
         //we try to restore the type system (otherwise we'll end up running queries

@@ -1760,6 +1760,8 @@
                         <exclude>**/atlas.data/**</exclude>
                         <exclude>**/${sys:atlas.data}/**</exclude>
                         <exclude>**/policy-store.txt</exclude>
+                        <exclude>**/*rebel*.xml</exclude>
+                        <exclude>**/*rebel*.xml.bak</exclude>
                     </excludes>
                 </configuration>
                 <executions>

@@ -30,7 +30,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
+        <checkstyle.failOnViolation>false</checkstyle.failOnViolation>
     </properties>
 
     <dependencies>
