@@ -114,7 +114,7 @@ public interface AtlasTypeDefStore {
     /*************************/
     /** EntityDef operation **/
     /*************************/
-    AtlasEntityDef createEntityDefs(AtlasEntityDef entityDef) throws AtlasBaseException;
+    AtlasEntityDef createEntityDef(AtlasEntityDef entityDef) throws AtlasBaseException;
 
     List<AtlasEntityDef> createEntityDefs(List<AtlasEntityDef> entityDefs) throws AtlasBaseException;
 

@@ -21,6 +21,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
+
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasStructDefs;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -381,7 +382,7 @@ public class AtlasStructDefStoreV1 implements AtlasStructDefStore {
                 String propertyKey = AtlasGraphUtilsV1.getPropertyKey(ret, attrName);
                 String attribJson  = atlasVertex.getProperty(propertyKey, String.class);
 
-                attributeDefs.add(toAttributeDefFromJson(attribJson));
+                attributeDefs.add(toAttributeDefFromJson(AtlasType.fromJson(attribJson, Map.class)));
             }
         }
         ret.setAttributeDefs(attributeDefs);
@@ -412,14 +413,17 @@ public class AtlasStructDefStoreV1 implements AtlasStructDefStore {
     }
 
     private static String toJsonFromAttributeDef(AtlasAttributeDef attributeDef) {
+        Boolean isComposite       = Boolean.FALSE;
+        String  reverseAttribName = null;
+
         Map<String, Object> attribInfo = new HashMap<String, Object>();
 
         attribInfo.put("name", attributeDef.getName());
         attribInfo.put("dataType", attributeDef.getTypeName());
         attribInfo.put("isUnique", attributeDef.isUnique());
         attribInfo.put("isIndexable", attributeDef.isIndexable());
-        attribInfo.put("isComposite", Boolean.FALSE);
-        attribInfo.put("reverseAttributeName", "");
+        attribInfo.put("isComposite", isComposite);
+        attribInfo.put("reverseAttributeName", reverseAttribName);
         Map<String, Object> multiplicity = new HashMap<String, Object>();
         multiplicity.put("lower", attributeDef.getValuesMinCount());
         multiplicity.put("upper", attributeDef.getValuesMaxCount());
@@ -430,23 +434,23 @@ public class AtlasStructDefStoreV1 implements AtlasStructDefStore {
         return AtlasType.toJson(attribInfo);
     }
 
-    private static AtlasAttributeDef toAttributeDefFromJson(String json) {
-        Map attribInfo = AtlasType.fromJson(json, Map.class);
-
+    private static AtlasAttributeDef toAttributeDefFromJson(Map attribInfo) {
         AtlasAttributeDef ret = new AtlasAttributeDef();
 
         ret.setName((String) attribInfo.get("name"));
         ret.setTypeName((String) attribInfo.get("dataType"));
         ret.setUnique((Boolean) attribInfo.get("isUnique"));
         ret.setIndexable((Boolean) attribInfo.get("isIndexable"));
+
         /*
-        attributeMap.put("isComposite", isComposite);
-        attributeMap.put("reverseAttributeName", reverseAttributeName);
+        String  reverseAttribName = (String)attribInfo.get("reverseAttributeName");
+        Boolean isComposite       = (Boolean) attribInfo.get("isComposite");
         */
-        Map multiplicity = AtlasType.fromJson((String) attribInfo.get("multiplicity"), Map.class);
-        Number  minCount = (Number) multiplicity.get("lower");
-        Number  maxCount = (Number) multiplicity.get("upper");
-        Boolean isUnique = (Boolean) multiplicity.get("isUnique");
+        Map     multiplicity      = AtlasType.fromJson((String) attribInfo.get("multiplicity"), Map.class);
+        Number  minCount          = (Number) multiplicity.get("lower");
+        Number  maxCount          = (Number) multiplicity.get("upper");
+        Boolean isUnique          = (Boolean) multiplicity.get("isUnique");
+
 
         if (minCount == null || minCount.intValue() == 0) {
             ret.setOptional(true);

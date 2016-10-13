@@ -38,6 +38,7 @@ public class AtlasStructType extends AtlasType {
 
     private Map<String, AtlasType> attrTypes = Collections.emptyMap();
 
+
     public AtlasStructType(AtlasStructDef structDef) {
         super(structDef.getName());
 
@@ -52,6 +53,10 @@ public class AtlasStructType extends AtlasType {
         this.resolveReferences(typeRegistry);
     }
 
+    public AtlasType getAttributeType(String attributeName) { return attrTypes.get(attributeName); }
+
+    public AtlasAttributeDef getAttributeDef(String attributeName) { return structDef.getAttribute(attributeName); }
+
     @Override
     public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         Map<String, AtlasType> a = new HashMap<String, AtlasType>();
@@ -59,24 +64,20 @@ public class AtlasStructType extends AtlasType {
         for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
             AtlasType attrType = typeRegistry.getType(attributeDef.getTypeName());
 
-            if (attrType != null) {
-                Cardinality cardinality = attributeDef.getCardinality();
-
-                if (cardinality == Cardinality.LIST || cardinality == Cardinality.SET) {
-                    attrType = new AtlasArrayType(attrType,
-                                                  attributeDef.getValuesMinCount(),
-                                                  attributeDef.getValuesMaxCount());
-                }
-
-                a.put(attributeDef.getName(), attrType);
-            } else {
-                String msg = attributeDef.getTypeName() + ": unknown type for attribute "
-                             + structDef.getName() + "." + attributeDef.getName();
-
-                LOG.error(msg);
-
-                throw new AtlasBaseException(msg);
+            if (attrType == null) {
+                throw new AtlasBaseException(attributeDef.getTypeName() + ": unknown type for attribute "
+                                             + structDef.getName() + "." + attributeDef.getName());
             }
+
+            Cardinality cardinality = attributeDef.getCardinality();
+
+            if (cardinality == Cardinality.LIST || cardinality == Cardinality.SET) {
+                attrType = new AtlasArrayType(attrType,
+                                              attributeDef.getValuesMinCount(),
+                                              attributeDef.getValuesMaxCount());
+            }
+
+            a.put(attributeDef.getName(), attrType);
         }
 
         this.attrTypes = Collections.unmodifiableMap(a);

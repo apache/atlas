@@ -35,7 +35,7 @@ public class TestAtlasEntityType {
     private final List<Object>    invalidValues = new ArrayList<Object>();
 
     {
-        entityType = getEntityType(ModelTestUtil.getEntityDefWithSuperTypes());
+        entityType  = getEntityType(ModelTestUtil.getEntityDefWithSuperTypes());
 
         AtlasEntity         invalidValue1 = entityType.createDefaultValue();
         AtlasEntity         invalidValue2 = entityType.createDefaultValue();

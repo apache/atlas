@@ -195,7 +195,16 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         sb.append("AtlasStructDef{");
         super.toString(sb);
         sb.append(", attributeDefs=[");
-        dumpObjects(attributeDefs, sb);
+        if (CollectionUtils.isNotEmpty(attributeDefs)) {
+            int i = 0;
+            for (AtlasAttributeDef attributeDef : attributeDefs) {
+                attributeDef.toString(sb);
+                if (i > 0) {
+                    sb.append(", ");
+                }
+                i++;
+            }
+        }
         sb.append("]");
         sb.append('}');
 
@@ -287,7 +296,6 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             }
         }
 
-
         public String getName() {
             return name;
         }
@@ -350,7 +358,6 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             isIndexable = idexable;
         }
 
-
         public StringBuilder toString(StringBuilder sb) {
             if (sb == null) {
                 sb = new StringBuilder();
@@ -409,7 +416,6 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             return toString(new StringBuilder()).toString();
         }
     }
-
 
     /**
      * REST serialization friendly list.

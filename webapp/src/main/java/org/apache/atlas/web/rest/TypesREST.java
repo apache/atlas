@@ -350,7 +350,7 @@ public class TypesREST {
         AtlasEntityDef ret = null;
 
         try {
-            ret = typeDefStore.createEntityDefs(entityDef);
+            ret = typeDefStore.createEntityDef(entityDef);
             return ret;
         } catch (AtlasBaseException ex) {
             throw new WebApplicationException(Servlets.getErrorResponse(ex, Response.Status.BAD_REQUEST));

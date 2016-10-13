@@ -41,7 +41,6 @@ public abstract class AtlasType {
     }
 
     public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
-
     }
 
     public String getTypeName() { return typeName; }

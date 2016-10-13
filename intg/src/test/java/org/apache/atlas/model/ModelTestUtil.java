@@ -157,7 +157,13 @@ public final class  ModelTestUtil {
             ret.setDefaultValue(ret.getElementDefs().get(idxDefault).getValue());
         }
 
-        typesRegistry.addEnumDef(ret);
+        try {
+            typesRegistry.addType(ret);
+        } catch (AtlasBaseException excp) {
+            LOG.error("failed to create enum-def", excp);
+
+            ret = null;
+        }
 
         return ret;
     }
@@ -176,7 +182,7 @@ public final class  ModelTestUtil {
         ret.setAttributeDefs(newAttributeDefsWithAllBuiltInTypes(PREFIX_ATTRIBUTE_NAME));
 
         try {
-            typesRegistry.addStructDef(ret);
+            typesRegistry.addType(ret);
         } catch (AtlasBaseException excp) {
             LOG.error("failed to create struct-def", excp);
 
@@ -214,7 +220,7 @@ public final class  ModelTestUtil {
         }
 
         try {
-            typesRegistry.addEntityDef(ret);
+            typesRegistry.addType(ret);
         } catch (AtlasBaseException excp) {
             LOG.error("failed to create entity-def", excp);
 
@@ -261,7 +267,7 @@ public final class  ModelTestUtil {
         }
 
         try {
-            typesRegistry.addClassificationDef(ret);
+            typesRegistry.addType(ret);
         } catch (AtlasBaseException excp) {
             LOG.error("failed to create classification-def", excp);
 

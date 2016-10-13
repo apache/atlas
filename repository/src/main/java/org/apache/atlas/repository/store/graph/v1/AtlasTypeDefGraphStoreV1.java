@@ -60,15 +60,29 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
     public AtlasTypeDefGraphStoreV1() {
         super();
 
-        enumDefStore           = new AtlasEnumDefStoreV1(this);
-        structDefStore         = new AtlasStructDefStoreV1(this);
-        classificationDefStore = new AtlasClassificationDefStoreV1(this);
-        entityDefStore         = new AtlasEntityDefStoreV1(this);
+        LOG.info("==> AtlasTypeDefGraphStoreV1()");
+
+        try {
+            init();
+        } catch(AtlasBaseException excp) {
+            LOG.error("failed to initialize types from graph store", excp);
+        }
+
+        LOG.info("<== AtlasTypeDefGraphStoreV1()");
     }
 
     @Override
-    public void init() {
+    public void init() throws AtlasBaseException {
+        LOG.info("==> AtlasTypeDefGraphStoreV1.init()");
 
+        super.init();
+
+        super.init(new AtlasEnumDefStoreV1(this),
+                   new AtlasStructDefStoreV1(this),
+                   new AtlasClassificationDefStoreV1(this),
+                   new AtlasEntityDefStoreV1(this));
+
+        LOG.info("<== AtlasTypeDefGraphStoreV1.init()");
     }
 
     public AtlasGraph getAtlasGraph() { return atlasGraph; }

@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
 
@@ -56,6 +57,10 @@ public class AtlasEnumType extends AtlasType {
         this.enumDef      = enumDef;
         this.elementDefs  = Collections.unmodifiableMap(e);
         this.defaultValue = d;
+    }
+
+    @Override
+    public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
     }
 
     @Override

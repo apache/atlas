@@ -64,6 +64,26 @@ public class AtlasMapType extends AtlasType {
         resolveReferences(typeRegistry);
     }
 
+    public String getKeyTypeName() {
+        return keyTypeName;
+    }
+
+    public String getValueTypeName() {
+        return valueTypeName;
+    }
+
+    public AtlasType getKeyType() {
+        return keyType;
+    }
+
+    public AtlasType getValueType() {
+        return valueType;
+    }
+
+    public void setKeyType(AtlasType keyType) {
+        this.keyType = keyType;
+    }
+
     @Override
     public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         this.keyType   = typeRegistry.getType(keyTypeName);
