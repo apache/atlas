@@ -26,7 +26,7 @@ The hook submits the request to a thread pool executor to avoid blocking the com
    * Link falcon hook jars in falcon classpath - 'ln -s <atlas-home>/hook/falcon/* <falcon-home>/server/webapp/falcon/WEB-INF/lib/'
    * In <falcon_conf>/falcon-env.sh, set an environment variable as follows:
      <verbatim>
-     export FALCON_SERVER_OPTS="$FALCON_SERVER_OPTS -Datlas.conf=<atlas-conf>"
+     export FALCON_SERVER_OPTS="<atlas_home>/hook/falcon/*:$FALCON_SERVER_OPTS"
      </verbatim>
 
 The following properties in <atlas-conf>/atlas-application.properties control the thread pool and notification details:
