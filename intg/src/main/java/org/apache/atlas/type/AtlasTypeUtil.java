@@ -26,6 +26,7 @@ import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_MAP_KEY
 import org.apache.commons.lang.StringUtils;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -50,6 +51,22 @@ public class AtlasTypeUtil {
 
     public static boolean isBuiltInType(String typeName) {
         return ATLAS_BUILTIN_TYPENAMES.contains(typeName);
+    }
+
+    public static boolean isArrayType(String typeName) {
+        return StringUtils.startsWith(typeName, ATLAS_TYPE_ARRAY_PREFIX)
+            && StringUtils.endsWith(typeName, ATLAS_TYPE_ARRAY_SUFFIX);
+    }
+
+    public static boolean isMapType(String typeName) {
+        return StringUtils.startsWith(typeName, ATLAS_TYPE_MAP_PREFIX)
+                && StringUtils.endsWith(typeName, ATLAS_TYPE_MAP_SUFFIX);
+    }
+
+    public static String getStringValue(Map map, Object key) {
+        Object ret = map != null ? map.get(key) : null;
+
+        return ret != null ? ret.toString() : null;
     }
 
     private static void getReferencedTypeNames(String typeName, Set<String> referencedTypeNames) {

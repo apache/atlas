@@ -20,9 +20,11 @@ package org.apache.atlas.model.typedef;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Set;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -256,23 +258,25 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
 
         public static final int COUNT_NOT_SET = -1;
 
-        private String      name;
-        private String      typeName;
-        private boolean     isOptional;
-        private Cardinality cardinality;
-        private int         valuesMinCount;
-        private int         valuesMaxCount;
-        private boolean     isUnique;
-        private boolean     isIndexable;
+        private String                   name;
+        private String                   typeName;
+        private boolean                  isOptional;
+        private Cardinality              cardinality;
+        private int                      valuesMinCount;
+        private int                      valuesMaxCount;
+        private boolean                  isUnique;
+        private boolean                  isIndexable;
+        private List<AtlasConstraintDef> constraintDefs;
 
         public AtlasAttributeDef() { this(null, null); }
 
         public AtlasAttributeDef(String name, String typeName) {
-            this(name, typeName, false, Cardinality.SINGLE, 1, 1, false, false);
+            this(name, typeName, false, Cardinality.SINGLE, 1, 1, false, false, null);
         }
 
         public AtlasAttributeDef(String name, String typeName, boolean isOptional, Cardinality cardinality,
-                                 int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable) {
+                                 int valuesMinCount, int valuesMaxCount, boolean isUnique, boolean isIndexable,
+                                 List<AtlasConstraintDef> constraintDefs) {
             setName(name);
             setTypeName(typeName);
             setOptional(isOptional);
@@ -281,6 +285,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             setValuesMaxCount(valuesMaxCount);
             setUnique(isUnique);
             setIndexable(isIndexable);
+            setConstraintDefs(constraintDefs);
         }
 
         public AtlasAttributeDef(AtlasAttributeDef other) {
@@ -293,6 +298,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
                 setValuesMaxCount(other.getValuesMaxCount());
                 setUnique(other.isUnique());
                 setIndexable(other.isIndexable());
+                setConstraintDefs(other.getConstraintDefs());
             }
         }
 
@@ -358,6 +364,33 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             isIndexable = idexable;
         }
 
+        public List<AtlasConstraintDef> getConstraintDefs() { return constraintDefs; }
+
+        public void setConstraintDefs(List<AtlasConstraintDef> constraintDefs) {
+            if (this.constraintDefs != null && this.constraintDefs == constraintDefs) {
+                return;
+            }
+
+            if (CollectionUtils.isEmpty(constraintDefs)) {
+                this.constraintDefs = null;
+            } else {
+                this.constraintDefs = new ArrayList<AtlasConstraintDef>(constraintDefs);
+            }
+        }
+
+        public void addConstraint(AtlasConstraintDef constraintDef) {
+            List<AtlasConstraintDef> cDefs = constraintDefs;
+
+            if (cDefs == null) {
+                cDefs = new ArrayList<>();
+            } else {
+                cDefs = new ArrayList<>(cDefs);
+            }
+
+            cDefs.add(constraintDef);
+
+            this.constraintDefs = cDefs;
+        }
         public StringBuilder toString(StringBuilder sb) {
             if (sb == null) {
                 sb = new StringBuilder();
@@ -372,6 +405,18 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             sb.append(", valuesMaxCount=").append(valuesMaxCount);
             sb.append(", isUnique=").append(isUnique);
             sb.append(", isIndexable=").append(isIndexable);
+            sb.append(", constraintDefs=[");
+            if (CollectionUtils.isNotEmpty(constraintDefs)) {
+                int i = 0;
+                for (AtlasConstraintDef constraintDef : constraintDefs) {
+                    constraintDef.toString(sb);
+                    if (i > 0) {
+                        sb.append(", ");
+                    }
+                    i++;
+                }
+            }
+            sb.append("]");
             sb.append('}');
 
             return sb;
@@ -394,6 +439,9 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             if (valuesMaxCount != that.valuesMaxCount) { return false; }
             if (isUnique != that.isUnique) { return false; }
             if (isIndexable != that.isIndexable) { return false; }
+            if (constraintDefs != null ? !constraintDefs.equals(that.constraintDefs) : that.constraintDefs != null) {
+                return false;
+            }
 
             return true;
         }
@@ -408,6 +456,7 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
             result = 31 * result + valuesMaxCount;
             result = 31 * result + (isUnique ? 1 : 0);
             result = 31 * result + (isIndexable ? 1 : 0);
+            result = 31 * result + (constraintDefs != null ? constraintDefs.hashCode() : 0);
             return result;
         }
 
@@ -415,6 +464,104 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
         public String toString() {
             return toString(new StringBuilder()).toString();
         }
+    }
+
+    /**
+     * class that captures details of a constraint.
+     */
+    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
+    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown=true)
+    @XmlRootElement
+    @XmlAccessorType(XmlAccessType.PROPERTY)
+    public static class AtlasConstraintDef implements Serializable {
+        private static final long serialVersionUID = 1L;
+
+        public static final String CONSTRAINT_TYPE_FOREIGN_KEY     = "foreignKey";
+        public static final String CONSTRAINT_TYPE_MAPPED_FROM_REF = "mappedFromRef";
+        public static final String CONSTRAINT_PARAM_REF_ATTRIBUTE  = "refAttribute";
+        public static final String CONSTRAINT_PARAM_ON_DELETE      = "onDelete";
+        public static final String CONSTRAINT_PARAM_VAL_CASCADE    = "cascade";
+
+        private String              type;   // foreignKey/mappedFromRef/valueInRange
+        private Map<String, Object> params; // onDelete=cascade/refAttribute=attr2/min=0,max=23
+
+
+        public AtlasConstraintDef() { }
+
+        public AtlasConstraintDef(String type) {
+            this(type, null);
+        }
+
+        public AtlasConstraintDef(String type, Map<String, Object> params) {
+            this.type = type;
+
+            if (params != null) {
+                this.params = new HashMap<String, Object>(params);
+            }
+        }
+
+        public AtlasConstraintDef(AtlasConstraintDef that) {
+            if (that != null) {
+                this.type = that.type;
+
+                if (that.params != null) {
+                    this.params = new HashMap<String, Object>(that.params);
+                }
+            }
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        public Map<String, Object> getParams() {
+            return params;
+        }
+
+        public void setParams(Map<String, Object> params) {
+            this.params = params;
+        }
+
+        public StringBuilder toString(StringBuilder sb) {
+            if (sb == null) {
+                sb = new StringBuilder();
+            }
+
+            sb.append("AtlasConstraintDef{");
+            sb.append("type='").append(type).append('\'');
+            sb.append(", params='").append(params).append('\'');
+            sb.append('}');
+
+            return sb;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            AtlasConstraintDef that = (AtlasConstraintDef) o;
+
+            if (type != null ? !type.equals(that.type) : that.type != null) return false;
+            if (params != null ? !params.equals(that.params) : that.params != null) return false;
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = type != null ? type.hashCode() : 0;
+            result = 31 * result + (params != null ? params.hashCode() : 0);
+            return result;
+        }
+
+        @Override
+        public String toString() { return toString(new StringBuilder()).toString(); }
     }
 
     /**

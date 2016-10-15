@@ -24,6 +24,8 @@ import org.apache.atlas.model.ModelTestUtil;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.*;
@@ -115,11 +117,114 @@ public class TestAtlasEntityType {
         }
     }
 
+    @Test
+    public void testForeignKeyConstraintValid() {
+        AtlasTypeRegistry    typeRegistry = new AtlasTypeRegistry();
+        List<AtlasEntityDef> entityDefs   = new ArrayList<>();
+        String               failureMsg   = null;
+
+        entityDefs.add(createTableEntityDef());
+        entityDefs.add(createColumnEntityDef());
+
+        try {
+            typeRegistry.addTypesWithNoRefResolve(entityDefs);
+            typeRegistry.resolveReferences();
+        } catch (AtlasBaseException excp) {
+            failureMsg = excp.getMessage();
+        }
+        assertNull(failureMsg, "failed to create types my_table and my_column");
+    }
+
+    @Test
+    public void testForeignKeyConstraintInValidMappedFromRef() {
+        AtlasTypeRegistry    typeRegistry = new AtlasTypeRegistry();
+        List<AtlasEntityDef> entityDefs   = new ArrayList<>();
+        String               failureMsg   = null;
+
+        entityDefs.add(createTableEntityDef());
+
+        try {
+            typeRegistry.addTypes(entityDefs);
+        } catch (AtlasBaseException excp) {
+            failureMsg = excp.getMessage();
+        }
+        assertNotNull(failureMsg, "expected invalid constraint failure - unknown attribute in mappedFromRef");
+    }
+
+    @Test
+    public void testForeignKeyConstraintInValidMappedFromRef2() {
+        AtlasTypeRegistry    typeRegistry = new AtlasTypeRegistry();
+        List<AtlasEntityDef> entityDefs   = new ArrayList<>();
+        String               failureMsg   = null;
+
+        entityDefs.add(createTableEntityDefWithMissingRefAttribute());
+        entityDefs.add(createColumnEntityDef());
+
+        try {
+            typeRegistry.addTypesWithNoRefResolve(entityDefs);
+            typeRegistry.resolveReferences();
+        } catch (AtlasBaseException excp) {
+            failureMsg = excp.getMessage();
+        }
+        assertNotNull(failureMsg, "expected invalid constraint failure - missing refAttribute in mappedFromRef");
+    }
+
+    @Test
+    public void testForeignKeyConstraintInValidForeignKey() {
+        AtlasTypeRegistry    typeRegistry = new AtlasTypeRegistry();
+        List<AtlasEntityDef> entityDefs   = new ArrayList<>();
+        String               failureMsg   = null;
+
+        entityDefs.add(createColumnEntityDef());
+
+        try {
+            typeRegistry.addTypes(entityDefs);
+        } catch (AtlasBaseException excp) {
+            failureMsg = excp.getMessage();
+        }
+        assertNotNull(failureMsg, "expected invalid constraint failure - unknown attribute in foreignKey");
+    }
+
     private static AtlasEntityType getEntityType(AtlasEntityDef entityDef) {
         try {
             return new AtlasEntityType(entityDef, ModelTestUtil.getTypesRegistry());
         } catch (AtlasBaseException excp) {
             return null;
         }
+    }
+
+    private AtlasEntityDef createTableEntityDef() {
+        AtlasEntityDef    table       = new AtlasEntityDef("my_table");
+        AtlasAttributeDef attrColumns = new AtlasAttributeDef("columns",
+                                                              AtlasBaseTypeDef.getArrayTypeName("my_column"));
+
+        Map<String, Object> params = new HashMap<>();
+        params.put(AtlasConstraintDef.CONSTRAINT_PARAM_REF_ATTRIBUTE, "table");
+
+        attrColumns.addConstraint(new AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_MAPPED_FROM_REF, params));
+        table.addAttribute(attrColumns);
+
+        return table;
+    }
+
+    private AtlasEntityDef createTableEntityDefWithMissingRefAttribute() {
+        AtlasEntityDef    table       = new AtlasEntityDef("my_table");
+        AtlasAttributeDef attrColumns = new AtlasAttributeDef("columns",
+                AtlasBaseTypeDef.getArrayTypeName("my_column"));
+
+        attrColumns.addConstraint(new AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_MAPPED_FROM_REF, null));
+        table.addAttribute(attrColumns);
+
+        return table;
+    }
+
+    private AtlasEntityDef createColumnEntityDef() {
+        AtlasEntityDef    column    = new AtlasEntityDef("my_column");
+        AtlasAttributeDef attrTable = new AtlasAttributeDef("table", "my_table");
+
+        attrTable.addConstraint(new AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_FOREIGN_KEY));
+        column.addAttribute(attrTable);
+
+        return column;
     }
 }

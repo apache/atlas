@@ -344,7 +344,7 @@ public class AtlasEntityDefStoreV1 implements AtlasEntityDefStore {
         typeDefStore.createSuperTypeEdges(vertex, entityDef.getSuperTypes());
     }
 
-    private AtlasEntityDef toEntityDef(AtlasVertex vertex) {
+    private AtlasEntityDef toEntityDef(AtlasVertex vertex) throws AtlasBaseException {
         AtlasEntityDef ret = null;
 
         if (vertex != null && typeDefStore.isTypeVertex(vertex, TypeCategory.CLASS)) {
