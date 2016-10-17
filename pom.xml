@@ -392,6 +392,16 @@
             </roles>
             <organization></organization>
         </developer>
+        <developer>
+            <id>madhan</id>
+            <name>Madhan Neethiraj</name>
+            <email>madhan@apache.org</email>
+            <timezone>America/Los_Angeles</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization></organization>
+        </developer>
     </developers>
 
     <properties>
