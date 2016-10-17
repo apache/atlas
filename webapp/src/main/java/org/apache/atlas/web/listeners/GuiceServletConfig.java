@@ -18,6 +18,7 @@
 
 package org.apache.atlas.web.listeners;
 
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,6 +37,7 @@ import org.apache.atlas.web.filters.ActiveServerFilter;
 import org.apache.atlas.web.filters.AuditFilter;
 import org.apache.atlas.web.service.ActiveInstanceElectorModule;
 import org.apache.atlas.web.service.ServiceModule;
+import org.apache.commons.collections.iterators.EnumerationIterator;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,13 +95,23 @@ public class GuiceServletConfig extends GuiceServletContextListener {
                             filter("/*").through(AuditFilter.class);
                             configureActiveServerFilterIfNecessary();
 
-                            String packages = getServletContext().getInitParameter(GUICE_CTX_PARAM);
+                            Map<String, String> initParams     = new HashMap<>();
+                            Enumeration<String> initParamNames = getServletContext().getInitParameterNames();
 
-                            LOG.info("Jersey loading from packages: " + packages);
+                            while (initParamNames.hasMoreElements()) {
+                                String initParamName  = initParamNames.nextElement();
+                                String initParamValue = getServletContext().getInitParameter(initParamName);
 
-                            Map<String, String> params = new HashMap<>();
-                            params.put(PackagesResourceConfig.PROPERTY_PACKAGES, packages);
-                            serve("/" + AtlasClient.BASE_URI + "*").with(GuiceContainer.class, params);
+                                if (GUICE_CTX_PARAM.equals(initParamName)) {
+                                    LOG.info("Jersey loading from packages: " + initParamValue);
+
+                                    initParams.put(PackagesResourceConfig.PROPERTY_PACKAGES, initParamValue);
+                                } else {
+                                    initParams.put(initParamName, initParamValue);
+                                }
+                            }
+
+                            serve("/" + AtlasClient.BASE_URI + "*").with(GuiceContainer.class, initParams);
                         }
 
                         private void configureActiveServerFilterIfNecessary() {
