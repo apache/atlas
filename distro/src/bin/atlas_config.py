@@ -132,7 +132,7 @@ def expandWebApp(dir):
     if not os.path.exists(os.path.join(webAppMetadataDir, "WEB-INF")):
         try:
             os.makedirs(webAppMetadataDir)
-        except OSError, e:
+        except OSError as e:
             if e.errno != errno.EEXIST:
                 raise e
             pass
