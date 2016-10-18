@@ -9,7 +9,8 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
-ATLAS-1227 Added support for attribute constraints in the API
+ATLAS-1229 Add TypeCategory and methods to access attribute definitiions in AtlasTypes (sumasai)
+ATLAS-1227 Added support for attribute constraints in the API (mneethiraj)
 ATLAS-1225 Optimize AtlasTypeDefGraphStore to use typeRegistry (mneethiraj via sumasai)
 ATLAS-1221 build failure in windows SyntaxError: invalid syntax (zhangqiang2 via shwethags)
 ATLAS-1226 Servlet init-params in web.xml are unused (mneethiraj via shwethags)

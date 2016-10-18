@@ -48,13 +48,19 @@ public class AtlasStructType extends AtlasType {
 
 
     public AtlasStructType(AtlasStructDef structDef) {
-        super(structDef.getName());
+        super(structDef.getName(), TypeCategory.STRUCT);
+
+        this.structDef = structDef;
+    }
+
+    public AtlasStructType(AtlasStructDef structDef, TypeCategory category) {
+        super(structDef.getName(), category);
 
         this.structDef = structDef;
     }
 
     public AtlasStructType(AtlasStructDef structDef, AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
-        super(structDef.getName());
+        super(structDef.getName(), TypeCategory.STRUCT);
 
         this.structDef = structDef;
 
@@ -431,5 +437,9 @@ public class AtlasStructType extends AtlasType {
             this.typeName      = typeName;
             this.attributeName = attributeName;
         }
+    }
+
+    public AtlasStructDef getStructDefinition() {
+        return structDef;
     }
 }

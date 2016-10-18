@@ -39,14 +39,14 @@ public class AtlasMapType extends AtlasType {
     private AtlasType valueType;
 
     public AtlasMapType(String keyTypeName, String valueTypeName) {
-        super(AtlasBaseTypeDef.getMapTypeName(keyTypeName, valueTypeName));
+        super(AtlasBaseTypeDef.getMapTypeName(keyTypeName, valueTypeName), TypeCategory.MAP);
 
         this.keyTypeName   = keyTypeName;
         this.valueTypeName = valueTypeName;
     }
 
     public AtlasMapType(AtlasType keyType, AtlasType valueType) {
-        super(AtlasBaseTypeDef.getMapTypeName(keyType.getTypeName(), valueType.getTypeName()));
+        super(AtlasBaseTypeDef.getMapTypeName(keyType.getTypeName(), valueType.getTypeName()), TypeCategory.MAP);
 
         this.keyTypeName   = keyType.getTypeName();
         this.valueTypeName = valueType.getTypeName();
@@ -56,7 +56,7 @@ public class AtlasMapType extends AtlasType {
 
     public AtlasMapType(String keyTypeName, String valueTypeName, AtlasTypeRegistry typeRegistry)
         throws AtlasBaseException {
-        super(AtlasBaseTypeDef.getMapTypeName(keyTypeName, valueTypeName));
+        super(AtlasBaseTypeDef.getMapTypeName(keyTypeName, valueTypeName), TypeCategory.MAP);
 
         this.keyTypeName   = keyTypeName;
         this.valueTypeName = valueTypeName;

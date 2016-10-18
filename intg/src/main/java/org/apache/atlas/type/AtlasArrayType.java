@@ -48,7 +48,7 @@ public class AtlasArrayType extends AtlasType {
     }
 
     public AtlasArrayType(AtlasType elementType, int minCount, int maxCount) {
-        super(AtlasBaseTypeDef.getArrayTypeName(elementType.getTypeName()));
+        super(AtlasBaseTypeDef.getArrayTypeName(elementType.getTypeName()), TypeCategory.ARRAY);
 
         this.elementTypeName = elementType.getTypeName();
         this.minCount        = minCount;
@@ -61,7 +61,7 @@ public class AtlasArrayType extends AtlasType {
     }
 
     public AtlasArrayType(String elementTypeName, int minCount, int maxCount) {
-        super(AtlasBaseTypeDef.getArrayTypeName(elementTypeName));
+        super(AtlasBaseTypeDef.getArrayTypeName(elementTypeName), TypeCategory.ARRAY);
 
         this.elementTypeName = elementTypeName;
         this.minCount        = minCount;
@@ -75,7 +75,7 @@ public class AtlasArrayType extends AtlasType {
 
     public AtlasArrayType(String elementTypeName, int minCount, int maxCount, AtlasTypeRegistry typeRegistry)
         throws  AtlasBaseException {
-        super(AtlasBaseTypeDef.getArrayTypeName(elementTypeName));
+        super(AtlasBaseTypeDef.getArrayTypeName(elementTypeName), TypeCategory.ARRAY);
 
         this.elementTypeName = elementTypeName;
         this.minCount        = minCount;

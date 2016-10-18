@@ -31,13 +31,20 @@ import java.util.List;
  */
 public abstract class AtlasType {
 
+    public enum TypeCategory {
+        PRIMITIVE, ARRAY, MAP, ENTITY, STRUCT, CLASSIFICATION, OBJECT_ID_TYPE
+    }
+
     private static final Gson GSON =
             new GsonBuilder().setDateFormat(AtlasBaseTypeDef.SERIALIZED_DATE_FORMAT_STR).create();
 
     private final String typeName;
 
-    public AtlasType(String typeName) {
+    private final TypeCategory typeCategory;
+
+    protected AtlasType(String typeName, TypeCategory category) {
         this.typeName = typeName;
+        this.typeCategory = category;
     }
 
     public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
@@ -50,6 +57,10 @@ public abstract class AtlasType {
     public abstract boolean isValidValue(Object obj);
 
     public abstract Object getNormalizedValue(Object obj);
+
+    public TypeCategory getTypeCategory() {
+        return typeCategory;
+    }
 
     public boolean validateValue(Object obj, String objName, List<String> messages) {
         boolean ret = isValidValue(obj);

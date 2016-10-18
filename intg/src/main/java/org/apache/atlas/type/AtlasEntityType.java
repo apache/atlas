@@ -45,7 +45,7 @@ public class AtlasEntityType extends AtlasStructType {
     private Set<String>           allSuperTypes = Collections.emptySet();
 
     public AtlasEntityType(AtlasEntityDef entityDef) {
-        super(entityDef);
+        super(entityDef, TypeCategory.ENTITY);
 
         this.entityDef = entityDef;
     }

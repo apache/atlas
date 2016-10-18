@@ -41,7 +41,7 @@ public class AtlasBuiltInTypes {
         private static final Boolean DEFAULT_VALUE = Boolean.FALSE;
 
         public AtlasBooleanType() {
-            super(AtlasBaseTypeDef.ATLAS_TYPE_BOOLEAN);
+            super(AtlasBaseTypeDef.ATLAS_TYPE_BOOLEAN, TypeCategory.PRIMITIVE);
         }
 
         @Override
@@ -75,7 +75,7 @@ public class AtlasBuiltInTypes {
         private static final Byte DEFAULT_VALUE = new Byte((byte)0);
 
         public AtlasByteType() {
-            super(AtlasBaseTypeDef.ATLAS_TYPE_BYTE);
+            super(AtlasBaseTypeDef.ATLAS_TYPE_BYTE, TypeCategory.PRIMITIVE);
         }
 
         @Override
@@ -119,7 +119,7 @@ public class AtlasBuiltInTypes {
         private static final Short DEFAULT_VALUE = new Short((short)0);
 
         public AtlasShortType() {
-            super(AtlasBaseTypeDef.ATLAS_TYPE_SHORT);
+            super(AtlasBaseTypeDef.ATLAS_TYPE_SHORT, TypeCategory.PRIMITIVE);
         }
 
         @Override
@@ -163,7 +163,7 @@ public class AtlasBuiltInTypes {
         private static final Integer DEFAULT_VALUE = new Integer(0);
 
         public AtlasIntType() {
-            super(AtlasBaseTypeDef.ATLAS_TYPE_INT);
+            super(AtlasBaseTypeDef.ATLAS_TYPE_INT, TypeCategory.PRIMITIVE);
         }
 
         @Override
@@ -207,7 +207,7 @@ public class AtlasBuiltInTypes {
         private static final Long DEFAULT_VALUE = new Long(0);
 
         public AtlasLongType() {
-            super(AtlasBaseTypeDef.ATLAS_TYPE_LONG);
+            super(AtlasBaseTypeDef.ATLAS_TYPE_LONG, TypeCategory.PRIMITIVE);
         }
 
         @Override
@@ -251,7 +251,7 @@ public class AtlasBuiltInTypes {
         private static final Float DEFAULT_VALUE = new Float(0);
 
         public AtlasFloatType() {
-            super(AtlasBaseTypeDef.ATLAS_TYPE_FLOAT);
+            super(AtlasBaseTypeDef.ATLAS_TYPE_FLOAT, TypeCategory.PRIMITIVE);
         }
 
         @Override
@@ -295,7 +295,7 @@ public class AtlasBuiltInTypes {
         private static final Double DEFAULT_VALUE = new Double(0);
 
         public AtlasDoubleType() {
-            super(AtlasBaseTypeDef.ATLAS_TYPE_DOUBLE);
+            super(AtlasBaseTypeDef.ATLAS_TYPE_DOUBLE, TypeCategory.PRIMITIVE);
         }
 
         @Override
@@ -341,7 +341,7 @@ public class AtlasBuiltInTypes {
         private static final BigInteger DEFAULT_VALUE = BigInteger.ZERO;
 
         public AtlasBigIntegerType() {
-            super(AtlasBaseTypeDef.ATLAS_TYPE_BIGINTEGER);
+            super(AtlasBaseTypeDef.ATLAS_TYPE_BIGINTEGER, TypeCategory.PRIMITIVE);
         }
 
         @Override
@@ -385,7 +385,7 @@ public class AtlasBuiltInTypes {
         private static final BigDecimal DEFAULT_VALUE = BigDecimal.ZERO;
 
         public AtlasBigDecimalType() {
-            super(AtlasBaseTypeDef.ATLAS_TYPE_BIGDECIMAL);
+            super(AtlasBaseTypeDef.ATLAS_TYPE_BIGDECIMAL, TypeCategory.PRIMITIVE);
         }
 
         @Override
@@ -429,7 +429,7 @@ public class AtlasBuiltInTypes {
         private static final Date DEFAULT_VALUE = new Date(0);
 
         public AtlasDateType() {
-            super(AtlasBaseTypeDef.ATLAS_TYPE_DATE);
+            super(AtlasBaseTypeDef.ATLAS_TYPE_DATE, TypeCategory.PRIMITIVE);
         }
 
         @Override
@@ -478,7 +478,7 @@ public class AtlasBuiltInTypes {
         private static final String DEFAULT_VALUE = "";
 
         public AtlasStringType() {
-            super(AtlasBaseTypeDef.ATLAS_TYPE_STRING);
+            super(AtlasBaseTypeDef.ATLAS_TYPE_STRING, TypeCategory.PRIMITIVE);
         }
 
         @Override
@@ -506,7 +506,7 @@ public class AtlasBuiltInTypes {
      */
     public static class AtlasObjectIdType extends AtlasType {
         public AtlasObjectIdType() {
-            super(AtlasBaseTypeDef.ATLAS_TYPE_OBJECT_ID);
+            super(AtlasBaseTypeDef.ATLAS_TYPE_OBJECT_ID, TypeCategory.OBJECT_ID_TYPE);
         }
 
         @Override

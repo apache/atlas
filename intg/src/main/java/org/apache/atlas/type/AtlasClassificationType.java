@@ -46,7 +46,7 @@ public class AtlasClassificationType extends AtlasStructType {
     private Set<String>                   allSuperTypes = Collections.emptySet();
 
     public AtlasClassificationType(AtlasClassificationDef classificationDef) {
-        super(classificationDef);
+        super(classificationDef, TypeCategory.CLASSIFICATION);
 
         this.classificationDef = classificationDef;
     }

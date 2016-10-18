@@ -36,7 +36,7 @@ public class AtlasEnumType extends AtlasType {
     private final String                           defaultValue;
 
     public AtlasEnumType(AtlasEnumDef enumDef) {
-        super(enumDef.getName());
+        super(enumDef.getName(), TypeCategory.PRIMITIVE);
 
         Map<String, AtlasEnumElementDef> e = new HashMap<String, AtlasEnumElementDef>();
 
