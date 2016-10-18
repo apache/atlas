@@ -26,6 +26,7 @@ import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEnumDefStore;
 import org.apache.atlas.repository.util.FilterUtil;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -34,21 +35,16 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 
 /**
  * EnumDef store in v1 format.
  */
-public class AtlasEnumDefStoreV1 implements AtlasEnumDefStore {
+public class AtlasEnumDefStoreV1 extends AtlasAbstractDefStoreV1 implements AtlasEnumDefStore {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEnumDefStoreV1.class);
 
-    private final AtlasTypeDefGraphStoreV1 typeDefStore;
-
-    public AtlasEnumDefStoreV1(AtlasTypeDefGraphStoreV1 typeDefStore) {
-        super();
-
-        this.typeDefStore = typeDefStore;
+    public AtlasEnumDefStoreV1(AtlasTypeDefGraphStoreV1 typeDefStore, AtlasTypeRegistry typeRegistry) {
+        super(typeDefStore, typeRegistry);
     }
 
     @Override
@@ -77,24 +73,22 @@ public class AtlasEnumDefStoreV1 implements AtlasEnumDefStore {
     }
 
     @Override
-    public List<AtlasEnumDef> create(List<AtlasEnumDef> atlasEnumDefs) throws AtlasBaseException {
+    public List<AtlasEnumDef> create(List<AtlasEnumDef> enumDefs) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEnumDefStoreV1.create({})", atlasEnumDefs);
+            LOG.debug("==> AtlasEnumDefStoreV1.create({})", enumDefs);
         }
-        List<AtlasEnumDef> enumDefList = new LinkedList<>();
-        for (AtlasEnumDef enumDef : atlasEnumDefs) {
-            try {
-                AtlasEnumDef atlasEnumDef = create(enumDef);
-                enumDefList.add(atlasEnumDef);
-            } catch (AtlasBaseException baseException) {
-                LOG.error("Failed to create {}", enumDef);
-                LOG.error("Exception: {}", baseException);
-            }
+
+        List<AtlasEnumDef> ret = new ArrayList<>();
+
+        for (AtlasEnumDef enumDef : enumDefs) {
+            ret.add(create(enumDef));
         }
+
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEnumDefStoreV1.create({}, {})", atlasEnumDefs, enumDefList);
+            LOG.debug("<== AtlasEnumDefStoreV1.create({}): {}", enumDefs, ret);
         }
-        return enumDefList;
+
+        return ret;
     }
 
     @Override
@@ -103,17 +97,18 @@ public class AtlasEnumDefStoreV1 implements AtlasEnumDefStore {
             LOG.debug("==> AtlasEnumDefStoreV1.getAll()");
         }
 
-        List<AtlasEnumDef> enumDefs = new LinkedList<>();
-        Iterator<AtlasVertex> verticesByCategory = typeDefStore.findTypeVerticesByCategory(TypeCategory.ENUM);
-        while (verticesByCategory.hasNext()) {
-            AtlasEnumDef enumDef = toEnumDef(verticesByCategory.next());
-            enumDefs.add(enumDef);
+        List<AtlasEnumDef> ret = new ArrayList<>();
+
+        Iterator<AtlasVertex> vertices = typeDefStore.findTypeVerticesByCategory(TypeCategory.ENUM);
+        while (vertices.hasNext()) {
+            ret.add(toEnumDef(vertices.next()));
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEnumDefStoreV1.getAll()");
+            LOG.debug("<== AtlasEnumDefStoreV1.getAll(): count={}", ret.size());
         }
-        return enumDefs;
+
+        return ret;
     }
 
     @Override
@@ -212,22 +207,17 @@ public class AtlasEnumDefStoreV1 implements AtlasEnumDefStore {
             LOG.debug("==> AtlasEnumDefStoreV1.update({})", enumDefs);
         }
 
-        List<AtlasEnumDef> updatedEnumDefs = new ArrayList<>();
+        List<AtlasEnumDef> ret = new ArrayList<>();
 
         for (AtlasEnumDef enumDef : enumDefs) {
-            try {
-                AtlasEnumDef updatedDef = updateByName(enumDef.getName(), enumDef);
-                updatedEnumDefs.add(updatedDef);
-            } catch (AtlasBaseException ex) {
-                LOG.error("Failed to update {}", enumDef);
-            }
+            ret.add(updateByName(enumDef.getName(), enumDef));
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEnumDefStoreV1.update({}): {}", enumDefs, updatedEnumDefs);
+            LOG.debug("<== AtlasEnumDefStoreV1.update({}): {}", enumDefs, ret);
         }
 
-        return updatedEnumDefs;
+        return ret;
     }
 
     @Override
@@ -256,11 +246,7 @@ public class AtlasEnumDefStoreV1 implements AtlasEnumDefStore {
         }
 
         for (String name : names) {
-            try {
-                deleteByName(name);
-            } catch (AtlasBaseException ex) {
-                LOG.error("Failed to delete {}", name);
-            }
+            deleteByName(name);
         }
 
         if (LOG.isDebugEnabled()) {
@@ -294,11 +280,7 @@ public class AtlasEnumDefStoreV1 implements AtlasEnumDefStore {
         }
 
         for (String guid : guids) {
-            try {
-                deleteByGuid(guid);
-            } catch (AtlasBaseException ex) {
-                LOG.error("Failed to delete {}", guid);
-            }
+            deleteByGuid(guid);
         }
 
         if (LOG.isDebugEnabled()) {
@@ -312,12 +294,11 @@ public class AtlasEnumDefStoreV1 implements AtlasEnumDefStore {
             LOG.debug("==> AtlasEnumDefStoreV1.search({})", filter);
         }
 
-        List<AtlasEnumDef> enumDefs = new ArrayList<AtlasEnumDef>();
-
+        List<AtlasEnumDef>    enumDefs = new ArrayList<AtlasEnumDef>();
         Iterator<AtlasVertex> vertices = typeDefStore.findTypeVerticesByCategory(TypeCategory.ENUM);
 
         while(vertices.hasNext()) {
-            AtlasVertex       vertex  = vertices.next();
+            AtlasVertex  vertex  = vertices.next();
             AtlasEnumDef enumDef = toEnumDef(vertex);
 
             if (enumDef != null) {
@@ -325,9 +306,7 @@ public class AtlasEnumDefStoreV1 implements AtlasEnumDefStore {
             }
         }
 
-        if (CollectionUtils.isNotEmpty(enumDefs)) {
-            CollectionUtils.filter(enumDefs, FilterUtil.getPredicateFromSearchFilter(filter));
-        }
+        CollectionUtils.filter(enumDefs, FilterUtil.getPredicateFromSearchFilter(filter));
 
         AtlasEnumDefs ret = new AtlasEnumDefs(enumDefs);
 

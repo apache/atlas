@@ -17,7 +17,11 @@
  */
 package org.apache.atlas.type;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.ModelTestUtil;
@@ -26,6 +30,7 @@ import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
+import org.apache.atlas.type.AtlasTypeRegistry.AtlasTransientTypeRegistry;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.*;
@@ -127,8 +132,11 @@ public class TestAtlasEntityType {
         entityDefs.add(createColumnEntityDef());
 
         try {
-            typeRegistry.addTypesWithNoRefResolve(entityDefs);
-            typeRegistry.resolveReferences();
+            AtlasTransientTypeRegistry ttr = typeRegistry.createTransientTypeRegistry();
+
+            ttr.addTypes(entityDefs);
+
+            typeRegistry.commitTransientTypeRegistry(ttr);
         } catch (AtlasBaseException excp) {
             failureMsg = excp.getMessage();
         }
@@ -144,7 +152,11 @@ public class TestAtlasEntityType {
         entityDefs.add(createTableEntityDef());
 
         try {
-            typeRegistry.addTypes(entityDefs);
+            AtlasTransientTypeRegistry ttr = typeRegistry.createTransientTypeRegistry();
+
+            ttr.addTypes(entityDefs);
+
+            typeRegistry.commitTransientTypeRegistry(ttr);
         } catch (AtlasBaseException excp) {
             failureMsg = excp.getMessage();
         }
@@ -161,8 +173,11 @@ public class TestAtlasEntityType {
         entityDefs.add(createColumnEntityDef());
 
         try {
-            typeRegistry.addTypesWithNoRefResolve(entityDefs);
-            typeRegistry.resolveReferences();
+            AtlasTransientTypeRegistry ttr = typeRegistry.createTransientTypeRegistry();
+
+            ttr.addTypes(entityDefs);
+
+            typeRegistry.commitTransientTypeRegistry(ttr);
         } catch (AtlasBaseException excp) {
             failureMsg = excp.getMessage();
         }
@@ -178,7 +193,11 @@ public class TestAtlasEntityType {
         entityDefs.add(createColumnEntityDef());
 
         try {
-            typeRegistry.addTypes(entityDefs);
+            AtlasTransientTypeRegistry ttr = typeRegistry.createTransientTypeRegistry();
+
+            ttr.addTypes(entityDefs);
+
+            typeRegistry.commitTransientTypeRegistry(ttr);
         } catch (AtlasBaseException excp) {
             failureMsg = excp.getMessage();
         }

@@ -88,25 +88,6 @@ public class AtlasMapType extends AtlasType {
     public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         this.keyType   = typeRegistry.getType(keyTypeName);
         this.valueType = typeRegistry.getType(valueTypeName);
-
-        if (keyType == null) {
-            String msg = keyTypeName + ": unknown key-type for map";
-
-            LOG.error(msg);
-
-            throw new AtlasBaseException(msg);
-        }
-
-        if (valueType == null) {
-            String msg = valueTypeName + ": unknown value-type for map";
-
-            LOG.error(msg);
-
-            throw new AtlasBaseException(msg);
-        }
-
-        keyType.resolveReferences(typeRegistry);
-        valueType.resolveReferences(typeRegistry);
     }
 
     @Override

@@ -84,10 +84,12 @@ public class TestAtlasEntityDef {
         entityDef.addSuperType(newSuperType);
 
         assertTrue(entityDef.hasSuperType(newSuperType));
+
+        entityDef.removeSuperType(newSuperType);
     }
 
     @Test
-    public void testEntityDefDefRemoveElement() {
+    public void testEntityDefRemoveElement() {
         AtlasEntityDef entityDef = ModelTestUtil.newEntityDefWithSuperTypes();
 
         for (String superType : entityDef.getSuperTypes()) {
@@ -114,6 +116,9 @@ public class TestAtlasEntityDef {
         for (String superType : newSuperTypes) {
             assertTrue(entityDef.hasSuperType(superType));
         }
+
+        // restore old sypertypes
+        entityDef.setSuperTypes(oldSuperTypes);
     }
 
     @Test

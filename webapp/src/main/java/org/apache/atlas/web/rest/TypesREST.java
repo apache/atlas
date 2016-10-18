@@ -64,7 +64,7 @@ public class TypesREST {
     private HttpServletRequest httpServletRequest;
 
     @Inject
-    public TypesREST(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry atlasTypeRegistry) {
+    public TypesREST(AtlasTypeDefStore typeDefStore) {
         LOG.info("new TypesREST");
         this.typeDefStore = typeDefStore;
     }

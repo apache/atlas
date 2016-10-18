@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.model.instance;
 
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.ModelTestUtil;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.type.AtlasType;
@@ -31,7 +32,7 @@ import static org.testng.Assert.assertTrue;
 public class TestAtlasEntity {
 
     @Test
-    public void testEntitySerDe() {
+    public void testEntitySerDe() throws AtlasBaseException {
         AtlasEntityDef    entityDef    = ModelTestUtil.getEntityDef();
         AtlasTypeRegistry typeRegistry = ModelTestUtil.getTypesRegistry();
         AtlasType         dataType     = typeRegistry.getType(entityDef.getName());
@@ -50,7 +51,7 @@ public class TestAtlasEntity {
     }
 
     @Test
-    public void testEntitySerDeWithSuperType() {
+    public void testEntitySerDeWithSuperType() throws AtlasBaseException {
         AtlasEntityDef    entityDef    = ModelTestUtil.getEntityDefWithSuperType();
         AtlasTypeRegistry typeRegistry = ModelTestUtil.getTypesRegistry();
         AtlasType         dataType     = typeRegistry.getType(entityDef.getName());
@@ -69,7 +70,7 @@ public class TestAtlasEntity {
     }
 
     @Test
-    public void testEntitySerDeWithSuperTypes() {
+    public void testEntitySerDeWithSuperTypes() throws AtlasBaseException {
         AtlasEntityDef    entityDef    = ModelTestUtil.getEntityDefWithSuperTypes();
         AtlasTypeRegistry typeRegistry = ModelTestUtil.getTypesRegistry();
         AtlasType         dataType     = typeRegistry.getType(entityDef.getName());

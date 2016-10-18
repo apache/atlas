@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import com.google.common.base.Preconditions;
 
+import com.google.inject.Inject;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
@@ -31,7 +32,12 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.AtlasClassificationDefStore;
+import org.apache.atlas.repository.store.graph.AtlasEntityDefStore;
+import org.apache.atlas.repository.store.graph.AtlasEnumDefStore;
+import org.apache.atlas.repository.store.graph.AtlasStructDefStore;
 import org.apache.atlas.repository.store.graph.AtlasTypeDefGraphStore;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -57,8 +63,9 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
 
     protected final AtlasGraph atlasGraph = AtlasGraphProvider.getGraphInstance();
 
-    public AtlasTypeDefGraphStoreV1() {
-        super();
+    @Inject
+    public AtlasTypeDefGraphStoreV1(AtlasTypeRegistry typeRegistry) {
+        super(typeRegistry);
 
         LOG.info("==> AtlasTypeDefGraphStoreV1()");
 
@@ -72,15 +79,30 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
     }
 
     @Override
+    protected AtlasEnumDefStore getEnumDefStore(AtlasTypeRegistry typeRegistry) {
+        return new AtlasEnumDefStoreV1(this, typeRegistry);
+    }
+
+    @Override
+    protected AtlasStructDefStore getStructDefStore(AtlasTypeRegistry typeRegistry) {
+        return new AtlasStructDefStoreV1(this, typeRegistry);
+    }
+
+    @Override
+    protected AtlasClassificationDefStore getClassificationDefStore(AtlasTypeRegistry typeRegistry) {
+        return new AtlasClassificationDefStoreV1(this, typeRegistry);
+    }
+
+    @Override
+    protected AtlasEntityDefStore getEntityDefStore(AtlasTypeRegistry typeRegistry) {
+        return new AtlasEntityDefStoreV1(this, typeRegistry);
+    }
+
+    @Override
     public void init() throws AtlasBaseException {
         LOG.info("==> AtlasTypeDefGraphStoreV1.init()");
 
         super.init();
-
-        super.init(new AtlasEnumDefStoreV1(this),
-                   new AtlasStructDefStoreV1(this),
-                   new AtlasClassificationDefStoreV1(this),
-                   new AtlasEntityDefStoreV1(this));
 
         LOG.info("<== AtlasTypeDefGraphStoreV1.init()");
     }

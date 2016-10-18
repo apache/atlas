@@ -41,6 +41,7 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.compress.archivers.dump.DumpArchiveEntry;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +49,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -56,15 +56,11 @@ import java.util.Set;
 /**
  * StructDef store in v1 format.
  */
-public class AtlasStructDefStoreV1 implements AtlasStructDefStore {
+public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements AtlasStructDefStore {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasStructDefStoreV1.class);
 
-    private final AtlasTypeDefGraphStoreV1 typeDefStore;
-
-    public AtlasStructDefStoreV1(AtlasTypeDefGraphStoreV1 typeDefStore) {
-        super();
-
-        this.typeDefStore = typeDefStore;
+    public AtlasStructDefStoreV1(AtlasTypeDefGraphStoreV1 typeDefStore, AtlasTypeRegistry typeRegistry) {
+        super(typeDefStore, typeRegistry);
     }
 
     @Override
@@ -79,9 +75,15 @@ public class AtlasStructDefStoreV1 implements AtlasStructDefStore {
             throw new AtlasBaseException(structDef.getName() + ": type already exists");
         }
 
+        AtlasType type = typeRegistry.getType(structDef.getName());
+
+        if (type.getTypeCategory() != AtlasType.TypeCategory.STRUCT) {
+            throw new AtlasBaseException(structDef.getName() + ": not a struct type");
+        }
+
         vertex = typeDefStore.createTypeVertex(structDef);
 
-        toVertex(structDef, vertex, typeDefStore);
+        toVertex(structDef, (AtlasStructType)type, vertex, typeDefStore, typeRegistry);
 
         AtlasStructDef ret = toStructDef(vertex);
 
@@ -97,20 +99,17 @@ public class AtlasStructDefStoreV1 implements AtlasStructDefStore {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasStructDefStoreV1.create({})", structDefs);
         }
-        List<AtlasStructDef> structDefList = new LinkedList<>();
+        List<AtlasStructDef> ret = new ArrayList<>();
+
         for (AtlasStructDef structDef : structDefs) {
-            try {
-                AtlasStructDef atlasStructDef = create(structDef);
-                structDefList.add(atlasStructDef);
-            } catch (AtlasBaseException baseException) {
-                LOG.error("Failed to create {}", structDef);
-                LOG.error("Exception: {}", baseException);
-            }
+            ret.add(create(structDef));
         }
+
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasStructDefStoreV1.create({}, {})", structDefs, structDefList);
+            LOG.debug("<== AtlasStructDefStoreV1.create({}, {})", structDefs, ret);
         }
-        return structDefList;
+
+        return ret;
     }
 
     @Override
@@ -119,17 +118,17 @@ public class AtlasStructDefStoreV1 implements AtlasStructDefStore {
             LOG.debug("==> AtlasStructDefStoreV1.getAll()");
         }
 
-        List<AtlasStructDef> structDefs = new LinkedList<>();
-        Iterator<AtlasVertex> verticesByCategory = typeDefStore.findTypeVerticesByCategory(TypeCategory.STRUCT);
-        while (verticesByCategory.hasNext()) {
-            AtlasStructDef atlasStructDef = toStructDef(verticesByCategory.next());
-            structDefs.add(atlasStructDef);
+        List<AtlasStructDef> ret = new ArrayList<>();
+
+        Iterator<AtlasVertex> vertices = typeDefStore.findTypeVerticesByCategory(TypeCategory.STRUCT);
+        while (vertices.hasNext()) {
+            ret.add(toStructDef(vertices.next()));
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasStructDefStoreV1.getAll()");
+            LOG.debug("<== AtlasStructDefStoreV1.getAll(): count={}", ret.size());
         }
-        return structDefs;
+        return ret;
     }
 
     @Override
@@ -188,7 +187,13 @@ public class AtlasStructDefStoreV1 implements AtlasStructDefStore {
             throw new AtlasBaseException("no structDef exists with name " + name);
         }
 
-        toVertex(structDef, vertex);
+        AtlasType type = typeRegistry.getType(structDef.getName());
+
+        if (type.getTypeCategory() != AtlasType.TypeCategory.STRUCT) {
+            throw new AtlasBaseException(structDef.getName() + ": not a struct type");
+        }
+
+        toVertex(structDef, (AtlasStructType)type, vertex);
 
         AtlasStructDef ret = toStructDef(vertex);
 
@@ -211,7 +216,13 @@ public class AtlasStructDefStoreV1 implements AtlasStructDefStore {
             throw new AtlasBaseException("no structDef exists with guid " + guid);
         }
 
-        toVertex(structDef, vertex);
+        AtlasType type = typeRegistry.getType(structDef.getName());
+
+        if (type.getTypeCategory() != AtlasType.TypeCategory.STRUCT) {
+            throw new AtlasBaseException(structDef.getName() + ": not a struct type");
+        }
+
+        toVertex(structDef, (AtlasStructType)type, vertex);
 
         AtlasStructDef ret = toStructDef(vertex);
 
@@ -228,20 +239,17 @@ public class AtlasStructDefStoreV1 implements AtlasStructDefStore {
             LOG.debug("==> AtlasStructDefStoreV1.update({})", structDefs);
         }
 
-        List<AtlasStructDef> updatedDefs = new ArrayList<>();
+        List<AtlasStructDef> ret = new ArrayList<>();
 
         for (AtlasStructDef structDef : structDefs) {
-            try {
-                AtlasStructDef updatedDef = updateByName(structDef.getName(), structDef);
-                updatedDefs.add(updatedDef);
-            } catch (AtlasBaseException ex) {}
+            ret.add(updateByName(structDef.getName(), structDef));
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasStructDefStoreV1.update({}): {}", structDefs, updatedDefs);
+            LOG.debug("<== AtlasStructDefStoreV1.update({}): {}", structDefs, ret);
         }
 
-        return updatedDefs;
+        return ret;
     }
 
     @Override
@@ -269,12 +277,8 @@ public class AtlasStructDefStoreV1 implements AtlasStructDefStore {
             LOG.debug("==> AtlasStructDefStoreV1.deleteByNames({})", names);
         }
 
-        List<AtlasStructDef> updatedDefs = new ArrayList<>();
-
         for (String name : names) {
-            try {
-                deleteByName(name);
-            } catch (AtlasBaseException ex) {}
+            deleteByName(name);
         }
 
         if (LOG.isDebugEnabled()) {
@@ -307,12 +311,8 @@ public class AtlasStructDefStoreV1 implements AtlasStructDefStore {
             LOG.debug("==> AtlasStructDefStoreV1.deleteByGuids({})", guids);
         }
 
-        List<AtlasStructDef> updatedDefs = new ArrayList<>();
-
         for (String guid : guids) {
-            try {
-                deleteByGuid(guid);
-            } catch (AtlasBaseException ex) {}
+            deleteByGuid(guid);
         }
 
         if (LOG.isDebugEnabled()) {
@@ -326,22 +326,19 @@ public class AtlasStructDefStoreV1 implements AtlasStructDefStore {
             LOG.debug("==> AtlasStructDefStoreV1.search({})", filter);
         }
 
-        List<AtlasStructDef> structDefs = new ArrayList<AtlasStructDef>();
+        List<AtlasStructDef>  structDefs = new ArrayList<AtlasStructDef>();
+        Iterator<AtlasVertex> vertices   = typeDefStore.findTypeVerticesByCategory(TypeCategory.STRUCT);
 
-        Iterator<AtlasVertex> vertices = typeDefStore.findTypeVerticesByCategory(TypeCategory.STRUCT);
-
-        while(vertices.hasNext()) {
-            AtlasVertex       AtlasVertex  = vertices.next();
-            AtlasStructDef structDef = toStructDef(AtlasVertex);
+        while (vertices.hasNext()) {
+            AtlasVertex    vertex    = vertices.next();
+            AtlasStructDef structDef = toStructDef(vertex);
 
             if (structDef != null) {
                 structDefs.add(structDef);
             }
         }
 
-        if (CollectionUtils.isNotEmpty(structDefs)) {
-            CollectionUtils.filter(structDefs, FilterUtil.getPredicateFromSearchFilter(filter));
-        }
+        CollectionUtils.filter(structDefs, FilterUtil.getPredicateFromSearchFilter(filter));
 
         AtlasStructDefs ret = new AtlasStructDefs(structDefs);
 
@@ -352,8 +349,8 @@ public class AtlasStructDefStoreV1 implements AtlasStructDefStore {
         return ret;
     }
 
-    private void toVertex(AtlasStructDef structDef, AtlasVertex vertex) {
-        toVertex(structDef, vertex, typeDefStore);
+    private void toVertex(AtlasStructDef structDef, AtlasStructType structType, AtlasVertex vertex) {
+        toVertex(structDef, structType, vertex, typeDefStore, typeRegistry);
     }
 
     private AtlasStructDef toStructDef(AtlasVertex vertex) throws AtlasBaseException {
@@ -366,15 +363,14 @@ public class AtlasStructDefStoreV1 implements AtlasStructDefStore {
         return ret;
     }
 
-    public static void toVertex(AtlasStructDef structDef, AtlasVertex vertex, AtlasTypeDefGraphStoreV1 typeDefStore) {
-        AtlasTypeRegistry typeRegistry = typeDefStore.getTypeRegistry();
-        AtlasStructType   structType   = (AtlasStructType)typeRegistry.getType(structDef.getName());
-        List<String>      attrNames    = new ArrayList<>(structDef.getAttributeDefs().size());
+    public static void toVertex(AtlasStructDef structDef, AtlasStructType structType, AtlasVertex vertex,
+                                AtlasTypeDefGraphStoreV1 typeDefStore, AtlasTypeRegistry typeRegistry) {
+        List<String> attrNames = new ArrayList<>(structDef.getAttributeDefs().size());
 
         for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
             String propertyKey = AtlasGraphUtilsV1.getPropertyKey(structDef, attributeDef.getName());
 
-            AtlasGraphUtilsV1.setProperty(vertex, propertyKey, toJsonFromAttributeDef(attributeDef, structType, typeRegistry));
+            AtlasGraphUtilsV1.setProperty(vertex, propertyKey, toJsonFromAttributeDef(attributeDef, structType));
 
             attrNames.add(attributeDef.getName());
             addReferencesForAttribute(vertex, attributeDef, typeDefStore);
@@ -382,8 +378,7 @@ public class AtlasStructDefStoreV1 implements AtlasStructDefStore {
         AtlasGraphUtilsV1.setProperty(vertex, AtlasGraphUtilsV1.getPropertyKey(structDef), attrNames);
     }
 
-    public static AtlasStructDef toStructDef(AtlasVertex              vertex,
-                                             AtlasStructDef           structDef,
+    public static AtlasStructDef toStructDef(AtlasVertex vertex, AtlasStructDef structDef,
                                              AtlasTypeDefGraphStoreV1 typeDefStore) throws AtlasBaseException {
         AtlasStructDef ret = (structDef != null) ? structDef :new AtlasStructDef();
 
@@ -406,8 +401,7 @@ public class AtlasStructDefStoreV1 implements AtlasStructDefStore {
         return ret;
     }
 
-    private static void addReferencesForAttribute(AtlasVertex              vertex,
-                                                  AtlasAttributeDef        attributeDef,
+    private static void addReferencesForAttribute(AtlasVertex vertex, AtlasAttributeDef attributeDef,
                                                   AtlasTypeDefGraphStoreV1 typeDefStore) {
         Set<String> referencedTypeNames = AtlasTypeUtil.getReferencedTypeNames(attributeDef.getTypeName());
 
@@ -415,36 +409,34 @@ public class AtlasStructDefStoreV1 implements AtlasStructDefStore {
 
         for (String referencedTypeName : referencedTypeNames) {
             if (!AtlasTypeUtil.isBuiltInType(referencedTypeName)) {
-                AtlasVertex referencedTypeAtlasVertex = typeDefStore.findTypeVertexByName(referencedTypeName);
+                AtlasVertex referencedTypeVertex = typeDefStore.findTypeVertexByName(referencedTypeName);
 
-                if (referencedTypeAtlasVertex == null) {
-                    // create atlasVertex?
+                if (referencedTypeVertex == null) {
+                    // create vertex?
                 }
 
-                if (referencedTypeAtlasVertex != null) {
+                if (referencedTypeVertex != null) {
                     String label = AtlasGraphUtilsV1.getEdgeLabel(typeName, attributeDef.getName());
 
-                    typeDefStore.getOrCreateEdge(vertex, referencedTypeAtlasVertex, label);
+                    typeDefStore.getOrCreateEdge(vertex, referencedTypeVertex, label);
                 }
             }
         }
     }
 
-    private static String toJsonFromAttributeDef(AtlasAttributeDef attributeDef,
-                                                 AtlasStructType   structType,
-                                                 AtlasTypeRegistry typeRegistry) {
+    private static String toJsonFromAttributeDef(AtlasAttributeDef attributeDef, AtlasStructType structType) {
         boolean isForeignKey      = structType.isForeignKeyAttribute(attributeDef.getName());
         boolean isMappedFromRef   = structType.isMappedFromRefAttribute(attributeDef.getName());
         String  reverseAttribName = null;
 
         if (isForeignKey) { // check if the referenced entity has foreignKeyRef to this attribute
-            AtlasType attribType = typeRegistry.getType(attributeDef.getTypeName());
+            AtlasType attribType = structType.getAttributeType(attributeDef.getTypeName());
 
-            if (attribType instanceof AtlasArrayType) {
+            if (attribType.getTypeCategory() == AtlasType.TypeCategory.ARRAY) {
                 attribType = ((AtlasArrayType)attribType).getElementType();
             }
 
-            if (attribType instanceof AtlasEntityType) {
+            if (attribType.getTypeCategory() == AtlasType.TypeCategory.ENTITY) {
                 reverseAttribName = ((AtlasStructType)attribType).getMappedFromRefAttribute(structType.getTypeName(),
                                                                                             attributeDef.getName());
             }
@@ -491,73 +483,67 @@ public class AtlasStructDefStoreV1 implements AtlasStructDefStore {
             }
         }
 
-        if (! AtlasTypeUtil.isBuiltInType(attrTypeName)) {
+        if (!AtlasTypeUtil.isBuiltInType(attrTypeName)) {
             AtlasVertex attributeType = typeDefStore.findTypeVertexByName(attrTypeName);
 
             // check for isComposite/reverseAttributeName for entity types
             if (attributeType != null && typeDefStore.isTypeVertex(attributeType, TypeCategory.CLASS)) {
-                String reverseAttribName = (String) attribInfo.get("reverseAttributeName");
-                Boolean isComposite      = (Boolean) attribInfo.get("isComposite");
+                String  reverseAttribName = (String) attribInfo.get("reverseAttributeName");
+                Boolean isComposite       = (Boolean) attribInfo.get("isComposite");
 
-                // find the attribute that refers to this attribute
                 if (StringUtils.isNotBlank(reverseAttribName) || isComposite) {
                     if (AtlasTypeUtil.isMapType(attrTypeName)) {
                         throw new AtlasBaseException(structDef.getName() + "." + ret.getName()
                                                      + ": constraints not supported on map type " + attrTypeName);
                     }
 
-                    if (attributeType != null) {
-                        String refAttributeName = null;
-
-                        List<String> attrNames = attributeType.getProperty(
+                    String       refAttributeName = null;
+                    List<String> attrNames        = attributeType.getProperty(
                                                             AtlasGraphUtilsV1.getPropertyKey(attrTypeName), List.class);
 
-                        if (CollectionUtils.isNotEmpty(attrNames)) {
-                            for (String attrName : attrNames) {
-                                String attribJson = attributeType.getProperty(
+                    if (CollectionUtils.isNotEmpty(attrNames)) {
+                        for (String attrName : attrNames) {
+                            String attribJson = attributeType.getProperty(
                                                 AtlasGraphUtilsV1.getPropertyKey(attrTypeName, attrName), String.class);
 
-                                Map    refAttrInfo            = AtlasType.fromJson(attribJson, Map.class);
-                                String refAttribType          = (String) refAttrInfo.get("dataType");
-                                String refAttribRevAttribName = (String) refAttrInfo.get("reverseAttributeName");
+                            Map    refAttrInfo            = AtlasType.fromJson(attribJson, Map.class);
+                            String refAttribType          = (String) refAttrInfo.get("dataType");
+                            String refAttribRevAttribName = (String) refAttrInfo.get("reverseAttributeName");
 
-                                if (StringUtils.equals(refAttribType, structDef.getName()) &&
-                                        StringUtils.equals(refAttribRevAttribName, ret.getName())) {
-                                    refAttributeName = (String) refAttrInfo.get("name");
+                            if (StringUtils.equals(refAttribType, structDef.getName()) &&
+                                StringUtils.equals(refAttribRevAttribName, ret.getName())) {
+                                refAttributeName = (String) refAttrInfo.get("name");
 
-                                    break;
-                                }
+                                break;
                             }
                         }
+                    }
 
-                        if (isComposite) {
-                            if (StringUtils.isNotBlank(refAttributeName)) { // ex: hive_table.columns, hive_column.table
-                                Map<String, Object> params = new HashMap<String, Object>();
-                                params.put(AtlasConstraintDef.CONSTRAINT_PARAM_REF_ATTRIBUTE, refAttributeName);
+                    if (isComposite) {
+                        if (StringUtils.isNotBlank(refAttributeName)) { // ex: hive_table.columns, hive_column.table
+                            Map<String, Object> params = new HashMap<String, Object>();
+                            params.put(AtlasConstraintDef.CONSTRAINT_PARAM_REF_ATTRIBUTE, refAttributeName);
 
-                                ret.addConstraint(new AtlasConstraintDef(CONSTRAINT_TYPE_MAPPED_FROM_REF, params));
-                            } else { // ex: hive_table.partitionKeys, with no reverseAttribute-reference
-                                ret.addConstraint(new AtlasConstraintDef(CONSTRAINT_TYPE_FOREIGN_KEY));
-                            }
+                            ret.addConstraint(new AtlasConstraintDef(CONSTRAINT_TYPE_MAPPED_FROM_REF, params));
+                        } else { // ex: hive_table.partitionKeys, with no reverseAttribute-reference
+                            ret.addConstraint(new AtlasConstraintDef(CONSTRAINT_TYPE_FOREIGN_KEY));
                         }
+                    }
 
-                        if (StringUtils.isNotBlank(reverseAttribName)) { // ex: hive_column.table
-                            Map<String, Object> params = new HashMap<>();
-                            params.put(CONSTRAINT_PARAM_ON_DELETE, CONSTRAINT_PARAM_VAL_CASCADE);
+                    if (StringUtils.isNotBlank(reverseAttribName)) { // ex: hive_column.table
+                        Map<String, Object> params = new HashMap<>();
+                        params.put(CONSTRAINT_PARAM_ON_DELETE, CONSTRAINT_PARAM_VAL_CASCADE);
 
-                            ret.addConstraint(new AtlasConstraintDef(CONSTRAINT_TYPE_FOREIGN_KEY, params));
-                        }
+                        ret.addConstraint(new AtlasConstraintDef(CONSTRAINT_TYPE_FOREIGN_KEY, params));
                     }
                 }
             }
         }
 
-
-        Map     multiplicity      = AtlasType.fromJson((String) attribInfo.get("multiplicity"), Map.class);
-        Number  minCount          = (Number) multiplicity.get("lower");
-        Number  maxCount          = (Number) multiplicity.get("upper");
-        Boolean isUnique          = (Boolean) multiplicity.get("isUnique");
-
+        Map     multiplicity = AtlasType.fromJson((String) attribInfo.get("multiplicity"), Map.class);
+        Number  minCount     = (Number) multiplicity.get("lower");
+        Number  maxCount     = (Number) multiplicity.get("upper");
+        Boolean isUnique     = (Boolean) multiplicity.get("isUnique");
 
         if (minCount == null || minCount.intValue() == 0) {
             ret.setOptional(true);

@@ -103,16 +103,6 @@ public class AtlasArrayType extends AtlasType {
     @Override
     public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         elementType = typeRegistry.getType(elementTypeName);
-
-        if (elementType == null) {
-            String msg = elementTypeName + ": unknown element-type for array";
-
-            LOG.error(msg);
-
-            throw new AtlasBaseException(msg);
-        }
-
-        elementType.resolveReferences(typeRegistry);
     }
 
     @Override

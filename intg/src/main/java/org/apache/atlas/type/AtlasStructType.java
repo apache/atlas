@@ -103,11 +103,6 @@ public class AtlasStructType extends AtlasType {
         for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
             AtlasType attrType = typeRegistry.getType(attributeDef.getTypeName());
 
-            if (attrType == null) {
-                throw new AtlasBaseException(attributeDef.getTypeName() + ": unknown type for attribute "
-                                             + structDef.getName() + "." + attributeDef.getName());
-            }
-
             resolveConstraints(attributeDef, attrType);
 
             Cardinality cardinality = attributeDef.getCardinality();
@@ -407,8 +402,8 @@ public class AtlasStructType extends AtlasType {
 
         if (StringUtils.isBlank(refAttribName)) {
             throw new AtlasBaseException(getTypeName() + "." + attribDef.getName() + ": "
-                        + CONSTRAINT_TYPE_MAPPED_FROM_REF + " invalid constraint. missing parameter "
-                        + CONSTRAINT_PARAM_REF_ATTRIBUTE);
+                        + " invalid constraint. missing parameter " + CONSTRAINT_PARAM_REF_ATTRIBUTE
+                        + " in " + CONSTRAINT_TYPE_MAPPED_FROM_REF + ". params=" + constraintDef.getParams());
         }
 
         AtlasStructType   structType = (AtlasStructType)attribType;
@@ -421,8 +416,8 @@ public class AtlasStructType extends AtlasType {
         }
 
         if (!StringUtils.equals(getTypeName(), refAttrib.getTypeName())) {
-            throw new AtlasBaseException(getTypeName() + "." + attribDef.getName() + ": invalid constraint. Datatype of"
-                    + CONSTRAINT_PARAM_REF_ATTRIBUTE + " " + structType.getTypeName() + "." + refAttribName
+            throw new AtlasBaseException(getTypeName() + "." + attribDef.getName() + ": invalid constraint. Datatype"
+                    + " of " + CONSTRAINT_PARAM_REF_ATTRIBUTE + " " + structType.getTypeName() + "." + refAttribName
                     + " should be " + getTypeName() + ", but found " + refAttrib.getTypeName());
         }
 

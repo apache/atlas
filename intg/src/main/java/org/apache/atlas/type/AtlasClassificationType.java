@@ -70,7 +70,7 @@ public class AtlasClassificationType extends AtlasStructType {
         for (String superTypeName : classificationDef.getSuperTypes()) {
             AtlasType superType = typeRegistry.getType(superTypeName);
 
-            if (superType != null && superType instanceof AtlasClassificationType) {
+            if (superType instanceof AtlasClassificationType) {
                 AtlasClassificationType superClassificationType = (AtlasClassificationType)superType;
 
                 superClassificationType.resolveReferences(typeRegistry);
@@ -82,13 +82,8 @@ public class AtlasClassificationType extends AtlasStructType {
                     allS.addAll(superClassificationType.getAllSuperTypes());
                 }
             } else {
-                String msg = superTypeName + ((superType == null) ? ": unknown" : ": incompatible");
-
-                msg += (" supertype in classification " + classificationDef.getName());
-
-                LOG.error(msg);
-
-                throw new AtlasBaseException(msg);
+                throw new AtlasBaseException(superTypeName + ": incompatible supertype in classification "
+                                             + classificationDef.getName());
             }
         }
 
