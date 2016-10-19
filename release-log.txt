@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1183 UI: help link should point to atlas website (kevalbhatt via shwethags)
 ATLAS-1182 Hive Column level lineage docs (svimal2106 via shwethags)
 ATLAS-1230 updated AtlasTypeRegistry to support batch, atomic type updates (mneethiraj)
 ATLAS-1229 Add TypeCategory and methods to access attribute definitiions in AtlasTypes (sumasai)
