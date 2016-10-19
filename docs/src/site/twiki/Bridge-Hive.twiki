@@ -71,6 +71,43 @@ The following properties in <atlas-conf>/atlas-application.properties control th
 
 Refer [[Configuration][Configuration]] for notification related configurations
 
+---++ Column Level Lineage
+
+Starting from 0.8-incubating version of Atlas, Column level lineage is captured in Atlas. Below are the details
+
+---+++ Model
+   * !ColumnLineageProcess type is a subclass of Process
+
+   * This relates an output Column to a set of input Columns or the Input Table
+
+   * The Lineage also captures the kind of Dependency: currently the values are SIMPLE, EXPRESSION, SCRIPT
+      * A SIMPLE dependency means the output column has the same value as the input
+      * An EXPRESSION dependency means the output column is transformed by some expression in the runtime(for e.g. a Hive SQL expression) on the Input Columns.
+      * SCRIPT means that the output column is transformed by a user provided script.
+
+   * In case of EXPRESSION dependency the expression attribute contains the expression in string form
+
+   * Since Process links input and output !DataSets, we make Column a subclass of !DataSet
+
+---+++ Examples
+For a simple CTAS below:
+<verbatim>
+create table t2 as select id, name from T1
+</verbatim>
+
+The lineage is captured as
+
+<img src="images/column_lineage_ex1.png" height="200" width="400" />
+
+
+
+---+++ Extracting Lineage from Hive commands
+  * The !HiveHook maps the !LineageInfo in the !HookContext to Column lineage instances
+
+  * The !LineageInfo in Hive provides column-level lineage for the final !FileSinkOperator, linking them to the input columns in the Hive Query
+
+---+++ NOTE
+Column level lineage works with Hive version 1.2.1 after the patch for <a href="https://issues.apache.org/jira/browse/HIVE-13112">HIVE-13112</a> is applied to Hive source
 
 ---++ Limitations
    * Since database name, table name and column names are case insensitive in hive, the corresponding names in entities are lowercase. So, any search APIs should use lowercase while querying on the entity names
