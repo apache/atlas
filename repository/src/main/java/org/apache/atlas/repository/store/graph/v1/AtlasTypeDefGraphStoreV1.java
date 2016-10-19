@@ -198,6 +198,14 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
         return ret;
     }
 
+    public void deleteTypeVertexOutEdges(AtlasVertex vertex) throws AtlasBaseException {
+        Iterable<AtlasEdge> edges = vertex.getEdges(AtlasEdgeDirection.OUT);
+
+        for (AtlasEdge edge : edges) {
+            atlasGraph.removeEdge(edge);
+        }
+    }
+
     public void deleteTypeVertex(AtlasVertex vertex) throws AtlasBaseException {
         Iterator<AtlasEdge> inEdges = vertex.getEdges(AtlasEdgeDirection.IN).iterator();
 
@@ -303,10 +311,10 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
         return ret;
     }
 
-    public void createSuperTypeEdges(AtlasVertex vertex, Set<String> superTypes) {
+    public void createSuperTypeEdges(AtlasVertex vertex, Set<String> superTypes, TypeCategory typeCategory) {
         if (CollectionUtils.isNotEmpty(superTypes)) {
             for (String superType : superTypes) {
-                AtlasVertex superTypeVertex = findTypeVertexByNameAndCategory(superType, TypeCategory.CLASS);
+                AtlasVertex superTypeVertex = findTypeVertexByNameAndCategory(superType, typeCategory);
 
                 getOrCreateEdge(vertex, superTypeVertex, AtlasGraphUtilsV1.SUPERTYPE_EDGE_LABEL);
             }

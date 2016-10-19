@@ -30,6 +30,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,43 +49,56 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
     }
 
     @Override
-    public AtlasEntityDef create(AtlasEntityDef entityDef) throws AtlasBaseException {
+    public AtlasVertex preCreate(AtlasEntityDef entityDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEntityDefStoreV1.create({})", entityDef);
+            LOG.debug("==> AtlasEntityDefStoreV1.preCreate({})", entityDef);
         }
 
-        AtlasVertex vertex = typeDefStore.findTypeVertexByName(entityDef.getName());
+        AtlasType type = typeRegistry.getType(entityDef.getName());
 
-        if (vertex != null) {
+        if (type.getTypeCategory() != AtlasType.TypeCategory.ENTITY) {
+            throw new AtlasBaseException(entityDef.getName() + ": not an entity type");
+        }
+
+        AtlasVertex ret = typeDefStore.findTypeVertexByName(entityDef.getName());
+
+        if (ret != null) {
             throw new AtlasBaseException(entityDef.getName() + ": type already exists");
         }
 
-        vertex = typeDefStore.createTypeVertex(entityDef);
+        ret = typeDefStore.createTypeVertex(entityDef);
 
-        toVertex(entityDef, vertex);
-
-        AtlasEntityDef ret = toEntityDef(vertex);
+        updateVertexPreCreate(entityDef, (AtlasEntityType)type, ret);
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEntityDefStoreV1.create({}): {}", entityDef, ret);
+            LOG.debug("<== AtlasEntityDefStoreV1.preCreate({}): {}", entityDef, ret);
         }
 
         return ret;
     }
 
     @Override
-    public List<AtlasEntityDef> create(List<AtlasEntityDef> entityDefs) throws AtlasBaseException {
+    public AtlasEntityDef create(AtlasEntityDef entityDef, Object preCreateResult) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEntityDefStoreV1.create({})", entityDefs);
+            LOG.debug("==> AtlasEntityDefStoreV1.create({}, {})", entityDef, preCreateResult);
         }
-        List<AtlasEntityDef> ret = new ArrayList<>();
 
-        for (AtlasEntityDef entityDef : entityDefs) {
-            ret.add(create(entityDef));
+        AtlasVertex vertex;
+
+        if (preCreateResult == null || !(preCreateResult instanceof AtlasVertex)) {
+            vertex = preCreate(entityDef);
+        } else {
+            vertex = (AtlasVertex)preCreateResult;
         }
+
+        updateVertexAddReferences(entityDef, vertex);
+
+        AtlasEntityDef ret = toEntityDef(vertex);
+
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEntityDefStoreV1.create({}, {})", entityDefs, ret);
+            LOG.debug("<== AtlasEntityDefStoreV1.create({}, {}): {}", entityDef, preCreateResult, ret);
         }
+
         return ret;
     }
 
@@ -153,9 +167,31 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
     }
 
     @Override
+    public AtlasEntityDef update(AtlasEntityDef entityDef) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> AtlasEntityDefStoreV1.update({})", entityDef);
+        }
+
+        AtlasEntityDef ret = StringUtils.isNotBlank(entityDef.getName()) ? updateByName(entityDef.getName(), entityDef)
+                                                                         : updateByGuid(entityDef.getGuid(), entityDef);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AtlasEntityDefStoreV1.update({}): {}", entityDef, ret);
+        }
+
+        return ret;
+    }
+
+    @Override
     public AtlasEntityDef updateByName(String name, AtlasEntityDef entityDef) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasEntityDefStoreV1.updateByName({}, {})", name, entityDef);
+        }
+
+        AtlasType type = typeRegistry.getType(entityDef.getName());
+
+        if (type.getTypeCategory() != AtlasType.TypeCategory.ENTITY) {
+            throw new AtlasBaseException(entityDef.getName() + ": not an entity type");
         }
 
         AtlasVertex vertex = typeDefStore.findTypeVertexByNameAndCategory(name, TypeCategory.CLASS);
@@ -164,7 +200,8 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
             throw new AtlasBaseException("no entityDef exists with name " + name);
         }
 
-        toVertex(entityDef, vertex);
+        updateVertexPreUpdate(entityDef, (AtlasEntityType)type, vertex);
+        updateVertexAddReferences(entityDef, vertex);
 
         AtlasEntityDef ret = toEntityDef(vertex);
 
@@ -181,13 +218,20 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
             LOG.debug("==> AtlasEntityDefStoreV1.updateByGuid({})", guid);
         }
 
+        AtlasType type = typeRegistry.getTypeByGuid(guid);
+
+        if (type.getTypeCategory() != AtlasType.TypeCategory.ENTITY) {
+            throw new AtlasBaseException(entityDef.getName() + ": not an entity type");
+        }
+
         AtlasVertex vertex = typeDefStore.findTypeVertexByGuidAndCategory(guid, TypeCategory.CLASS);
 
         if (vertex == null) {
             throw new AtlasBaseException("no entityDef exists with guid " + guid);
         }
 
-        toVertex(entityDef, vertex);
+        updateVertexPreUpdate(entityDef, (AtlasEntityType)type, vertex);
+        updateVertexAddReferences(entityDef, vertex);
 
         AtlasEntityDef ret = toEntityDef(vertex);
 
@@ -199,89 +243,86 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
     }
 
     @Override
-    public List<AtlasEntityDef> update(List<AtlasEntityDef> entityDefs) throws AtlasBaseException {
+    public AtlasVertex preDeleteByName(String name) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEntityDefStoreV1.update({})", entityDefs);
+            LOG.debug("==> AtlasEntityDefStoreV1.preDeleteByName({})", name);
         }
 
-        List<AtlasEntityDef> ret = new ArrayList<>();
+        AtlasVertex ret = typeDefStore.findTypeVertexByNameAndCategory(name, TypeCategory.CLASS);
 
-        for (AtlasEntityDef entityDef : entityDefs) {
-            ret.add(updateByName(entityDef.getName(), entityDef));
+        if (ret == null) {
+            throw new AtlasBaseException("no entityDef exists with name " + name);
         }
 
+        typeDefStore.deleteTypeVertexOutEdges(ret);
+
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEntityDefStoreV1.update({}): {}", entityDefs, ret);
+            LOG.debug("<== AtlasEntityDefStoreV1.preDeleteByName({}): {}", name, ret);
         }
 
         return ret;
     }
 
     @Override
-    public void deleteByName(String name) throws AtlasBaseException {
+    public void deleteByName(String name, Object preDeleteResult) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEntityDefStoreV1.deleteByName({})", name);
+            LOG.debug("==> AtlasEntityDefStoreV1.deleteByName({}, {})", name, preDeleteResult);
         }
 
-        AtlasVertex vertex = typeDefStore.findTypeVertexByNameAndCategory(name, TypeCategory.CLASS);
+        AtlasVertex vertex;
 
-        if (vertex == null) {
-            throw new AtlasBaseException("no entityDef exists with name " + name);
+        if (preDeleteResult == null || !(preDeleteResult instanceof AtlasVertex)) {
+            vertex = preDeleteByName(name);
+        } else {
+            vertex = (AtlasVertex)preDeleteResult;
         }
 
         typeDefStore.deleteTypeVertex(vertex);
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEntityDefStoreV1.deleteByName({})", name);
+            LOG.debug("<== AtlasEntityDefStoreV1.deleteByName({}, {})", name, preDeleteResult);
         }
     }
 
     @Override
-    public void deleteByNames(List<String> names) throws AtlasBaseException {
+    public AtlasVertex preDeleteByGuid(String guid) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEntityDefStoreV1.deleteByNames({})", names);
+            LOG.debug("==> AtlasEntityDefStoreV1.preDeleteByGuid({})", guid);
         }
 
-        for (String name : names) {
-            deleteByName(name);
-        }
+        AtlasVertex ret = typeDefStore.findTypeVertexByGuidAndCategory(guid, TypeCategory.CLASS);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEntityDefStoreV1.deleteByNames({})", names);
-        }
-    }
-
-    @Override
-    public void deleteByGuid(String guid) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEntityDefStoreV1.deleteByGuid({})", guid);
-        }
-
-        AtlasVertex vertex = typeDefStore.findTypeVertexByGuidAndCategory(guid, TypeCategory.CLASS);
-
-        if (vertex == null) {
+        if (ret == null) {
             throw new AtlasBaseException("no entityDef exists with guid " + guid);
         }
 
-        typeDefStore.deleteTypeVertex(vertex);
+        typeDefStore.deleteTypeVertexOutEdges(ret);
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEntityDefStoreV1.deleteByGuid({})", guid);
+            LOG.debug("<== AtlasEntityDefStoreV1.preDeleteByGuid({}): {}", guid, ret);
         }
+
+        return ret;
     }
 
     @Override
-    public void deleteByGuids(List<String> guids) throws AtlasBaseException {
+    public void deleteByGuid(String guid, Object preDeleteResult) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEntityDefStoreV1.deleteByGuids({})", guids);
+            LOG.debug("==> AtlasEntityDefStoreV1.deleteByGuid({}, {})", guid, preDeleteResult);
         }
 
-        for (String guid : guids) {
-            deleteByGuid(guid);
+        AtlasVertex vertex;
+
+        if (preDeleteResult == null || !(preDeleteResult instanceof AtlasVertex)) {
+            vertex = preDeleteByGuid(guid);
+        } else {
+            vertex = (AtlasVertex)preDeleteResult;
         }
 
+        typeDefStore.deleteTypeVertex(vertex);
+
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEntityDefStoreV1.deleteByGuids({})", guids);
+            LOG.debug("<== AtlasEntityDefStoreV1.deleteByGuid({}, {})", guid, preDeleteResult);
         }
     }
 
@@ -291,7 +332,7 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
             LOG.debug("==> AtlasEntityDefStoreV1.search({})", filter);
         }
 
-        List<AtlasEntityDef>  entityDefs = new ArrayList<AtlasEntityDef>();
+        List<AtlasEntityDef>  entityDefs = new ArrayList<>();
         Iterator<AtlasVertex> vertices   = typeDefStore.findTypeVerticesByCategory(TypeCategory.CLASS);
 
         while(vertices.hasNext()) {
@@ -314,16 +355,18 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         return ret;
     }
 
-    private void toVertex(AtlasEntityDef entityDef, AtlasVertex vertex) throws AtlasBaseException {
-        AtlasType type = typeRegistry.getType(entityDef.getName());
+    private void updateVertexPreCreate(AtlasEntityDef entityDef, AtlasEntityType entityType, AtlasVertex vertex) {
+        AtlasStructDefStoreV1.updateVertexPreCreate(entityDef, entityType, vertex);
+    }
 
-        if (type.getTypeCategory() != AtlasType.TypeCategory.ENTITY) {
-            throw new AtlasBaseException(entityDef.getName() + ": not a entity type");
-        }
+    private void updateVertexPreUpdate(AtlasEntityDef entityDef, AtlasEntityType entityType, AtlasVertex vertex) {
+        AtlasStructDefStoreV1.updateVertexPreUpdate(entityDef, entityType, vertex);
+    }
 
-        AtlasStructDefStoreV1.toVertex(entityDef, (AtlasEntityType)type, vertex, typeDefStore, typeRegistry);
+    private void updateVertexAddReferences(AtlasEntityDef  entityDef, AtlasVertex vertex) throws AtlasBaseException {
+        AtlasStructDefStoreV1.updateVertexAddReferences(entityDef, vertex, typeDefStore);
 
-        typeDefStore.createSuperTypeEdges(vertex, entityDef.getSuperTypes());
+        typeDefStore.createSuperTypeEdges(vertex, entityDef.getSuperTypes(), TypeCategory.CLASS);
     }
 
     private AtlasEntityDef toEntityDef(AtlasVertex vertex) throws AtlasBaseException {

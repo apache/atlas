@@ -33,6 +33,7 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.web.util.Servlets;
+import org.apache.http.annotation.Experimental;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -383,6 +384,7 @@ public class TypesREST {
     @Path("/entitydef/name/{name}")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Experimental
     public AtlasEntityDef updateEntityDefByName(@PathParam("name") String name, AtlasEntityDef entityDef) throws Exception {
         AtlasEntityDef ret = null;
 
@@ -395,6 +397,7 @@ public class TypesREST {
     @Path("/entitydef/guid/{guid}")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Experimental
     public AtlasEntityDef updateEntityDefByGuid(@PathParam("guid") String guid, AtlasEntityDef entityDef) throws Exception {
         AtlasEntityDef ret = null;
 
@@ -406,6 +409,7 @@ public class TypesREST {
     @DELETE
     @Path("/entitydef/name/{name}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Experimental
     public void deleteEntityDef(@PathParam("name") String name) throws Exception {
         typeDefStore.deleteEntityDefByName(name);
     }
@@ -413,6 +417,7 @@ public class TypesREST {
     @DELETE
     @Path("/entitydef/guid/{guid}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Experimental
     public void deleteEntityDefByGuid(@PathParam("guid") String guid) throws Exception {
         typeDefStore.deleteEntityDefByGuid(guid);
     }
@@ -488,6 +493,7 @@ public class TypesREST {
     @Path("/typedefs")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Experimental
     public AtlasTypesDef updateAtlasTypeDefs(final AtlasTypesDef typesDef) throws Exception {
         AtlasTypesDef ret = null;
 
@@ -498,6 +504,24 @@ public class TypesREST {
         }
 
         return ret;
+    }
+
+    /**
+     * Bulk delete API for all types
+     * @param typesDef A composite object that captures all types to be deleted
+     * @throws Exception
+     */
+    @DELETE
+    @Path("/typedefs")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Experimental
+    public void deleteAtlasTypeDefs(final AtlasTypesDef typesDef) {
+        try {
+            typeDefStore.deleteTypesDef(typesDef);
+        } catch (AtlasBaseException ex) {
+            throw new WebApplicationException(Servlets.getErrorResponse(ex, Response.Status.NOT_MODIFIED));
+        }
     }
 
     /**

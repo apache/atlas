@@ -40,7 +40,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -197,6 +196,33 @@ public class AtlasTypeRegistry {
             classificationDefs = new TypeDefCache<>(other.classificationDefs, allTypes);
             entityDefs         = new TypeDefCache<>(other.entityDefs, allTypes);
         }
+
+        void updateGuid(String typeName, String guid) {
+            if (typeName != null) {
+                enumDefs.updateGuid(typeName, guid);
+                structDefs.updateGuid(typeName, guid);
+                classificationDefs.updateGuid(typeName, guid);
+                entityDefs.updateGuid(typeName, guid);
+            }
+        }
+
+        void removeByGuid(String guid) {
+            if (guid != null) {
+                enumDefs.removeTypeDefByGuid(guid);
+                structDefs.removeTypeDefByGuid(guid);
+                classificationDefs.removeTypeDefByGuid(guid);
+                entityDefs.removeTypeDefByGuid(guid);
+            }
+        }
+
+        void removeByName(String typeName) {
+            if (typeName != null) {
+                enumDefs.removeTypeDefByName(typeName);
+                structDefs.removeTypeDefByName(typeName);
+                classificationDefs.removeTypeDefByName(typeName);
+                entityDefs.removeTypeDefByName(typeName);
+            }
+        }
     }
 
     public static class AtlasTransientTypeRegistry extends AtlasTypeRegistry {
@@ -224,6 +250,19 @@ public class AtlasTypeRegistry {
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== AtlasTypeRegistry.addType({})", typeDef);
+            }
+        }
+
+        public void updateGuid(String typeName, String guid) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("==> AtlasTypeRegistry.updateGuid({}, {})", typeName, guid);
+            }
+
+            registryData.updateGuid(typeName, guid);
+
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== AtlasTypeRegistry.updateGuid({}, {})", typeName, guid);
             }
         }
 
@@ -351,10 +390,7 @@ public class AtlasTypeRegistry {
             }
 
             if (guid != null) {
-                registryData.enumDefs.removeTypeDefByGuid(guid);
-                registryData.structDefs.removeTypeDefByGuid(guid);
-                registryData.classificationDefs.removeTypeDefByGuid(guid);
-                registryData.entityDefs.removeTypeDefByGuid(guid);
+                registryData.removeByGuid(guid);
 
                 resolveReferences();
             }
@@ -370,10 +406,7 @@ public class AtlasTypeRegistry {
             }
 
             if (name != null) {
-                registryData.enumDefs.removeTypeDefByName(name);
-                registryData.structDefs.removeTypeDefByName(name);
-                registryData.classificationDefs.removeTypeDefByName(name);
-                registryData.entityDefs.removeTypeDefByName(name);
+                registryData.removeByName(name);
 
                 resolveReferences();
             }
@@ -390,10 +423,6 @@ public class AtlasTypeRegistry {
             }
 
             if (typeDef != null) {
-                if (StringUtils.isBlank(typeDef.getGuid())) {
-                    typeDef.setGuid(UUID.randomUUID().toString());
-                }
-
                 if (typeDef.getClass().equals(AtlasEnumDef.class)) {
                     AtlasEnumDef enumDef = (AtlasEnumDef) typeDef;
 
@@ -599,6 +628,20 @@ class TypeCache {
         return ret;
     }
 
+    public void updateGuid(String typeName, String currGuid, String newGuid) {
+        if (currGuid != null) {
+            typeGuidMap.remove(currGuid);
+        }
+
+        if (typeName != null && newGuid != null) {
+            AtlasType type = typeNameMap.get(typeName);
+
+            if (type != null) {
+                typeGuidMap.put(newGuid, type);
+            }
+        }
+    }
+
     public void removeTypeByGuid(String guid) {
         if (guid != null) {
             typeGuidMap.remove(guid);
@@ -657,6 +700,30 @@ class TypeDefCache<T extends AtlasBaseTypeDef> {
         T ret = name != null ? typeDefNameMap.get(name) : null;
 
         return ret;
+    }
+
+    public void updateGuid(String typeName, String newGuid) {
+        if (typeName != null) {
+            T typeDef = typeDefNameMap.get(typeName);
+
+            if (typeDef != null) {
+                String currGuid = typeDef.getGuid();
+
+                if (!StringUtils.equals(currGuid, newGuid)) {
+                    if (currGuid != null) {
+                        typeDefGuidMap.remove(currGuid);
+                    }
+
+                    typeDef.setGuid(newGuid);
+
+                    if (newGuid != null) {
+                        typeDefGuidMap.put(newGuid, typeDef);
+                    }
+
+                    typeCache.updateGuid(typeName, currGuid, newGuid);
+                }
+            }
+        }
     }
 
     public void removeTypeDefByGuid(String guid) {

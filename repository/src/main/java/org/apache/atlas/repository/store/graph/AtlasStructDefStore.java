@@ -28,9 +28,9 @@ import java.util.List;
  * Interface for graph persistence store for AtlasStructDef
  */
 public interface AtlasStructDefStore {
-    AtlasStructDef create(AtlasStructDef structDef) throws AtlasBaseException;
+    Object preCreate(AtlasStructDef structDef) throws AtlasBaseException;
 
-    List<AtlasStructDef> create(List<AtlasStructDef> structDefs) throws AtlasBaseException;
+    AtlasStructDef create(AtlasStructDef structDef, Object preCreateResult) throws AtlasBaseException;
 
     List<AtlasStructDef> getAll() throws AtlasBaseException;
 
@@ -38,19 +38,19 @@ public interface AtlasStructDefStore {
 
     AtlasStructDef getByGuid(String guid) throws AtlasBaseException;
 
+    AtlasStructDef update(AtlasStructDef structDef) throws AtlasBaseException;
+
     AtlasStructDef updateByName(String name, AtlasStructDef structDef) throws AtlasBaseException;
 
     AtlasStructDef updateByGuid(String guid, AtlasStructDef structDef) throws AtlasBaseException;
 
-    List<AtlasStructDef> update(List<AtlasStructDef> structDefs) throws AtlasBaseException;
+    Object preDeleteByName(String name) throws AtlasBaseException;
 
-    void deleteByName(String name) throws AtlasBaseException;
+    void deleteByName(String name, Object preDeleteResult) throws AtlasBaseException;
 
-    void deleteByNames(List<String> names) throws AtlasBaseException;
+    Object preDeleteByGuid(String name) throws AtlasBaseException;
 
-    void deleteByGuid(String guid) throws AtlasBaseException;
-
-    void deleteByGuids(List<String> guids) throws AtlasBaseException;
+    void deleteByGuid(String guid, Object preDeleteResult) throws AtlasBaseException;
 
     AtlasStructDefs search(SearchFilter filter) throws AtlasBaseException;
 }

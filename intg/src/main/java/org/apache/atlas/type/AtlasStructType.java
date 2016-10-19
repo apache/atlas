@@ -357,16 +357,16 @@ public class AtlasStructType extends AtlasType {
      */
     private void resolveForeignKeyConstraint(AtlasAttributeDef attribDef, AtlasConstraintDef constraintDef,
                                              AtlasType attribType) throws AtlasBaseException {
-        if (!(this instanceof AtlasEntityType)) {
+        if (this.getTypeCategory() != TypeCategory.ENTITY) {
             throw new AtlasBaseException(getTypeName() + "." + attribDef.getName() + ": "
                          + AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_FOREIGN_KEY + " constraint not supported");
         }
 
-        if (attribType instanceof AtlasArrayType) {
+        if (attribType.getTypeCategory() == TypeCategory.ARRAY) {
             attribType = ((AtlasArrayType)attribType).getElementType();
         }
 
-        if (!(attribType instanceof AtlasEntityType)) {
+        if (attribType.getTypeCategory() != TypeCategory.ENTITY) {
             throw new AtlasBaseException(getTypeName() + "." + attribDef.getName() + ": "
                                       + AtlasConstraintDef.CONSTRAINT_TYPE_FOREIGN_KEY + " incompatible attribute type "
                                       + attribType.getTypeName());
@@ -383,16 +383,17 @@ public class AtlasStructType extends AtlasType {
      */
     private void resolveMappedFromRefConstraint(AtlasAttributeDef attribDef, AtlasConstraintDef constraintDef,
                                                 AtlasType attribType) throws AtlasBaseException {
-        if (!(this instanceof AtlasEntityType)) {
+
+        if (this.getTypeCategory() != TypeCategory.ENTITY) {
             throw new AtlasBaseException(getTypeName() + "." + attribDef.getName() + ": "
                                     + CONSTRAINT_TYPE_MAPPED_FROM_REF + " constraint not supported");
         }
 
-        if (attribType instanceof AtlasArrayType) {
+        if (attribType.getTypeCategory() == TypeCategory.ARRAY) {
             attribType = ((AtlasArrayType)attribType).getElementType();
         }
 
-        if (!(attribType instanceof AtlasEntityType)) {
+        if (attribType.getTypeCategory() != TypeCategory.ENTITY) {
             throw new AtlasBaseException(getTypeName() + "." + attribDef.getName() + ": "
                                   + CONSTRAINT_TYPE_MAPPED_FROM_REF + " incompatible attribute type "
                                   + attribType.getTypeName());
@@ -421,7 +422,7 @@ public class AtlasStructType extends AtlasType {
                     + " should be " + getTypeName() + ", but found " + refAttrib.getTypeName());
         }
 
-        mappedFromRefAttributes.put(attribDef.getName(), new TypeAttributePair(refAttrib.getTypeName(), refAttribName));
+        mappedFromRefAttributes.put(attribDef.getName(), new TypeAttributePair(attribType.getTypeName(), refAttribName));
     }
 
     private class TypeAttributePair {

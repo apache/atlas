@@ -30,27 +30,21 @@ import java.util.List;
 public interface AtlasEnumDefStore {
     AtlasEnumDef create(AtlasEnumDef enumDef) throws AtlasBaseException;
 
-    List<AtlasEnumDef> create(List<AtlasEnumDef> atlasEnumDefs) throws AtlasBaseException;
-
     List<AtlasEnumDef> getAll() throws AtlasBaseException;
 
     AtlasEnumDef getByName(String name) throws AtlasBaseException;
 
     AtlasEnumDef getByGuid(String guid) throws AtlasBaseException;
 
+    AtlasEnumDef update(AtlasEnumDef enumDef) throws AtlasBaseException;
+
     AtlasEnumDef updateByName(String name, AtlasEnumDef enumDef) throws AtlasBaseException;
 
     AtlasEnumDef updateByGuid(String guid, AtlasEnumDef enumDef) throws AtlasBaseException;
 
-    List<AtlasEnumDef> update(List<AtlasEnumDef> enumDefs) throws AtlasBaseException;
-
     void deleteByName(String name) throws AtlasBaseException;
 
-    void deleteByNames(List<String> names) throws AtlasBaseException;
-
     void deleteByGuid(String guid) throws AtlasBaseException;
-
-    void deleteByGuids(List<String> guids) throws AtlasBaseException;
 
     AtlasEnumDefs search(SearchFilter filter) throws AtlasBaseException;
 }

@@ -28,9 +28,9 @@ import java.util.List;
  * Interface for graph persistence store for AtlasClassificationDef
  */
 public interface AtlasClassificationDefStore {
-    AtlasClassificationDef create(AtlasClassificationDef classificationDef) throws AtlasBaseException;
+    Object preCreate(AtlasClassificationDef classificationDef) throws AtlasBaseException;
 
-    List<AtlasClassificationDef> create(List<AtlasClassificationDef> classificationDefs) throws AtlasBaseException;
+    AtlasClassificationDef create(AtlasClassificationDef classifiDef, Object preCreateResult) throws AtlasBaseException;
 
     List<AtlasClassificationDef> getAll() throws AtlasBaseException;
 
@@ -38,19 +38,19 @@ public interface AtlasClassificationDefStore {
 
     AtlasClassificationDef getByGuid(String guid) throws AtlasBaseException;
 
-    AtlasClassificationDef updateByName(String name, AtlasClassificationDef classificationDef) throws AtlasBaseException;
+    AtlasClassificationDef update(AtlasClassificationDef classifiDef) throws AtlasBaseException;
 
-    AtlasClassificationDef updateByGuid(String guid, AtlasClassificationDef classificationDef) throws AtlasBaseException;
+    AtlasClassificationDef updateByName(String name, AtlasClassificationDef classifiDef) throws AtlasBaseException;
 
-    List<AtlasClassificationDef> update(List<AtlasClassificationDef> classificationDefs) throws AtlasBaseException;
+    AtlasClassificationDef updateByGuid(String guid, AtlasClassificationDef classifiDef) throws AtlasBaseException;
 
-    void deleteByName(String name) throws AtlasBaseException;
+    Object preDeleteByName(String name) throws AtlasBaseException;
 
-    void deleteByNames(List<String> names) throws AtlasBaseException;
+    void deleteByName(String name, Object preDeleteResult) throws AtlasBaseException;
 
-    void deleteByGuid(String guid) throws AtlasBaseException;
+    Object preDeleteByGuid(String guid) throws AtlasBaseException;
 
-    void deleteByGuids(List<String> guids) throws AtlasBaseException;
+    void deleteByGuid(String guid, Object preDeleteResult) throws AtlasBaseException;
 
     AtlasClassificationDefs search(SearchFilter filter) throws AtlasBaseException;
 }

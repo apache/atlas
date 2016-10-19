@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
+import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef.AtlasEntityDefs;
 
@@ -28,9 +29,9 @@ import java.util.List;
  * Interface for graph persistence store for AtlasEntityDef
  */
 public interface AtlasEntityDefStore {
-    AtlasEntityDef create(AtlasEntityDef entityDef) throws AtlasBaseException;
+    Object preCreate(AtlasEntityDef entityDef) throws AtlasBaseException;
 
-    List<AtlasEntityDef> create(List<AtlasEntityDef> entityDefs) throws AtlasBaseException;
+    AtlasEntityDef create(AtlasEntityDef entityDef, Object preCreateResult) throws AtlasBaseException;
 
     List<AtlasEntityDef> getAll() throws AtlasBaseException;
 
@@ -38,19 +39,19 @@ public interface AtlasEntityDefStore {
 
     AtlasEntityDef getByGuid(String guid) throws AtlasBaseException;
 
+    AtlasEntityDef update(AtlasEntityDef entityDef) throws AtlasBaseException;
+
     AtlasEntityDef updateByName(String name, AtlasEntityDef entityDef) throws AtlasBaseException;
 
     AtlasEntityDef updateByGuid(String guid, AtlasEntityDef entityDef) throws AtlasBaseException;
 
-    List<AtlasEntityDef> update(List<AtlasEntityDef> entityDefs) throws AtlasBaseException;
+    Object preDeleteByName(String name) throws AtlasBaseException;
 
-    void deleteByName(String name) throws AtlasBaseException;
+    void deleteByName(String name, Object preDeleteResult) throws AtlasBaseException;
 
-    void deleteByNames(List<String> names) throws AtlasBaseException;
+    Object preDeleteByGuid(String guid) throws AtlasBaseException;
 
-    void deleteByGuid(String guid) throws AtlasBaseException;
-
-    void deleteByGuids(List<String> guids) throws AtlasBaseException;
+    void deleteByGuid(String guid, Object preDeleteResult) throws AtlasBaseException;
 
     AtlasEntityDefs search(SearchFilter filter) throws AtlasBaseException;
 }
