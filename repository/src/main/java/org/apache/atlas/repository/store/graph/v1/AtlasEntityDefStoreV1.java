@@ -172,8 +172,8 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
             LOG.debug("==> AtlasEntityDefStoreV1.update({})", entityDef);
         }
 
-        AtlasEntityDef ret = StringUtils.isNotBlank(entityDef.getName()) ? updateByName(entityDef.getName(), entityDef)
-                                                                         : updateByGuid(entityDef.getGuid(), entityDef);
+        AtlasEntityDef ret = StringUtils.isNotBlank(entityDef.getGuid()) ? updateByGuid(entityDef.getGuid(), entityDef)
+                                                                         : updateByName(entityDef.getName(), entityDef);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasEntityDefStoreV1.update({}): {}", entityDef, ret);
@@ -356,11 +356,12 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
     }
 
     private void updateVertexPreCreate(AtlasEntityDef entityDef, AtlasEntityType entityType, AtlasVertex vertex) {
-        AtlasStructDefStoreV1.updateVertexPreCreate(entityDef, entityType, vertex);
+        AtlasStructDefStoreV1.updateVertexPreCreate(entityDef, entityType, vertex, typeDefStore);
     }
 
-    private void updateVertexPreUpdate(AtlasEntityDef entityDef, AtlasEntityType entityType, AtlasVertex vertex) {
-        AtlasStructDefStoreV1.updateVertexPreUpdate(entityDef, entityType, vertex);
+    private void updateVertexPreUpdate(AtlasEntityDef entityDef, AtlasEntityType entityType, AtlasVertex vertex)
+        throws AtlasBaseException {
+        AtlasStructDefStoreV1.updateVertexPreUpdate(entityDef, entityType, vertex, typeDefStore);
     }
 
     private void updateVertexAddReferences(AtlasEntityDef  entityDef, AtlasVertex vertex) throws AtlasBaseException {

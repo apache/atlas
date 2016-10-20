@@ -81,7 +81,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
 
         ret = typeDefStore.createTypeVertex(structDef);
 
-        AtlasStructDefStoreV1.updateVertexPreCreate(structDef, (AtlasStructType)type, ret);
+        AtlasStructDefStoreV1.updateVertexPreCreate(structDef, (AtlasStructType)type, ret, typeDefStore);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasStructDefStoreV1.preCreate({}): {}", structDef, ret);
@@ -184,8 +184,8 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
             LOG.debug("==> AtlasStructDefStoreV1.update({})", structDef);
         }
 
-        AtlasStructDef ret = StringUtils.isNotBlank(structDef.getName()) ? updateByName(structDef.getName(), structDef)
-                                                                         : updateByGuid(structDef.getGuid(), structDef);
+        AtlasStructDef ret = StringUtils.isNotBlank(structDef.getGuid()) ? updateByGuid(structDef.getGuid(), structDef)
+                                                                         : updateByName(structDef.getName(), structDef);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasStructDefStoreV1.update({}): {}", structDef, ret);
@@ -212,7 +212,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
             throw new AtlasBaseException("no structDef exists with name " + name);
         }
 
-        AtlasStructDefStoreV1.updateVertexPreUpdate(structDef, (AtlasStructType)type, vertex);
+        AtlasStructDefStoreV1.updateVertexPreUpdate(structDef, (AtlasStructType)type, vertex, typeDefStore);
         AtlasStructDefStoreV1.updateVertexAddReferences(structDef, vertex, typeDefStore);
 
         AtlasStructDef ret = toStructDef(vertex);
@@ -242,7 +242,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
             throw new AtlasBaseException("no structDef exists with guid " + guid);
         }
 
-        AtlasStructDefStoreV1.updateVertexPreUpdate(structDef, (AtlasStructType)type, vertex);
+        AtlasStructDefStoreV1.updateVertexPreUpdate(structDef, (AtlasStructType)type, vertex, typeDefStore);
         AtlasStructDefStoreV1.updateVertexAddReferences(structDef, vertex, typeDefStore);
 
         AtlasStructDef ret = toStructDef(vertex);
@@ -377,7 +377,8 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         return ret;
     }
 
-    public static void updateVertexPreCreate(AtlasStructDef structDef, AtlasStructType structType, AtlasVertex vertex) {
+    public static void updateVertexPreCreate(AtlasStructDef structDef, AtlasStructType structType,
+                                             AtlasVertex vertex, AtlasTypeDefGraphStoreV1 typeDefStore) {
         List<String> attrNames = new ArrayList<>(structDef.getAttributeDefs().size());
 
         for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
@@ -390,8 +391,49 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         AtlasGraphUtilsV1.setProperty(vertex, AtlasGraphUtilsV1.getPropertyKey(structDef), attrNames);
     }
 
-    public static void updateVertexPreUpdate(AtlasStructDef structDef, AtlasStructType structType, AtlasVertex vertex) {
-        AtlasStructDefStoreV1.updateVertexPreCreate(structDef, structType, vertex);
+    public static void updateVertexPreUpdate(AtlasStructDef structDef, AtlasStructType structType,
+                                             AtlasVertex vertex, AtlasTypeDefGraphStoreV1 typeDefStore)
+        throws AtlasBaseException {
+
+        List<String> attrNames = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(structDef.getAttributeDefs())) {
+            for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
+                attrNames.add(attributeDef.getName());
+            }
+        }
+
+        List<String> currAttrNames = vertex.getProperty(AtlasGraphUtilsV1.getPropertyKey(structDef), List.class);
+
+        // delete attributes that are not present in updated structDef
+        if (CollectionUtils.isNotEmpty(currAttrNames)) {
+            for (String currAttrName : currAttrNames) {
+                if (!attrNames.contains(currAttrName)) {
+                    throw new AtlasBaseException(structDef.getName() + "." + currAttrName +
+                                                                                    ": attribute delete not supported");
+                }
+            }
+        }
+
+        typeDefStore.updateTypeVertex(structDef, vertex);
+
+        // add/update attributes that are present in updated structDef
+        if (CollectionUtils.isNotEmpty(structDef.getAttributeDefs())) {
+            for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
+                if (CollectionUtils.isEmpty(currAttrNames) || !currAttrNames.contains(attributeDef.getName())) {
+                    // new attribute - only allow if optional
+                    if (!attributeDef.isOptional()) {
+                        throw new AtlasBaseException(structDef.getName() + "." + attributeDef.getName()
+                                                                                + ": can not add mandatory attribute");
+                    }
+                }
+
+                String propertyKey = AtlasGraphUtilsV1.getPropertyKey(structDef, attributeDef.getName());
+
+                AtlasGraphUtilsV1.setProperty(vertex, propertyKey, toJsonFromAttributeDef(attributeDef, structType));
+            }
+        }
+
+        AtlasGraphUtilsV1.setProperty(vertex, AtlasGraphUtilsV1.getPropertyKey(structDef), attrNames);
     }
 
     public static void updateVertexAddReferences(AtlasStructDef structDef, AtlasVertex vertex,

@@ -173,8 +173,8 @@ public class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1 imple
             LOG.debug("==> AtlasClassificationDefStoreV1.update({})", classifiDef);
         }
 
-        AtlasClassificationDef ret = StringUtils.isNotBlank(classifiDef.getName())
-                  ? updateByName(classifiDef.getName(), classifiDef) : updateByGuid(classifiDef.getGuid(), classifiDef);
+        AtlasClassificationDef ret = StringUtils.isNotBlank(classifiDef.getGuid())
+                  ? updateByGuid(classifiDef.getGuid(), classifiDef) : updateByName(classifiDef.getName(), classifiDef);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasClassificationDefStoreV1.update({}): {}", classifiDef, ret);
@@ -360,13 +360,13 @@ public class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1 imple
     private void updateVertexPreCreate(AtlasClassificationDef  classificationDef,
                                        AtlasClassificationType classificationType,
                                        AtlasVertex             vertex) {
-        AtlasStructDefStoreV1.updateVertexPreCreate(classificationDef, classificationType, vertex);
+        AtlasStructDefStoreV1.updateVertexPreCreate(classificationDef, classificationType, vertex, typeDefStore);
     }
 
     private void updateVertexPreUpdate(AtlasClassificationDef  classificationDef,
                                        AtlasClassificationType classificationType,
-                                       AtlasVertex             vertex) {
-        AtlasStructDefStoreV1.updateVertexPreUpdate(classificationDef, classificationType, vertex);
+                                       AtlasVertex             vertex) throws AtlasBaseException {
+        AtlasStructDefStoreV1.updateVertexPreUpdate(classificationDef, classificationType, vertex, typeDefStore);
     }
 
     private void updateVertexAddReferences(AtlasClassificationDef classificationDef, AtlasVertex vertex) throws AtlasBaseException {

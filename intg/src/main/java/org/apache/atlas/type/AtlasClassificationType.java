@@ -65,22 +65,13 @@ public class AtlasClassificationType extends AtlasStructType {
         super.resolveReferences(typeRegistry);
 
         List<AtlasClassificationType> s    = new ArrayList<AtlasClassificationType>();
-        Set<String>                   allS = new HashSet<String>();
+        Set<String>                   allS = getAllSuperTypes(typeRegistry);
 
         for (String superTypeName : classificationDef.getSuperTypes()) {
             AtlasType superType = typeRegistry.getType(superTypeName);
 
             if (superType instanceof AtlasClassificationType) {
-                AtlasClassificationType superClassificationType = (AtlasClassificationType)superType;
-
-                superClassificationType.resolveReferences(typeRegistry);
-
-                s.add(superClassificationType);
-                allS.add(superTypeName);
-
-                if (CollectionUtils.isNotEmpty(superClassificationType.getAllSuperTypes())) {
-                    allS.addAll(superClassificationType.getAllSuperTypes());
-                }
+                s.add((AtlasClassificationType)superType);
             } else {
                 throw new AtlasBaseException(superTypeName + ": incompatible supertype in classification "
                                              + classificationDef.getName());
@@ -88,7 +79,7 @@ public class AtlasClassificationType extends AtlasStructType {
         }
 
         this.superTypes    = Collections.unmodifiableList(s);
-        this.allSuperTypes = allS;
+        this.allSuperTypes = Collections.unmodifiableSet(allS);
     }
 
     public Set<String> getSuperTypes() {
@@ -191,6 +182,43 @@ public class AtlasClassificationType extends AtlasStructType {
             }
 
             super.populateDefaultValues(classification);
+        }
+    }
+
+    private Set<String> getAllSuperTypes(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+        Set<String>  superTypes = new HashSet<>();
+        List<String> subTypes   = new ArrayList<>();
+
+        collectAllSuperTypes(subTypes, superTypes, typeRegistry);
+
+        return superTypes;
+    }
+
+    /*
+     * This method should not assume that resolveReferences() has been called on all superTypes.
+     * this.classificationDef is the only safe member to reference here
+     */
+    private void collectAllSuperTypes(List<String> subTypes, Set<String> superTypes, AtlasTypeRegistry typeRegistry)
+        throws AtlasBaseException {
+        if (subTypes.contains(classificationDef.getName())) {
+            throw new AtlasBaseException(classificationDef.getName()
+                                         + ": invalid supertypes - circular reference back to self " + subTypes);
+        }
+
+        if (CollectionUtils.isNotEmpty(classificationDef.getSuperTypes())) {
+            superTypes.addAll(classificationDef.getSuperTypes());
+
+            subTypes.add(classificationDef.getName());
+            for (String superTypeName : classificationDef.getSuperTypes()) {
+                AtlasType type = typeRegistry.getType(superTypeName);
+
+                if (type instanceof AtlasClassificationType) {
+                    AtlasClassificationType superType = (AtlasClassificationType) type;
+
+                    superType.collectAllSuperTypes(subTypes, superTypes, typeRegistry);
+                }
+            }
+            subTypes.remove(classificationDef.getName());
         }
     }
 }

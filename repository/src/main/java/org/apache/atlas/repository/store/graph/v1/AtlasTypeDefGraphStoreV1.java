@@ -162,13 +162,15 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
     public AtlasVertex createTypeVertex(AtlasBaseTypeDef typeDef) {
         // Validate all the required checks
         Preconditions.checkArgument(StringUtils.isNotBlank(typeDef.getName()), "Type name can't be null/empty");
-        Preconditions.checkArgument(StringUtils.isNotBlank(typeDef.getTypeVersion()), "Type version can't be null/empty");
-        Preconditions.checkArgument(typeDef.getVersion() != null, "Version can't be null");
 
         AtlasVertex ret = atlasGraph.addVertex();
 
         if (StringUtils.isBlank(typeDef.getTypeVersion())) {
             typeDef.setTypeVersion("1.0");
+        }
+
+        if (typeDef.getVersion() == null) {
+            typeDef.setVersion(Long.valueOf(1l));
         }
 
         if (StringUtils.isBlank(typeDef.getGuid())) {
@@ -196,6 +198,26 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
         ret.setProperty(Constants.VERSION_PROPERTY_KEY, typeDef.getVersion());
 
         return ret;
+    }
+
+    public void updateTypeVertex(AtlasBaseTypeDef typeDef, AtlasVertex vertex) {
+        if (!isTypeVertex(vertex)) {
+            LOG.warn("updateTypeVertex(): not a type-vertex - {}", vertex);
+
+            return;
+        }
+
+        updateVertexProperty(vertex, Constants.GUID_PROPERTY_KEY, typeDef.getGuid());
+        /*
+         * rename of a type is supported yet - as the typename is used to in the name of the edges from this vertex
+         * To support rename of types, he edge names should be derived from an internal-name - not directly the typename
+         *
+        updateVertexProperty(vertex, Constants.TYPENAME_PROPERTY_KEY, typeDef.getName());
+         */
+        updateVertexProperty(vertex, Constants.TYPEDESCRIPTION_PROPERTY_KEY, typeDef.getDescription());
+        updateVertexProperty(vertex, Constants.TYPEVERSION_PROPERTY_KEY, typeDef.getTypeVersion());
+
+        markVertexUpdated(vertex);
     }
 
     public void deleteTypeVertexOutEdges(AtlasVertex vertex) throws AtlasBaseException {
@@ -311,15 +333,23 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
         return ret;
     }
 
-    public void createSuperTypeEdges(AtlasVertex vertex, Set<String> superTypes, TypeCategory typeCategory) {
+    public void createSuperTypeEdges(AtlasVertex vertex, Set<String> superTypes, TypeCategory typeCategory)
+        throws AtlasBaseException {
+        Set<String> currentSuperTypes = getSuperTypeNames(vertex);
+
         if (CollectionUtils.isNotEmpty(superTypes)) {
+            if (! superTypes.containsAll(currentSuperTypes)) {
+                throw new AtlasBaseException("superType remove not supported");
+            }
+
             for (String superType : superTypes) {
                 AtlasVertex superTypeVertex = findTypeVertexByNameAndCategory(superType, typeCategory);
 
                 getOrCreateEdge(vertex, superTypeVertex, AtlasGraphUtilsV1.SUPERTYPE_EDGE_LABEL);
             }
+        } else if (CollectionUtils.isNotEmpty(currentSuperTypes)) {
+            throw new AtlasBaseException("superType remove not supported");
         }
-        // TODO: remove any other superType edges, if any exists
     }
 
     public Set<String> getSuperTypeNames(AtlasVertex vertex) {
@@ -347,5 +377,43 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
         }
 
         return ret;
+    }
+
+    /*
+     * update the given vertex property, if the new value is not-blank
+     */
+    private void updateVertexProperty(AtlasVertex vertex, String propertyName, String newValue) {
+        if (StringUtils.isNotBlank(newValue)) {
+            String currValue = vertex.getProperty(propertyName, String.class);
+
+            if (!StringUtils.equals(currValue, newValue)) {
+                vertex.setProperty(propertyName, newValue);
+            }
+        }
+    }
+
+    /*
+     * update the given vertex property, if the new value is not-null
+     */
+    private void updateVertexProperty(AtlasVertex vertex, String propertyName, Date newValue) {
+        if (newValue != null) {
+            Number currValue = vertex.getProperty(propertyName, Number.class);
+
+            if (currValue == null || !currValue.equals(newValue.getTime())) {
+                vertex.setProperty(propertyName, newValue.getTime());
+            }
+        }
+    }
+
+    /*
+     * increment the version value for this vertex
+     */
+    private void markVertexUpdated(AtlasVertex vertex) {
+        Date   now         = new Date();
+        Number currVersion = vertex.getProperty(Constants.VERSION_PROPERTY_KEY, Number.class);
+        long   newVersion  = currVersion == null ? 1 : (currVersion.longValue() + 1);
+
+        vertex.setProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, now.getTime());
+        vertex.setProperty(Constants.VERSION_PROPERTY_KEY, newVersion);
     }
 }
