@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1234 Lineage REST API - v2 (sarath.kum4r@gmail.com via mneethiraj)
 ATLAS-1276 fix for webapp test failures (ayubkhan via mneethiraj)
 ATLAS-1278 Added API to get typedef header info (apoorvnaik via mneethiraj)
 ATLAS-1192 Atlas IE support (kevalbhatt)

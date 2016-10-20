@@ -86,6 +86,9 @@ public final class Constants {
 
     public static final String FULLTEXT_INDEX = "fulltext_index";
 
+    public static final String QUALIFIED_NAME = "Referenceable.qualifiedName";
+    public static final String TYPE_NAME_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "typeName";
+
     private Constants() {
     }
 

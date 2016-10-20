@@ -1,0 +1,206 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.atlas.model.lineage;
+
+import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.codehaus.jackson.annotate.JsonAutoDetect;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
+import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.PROPERTY)
+public class AtlasLineageInfo implements Serializable {
+    private String                         baseEntityGuid;
+    private LineageDirection               lineageDirection;
+    private int                            lineageDepth;
+    private Map<String, AtlasEntityHeader> guidEntityMap;
+    private Set<LineageRelation>           relations;
+
+    public AtlasLineageInfo() {}
+
+    public enum LineageDirection { INPUT, OUTPUT, BOTH }
+
+    /**
+     * Captures lineage information for an entity instance like hive_table
+
+     * @param baseEntityGuid guid of the lineage entity .
+     * @param lineageDirection direction of lineage, can be INPUT, OUTPUT or INPUT_AND_OUTPUT
+     * @param lineageDepth  lineage depth to be fetched.
+     * @param guidEntityMap map of entity guid to AtlasEntityHeader (minimal entity info)
+     * @param relations list of lineage relations for the entity (fromEntityId -> toEntityId)
+     */
+    public AtlasLineageInfo(String baseEntityGuid, Map<String, AtlasEntityHeader> guidEntityMap,
+                            Set<LineageRelation> relations, LineageDirection lineageDirection, int lineageDepth) {
+        this.baseEntityGuid   = baseEntityGuid;
+        this.lineageDirection = lineageDirection;
+        this.lineageDepth     = lineageDepth;
+        this.guidEntityMap    = guidEntityMap;
+        this.relations        = relations;
+    }
+
+    public String getBaseEntityGuid() {
+        return baseEntityGuid;
+    }
+
+    public void setBaseEntityGuid(String baseEntityGuid) {
+        this.baseEntityGuid = baseEntityGuid;
+    }
+
+    public Map<String, AtlasEntityHeader> getGuidEntityMap() {
+        return guidEntityMap;
+    }
+
+    public void setGuidEntityMap(Map<String, AtlasEntityHeader> guidEntityMap) {
+        this.guidEntityMap = guidEntityMap;
+    }
+
+    public Set<LineageRelation> getRelations() {
+        return relations;
+    }
+
+    public void setRelations(Set<LineageRelation> relations) {
+        this.relations = relations;
+    }
+
+    public LineageDirection getLineageDirection() {
+        return lineageDirection;
+    }
+
+    public void setLineageDirection(LineageDirection lineageDirection) {
+        this.lineageDirection = lineageDirection;
+    }
+
+    public int getLineageDepth() {
+        return lineageDepth;
+    }
+
+    public void setLineageDepth(int lineageDepth) {
+        this.lineageDepth = lineageDepth;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AtlasLineageInfo that = (AtlasLineageInfo) o;
+
+        if (baseEntityGuid != null ? !baseEntityGuid.equals(that.baseEntityGuid) : that.baseEntityGuid != null) return false;
+        if (lineageDepth != that.lineageDepth) return false;
+        if (guidEntityMap != null ? !guidEntityMap.equals(that.guidEntityMap) : that.guidEntityMap != null) return false;
+        if (relations != null ? !relations.equals(that.relations) : that.relations != null) return false;
+        return lineageDirection == that.lineageDirection;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = guidEntityMap != null ? guidEntityMap.hashCode() : 0;
+        result = 31 * result + (relations != null ? relations.hashCode() : 0);
+        result = 31 * result + (lineageDirection != null ? lineageDirection.hashCode() : 0);
+        result = 31 * result + lineageDepth;
+        result = 31 * result + (baseEntityGuid != null ? baseEntityGuid.hashCode() : 0);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "AtlasLineageInfo{" +
+                "baseEntityGuid=" + baseEntityGuid +
+                ", guidEntityMap=" + guidEntityMap +
+                ", relations=" + relations +
+                ", lineageDirection=" + lineageDirection +
+                ", lineageDepth=" + lineageDepth +
+                '}';
+    }
+
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @XmlRootElement
+    @XmlAccessorType(XmlAccessType.PROPERTY)
+    public static class LineageRelation {
+        private String fromEntityId;
+        private String toEntityId;
+
+        public LineageRelation() { }
+
+        public LineageRelation(String fromEntityId, String toEntityId) {
+            this.fromEntityId = fromEntityId;
+            this.toEntityId   = toEntityId;
+        }
+
+        public String getFromEntityId() {
+            return fromEntityId;
+        }
+
+        public void setFromEntityId(String fromEntityId) {
+            this.fromEntityId = fromEntityId;
+        }
+
+        public String getToEntityId() {
+            return toEntityId;
+        }
+
+        public void setToEntityId(String toEntityId) {
+            this.toEntityId = toEntityId;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            LineageRelation that = (LineageRelation) o;
+
+            if (fromEntityId != null ? !fromEntityId.equals(that.fromEntityId) : that.fromEntityId != null)
+                return false;
+            return toEntityId != null ? toEntityId.equals(that.toEntityId) : that.toEntityId == null;
+
+        }
+
+        @Override
+        public int hashCode() {
+            int result = fromEntityId != null ? fromEntityId.hashCode() : 0;
+            result = 31 * result + (toEntityId != null ? toEntityId.hashCode() : 0);
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return "LineageRelation{" +
+                    "fromEntityId='" + fromEntityId + '\'' +
+                    ", toEntityId='" + toEntityId + '\'' +
+                    '}';
+        }
+    }
+
+}
