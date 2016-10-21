@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1207 Dataset exists query in lineage APIs takes longer (shwethags)
 ATLAS-1232 added preCreate(), preDelete() in typedef persistence, to enable edge creation for references in a later stage (mneethiraj)
 ATLAS-1183 UI: help link should point to atlas website (kevalbhatt via shwethags)
 ATLAS-1182 Hive Column level lineage docs (svimal2106 via shwethags)

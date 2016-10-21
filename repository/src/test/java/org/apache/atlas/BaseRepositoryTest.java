@@ -17,12 +17,9 @@
  */
 package org.apache.atlas;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
-import javax.inject.Inject;
-
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
@@ -45,9 +42,10 @@ import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.testng.annotations.Guice;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
+import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 /**
  *  Base Class to set up hive types and instances for tests
@@ -319,7 +317,7 @@ public class BaseRepositoryTest {
         List<Referenceable> columns, String... traitNames) throws Exception {
         Referenceable referenceable = new Referenceable(HIVE_TABLE_TYPE, traitNames);
         referenceable.set("name", name);
-        referenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
+        referenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, "qualified:" + name);
         referenceable.set("description", description);
         referenceable.set("owner", owner);
         referenceable.set("tableType", tableType);
