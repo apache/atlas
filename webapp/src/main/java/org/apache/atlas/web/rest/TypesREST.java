@@ -66,7 +66,6 @@ public class TypesREST {
 
     @Inject
     public TypesREST(AtlasTypeDefStore typeDefStore) {
-        LOG.info("new TypesREST");
         this.typeDefStore = typeDefStore;
     }
 
@@ -76,24 +75,17 @@ public class TypesREST {
     @Path("/enumdef")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasEnumDef createEnumDef(AtlasEnumDef enumDef) throws Exception {
-        AtlasEnumDef ret = null;
+    public AtlasEnumDef createEnumDef(AtlasEnumDef enumDef) throws AtlasBaseException {
+        AtlasEnumDef ret = typeDefStore.createEnumDef(enumDef);
 
-        try {
-            ret = typeDefStore.createEnumDef(enumDef);
-            return ret;
-        } catch (AtlasBaseException ex) {
-            throw new WebApplicationException(Servlets.getErrorResponse(ex, Response.Status.BAD_REQUEST));
-        }
+        return ret;
     }
 
     @GET
     @Path("/enumdef/name/{name}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasEnumDef getEnumDefByName(@PathParam("name") String name) throws Exception {
-        AtlasEnumDef ret = null;
-
-        ret = typeDefStore.getEnumDefByName(name);
+    public AtlasEnumDef getEnumDefByName(@PathParam("name") String name) throws AtlasBaseException {
+        AtlasEnumDef ret = typeDefStore.getEnumDefByName(name);
 
         return ret;
     }
@@ -101,10 +93,8 @@ public class TypesREST {
     @GET
     @Path("/enumdef/guid/{guid}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasEnumDef getEnumDefByGuid(@PathParam("guid") String guid) throws Exception {
-        AtlasEnumDef ret = null;
-
-        ret = typeDefStore.getEnumDefByGuid(guid);
+    public AtlasEnumDef getEnumDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
+        AtlasEnumDef ret = typeDefStore.getEnumDefByGuid(guid);
 
         return ret;
     }
@@ -113,10 +103,8 @@ public class TypesREST {
     @Path("/enumdef/name/{name}")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasEnumDef updateEnumDefByName(@PathParam("name") String name, AtlasEnumDef enumDef) throws Exception {
-        AtlasEnumDef ret = null;
-
-        ret = typeDefStore.updateEnumDefByName(name, enumDef);
+    public AtlasEnumDef updateEnumDefByName(@PathParam("name") String name, AtlasEnumDef enumDef) throws AtlasBaseException {
+        AtlasEnumDef ret = typeDefStore.updateEnumDefByName(name, enumDef);
 
         return ret;
     }
@@ -125,10 +113,8 @@ public class TypesREST {
     @Path("/enumdef/guid/{guid}")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasEnumDef updateEnumDefByGuid(@PathParam("guid") String guid, AtlasEnumDef enumDef) throws Exception {
-        AtlasEnumDef ret = null;
-
-        ret = typeDefStore.updateEnumDefByGuid(guid, enumDef);
+    public AtlasEnumDef updateEnumDefByGuid(@PathParam("guid") String guid, AtlasEnumDef enumDef) throws AtlasBaseException {
+        AtlasEnumDef ret = typeDefStore.updateEnumDefByGuid(guid, enumDef);
 
         return ret;
     }
@@ -136,21 +122,21 @@ public class TypesREST {
     @DELETE
     @Path("/enumdef/name/{name}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public void deleteEnumDefByName(@PathParam("name") String name) throws Exception {
+    public void deleteEnumDefByName(@PathParam("name") String name) throws AtlasBaseException {
         typeDefStore.deleteEnumDefByName(name);
     }
 
     @DELETE
     @Path("/enumdef/guid/{guid}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public void deleteEnumDefByGuid(@PathParam("guid") String guid) throws Exception {
+    public void deleteEnumDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         typeDefStore.deleteEnumDefByGuid(guid);
     }
 
     @GET
     @Path("/enumdef")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasEnumDefs searchEnumDefs() throws Exception {
+    public AtlasEnumDefs searchEnumDefs() throws AtlasBaseException {
         AtlasEnumDefs ret = null;
 
         SearchFilter filter = getSearchFilter();
@@ -167,25 +153,17 @@ public class TypesREST {
     @Path("/structdef")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasStructDef createStructDef(AtlasStructDef structDef) throws Exception {
-        AtlasStructDef ret = null;
+    public AtlasStructDef createStructDef(AtlasStructDef structDef) throws AtlasBaseException {
+        AtlasStructDef ret = typeDefStore.createStructDef(structDef);
 
-        try {
-            ret = typeDefStore.createStructDef(structDef);
-            return ret;
-        } catch (AtlasBaseException ex) {
-            throw new WebApplicationException(Servlets.getErrorResponse(ex, Response.Status.BAD_REQUEST));
-        }
-
+        return ret;
     }
 
     @GET
     @Path("/structdef/name/{name}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasStructDef getStructDefByName(@PathParam("name") String name) throws Exception {
-        AtlasStructDef ret = null;
-
-        ret = typeDefStore.getStructDefByName(name);
+    public AtlasStructDef getStructDefByName(@PathParam("name") String name) throws AtlasBaseException {
+        AtlasStructDef ret = typeDefStore.getStructDefByName(name);
 
         return ret;
     }
@@ -193,10 +171,8 @@ public class TypesREST {
     @GET
     @Path("/structdef/guid/{guid}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasStructDef getStructDefByGuid(@PathParam("guid") String guid) throws Exception {
-        AtlasStructDef ret = null;
-
-        ret = typeDefStore.getStructDefByGuid(guid);
+    public AtlasStructDef getStructDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
+        AtlasStructDef ret = typeDefStore.getStructDefByGuid(guid);
 
         return ret;
     }
@@ -205,10 +181,8 @@ public class TypesREST {
     @Path("/structdef/name/{name}")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasStructDef updateStructDefByName(@PathParam("name") String name, AtlasStructDef structDef) throws Exception {
-        AtlasStructDef ret = null;
-
-        ret = typeDefStore.updateStructDefByName(name, structDef);
+    public AtlasStructDef updateStructDefByName(@PathParam("name") String name, AtlasStructDef structDef) throws AtlasBaseException {
+        AtlasStructDef ret = typeDefStore.updateStructDefByName(name, structDef);
 
         return ret;
     }
@@ -217,10 +191,8 @@ public class TypesREST {
     @Path("/structdef/guid/{guid}")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasStructDef updateStructDefByGuid(@PathParam("guid") String guid, AtlasStructDef structDef) throws Exception {
-        AtlasStructDef ret = null;
-
-        ret = typeDefStore.updateStructDefByGuid(guid, structDef);
+    public AtlasStructDef updateStructDefByGuid(@PathParam("guid") String guid, AtlasStructDef structDef) throws AtlasBaseException {
+        AtlasStructDef ret = typeDefStore.updateStructDefByGuid(guid, structDef);
 
         return ret;
     }
@@ -228,25 +200,23 @@ public class TypesREST {
     @DELETE
     @Path("/structdef/name/{name}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public void deleteStructDefByName(@PathParam("name") String name) throws Exception {
+    public void deleteStructDefByName(@PathParam("name") String name) throws AtlasBaseException {
         typeDefStore.deleteStructDefByName(name);
     }
 
     @DELETE
     @Path("/structdef/guid/{guid}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public void deleteStructDefByGuid(@PathParam("guid") String guid) throws Exception {
+    public void deleteStructDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         typeDefStore.deleteStructDefByGuid(guid);
     }
 
     @GET
     @Path("/structdef")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasStructDefs searchStructDefs() throws Exception {
-        AtlasStructDefs ret = null;
-
+    public AtlasStructDefs searchStructDefs() throws AtlasBaseException {
         SearchFilter filter = getSearchFilter();
-        ret = typeDefStore.searchStructDefs(filter);
+        AtlasStructDefs ret = typeDefStore.searchStructDefs(filter);
 
         return ret;
     }
@@ -257,24 +227,17 @@ public class TypesREST {
     @Path("/classificationdef")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasClassificationDef createClassificationDef(AtlasClassificationDef classificationDef) throws Exception {
-        AtlasClassificationDef ret = null;
+    public AtlasClassificationDef createClassificationDef(AtlasClassificationDef classificationDef) throws AtlasBaseException {
+        AtlasClassificationDef ret = typeDefStore.createClassificationDef(classificationDef);
 
-        try {
-            ret = typeDefStore.createClassificationDef(classificationDef);
-            return ret;
-        } catch (AtlasBaseException ex) {
-            throw new WebApplicationException(Servlets.getErrorResponse(ex, Response.Status.BAD_REQUEST));
-        }
+        return ret;
     }
 
     @GET
     @Path("/classificationdef/name/{name}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasClassificationDef getClassificationDefByName(@PathParam("name") String name) throws Exception {
-        AtlasClassificationDef ret = null;
-
-        ret = typeDefStore.getClassificationDefByName(name);
+    public AtlasClassificationDef getClassificationDefByName(@PathParam("name") String name) throws AtlasBaseException {
+        AtlasClassificationDef ret = typeDefStore.getClassificationDefByName(name);
 
         return ret;
     }
@@ -282,10 +245,8 @@ public class TypesREST {
     @GET
     @Path("/classificationdef/guid/{guid}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasClassificationDef getClassificationDefByGuid(@PathParam("guid") String guid) throws Exception {
-        AtlasClassificationDef ret = null;
-
-        ret = typeDefStore.getClassificationDefByGuid(guid);
+    public AtlasClassificationDef getClassificationDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
+        AtlasClassificationDef ret = typeDefStore.getClassificationDefByGuid(guid);
 
         return ret;
     }
@@ -294,10 +255,8 @@ public class TypesREST {
     @Path("/classificationdef/name/{name}")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasClassificationDef updateClassificationDefByName(@PathParam("name") String name, AtlasClassificationDef classificationDef) throws Exception {
-        AtlasClassificationDef ret = null;
-
-        ret = typeDefStore.updateClassificationDefByName(name, classificationDef);
+    public AtlasClassificationDef updateClassificationDefByName(@PathParam("name") String name, AtlasClassificationDef classificationDef) throws AtlasBaseException {
+        AtlasClassificationDef ret = typeDefStore.updateClassificationDefByName(name, classificationDef);
 
         return ret;
     }
@@ -306,10 +265,8 @@ public class TypesREST {
     @Path("/classificationdef/guid/{guid}")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasClassificationDef updateClassificationDefByGuid(@PathParam("guid") String guid, AtlasClassificationDef classificationDef) throws Exception {
-        AtlasClassificationDef ret = null;
-
-        ret = typeDefStore.updateClassificationDefByGuid(guid, classificationDef);
+    public AtlasClassificationDef updateClassificationDefByGuid(@PathParam("guid") String guid, AtlasClassificationDef classificationDef) throws AtlasBaseException {
+        AtlasClassificationDef ret = typeDefStore.updateClassificationDefByGuid(guid, classificationDef);
 
         return ret;
     }
@@ -317,14 +274,14 @@ public class TypesREST {
     @DELETE
     @Path("/classificationdef/name/{name}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public void deleteClassificationDefByName(@PathParam("name") String name) throws Exception {
+    public void deleteClassificationDefByName(@PathParam("name") String name) throws AtlasBaseException {
         typeDefStore.deleteClassificationDefByName(name);
     }
 
     @DELETE
     @Path("/classificationdef/guid/{guid}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public void deleteClassificationDefByGuid(@PathParam("guid") String guid) throws Exception {
+    public void deleteClassificationDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         typeDefStore.deleteClassificationDefByGuid(guid);
     }
 
@@ -332,11 +289,10 @@ public class TypesREST {
     @Path("/classificationdef")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasClassificationDefs searchClassificationDefs() throws Exception {
-        AtlasClassificationDefs ret = null;
-
+    public AtlasClassificationDefs searchClassificationDefs() throws AtlasBaseException {
         SearchFilter filter = getSearchFilter();
-        ret = typeDefStore.searchClassificationDefs(filter);
+
+        AtlasClassificationDefs ret = typeDefStore.searchClassificationDefs(filter);
 
         return ret;
     }
@@ -347,8 +303,8 @@ public class TypesREST {
     @Path("/entitydef")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasEntityDef createEntityDef(AtlasEntityDef entityDef) throws Exception {
-        AtlasEntityDef ret = null;
+    public AtlasEntityDef createEntityDef(AtlasEntityDef entityDef) throws AtlasBaseException {
+        AtlasEntityDef ret = typeDefStore.createEntityDef(entityDef);
 
         try {
             ret = typeDefStore.createEntityDef(entityDef);
@@ -361,10 +317,8 @@ public class TypesREST {
     @GET
     @Path("/entitydef/name/{name}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasEntityDef getEntityDefByName(@PathParam("name") String name) throws Exception {
-        AtlasEntityDef ret = null;
-
-        ret = typeDefStore.getEntityDefByName(name);
+    public AtlasEntityDef getEntityDefByName(@PathParam("name") String name) throws AtlasBaseException {
+        AtlasEntityDef ret = typeDefStore.getEntityDefByName(name);
 
         return ret;
     }
@@ -372,10 +326,8 @@ public class TypesREST {
     @GET
     @Path("/entitydef/guid/{guid}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasEntityDef getEntityDefByGuid(@PathParam("guid") String guid) throws Exception {
-        AtlasEntityDef ret = null;
-
-        ret = typeDefStore.getEntityDefByGuid(guid);
+    public AtlasEntityDef getEntityDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
+        AtlasEntityDef ret = typeDefStore.getEntityDefByGuid(guid);
 
         return ret;
     }
@@ -425,11 +377,9 @@ public class TypesREST {
     @GET
     @Path("/entitydef")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasEntityDefs searchEntityDefs() throws Exception {
-        AtlasEntityDefs ret = null;
-
+    public AtlasEntityDefs searchEntityDefs() throws AtlasBaseException {
         SearchFilter filter = getSearchFilter();
-        ret = typeDefStore.searchEntityDefs(filter);
+        AtlasEntityDefs ret = typeDefStore.searchEntityDefs(filter);
 
         return ret;
     }
@@ -447,16 +397,10 @@ public class TypesREST {
     @GET
     @Path("/typedefs")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasTypesDef getAllTypeDefs() throws Exception {
+    public AtlasTypesDef getAllTypeDefs() throws AtlasBaseException {
         SearchFilter searchFilter = getSearchFilter();
 
-        AtlasTypesDef typesDef = null;
-
-        try {
-            typesDef = typeDefStore.searchTypesDef(searchFilter);
-        } catch (AtlasBaseException ex) {
-            throw new WebApplicationException(Servlets.getErrorResponse(ex, Response.Status.NOT_FOUND));
-        }
+        AtlasTypesDef typesDef = typeDefStore.searchTypesDef(searchFilter);
 
         return typesDef;
     }
@@ -473,13 +417,9 @@ public class TypesREST {
     @Path("/typedefs")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasTypesDef createAtlasTypeDefs(final AtlasTypesDef typesDef) throws Exception {
-        AtlasTypesDef ret = null;
-        try {
-            ret = typeDefStore.createTypesDef(typesDef);
-        } catch (AtlasBaseException ex) {
-            throw new WebApplicationException(Servlets.getErrorResponse(ex, Response.Status.BAD_REQUEST));
-        }
+    public AtlasTypesDef createAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
+        AtlasTypesDef ret = typeDefStore.createTypesDef(typesDef);
+
         return ret;
     }
 

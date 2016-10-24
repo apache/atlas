@@ -18,38 +18,59 @@
 
 package org.apache.atlas.web.errors;
 
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.type.AtlasType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.WebApplicationException;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
+
+import javax.inject.Singleton;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
-import java.util.concurrent.ThreadLocalRandom;
+import javax.ws.rs.ext.Provider;
 
 /**
  * Exception mapper for Jersey.
  * @param <E>
  */
-public class LoggingExceptionMapper<E extends Throwable> implements ExceptionMapper<E> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(LoggingExceptionMapper.class);
+@Provider
+@Singleton
+public class AtlasBaseExceptionMapper implements ExceptionMapper<AtlasBaseException> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AtlasBaseExceptionMapper.class);
 
     @Override
-    public Response toResponse(E exception) {
-        if (exception instanceof WebApplicationException) {
-            return ((WebApplicationException) exception).getResponse();
-        }
-
+    public Response toResponse(AtlasBaseException exception) {
         final long id = ThreadLocalRandom.current().nextLong();
+
+        // Log the response and use the error codes from the Exception
         logException(id, exception);
-        return Response.serverError().entity(formatErrorMessage(id, exception)).build();
+        return buildAtlasBaseExceptionResponse((AtlasBaseException) exception);
+    }
+
+    protected Response buildAtlasBaseExceptionResponse(AtlasBaseException baseException) {
+        Map<String, String> errorJsonMap = new LinkedHashMap<>();
+        AtlasErrorCode errorCode = baseException.getAtlasErrorCode();
+        errorJsonMap.put("errorCode", errorCode.getErrorCode());
+        errorJsonMap.put("errorMessage", baseException.getMessage());
+        Response.ResponseBuilder responseBuilder = Response.status(errorCode.getHttpCode());
+
+        // No body for 204 (and maybe 304)
+        if (Response.Status.NO_CONTENT != errorCode.getHttpCode()) {
+            responseBuilder.entity(AtlasType.toJson(errorJsonMap));
+        }
+        return responseBuilder.build();
     }
 
     @SuppressWarnings("UnusedParameters")
-    protected String formatErrorMessage(long id, E exception) {
+    protected String formatErrorMessage(long id, AtlasBaseException exception) {
         return String.format("There was an error processing your request. It has been logged (ID %016x).", id);
     }
 
-    protected void logException(long id, E exception) {
+    protected void logException(long id, AtlasBaseException exception) {
         LOGGER.error(formatLogMessage(id, exception), exception);
     }
 
@@ -57,4 +78,5 @@ public class LoggingExceptionMapper<E extends Throwable> implements ExceptionMap
     protected String formatLogMessage(long id, Throwable exception) {
         return String.format("Error handling a request: %016x", id);
     }
+
 }

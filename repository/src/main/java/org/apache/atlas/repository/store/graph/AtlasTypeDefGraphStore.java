@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.store.graph;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
@@ -41,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -102,9 +104,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         Collection<AtlasEnumDef> enumDefs = typeRegistry.getAllEnumDefs();
 
-        if (enumDefs != null) {
-            ret = new ArrayList<>(enumDefs);
-        }
+        ret = CollectionUtils.isNotEmpty(enumDefs) ?
+                new ArrayList<>(enumDefs) : Collections.<AtlasEnumDef>emptyList();
 
         return ret;
     }
@@ -113,7 +114,9 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     @GraphTransaction
     public AtlasEnumDef getEnumDefByName(String name) throws AtlasBaseException {
         AtlasEnumDef ret = typeRegistry.getEnumDefByName(name);
-
+        if (ret == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
+        }
         return ret;
     }
 
@@ -121,7 +124,9 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     @GraphTransaction
     public AtlasEnumDef getEnumDefByGuid(String guid) throws AtlasBaseException {
         AtlasEnumDef ret = typeRegistry.getEnumDefByGuid(guid);
-
+        if (ret == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
+        }
         return ret;
     }
 
@@ -180,7 +185,11 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     @Override
     @GraphTransaction
     public AtlasEnumDefs searchEnumDefs(SearchFilter filter) throws AtlasBaseException {
-        return getEnumDefStore(typeRegistry).search(filter);
+        AtlasEnumDefs search = getEnumDefStore(typeRegistry).search(filter);
+        if (search == null || search.getTotalCount() == 0) {
+            throw new AtlasBaseException(AtlasErrorCode.NO_SEARCH_RESULTS);
+        }
+        return search;
     }
 
     @Override
@@ -206,9 +215,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         Collection<AtlasStructDef> structDefs = typeRegistry.getAllStructDefs();
 
-        if (structDefs != null) {
-            ret = new ArrayList<>(structDefs);
-        }
+        ret = CollectionUtils.isNotEmpty(structDefs) ?
+                new ArrayList<>(structDefs) : Collections.<AtlasStructDef>emptyList();
 
         return ret;
     }
@@ -217,7 +225,9 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     @GraphTransaction
     public AtlasStructDef getStructDefByName(String name) throws AtlasBaseException {
         AtlasStructDef ret = typeRegistry.getStructDefByName(name);
-
+        if (ret == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
+        }
         return ret;
     }
 
@@ -225,7 +235,9 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     @GraphTransaction
     public AtlasStructDef getStructDefByGuid(String guid) throws AtlasBaseException {
         AtlasStructDef ret = typeRegistry.getStructDefByGuid(guid);
-
+        if (ret == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
+        }
         return ret;
     }
 
@@ -284,7 +296,11 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     @Override
     @GraphTransaction
     public AtlasStructDefs searchStructDefs(SearchFilter filter) throws AtlasBaseException {
-        return getStructDefStore(typeRegistry).search(filter);
+        AtlasStructDefs search = getStructDefStore(typeRegistry).search(filter);
+        if (search == null || search.getTotalCount() == 0) {
+            throw new AtlasBaseException(AtlasErrorCode.NO_SEARCH_RESULTS);
+        }
+        return search;
     }
 
     @Override
@@ -311,9 +327,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         Collection<AtlasClassificationDef> classificationDefs = typeRegistry.getAllClassificationDefs();
 
-        if (classificationDefs != null) {
-            ret = new ArrayList<>(classificationDefs);
-        }
+        ret = CollectionUtils.isNotEmpty(classificationDefs) ?
+                new ArrayList<>(classificationDefs) : Collections.<AtlasClassificationDef>emptyList();
 
         return ret;
     }
@@ -323,6 +338,9 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     public AtlasClassificationDef getClassificationDefByName(String name) throws AtlasBaseException {
         AtlasClassificationDef ret = typeRegistry.getClassificationDefByName(name);
 
+        if (ret == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
+        }
         return ret;
     }
 
@@ -330,7 +348,9 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     @GraphTransaction
     public AtlasClassificationDef getClassificationDefByGuid(String guid) throws AtlasBaseException {
         AtlasClassificationDef ret = typeRegistry.getClassificationDefByGuid(guid);
-
+        if (ret == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
+        }
         return ret;
     }
 
@@ -391,7 +411,11 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     @Override
     @GraphTransaction
     public AtlasClassificationDefs searchClassificationDefs(SearchFilter filter) throws AtlasBaseException {
-        return getClassificationDefStore(typeRegistry).search(filter);
+        AtlasClassificationDefs search = getClassificationDefStore(typeRegistry).search(filter);
+        if (search == null || search.getTotalCount() == 0) {
+            throw new AtlasBaseException(AtlasErrorCode.NO_SEARCH_RESULTS);
+        }
+        return search;
     }
 
     @Override
@@ -417,9 +441,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
         Collection<AtlasEntityDef> entityDefs = typeRegistry.getAllEntityDefs();
 
-        if (entityDefs != null) {
-            ret = new ArrayList<>(entityDefs);
-        }
+        ret = CollectionUtils.isNotEmpty(entityDefs) ?
+                new ArrayList<>(entityDefs) : Collections.<AtlasEntityDef>emptyList();
 
         return ret;
     }
@@ -428,7 +451,9 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     @GraphTransaction
     public AtlasEntityDef getEntityDefByName(String name) throws AtlasBaseException {
         AtlasEntityDef ret = typeRegistry.getEntityDefByName(name);
-
+        if (ret == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
+        }
         return ret;
     }
 
@@ -436,7 +461,9 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     @GraphTransaction
     public AtlasEntityDef getEntityDefByGuid(String guid) throws AtlasBaseException {
         AtlasEntityDef ret = typeRegistry.getEntityDefByGuid(guid);
-
+        if (ret == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
+        }
         return ret;
     }
 
@@ -495,7 +522,11 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     @Override
     @GraphTransaction
     public AtlasEntityDefs searchEntityDefs(SearchFilter filter) throws AtlasBaseException {
-        return getEntityDefStore(typeRegistry).search(filter);
+        AtlasEntityDefs search = getEntityDefStore(typeRegistry).search(filter);
+        if (search == null || search.getTotalCount() == 0) {
+            throw new AtlasBaseException(AtlasErrorCode.NO_SEARCH_RESULTS);
+        }
+        return search;
     }
 
     @Override
@@ -809,6 +840,9 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             LOG.error("Failed to retrieve the EntityDefs", ex);
         }
 
+        if (typesDef.isEmpty()) {
+            throw new AtlasBaseException(AtlasErrorCode.NO_SEARCH_RESULTS);
+        }
         return typesDef;
     }
 }

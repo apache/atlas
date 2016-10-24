@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.store.graph.v1;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.AtlasStructDef;
@@ -70,13 +71,13 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         AtlasType type = typeRegistry.getType(structDef.getName());
 
         if (type.getTypeCategory() != AtlasType.TypeCategory.STRUCT) {
-            throw new AtlasBaseException(structDef.getName() + ": not a struct type");
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_MATCH_FAILED, structDef.getName(), TypeCategory.STRUCT.name());
         }
 
         AtlasVertex ret = typeDefStore.findTypeVertexByName(structDef.getName());
 
         if (ret != null) {
-            throw new AtlasBaseException(structDef.getName() + ": type already exists");
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_ALREADY_EXISTS, structDef.getName());
         }
 
         ret = typeDefStore.createTypeVertex(structDef);
@@ -143,7 +144,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         AtlasVertex vertex = typeDefStore.findTypeVertexByNameAndCategory(name, TypeCategory.STRUCT);
 
         if (vertex == null) {
-            throw new AtlasBaseException("no structDef exists with name " + name);
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
         }
 
         vertex.getProperty(Constants.TYPE_CATEGORY_PROPERTY_KEY, String.class);
@@ -166,7 +167,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         AtlasVertex vertex = typeDefStore.findTypeVertexByGuidAndCategory(guid, TypeCategory.STRUCT);
 
         if (vertex == null) {
-            throw new AtlasBaseException("no structDef exists with guid " + guid);
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
         }
 
         AtlasStructDef ret = toStructDef(vertex);
@@ -203,13 +204,13 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         AtlasType type = typeRegistry.getType(structDef.getName());
 
         if (type.getTypeCategory() != AtlasType.TypeCategory.STRUCT) {
-            throw new AtlasBaseException(structDef.getName() + ": not a struct type");
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_MATCH_FAILED, structDef.getName(), TypeCategory.STRUCT.name());
         }
 
         AtlasVertex vertex = typeDefStore.findTypeVertexByNameAndCategory(name, TypeCategory.STRUCT);
 
         if (vertex == null) {
-            throw new AtlasBaseException("no structDef exists with name " + name);
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
         }
 
         AtlasStructDefStoreV1.updateVertexPreUpdate(structDef, (AtlasStructType)type, vertex, typeDefStore);
@@ -233,13 +234,13 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         AtlasType type = typeRegistry.getTypeByGuid(guid);
 
         if (type.getTypeCategory() != AtlasType.TypeCategory.STRUCT) {
-            throw new AtlasBaseException(structDef.getName() + ": not a struct type");
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_MATCH_FAILED, structDef.getName(), TypeCategory.STRUCT.name());
         }
 
         AtlasVertex vertex = typeDefStore.findTypeVertexByGuidAndCategory(guid, TypeCategory.STRUCT);
 
         if (vertex == null) {
-            throw new AtlasBaseException("no structDef exists with guid " + guid);
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
         }
 
         AtlasStructDefStoreV1.updateVertexPreUpdate(structDef, (AtlasStructType)type, vertex, typeDefStore);
@@ -263,7 +264,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         AtlasVertex ret = typeDefStore.findTypeVertexByNameAndCategory(name, TypeCategory.STRUCT);
 
         if (ret == null) {
-            throw new AtlasBaseException("no structDef exists with name " + name);
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
         }
 
         typeDefStore.deleteTypeVertexOutEdges(ret);
@@ -305,7 +306,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         AtlasVertex ret = typeDefStore.findTypeVertexByGuidAndCategory(guid, TypeCategory.STRUCT);
 
         if (ret == null) {
-            throw new AtlasBaseException("no structDef exists with guid " + guid);
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
         }
 
         typeDefStore.deleteTypeVertexOutEdges(ret);
@@ -477,7 +478,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
                 AtlasVertex referencedTypeVertex = typeDefStore.findTypeVertexByName(referencedTypeName);
 
                 if (referencedTypeVertex == null) {
-                    throw new AtlasBaseException(referencedTypeName + ": unknown datatype");
+                    throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPE, referencedTypeName, typeName, attributeDef.getName());
                 }
 
                 String label = AtlasGraphUtilsV1.getEdgeLabel(typeName, attributeDef.getName());

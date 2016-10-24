@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.store.graph.v1;
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
@@ -57,13 +58,13 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         AtlasType type = typeRegistry.getType(entityDef.getName());
 
         if (type.getTypeCategory() != AtlasType.TypeCategory.ENTITY) {
-            throw new AtlasBaseException(entityDef.getName() + ": not an entity type");
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_MATCH_FAILED, entityDef.getName(), TypeCategory.CLASS.name());
         }
 
         AtlasVertex ret = typeDefStore.findTypeVertexByName(entityDef.getName());
 
         if (ret != null) {
-            throw new AtlasBaseException(entityDef.getName() + ": type already exists");
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_ALREADY_EXISTS, entityDef.getName());
         }
 
         ret = typeDefStore.createTypeVertex(entityDef);
@@ -131,7 +132,7 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         AtlasVertex vertex = typeDefStore.findTypeVertexByNameAndCategory(name, TypeCategory.CLASS);
 
         if (vertex == null) {
-            throw new AtlasBaseException("no entityDef exists with name " + name);
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
         }
 
         vertex.getProperty(Constants.TYPE_CATEGORY_PROPERTY_KEY, TypeCategory.class);
@@ -154,7 +155,7 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         AtlasVertex vertex = typeDefStore.findTypeVertexByGuidAndCategory(guid, TypeCategory.CLASS);
 
         if (vertex == null) {
-            throw new AtlasBaseException("no entityDef exists with guid " + guid);
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
         }
 
         AtlasEntityDef ret = toEntityDef(vertex);
@@ -191,13 +192,13 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         AtlasType type = typeRegistry.getType(entityDef.getName());
 
         if (type.getTypeCategory() != AtlasType.TypeCategory.ENTITY) {
-            throw new AtlasBaseException(entityDef.getName() + ": not an entity type");
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_MATCH_FAILED, entityDef.getName(), TypeCategory.CLASS.name());
         }
 
         AtlasVertex vertex = typeDefStore.findTypeVertexByNameAndCategory(name, TypeCategory.CLASS);
 
         if (vertex == null) {
-            throw new AtlasBaseException("no entityDef exists with name " + name);
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
         }
 
         updateVertexPreUpdate(entityDef, (AtlasEntityType)type, vertex);
@@ -221,13 +222,13 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         AtlasType type = typeRegistry.getTypeByGuid(guid);
 
         if (type.getTypeCategory() != AtlasType.TypeCategory.ENTITY) {
-            throw new AtlasBaseException(entityDef.getName() + ": not an entity type");
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_MATCH_FAILED, entityDef.getName(), TypeCategory.CLASS.name());
         }
 
         AtlasVertex vertex = typeDefStore.findTypeVertexByGuidAndCategory(guid, TypeCategory.CLASS);
 
         if (vertex == null) {
-            throw new AtlasBaseException("no entityDef exists with guid " + guid);
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
         }
 
         updateVertexPreUpdate(entityDef, (AtlasEntityType)type, vertex);
@@ -251,7 +252,7 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         AtlasVertex ret = typeDefStore.findTypeVertexByNameAndCategory(name, TypeCategory.CLASS);
 
         if (ret == null) {
-            throw new AtlasBaseException("no entityDef exists with name " + name);
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
         }
 
         typeDefStore.deleteTypeVertexOutEdges(ret);
@@ -293,7 +294,7 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         AtlasVertex ret = typeDefStore.findTypeVertexByGuidAndCategory(guid, TypeCategory.CLASS);
 
         if (ret == null) {
-            throw new AtlasBaseException("no entityDef exists with guid " + guid);
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
         }
 
         typeDefStore.deleteTypeVertexOutEdges(ret);

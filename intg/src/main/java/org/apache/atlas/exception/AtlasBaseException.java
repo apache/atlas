@@ -17,27 +17,47 @@
  */
 package org.apache.atlas.exception;
 
+import org.apache.atlas.AtlasErrorCode;
+
+import javax.ws.rs.core.Response;
+
 /**
  * Base Exception class for Atlas API.
  */
 public class AtlasBaseException extends Exception {
 
+    private AtlasErrorCode atlasErrorCode;
+
+    public AtlasBaseException(AtlasErrorCode errorCode, String ... params) {
+        super(errorCode.getFormattedErrorMessage(params));
+        this.atlasErrorCode = errorCode;
+    }
+
     public AtlasBaseException() {
+        this(AtlasErrorCode.INTERNAL_ERROR);
     }
 
     public AtlasBaseException(String message) {
         super(message);
+        this.atlasErrorCode = AtlasErrorCode.INTERNAL_ERROR;
     }
 
     public AtlasBaseException(String message, Throwable cause) {
         super(message, cause);
+        this.atlasErrorCode = AtlasErrorCode.INTERNAL_ERROR;
     }
 
     public AtlasBaseException(Throwable cause) {
         super(cause);
+        this.atlasErrorCode = AtlasErrorCode.INTERNAL_ERROR;
     }
 
     public AtlasBaseException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
+        this.atlasErrorCode = AtlasErrorCode.INTERNAL_ERROR;
+    }
+
+    public AtlasErrorCode getAtlasErrorCode() {
+        return atlasErrorCode;
     }
 }

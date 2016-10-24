@@ -20,6 +20,8 @@ package org.apache.atlas.repository.store.graph.v1;
 import com.google.common.base.Preconditions;
 
 import com.google.inject.Inject;
+import org.apache.atlas.AtlasConstants;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
@@ -232,7 +234,7 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
         Iterator<AtlasEdge> inEdges = vertex.getEdges(AtlasEdgeDirection.IN).iterator();
 
         if (inEdges.hasNext()) {
-            throw new AtlasBaseException("has references");
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_HAS_REFERENCES);
         }
 
         Iterable<AtlasEdge> edges = vertex.getEdges(AtlasEdgeDirection.OUT);
