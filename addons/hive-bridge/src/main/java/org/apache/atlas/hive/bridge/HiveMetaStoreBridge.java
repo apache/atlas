@@ -563,7 +563,7 @@ public class HiveMetaStoreBridge {
         Referenceable ref = new Referenceable(FSDataTypes.HDFS_PATH().toString());
         ref.set("path", pathUri);
         Path path = new Path(pathUri);
-        ref.set(AtlasClient.NAME, path.getName());
+        ref.set(AtlasClient.NAME, Path.getPathWithoutSchemeAndAuthority(path).toString().toLowerCase());
         ref.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, pathUri);
         return ref;
     }

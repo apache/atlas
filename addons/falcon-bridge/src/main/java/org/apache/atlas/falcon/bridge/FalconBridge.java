@@ -46,6 +46,7 @@ import org.apache.falcon.entity.v0.process.Input;
 import org.apache.falcon.entity.v0.process.Output;
 import org.apache.falcon.entity.v0.process.Workflow;
 import org.apache.falcon.workflow.WorkflowExecutionArgs;
+import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -323,7 +324,8 @@ public class FalconBridge {
         //        Path path = new Path(pathUri);
         //        ref.set("name", path.getName());
         //TODO - Fix after ATLAS-542 to shorter Name
-        ref.set(AtlasClient.NAME, pathUri);
+        Path path = new Path(pathUri);
+        ref.set(AtlasClient.NAME, Path.getPathWithoutSchemeAndAuthority(path).toString().toLowerCase());
         ref.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, pathUri);
         ref.set(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, clusterName);
         entities.add(ref);

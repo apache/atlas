@@ -119,8 +119,8 @@ public class SqoopHookIT {
     private String assertHiveTableIsRegistered(String dbName, String tableName) throws Exception {
         LOG.debug("Searching for table {}.{}", dbName, tableName);
         String query = String.format(
-                "%s as t where " + AtlasClient.NAME + " = '%s',  db where " + AtlasClient.NAME + " = '%s' and clusterName = '%s'" + " select t",
-                HiveDataTypes.HIVE_TABLE.getName(), tableName.toLowerCase(), dbName.toLowerCase(), CLUSTER_NAME);
+                "%s as t where " + AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME + " = '%s',  db where " + AtlasClient.NAME + " = '%s' and clusterName = '%s'" + " select t",
+                HiveDataTypes.HIVE_TABLE.getName(), HiveMetaStoreBridge.getTableQualifiedName(CLUSTER_NAME, dbName, tableName), dbName.toLowerCase(), CLUSTER_NAME);
         return assertEntityIsRegistered(query);
     }
 

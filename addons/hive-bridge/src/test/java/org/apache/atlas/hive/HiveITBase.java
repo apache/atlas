@@ -218,13 +218,14 @@ public class HiveITBase {
         List<Id> hdfsPathRefs = (List<Id>) processReference.get(attributeName);
 
         for (int i = 0; i < testPaths.length; i++) {
-            final String testPathNormed = lower(new Path(testPaths[i]).toString());
+            final Path path = new Path(testPaths[i]);
+            final String testPathNormed = lower(path.toString());
             String hdfsPathId = assertHDFSPathIsRegistered(testPathNormed);
             Assert.assertEquals(hdfsPathRefs.get(0)._getId(), hdfsPathId);
 
             Referenceable hdfsPathRef = atlasClient.getEntity(hdfsPathId);
             Assert.assertEquals(hdfsPathRef.get("path"), testPathNormed);
-            Assert.assertEquals(hdfsPathRef.get(NAME), new Path(testPathNormed).getName());
+            Assert.assertEquals(hdfsPathRef.get(NAME), Path.getPathWithoutSchemeAndAuthority(path).toString().toLowerCase());
             Assert.assertEquals(hdfsPathRef.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME), testPathNormed);
         }
     }
