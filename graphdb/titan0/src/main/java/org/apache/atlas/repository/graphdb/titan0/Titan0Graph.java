@@ -34,6 +34,7 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
+import org.apache.atlas.groovy.GroovyExpression;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
@@ -286,7 +287,7 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
     }
 
     @Override
-    public String generatePersisentToLogicalConversionExpression(String expr, IDataType<?> type) {
+    public GroovyExpression generatePersisentToLogicalConversionExpression(GroovyExpression expr, IDataType<?> type) {
 
         //nothing special needed, value is stored in required type
         return expr;
@@ -304,13 +305,13 @@ public class Titan0Graph implements AtlasGraph<Titan0Vertex, Titan0Edge> {
     }
 
     @Override
-    public String getInitialIndexedPredicate() {
-        return "";
+    public GroovyExpression getInitialIndexedPredicate(GroovyExpression expr) {
+        return expr;
     }
 
     @Override
-    public String getOutputTransformationPredicate(boolean inSelect, boolean isPath) {
-        return "";
+    public GroovyExpression addOutputTransformationPredicate(GroovyExpression expr, boolean inSelect, boolean isPath) {
+        return expr;
     }
 
     public Iterable<AtlasEdge<Titan0Vertex, Titan0Edge>> wrapEdges(Iterator<Edge> it) {

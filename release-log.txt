@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1195 Clean up DSL Translation (jnhagelb via dkantor)
 ATLAS-1139 Parameter name of a HDFS DataSet entity should contain filesystem path (svimal2106 via sumasai)
 ATLAS-1200 Error Catalog enhancement (apoorvnaik via sumasai)
 ATLAS-1207 Dataset exists query in lineage APIs takes longer (shwethags)

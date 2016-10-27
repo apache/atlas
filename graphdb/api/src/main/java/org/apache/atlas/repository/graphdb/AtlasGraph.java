@@ -23,6 +23,7 @@ import java.util.Set;
 
 import javax.script.ScriptException;
 
+import org.apache.atlas.groovy.GroovyExpression;
 import org.apache.atlas.typesystem.types.IDataType;
 
 /**
@@ -204,7 +205,7 @@ public interface AtlasGraph<V, E> {
      * @param type
      * @return
      */
-    String generatePersisentToLogicalConversionExpression(String valueExpr, IDataType<?> type);
+    GroovyExpression generatePersisentToLogicalConversionExpression(GroovyExpression valueExpr, IDataType<?> type);
 
     /**
      * Indicates whether or not stored values with the specified type need to be converted
@@ -240,7 +241,7 @@ public interface AtlasGraph<V, E> {
      *
      * @return
      */
-    String getInitialIndexedPredicate();
+    GroovyExpression getInitialIndexedPredicate(GroovyExpression parent);
 
     /**
      * As an optimization, a graph database implementation may want to retrieve additional
@@ -249,7 +250,7 @@ public interface AtlasGraph<V, E> {
      * avoid the need to make an extra REST API call to look up those edges.  For implementations
      * that do not require any kind of transform, an empty String should be returned.
      */
-    String getOutputTransformationPredicate(boolean isSelect, boolean isPath);
+    GroovyExpression addOutputTransformationPredicate(GroovyExpression expr, boolean isSelect, boolean isPath);
 
     /**
      * Executes a Gremlin script, returns an object with the result.

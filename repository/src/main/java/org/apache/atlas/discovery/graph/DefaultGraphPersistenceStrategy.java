@@ -23,16 +23,16 @@ import java.util.List;
 import javax.inject.Inject;
 
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.query.Expressions;
+import org.apache.atlas.groovy.GroovyExpression;
 import org.apache.atlas.query.GraphPersistenceStrategies;
 import org.apache.atlas.query.GraphPersistenceStrategies$class;
-import org.apache.atlas.query.IntSequence;
 import org.apache.atlas.query.TypeUtils;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.GraphBackedMetadataRepository;
 import org.apache.atlas.repository.graph.GraphHelper;
+import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.GremlinVersion;
@@ -102,11 +102,6 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
     @Override
     public List<String> traitNames(AtlasVertex AtlasVertex) {
         return GraphHelper.getTraitNames(AtlasVertex);
-    }
-
-    @Override
-    public String fieldPrefixInSelect() {
-        return "it";
     }
 
     @Override
@@ -212,28 +207,13 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
     }
 
     @Override
-    public String gremlinCompOp(Expressions.ComparisonExpression op) {
-        return GraphPersistenceStrategies$class.gremlinCompOp(this, op);
-    }
-    
-    @Override
-    public String gremlinPrimitiveOp(Expressions.ComparisonExpression op) {
-        return GraphPersistenceStrategies$class.gremlinPrimitiveOp(this, op);
+    public AtlasEdgeDirection instanceToTraitEdgeDirection() {
+        return AtlasEdgeDirection.OUT;
     }
 
     @Override
-    public String loopObjectExpression(IDataType<?> dataType) {
-        return GraphPersistenceStrategies$class.loopObjectExpression(this, dataType);
-    }
-
-    @Override
-    public String instanceToTraitEdgeDirection() {
-        return "out";
-    }
-
-    @Override
-    public String traitToInstanceEdgeDirection() {
-        return "in";
+    public AtlasEdgeDirection traitToInstanceEdgeDirection() {
+        return AtlasEdgeDirection.IN;
     }
 
     @Override
@@ -247,33 +227,28 @@ public class DefaultGraphPersistenceStrategy implements GraphPersistenceStrategi
     }
 
     @Override
-    public scala.collection.Seq<String> typeTestExpression(String typeName, IntSequence intSeq) {
-        return GraphPersistenceStrategies$class.typeTestExpression(this, typeName, intSeq);
-    }
-
-    @Override
     public boolean collectTypeInstancesIntoVar() {
         return GraphPersistenceStrategies$class.collectTypeInstancesIntoVar(this);
     }
 
     @Override
-    public boolean addGraphVertexPrefix(scala.collection.Traversable<String> preStatements) {
+    public boolean addGraphVertexPrefix(scala.collection.Traversable<GroovyExpression> preStatements) {
         return GraphPersistenceStrategies$class.addGraphVertexPrefix(this, preStatements);
     }
-    
+
     @Override
     public GremlinVersion getSupportedGremlinVersion() {
         return GraphPersistenceStrategies$class.getSupportedGremlinVersion(this);
     }
 
     @Override
-    public String generatePersisentToLogicalConversionExpression(String expr, IDataType<?> t) {
+    public GroovyExpression generatePersisentToLogicalConversionExpression(GroovyExpression expr, IDataType<?> t) {
         return GraphPersistenceStrategies$class.generatePersisentToLogicalConversionExpression(this,expr, t);
     }
 
     @Override
-    public String initialQueryCondition() {
-        return GraphPersistenceStrategies$class.initialQueryCondition(this);
+    public GroovyExpression addInitialQueryCondition(GroovyExpression expr) {
+        return GraphPersistenceStrategies$class.addInitialQueryCondition(this, expr);
     }
 
     @Override

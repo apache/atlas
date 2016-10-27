@@ -21,23 +21,20 @@ package org.apache.atlas.query
 import java.util
 import java.util.Date
 
+import scala.collection.JavaConversions._
 import scala.collection.JavaConversions.seqAsJavaList
+import scala.language.existentials
 
-import org.apache.atlas.query.Expressions.{ComparisonExpression, ExpressionException}
+import org.apache.atlas.groovy.GroovyExpression
 import org.apache.atlas.query.TypeUtils.FieldInfo
-import org.apache.atlas.repository.graph.{GraphHelper, GraphBackedMetadataRepository}
 import org.apache.atlas.repository.RepositoryException
+import org.apache.atlas.repository.graph.GraphHelper
 import org.apache.atlas.repository.graphdb._
-import org.apache.atlas.typesystem.persistence.Id
-import org.apache.atlas.typesystem.types.DataTypes._
+import org.apache.atlas.typesystem.ITypedInstance
+import org.apache.atlas.typesystem.ITypedReferenceableInstance
 import org.apache.atlas.typesystem.persistence.Id
 import org.apache.atlas.typesystem.types._
-import org.apache.atlas.typesystem.{ITypedInstance, ITypedReferenceableInstance}
-
-
-import scala.collection.JavaConversions._
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
+import org.apache.atlas.typesystem.types.DataTypes._
 
 /**
  * Represents the Bridge between the QueryProcessor and the Graph Persistence scheme used.
@@ -47,19 +44,19 @@ import scala.collection.mutable.ArrayBuffer
  * - how are attribute names mapped to Property Keys in Vertices.
  *
  * This is a work in progress.
- * 
+ *
  */
 trait GraphPersistenceStrategies {
 
     @throws(classOf[RepositoryException])
     def getGraph() : AtlasGraph[_,_]
-    
+
     def getSupportedGremlinVersion() : GremlinVersion = getGraph().getSupportedGremlinVersion;
-    def generatePersisentToLogicalConversionExpression(expr: String, t: IDataType[_]) : String = getGraph().generatePersisentToLogicalConversionExpression(expr, t);
+    def generatePersisentToLogicalConversionExpression(expr: GroovyExpression, t: IDataType[_]) : GroovyExpression = getGraph().generatePersisentToLogicalConversionExpression(expr, t);
     def isPropertyValueConversionNeeded(attrType: IDataType[_]) : Boolean = getGraph().isPropertyValueConversionNeeded(attrType);
-    
-    def initialQueryCondition = if (getGraph().requiresInitialIndexedPredicate()) { s""".${getGraph().getInitialIndexedPredicate}""" } else {""};
-   
+
+    def addInitialQueryCondition(parent: GroovyExpression) : GroovyExpression = if (getGraph().requiresInitialIndexedPredicate()) { getGraph().getInitialIndexedPredicate(parent) } else { parent };
+
     /**
      * Name of attribute used to store typeName in vertex
      */
@@ -87,11 +84,12 @@ trait GraphPersistenceStrategies {
 
     def traitLabel(cls: IDataType[_], traitName: String): String
 
-    def instanceToTraitEdgeDirection : String = "out"
-    def traitToInstanceEdgeDirection = instanceToTraitEdgeDirection match {
-      case "out" => "in"
-      case "in" => "out"
-      case x => x
+    def instanceToTraitEdgeDirection : AtlasEdgeDirection = AtlasEdgeDirection.OUT;
+
+    def traitToInstanceEdgeDirection : AtlasEdgeDirection = instanceToTraitEdgeDirection match {
+      case AtlasEdgeDirection.OUT => AtlasEdgeDirection.IN;
+      case AtlasEdgeDirection.IN => AtlasEdgeDirection.OUT;
+      case x => AtlasEdgeDirection.IN;
     }
 
     /**
@@ -115,27 +113,6 @@ trait GraphPersistenceStrategies {
         case FieldInfo(dataType, null, null, traitName) => traitLabel(dataType, traitName)
     }
 
-    def fieldPrefixInSelect(): String = {
-
-        if(getSupportedGremlinVersion() == GremlinVersion.THREE) {
-            //this logic is needed to remove extra results from
-            //what is emitted by repeat loops.  Technically
-            //for queries that don't have a loop in them we could just use "it"
-            //the reason for this is that in repeat loops with an alias,
-            //although the alias gets set to the right value, for some
-            //reason the select actually includes all vertices that were traversed
-            //through in the loop.  In these cases, we only want the last vertex
-            //traversed in the loop to be selected.  The logic here handles that
-            //case by converting the result to a list and just selecting the
-            //last item from it.
-            "((it as Vertex[]) as List<Vertex>).last()"
-        }
-        else {
-            "it"
-        }
-
-    }   
-
     /**
      * extract the Id from a Vertex.
      * @param dataTypeNm the dataType of the instance that the given vertex represents
@@ -146,50 +123,7 @@ trait GraphPersistenceStrategies {
 
     def constructInstance[U](dataType: IDataType[U], v: java.lang.Object): U
 
-    def gremlinCompOp(op: ComparisonExpression) = {
-         if( getSupportedGremlinVersion() == GremlinVersion.TWO) {
-             gremlin2CompOp(op);
-         }
-         else {
-            gremlin3CompOp(op);
-         }
-     }
-    
-     def gremlinPrimitiveOp(op: ComparisonExpression) = op.symbol match {
-        case "=" => "=="
-        case "!=" => "!="
-        case ">" => ">"
-        case ">=" => ">="
-        case "<" => "<"
-        case "<=" => "<="
-        case _ => throw new ExpressionException(op, "Comparison operator not supported in Gremlin")
-     }
-
-    private def gremlin2CompOp(op: ComparisonExpression) = op.symbol match {
-        case "=" => "T.eq"
-        case "!=" => "T.neq"
-        case ">" => "T.gt"
-        case ">=" => "T.gte"
-        case "<" => "T.lt"
-        case "<=" => "T.lte"
-        case _ => throw new ExpressionException(op, "Comparison operator not supported in Gremlin")
-    }
-
-    private def gremlin3CompOp(op: ComparisonExpression) = op.symbol match {
-        case "=" => "eq"
-        case "!=" => "neq"
-        case ">" => "gt"
-        case ">=" => "gte"
-        case "<" => "lt"
-        case "<=" => "lte"
-        case _ => throw new ExpressionException(op, "Comparison operator not supported in Gremlin")
-    }
-
-    def loopObjectExpression(dataType: IDataType[_]) = {
-      _typeTestExpression(dataType.getName, "it.object")
-    }
-
-    def addGraphVertexPrefix(preStatements : Traversable[String]) = !collectTypeInstancesIntoVar
+    def addGraphVertexPrefix(preStatements : Traversable[GroovyExpression]) = !collectTypeInstancesIntoVar
 
     /**
      * Controls behavior of how instances of a Type are discovered.
@@ -213,76 +147,14 @@ trait GraphPersistenceStrategies {
      */
     def collectTypeInstancesIntoVar = true
 
-    def typeTestExpression(typeName : String, intSeq : IntSequence) : Seq[String] = {
-        if (collectTypeInstancesIntoVar)
-            typeTestExpressionMultiStep(typeName, intSeq)
-        else
-            typeTestExpressionUsingFilter(typeName)
-    }
-
-    private def typeTestExpressionUsingFilter(typeName : String) : Seq[String] = {
-      Seq(s"""filter${_typeTestExpression(typeName, "it")}""")
-    }
-
-    /**
-     * type test expression that ends up in the emit clause in
-     * loop/repeat steps and a few other places
-     */
-    private def _typeTestExpression(typeName: String, itRef: String): String = {
-
-        if( getSupportedGremlinVersion() == GremlinVersion.TWO) {
-             s"""{(${itRef}.'${typeAttributeName}' == '${typeName}') |
-       | (${itRef}.'${superTypeAttributeName}' ?
-       | ${itRef}.'${superTypeAttributeName}'.contains('${typeName}') : false)}""".
-          stripMargin.replace(System.getProperty("line.separator"), "")
-        }
-        else {
-            //gremlin 3
-            s"""has('${typeAttributeName}',eq('${typeName}')).or().has('${superTypeAttributeName}',eq('${typeName}'))"""
-        }
-  }
 
     private def propertyValueSet(vertexRef : String, attrName: String) : String = {
         s"""org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils.set(${vertexRef}.values('${attrName})"""
     }
 
-    private def typeTestExpressionMultiStep(typeName : String, intSeq : IntSequence) : Seq[String] = {
 
-        val varName = s"_var_${intSeq.next}"
-        Seq(
-            newSetVar(varName),
-            fillVarWithTypeInstances(typeName, varName),
-            fillVarWithSubTypeInstances(typeName, varName),
-            if(getSupportedGremlinVersion() == GremlinVersion.TWO) {
-                s"$varName._()"
-            }
-            else {
-                //this bit of groovy magic converts the set of vertices in varName into
-                //a String containing the ids of all the vertices.  This becomes the argument
-                //to g.V().  This is needed because Gremlin 3 does not support
-                // _()
-                //s"g.V(${varName}.collect{it.id()} as String[])"
-                s"g.V(${varName} as Object[])${initialQueryCondition}"
-            }
-        )
-    }
-
-    private def newSetVar(varName : String) = s"def $varName = [] as Set"
-
-    private def fillVarWithTypeInstances(typeName : String, fillVar : String) = {
-        s"""g.V().has("${typeAttributeName}", "${typeName}").fill($fillVar)"""
-    }
-
-    private def fillVarWithSubTypeInstances(typeName : String, fillVar : String) = {
-        s"""g.V().has("${superTypeAttributeName}", "${typeName}").fill($fillVar)"""
-    }  
 }
 
-import scala.language.existentials;
-import org.apache.atlas.repository.RepositoryException
-import org.apache.atlas.repository.RepositoryException
-import org.apache.atlas.repository.RepositoryException
-import org.apache.atlas.repository.RepositoryException
 
 case class GraphPersistenceStrategy1(g: AtlasGraph[_,_]) extends GraphPersistenceStrategies {
 
@@ -293,8 +165,8 @@ case class GraphPersistenceStrategy1(g: AtlasGraph[_,_]) extends GraphPersistenc
 
     override def getGraph() : AtlasGraph[_,_] =  {
         return g;
-    }   
-    
+    }
+
     def edgeLabel(dataType: IDataType[_], aInfo: AttributeInfo) = s"__${dataType.getName}.${aInfo.name}"
 
     def edgeLabel(propertyName: String) = s"__${propertyName}"
@@ -458,8 +330,6 @@ case class GraphPersistenceStrategy1(g: AtlasGraph[_,_]) extends GraphPersistenc
         }
     }
 
-
-
     private def mapVertexToCollectionEntry(instanceVertex: AtlasVertex[_,_], attributeInfo: AttributeInfo, elementType: IDataType[_], i: ITypedInstance,  value: Any): Any = {
         elementType.getTypeCategory match {
             case DataTypes.TypeCategory.PRIMITIVE => value
@@ -474,5 +344,6 @@ case class GraphPersistenceStrategy1(g: AtlasGraph[_,_]) extends GraphPersistenc
                 throw new UnsupportedOperationException(s"load for ${attributeInfo.dataType()} not supported")
         }
     }
+
 }
 
