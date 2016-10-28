@@ -18,19 +18,20 @@
 package org.apache.atlas.type;
 
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -71,8 +72,8 @@ public class AtlasEntityType extends AtlasStructType {
             if (superType instanceof AtlasEntityType) {
                 s.add((AtlasEntityType)superType);
             } else {
-                throw new AtlasBaseException(superTypeName + ": incompatible supertype in entity "
-                                             + entityDef.getName());
+                throw new AtlasBaseException(AtlasErrorCode.INCOMPATIBLE_SUPERTYPE, superTypeName,
+                        entityDef.getName());
             }
         }
 
@@ -201,8 +202,7 @@ public class AtlasEntityType extends AtlasStructType {
     private void collectAllSuperTypes(List<String> subTypes, Set<String> superTypes, AtlasTypeRegistry typeRegistry)
         throws AtlasBaseException {
         if (subTypes.contains(entityDef.getName())) {
-            throw new AtlasBaseException(entityDef.getName()
-                                         + ": invalid supertypes - circular reference back to self "  + subTypes);
+            throw new AtlasBaseException(AtlasErrorCode.CIRCULAR_REFERENCE, entityDef.getName(), subTypes.toString());
         }
 
         if (CollectionUtils.isNotEmpty(entityDef.getSuperTypes())) {

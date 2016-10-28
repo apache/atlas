@@ -18,20 +18,20 @@
 package org.apache.atlas.type;
 
 
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasClassification;
+import org.apache.atlas.model.typedef.AtlasClassificationDef;
+import org.apache.commons.collections.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.apache.atlas.exception.AtlasBaseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.typedef.AtlasClassificationDef;
-import org.apache.commons.collections.CollectionUtils;
 
 
 /**
@@ -73,8 +73,8 @@ public class AtlasClassificationType extends AtlasStructType {
             if (superType instanceof AtlasClassificationType) {
                 s.add((AtlasClassificationType)superType);
             } else {
-                throw new AtlasBaseException(superTypeName + ": incompatible supertype in classification "
-                                             + classificationDef.getName());
+                throw new AtlasBaseException(AtlasErrorCode.INCOMPATIBLE_SUPERTYPE, superTypeName,
+                        classificationDef.getName());
             }
         }
 
@@ -201,8 +201,8 @@ public class AtlasClassificationType extends AtlasStructType {
     private void collectAllSuperTypes(List<String> subTypes, Set<String> superTypes, AtlasTypeRegistry typeRegistry)
         throws AtlasBaseException {
         if (subTypes.contains(classificationDef.getName())) {
-            throw new AtlasBaseException(classificationDef.getName()
-                                         + ": invalid supertypes - circular reference back to self " + subTypes);
+            throw new AtlasBaseException(AtlasErrorCode.CIRCULAR_REFERENCE,
+                    classificationDef.getName(), subTypes.toString());
         }
 
         if (CollectionUtils.isNotEmpty(classificationDef.getSuperTypes())) {

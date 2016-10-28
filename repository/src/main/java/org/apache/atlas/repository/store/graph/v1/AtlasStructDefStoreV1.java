@@ -23,12 +23,6 @@ import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
-
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ON_DELETE;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_VAL_CASCADE;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_FOREIGN_KEY;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_MAPPED_FROM_REF;
-
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasStructDefs;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -51,6 +45,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ON_DELETE;
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_VAL_CASCADE;
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_FOREIGN_KEY;
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_MAPPED_FROM_REF;
 
 /**
  * StructDef store in v1 format.
@@ -409,8 +408,8 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         if (CollectionUtils.isNotEmpty(currAttrNames)) {
             for (String currAttrName : currAttrNames) {
                 if (!attrNames.contains(currAttrName)) {
-                    throw new AtlasBaseException(structDef.getName() + "." + currAttrName +
-                                                                                    ": attribute delete not supported");
+                    throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_DELETION_NOT_SUPPORTED,
+                            structDef.getName(), currAttrName);
                 }
             }
         }
@@ -423,8 +422,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
                 if (CollectionUtils.isEmpty(currAttrNames) || !currAttrNames.contains(attributeDef.getName())) {
                     // new attribute - only allow if optional
                     if (!attributeDef.isOptional()) {
-                        throw new AtlasBaseException(structDef.getName() + "." + attributeDef.getName()
-                                                                                + ": can not add mandatory attribute");
+                        throw new AtlasBaseException(AtlasErrorCode.CANNOT_ADD_MANDATORY_ATTRIBUTE, structDef.getName(), attributeDef.getName());
                     }
                 }
 
@@ -557,8 +555,8 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
 
                 if (StringUtils.isNotBlank(reverseAttribName) || isComposite) {
                     if (AtlasTypeUtil.isMapType(attrTypeName)) {
-                        throw new AtlasBaseException(structDef.getName() + "." + ret.getName()
-                                                     + ": constraints not supported on map type " + attrTypeName);
+                        throw new AtlasBaseException(AtlasErrorCode.CONSTRAINT_NOT_SUPPORTED_ON_MAP_TYPE,
+                                structDef.getName(), ret.getName(), attrTypeName);
                     }
 
                     String       refAttributeName = null;

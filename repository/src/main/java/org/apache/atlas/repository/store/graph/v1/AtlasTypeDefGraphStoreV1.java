@@ -18,9 +18,8 @@
 package org.apache.atlas.repository.store.graph.v1;
 
 import com.google.common.base.Preconditions;
-
 import com.google.inject.Inject;
-import org.apache.atlas.AtlasConstants;
+
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
@@ -341,7 +340,7 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
 
         if (CollectionUtils.isNotEmpty(superTypes)) {
             if (! superTypes.containsAll(currentSuperTypes)) {
-                throw new AtlasBaseException("superType remove not supported");
+                throw new AtlasBaseException(AtlasErrorCode.SUPERTYPE_REMOVAL_NOT_SUPPORTED);
             }
 
             for (String superType : superTypes) {
@@ -350,7 +349,7 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
                 getOrCreateEdge(vertex, superTypeVertex, AtlasGraphUtilsV1.SUPERTYPE_EDGE_LABEL);
             }
         } else if (CollectionUtils.isNotEmpty(currentSuperTypes)) {
-            throw new AtlasBaseException("superType remove not supported");
+            throw new AtlasBaseException(AtlasErrorCode.SUPERTYPE_REMOVAL_NOT_SUPPORTED);
         }
     }
 
