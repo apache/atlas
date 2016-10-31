@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1239 when stopping Atlas on the command line it should explicitly say when it has stopped (ayubkhan via sumasai)
 ATLAS-1253 Extract error codes into AtlasErrorCode Enum (apoorvnaik via sumasai)
 ATLAS-1195 Clean up DSL Translation (jnhagelb via dkantor)
 ATLAS-1139 Parameter name of a HDFS DataSet entity should contain filesystem path (svimal2106 via sumasai)

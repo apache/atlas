@@ -49,6 +49,8 @@ def main():
     os.kill(pid, SIGTERM)
 
     mc.wait_for_shutdown(pid, "stopping atlas", 30)
+    if not mc.exist_pid(pid):
+        print "Apache Atlas Server stopped!!!\n"
 
     # assuming kill worked since process check on windows is more involved...
     if os.path.exists(atlas_pid_file):
