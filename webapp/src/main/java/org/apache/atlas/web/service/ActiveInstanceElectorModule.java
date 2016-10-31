@@ -24,6 +24,7 @@ import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.notification.NotificationHookConsumer;
 import org.apache.atlas.repository.audit.HBaseBasedAuditRepository;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
+import org.apache.atlas.repository.store.graph.v1.AtlasTypeDefGraphStoreV1;
 import org.apache.atlas.service.Service;
 import org.apache.atlas.services.DefaultMetadataService;
 
@@ -41,6 +42,7 @@ public class ActiveInstanceElectorModule extends AbstractModule {
         activeStateChangeHandlerBinder.addBinding().to(DefaultMetadataService.class);
         activeStateChangeHandlerBinder.addBinding().to(NotificationHookConsumer.class);
         activeStateChangeHandlerBinder.addBinding().to(HBaseBasedAuditRepository.class);
+        activeStateChangeHandlerBinder.addBinding().to(AtlasTypeDefGraphStoreV1.class);
 
         Multibinder<Service> serviceBinder = Multibinder.newSetBinder(binder(), Service.class);
         serviceBinder.addBinding().to(ActiveInstanceElectorService.class);

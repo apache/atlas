@@ -20,10 +20,12 @@ package org.apache.atlas;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.services.MetadataService;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.TypesDef;
@@ -42,10 +44,11 @@ import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.testng.annotations.Guice;
 
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
+import javax.inject.Inject;
 
 /**
  *  Base Class to set up hive types and instances for tests
@@ -65,7 +68,7 @@ public class BaseRepositoryTest {
         //force graph initialization / built in type registration
         TestUtils.getGraph();
         setUpTypes();
-        new GraphBackedSearchIndexer();
+        new GraphBackedSearchIndexer(new AtlasTypeRegistry());
         TestUtils.resetRequestContext();
         setupInstances();
         TestUtils.dumpGraph(TestUtils.getGraph());

@@ -42,6 +42,11 @@ public class AtlasBaseException extends Exception {
         this.atlasErrorCode = AtlasErrorCode.INTERNAL_ERROR;
     }
 
+    public AtlasBaseException(AtlasErrorCode errorCode, Throwable cause, String... params) {
+        super(errorCode.getFormattedErrorMessage(params), cause);
+        this.atlasErrorCode = errorCode;
+    }
+
     public AtlasBaseException(String message, Throwable cause) {
         super(message, cause);
         this.atlasErrorCode = AtlasErrorCode.INTERNAL_ERROR;
@@ -52,7 +57,14 @@ public class AtlasBaseException extends Exception {
         this.atlasErrorCode = AtlasErrorCode.INTERNAL_ERROR;
     }
 
-    public AtlasBaseException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    public AtlasBaseException(AtlasErrorCode errorCode, Throwable cause, boolean enableSuppression,
+                              boolean writableStackTrace, String ... params) {
+        super(errorCode.getFormattedErrorMessage(params), cause, enableSuppression, writableStackTrace);
+        this.atlasErrorCode = AtlasErrorCode.INTERNAL_ERROR;
+    }
+
+    public AtlasBaseException(String message, Throwable cause, boolean enableSuppression,
+                              boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
         this.atlasErrorCode = AtlasErrorCode.INTERNAL_ERROR;
     }

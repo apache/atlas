@@ -18,22 +18,7 @@
 
 package org.apache.atlas.discovery;
 
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
-import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.inject.Inject;
+import com.google.common.collect.ImmutableSet;
 
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.BaseRepositoryTest;
@@ -46,6 +31,7 @@ import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.persistence.Id;
@@ -65,7 +51,22 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import com.google.common.collect.ImmutableSet;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.inject.Inject;
+
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createClassTypeDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAttrDef;
+import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 
 @Guice(modules = RepositoryMetadataModule.class)
 public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
@@ -119,7 +120,7 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
         //We need to commit the transaction before creating the indices to release the locks held by the transaction.
         //otherwise, the index commit will fail while waiting for the those locks to be released.
         AtlasGraphProvider.getGraphInstance().commit();
-        GraphBackedSearchIndexer idx = new GraphBackedSearchIndexer();
+        GraphBackedSearchIndexer idx = new GraphBackedSearchIndexer(new AtlasTypeRegistry());
         idx.onAdd(newTypes);
 	}
 

@@ -18,13 +18,6 @@
 
 package org.apache.atlas.repository.graph;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-
-import javax.inject.Inject;
-
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.RepositoryMetadataModule;
@@ -35,6 +28,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
@@ -49,6 +43,13 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+
+import javax.inject.Inject;
 
 @Test
 @Guice(modules = RepositoryMetadataModule.class)
@@ -72,7 +73,7 @@ public class GraphRepoMapperScaleTest {
     public void setUp() throws Exception {
         //force up front graph initialization
         TestUtils.getGraph();
-        searchIndexer = new GraphBackedSearchIndexer(new AtlasGraphProvider(), ApplicationProperties.get());
+        searchIndexer = new GraphBackedSearchIndexer(new AtlasGraphProvider(), ApplicationProperties.get(), new AtlasTypeRegistry());
         //Make sure we can cleanup the index directory
         Collection<IDataType> typesAdded = TestUtils.createHiveTypes(typeSystem);
         searchIndexer.onAdd(typesAdded);

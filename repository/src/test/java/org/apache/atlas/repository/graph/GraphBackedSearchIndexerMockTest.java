@@ -18,10 +18,6 @@
 
 package org.apache.atlas.repository.graph;
 
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.repository.Constants;
@@ -29,11 +25,16 @@ import org.apache.atlas.repository.IndexException;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.configuration.Configuration;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 public class GraphBackedSearchIndexerMockTest implements IAtlasGraphProvider {
 
@@ -46,6 +47,9 @@ public class GraphBackedSearchIndexerMockTest implements IAtlasGraphProvider {
     @Mock
     private AtlasGraphManagement management;
 
+    @Mock
+    private AtlasTypeRegistry typeRegistry;
+
     @BeforeMethod
     public void setup() {
         MockitoAnnotations.initMocks(this);
@@ -57,7 +61,7 @@ public class GraphBackedSearchIndexerMockTest implements IAtlasGraphProvider {
         when(graph.getManagementSystem()).thenReturn(management);
         when(management.containsPropertyKey(Constants.VERTEX_TYPE_PROPERTY_KEY)).thenReturn(true);
 
-        GraphBackedSearchIndexer graphBackedSearchIndexer = new GraphBackedSearchIndexer(this, configuration);
+        GraphBackedSearchIndexer graphBackedSearchIndexer = new GraphBackedSearchIndexer(this, configuration, typeRegistry);
 
         verify(management).containsPropertyKey(Constants.VERTEX_TYPE_PROPERTY_KEY);
     }
@@ -69,7 +73,7 @@ public class GraphBackedSearchIndexerMockTest implements IAtlasGraphProvider {
         when(graph.getManagementSystem()).thenReturn(management);
         when(management.containsPropertyKey(Constants.VERTEX_TYPE_PROPERTY_KEY)).thenReturn(true);
 
-        new GraphBackedSearchIndexer(this, configuration);
+        new GraphBackedSearchIndexer(this, configuration, typeRegistry);
         verifyZeroInteractions(management);
 
     }
@@ -81,7 +85,7 @@ public class GraphBackedSearchIndexerMockTest implements IAtlasGraphProvider {
         when(graph.getManagementSystem()).thenReturn(management);
         when(management.containsPropertyKey(Constants.VERTEX_TYPE_PROPERTY_KEY)).thenReturn(true);
 
-        GraphBackedSearchIndexer graphBackedSearchIndexer = new GraphBackedSearchIndexer(this, configuration);
+        GraphBackedSearchIndexer graphBackedSearchIndexer = new GraphBackedSearchIndexer(this, configuration, typeRegistry);
         graphBackedSearchIndexer.instanceIsActive();
 
         verify(management).containsPropertyKey(Constants.VERTEX_TYPE_PROPERTY_KEY);

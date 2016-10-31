@@ -18,29 +18,25 @@
 
 package org.apache.atlas.services;
 
-import static org.apache.atlas.AtlasClient.PROCESS_ATTRIBUTE_INPUTS;
-import static org.apache.atlas.AtlasClient.PROCESS_ATTRIBUTE_OUTPUTS;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.inject.Provider;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.classification.InterfaceAudience;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
+import org.apache.atlas.listener.ChangedTypeDefs;
 import org.apache.atlas.listener.EntityChangeListener;
+import org.apache.atlas.listener.TypeDefChangeListener;
 import org.apache.atlas.listener.TypesChangeListener;
-import org.apache.atlas.query.QueryParser;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
@@ -72,17 +68,23 @@ import org.apache.atlas.typesystem.types.TypeSystem;
 import org.apache.atlas.typesystem.types.cache.TypeCache;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.utils.ParamChecker;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.inject.Provider;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import static org.apache.atlas.AtlasClient.PROCESS_ATTRIBUTE_INPUTS;
+import static org.apache.atlas.AtlasClient.PROCESS_ATTRIBUTE_OUTPUTS;
 
 
 
@@ -91,7 +93,7 @@ import com.google.inject.Provider;
  * for listening to changes to the repository.
  */
 @Singleton
-public class DefaultMetadataService implements MetadataService, ActiveStateChangeHandler {
+public class DefaultMetadataService implements MetadataService, ActiveStateChangeHandler, TypeDefChangeListener {
 
     private static final Logger LOG = LoggerFactory.getLogger(DefaultMetadataService.class);
     private final short maxAuditResults;
@@ -773,5 +775,23 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
     @Override
     public void instanceIsPassive() {
         LOG.info("Reacting to passive state: no action right now");
+    }
+
+    @Override
+    public void onChange(ChangedTypeDefs changedTypeDefs) throws AtlasBaseException {
+        // All we need here is a restore of the type-system
+        LOG.info("TypeSystem reset invoked by TypeRegistry changes");
+        try {
+            TypesDef typesDef = typeStore.restore();
+            typeSystem.reset();
+            TypeSystem.TransientTypeSystem transientTypeSystem
+                    = typeSystem.createTransientTypeSystem(typesDef, false);
+            Map<String, IDataType> typesAdded = transientTypeSystem.getTypesAdded();
+            LOG.info("Number of types got from transient type system: " + typesAdded.size());
+            typeSystem.commitTypes(typesAdded);
+        } catch (AtlasException e) {
+            LOG.error("Failed to restore type-system after TypeRegistry changes", e);
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
+        }
     }
 }

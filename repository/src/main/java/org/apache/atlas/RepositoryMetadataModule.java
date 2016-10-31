@@ -29,6 +29,7 @@ import org.apache.atlas.discovery.DiscoveryService;
 import org.apache.atlas.discovery.LineageService;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
 import org.apache.atlas.listener.EntityChangeListener;
+import org.apache.atlas.listener.TypeDefChangeListener;
 import org.apache.atlas.listener.TypesChangeListener;
 import org.apache.atlas.repository.MetadataRepository;
 import org.apache.atlas.repository.audit.EntityAuditListener;
@@ -75,6 +76,12 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
         Multibinder<TypesChangeListener> typesChangeListenerBinder =
                 Multibinder.newSetBinder(binder(), TypesChangeListener.class);
         typesChangeListenerBinder.addBinding().to(GraphBackedSearchIndexer.class).asEagerSingleton();
+
+        // New typesdef/instance change listener should also be bound to the corresponding implementation
+        Multibinder<TypeDefChangeListener> typeDefChangeListenerMultibinder =
+                Multibinder.newSetBinder(binder(), TypeDefChangeListener.class);
+        typeDefChangeListenerMultibinder.addBinding().to(DefaultMetadataService.class);
+        typeDefChangeListenerMultibinder.addBinding().to(GraphBackedSearchIndexer.class).asEagerSingleton();
 
         // bind the MetadataService interface to an implementation
         bind(MetadataService.class).to(DefaultMetadataService.class).asEagerSingleton();

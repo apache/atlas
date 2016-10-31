@@ -31,7 +31,6 @@ import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasStructDefs;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.store.AtlasTypeDefStore;
-import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.http.annotation.Experimental;
 import org.slf4j.Logger;

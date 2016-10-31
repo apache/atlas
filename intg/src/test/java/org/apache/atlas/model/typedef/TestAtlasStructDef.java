@@ -17,17 +17,16 @@
  */
 package org.apache.atlas.model.typedef;
 
-import java.util.List;
-
 import org.apache.atlas.model.ModelTestUtil;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.type.AtlasType;
 import org.testng.annotations.Test;
 
+import java.util.List;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 
 public class TestAtlasStructDef {

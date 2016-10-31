@@ -55,6 +55,11 @@
             <version>${codehaus.jackson.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>javax.inject</groupId>
+            <artifactId>javax.inject</artifactId>
+            <version>${javax-inject.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.testng</groupId>

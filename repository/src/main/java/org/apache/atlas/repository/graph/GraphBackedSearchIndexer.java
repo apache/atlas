@@ -18,6 +18,50 @@
 
 package org.apache.atlas.repository.graph;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
+
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.discovery.SearchIndexer;
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.ha.HAConfiguration;
+import org.apache.atlas.listener.ActiveStateChangeHandler;
+import org.apache.atlas.listener.ChangedTypeDefs;
+import org.apache.atlas.listener.TypeDefChangeListener;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasEnumDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
+import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.IndexCreationException;
+import org.apache.atlas.repository.IndexException;
+import org.apache.atlas.repository.RepositoryException;
+import org.apache.atlas.repository.graphdb.AtlasCardinality;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
+import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
+import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
+import org.apache.atlas.type.AtlasClassificationType;
+import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasEnumType;
+import org.apache.atlas.type.AtlasStructType;
+import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.typesystem.types.AttributeInfo;
+import org.apache.atlas.typesystem.types.ClassType;
+import org.apache.atlas.typesystem.types.DataTypes;
+import org.apache.atlas.typesystem.types.IDataType;
+import org.apache.atlas.typesystem.types.Multiplicity;
+import org.apache.atlas.typesystem.types.StructType;
+import org.apache.atlas.typesystem.types.TraitType;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.configuration.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -28,38 +72,24 @@ import java.util.Map;
 
 import javax.inject.Inject;
 
-import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasException;
-import org.apache.atlas.discovery.SearchIndexer;
-import org.apache.atlas.ha.HAConfiguration;
-import org.apache.atlas.listener.ActiveStateChangeHandler;
-import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.IndexCreationException;
-import org.apache.atlas.repository.IndexException;
-import org.apache.atlas.repository.RepositoryException;
-import org.apache.atlas.repository.graphdb.AtlasCardinality;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
-import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
-import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
-import org.apache.atlas.typesystem.types.AttributeInfo;
-import org.apache.atlas.typesystem.types.ClassType;
-import org.apache.atlas.typesystem.types.DataTypes;
-import org.apache.atlas.typesystem.types.IDataType;
-import org.apache.atlas.typesystem.types.Multiplicity;
-import org.apache.atlas.typesystem.types.StructType;
-import org.apache.atlas.typesystem.types.TraitType;
-import org.apache.commons.configuration.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.annotations.VisibleForTesting;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BIGDECIMAL;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BIGINTEGER;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BOOLEAN;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BYTE;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_DATE;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_DOUBLE;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_FLOAT;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_INT;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_LONG;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_SHORT;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_STRING;
 
 
 /**
  * Adds index for properties of a given type when its added before any instances are added.
  */
-public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChangeHandler {
+public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChangeHandler,
+        TypeDefChangeListener {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphBackedSearchIndexer.class);
     
@@ -70,19 +100,23 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             add(BigInteger.class);
         }
     };
-    
+
+    // Added for type lookup when indexing the new typedefs
+    private final AtlasTypeRegistry typeRegistry;
+
     //allows injection of a dummy graph for testing
     private IAtlasGraphProvider provider;
     
     @Inject
-    public GraphBackedSearchIndexer() throws RepositoryException, AtlasException {
-        this(new AtlasGraphProvider(), ApplicationProperties.get());
+    public GraphBackedSearchIndexer(AtlasTypeRegistry typeRegistry) throws AtlasException {
+        this(new AtlasGraphProvider(), ApplicationProperties.get(), typeRegistry);
     }
 
     @VisibleForTesting
-    GraphBackedSearchIndexer( IAtlasGraphProvider provider, Configuration configuration)
+    GraphBackedSearchIndexer( IAtlasGraphProvider provider, Configuration configuration, AtlasTypeRegistry typeRegistry)
             throws IndexException, RepositoryException {
         this.provider = provider;
+        this.typeRegistry = typeRegistry;
         if (!HAConfiguration.isHAEnabled(configuration)) {
             initialize(provider.get());
         }
@@ -209,6 +243,117 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     @Override
     public void onChange(Collection<? extends IDataType> dataTypes) throws AtlasException {
         onAdd(dataTypes);
+    }
+
+    private void addIndexForType(AtlasGraphManagement management, AtlasBaseTypeDef typeDef) {
+        if (typeDef instanceof AtlasEnumDef) {
+            // Only handle complex types like Struct, Classification and Entity
+            return;
+        }
+        if (typeDef instanceof AtlasStructDef) {
+            AtlasStructDef structDef = (AtlasStructDef) typeDef;
+            List<AtlasAttributeDef> attributeDefs = structDef.getAttributeDefs();
+            if (CollectionUtils.isNotEmpty(attributeDefs)) {
+                for (AtlasAttributeDef attributeDef : attributeDefs) {
+                    createIndexForAttribute(management, typeDef.getName(), attributeDef);
+                }
+            }
+        } else if (!AtlasTypeUtil.isBuiltInType(typeDef.getName())){
+            throw new IllegalArgumentException("bad data type" + typeDef.getName());
+        }
+    }
+
+    private void createIndexForAttribute(AtlasGraphManagement management, String typeName,
+                                         AtlasAttributeDef attributeDef) {
+        final String propertyName = GraphHelper.encodePropertyKey(typeName + "." + attributeDef.getName());
+        AtlasCardinality cardinality = toAtlasCardinality(attributeDef.getCardinality());
+        boolean isUnique = attributeDef.isUnique();
+        boolean isIndexable = attributeDef.isIndexable();
+        String attribTypeName = attributeDef.getTypeName();
+        boolean isBuiltInType = AtlasTypeUtil.isBuiltInType(attribTypeName);
+        boolean isArrayType = AtlasTypeUtil.isArrayType(attribTypeName);
+        boolean isMapType = AtlasTypeUtil.isMapType(attribTypeName);
+
+
+        try {
+            AtlasType atlasType = typeRegistry.getType(attribTypeName);
+
+            if (isMapType || isArrayType || isClassificationType(atlasType) || isEntityType(atlasType)) {
+                LOG.warn("Ignoring non-indexable attribute {}", attribTypeName);
+            }
+
+            if (isBuiltInType) {
+                createIndexes(management, propertyName, getPrimitiveClass(attribTypeName), isUnique, cardinality, false, isIndexable);
+            }
+
+            if (isEnumType(atlasType)) {
+                createIndexes(management, propertyName, String.class, isUnique, cardinality, false, isIndexable);
+            }
+
+            if (isStructType(atlasType)) {
+                AtlasStructDef structDef = typeRegistry.getStructDefByName(attributeDef.getName());
+                updateIndexForTypeDef(management, structDef);
+            }
+        } catch (AtlasBaseException e) {
+            LOG.error("No type exists for {}", attribTypeName, e);
+        }
+    }
+
+    private boolean isEntityType(AtlasType type) {
+        return type instanceof AtlasEntityType;
+    }
+
+    private boolean isClassificationType(AtlasType type) {
+        return type instanceof AtlasClassificationType;
+    }
+
+    private boolean isEnumType(AtlasType type) {
+        return type instanceof AtlasEnumType;
+    }
+
+    private boolean isStructType(AtlasType type) {
+        return type instanceof AtlasStructType;
+    }
+
+    private Class getPrimitiveClass(String attribTypeName) {
+        switch (attribTypeName.toLowerCase()) {
+            case ATLAS_TYPE_BOOLEAN:
+                return Boolean.class;
+            case ATLAS_TYPE_BYTE:
+                return Byte.class;
+            case ATLAS_TYPE_SHORT:
+                return Short.class;
+            case ATLAS_TYPE_INT:
+                return Integer.class;
+            case ATLAS_TYPE_LONG:
+            case ATLAS_TYPE_DATE:
+                return Long.class;
+            case ATLAS_TYPE_FLOAT:
+                return Float.class;
+            case ATLAS_TYPE_DOUBLE:
+                return Double.class;
+            case ATLAS_TYPE_BIGINTEGER:
+                return BigInteger.class;
+            case ATLAS_TYPE_BIGDECIMAL:
+                return BigDecimal.class;
+            case ATLAS_TYPE_STRING:
+                return String.class;
+        }
+
+        throw new IllegalArgumentException(String.format("Unknown primitive typename %s", attribTypeName));
+    }
+
+    private AtlasCardinality toAtlasCardinality(AtlasAttributeDef.Cardinality cardinality) {
+        switch (cardinality) {
+            case SINGLE:
+                return AtlasCardinality.SINGLE;
+            case LIST:
+                return AtlasCardinality.LIST;
+            case SET:
+                return AtlasCardinality.SET;
+        }
+        // Should never reach this point
+        throw new IllegalArgumentException(String.format("Bad cardinality %s", cardinality));
     }
 
     private void addIndexForType(AtlasGraphManagement management, IDataType dataType) {
@@ -456,9 +601,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         LOG.info("Reacting to active: initializing index");
         try {
             initialize();
-        } catch (RepositoryException e) {
-            throw new AtlasException("Error in reacting to active on initialization", e);
-        } catch (IndexException e) {
+        } catch (RepositoryException | IndexException e) {
             throw new AtlasException("Error in reacting to active on initialization", e);
         }
     }
@@ -467,7 +610,59 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     public void instanceIsPassive() {
         LOG.info("Reacting to passive state: No action right now.");
     }
-    
+
+    @Override
+    public void onChange(ChangedTypeDefs changedTypeDefs) throws AtlasBaseException {
+        LOG.info("Adding indexes for changed typedefs");
+        AtlasGraphManagement management = null;
+        try {
+            management = provider.get().getManagementSystem();
+
+            // Update index for newly created types
+            if (CollectionUtils.isNotEmpty(changedTypeDefs.getCreateTypeDefs())) {
+                for (AtlasBaseTypeDef typeDef : changedTypeDefs.getCreateTypeDefs()) {
+                    updateIndexForTypeDef(management, typeDef);
+                }
+            }
+
+            // Update index for updated types
+            if (CollectionUtils.isNotEmpty(changedTypeDefs.getUpdatedTypeDefs())) {
+                for (AtlasBaseTypeDef typeDef : changedTypeDefs.getUpdatedTypeDefs()) {
+                    updateIndexForTypeDef(management, typeDef);
+                }
+            }
+
+            //Commit indexes
+            commit(management);
+        } catch (RepositoryException | IndexException e) {
+            LOG.error("Failed to update indexes for changed typedefs", e);
+            attemptRollback(changedTypeDefs, management);
+        }
+
+    }
+
+    private void attemptRollback(ChangedTypeDefs changedTypeDefs, AtlasGraphManagement management)
+            throws AtlasBaseException {
+        if (null != management) {
+            try {
+                rollback(management);
+            } catch (IndexException e) {
+                LOG.error("Index rollback has failed", e);
+                throw new AtlasBaseException(AtlasErrorCode.INDEX_ROLLBACK_FAILED, e,
+                        changedTypeDefs.toString());
+            }
+        }
+    }
+
+    private void updateIndexForTypeDef(AtlasGraphManagement management, AtlasBaseTypeDef typeDef) {
+        Preconditions.checkNotNull(typeDef, "Cannot index on null typedefs");
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Creating indexes for type name={}, definition={}", typeDef.getName(), typeDef.getClass());
+        }
+        addIndexForType(management, typeDef);
+        LOG.info("Index creation for type {} complete", typeDef.getName());
+    }
+
     /* Commenting this out since we do not need an index for edge label here
     private void createEdgeMixedIndex(String propertyName) {
         EdgeLabel edgeLabel = management.getEdgeLabel(propertyName);

@@ -74,7 +74,8 @@ trait GraphUtils {
 object QueryTestsUtils extends GraphUtils {
 
      def setupTypesAndIndices() : Unit = {
-        val indexer = new GraphBackedSearchIndexer();
+         // FIXME: Do we need to init the AtlasTypeRegistry here ?
+        val indexer = new GraphBackedSearchIndexer(null);
         val typesDef : TypesDef = defineTypes;
         val newTypes = TypeSystem.getInstance.defineTypes(typesDef);
         indexer.onAdd(newTypes.values());        

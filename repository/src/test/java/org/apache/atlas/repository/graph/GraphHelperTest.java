@@ -18,11 +18,21 @@
 
 package org.apache.atlas.repository.graph;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
+import org.apache.atlas.RepositoryMetadataModule;
+import org.apache.atlas.TestUtils;
+import org.apache.atlas.repository.graph.GraphHelper.VertexInfo;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.typesystem.ITypedReferenceableInstance;
+import org.apache.atlas.typesystem.types.TypeSystem;
+import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Guice;
+import org.testng.annotations.Test;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,20 +42,11 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
-import org.apache.atlas.RepositoryMetadataModule;
-import org.apache.atlas.TestUtils;
-import org.apache.atlas.repository.graph.GraphHelper.VertexInfo;
-import org.apache.atlas.repository.graphdb.AtlasEdge;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.typesystem.ITypedReferenceableInstance;
-import org.apache.atlas.typesystem.types.TypeSystem;
-import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Guice;
-import org.testng.annotations.Test;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 @Guice(modules = RepositoryMetadataModule.class)
 public class GraphHelperTest {
@@ -72,12 +73,15 @@ public class GraphHelperTest {
 
     private TypeSystem typeSystem;
 
+    @Inject
+    private AtlasTypeRegistry typeRegistry;
+
     @BeforeClass
     public void setUp() throws Exception {
         typeSystem = TypeSystem.getInstance();
         typeSystem.reset();
 
-        new GraphBackedSearchIndexer();
+        new GraphBackedSearchIndexer(typeRegistry);
 
         TestUtils.defineDeptEmployeeTypes(typeSystem);
     }
