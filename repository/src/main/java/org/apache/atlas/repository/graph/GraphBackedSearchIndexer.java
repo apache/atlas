@@ -280,17 +280,11 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
             if (isMapType || isArrayType || isClassificationType(atlasType) || isEntityType(atlasType)) {
                 LOG.warn("Ignoring non-indexable attribute {}", attribTypeName);
-            }
-
-            if (isBuiltInType) {
+            } else if (isBuiltInType) {
                 createIndexes(management, propertyName, getPrimitiveClass(attribTypeName), isUnique, cardinality, false, isIndexable);
-            }
-
-            if (isEnumType(atlasType)) {
+            } else if (isEnumType(atlasType)) {
                 createIndexes(management, propertyName, String.class, isUnique, cardinality, false, isIndexable);
-            }
-
-            if (isStructType(atlasType)) {
+            } else if (isStructType(atlasType)) {
                 AtlasStructDef structDef = typeRegistry.getStructDefByName(attributeDef.getName());
                 updateIndexForTypeDef(management, structDef);
             }

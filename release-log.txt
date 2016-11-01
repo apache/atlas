@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1258 BugFix for Indexer NPE on StructDef lookup (apoorvnaik via sumasai)
 ATLAS-1233 UnitTests for the TypeDefStores (apoorvnaik via sumasai)
 ATLAS-1240 Adding Change listeners to react on changes in TypesDef (apoorvnaik via sumasai)
 ATLAS-1239 when stopping Atlas on the command line it should explicitly say when it has stopped (ayubkhan via sumasai)
