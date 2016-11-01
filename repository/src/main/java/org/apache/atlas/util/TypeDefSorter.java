@@ -57,18 +57,23 @@ public class TypeDefSorter {
         }
         processed.add(type);
         Set<String> superTypeNames = new HashSet<>();
-        try {
-            AtlasClassificationDef classificationDef = AtlasClassificationDef.class.cast(type);
-            superTypeNames.addAll(classificationDef.getSuperTypes());
-        } catch (ClassCastException ex) {
-            LOG.warn("Casting to ClassificationDef failed");
+        if (type.getClass().equals(AtlasClassificationDef.class)) {
+            try {
+                AtlasClassificationDef classificationDef = AtlasClassificationDef.class.cast(type);
+                superTypeNames.addAll(classificationDef.getSuperTypes());
+            } catch (ClassCastException ex) {
+                LOG.warn("Casting to ClassificationDef failed");
+            }
         }
-        try {
-            AtlasEntityDef entityDef = AtlasEntityDef.class.cast(type);
-            superTypeNames.addAll(entityDef.getSuperTypes());
-        } catch (ClassCastException ex) {
-            LOG.warn("Casting to AtlasEntityDef failed");
+        if (type.getClass().equals(AtlasEntityDef.class)) {
+            try {
+                AtlasEntityDef entityDef = AtlasEntityDef.class.cast(type);
+                superTypeNames.addAll(entityDef.getSuperTypes());
+            } catch (ClassCastException ex) {
+                LOG.warn("Casting to AtlasEntityDef failed");
+            }
         }
+
         for (String superTypeName : superTypeNames) {
             // Recursively add any supertypes first to the result.
             T superType = typesByName.get(superTypeName);
