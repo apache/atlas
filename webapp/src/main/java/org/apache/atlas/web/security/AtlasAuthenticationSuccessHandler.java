@@ -43,6 +43,11 @@ public class AtlasAuthenticationSuccessHandler implements AuthenticationSuccessH
         ObjectMapper mapper = new ObjectMapper();
         json.put("msgDesc", "Success");
 
+        if (request.getSession() != null) { // incase of form based login mark it as local login in session
+            request.getSession().setAttribute("locallogin","true");
+            request.getServletContext().setAttribute(request.getSession().getId(), "locallogin");
+        }
+
         String jsonAsStr = mapper.writeValueAsString(json);
         response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_OK);

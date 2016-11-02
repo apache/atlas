@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1244 added support for KnoxSSO Authentication
 ATLAS-1295 Build failure due to patch for ATLAS-1081 (apoorvnaik via sumasai)
 ATLAS-1081 Atlas jetty server configuration (shwethags)
 ATLAS-1257 Map Entity REST APIs to ATLAS v1 backend (sumasai)

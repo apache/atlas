@@ -39,6 +39,10 @@ public class AtlasAuthenticationProvider extends
     public static final String FILE_AUTH_METHOD = "atlas.authentication.method.file";
     public static final String LDAP_TYPE = "atlas.authentication.method.ldap.type";
 
+
+
+    private boolean ssoEnabled = false;
+
     @Autowired
     AtlasLdapAuthenticationProvider ldapAuthenticationProvider;
 
@@ -67,17 +71,27 @@ public class AtlasAuthenticationProvider extends
     public Authentication authenticate(Authentication authentication)
             throws AuthenticationException {
 
-        if (ldapType.equalsIgnoreCase("LDAP")) {
-            try {
-                authentication = ldapAuthenticationProvider.authenticate(authentication);
-            } catch (Exception ex) {
-                LOG.error("Error while LDAP authentication", ex);
+        if(ssoEnabled){
+            if (authentication != null){
+                authentication = getSSOAuthentication(authentication);
+                if(authentication!=null && authentication.isAuthenticated()){
+                    return authentication;
+                }
             }
-        } else if (ldapType.equalsIgnoreCase("AD")) {
-            try {
-                authentication = adAuthenticationProvider.authenticate(authentication);
-            } catch (Exception ex) {
-                LOG.error("Error while AD authentication", ex);
+        } else {
+
+            if (ldapType.equalsIgnoreCase("LDAP")) {
+                try {
+                    authentication = ldapAuthenticationProvider.authenticate(authentication);
+                } catch (Exception ex) {
+                    LOG.error("Error while LDAP authentication", ex);
+                }
+            } else if (ldapType.equalsIgnoreCase("AD")) {
+                try {
+                    authentication = adAuthenticationProvider.authenticate(authentication);
+                } catch (Exception ex) {
+                    LOG.error("Error while AD authentication", ex);
+                }
             }
         }
 
@@ -97,4 +111,15 @@ public class AtlasAuthenticationProvider extends
         throw new AtlasAuthenticationException("Authentication failed.");
     }
 
+    public boolean isSsoEnabled() {
+        return ssoEnabled;
+    }
+
+    public void setSsoEnabled(boolean ssoEnabled) {
+        this.ssoEnabled = ssoEnabled;
+    }
+
+    private Authentication getSSOAuthentication(Authentication authentication) throws AuthenticationException{
+        return authentication;
+    }
 }

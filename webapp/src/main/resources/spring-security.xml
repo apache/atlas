@@ -42,6 +42,7 @@
         <security:session-management
                 session-fixation-protection="newSession" />
         <intercept-url pattern="/**" access="isAuthenticated()" />
+        <custom-filter ref="ssoAuthenticationFilter" after="BASIC_AUTH_FILTER" />
 
         <security:custom-filter ref="krbAuthenticationFilter" after="SERVLET_API_SUPPORT_FILTER" />
         <security:custom-filter ref="CSRFPreventionFilter" after="REMEMBER_ME_FILTER" />
@@ -53,7 +54,7 @@
                 username-parameter="j_username"
                 password-parameter="j_password" />
 
-        <security:logout logout-success-url="/login.jsp" delete-cookies="JSESSIONID"
+        <security:logout logout-success-url="/login.jsp" delete-cookies="ATLASSESSIONID"
                          logout-url="/logout.html" />
         <http-basic />
         <security:custom-filter position="LAST" ref="atlasAuthorizationFilter"/>
@@ -61,7 +62,10 @@
 
     <beans:bean id="krbAuthenticationFilter" class="org.apache.atlas.web.filters.AtlasAuthenticationFilter">
     </beans:bean>
-    
+
+    <beans:bean id="ssoAuthenticationFilter" class="org.apache.atlas.web.filters.AtlasKnoxSSOAuthenticationFilter">
+    </beans:bean>
+
     <beans:bean id="CSRFPreventionFilter" class="org.apache.atlas.web.filters.AtlasCSRFPreventionFilter">
     </beans:bean>
 

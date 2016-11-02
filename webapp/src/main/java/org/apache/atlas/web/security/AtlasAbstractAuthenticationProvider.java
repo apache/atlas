@@ -22,7 +22,11 @@ package org.apache.atlas.web.security;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.security.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -33,6 +37,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 public abstract class AtlasAbstractAuthenticationProvider implements
         AuthenticationProvider {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasAbstractAuthenticationProvider.class);
 
     @Override
     public boolean supports(Class<?> authentication) {
@@ -92,16 +97,20 @@ public abstract class AtlasAbstractAuthenticationProvider implements
         return authentication;
     }
 
-    public List<GrantedAuthority> getAuthoritiesFromUGI(String userName) {
+    public static List<GrantedAuthority> getAuthoritiesFromUGI(String userName) {
         List<GrantedAuthority> grantedAuths = new ArrayList<GrantedAuthority>();
-        UserGroupInformation ugi = UserGroupInformation.createRemoteUser(userName);
-        if (ugi != null) {
-            String[] userGroups = ugi.getGroupNames();
+        Configuration config = new Configuration();
+
+        try {
+            Groups gp = new Groups(config);
+            List<String> userGroups = gp.getGroups(userName);
             if (userGroups != null) {
                 for (String group : userGroups) {
                     grantedAuths.add(new SimpleGrantedAuthority(group));
                 }
             }
+        } catch (java.io.IOException e) {
+            LOG.error("Exception while fetching groups ", e);
         }
         return grantedAuths;
     }
