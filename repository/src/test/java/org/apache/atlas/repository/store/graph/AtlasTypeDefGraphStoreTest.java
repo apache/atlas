@@ -342,7 +342,10 @@ public class AtlasTypeDefGraphStoreTest {
         // Test Classification with supertype
         List<AtlasClassificationDef> classificationDefs = TestUtilsV2.getClassificationWithValidSuperType();
 
-        AtlasTypesDef toCreate = new AtlasTypesDef(null, null, classificationDefs, null);
+        AtlasTypesDef toCreate = new AtlasTypesDef(Collections.<AtlasEnumDef>emptyList(),
+                Collections.<AtlasStructDef>emptyList(),
+                classificationDefs,
+                Collections.<AtlasEntityDef>emptyList());
         try {
             AtlasTypesDef created = typeDefStore.createTypesDef(toCreate);
             assertEquals(created.getClassificationDefs(), toCreate.getClassificationDefs(),
@@ -353,7 +356,10 @@ public class AtlasTypeDefGraphStoreTest {
 
         // Test Entity with supertype
         List<AtlasEntityDef> entityDefs = TestUtilsV2.getEntityWithValidSuperType();
-        toCreate = new AtlasTypesDef(null, null, null, entityDefs);
+        toCreate = new AtlasTypesDef(Collections.<AtlasEnumDef>emptyList(),
+                Collections.<AtlasStructDef>emptyList(),
+                Collections.<AtlasClassificationDef>emptyList(),
+                entityDefs);
         try {
             AtlasTypesDef created = typeDefStore.createTypesDef(toCreate);
             assertEquals(created.getEntityDefs(), toCreate.getEntityDefs(),
