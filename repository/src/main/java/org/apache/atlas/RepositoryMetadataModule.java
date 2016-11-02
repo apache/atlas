@@ -37,6 +37,8 @@ import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.graph.DeleteHandler;
 import org.apache.atlas.repository.graph.GraphBackedMetadataRepository;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
+import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.v1.AtlasEntityStoreV1;
 import org.apache.atlas.repository.store.graph.v1.AtlasTypeDefGraphStoreV1;
 import org.apache.atlas.repository.typestore.GraphBackedTypeStore;
 import org.apache.atlas.repository.typestore.ITypeStore;
@@ -82,6 +84,8 @@ public class RepositoryMetadataModule extends com.google.inject.AbstractModule {
                 Multibinder.newSetBinder(binder(), TypeDefChangeListener.class);
         typeDefChangeListenerMultibinder.addBinding().to(DefaultMetadataService.class);
         typeDefChangeListenerMultibinder.addBinding().to(GraphBackedSearchIndexer.class).asEagerSingleton();
+
+        bind(AtlasEntityStore.class).to(AtlasEntityStoreV1.class);
 
         // bind the MetadataService interface to an implementation
         bind(MetadataService.class).to(DefaultMetadataService.class).asEagerSingleton();

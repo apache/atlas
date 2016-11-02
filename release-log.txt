@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1241 New Instance APIs and POJOs (sumasai)
 ATLAS-1259 Fix Test and compilation failure caused bt ATLAS-1233 changes (apoorvnaik via sumasai)
 ATLAS-1248 /bin/atlas_stop.py not killing the process and process is found alive even after 30 secs (zhangqiang2 via sumasai)
 ATLAS-1258 BugFix for Indexer NPE on StructDef lookup (apoorvnaik via sumasai)

@@ -347,6 +347,14 @@
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-intg</artifactId>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <build>
