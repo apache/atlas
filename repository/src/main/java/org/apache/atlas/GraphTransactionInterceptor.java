@@ -26,8 +26,14 @@ import org.apache.atlas.typesystem.exception.SchemaNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class GraphTransactionInterceptor implements MethodInterceptor {
     private static final Logger LOG = LoggerFactory.getLogger(GraphTransactionInterceptor.class);
+
+    private static final ThreadLocal<List<PostTransactionHook>> postTransactionHooks = new ThreadLocal<>();
+
     private AtlasGraph graph;
 
     @Override
@@ -37,19 +43,38 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
             graph = AtlasGraphProvider.getGraphInstance();
         }
 
+        boolean isSuccess = false;
+
         try {
-            Object response = invocation.proceed();
-            graph.commit();
-            LOG.info("graph commit");
-            return response;
-        } catch (Throwable t) {
-            if (logException(t)) {
-                LOG.error("graph rollback due to exception ", t);
-            } else {
-                LOG.error("graph rollback due to exception " + t.getClass().getSimpleName() + ":" + t.getMessage());
+            try {
+                Object response = invocation.proceed();
+                graph.commit();
+                isSuccess = true;
+                LOG.info("graph commit");
+                return response;
+            } catch (Throwable t) {
+                if (logException(t)) {
+                    LOG.error("graph rollback due to exception ", t);
+                } else {
+                    LOG.error("graph rollback due to exception " + t.getClass().getSimpleName() + ":" + t.getMessage());
+                }
+                graph.rollback();
+                throw t;
             }
-            graph.rollback();
-            throw t;
+        } finally {
+            List<PostTransactionHook> trxHooks = postTransactionHooks.get();
+
+            if (trxHooks != null) {
+                postTransactionHooks.remove();
+
+                for (PostTransactionHook trxHook : trxHooks) {
+                    try {
+                        trxHook.onComplete(isSuccess);
+                    } catch (Throwable t) {
+                        LOG.error("postTransactionHook failed", t);
+                    }
+                }
+            }
         }
     }
 
@@ -58,5 +83,20 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
             return false;
         }
         return true;
+    }
+
+    public static abstract class PostTransactionHook {
+        protected PostTransactionHook() {
+            List<PostTransactionHook> trxHooks = postTransactionHooks.get();
+
+            if (trxHooks == null) {
+                trxHooks = new ArrayList<>();
+                postTransactionHooks.set(trxHooks);
+            }
+
+            trxHooks.add(this);
+        }
+
+        public abstract void onComplete(boolean isSuccess);
     }
 }

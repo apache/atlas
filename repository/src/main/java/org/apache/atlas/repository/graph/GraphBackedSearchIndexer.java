@@ -285,7 +285,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             } else if (isEnumType(atlasType)) {
                 createIndexes(management, propertyName, String.class, isUnique, cardinality, false, isIndexable);
             } else if (isStructType(atlasType)) {
-                AtlasStructDef structDef = typeRegistry.getStructDefByName(attributeDef.getName());
+                AtlasStructDef structDef = typeRegistry.getStructDefByName(attribTypeName);
                 updateIndexForTypeDef(management, structDef);
             }
         } catch (AtlasBaseException e) {
