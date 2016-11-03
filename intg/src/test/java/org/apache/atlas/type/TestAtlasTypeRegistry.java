@@ -19,14 +19,20 @@ package org.apache.atlas.type;
 
 
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeRegistry.AtlasTransientTypeRegistry;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import static org.testng.Assert.*;
 
 public class TestAtlasTypeRegistry {
 
@@ -57,6 +63,14 @@ public class TestAtlasTypeRegistry {
         classifiL2_3.addSuperType(classifiL1_2.getName());
         classifiL2_4.addSuperType(classifiL1_2.getName());
 
+        classifiL0.addAttribute(new AtlasAttributeDef("L0_a1", AtlasBaseTypeDef.ATLAS_TYPE_INT));
+        classifiL1_1.addAttribute(new AtlasAttributeDef("L1-1_a1", AtlasBaseTypeDef.ATLAS_TYPE_INT));
+        classifiL1_2.addAttribute(new AtlasAttributeDef("L1-2_a1", AtlasBaseTypeDef.ATLAS_TYPE_INT));
+        classifiL2_1.addAttribute(new AtlasAttributeDef("L2-1_a1", AtlasBaseTypeDef.ATLAS_TYPE_INT));
+        classifiL2_2.addAttribute(new AtlasAttributeDef("L2-2_a1", AtlasBaseTypeDef.ATLAS_TYPE_INT));
+        classifiL2_3.addAttribute(new AtlasAttributeDef("L2-3_a1", AtlasBaseTypeDef.ATLAS_TYPE_INT));
+        classifiL2_4.addAttribute(new AtlasAttributeDef("L2-4_a1", AtlasBaseTypeDef.ATLAS_TYPE_INT));
+
         AtlasTypesDef typesDef = new AtlasTypesDef();
 
         typesDef.getClassificationDefs().add(classifiL0);
@@ -77,6 +91,24 @@ public class TestAtlasTypeRegistry {
             failureMsg = excp.getMessage();
         }
         assertNull(failureMsg);
+
+        typeRegistry.commitTransientTypeRegistry(ttr);
+
+        validateSuperTypes(typeRegistry, "L0", new HashSet<String>());
+        validateSuperTypes(typeRegistry, "L1-1", new HashSet<>(Arrays.asList("L0")));
+        validateSuperTypes(typeRegistry, "L1-2", new HashSet<>(Arrays.asList("L0")));
+        validateSuperTypes(typeRegistry, "L2-1", new HashSet<>(Arrays.asList("L1-1", "L0")));
+        validateSuperTypes(typeRegistry, "L2-2", new HashSet<>(Arrays.asList("L1-1", "L0")));
+        validateSuperTypes(typeRegistry, "L2-3", new HashSet<>(Arrays.asList("L1-1", "L0", "L1-2")));
+        validateSuperTypes(typeRegistry, "L2-4", new HashSet<>(Arrays.asList("L1-2", "L0")));
+
+        validateAttributeNames(typeRegistry, "L0", new HashSet<>(Arrays.asList("L0_a1")));
+        validateAttributeNames(typeRegistry, "L1-1", new HashSet<>(Arrays.asList("L0_a1", "L1-1_a1")));
+        validateAttributeNames(typeRegistry, "L1-2", new HashSet<>(Arrays.asList("L0_a1", "L1-2_a1")));
+        validateAttributeNames(typeRegistry, "L2-1", new HashSet<>(Arrays.asList("L0_a1", "L1-1_a1", "L2-1_a1")));
+        validateAttributeNames(typeRegistry, "L2-2", new HashSet<>(Arrays.asList("L0_a1", "L1-1_a1", "L2-2_a1")));
+        validateAttributeNames(typeRegistry, "L2-3", new HashSet<>(Arrays.asList("L0_a1", "L1-1_a1", "L1-2_a1", "L2-3_a1")));
+        validateAttributeNames(typeRegistry, "L2-4", new HashSet<>(Arrays.asList("L0_a1", "L1-2_a1", "L2-4_a1")));
     }
 
     @Test
@@ -176,6 +208,14 @@ public class TestAtlasTypeRegistry {
         entL2_3.addSuperType(entL1_2.getName());
         entL2_4.addSuperType(entL1_2.getName());
 
+        entL0.addAttribute(new AtlasAttributeDef("L0_a1", AtlasBaseTypeDef.ATLAS_TYPE_INT));
+        entL1_1.addAttribute(new AtlasAttributeDef("L1-1_a1", AtlasBaseTypeDef.ATLAS_TYPE_INT));
+        entL1_2.addAttribute(new AtlasAttributeDef("L1-2_a1", AtlasBaseTypeDef.ATLAS_TYPE_INT));
+        entL2_1.addAttribute(new AtlasAttributeDef("L2-1_a1", AtlasBaseTypeDef.ATLAS_TYPE_INT));
+        entL2_2.addAttribute(new AtlasAttributeDef("L2-2_a1", AtlasBaseTypeDef.ATLAS_TYPE_INT));
+        entL2_3.addAttribute(new AtlasAttributeDef("L2-3_a1", AtlasBaseTypeDef.ATLAS_TYPE_INT));
+        entL2_4.addAttribute(new AtlasAttributeDef("L2-4_a1", AtlasBaseTypeDef.ATLAS_TYPE_INT));
+
         AtlasTypesDef typesDef = new AtlasTypesDef();
 
         typesDef.getEntityDefs().add(entL0);
@@ -196,6 +236,24 @@ public class TestAtlasTypeRegistry {
             failureMsg = excp.getMessage();
         }
         assertNull(failureMsg);
+
+        typeRegistry.commitTransientTypeRegistry(ttr);
+
+        validateSuperTypes(typeRegistry, "L0", new HashSet<String>());
+        validateSuperTypes(typeRegistry, "L1-1", new HashSet<>(Arrays.asList("L0")));
+        validateSuperTypes(typeRegistry, "L1-2", new HashSet<>(Arrays.asList("L0")));
+        validateSuperTypes(typeRegistry, "L2-1", new HashSet<>(Arrays.asList("L1-1", "L0")));
+        validateSuperTypes(typeRegistry, "L2-2", new HashSet<>(Arrays.asList("L1-1", "L0")));
+        validateSuperTypes(typeRegistry, "L2-3", new HashSet<>(Arrays.asList("L1-1", "L0", "L1-2")));
+        validateSuperTypes(typeRegistry, "L2-4", new HashSet<>(Arrays.asList("L1-2", "L0")));
+
+        validateAttributeNames(typeRegistry, "L0", new HashSet<>(Arrays.asList("L0_a1")));
+        validateAttributeNames(typeRegistry, "L1-1", new HashSet<>(Arrays.asList("L0_a1", "L1-1_a1")));
+        validateAttributeNames(typeRegistry, "L1-2", new HashSet<>(Arrays.asList("L0_a1", "L1-2_a1")));
+        validateAttributeNames(typeRegistry, "L2-1", new HashSet<>(Arrays.asList("L0_a1", "L1-1_a1", "L2-1_a1")));
+        validateAttributeNames(typeRegistry, "L2-2", new HashSet<>(Arrays.asList("L0_a1", "L1-1_a1", "L2-2_a1")));
+        validateAttributeNames(typeRegistry, "L2-3", new HashSet<>(Arrays.asList("L0_a1", "L1-1_a1", "L1-2_a1", "L2-3_a1")));
+        validateAttributeNames(typeRegistry, "L2-4", new HashSet<>(Arrays.asList("L0_a1", "L1-2_a1", "L2-4_a1")));
     }
 
     @Test
@@ -266,5 +324,48 @@ public class TestAtlasTypeRegistry {
             failureMsg = excp.getMessage();
         }
         assertNotNull(failureMsg, "expected invalid supertype failure");
+    }
+
+    private void validateSuperTypes(AtlasTypeRegistry typeRegistry, String typeName, Set<String> expectedSuperTypes) {
+        AtlasType type = null;
+
+        try {
+            type = typeRegistry.getType(typeName);
+        } catch (AtlasBaseException excp) {
+        }
+
+        Set<String> superTypes = null;
+
+        if (type != null) {
+            if (type instanceof AtlasEntityType) {
+                superTypes = ((AtlasEntityType) type).getAllSuperTypes();
+            } else if (type instanceof AtlasClassificationType) {
+                superTypes = ((AtlasClassificationType) type).getAllSuperTypes();
+            }
+        }
+
+        assertEquals(superTypes, expectedSuperTypes);
+    }
+
+    private void validateAttributeNames(AtlasTypeRegistry typeRegistry, String typeName, Set<String> attributeNames) {
+        AtlasType type = null;
+
+        try {
+            type = typeRegistry.getType(typeName);
+        } catch (AtlasBaseException excp) {
+        }
+
+        Map<String, AtlasAttributeDef> attributeDefs = null;
+
+        if (type != null) {
+            if (type instanceof AtlasEntityType) {
+                attributeDefs = ((AtlasEntityType) type).getAllAttributeDefs();
+            } else if (type instanceof AtlasClassificationType) {
+                attributeDefs = ((AtlasClassificationType) type).getAllAttributeDefs();
+            }
+        }
+
+        assertNotNull(attributeDefs);
+        assertEquals(attributeDefs.keySet(), attributeNames);
     }
 }

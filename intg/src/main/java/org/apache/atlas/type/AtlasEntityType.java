@@ -22,17 +22,18 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 
 /**
  * class that implements behaviour of an entity-type.
@@ -42,8 +43,9 @@ public class AtlasEntityType extends AtlasStructType {
 
     private final AtlasEntityDef entityDef;
 
-    private List<AtlasEntityType> superTypes    = Collections.emptyList();
-    private Set<String>           allSuperTypes = Collections.emptySet();
+    private List<AtlasEntityType>          superTypes       = Collections.emptyList();
+    private Set<String>                    allSuperTypes    = Collections.emptySet();
+    private Map<String, AtlasAttributeDef> allAttributeDefs = Collections.emptyMap();
 
     public AtlasEntityType(AtlasEntityDef entityDef) {
         super(entityDef, TypeCategory.ENTITY);
@@ -63,8 +65,11 @@ public class AtlasEntityType extends AtlasStructType {
     public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super.resolveReferences(typeRegistry);
 
-        List<AtlasEntityType> s    = new ArrayList<AtlasEntityType>();
-        Set<String>           allS = getAllSuperTypes(typeRegistry);
+        List<AtlasEntityType>          s    = new ArrayList<>();
+        Set<String>                    allS = new HashSet<>();
+        Map<String, AtlasAttributeDef> allA = new HashMap<>();
+
+        getTypeHierarchyInfo(typeRegistry, allS, allA);
 
         for (String superTypeName : entityDef.getSuperTypes()) {
             AtlasType superType = typeRegistry.getType(superTypeName);
@@ -77,8 +82,9 @@ public class AtlasEntityType extends AtlasStructType {
             }
         }
 
-        this.superTypes    = Collections.unmodifiableList(s);
-        this.allSuperTypes = Collections.unmodifiableSet(allS);
+        this.superTypes       = Collections.unmodifiableList(s);
+        this.allSuperTypes    = Collections.unmodifiableSet(allS);
+        this.allAttributeDefs = Collections.unmodifiableMap(allA);
     }
 
     public Set<String> getSuperTypes() {
@@ -88,6 +94,8 @@ public class AtlasEntityType extends AtlasStructType {
     public Set<String> getAllSuperTypes() {
         return allSuperTypes;
     }
+
+    public Map<String, AtlasAttributeDef> getAllAttributeDefs() { return allAttributeDefs; }
 
     public boolean isSuperTypeOf(AtlasEntityType entityType) {
         return entityType != null ? entityType.getAllSuperTypes().contains(this.getTypeName()) : false;
@@ -186,39 +194,47 @@ public class AtlasEntityType extends AtlasStructType {
         }
     }
 
-    private Set<String> getAllSuperTypes(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
-        Set<String>  superTypes = new HashSet<>();
-        List<String> subTypes   = new ArrayList<>();
+    private void getTypeHierarchyInfo(AtlasTypeRegistry              typeRegistry,
+                                      Set<String>                    allSuperTypeNames,
+                                      Map<String, AtlasAttributeDef> allAttributeDefs) throws AtlasBaseException {
+        List<String> visitedTypes = new ArrayList<>();
 
-        collectAllSuperTypes(subTypes, superTypes, typeRegistry);
-
-        return superTypes;
+        collectTypeHierarchyInfo(typeRegistry, allSuperTypeNames, allAttributeDefs, visitedTypes);
     }
 
     /*
      * This method should not assume that resolveReferences() has been called on all superTypes.
      * this.entityDef is the only safe member to reference here
      */
-    private void collectAllSuperTypes(List<String> subTypes, Set<String> superTypes, AtlasTypeRegistry typeRegistry)
-        throws AtlasBaseException {
-        if (subTypes.contains(entityDef.getName())) {
-            throw new AtlasBaseException(AtlasErrorCode.CIRCULAR_REFERENCE, entityDef.getName(), subTypes.toString());
+    private void collectTypeHierarchyInfo(AtlasTypeRegistry              typeRegistry,
+                                          Set<String>                    allSuperTypeNames,
+                                          Map<String, AtlasAttributeDef> allAttributeDefs,
+                                          List<String>                   visitedTypes) throws AtlasBaseException {
+        if (visitedTypes.contains(entityDef.getName())) {
+            throw new AtlasBaseException(AtlasErrorCode.CIRCULAR_REFERENCE, entityDef.getName(),
+                                         visitedTypes.toString());
         }
 
         if (CollectionUtils.isNotEmpty(entityDef.getSuperTypes())) {
-            superTypes.addAll(entityDef.getSuperTypes());
-
-            subTypes.add(entityDef.getName());
+            visitedTypes.add(entityDef.getName());
             for (String superTypeName : entityDef.getSuperTypes()) {
                 AtlasType type = typeRegistry.getType(superTypeName);
 
                 if (type instanceof AtlasEntityType) {
                     AtlasEntityType superType = (AtlasEntityType) type;
 
-                    superType.collectAllSuperTypes(subTypes, superTypes, typeRegistry);
+                    superType.collectTypeHierarchyInfo(typeRegistry, allSuperTypeNames, allAttributeDefs, visitedTypes);
                 }
             }
-            subTypes.remove(entityDef.getName());
+            visitedTypes.remove(entityDef.getName());
+
+            allSuperTypeNames.addAll(entityDef.getSuperTypes());
+        }
+
+        if (CollectionUtils.isNotEmpty(entityDef.getAttributeDefs())) {
+            for (AtlasAttributeDef attributeDef : entityDef.getAttributeDefs()) {
+                allAttributeDefs.put(attributeDef.getName(), attributeDef);
+            }
         }
     }
 }
