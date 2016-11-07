@@ -106,9 +106,9 @@
             <outputDirectory>examples</outputDirectory>
         </fileSet>
 
-        <!-- addons/hdfs-model -->
+        <!-- out-of-box-models -->
         <fileSet>
-            <directory>../addons/hdfs-model/target/models</directory>
+            <directory>../addons/models</directory>
             <outputDirectory>models</outputDirectory>
         </fileSet>
 
@@ -130,20 +130,10 @@
             <outputDirectory>hook</outputDirectory>
         </fileSet>
 
-        <fileSet>
-            <directory>../addons/hive-bridge/target/models</directory>
-            <outputDirectory>models</outputDirectory>
-        </fileSet>
-
         <!-- addons/falcon -->
         <fileSet>
             <directory>../addons/falcon-bridge/target/dependency/hook</directory>
             <outputDirectory>hook</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>../addons/falcon-bridge/target/models</directory>
-            <outputDirectory>models</outputDirectory>
         </fileSet>
 
         <!-- addons/sqoop -->
@@ -152,32 +142,16 @@
             <outputDirectory>hook</outputDirectory>
         </fileSet>
 
-        <fileSet>
-            <directory>../addons/sqoop-bridge/target/models</directory>
-            <outputDirectory>models</outputDirectory>
-        </fileSet>
-
         <!-- addons/storm -->
         <fileSet>
             <directory>../addons/storm-bridge/target/dependency/hook</directory>
             <outputDirectory>hook</outputDirectory>
         </fileSet>
 
-        <fileSet>
-            <directory>../addons/storm-bridge/target/models</directory>
-            <outputDirectory>models</outputDirectory>
-        </fileSet>
-
         <!-- for kafka topic setup -->
         <fileSet>
             <directory>../notification/target/dependency/hook</directory>
             <outputDirectory>hook</outputDirectory>
-        </fileSet>
-
-        <!-- for patches -->
-        <fileSet>
-            <directory>../addons/hive-bridge/src/patches</directory>
-            <outputDirectory>models/patches</outputDirectory>
         </fileSet>
     </fileSets>
 

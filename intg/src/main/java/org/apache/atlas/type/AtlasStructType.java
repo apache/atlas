@@ -198,7 +198,7 @@ public class AtlasStructType extends AtlasType {
 
                         if (value != null) {
                             ret = dataType.validateValue(value, fieldName, messages) && ret;
-                        } else if (!attributeDef.isOptional()) {
+                        } else if (!attributeDef.getIsOptional()) {
                             ret = false;
 
                             messages.add(fieldName + ": mandatory attribute value missing in type " + getTypeName());
@@ -218,7 +218,7 @@ public class AtlasStructType extends AtlasType {
 
                         if (value != null) {
                             ret = dataType.validateValue(value, fieldName, messages) && ret;
-                        } else if (!attributeDef.isOptional()) {
+                        } else if (!attributeDef.getIsOptional()) {
                             ret = false;
 
                             messages.add(fieldName + ": mandatory attribute value missing in type " + getTypeName());
@@ -244,7 +244,7 @@ public class AtlasStructType extends AtlasType {
                     Object attributeValue = getNormalizedValue(obj.getAttribute(attributeName), attributeDef);
 
                     obj.setAttribute(attributeName, attributeValue);
-                } else if (!attributeDef.isOptional()) {
+                } else if (!attributeDef.getIsOptional()) {
                     obj.setAttribute(attributeName, createDefaultValue(attributeDef));
                 }
             }
@@ -260,7 +260,7 @@ public class AtlasStructType extends AtlasType {
                     Object attributeValue = getNormalizedValue(obj.get(attributeName), attributeDef);
 
                     obj.put(attributeName, attributeValue);
-                } else if (!attributeDef.isOptional()) {
+                } else if (!attributeDef.getIsOptional()) {
                     obj.put(attributeName, createDefaultValue(attributeDef));
                 }
             }
@@ -276,7 +276,7 @@ public class AtlasStructType extends AtlasType {
             }
 
             for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
-                if (!attributeDef.isOptional()) {
+                if (!attributeDef.getIsOptional()) {
                     attributes.put(attributeDef.getName(), createDefaultValue(attributeDef));
                 }
             }
@@ -310,7 +310,7 @@ public class AtlasStructType extends AtlasType {
                     ret = false; // invalid value
                 }
             }
-        } else if (!attributeDef.isOptional()) {
+        } else if (!attributeDef.getIsOptional()) {
             ret = false; // mandatory attribute not present
         }
 
@@ -322,7 +322,7 @@ public class AtlasStructType extends AtlasType {
 
         if (attrType != null) {
             if (value == null) {
-                if (!attributeDef.isOptional()) {
+                if (!attributeDef.getIsOptional()) {
                     return attrType.createDefaultValue();
                 }
             } else {

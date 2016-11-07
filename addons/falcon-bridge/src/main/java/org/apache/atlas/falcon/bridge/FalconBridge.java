@@ -21,11 +21,8 @@ package org.apache.atlas.falcon.bridge;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.falcon.Util.EventUtil;
-import org.apache.atlas.falcon.model.FalconDataModelGenerator;
 import org.apache.atlas.falcon.model.FalconDataTypes;
-import org.apache.atlas.fs.model.FSDataTypes;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
-import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.commons.collections.CollectionUtils;
@@ -61,6 +58,15 @@ import java.util.Map;
 public class FalconBridge {
     private static final Logger LOG = LoggerFactory.getLogger(FalconBridge.class);
 
+    public static final String COLO = "colo";
+    public static final String TAGS = "tags";
+    public static final String GROUPS = "groups";
+    public static final String PIPELINES = "pipelines";
+    public static final String WFPROPERTIES = "workflow-properties";
+    public static final String RUNSON = "runs-on";
+    public static final String STOREDIN = "stored-in";
+    public static final String FREQUENCY = "frequency";
+
     /**
      * Creates cluster entity
      *
@@ -77,14 +83,14 @@ public class FalconBridge {
         clusterRef.set(AtlasClient.DESCRIPTION, cluster.getDescription());
         clusterRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, cluster.getName());
 
-        clusterRef.set(FalconDataModelGenerator.COLO, cluster.getColo());
+        clusterRef.set(FalconBridge.COLO, cluster.getColo());
 
         if (cluster.getACL() != null) {
             clusterRef.set(AtlasClient.OWNER, cluster.getACL().getGroup());
         }
 
         if (StringUtils.isNotEmpty(cluster.getTags())) {
-            clusterRef.set(FalconDataModelGenerator.TAGS,
+            clusterRef.set(FalconBridge.TAGS,
                     EventUtil.convertKeyValueStringToMap(cluster.getTags()));
         }
 
@@ -100,19 +106,19 @@ public class FalconBridge {
         String feedQualifiedName =
                 getFeedQualifiedName(feed.getName(), (String) clusterReferenceable.get(AtlasClient.NAME));
         feedEntity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, feedQualifiedName);
-        feedEntity.set(FalconDataModelGenerator.FREQUENCY, feed.getFrequency().toString());
-        feedEntity.set(FalconDataModelGenerator.STOREDIN, clusterReferenceable);
+        feedEntity.set(FalconBridge.FREQUENCY, feed.getFrequency().toString());
+        feedEntity.set(FalconBridge.STOREDIN, clusterReferenceable);
         if (feed.getACL() != null) {
             feedEntity.set(AtlasClient.OWNER, feed.getACL().getOwner());
         }
 
         if (StringUtils.isNotEmpty(feed.getTags())) {
-            feedEntity.set(FalconDataModelGenerator.TAGS,
+            feedEntity.set(FalconBridge.TAGS,
                     EventUtil.convertKeyValueStringToMap(feed.getTags()));
         }
 
         if (feed.getGroups() != null) {
-            feedEntity.set(FalconDataModelGenerator.GROUPS, feed.getGroups());
+            feedEntity.set(FalconBridge.GROUPS, feed.getGroups());
         }
 
         return feedEntity;
@@ -165,7 +171,7 @@ public class FalconBridge {
                         feedCreateEntity.set(AtlasClient.PROCESS_ATTRIBUTE_OUTPUTS, outputs);
                     }
 
-                    feedCreateEntity.set(FalconDataModelGenerator.STOREDIN, clusterReferenceable);
+                    feedCreateEntity.set(FalconBridge.STOREDIN, clusterReferenceable);
                     entities.add(feedCreateEntity);
                 }
 
@@ -244,7 +250,7 @@ public class FalconBridge {
                     processEntity.set(AtlasClient.NAME, process.getName());
                     processEntity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                             getProcessQualifiedName(process.getName(), cluster.getName()));
-                    processEntity.set(FalconDataModelGenerator.FREQUENCY, process.getFrequency().toString());
+                    processEntity.set(FalconBridge.FREQUENCY, process.getFrequency().toString());
 
                     if (!inputs.isEmpty()) {
                         processEntity.set(AtlasClient.PROCESS_ATTRIBUTE_INPUTS, inputs);
@@ -254,7 +260,7 @@ public class FalconBridge {
                     }
 
                     // set cluster
-                    processEntity.set(FalconDataModelGenerator.RUNSON, clusterReferenceable);
+                    processEntity.set(FalconBridge.RUNSON, clusterReferenceable);
 
                     // Set user
                     if (process.getACL() != null) {
@@ -262,15 +268,15 @@ public class FalconBridge {
                     }
 
                     if (StringUtils.isNotEmpty(process.getTags())) {
-                        processEntity.set(FalconDataModelGenerator.TAGS,
+                        processEntity.set(FalconBridge.TAGS,
                                 EventUtil.convertKeyValueStringToMap(process.getTags()));
                     }
 
                     if (process.getPipelines() != null) {
-                        processEntity.set(FalconDataModelGenerator.PIPELINES, process.getPipelines());
+                        processEntity.set(FalconBridge.PIPELINES, process.getPipelines());
                     }
 
-                    processEntity.set(FalconDataModelGenerator.WFPROPERTIES,
+                    processEntity.set(FalconBridge.WFPROPERTIES,
                             getProcessEntityWFProperties(process.getWorkflow(),
                                     process.getName()));
 
@@ -319,7 +325,7 @@ public class FalconBridge {
 
     private static List<Referenceable> fillHDFSDataSet(final String pathUri, final String clusterName) {
         List<Referenceable> entities = new ArrayList<>();
-        Referenceable ref = new Referenceable(FSDataTypes.HDFS_PATH().toString());
+        Referenceable ref = new Referenceable(HiveMetaStoreBridge.HDFS_PATH);
         ref.set("path", pathUri);
         //        Path path = new Path(pathUri);
         //        ref.set("name", path.getName());
@@ -352,7 +358,7 @@ public class FalconBridge {
         tableRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 HiveMetaStoreBridge.getTableQualifiedName(clusterName, dbName, tableName));
         tableRef.set(AtlasClient.NAME, tableName.toLowerCase());
-        tableRef.set(HiveDataModelGenerator.DB, dbRef);
+        tableRef.set(HiveMetaStoreBridge.DB, dbRef);
         entities.add(tableRef);
 
         return entities;
@@ -364,7 +370,7 @@ public class FalconBridge {
         Referenceable clusterRef = new Referenceable(FalconDataTypes.FALCON_CLUSTER.getName());
         clusterRef.set(AtlasClient.NAME, String.format("%s", clusterName));
         clusterRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, clusterName);
-        clusterRef.set(FalconDataModelGenerator.COLO, colo);
+        clusterRef.set(FalconBridge.COLO, colo);
         return clusterRef;
     }
 
@@ -375,8 +381,8 @@ public class FalconBridge {
         feedDatasetRef.set(AtlasClient.NAME, feed.getName());
         feedDatasetRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, getFeedQualifiedName(feed.getName(),
                 (String) clusterReference.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME)));
-        feedDatasetRef.set(FalconDataModelGenerator.STOREDIN, clusterReference);
-        feedDatasetRef.set(FalconDataModelGenerator.FREQUENCY, feed.getFrequency());
+        feedDatasetRef.set(FalconBridge.STOREDIN, clusterReference);
+        feedDatasetRef.set(FalconBridge.FREQUENCY, feed.getFrequency());
         return feedDatasetRef;
     }
 

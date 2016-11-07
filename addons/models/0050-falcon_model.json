@@ -1,0 +1,147 @@
+{
+    "enumDefs": [],
+    "structDefs": [],
+    "classificationDefs": [],
+    "entityDefs": [
+        {
+            "name": "falcon_feed_replication",
+            "superTypes": [
+                "Process"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": []
+        },
+        {
+            "name": "falcon_cluster",
+            "superTypes": [
+                "Infrastructure"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "colo",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "tags",
+                    "typeName": "map<string,string>",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                }
+            ]
+        },
+        {
+            "name": "falcon_feed",
+            "superTypes": [
+                "DataSet"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "frequency",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "stored-in",
+                    "typeName": "falcon_cluster",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "groups",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "tags",
+                    "typeName": "map<string,string>",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                }
+            ]
+        },
+        {
+            "name": "falcon_process",
+            "superTypes": [
+                "Process"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "frequency",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "runs-on",
+                    "typeName": "falcon_cluster",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "tags",
+                    "typeName": "map<string,string>",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "pipelines",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "workflow-properties",
+                    "typeName": "map<string,string>",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                }
+            ]
+        },
+        {
+            "name": "falcon_feed_creation",
+            "superTypes": [
+                "Process"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "stored-in",
+                    "typeName": "falcon_cluster",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                }
+            ]
+        }
+    ]
+}

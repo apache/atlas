@@ -19,8 +19,6 @@
 package org.apache.atlas.hive.bridge;
 
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.hive.hook.HiveHook;
-import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.hadoop.hive.ql.hooks.LineageInfo;
@@ -31,7 +29,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 public class ColumnLineageUtils {
     public static final Logger LOG = LoggerFactory.getLogger(ColumnLineageUtils.class);
@@ -92,7 +89,7 @@ public class ColumnLineageUtils {
         if (r.getTypeName().equals(HiveDataTypes.HIVE_TABLE.getName())) {
             String qName = (String) r.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME);
             String[] qNameComps = extractComponents(qName);
-            for (Referenceable col : (List<Referenceable>) r.get(HiveDataModelGenerator.COLUMNS)) {
+            for (Referenceable col : (List<Referenceable>) r.get(HiveMetaStoreBridge.COLUMNS)) {
                 String cName = (String) col.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME);
                 String[] colQNameComps = extractComponents(cName);
                 String colQName = colQNameComps[0] + "." + colQNameComps[1] + "." + colQNameComps[2];

@@ -190,7 +190,7 @@ public class AtlasTypeDefGraphStoreTest {
         try {
             existingTypesDef = typeDefStore.searchTypesDef(new SearchFilter());
         } catch (AtlasBaseException e) {
-            fail("Shouldn't have failed during Search");
+            // ignore
         }
 
         assertNotEquals(atlasTypesDef, existingTypesDef, "Types to be created already exist in the system");
@@ -204,7 +204,7 @@ public class AtlasTypeDefGraphStoreTest {
             assertTrue(createdTypesDef.getEntityDefs().containsAll(atlasTypesDef.getEntityDefs()), "EntityDef creation failed");
 
         } catch (AtlasBaseException e) {
-            fail("Creation of Types should've been a success");
+            fail("Creation of Types should've been a success", e);
         }
     }
 

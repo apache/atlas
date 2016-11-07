@@ -421,7 +421,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
             for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
                 if (CollectionUtils.isEmpty(currAttrNames) || !currAttrNames.contains(attributeDef.getName())) {
                     // new attribute - only allow if optional
-                    if (!attributeDef.isOptional()) {
+                    if (!attributeDef.getIsOptional()) {
                         throw new AtlasBaseException(AtlasErrorCode.CANNOT_ADD_MANDATORY_ATTRIBUTE, structDef.getName(), attributeDef.getName());
                     }
                 }
@@ -510,13 +510,30 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
 
         attribInfo.put("name", attributeDef.getName());
         attribInfo.put("dataType", attributeDef.getTypeName());
-        attribInfo.put("isUnique", attributeDef.isUnique());
-        attribInfo.put("isIndexable", attributeDef.isIndexable());
+        attribInfo.put("isUnique", attributeDef.getIsUnique());
+        attribInfo.put("isIndexable", attributeDef.getIsIndexable());
         attribInfo.put("isComposite", isComposite);
         attribInfo.put("reverseAttributeName", reverseAttribName);
+
+        final int lower;
+        final int upper;
+
+        if (attributeDef.getCardinality() == AtlasAttributeDef.Cardinality.SINGLE) {
+            lower = attributeDef.getIsOptional() ? 0 : 1;
+            upper = 1;
+        } else {
+            if(attributeDef.getIsOptional()) {
+                lower = 0;
+            } else {
+                lower = attributeDef.getValuesMinCount() < 1 ? 1 : attributeDef.getValuesMinCount();
+            }
+
+            upper = attributeDef.getValuesMaxCount() < 2 ? Integer.MAX_VALUE : attributeDef.getValuesMaxCount();
+        }
+
         Map<String, Object> multiplicity = new HashMap<>();
-        multiplicity.put("lower", attributeDef.getValuesMinCount());
-        multiplicity.put("upper", attributeDef.getValuesMaxCount());
+        multiplicity.put("lower", lower);
+        multiplicity.put("upper", upper);
         multiplicity.put("isUnique", AtlasAttributeDef.Cardinality.SET.equals(attributeDef.getCardinality()));
 
         attribInfo.put("multiplicity", AtlasType.toJson(multiplicity));
@@ -532,8 +549,8 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
 
         ret.setName((String) attribInfo.get("name"));
         ret.setTypeName((String) attribInfo.get("dataType"));
-        ret.setUnique((Boolean) attribInfo.get("isUnique"));
-        ret.setIndexable((Boolean) attribInfo.get("isIndexable"));
+        ret.setIsUnique((Boolean) attribInfo.get("isUnique"));
+        ret.setIsIndexable((Boolean) attribInfo.get("isIndexable"));
 
         String attrTypeName = ret.getTypeName();
 
@@ -608,10 +625,10 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         Boolean isUnique     = (Boolean) multiplicity.get("isUnique");
 
         if (minCount == null || minCount.intValue() == 0) {
-            ret.setOptional(true);
+            ret.setIsOptional(true);
             ret.setValuesMinCount(0);
         } else {
-            ret.setOptional(false);
+            ret.setIsOptional(false);
             ret.setValuesMinCount(minCount.intValue());
         }
 

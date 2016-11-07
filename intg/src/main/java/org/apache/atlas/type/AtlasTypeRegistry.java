@@ -64,6 +64,10 @@ public class AtlasTypeRegistry {
 
     public Collection<String> getAllTypeNames() { return registryData.allTypes.getAllTypeNames(); }
 
+    public boolean isRegisteredType(String typeName) {
+        return registryData.allTypes.isKnownType(typeName);
+    }
+
     public AtlasType getType(String typeName) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasTypeRegistry.getType({})", typeName);
@@ -675,6 +679,10 @@ class TypeCache {
                 typeNameMap.put(typeDef.getName(), type);
             }
         }
+    }
+
+    public boolean isKnownType(String typeName) {
+        return typeNameMap.containsKey(typeName);
     }
 
     public Collection<String> getAllTypeNames() {

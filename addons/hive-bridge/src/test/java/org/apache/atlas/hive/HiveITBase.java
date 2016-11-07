@@ -20,7 +20,6 @@ package org.apache.atlas.hive;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.fs.model.FSDataTypes;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.hook.HiveHookIT;
 import org.apache.atlas.hive.model.HiveDataTypes;
@@ -93,7 +92,6 @@ public class HiveITBase {
         }
 
         hiveMetaStoreBridge = new HiveMetaStoreBridge(configuration, conf, atlasClient);
-        hiveMetaStoreBridge.registerHiveDataModel();
 
         HiveConf conf = new HiveConf();
         conf.set("hive.exec.post.hooks", "");
@@ -232,7 +230,7 @@ public class HiveITBase {
 
     private String assertHDFSPathIsRegistered(String path) throws Exception {
         LOG.debug("Searching for hdfs path {}", path);
-        return assertEntityIsRegistered(FSDataTypes.HDFS_PATH().toString(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, path, null);
+        return assertEntityIsRegistered(HiveMetaStoreBridge.HDFS_PATH, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, path, null);
     }
 
     protected String assertDatabaseIsRegistered(String dbName) throws Exception {

@@ -180,24 +180,6 @@
                 <version>1.2.1</version>
                 <inherited>false</inherited>
                 <executions>
-                    <execution>
-                        <configuration>
-                            <mainClass>org.apache.atlas.fs.model.FSDataModelGenerator</mainClass>
-                            <systemProperties>
-                                <systemProperty>
-                                    <key>atlas.conf</key>
-                                    <value>${project.build.directory}/../../../typesystem/src/test/resources/</value>
-                                </systemProperty>
-                            </systemProperties>
-                            <arguments>
-                                <argument>${project.build.directory}/models/fs_model.json</argument>
-                            </arguments>
-                        </configuration>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>java</goal>
-                        </goals>
-                    </execution>
                 </executions>
             </plugin>
 

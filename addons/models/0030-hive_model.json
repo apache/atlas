@@ -1,0 +1,498 @@
+{
+    "enumDefs": [
+        {
+            "name": "hive_principal_type",
+            "typeVersion": "1.0",
+            "elementDefs": [
+                {
+                    "ordinal": 1,
+                    "value": "USER"
+                },
+                {
+                    "ordinal": 2,
+                    "value": "ROLE"
+                },
+                {
+                    "ordinal": 3,
+                    "value": "GROUP"
+                }
+            ]
+        }
+    ],
+    "structDefs": [
+        {
+            "name": "hive_order",
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "order",
+                    "typeName": "int",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "col",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                }
+            ]
+        },
+        {
+            "name": "hive_serde",
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "name",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "serializationLib",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "parameters",
+                    "typeName": "map<string,string>",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                }
+            ]
+        }
+    ],
+    "classificationDefs": [],
+    "entityDefs": [
+        {
+            "name": "hive_process",
+            "superTypes": [
+                "Process"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "startTime",
+                    "typeName": "date",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "endTime",
+                    "typeName": "date",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "userName",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "operationType",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "queryText",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "queryPlan",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "queryId",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "recentQueries",
+                    "typeName": "array<string>",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "clusterName",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "queryGraph",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                }
+            ]
+        },
+        {
+            "name": "hive_table",
+            "superTypes": [
+                "DataSet"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "db",
+                    "typeName": "hive_db",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "createTime",
+                    "typeName": "date",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "lastAccessTime",
+                    "typeName": "date",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "comment",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "retention",
+                    "typeName": "int",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "sd",
+                    "typeName": "hive_storagedesc",
+                    "cardinality": "SINGLE",
+                    "constraintDefs": [
+                        {
+                            "type": "mappedFromRef",
+                            "params": {
+                                "refAttribute": "table"
+                            }
+                        }
+                    ],
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "partitionKeys",
+                    "typeName": "array<hive_column>",
+                    "cardinality": "SINGLE",
+                    "constraintDefs": [
+                        {
+                            "type": "foreignKey"
+                        }
+                    ],
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "aliases",
+                    "typeName": "array<string>",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "columns",
+                    "typeName": "array<hive_column>",
+                    "cardinality": "SINGLE",
+                    "constraintDefs": [
+                        {
+                            "type": "mappedFromRef",
+                            "params": {
+                                "refAttribute": "table"
+                            }
+                        }
+                    ],
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "parameters",
+                    "typeName": "map<string,string>",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "viewOriginalText",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "viewExpandedText",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "tableType",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "temporary",
+                    "typeName": "boolean",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false
+                }
+            ]
+        },
+        {
+            "name": "hive_storagedesc",
+            "superTypes": [
+                "Referenceable"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "table",
+                    "typeName": "hive_table",
+                    "cardinality": "SINGLE",
+                    "constraintDefs": [
+                        {
+                            "type": "foreignKey",
+                            "params": {
+                                "onDelete": "cascade"
+                            }
+                        }
+                    ],
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "location",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "inputFormat",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "outputFormat",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "compressed",
+                    "typeName": "boolean",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "numBuckets",
+                    "typeName": "int",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "serdeInfo",
+                    "typeName": "hive_serde",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "bucketCols",
+                    "typeName": "array<string>",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "sortCols",
+                    "typeName": "array<hive_order>",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "parameters",
+                    "typeName": "map<string,string>",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "storedAsSubDirectories",
+                    "typeName": "boolean",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                }
+            ]
+        },
+        {
+            "name": "hive_db",
+            "superTypes": [
+                "Referenceable",
+                "Asset"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "clusterName",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "location",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "parameters",
+                    "typeName": "map<string,string>",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "ownerType",
+                    "typeName": "hive_principal_type",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                }
+            ]
+        },
+        {
+            "name": "hive_column",
+            "superTypes": [
+                "DataSet"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "type",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "comment",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "table",
+                    "typeName": "hive_table",
+                    "cardinality": "SINGLE",
+                    "constraintDefs": [
+                        {
+                            "type": "foreignKey",
+                            "params": {
+                                "onDelete": "cascade"
+                            }
+                        }
+                    ],
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                }
+            ]
+        }
+    ]
+}

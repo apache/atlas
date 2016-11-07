@@ -1,0 +1,97 @@
+{
+    "enumDefs": [],
+    "structDefs": [],
+    "classificationDefs": [],
+    "entityDefs": [
+        {
+            "name": "Referenceable",
+            "superTypes": [],
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "qualifiedName",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": true
+                }
+            ]
+        },
+        {
+            "name": "Asset",
+            "superTypes": [],
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "name",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": false,
+                    "isUnique": false
+                },
+                {
+                    "name": "description",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "owner",
+                    "typeName": "string",
+                    "cardinality": "SINGLE",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false
+                }
+            ]
+        },
+        {
+            "name": "DataSet",
+            "superTypes": [
+                "Referenceable",
+                "Asset"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": []
+        },
+        {
+            "name": "Infrastructure",
+            "superTypes": [
+                "Referenceable",
+                "Asset"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": []
+        },
+        {
+            "name": "Process",
+            "superTypes": [
+                "Referenceable",
+                "Asset"
+            ],
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "inputs",
+                    "typeName": "array<DataSet>",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                },
+                {
+                    "name": "outputs",
+                    "typeName": "array<DataSet>",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false
+                }
+            ]
+        }
+    ]
+}

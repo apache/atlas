@@ -35,6 +35,7 @@ import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumDefs;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasStructDefs;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -45,6 +46,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -89,6 +91,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
         ttr.addTypes(typesDef);
 
         typeRegistry.commitTransientTypeRegistry(ttr);
+
+        bootstrapTypes();
     }
 
     @Override
@@ -884,6 +888,15 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore, Activ
     @Override
     public void instanceIsPassive() throws AtlasException {
         LOG.info("Not reacting to a Passive state change");
+    }
+
+    private void bootstrapTypes() {
+        AtlasTypeDefStoreInitializer storeInitializer = new AtlasTypeDefStoreInitializer();
+
+        String atlasHomeDir = System.getProperty("atlas.home");
+        String typesDirName = (StringUtils.isEmpty(atlasHomeDir) ? "." : atlasHomeDir) + File.separator + "models";
+
+        storeInitializer.initializeStore(this, typeRegistry, typesDirName);
     }
 
     private void updateTypeRegistryPostCommit(AtlasTransientTypeRegistry ttr) {

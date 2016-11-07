@@ -355,24 +355,6 @@
                 <version>1.2.1</version>
                 <inherited>false</inherited>
                 <executions>
-                    <execution>
-                        <configuration>
-                            <mainClass>org.apache.atlas.falcon.model.FalconDataModelGenerator</mainClass>
-                            <systemProperties>
-                                <systemProperty>
-                                    <key>atlas.conf</key>
-                                    <value>${project.build.directory}/../../../typesystem/target/test-classes</value>
-                                </systemProperty>
-                            </systemProperties>
-                            <arguments>
-                                <argument>${project.build.directory}/models/falcon_model.json</argument>
-                            </arguments>
-                        </configuration>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>java</goal>
-                        </goals>
-                    </execution>
                 </executions>
             </plugin>
         </plugins>

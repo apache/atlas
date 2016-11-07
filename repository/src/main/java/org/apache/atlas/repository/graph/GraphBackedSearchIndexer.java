@@ -267,8 +267,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                                          AtlasAttributeDef attributeDef) {
         final String propertyName = GraphHelper.encodePropertyKey(typeName + "." + attributeDef.getName());
         AtlasCardinality cardinality = toAtlasCardinality(attributeDef.getCardinality());
-        boolean isUnique = attributeDef.isUnique();
-        boolean isIndexable = attributeDef.isIndexable();
+        boolean isUnique = attributeDef.getIsUnique();
+        boolean isIndexable = attributeDef.getIsIndexable();
         String attribTypeName = attributeDef.getTypeName();
         boolean isBuiltInType = AtlasTypeUtil.isBuiltInType(attribTypeName);
         boolean isArrayType = AtlasTypeUtil.isArrayType(attribTypeName);

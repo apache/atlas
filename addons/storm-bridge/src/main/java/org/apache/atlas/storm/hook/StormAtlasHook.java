@@ -26,9 +26,7 @@ import org.apache.storm.generated.TopologyInfo;
 import org.apache.storm.utils.Utils;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConstants;
-import org.apache.atlas.fs.model.FSDataTypes;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
-import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.storm.model.StormDataTypes;
 import org.apache.atlas.typesystem.Referenceable;
@@ -213,7 +211,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
                 break;
 
             case "HdfsBolt":
-                dataSetReferenceable = new Referenceable(FSDataTypes.HDFS_PATH().toString());
+                dataSetReferenceable = new Referenceable(HiveMetaStoreBridge.HDFS_PATH);
                 String hdfsUri = config.get("HdfsBolt.rotationActions") == null
                         ? config.get("HdfsBolt.fileNameFormat.path")
                         : config.get("HdfsBolt.rotationActions");
@@ -241,7 +239,7 @@ public class StormAtlasHook extends AtlasHook implements ISubmitterHook {
                 final String tableQualifiedName = HiveMetaStoreBridge.getTableQualifiedName(clusterName,
                         databaseName, hiveTableName);
                 dataSetReferenceable.set(AtlasClient.NAME, hiveTableName);
-                dataSetReferenceable.set(HiveDataModelGenerator.DB, dbReferenceable);
+                dataSetReferenceable.set(HiveMetaStoreBridge.DB, dbReferenceable);
                 dataSetReferenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableQualifiedName);
                 break;
 

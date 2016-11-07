@@ -20,7 +20,6 @@ package org.apache.atlas.services;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.Provider;
 
 import org.apache.atlas.ApplicationProperties;
@@ -29,7 +28,6 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.classification.InterfaceAudience;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
@@ -54,7 +52,6 @@ import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.json.TypesSerialization;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.persistence.ReferenceableInstance;
-import org.apache.atlas.typesystem.types.AttributeDefinition;
 import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
@@ -83,9 +80,6 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import static org.apache.atlas.AtlasClient.PROCESS_ATTRIBUTE_INPUTS;
-import static org.apache.atlas.AtlasClient.PROCESS_ATTRIBUTE_OUTPUTS;
-
 
 
 /**
@@ -103,35 +97,29 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
     private final TypeSystem typeSystem;
     private final MetadataRepository repository;
     private final ITypeStore typeStore;
-    private IBootstrapTypesRegistrar typesRegistrar;
 
     private final Collection<TypesChangeListener> typeChangeListeners = new LinkedHashSet<>();
     private final Collection<EntityChangeListener> entityChangeListeners = new LinkedHashSet<>();
-
-    private boolean wasInitialized = false;
 
     @Inject
     private EntityAuditRepository auditRepository;
 
     @Inject
     DefaultMetadataService(final MetadataRepository repository, final ITypeStore typeStore,
-                           final IBootstrapTypesRegistrar typesRegistrar,
                            final Collection<Provider<TypesChangeListener>> typeListenerProviders,
                            final Collection<Provider<EntityChangeListener>> entityListenerProviders, TypeCache typeCache)
             throws AtlasException {
-        this(repository, typeStore, typesRegistrar, typeListenerProviders, entityListenerProviders,
+        this(repository, typeStore, typeListenerProviders, entityListenerProviders,
                 TypeSystem.getInstance(), ApplicationProperties.get(), typeCache);
     }
     
     //for testing only
     public DefaultMetadataService(final MetadataRepository repository, final ITypeStore typeStore,
-                           final IBootstrapTypesRegistrar typesRegistrar,
                            final Collection<Provider<TypesChangeListener>> typeListenerProviders,
                            final Collection<Provider<EntityChangeListener>> entityListenerProviders,
                            final TypeSystem typeSystem,
                            final Configuration configuration, TypeCache typeCache) throws AtlasException {
         this.typeStore = typeStore;
-        this.typesRegistrar = typesRegistrar;
         this.typeSystem = typeSystem;
         /**
          * Ideally a TypeCache implementation should have been injected in the TypeSystemProvider,
@@ -163,70 +151,20 @@ public class DefaultMetadataService implements MetadataService, ActiveStateChang
 
     private void restoreTypeSystem() throws AtlasException {
         LOG.info("Restoring type system from the store");
-        TypesDef typesDef = typeStore.restore();
-        if (!wasInitialized) {
-            LOG.info("Initializing type system for the first time.");
-            typeSystem.defineTypes(typesDef);
 
-            // restore types before creating super types
-            createSuperTypes();
-            typesRegistrar.registerTypes(ReservedTypesRegistrar.getTypesDir(), typeSystem, this);
-            wasInitialized = true;
-        } else {
-            LOG.info("Type system was already initialized, refreshing cache.");
-            refreshCache(typesDef);
-        }
+        TypesDef typesDef = typeStore.restore();
+
+        refreshCache(typesDef);
+
         LOG.info("Restored type system from the store");
     }
 
     private void refreshCache(TypesDef typesDef) throws AtlasException {
-        TypeSystem.TransientTypeSystem transientTypeSystem
-                = typeSystem.createTransientTypeSystem(typesDef, true);
-        Map<String, IDataType> typesAdded = transientTypeSystem.getTypesAdded();
-        LOG.info("Number of types got from transient type system: " + typesAdded.size());
-        typeSystem.commitTypes(typesAdded);
-    }
-
-    @InterfaceAudience.Private
-    private void createSuperTypes() throws AtlasException {
-        HierarchicalTypeDefinition<ClassType> referenceableType = TypesUtil
-                .createClassTypeDef(AtlasClient.REFERENCEABLE_SUPER_TYPE, ImmutableSet.<String>of(),
-                 new AttributeDefinition(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, true, true, null));
-        createType(referenceableType);
-
-        HierarchicalTypeDefinition<ClassType> assetType = TypesUtil
-                .createClassTypeDef(AtlasClient.ASSET_TYPE, ImmutableSet.<String>of(),
-                        new AttributeDefinition(AtlasClient.NAME, DataTypes.STRING_TYPE.getName(), Multiplicity.REQUIRED, false, false, true, null),
-                        TypesUtil.createOptionalAttrDef(AtlasClient.DESCRIPTION, DataTypes.STRING_TYPE),
-                        new AttributeDefinition(AtlasClient.OWNER, DataTypes.STRING_TYPE.getName(), Multiplicity.OPTIONAL, false, false, true, null));
-        createType(assetType);
-
-        HierarchicalTypeDefinition<ClassType> infraType = TypesUtil
-            .createClassTypeDef(AtlasClient.INFRASTRUCTURE_SUPER_TYPE,
-                    ImmutableSet.of(AtlasClient.REFERENCEABLE_SUPER_TYPE, AtlasClient.ASSET_TYPE));
-        createType(infraType);
-
-        HierarchicalTypeDefinition<ClassType> datasetType = TypesUtil
-            .createClassTypeDef(AtlasClient.DATA_SET_SUPER_TYPE,
-                    ImmutableSet.of(AtlasClient.REFERENCEABLE_SUPER_TYPE, AtlasClient.ASSET_TYPE));
-        createType(datasetType);
-
-        HierarchicalTypeDefinition<ClassType> processType = TypesUtil
-            .createClassTypeDef(AtlasClient.PROCESS_SUPER_TYPE,
-                    ImmutableSet.of(AtlasClient.REFERENCEABLE_SUPER_TYPE, AtlasClient.ASSET_TYPE),
-                new AttributeDefinition(PROCESS_ATTRIBUTE_INPUTS, DataTypes.arrayTypeName(AtlasClient.DATA_SET_SUPER_TYPE),
-                    Multiplicity.OPTIONAL, false, null),
-                new AttributeDefinition(PROCESS_ATTRIBUTE_OUTPUTS, DataTypes.arrayTypeName(AtlasClient.DATA_SET_SUPER_TYPE),
-                    Multiplicity.OPTIONAL, false, null));
-        createType(processType);
-    }
-
-    private void createType(HierarchicalTypeDefinition<ClassType> type) throws AtlasException {
-        if (!typeSystem.isRegistered(type.typeName)) {
-            TypesDef typesDef = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(), ImmutableList.<StructTypeDefinition>of(),
-                            ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
-                            ImmutableList.of(type));
-            createType(TypesSerialization.toJson(typesDef));
+        if (typesDef != null && !typesDef.isEmpty()) {
+            TypeSystem.TransientTypeSystem transientTypeSystem = typeSystem.createTransientTypeSystem(typesDef, true);
+            Map<String, IDataType> typesAdded = transientTypeSystem.getTypesAdded();
+            LOG.info("Number of types got from transient type system: " + typesAdded.size());
+            typeSystem.commitTypes(typesAdded);
         }
     }
 

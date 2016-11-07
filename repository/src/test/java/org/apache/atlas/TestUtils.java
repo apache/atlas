@@ -33,7 +33,6 @@ import org.apache.atlas.repository.typestore.GraphBackedTypeStore;
 import org.apache.atlas.repository.typestore.ITypeStore;
 import org.apache.atlas.services.DefaultMetadataService;
 import org.apache.atlas.services.MetadataService;
-import org.apache.atlas.services.ReservedTypesRegistrar;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.Referenceable;
@@ -527,7 +526,6 @@ public final class TestUtils {
         ITypeStore typeStore = new GraphBackedTypeStore();
         DefaultMetadataService defaultMetadataService = new DefaultMetadataService(repo,
                 typeStore,
-                new ReservedTypesRegistrar(),
                 Collections.singletonList(indexerProvider),
                 new ArrayList<Provider<EntityChangeListener>>(), TypeSystem.getInstance(), config, typeCache);
 

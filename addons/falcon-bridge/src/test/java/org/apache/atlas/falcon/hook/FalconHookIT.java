@@ -23,9 +23,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.falcon.bridge.FalconBridge;
-import org.apache.atlas.falcon.model.FalconDataModelGenerator;
 import org.apache.atlas.falcon.model.FalconDataTypes;
-import org.apache.atlas.fs.model.FSDataTypes;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.typesystem.Referenceable;
@@ -47,7 +45,6 @@ import org.apache.falcon.entity.v0.feed.Location;
 import org.apache.falcon.entity.v0.feed.LocationType;
 import org.apache.falcon.entity.v0.process.Process;
 import org.apache.falcon.security.CurrentUser;
-import org.apache.hadoop.hive.conf.HiveConf;
 import org.slf4j.Logger;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -84,22 +81,7 @@ public class FalconHookIT {
         AtlasService service = new AtlasService();
         service.init();
         STORE.registerListener(service);
-        registerFalconDataModel();
         CurrentUser.authenticate(System.getProperty("user.name"));
-    }
-
-    private void registerFalconDataModel() throws Exception {
-        if (isDataModelAlreadyRegistered()) {
-            LOG.info("Falcon data model is already registered!");
-            return;
-        }
-
-        HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(ApplicationProperties.get(), new HiveConf(), atlasClient);
-        hiveMetaStoreBridge.registerHiveDataModel();
-
-        FalconDataModelGenerator dataModelGenerator = new FalconDataModelGenerator();
-        LOG.info("Registering Falcon data model");
-        atlasClient.createType(dataModelGenerator.getModelAsJson());
     }
 
     private boolean isDataModelAlreadyRegistered() throws Exception {
@@ -196,7 +178,7 @@ public class FalconHookIT {
 
         String inputId = ((List<Id>) processEntity.get("inputs")).get(0).getId()._getId();
         Referenceable pathEntity = atlasClient.getEntity(inputId);
-        assertEquals(pathEntity.getTypeName(), FSDataTypes.HDFS_PATH().toString());
+        assertEquals(pathEntity.getTypeName(), HiveMetaStoreBridge.HDFS_PATH.toString());
 
         List<Location> locations = FeedHelper.getLocations(feedCluster, feed);
         Location dataLocation = FileSystemStorage.getLocation(locations, LocationType.DATA);
@@ -243,7 +225,7 @@ public class FalconHookIT {
     private void assertFeedAttributes(String feedId) throws Exception {
         Referenceable feedEntity = atlasClient.getEntity(feedId);
         assertEquals(feedEntity.get(AtlasClient.OWNER), "testuser");
-        assertEquals(feedEntity.get(FalconDataModelGenerator.FREQUENCY), "hours(1)");
+        assertEquals(feedEntity.get(FalconBridge.FREQUENCY), "hours(1)");
         assertEquals(feedEntity.get(AtlasClient.DESCRIPTION), "test input");
     }
 

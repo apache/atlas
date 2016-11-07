@@ -1,0 +1,21 @@
+{
+  "patches": [
+    {
+      "action": "ADD_ATTRIBUTE",
+      "typeName": "hive_column",
+      "applyToVersion": "1.0",
+      "updateToVersion": "1.1",
+      "params": null,
+      "attributeDefs": [
+        {
+          "name": "position",
+          "typeName": "int",
+          "cardinality": "SINGLE",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false
+        }
+      ]
+    }
+  ]
+}

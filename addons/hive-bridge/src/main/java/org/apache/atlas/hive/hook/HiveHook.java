@@ -25,7 +25,6 @@ import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.hive.bridge.HiveMetaStoreBridge;
 import org.apache.atlas.hive.bridge.ColumnLineageUtils;
-import org.apache.atlas.hive.model.HiveDataModelGenerator;
 import org.apache.atlas.hive.model.HiveDataTypes;
 import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.notification.hook.HookNotification;
@@ -411,10 +410,10 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                     Referenceable tableEntity = tables.get(Type.TABLE);
 
                     //Reset regular column QF Name to old Name and create a new partial notification request to replace old column QFName to newName to retain any existing traits
-                    replaceColumnQFName(event, (List<Referenceable>) tableEntity.get(HiveDataModelGenerator.COLUMNS), oldQualifiedName, newQualifiedName);
+                    replaceColumnQFName(event, (List<Referenceable>) tableEntity.get(HiveMetaStoreBridge.COLUMNS), oldQualifiedName, newQualifiedName);
 
                     //Reset partition key column QF Name to old Name and create a new partial notification request to replace old column QFName to newName to retain any existing traits
-                    replaceColumnQFName(event, (List<Referenceable>) tableEntity.get(HiveDataModelGenerator.PART_COLS), oldQualifiedName, newQualifiedName);
+                    replaceColumnQFName(event, (List<Referenceable>) tableEntity.get(HiveMetaStoreBridge.PART_COLS), oldQualifiedName, newQualifiedName);
 
                     //Reset SD QF Name to old Name and create a new partial notification request to replace old SD QFName to newName to retain any existing traits
                     replaceSDQFName(event, tableEntity, oldQualifiedName, newQualifiedName);
@@ -437,7 +436,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
         ArrayList<String> alias_list = new ArrayList<>();
         alias_list.add(oldTable.getTableName().toLowerCase());
-        newEntity.set(HiveDataModelGenerator.TABLE_ALIAS_LIST, alias_list);
+        newEntity.set(HiveMetaStoreBridge.TABLE_ALIAS_LIST, alias_list);
         event.addMessage(new HookNotification.EntityPartialUpdateRequest(event.getUser(),
             HiveDataTypes.HIVE_TABLE.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
             oldTableQFName, newEntity));
@@ -466,7 +465,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
     private Referenceable replaceSDQFName(final HiveEventContext event, Referenceable tableEntity, final String oldTblQFName, final String newTblQFName) {
         //Reset storage desc QF Name to old Name
-        final Referenceable sdRef = ((Referenceable) tableEntity.get(HiveDataModelGenerator.STORAGE_DESC));
+        final Referenceable sdRef = ((Referenceable) tableEntity.get(HiveMetaStoreBridge.STORAGE_DESC));
         sdRef.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, HiveMetaStoreBridge.getStorageDescQFName(oldTblQFName));
 
         //Replace SD QF name first to retain tags
