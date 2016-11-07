@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+Atlas web server allows user to browse webapp directory (vrathor-hw via shwethags)
 ATLAS-1241 New Instance APIs and POJOs (sumasai)
 ATLAS-1259 Fix Test and compilation failure caused bt ATLAS-1233 changes (apoorvnaik via sumasai)
 ATLAS-1248 /bin/atlas_stop.py not killing the process and process is found alive even after 30 secs (zhangqiang2 via sumasai)

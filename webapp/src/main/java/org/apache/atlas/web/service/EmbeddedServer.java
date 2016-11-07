@@ -52,6 +52,8 @@ public class EmbeddedServer {
     protected WebAppContext getWebAppContext(String path) {
         WebAppContext application = new WebAppContext(path, "/");
         application.setClassLoader(Thread.currentThread().getContextClassLoader());
+        // Disable directory listing
+        application.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
         return application;
     }
 
