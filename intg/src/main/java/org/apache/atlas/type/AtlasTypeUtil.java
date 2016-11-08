@@ -27,16 +27,19 @@ import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
+import org.apache.atlas.model.typedef.AtlasTypeDefHeader;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.model.TypeCategory;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Arrays;
 
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_ARRAY_PREFIX;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_ARRAY_SUFFIX;
@@ -193,5 +196,32 @@ public class AtlasTypeUtil {
         List<AtlasClassificationDef> traits,
         List<AtlasEntityDef> classes) {
         return new AtlasTypesDef(enums, structs, traits, classes);
+    }
+
+    public static List<AtlasTypeDefHeader> toTypeDefHeader(AtlasTypesDef typesDef) {
+        List<AtlasTypeDefHeader> headerList = new LinkedList<>();
+        if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
+            for (AtlasEnumDef enumDef : typesDef.getEnumDefs()) {
+                headerList.add(new AtlasTypeDefHeader(enumDef.getGuid(), enumDef.getName(), TypeCategory.PRIMITIVE));
+            }
+        }
+        if (CollectionUtils.isNotEmpty(typesDef.getStructDefs())) {
+            for (AtlasStructDef structDef : typesDef.getStructDefs()) {
+                headerList.add(new AtlasTypeDefHeader(structDef.getGuid(), structDef.getName(), TypeCategory.STRUCT));
+            }
+        }
+        if (CollectionUtils.isNotEmpty(typesDef.getClassificationDefs())) {
+            for (AtlasClassificationDef classificationDef : typesDef.getClassificationDefs()) {
+                headerList.add(new AtlasTypeDefHeader(classificationDef.getGuid(), classificationDef.getName(),
+                        TypeCategory.CLASSIFICATION));
+            }
+        }
+        if (CollectionUtils.isNotEmpty(typesDef.getEntityDefs())) {
+            for (AtlasEntityDef entityDef : typesDef.getEntityDefs()) {
+                headerList.add(new AtlasTypeDefHeader(entityDef.getGuid(), entityDef.getName(), TypeCategory.ENTITY));
+            }
+        }
+
+        return headerList;
     }
 }

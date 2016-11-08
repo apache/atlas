@@ -29,13 +29,16 @@ import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumDefs;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasStructDefs;
+import org.apache.atlas.model.typedef.AtlasTypeDefHeader;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.http.annotation.Experimental;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Set;
 
 import javax.inject.Singleton;
@@ -387,6 +390,21 @@ public class TypesREST {
     /** Bulk API operations                                          **/
     /******************************************************************/
 
+    /**
+     * Bulk retrieval API for all type definitions returned as a list of minimal information header
+     * @return List of AtlasTypeDefHeader {@link AtlasTypeDefHeader}
+     * @throws AtlasBaseException
+     */
+    @GET
+    @Path("/typedefs/headers")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public List<AtlasTypeDefHeader> getTypeDefHeaders() throws AtlasBaseException {
+        SearchFilter searchFilter = getSearchFilter();
+
+        AtlasTypesDef searchTypesDef = typeDefStore.searchTypesDef(searchFilter);
+
+        return AtlasTypeUtil.toTypeDefHeader(searchTypesDef);
+    }
 
     /**
      * Bulk retrieval API for retrieving all type definitions in Atlas

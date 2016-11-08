@@ -24,6 +24,7 @@ import java.text.ParseException;
 import java.util.Date;
 import java.util.Map;
 
+import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.commons.lang.StringUtils;

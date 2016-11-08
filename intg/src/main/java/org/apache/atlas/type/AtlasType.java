@@ -21,6 +21,7 @@ package org.apache.atlas.type;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 
 import java.util.List;
@@ -30,10 +31,6 @@ import java.util.List;
  * base class that declares interface for all Atlas types.
  */
 public abstract class AtlasType {
-
-    public enum TypeCategory {
-        PRIMITIVE, ARRAY, MAP, ENTITY, STRUCT, CLASSIFICATION, OBJECT_ID_TYPE
-    }
 
     private static final Gson GSON =
             new GsonBuilder().setDateFormat(AtlasBaseTypeDef.SERIALIZED_DATE_FORMAT_STR).create();

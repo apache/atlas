@@ -69,7 +69,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
 
         AtlasType type = typeRegistry.getType(structDef.getName());
 
-        if (type.getTypeCategory() != AtlasType.TypeCategory.STRUCT) {
+        if (type.getTypeCategory() != org.apache.atlas.model.TypeCategory.STRUCT) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_MATCH_FAILED, structDef.getName(), TypeCategory.STRUCT.name());
         }
 
@@ -202,7 +202,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
 
         AtlasType type = typeRegistry.getType(structDef.getName());
 
-        if (type.getTypeCategory() != AtlasType.TypeCategory.STRUCT) {
+        if (type.getTypeCategory() != org.apache.atlas.model.TypeCategory.STRUCT) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_MATCH_FAILED, structDef.getName(), TypeCategory.STRUCT.name());
         }
 
@@ -232,7 +232,7 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
 
         AtlasType type = typeRegistry.getTypeByGuid(guid);
 
-        if (type.getTypeCategory() != AtlasType.TypeCategory.STRUCT) {
+        if (type.getTypeCategory() != org.apache.atlas.model.TypeCategory.STRUCT) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_MATCH_FAILED, structDef.getName(), TypeCategory.STRUCT.name());
         }
 
@@ -494,11 +494,11 @@ public class AtlasStructDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
         if (isForeignKey) { // check if the referenced entity has foreignKeyRef to this attribute
             AtlasType attribType = structType.getAttributeType(attributeDef.getName());
 
-            if (attribType.getTypeCategory() == AtlasType.TypeCategory.ARRAY) {
+            if (attribType.getTypeCategory() == org.apache.atlas.model.TypeCategory.ARRAY) {
                 attribType = ((AtlasArrayType)attribType).getElementType();
             }
 
-            if (attribType.getTypeCategory() == AtlasType.TypeCategory.ENTITY) {
+            if (attribType.getTypeCategory() == org.apache.atlas.model.TypeCategory.ENTITY) {
                 reverseAttribName = ((AtlasStructType)attribType).getMappedFromRefAttribute(structType.getTypeName(),
                                                                                             attributeDef.getName());
             }

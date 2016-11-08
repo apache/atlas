@@ -57,7 +57,7 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
 
         AtlasType type = typeRegistry.getType(entityDef.getName());
 
-        if (type.getTypeCategory() != AtlasType.TypeCategory.ENTITY) {
+        if (type.getTypeCategory() != org.apache.atlas.model.TypeCategory.ENTITY) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_MATCH_FAILED, entityDef.getName(), TypeCategory.CLASS.name());
         }
 
@@ -191,7 +191,7 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
 
         AtlasType type = typeRegistry.getType(entityDef.getName());
 
-        if (type.getTypeCategory() != AtlasType.TypeCategory.ENTITY) {
+        if (type.getTypeCategory() != org.apache.atlas.model.TypeCategory.ENTITY) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_MATCH_FAILED, entityDef.getName(), TypeCategory.CLASS.name());
         }
 
@@ -221,7 +221,7 @@ public class AtlasEntityDefStoreV1 extends AtlasAbstractDefStoreV1 implements At
 
         AtlasType type = typeRegistry.getTypeByGuid(guid);
 
-        if (type.getTypeCategory() != AtlasType.TypeCategory.ENTITY) {
+        if (type.getTypeCategory() != org.apache.atlas.model.TypeCategory.ENTITY) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_MATCH_FAILED, entityDef.getName(), TypeCategory.CLASS.name());
         }
 

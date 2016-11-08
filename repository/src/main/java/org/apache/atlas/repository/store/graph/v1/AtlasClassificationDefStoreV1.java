@@ -58,7 +58,7 @@ public class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1 imple
 
         AtlasType type = typeRegistry.getType(classificationDef.getName());
 
-        if (type.getTypeCategory() != AtlasType.TypeCategory.CLASSIFICATION) {
+        if (type.getTypeCategory() != org.apache.atlas.model.TypeCategory.CLASSIFICATION) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_MATCH_FAILED, classificationDef.getName(), TypeCategory.TRAIT.name());
         }
 
@@ -193,7 +193,7 @@ public class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1 imple
 
         AtlasType type = typeRegistry.getType(classificationDef.getName());
 
-        if (type.getTypeCategory() != AtlasType.TypeCategory.CLASSIFICATION) {
+        if (type.getTypeCategory() != org.apache.atlas.model.TypeCategory.CLASSIFICATION) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_MATCH_FAILED, classificationDef.getName(), TypeCategory.TRAIT.name());
         }
 
@@ -223,7 +223,7 @@ public class AtlasClassificationDefStoreV1 extends AtlasAbstractDefStoreV1 imple
 
         AtlasType type = typeRegistry.getTypeByGuid(guid);
 
-        if (type.getTypeCategory() != AtlasType.TypeCategory.CLASSIFICATION) {
+        if (type.getTypeCategory() != org.apache.atlas.model.TypeCategory.CLASSIFICATION) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_MATCH_FAILED, classificationDef.getName(), TypeCategory.TRAIT.name());
         }
 
