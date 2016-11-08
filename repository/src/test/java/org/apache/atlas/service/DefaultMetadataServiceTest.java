@@ -77,6 +77,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Collections;
 
 import static org.apache.atlas.TestUtils.COLUMNS_ATTR_NAME;
 import static org.apache.atlas.TestUtils.COLUMN_TYPE;
@@ -1138,11 +1139,16 @@ public class DefaultMetadataServiceTest {
     @Test
     public void testOnChangeRefresh() {
         try {
-            List<String> beforeChangeTypeNames = metadataService.getTypeNames(new HashMap<TypeCache.TYPE_FILTER, String>());
+            List<String> beforeChangeTypeNames = new ArrayList<>();
+            beforeChangeTypeNames.addAll(metadataService.getTypeNames(new HashMap<TypeCache.TYPE_FILTER, String>()));
 
             ((DefaultMetadataService)metadataService).onChange(new ChangedTypeDefs());
 
-            List<String> afterChangeTypeNames = metadataService.getTypeNames(new HashMap<TypeCache.TYPE_FILTER, String>());
+            List<String> afterChangeTypeNames = new ArrayList<>();
+            afterChangeTypeNames.addAll(metadataService.getTypeNames(new HashMap<TypeCache.TYPE_FILTER, String>()));
+
+            Collections.sort(beforeChangeTypeNames);
+            Collections.sort(afterChangeTypeNames);
             assertEquals(afterChangeTypeNames, beforeChangeTypeNames);
         } catch (AtlasBaseException e) {
             fail("Should've succeeded", e);
