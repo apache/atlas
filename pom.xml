@@ -402,6 +402,16 @@
             </roles>
             <organization></organization>
         </developer>
+        <developer>
+            <id>svimal2106</id>
+            <name>Vimal Sharma</name>
+            <email>svimal2106@apache.org</email>
+            <timezone>Asia/Kolkata</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization></organization>
+        </developer>
     </developers>
 
     <properties>
