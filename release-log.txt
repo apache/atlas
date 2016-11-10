@@ -9,7 +9,8 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
-ATLAS-1278 Added API to get typedef header info
+ATLAS-1276 fix for webapp test failures (ayubkhan via mneethiraj)
+ATLAS-1278 Added API to get typedef header info (apoorvnaik via mneethiraj)
 ATLAS-1246 Upgrade versions of dependencies (shwethags)
 ATLAS-1192 Atlas IE support (kevalbhatt)
 ATLAS-1273 Test testOnChangeRefresh in DefaultMetadataServiceTest is failing (ayubkhan via shwethags)
