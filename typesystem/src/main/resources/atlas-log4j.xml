@@ -75,7 +75,7 @@
         <appender-ref ref="console"/>
     </logger>
 
-    <logger name="AUDIT">
+    <logger name="AUDIT" additivity="false">
         <level value="info"/>
         <appender-ref ref="console"/>
     </logger>

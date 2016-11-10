@@ -88,8 +88,6 @@ public class AuditFilter implements Filter {
         final String whatURL = Servlets.getRequestURL(httpRequest);
         final String whatAddrs = httpRequest.getLocalAddr();
 
-        LOG.info("Audit: {}/{} performed request {} {} ({}) at time {}", who, fromAddress, whatRequest, whatURL,
-                whatAddrs, whenISO9601);
         audit(who, fromAddress, whatRequest, fromHost, whatURL, whatAddrs, whenISO9601);
     }
 
