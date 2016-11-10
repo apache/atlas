@@ -315,13 +315,12 @@ public class AtlasTypeDefStoreInitializer {
 
         @Override
         public void applyPatch(TypeDefPatch patch) throws AtlasBaseException {
-            String typeName = patch.getTypeName();
+            String           typeName = patch.getTypeName();
+            AtlasBaseTypeDef typeDef  = typeRegistry.getTypeDefByName(typeName);
 
-            if (!typeRegistry.isRegisteredType(typeName)) {
+            if (typeDef == null) {
                 throw new AtlasBaseException(AtlasErrorCode.PATCH_FOR_UNKNOWN_TYPE, patch.getAction(), typeName);
             }
-
-            AtlasBaseTypeDef typeDef = typeRegistry.getTypeDefByName(typeName);
 
             if (isPatchApplicable(patch, typeDef)) {
                 if (typeDef.getClass().equals(AtlasEntityDef.class)) {
