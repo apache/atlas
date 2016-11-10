@@ -28,6 +28,7 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
+import org.apache.atlas.model.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -51,9 +52,7 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
 
 
     public AtlasClassificationDef() {
-        super();
-
-        setSuperTypes(null);
+        this(null, null, null, null, null);
     }
 
     public AtlasClassificationDef(String name) {
@@ -75,7 +74,7 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
 
     public AtlasClassificationDef(String name, String description, String typeVersion,
                                   List<AtlasAttributeDef> attributeDefs, Set<String> superTypes) {
-        super(name, description, typeVersion, attributeDefs);
+        super(TypeCategory.CLASSIFICATION, name, description, typeVersion, attributeDefs);
 
         setSuperTypes(superTypes);
     }

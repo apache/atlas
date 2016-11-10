@@ -45,12 +45,13 @@ public class AtlasClassificationType extends AtlasStructType {
 
     private final AtlasClassificationDef classificationDef;
 
-    private List<AtlasClassificationType>  superTypes       = Collections.emptyList();
-    private Set<String>                    allSuperTypes    = Collections.emptySet();
-    private Map<String, AtlasAttributeDef> allAttributeDefs = Collections.emptyMap();
+    private List<AtlasClassificationType>  superTypes        = Collections.emptyList();
+    private Set<String>                    allSuperTypes     = Collections.emptySet();
+    private Map<String, AtlasAttributeDef> allAttributeDefs  = Collections.emptyMap();
+    private Map<String, AtlasType>         allAttributeTypes = new HashMap<>();
 
     public AtlasClassificationType(AtlasClassificationDef classificationDef) {
-        super(classificationDef, TypeCategory.CLASSIFICATION);
+        super(classificationDef);
 
         this.classificationDef = classificationDef;
     }
@@ -63,6 +64,8 @@ public class AtlasClassificationType extends AtlasStructType {
 
         resolveReferences(typeRegistry);
     }
+
+    public AtlasClassificationDef getClassificationDef() { return classificationDef; }
 
     @Override
     public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
@@ -85,9 +88,10 @@ public class AtlasClassificationType extends AtlasStructType {
             }
         }
 
-        this.superTypes       = Collections.unmodifiableList(s);
-        this.allSuperTypes    = Collections.unmodifiableSet(allS);
-        this.allAttributeDefs = Collections.unmodifiableMap(allA);
+        this.superTypes        = Collections.unmodifiableList(s);
+        this.allSuperTypes     = Collections.unmodifiableSet(allS);
+        this.allAttributeDefs  = Collections.unmodifiableMap(allA);
+        this.allAttributeTypes = new HashMap<>(); // this will be rebuilt on calls to getAttributeType()
     }
 
     public Set<String> getSuperTypes() {
@@ -97,6 +101,49 @@ public class AtlasClassificationType extends AtlasStructType {
     public Set<String> getAllSuperTypes() { return allSuperTypes; }
 
     public Map<String, AtlasAttributeDef> getAllAttributeDefs() { return allAttributeDefs; }
+
+    @Override
+    public AtlasType getAttributeType(String attributeName) {
+        AtlasType ret = allAttributeTypes.get(attributeName);
+
+        if (ret == null) {
+            ret = super.getAttributeType(attributeName);
+
+            if (ret == null) {
+                for (AtlasClassificationType superType : superTypes) {
+                    ret = superType.getAttributeType(attributeName);
+
+                    if (ret != null) {
+                        break;
+                    }
+                }
+            }
+
+            if (ret != null) {
+                allAttributeTypes.put(attributeName, ret);
+            }
+        }
+
+        return ret;
+    }
+
+
+    @Override
+    public AtlasAttributeDef getAttributeDef(String attributeName) {
+        AtlasAttributeDef ret = super.getAttributeDef(attributeName);
+
+        if (ret == null) {
+            for (AtlasClassificationType superType : superTypes) {
+                ret = superType.getAttributeDef(attributeName);
+
+                if (ret != null) {
+                    break;
+                }
+            }
+        }
+
+        return ret;
+    }
 
     public boolean isSuperTypeOf(AtlasClassificationType classificationType) {
         return classificationType != null ? classificationType.getAllSuperTypes().contains(this.getTypeName()) : false;

@@ -29,7 +29,6 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
 import org.apache.atlas.model.typedef.AtlasTypeDefHeader;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.model.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 
@@ -202,23 +201,22 @@ public class AtlasTypeUtil {
         List<AtlasTypeDefHeader> headerList = new LinkedList<>();
         if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
             for (AtlasEnumDef enumDef : typesDef.getEnumDefs()) {
-                headerList.add(new AtlasTypeDefHeader(enumDef.getGuid(), enumDef.getName(), TypeCategory.PRIMITIVE));
+                headerList.add(new AtlasTypeDefHeader(enumDef));
             }
         }
         if (CollectionUtils.isNotEmpty(typesDef.getStructDefs())) {
             for (AtlasStructDef structDef : typesDef.getStructDefs()) {
-                headerList.add(new AtlasTypeDefHeader(structDef.getGuid(), structDef.getName(), TypeCategory.STRUCT));
+                headerList.add(new AtlasTypeDefHeader(structDef));
             }
         }
         if (CollectionUtils.isNotEmpty(typesDef.getClassificationDefs())) {
             for (AtlasClassificationDef classificationDef : typesDef.getClassificationDefs()) {
-                headerList.add(new AtlasTypeDefHeader(classificationDef.getGuid(), classificationDef.getName(),
-                        TypeCategory.CLASSIFICATION));
+                headerList.add(new AtlasTypeDefHeader(classificationDef));
             }
         }
         if (CollectionUtils.isNotEmpty(typesDef.getEntityDefs())) {
             for (AtlasEntityDef entityDef : typesDef.getEntityDefs()) {
-                headerList.add(new AtlasTypeDefHeader(entityDef.getGuid(), entityDef.getName(), TypeCategory.ENTITY));
+                headerList.add(new AtlasTypeDefHeader(entityDef));
             }
         }
 

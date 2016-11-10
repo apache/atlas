@@ -34,10 +34,16 @@ import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONL
 @JsonIgnoreProperties(ignoreUnknown=true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
-public class AtlasTypeDefHeader {
+public class AtlasTypeDefHeader implements java.io.Serializable {
+    private static final long serialVersionUID = 1L;
+
     private String guid;
     private String name;
     private TypeCategory category;
+
+    public AtlasTypeDefHeader() {
+        this(null, null, null);
+    }
 
     public AtlasTypeDefHeader(String guid, String name, TypeCategory category) {
         this.guid = guid;
@@ -45,8 +51,8 @@ public class AtlasTypeDefHeader {
         this.category = category;
     }
 
-    public AtlasTypeDefHeader() {
-        this(null, null, null);
+    public AtlasTypeDefHeader(AtlasBaseTypeDef typeDef) {
+        this(typeDef.getGuid(), typeDef.getName(), typeDef.getCategory());
     }
 
     public AtlasTypeDefHeader(AtlasTypeDefHeader other) {

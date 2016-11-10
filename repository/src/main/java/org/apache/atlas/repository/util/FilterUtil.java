@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.util;
 
 import org.apache.atlas.model.SearchFilter;
+import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
@@ -81,17 +82,19 @@ public class FilterUtil {
             @Override
             public boolean evaluate(Object o) {
                 if (o instanceof AtlasBaseTypeDef) {
+                    AtlasBaseTypeDef typeDef = (AtlasBaseTypeDef)o;
+
                     switch (type.toUpperCase()) {
                         case "CLASS":
                         case "ENTITY":
-                            return o instanceof AtlasEntityDef;
+                            return typeDef.getCategory() == TypeCategory.ENTITY;
                         case "TRAIT":
                         case "CLASSIFICATION":
-                            return o instanceof AtlasClassificationDef;
+                            return typeDef.getCategory() == TypeCategory.CLASSIFICATION;
                         case "STRUCT":
-                            return o instanceof AtlasStructDef;
+                            return typeDef.getCategory() == TypeCategory.STRUCT;
                         case "ENUM":
-                            return o instanceof AtlasEnumDef;
+                            return typeDef.getCategory() == TypeCategory.ENUM;
                         default:
                             // This shouldn't have happened
                             return false;

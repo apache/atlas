@@ -367,19 +367,21 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
     }
 
     TypeCategory getTypeCategory(AtlasBaseTypeDef typeDef) {
-        TypeCategory ret = null;
+        switch (typeDef.getCategory()) {
+            case ENTITY:
+                return TypeCategory.CLASS;
 
-        if (typeDef instanceof AtlasEntityDef) {
-            ret = TypeCategory.CLASS;
-        } else if (typeDef instanceof AtlasClassificationDef) {
-            ret = TypeCategory.TRAIT;
-        } else if (typeDef instanceof AtlasStructDef) {
-            ret = TypeCategory.STRUCT;
-        } else if (typeDef instanceof AtlasEnumDef) {
-            ret = TypeCategory.ENUM;
+            case CLASSIFICATION:
+                return TypeCategory.TRAIT;
+
+            case STRUCT:
+                return TypeCategory.STRUCT;
+
+            case ENUM:
+                return TypeCategory.ENUM;
         }
 
-        return ret;
+        return null;
     }
 
     /*

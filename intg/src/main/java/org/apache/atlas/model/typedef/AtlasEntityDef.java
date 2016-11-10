@@ -28,6 +28,7 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
+import org.apache.atlas.model.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -72,7 +73,7 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
 
     public AtlasEntityDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs,
                           Set<String> superTypes) {
-        super(name, description, typeVersion, attributeDefs);
+        super(TypeCategory.ENTITY, name, description, typeVersion, attributeDefs);
 
         setSuperTypes(superTypes);
     }

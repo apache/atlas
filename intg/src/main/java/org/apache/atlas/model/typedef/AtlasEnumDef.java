@@ -27,6 +27,7 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
+import org.apache.atlas.model.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.util.StringUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
@@ -51,10 +52,7 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
     private String                    defaultValue;
 
     public AtlasEnumDef() {
-        super();
-
-        setElementDefs(null);
-        setDefaultValue(null);
+        this(null, null, null, null, null);
     }
 
     public AtlasEnumDef(String name) {
@@ -79,7 +77,7 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
 
     public AtlasEnumDef(String name, String description, String typeVersion, List<AtlasEnumElementDef> elementDefs,
                         String defaultValue) {
-        super(name, description, typeVersion);
+        super(TypeCategory.ENUM, name, description, typeVersion);
 
         setElementDefs(elementDefs);
         setDefaultValue(defaultValue);

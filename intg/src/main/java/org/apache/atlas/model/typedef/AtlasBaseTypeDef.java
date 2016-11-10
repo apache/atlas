@@ -27,6 +27,7 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.apache.atlas.model.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
@@ -103,6 +104,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
     public static final String     SERIALIZED_DATE_FORMAT_STR = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
     public static final DateFormat DATE_FORMATTER             = new SimpleDateFormat(SERIALIZED_DATE_FORMAT_STR);
 
+    private final TypeCategory category;
     private String  guid       = null;
     private String  createdBy  = null;
     private String  updatedBy  = null;
@@ -113,20 +115,10 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
     private String  description;
     private String  typeVersion;
 
-    public AtlasBaseTypeDef() {
-        this(null, null, null);
-    }
-
-    public AtlasBaseTypeDef(String name) {
-        this(name, null, null);
-    }
-
-    public AtlasBaseTypeDef(String name, String description) {
-        this(name, description, null);
-    }
-
-    public AtlasBaseTypeDef(String name, String description, String typeVersion) {
+    protected AtlasBaseTypeDef(TypeCategory category, String name, String description, String typeVersion) {
         super();
+
+        this.category = category;
 
         setGuid(null);
         setCreatedBy(null);
@@ -139,8 +131,10 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         setTypeVersion(typeVersion);
     }
 
-    public AtlasBaseTypeDef(AtlasBaseTypeDef other) {
+    protected AtlasBaseTypeDef(AtlasBaseTypeDef other) {
         if (other != null) {
+            this.category = other.category;
+
             setGuid(other.getGuid());
             setCreatedBy(other.getCreatedBy());
             setUpdatedBy(other.getUpdatedBy());
@@ -151,6 +145,8 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
             setDescription(other.getDescription());
             setTypeVersion(other.getTypeVersion());
         } else {
+            this.category = TypeCategory.PRIMITIVE;
+
             setGuid(null);
             setCreatedBy(null);
             setUpdatedBy(null);
@@ -162,6 +158,8 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
             setTypeVersion(null);
         }
     }
+
+    public TypeCategory getCategory() { return category; }
 
     public String getGuid() {
         return guid;
@@ -242,7 +240,8 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         }
 
         sb.append("AtlasBaseTypeDef{");
-        sb.append("guid='").append(guid).append('\'');
+        sb.append("category='").append(category).append('\'');
+        sb.append(", guid='").append(guid).append('\'');
         sb.append(", createdBy='").append(createdBy).append('\'');
         sb.append(", updatedBy='").append(updatedBy).append('\'');
         dumpDateField(", createTime=", createTime, sb);
@@ -263,6 +262,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
 
         AtlasBaseTypeDef that = (AtlasBaseTypeDef) o;
 
+        if (category != null ? !category.equals(that.category) : that.category != null) { return false; }
         if (guid != null ? !guid.equals(that.guid) : that.guid != null) { return false; }
         if (createdBy != null ? !createdBy.equals(that.createdBy) : that.createdBy != null) { return false; }
         if (updatedBy != null ? !updatedBy.equals(that.updatedBy) : that.updatedBy != null) { return false; }
@@ -279,7 +279,8 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
 
     @Override
     public int hashCode() {
-        int result = guid != null ? guid.hashCode() : 0;
+        int result = category != null ? category.hashCode() : 0;
+        result = 31 * result + (guid != null ? guid.hashCode() : 0);
         result = 31 * result + (createdBy != null ? createdBy.hashCode() : 0);
         result = 31 * result + (updatedBy != null ? updatedBy.hashCode() : 0);
         result = 31 * result + (createTime != null ? createTime.hashCode() : 0);

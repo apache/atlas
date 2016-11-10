@@ -35,13 +35,16 @@ public abstract class AtlasType {
     private static final Gson GSON =
             new GsonBuilder().setDateFormat(AtlasBaseTypeDef.SERIALIZED_DATE_FORMAT_STR).create();
 
-    private final String typeName;
-
+    private final String       typeName;
     private final TypeCategory typeCategory;
 
-    protected AtlasType(String typeName, TypeCategory category) {
-        this.typeName = typeName;
-        this.typeCategory = category;
+    protected AtlasType(AtlasBaseTypeDef typeDef) {
+        this(typeDef.getName(), typeDef.getCategory());
+    }
+
+    protected AtlasType(String typeName, TypeCategory typeCategory) {
+        this.typeName     = typeName;
+        this.typeCategory = typeCategory;
     }
 
     public void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
@@ -49,15 +52,13 @@ public abstract class AtlasType {
 
     public String getTypeName() { return typeName; }
 
+    public TypeCategory getTypeCategory() { return typeCategory; }
+
     public abstract Object createDefaultValue();
 
     public abstract boolean isValidValue(Object obj);
 
     public abstract Object getNormalizedValue(Object obj);
-
-    public TypeCategory getTypeCategory() {
-        return typeCategory;
-    }
 
     public boolean validateValue(Object obj, String objName, List<String> messages) {
         boolean ret = isValidValue(obj);

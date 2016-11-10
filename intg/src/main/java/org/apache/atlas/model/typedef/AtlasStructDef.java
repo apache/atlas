@@ -34,6 +34,7 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
+import org.apache.atlas.model.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.util.StringUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
@@ -75,7 +76,11 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
     }
 
     public AtlasStructDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs) {
-        super(name, description, typeVersion);
+        this(TypeCategory.STRUCT, name, description, typeVersion, attributeDefs);
+    }
+
+    protected AtlasStructDef(TypeCategory category, String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs) {
+        super(category, name, description, typeVersion);
 
         setAttributeDefs(attributeDefs);
     }
