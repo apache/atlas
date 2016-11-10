@@ -57,12 +57,14 @@
             <artifactId>atlas-graphdb-api</artifactId>
         </dependency>
 
-	    <dependency>
+	
+	<dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-graphdb-impls</artifactId>
-	        <type>pom</type>
+	    <type>pom</type>
             <scope>test</scope>
         </dependency>
+
 
         <dependency>
             <groupId>joda-time</groupId>
@@ -101,6 +103,11 @@
 
         <dependency>
             <groupId>org.scala-lang</groupId>
+            <artifactId>jline</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
         </dependency>
 
@@ -112,6 +119,11 @@
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scalap</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.scalamacros</groupId>
+            <artifactId>quasiquotes_${scala.binary.version}</artifactId>
         </dependency>
 
         <dependency>
@@ -130,9 +142,20 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-typesystem</artifactId>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-server</artifactId>
             <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-server</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -142,23 +165,11 @@
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-intg</artifactId>
             <type>test-jar</type>
             <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-hbase-client-shaded</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-hbase-server-shaded</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -200,6 +211,23 @@
                         <jvmArg>-Xmx512m</jvmArg>
                         <jvmArg>-XX:MaxPermSize=128m</jvmArg>
                     </jvmArgs>
+                    <!--
+                    <javacArgs>
+                        <javacArg>-source</javacArg>
+                        <javacArg>${java.version}</javacArg>
+                        <javacArg>-target</javacArg>
+                        <javacArg>${java.version}</javacArg>
+                    </javacArgs>
+                    -->
+                    <!-- The following plugin is required to use quasiquotes in Scala 2.10 and is used
+                         by Spark SQL for code generation. -->
+                    <!--<compilerPlugins>
+                        <compilerPlugin>
+                            <groupId>org.scalamacros</groupId>
+                            <artifactId>paradise_${scala.version}</artifactId>
+                            <version>${scala.macros.version}</version>
+                        </compilerPlugin>
+                    </compilerPlugins>-->
                 </configuration>
             </plugin>
 

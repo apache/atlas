@@ -142,17 +142,17 @@
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>org.json4s</groupId>
-                                            <artifactId>json4s-native_${scala.binary.version}</artifactId>
+                                            <artifactId>json4s-native_2.10</artifactId>
                                             <version>${json.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>org.json4s</groupId>
-                                            <artifactId>json4s-core_${scala.binary.version}</artifactId>
+                                            <artifactId>json4s-core_2.10</artifactId>
                                             <version>${json.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>org.json4s</groupId>
-                                            <artifactId>json4s-ast_${scala.binary.version}</artifactId>
+                                            <artifactId>json4s-ast_2.10</artifactId>
                                             <version>${json.version}</version>
                                         </artifactItem>
                                         <artifactItem>
@@ -203,6 +203,7 @@
                                         <artifactItem>
                                             <groupId>com.google.inject.extensions</groupId>
                                             <artifactId>guice-multibindings</artifactId>
+                                            <version>${guice.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>org.apache.kafka</groupId>

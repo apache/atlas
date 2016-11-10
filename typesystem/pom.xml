@@ -49,6 +49,11 @@
 
         <dependency>
             <groupId>org.scala-lang</groupId>
+            <artifactId>jline</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
         </dependency>
 
@@ -63,18 +68,28 @@
         </dependency>
 
         <dependency>
+            <groupId>org.scalamacros</groupId>
+            <artifactId>quasiquotes_${scala.binary.version}</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.json4s</groupId>
-            <artifactId>json4s-native_${scala.binary.version}</artifactId>
+            <artifactId>json4s-native_2.10</artifactId>
         </dependency>
 
         <dependency>
             <groupId>com.github.nscala-time</groupId>
-            <artifactId>nscala-time_${scala.binary.version}</artifactId>
+            <artifactId>nscala-time_2.10</artifactId>
         </dependency>
 
         <dependency>
             <groupId>com.typesafe</groupId>
             <artifactId>config</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
         </dependency>
 
         <dependency>
@@ -101,7 +116,6 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-intg</artifactId>
@@ -145,6 +159,23 @@
                         <jvmArg>-Xmx512m</jvmArg>
                         <jvmArg>-XX:MaxPermSize=128m</jvmArg>
                     </jvmArgs>
+                    <!--
+                    <javacArgs>
+                        <javacArg>-source</javacArg>
+                        <javacArg>${java.version}</javacArg>
+                        <javacArg>-target</javacArg>
+                        <javacArg>${java.version}</javacArg>
+                    </javacArgs>
+                    -->
+                    <!-- The following plugin is required to use quasiquotes in Scala 2.10 and is used
+                         by Spark SQL for code generation. -->
+                    <!--<compilerPlugins>
+                        <compilerPlugin>
+                            <groupId>org.scalamacros</groupId>
+                            <artifactId>paradise_${scala.version}</artifactId>
+                            <version>${scala.macros.version}</version>
+                        </compilerPlugin>
+                    </compilerPlugins>-->
                 </configuration>
             </plugin>
 

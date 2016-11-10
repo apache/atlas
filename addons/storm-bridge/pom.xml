@@ -95,10 +95,11 @@
             <groupId>org.apache.storm</groupId>
             <artifactId>storm-core</artifactId>
             <version>${storm.version}</version>
+            <type>jar</type>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
-                    <artifactId>log4j-over-slf4j</artifactId>
+                    <artifactId>slf4j-log4j12</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -167,17 +168,17 @@
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>org.json4s</groupId>
-                                            <artifactId>json4s-native_${scala.binary.version}</artifactId>
+                                            <artifactId>json4s-native_2.10</artifactId>
                                             <version>${json.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>org.json4s</groupId>
-                                            <artifactId>json4s-core_${scala.binary.version}</artifactId>
+                                            <artifactId>json4s-core_2.10</artifactId>
                                             <version>${json.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>org.json4s</groupId>
-                                            <artifactId>json4s-ast_${scala.binary.version}</artifactId>
+                                            <artifactId>json4s-ast_2.10</artifactId>
                                             <version>${json.version}</version>
                                         </artifactItem>
                                         <artifactItem>
@@ -233,18 +234,22 @@
                                         <artifactItem>
                                             <groupId>com.google.inject</groupId>
                                             <artifactId>guice</artifactId>
+                                            <version>${guice.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>com.google.inject.extensions</groupId>
                                             <artifactId>guice-multibindings</artifactId>
+                                            <version>${guice.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>com.google.inject.extensions</groupId>
                                             <artifactId>guice-servlet</artifactId>
+                                            <version>${guice.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>com.google.inject.extensions</groupId>
                                             <artifactId>guice-throwingproviders</artifactId>
+                                            <version>${guice.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>org.apache.kafka</groupId>

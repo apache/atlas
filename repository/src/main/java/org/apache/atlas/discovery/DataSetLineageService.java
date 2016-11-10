@@ -44,12 +44,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Option;
 import scala.Some;
-import scala.collection.JavaConversions;
 import scala.collection.immutable.List;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Arrays;
 import java.util.Iterator;
 
 /**
@@ -61,8 +59,8 @@ public class DataSetLineageService implements LineageService {
     private static final Logger LOG = LoggerFactory.getLogger(DataSetLineageService.class);
 
     private static final Option<List<String>> SELECT_ATTRIBUTES =
-            Some.apply(JavaConversions.asScalaBuffer(Arrays.asList(AtlasClient.NAME,
-                    AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME)).toList());
+            Some.<List<String>>apply(List.<String>fromArray(new String[]{AtlasClient.NAME,
+                    AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME}));
     public static final String SELECT_INSTANCE_GUID = "__guid";
 
     public static final String DATASET_SCHEMA_QUERY_PREFIX = "atlas.lineage.schema.query.";

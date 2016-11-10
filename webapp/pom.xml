@@ -103,12 +103,6 @@
     <dependencies>
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-graphdb-impls</artifactId>
-            <type>pom</type>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-common</artifactId>
         </dependency>
 
@@ -147,7 +141,6 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-minikdc</artifactId>
@@ -163,20 +156,10 @@
             <artifactId>atlas-catalog</artifactId>
         </dependency>
 
-        <!-- Zookeeper, curator -->
         <dependency>
-            <groupId>org.apache.curator</groupId>
-            <artifactId>curator-framework</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.curator</groupId>
-            <artifactId>curator-recipes</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.zookeeper</groupId>
-            <artifactId>zookeeper</artifactId>
+          <groupId>org.apache.atlas</groupId>
+          <artifactId>atlas-graphdb-impls</artifactId>
+          <type>pom</type>
         </dependency>
 
         <!-- supports simple auth handler -->
