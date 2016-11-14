@@ -20,7 +20,6 @@ package org.apache.atlas.web.security;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.web.TestUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -61,7 +60,7 @@ public class NegativeSSLAndKerberosTest extends BaseSSLAndKerberosTest {
         // client will actually only leverage subset of these properties
         final PropertiesConfiguration configuration = getSSLConfiguration(providerUrl);
 
-        persistSSLClientConfiguration((org.apache.commons.configuration.Configuration) configuration);
+        persistSSLClientConfiguration(configuration);
 
         TestUtils.writeConfiguration(configuration, persistDir + File.separator +
             ApplicationProperties.APPLICATION_PROPERTIES);
@@ -103,12 +102,7 @@ public class NegativeSSLAndKerberosTest extends BaseSSLAndKerberosTest {
         originalConf = System.getProperty("atlas.conf");
         System.setProperty("atlas.conf", persistDir);
 
-        dgiClient = new AtlasClient(DGI_URL) {
-            @Override
-            protected PropertiesConfiguration getClientProperties() {
-                return configuration;
-            }
-        };
+        dgiClient = new AtlasClient(configuration, DGI_URL);
 
 
         secureEmbeddedServer = new TestSecureEmbeddedServer(21443, getWarPath()) {

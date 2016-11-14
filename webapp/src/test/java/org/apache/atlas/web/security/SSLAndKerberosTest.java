@@ -20,8 +20,8 @@ package org.apache.atlas.web.security;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.web.TestUtils;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -29,6 +29,12 @@ import org.apache.hadoop.security.alias.JavaKeyStoreProvider;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.security.PrivilegedExceptionAction;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
@@ -38,11 +44,6 @@ import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.security.PrivilegedExceptionAction;
 
 import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
 
@@ -120,12 +121,7 @@ public class SSLAndKerberosTest extends BaseSSLAndKerberosTest {
         dgiCLient = proxyUser.doAs(new PrivilegedExceptionAction<AtlasClient>() {
             @Override
             public AtlasClient run() throws Exception {
-                return new AtlasClient(DGI_URL) {
-                    @Override
-                    protected PropertiesConfiguration getClientProperties() {
-                        return configuration;
-                    }
-                };
+                return new AtlasClient(configuration, DGI_URL);
             }
         });
 

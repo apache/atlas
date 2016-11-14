@@ -19,6 +19,7 @@
 package org.apache.atlas.web.resources;
 
 import com.sun.jersey.api.client.ClientResponse;
+
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.services.MetadataService;

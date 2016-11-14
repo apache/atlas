@@ -31,7 +31,16 @@ public class AtlasServiceException extends Exception {
         super("Metadata service API " + api + " failed", e);
     }
 
+    public AtlasServiceException(AtlasBaseClient.APIInfo api, Exception e) {
+        super("Metadata service API " + api + " failed", e);
+    }
+
     public AtlasServiceException(AtlasClient.API api, WebApplicationException e) throws JSONException {
+        this(api, ClientResponse.Status.fromStatusCode(e.getResponse().getStatus()),
+                ((JSONObject) e.getResponse().getEntity()).getString("stackTrace"));
+    }
+
+    public AtlasServiceException(AtlasBaseClient.APIInfo api, WebApplicationException e) throws JSONException {
         this(api, ClientResponse.Status.fromStatusCode(e.getResponse().getStatus()),
                 ((JSONObject) e.getResponse().getEntity()).getString("stackTrace"));
     }
@@ -42,7 +51,17 @@ public class AtlasServiceException extends Exception {
         this.status = status;
     }
 
+    private AtlasServiceException(AtlasBaseClient.APIInfo api, ClientResponse.Status status, String response) {
+        super("Metadata service API " + api + " failed with status " + (status != null ? status.getStatusCode() : -1)
+                + " (" + status + ") Response Body (" + response + ")");
+        this.status = status;
+    }
+
     public AtlasServiceException(AtlasClient.API api, ClientResponse response) {
+        this(api, ClientResponse.Status.fromStatusCode(response.getStatus()), response.getEntity(String.class));
+    }
+
+    public AtlasServiceException(AtlasBaseClient.APIInfo api, ClientResponse response) {
         this(api, ClientResponse.Status.fromStatusCode(response.getStatus()), response.getEntity(String.class));
     }
 

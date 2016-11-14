@@ -21,6 +21,7 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.commons.configuration.Configuration;
@@ -32,13 +33,14 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
 import java.net.ConnectException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
+
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -94,6 +96,7 @@ public class AtlasClientTest {
 
         JSONObject jsonResponse = new JSONObject(new AtlasClient.EntityResult(Arrays.asList("id"), null, null).toString());
         when(response.getEntity(String.class)).thenReturn(jsonResponse.toString());
+        when(response.getLength()).thenReturn(jsonResponse.length());
         String entityJson = InstanceSerialization.toJson(new Referenceable("type"), true);
         when(builder.method(anyString(), Matchers.<Class>any(), anyString())).thenReturn(response);
 
@@ -157,8 +160,14 @@ public class AtlasClientTest {
         WebResource.Builder builder = setupBuilder(AtlasClient.API.STATUS, service);
         ClientResponse response = mock(ClientResponse.class);
         when(response.getStatus()).thenReturn(Response.Status.OK.getStatusCode());
-        when(response.getEntity(String.class)).thenReturn("{\"Status\":\"Active\"}");
+        String activeStatus = "{\"Status\":\"Active\"}";
+        when(response.getEntity(String.class)).thenReturn(activeStatus);
+        when(response.getLength()).thenReturn(activeStatus.length());
         when(builder.method(AtlasClient.API.STATUS.getMethod(), ClientResponse.class, null)).thenReturn(response);
+
+//         Fix after AtlasBaseClient
+//        atlasClient.setService();
+
 
         String status = atlasClient.getAdminStatus();
         assertEquals(status, "Active");
@@ -212,10 +221,14 @@ public class AtlasClientTest {
         WebResource.Builder builder = setupBuilder(AtlasClient.API.STATUS, service);
         ClientResponse firstResponse = mock(ClientResponse.class);
         when(firstResponse.getStatus()).thenReturn(Response.Status.OK.getStatusCode());
-        when(firstResponse.getEntity(String.class)).thenReturn("{\"Status\":\"PASSIVE\"}");
+        String passiveStatus = "{\"Status\":\"PASSIVE\"}";
+        when(firstResponse.getEntity(String.class)).thenReturn(passiveStatus);
+        when(firstResponse.getLength()).thenReturn(passiveStatus.length());
         ClientResponse secondResponse = mock(ClientResponse.class);
         when(secondResponse.getStatus()).thenReturn(Response.Status.OK.getStatusCode());
-        when(secondResponse.getEntity(String.class)).thenReturn("{\"Status\":\"ACTIVE\"}");
+        String activeStatus = "{\"Status\":\"ACTIVE\"}";
+        when(secondResponse.getEntity(String.class)).thenReturn(activeStatus);
+        when(secondResponse.getLength()).thenReturn(activeStatus.length());
         when(builder.method(AtlasClient.API.STATUS.getMethod(), ClientResponse.class, null)).
                 thenReturn(firstResponse).thenReturn(firstResponse).thenReturn(firstResponse).
                 thenReturn(secondResponse);
@@ -239,7 +252,9 @@ public class AtlasClientTest {
         when(response.getEntity(String.class)).thenReturn("{\"Status\":\"BECOMING_ACTIVE\"}");
         ClientResponse nextResponse = mock(ClientResponse.class);
         when(nextResponse.getStatus()).thenReturn(Response.Status.OK.getStatusCode());
-        when(nextResponse.getEntity(String.class)).thenReturn("{\"Status\":\"ACTIVE\"}");
+        String activeStatus = "{\"Status\":\"ACTIVE\"}";
+        when(response.getEntity(String.class)).thenReturn(activeStatus);
+        when(response.getLength()).thenReturn(activeStatus.length());
         when(builder.method(AtlasClient.API.STATUS.getMethod(), ClientResponse.class, null)).
                 thenReturn(response).thenReturn(response).thenReturn(nextResponse);
 
@@ -262,13 +277,17 @@ public class AtlasClientTest {
         when(response.getEntity(String.class)).thenReturn("{\"Status\":\"BECOMING_ACTIVE\"}");
         ClientResponse nextResponse = mock(ClientResponse.class);
         when(nextResponse.getStatus()).thenReturn(Response.Status.OK.getStatusCode());
-        when(nextResponse.getEntity(String.class)).thenReturn("{\"Status\":\"ACTIVE\"}");
+        String activeStatus = "{\"Status\":\"ACTIVE\"}";
+        when(response.getEntity(String.class)).thenReturn(activeStatus);
+        when(response.getLength()).thenReturn(activeStatus.length());
         when(builder.method(AtlasClient.API.STATUS.getMethod(), ClientResponse.class, null)).
                 thenThrow(new ClientHandlerException("Simulating connection exception")).
                 thenReturn(response).
                 thenReturn(nextResponse);
 
         AtlasClient atlasClient = new AtlasClient(service, configuration);
+        atlasClient.setService(service);
+        atlasClient.setConfiguration(configuration);
 
         String serviceURL = atlasClient.determineActiveServiceURL(
                 new String[] {"http://localhost:31000","http://localhost:41000"},
@@ -313,7 +332,9 @@ public class AtlasClientTest {
 
         ClientResponse response = mock(ClientResponse.class);
         when(response.getStatus()).thenReturn(Response.Status.OK.getStatusCode());
-        when(response.getEntity(String.class)).thenReturn("{\"Status\":\"ACTIVE\"}");
+        String activeStatus = "{\"Status\":\"ACTIVE\"}";
+        when(response.getEntity(String.class)).thenReturn(activeStatus);
+        when(response.getLength()).thenReturn(activeStatus.length());
 
         when(builder.method(AtlasClient.API.LIST_TYPES.getMethod(), ClientResponse.class, null)).
                 thenThrow(new ClientHandlerException("simulating exception in calling API", new ConnectException())).
@@ -322,6 +343,9 @@ public class AtlasClientTest {
         when(resourceCreator.createResource()).thenReturn(resourceObject);
 
         AtlasClient atlasClient = getClientForTest("http://localhost:31000","http://localhost:41000");
+
+        atlasClient.setService(service);
+        atlasClient.setConfiguration(configuration);
 
         atlasClient.callAPIWithRetries(AtlasClient.API.LIST_TYPES, null, resourceCreator);
 
@@ -343,7 +367,9 @@ public class AtlasClientTest {
 
         ClientResponse response = mock(ClientResponse.class);
         when(response.getStatus()).thenReturn(Response.Status.OK.getStatusCode());
-        when(response.getEntity(String.class)).thenReturn("{\"Status\":\"ACTIVE\"}");
+        String activeStatus = "{\"Status\":\"ACTIVE\"}";
+        when(response.getEntity(String.class)).thenReturn(activeStatus);
+        when(response.getLength()).thenReturn(activeStatus.length());
 
         when(builder.method(AtlasClient.API.LIST_TYPES.getMethod(), ClientResponse.class, null)).
                 thenThrow(new ClientHandlerException("simulating exception in calling API", new ConnectException())).
@@ -353,6 +379,9 @@ public class AtlasClientTest {
         when(configuration.getString("atlas.http.authentication.type", "simple")).thenReturn("simple");
 
         AtlasClient atlasClient = getClientForTest("http://localhost:31000");
+
+        atlasClient.setService(resourceObject);
+        atlasClient.setConfiguration(configuration);
 
         atlasClient.callAPIWithRetries(AtlasClient.API.LIST_TYPES, null, resourceCreator);
 
@@ -379,7 +408,9 @@ public class AtlasClientTest {
 
         ClientResponse response = mock(ClientResponse.class);
         when(response.getStatus()).thenReturn(Response.Status.OK.getStatusCode());
-        when(response.getEntity(String.class)).thenReturn("{\"Status\":\"ACTIVE\"}");
+        String activeStatus = "{\"Status\":\"ACTIVE\"}";
+        when(response.getEntity(String.class)).thenReturn(activeStatus);
+        when(response.getLength()).thenReturn(activeStatus.length());
 
         when(builder.method(AtlasClient.API.LIST_TYPES.getMethod(), ClientResponse.class, null)).
                 thenThrow(new ClientHandlerException("simulating exception in calling API", new ConnectException())).
@@ -389,8 +420,11 @@ public class AtlasClientTest {
         when(resourceCreator.createResource()).thenReturn(resourceObject);
 
         AtlasClient atlasClient = getClientForTest("http://localhost:31000","http://localhost:41000");
+        atlasClient.setService(resourceObject);
+        atlasClient.setConfiguration(configuration);
 
         atlasClient.callAPIWithRetries(AtlasClient.API.LIST_TYPES, null, resourceCreator);
+
 
         verify(client).destroy();
         verify(client).resource(UriBuilder.fromUri("http://localhost:31000").build());
@@ -399,8 +433,9 @@ public class AtlasClientTest {
 
     private WebResource.Builder getBuilder(WebResource resourceObject) {
         WebResource.Builder builder = mock(WebResource.Builder.class);
-        when(resourceObject.accept(AtlasClient.JSON_MEDIA_TYPE)).thenReturn(builder);
-        when(builder.type(AtlasClient.JSON_MEDIA_TYPE)).thenReturn(builder);
+        when(resourceObject.path(anyString())).thenReturn(resourceObject);
+        when(resourceObject.accept(AtlasBaseClient.JSON_MEDIA_TYPE)).thenReturn(builder);
+        when(builder.type(AtlasBaseClient.JSON_MEDIA_TYPE)).thenReturn(builder);
         return builder;
     }
 
@@ -413,7 +448,7 @@ public class AtlasClientTest {
     }
 
     private AtlasClient getClientForTest(final String... baseUrls) {
-        return new AtlasClient(null, null, baseUrls) {
+        return new AtlasClient((UserGroupInformation)null, (String)null, baseUrls) {
             boolean firstCall = true;
             @Override
             protected String determineActiveServiceURL(String[] baseUrls, Client client) {
