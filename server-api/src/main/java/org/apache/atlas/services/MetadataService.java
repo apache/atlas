@@ -101,13 +101,27 @@ public interface MetadataService {
      */
     List<String> createEntities(ITypedReferenceableInstance[] typedInstances) throws AtlasException;
 
+
     /**
      * Return the definition for the given guid.
      *
      * @param guid guid
      * @return entity definition as JSON
      */
-    String getEntityDefinition(String guid) throws AtlasException;
+    String getEntityDefinitionJson(String guid) throws AtlasException;
+
+    ITypedReferenceableInstance getEntityDefinition(String guid) throws AtlasException;
+
+
+    /**
+     * Return the definition given type and attribute. The attribute has to be unique attribute for the type
+     * @param entityType - type name
+     * @param attribute - attribute name
+     * @param value - attribute value
+     * @return
+     * @throws AtlasException
+     */
+    ITypedReferenceableInstance getEntityDefinitionReference(String entityType, String attribute, String value) throws AtlasException;
 
     /**
      * Return the definition given type and attribute. The attribute has to be unique attribute for the type
@@ -154,6 +168,15 @@ public interface MetadataService {
      * @return json array of guids of entities created/updated
      */
     AtlasClient.EntityResult updateEntities(String entityJson) throws AtlasException;
+
+
+    /**
+     * Batch API - Adds/Updates the given entity id(guid).
+     *
+     * @param entityJson entity json
+     * @return json array of guids of entities created/updated
+     */
+    AtlasClient.EntityResult updateEntities(ITypedReferenceableInstance[] iTypedReferenceableInstances) throws AtlasException;
 
     // Trait management functions
 

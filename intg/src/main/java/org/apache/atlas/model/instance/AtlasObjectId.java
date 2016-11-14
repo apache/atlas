@@ -31,6 +31,7 @@ import org.apache.atlas.model.SearchFilter.SortType;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
+
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
@@ -139,7 +140,6 @@ public class AtlasObjectId  implements Serializable {
     public String toString() {
         return toString(new StringBuilder()).toString();
     }
-
 
     /**
      * REST serialization friendly list.

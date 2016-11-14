@@ -179,7 +179,7 @@ public class EntityResource {
         response.put(AtlasClient.ENTITIES, new JSONObject(entityResult.toString()).get(AtlasClient.ENTITIES));
         String sampleEntityId = getSample(entityResult);
         if (sampleEntityId != null) {
-            String entityDefinition = metadataService.getEntityDefinition(sampleEntityId);
+            String entityDefinition = metadataService.getEntityDefinitionJson(sampleEntityId);
             response.put(AtlasClient.DEFINITION, new JSONObject(entityDefinition));
         }
         return response;
@@ -470,7 +470,7 @@ public class EntityResource {
 
             LOG.debug("Fetching entity definition for guid={} ", guid);
             guid = ParamChecker.notEmpty(guid, "guid cannot be null");
-            final String entityDefinition = metadataService.getEntityDefinition(guid);
+            final String entityDefinition = metadataService.getEntityDefinitionJson(guid);
 
             JSONObject response = new JSONObject();
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
@@ -653,7 +653,7 @@ public class EntityResource {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.getTraitDefinitionsForEntity(" + guid + ")");
             }
             LOG.debug("Fetching all trait definitions for entity={}", guid);
-            final String entityDefinition = metadataService.getEntityDefinition(guid);
+            final String entityDefinition = metadataService.getEntityDefinitionJson(guid);
 
             Referenceable entity = InstanceSerialization.fromJsonReferenceable(entityDefinition, true);
             JSONArray traits = new JSONArray();

@@ -21,6 +21,8 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -33,6 +35,8 @@ import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 import static org.codehaus.jackson.annotate.JsonAutoDetect.Visibility.NONE;
+
+import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
@@ -61,6 +65,9 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     private Date   updateTime = null;
     private Long   version    = null;
 
+    @JsonIgnore
+    private static AtomicLong s_nextId = new AtomicLong(System.nanoTime());
+
     public AtlasEntity() {
         this(null, null);
     }
@@ -76,7 +83,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     public AtlasEntity(String typeName, Map<String, Object> attributes) {
         super(typeName, attributes);
 
-        setGuid(null);
+        setGuid(nextInternalId());
         setStatus(null);
         setCreatedBy(null);
         setUpdatedBy(null);
@@ -238,5 +245,40 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
                              SortType sortType, String sortBy) {
             super(list, startIndex, pageSize, totalCount, sortType, sortBy);
         }
+    }
+
+    @JsonIgnore
+    public boolean validate(String id) {
+        try {
+            long l = Long.parseLong(id);
+            return l < 0;
+        } catch (NumberFormatException ne) {
+            return false;
+        }
+    }
+
+    @JsonIgnore
+    public boolean isUnassigned() {
+        return guid != null && guid.length() > 0 && guid.charAt(0) == '-';
+    }
+
+    @JsonIgnore
+    public boolean isAssigned() {
+        return isAssigned(guid);
+    }
+
+    @JsonIgnore
+    public static boolean isAssigned(String guid) {
+        try {
+            UUID.fromString(guid);
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private String nextInternalId() {
+        return "-" + Long.toString(s_nextId.getAndIncrement());
     }
 }

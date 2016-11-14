@@ -20,6 +20,7 @@ package org.apache.atlas.exception;
 import org.apache.atlas.AtlasErrorCode;
 
 import javax.ws.rs.core.Response;
+import java.util.List;
 
 /**
  * Base Exception class for Atlas API.
@@ -30,6 +31,11 @@ public class AtlasBaseException extends Exception {
 
     public AtlasBaseException(AtlasErrorCode errorCode, String ... params) {
         super(errorCode.getFormattedErrorMessage(params));
+        this.atlasErrorCode = errorCode;
+    }
+
+    public AtlasBaseException(final AtlasErrorCode errorCode, final List<String> params) {
+        super(errorCode.getFormattedErrorMessage(params.toArray(new String[params.size()])));
         this.atlasErrorCode = errorCode;
     }
 
@@ -67,6 +73,11 @@ public class AtlasBaseException extends Exception {
                               boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
         this.atlasErrorCode = AtlasErrorCode.INTERNAL_ERROR;
+    }
+
+    public AtlasBaseException(final AtlasErrorCode errorCode, Throwable cause, final List<String> params) {
+        super(errorCode.getFormattedErrorMessage(params.toArray(new String[params.size()])), cause);
+        this.atlasErrorCode = errorCode;
     }
 
     public AtlasErrorCode getAtlasErrorCode() {

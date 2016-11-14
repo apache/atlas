@@ -32,13 +32,14 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+
 import java.util.Map;
 import java.util.Set;
+import java.util.Arrays;
 
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_ARRAY_PREFIX;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_ARRAY_SUFFIX;
@@ -112,21 +113,21 @@ public class AtlasTypeUtil {
     public static AtlasAttributeDef createOptionalAttrDef(String name, AtlasType dataType) {
         return new AtlasAttributeDef(name, dataType.getTypeName(), true,
             Cardinality.SINGLE, 0, 1,
-            true, false,
+            false, false,
             Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
     }
 
     public static AtlasAttributeDef createOptionalAttrDef(String name, String dataType) {
         return new AtlasAttributeDef(name, dataType, true,
             Cardinality.SINGLE, 0, 1,
-            true, false,
+            false, false,
             Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
     }
 
     public static AtlasAttributeDef createRequiredAttrDef(String name, String dataType) {
         return new AtlasAttributeDef(name, dataType, false,
             Cardinality.SINGLE, 1, 1,
-            false, false,
+            false, true,
             Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
     }
 
@@ -147,7 +148,7 @@ public class AtlasTypeUtil {
     public static AtlasAttributeDef createRequiredAttrDef(String name, AtlasType dataType) {
         return new AtlasAttributeDef(name, dataType.getTypeName(), false,
             Cardinality.SINGLE, 1, 1,
-            false, false,
+            false, true,
             Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
     }
 

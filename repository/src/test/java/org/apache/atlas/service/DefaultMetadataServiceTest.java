@@ -221,7 +221,7 @@ public class DefaultMetadataServiceTest {
 
         //Verify that get entity definition returns actual values with reserved characters
         Referenceable instance =
-                InstanceSerialization.fromJsonReferenceable(metadataService.getEntityDefinition(id), true);
+                InstanceSerialization.fromJsonReferenceable(metadataService.getEntityDefinitionJson(id), true);
         assertReferenceableEquals(instance, entity);
 
         //Verify that search with reserved characters works - for string attribute
@@ -693,7 +693,7 @@ public class DefaultMetadataServiceTest {
         serdeInstance.setNull("description");
         updateInstance(table);
         tableDefinitionJson =
-            metadataService.getEntityDefinition(tableId._getId());
+            metadataService.getEntityDefinitionJson(tableId._getId());
         tableDefinition = InstanceSerialization.fromJsonReferenceable(tableDefinitionJson, true);
         Assert.assertNull(((Struct) tableDefinition.get("serde1")).get("description"));
     }
@@ -733,7 +733,7 @@ public class DefaultMetadataServiceTest {
         metadataService.updateEntityAttributeByGuid(tableId._getId(), "database", dbId);
 
         String tableDefinitionJson =
-            metadataService.getEntityDefinition(tableId._getId());
+            metadataService.getEntityDefinitionJson(tableId._getId());
         Referenceable tableDefinition = InstanceSerialization.fromJsonReferenceable(tableDefinitionJson, true);
 
         assertEquals(dbId, (((Id) tableDefinition.get("database"))._getId()));

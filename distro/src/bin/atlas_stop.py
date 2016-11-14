@@ -64,9 +64,9 @@ def main():
     if mc.is_hbase_local(confdir):
         mc.run_hbase_action(mc.hbaseBinDir(atlas_home), "stop", None, None, True)
 		
-    #after 30 seconds kill it 
-    time.sleep(30)
     if mc.exist_pid(pid):
+        #after 30 seconds kill it
+        time.sleep(30)
         try:
             sys.stderr.write("did not stop gracefully after 30 seconds seconds: killing with SIGKILL\n")
             os.kill(pid, SIGKILL)

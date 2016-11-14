@@ -33,11 +33,11 @@ import org.apache.atlas.notification.NotificationModule;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.service.Services;
+import org.apache.atlas.web.adapters.AtlasFormatConvertersModule;
 import org.apache.atlas.web.filters.ActiveServerFilter;
 import org.apache.atlas.web.filters.AuditFilter;
 import org.apache.atlas.web.service.ActiveInstanceElectorModule;
 import org.apache.atlas.web.service.ServiceModule;
-import org.apache.commons.collections.iterators.EnumerationIterator;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +74,7 @@ public class GuiceServletConfig extends GuiceServletContextListener {
             LoginProcessor loginProcessor = new LoginProcessor();
             loginProcessor.login();
 
-            injector = Guice.createInjector(Stage.PRODUCTION, getRepositoryModule(), new ActiveInstanceElectorModule(),
+            injector = Guice.createInjector(Stage.PRODUCTION,  getRepositoryModule(), new AtlasFormatConvertersModule(), new ActiveInstanceElectorModule(),
                     new NotificationModule(), new ServiceModule(), new JerseyServletModule() {
 
                         private Configuration appConfiguration = null;

@@ -49,6 +49,7 @@ public enum AtlasErrorCode {
     INSTANCE_GUID_NOT_FOUND(404, "ATLAS4045E", "Given instance guid {0} is invalid"),
     INSTANCE_LINEAGE_INVALID_PARAMS(404, "ATLAS4046E", "Invalid lineage query parameters passed {0}: {1}"),
     INSTANCE_LINEAGE_QUERY_FAILED(404, "ATLAS4047E", "Instance lineage query failed {0}"),
+    INSTANCE_ALREADY_EXISTS(405, "ATLAS4051E", "Given entity with guid/name {0} already exists"),
 
     TYPE_ALREADY_EXISTS(409, "ATLAS4091E", "Given type {0} already exists"),
     TYPE_HAS_REFERENCES(409, "ATLAS4092E", "Given type {0} has references"),
@@ -57,9 +58,12 @@ public enum AtlasErrorCode {
     INTERNAL_ERROR(500, "ATLAS5001E", "Internal server error {0}"),
     INDEX_CREATION_FAILED(500, "ATLAS5002E", "Index creation failed for {0}"),
     INDEX_ROLLBACK_FAILED(500, "ATLAS5003E", "Index rollback failed for {0}"),
+
     PATCH_NOT_APPLICABLE_FOR_TYPE(500, "ATLAS5004E", "{0} - invalid patch for type {1}"),
-    PATCH_FOR_UNKNOWN_TYPE(500, "ATLAS5005E", "{0} - patch references unknown type {1}")
-    ;
+    PATCH_FOR_UNKNOWN_TYPE(500, "ATLAS5005E", "{0} - patch references unknown type {1}"),
+    ATTRIBUTE_UNIQUE_INVALID(400, "ATLAS40015E", "Type {0} with unique attribute {1} does not exist"),
+    TYPE_NAME_INVALID(400, "ATLAS40016E", "Type {0} with name {1} does not exist"),
+    TYPE_CATEGORY_INVALID(400, "ATLAS40017E", "Type Category {0} does not match {1} or is invalid");
 
     private String errorCode;
     private String errorMessage;

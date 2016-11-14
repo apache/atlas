@@ -61,7 +61,7 @@ public class EntityMutationResponse {
         this.entitiesMutated = opVsEntityMap;
     }
 
-    List<AtlasEntityHeader> getEntitiesByOperation(EntityMutations.EntityOperation op) {
+    public List<AtlasEntityHeader> getEntitiesByOperation(EntityMutations.EntityOperation op) {
         if ( entitiesMutated != null) {
             return entitiesMutated.get(op);
         }
