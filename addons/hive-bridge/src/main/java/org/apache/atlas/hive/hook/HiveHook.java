@@ -175,7 +175,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             final HiveEventContext event = new HiveEventContext();
             event.setInputs(hookContext.getInputs());
             event.setOutputs(hookContext.getOutputs());
-            event.setJsonPlan(getQueryPlan(hookContext.getConf(), hookContext.getQueryPlan()));
             event.setHookType(hookContext.getHookType());
             event.setUgi(hookContext.getUgi());
             event.setUser(getUser(hookContext.getUserName()));
@@ -668,18 +667,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         }
     }
 
-    private JSONObject getQueryPlan(HiveConf hiveConf, QueryPlan queryPlan) throws Exception {
-        try {
-            ExplainTask explain = new ExplainTask();
-            explain.initialize(hiveConf, queryPlan, null);
-            List<Task<?>> rootTasks = queryPlan.getRootTasks();
-            return explain.getJSONPlan(null, null, rootTasks, queryPlan.getFetchTask(), true, false, false);
-        } catch (Throwable e) {
-            LOG.info("Failed to get queryplan", e);
-            return new JSONObject();
-        }
-    }
-
     private boolean isSelectQuery(HiveEventContext event) {
         if (event.getOperation() == HiveOperation.QUERY) {
             //Select query has only one output
@@ -778,7 +765,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         processReferenceable.set("userName", hiveEvent.getUser());
         processReferenceable.set("queryText", queryStr);
         processReferenceable.set("queryId", hiveEvent.getQueryId());
-        processReferenceable.set("queryPlan", hiveEvent.getJsonPlan());
+        processReferenceable.set("queryPlan", "Not Supported");
         processReferenceable.set(AtlasConstants.CLUSTER_NAME_ATTRIBUTE, dgiBridge.getClusterName());
 
         List<String> recentQueries = new ArrayList<>(1);
@@ -1022,10 +1009,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             this.hookType = hookType;
         }
 
-        public void setJsonPlan(JSONObject jsonPlan) {
-            this.jsonPlan = jsonPlan;
-        }
-
         public void setQueryId(String queryId) {
             this.queryId = queryId;
         }
@@ -1073,10 +1056,6 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
         public HookContext.HookType getHookType() {
             return hookType;
-        }
-
-        public JSONObject getJsonPlan() {
-            return jsonPlan;
         }
 
         public String getQueryId() {
