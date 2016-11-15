@@ -18,18 +18,20 @@
 
 package org.apache.atlas.web.service;
 
-import org.apache.atlas.ApplicationProperties;
-import org.apache.commons.configuration.Configuration;
+import org.apache.atlas.AtlasConfiguration;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class embeds a Jetty server and a connector.
@@ -37,11 +39,19 @@ import java.io.IOException;
 public class EmbeddedServer {
     public static final Logger LOG = LoggerFactory.getLogger(EmbeddedServer.class);
 
-    private static final int DEFAULT_BUFFER_SIZE = 16192;
-
-    protected final Server server = new Server();
+    protected final Server server;
 
     public EmbeddedServer(int port, String path) throws IOException {
+        int queueSize = AtlasConfiguration.WEBSERVER_QUEUE_SIZE.getInt();
+        LinkedBlockingQueue<Runnable> queue = new LinkedBlockingQueue<>(queueSize);
+
+        int minThreads = AtlasConfiguration.WEBSERVER_MIN_THREADS.getInt();
+        int maxThreads = AtlasConfiguration.WEBSERVER_MAX_THREADS.getInt();
+        long keepAliveTime = AtlasConfiguration.WEBSERVER_KEEPALIVE_SECONDS.getLong();
+        ExecutorThreadPool pool =
+                new ExecutorThreadPool(minThreads, maxThreads, keepAliveTime, TimeUnit.SECONDS, queue);
+        server = new Server(pool);
+
         Connector connector = getConnector(port);
         server.addConnector(connector);
 
@@ -66,29 +76,16 @@ public class EmbeddedServer {
     }
 
     protected Connector getConnector(int port) throws IOException {
-
         HttpConfiguration http_config = new HttpConfiguration();
         // this is to enable large header sizes when Kerberos is enabled with AD
-        final int bufferSize = getBufferSize();
+        final int bufferSize = AtlasConfiguration.WEBSERVER_REQUEST_BUFFER_SIZE.getInt();;
         http_config.setResponseHeaderSize(bufferSize);
         http_config.setRequestHeaderSize(bufferSize);
 
         ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(http_config));
         connector.setPort(port);
         connector.setHost("0.0.0.0");
-        server.addConnector(connector);
         return connector;
-    }
-
-    protected Integer getBufferSize() {
-        try {
-            Configuration configuration = ApplicationProperties.get();
-            return configuration.getInt("atlas.jetty.request.buffer.size", DEFAULT_BUFFER_SIZE);
-        } catch (Exception e) {
-            // do nothing
-        }
-
-        return DEFAULT_BUFFER_SIZE;
     }
 
     public void start() throws Exception {

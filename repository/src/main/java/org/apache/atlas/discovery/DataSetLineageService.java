@@ -20,8 +20,8 @@ package org.apache.atlas.discovery;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.AtlasProperties;
 import org.apache.atlas.GraphTransaction;
 import org.apache.atlas.discovery.graph.DefaultGraphPersistenceStrategy;
 import org.apache.atlas.discovery.graph.GraphBackedDiscoveryService;
@@ -178,7 +178,7 @@ public class DataSetLineageService implements LineageService {
         if (propertiesConf.getString(configName) != null) {
             final String schemaQuery =
                 String.format(propertiesConf.getString(configName), guid);
-            int limit = AtlasProperties.getProperty(AtlasProperties.AtlasProperty.SEARCH_MAX_LIMIT);
+            int limit = AtlasConfiguration.SEARCH_MAX_LIMIT.getInt();
             return discoveryService.searchByDSL(schemaQuery, new QueryParams(limit, 0));
         }
         throw new SchemaNotFoundException("Schema is not configured for type " + typeName + ". Configure " + configName);

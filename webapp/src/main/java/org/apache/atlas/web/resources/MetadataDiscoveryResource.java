@@ -20,7 +20,7 @@ package org.apache.atlas.web.resources;
 
 import com.google.common.base.Preconditions;
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.AtlasProperties;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.classification.InterfaceAudience;
 import org.apache.atlas.discovery.DiscoveryException;
 import org.apache.atlas.discovery.DiscoveryService;
@@ -157,8 +157,8 @@ public class MetadataDiscoveryResource {
     }
 
     private QueryParams validateQueryParams(int limitParam, int offsetParam) {
-        int maxLimit = AtlasProperties.getProperty(AtlasProperties.AtlasProperty.SEARCH_MAX_LIMIT);
-        int defaultLimit = AtlasProperties.getProperty(AtlasProperties.AtlasProperty.SEARCH_DEFAULT_LIMIT);
+        int maxLimit = AtlasConfiguration.SEARCH_MAX_LIMIT.getInt();
+        int defaultLimit = AtlasConfiguration.SEARCH_DEFAULT_LIMIT.getInt();
 
         int limit = defaultLimit;
         boolean limitSet = (limitParam != Integer.valueOf(LIMIT_OFFSET_DEFAULT));

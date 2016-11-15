@@ -19,10 +19,12 @@
 package org.apache.atlas.web.service;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.alias.CredentialProvider;
 import org.apache.hadoop.security.alias.CredentialProviderFactory;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -30,24 +32,23 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.http.HttpVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
 
+import static org.apache.atlas.security.SecurityProperties.ATLAS_SSL_EXCLUDE_CIPHER_SUITES;
 import static org.apache.atlas.security.SecurityProperties.CERT_STORES_CREDENTIAL_PROVIDER_PATH;
 import static org.apache.atlas.security.SecurityProperties.CLIENT_AUTH_KEY;
 import static org.apache.atlas.security.SecurityProperties.DEFATULT_TRUSTORE_FILE_LOCATION;
+import static org.apache.atlas.security.SecurityProperties.DEFAULT_CIPHER_SUITES;
 import static org.apache.atlas.security.SecurityProperties.DEFAULT_KEYSTORE_FILE_LOCATION;
 import static org.apache.atlas.security.SecurityProperties.KEYSTORE_FILE_KEY;
 import static org.apache.atlas.security.SecurityProperties.KEYSTORE_PASSWORD_KEY;
 import static org.apache.atlas.security.SecurityProperties.SERVER_CERT_PASSWORD_KEY;
 import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_FILE_KEY;
 import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_PASSWORD_KEY;
-import static org.apache.atlas.security.SecurityProperties.ATLAS_SSL_EXCLUDE_CIPHER_SUITES;
-import static org.apache.atlas.security.SecurityProperties.DEFAULT_CIPHER_SUITES;
 
 /**
  * This is a jetty server which requires client auth via certificates.
@@ -81,7 +82,7 @@ public class SecureEmbeddedServer extends EmbeddedServer {
         // HTTP Configuration
         HttpConfiguration http_config = new HttpConfiguration();
         http_config.setSecureScheme("https");
-        final int bufferSize = getBufferSize();
+        final int bufferSize = AtlasConfiguration.WEBSERVER_REQUEST_BUFFER_SIZE.getInt();
         http_config.setSecurePort(port);
         http_config.setRequestHeaderSize(bufferSize);
         http_config.setResponseHeaderSize(bufferSize);

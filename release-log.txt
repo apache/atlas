@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1081 Atlas jetty server configuration (shwethags)
 ATLAS-1257 Map Entity REST APIs to ATLAS v1 backend (sumasai)
 ATLAS-1279 Remove QueryPlan attribute from Hive Process entity (svimal2106)
 ATLAS-1234 Lineage REST API - v2 (sarath.kum4r@gmail.com via mneethiraj)

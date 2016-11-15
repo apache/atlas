@@ -271,4 +271,16 @@ atlas.graph.storage.lock.retries=10
 # Milliseconds to wait before evicting a cached entry. This should be > atlas.graph.storage.lock.wait-time x atlas.graph.storage.lock.retries
 # If this is set to a low value (default is 10000), warnings on transactions taking too long will occur in the Atlas application log.
 atlas.graph.storage.cache.db-cache-time=120000
+
+# Minimum number of threads in the atlas web server
+atlas.webserver.minthreads=10
+
+# Maximum number of threads in the atlas web server
+atlas.webserver.maxthreads=100
+
+# Keepalive time in secs for the thread pool of the atlas web server
+atlas.webserver.keepalivetimesecs=60
+
+# Queue size for the requests(when max threads are busy) for the atlas web server
+atlas.webserver.queuesize=100
 </verbatim>
