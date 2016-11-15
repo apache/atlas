@@ -87,14 +87,14 @@ class TestMetadata(unittest.TestCase):
         'org.apache.atlas.Atlas',
         ['-app', 'atlas_home\\server\\webapp\\atlas'],
         'atlas_home\\conf;atlas_home\\server\\webapp\\atlas\\WEB-INF\\classes;atlas_home\\server\\webapp\\atlas\\WEB-INF\\lib\\*;atlas_home\\libext\\*;atlas_home\\hbase\\conf',
-        ['-Datlas.log.dir=atlas_home\\logs', '-Datlas.log.file=application.log', '-Datlas.home=atlas_home', '-Datlas.conf=atlas_home\\conf', '-Xmx1024m', '-XX:MaxPermSize=512m', '-Dlog4j.configuration=atlas-log4j.xml', '-Djava.net.preferIPv4Stack=true'], 'atlas_home\\logs')
+        ['-Datlas.log.dir=atlas_home\\logs', '-Datlas.log.file=application.log', '-Datlas.home=atlas_home', '-Datlas.conf=atlas_home\\conf', '-Xmx1024m', '-XX:MaxPermSize=512m', '-Dlog4j.configuration=atlas-log4j.xml', '-Djava.net.preferIPv4Stack=true', '-server'], 'atlas_home\\logs')
       
     else:
       java_mock.assert_called_with(
         'org.apache.atlas.Atlas',
         ['-app', 'atlas_home/server/webapp/atlas'],
         'atlas_home/conf:atlas_home/server/webapp/atlas/WEB-INF/classes:atlas_home/server/webapp/atlas/WEB-INF/lib/*:atlas_home/libext/*:atlas_home/hbase/conf',
-        ['-Datlas.log.dir=atlas_home/logs', '-Datlas.log.file=application.log', '-Datlas.home=atlas_home', '-Datlas.conf=atlas_home/conf', '-Xmx1024m', '-XX:MaxPermSize=512m', '-Dlog4j.configuration=atlas-log4j.xml', '-Djava.net.preferIPv4Stack=true'],  'atlas_home/logs')
+        ['-Datlas.log.dir=atlas_home/logs', '-Datlas.log.file=application.log', '-Datlas.home=atlas_home', '-Datlas.conf=atlas_home/conf', '-Xmx1024m', '-XX:MaxPermSize=512m', '-Dlog4j.configuration=atlas-log4j.xml', '-Djava.net.preferIPv4Stack=true', '-server'],  'atlas_home/logs')
 
     pass
 
@@ -153,14 +153,14 @@ class TestMetadata(unittest.TestCase):
         'org.apache.atlas.Atlas',
         ['-app', 'atlas_home\\server\\webapp\\atlas'],
         'atlas_home\\conf;atlas_home\\server\\webapp\\atlas\\WEB-INF\\classes;atlas_home\\server\\webapp\\atlas\\WEB-INF\\lib\\*;atlas_home\\libext\\*;atlas_home\\hbase\\conf',
-        ['-Datlas.log.dir=atlas_home\\logs', '-Datlas.log.file=application.log', '-Datlas.home=atlas_home', '-Datlas.conf=atlas_home\\conf', '-Xmx1024m', '-XX:MaxPermSize=512m', '-Dlog4j.configuration=atlas-log4j.xml', '-Djava.net.preferIPv4Stack=true'], 'atlas_home\\logs')
+        ['-Datlas.log.dir=atlas_home\\logs', '-Datlas.log.file=application.log', '-Datlas.home=atlas_home', '-Datlas.conf=atlas_home\\conf', '-Xmx1024m', '-XX:MaxPermSize=512m', '-Dlog4j.configuration=atlas-log4j.xml', '-Djava.net.preferIPv4Stack=true', '-server'], 'atlas_home\\logs')
 
     else:
       java_mock.assert_called_with(
         'org.apache.atlas.Atlas',
         ['-app', 'atlas_home/server/webapp/atlas'],
         'atlas_home/conf:atlas_home/server/webapp/atlas/WEB-INF/classes:atlas_home/server/webapp/atlas/WEB-INF/lib/*:atlas_home/libext/*:atlas_home/hbase/conf',
-        ['-Datlas.log.dir=atlas_home/logs', '-Datlas.log.file=application.log', '-Datlas.home=atlas_home', '-Datlas.conf=atlas_home/conf', '-Xmx1024m', '-XX:MaxPermSize=512m', '-Dlog4j.configuration=atlas-log4j.xml', '-Djava.net.preferIPv4Stack=true'],  'atlas_home/logs')
+        ['-Datlas.log.dir=atlas_home/logs', '-Datlas.log.file=application.log', '-Datlas.home=atlas_home', '-Datlas.conf=atlas_home/conf', '-Xmx1024m', '-XX:MaxPermSize=512m', '-Dlog4j.configuration=atlas-log4j.xml', '-Djava.net.preferIPv4Stack=true', '-server'],  'atlas_home/logs')
 
     pass
 
