@@ -432,7 +432,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <node.version>v0.10.30</node.version>
         <node-for-v2.version>v4.4.2</node-for-v2.version>
-        <slf4j.version>1.7.7</slf4j.version>
+        <slf4j.version>1.7.21</slf4j.version>
         <jetty.version>9.2.12.v20150709</jetty.version>
         <jersey.version>1.19</jersey.version>
         <tinkerpop.version>2.6.0</tinkerpop.version>
@@ -441,22 +441,26 @@
         <hbase.version>1.1.2</hbase.version>
         <solr.version>5.5.1</solr.version>
         <kafka.version>0.10.0.0</kafka.version>
+        <curator.version>2.11.0</curator.version>
+        <zookeeper.version>3.4.6</zookeeper.version>
+
         <!-- scala versions -->
-        <scala.version>2.10.4</scala.version>
-        <scala.binary.version>2.10</scala.binary.version>
+        <scala.version>2.11.8</scala.version>
+        <scala.binary.version>2.11</scala.binary.version>
         <scala.macros.version>2.0.1</scala.macros.version>
         <json.version>3.2.11</json.version>
         <log4j.version>1.2.17</log4j.version>
         <akka.version>2.3.7</akka.version>
         <spray.version>1.3.1</spray.version>
         <gson.version>2.5</gson.version>
-        <guava.version>14.0</guava.version>
         <fastutil.version>6.5.16</fastutil.version>
-        <guice.version>4.0</guice.version>
+        <guice.version>4.1.0</guice.version>
         <spring.version>3.1.3.RELEASE</spring.version>
         <spring.security.version>3.1.3.RELEASE</spring.security.version>
         <spring-ldap-core.version>1.3.1.RELEASE</spring-ldap-core.version>
         <javax.servlet.version>3.1.0</javax.servlet.version>
+        <guava.version>18.0</guava.version>
+
         <!-- Needed for hooks -->
         <aopalliance.version>1.0</aopalliance.version>
         <codehaus.jackson.version>1.9.13</codehaus.jackson.version>
@@ -466,7 +470,7 @@
         <commons-lang.version>2.6</commons-lang.version>
         <javax-inject.version>1</javax-inject.version>
         <jettison.version>1.3.7</jettison.version>
-        <paranamer.version>2.3</paranamer.version>
+        <paranamer.version>2.7</paranamer.version>
         <zkclient.version>0.8</zkclient.version>
 
         <PermGen>64m</PermGen>
@@ -485,7 +489,7 @@
         <titan.storage.backend>berkeleyje</titan.storage.backend>
         <titan.index.backend>elasticsearch</titan.index.backend>
         <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
-	<graphdb.backend.impl>org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase</graphdb.backend.impl>
+	    <graphdb.backend.impl>org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase</graphdb.backend.impl>
         <atlas.surefire.options></atlas.surefire.options>
     </properties>
 
@@ -540,6 +544,8 @@
         <module>notification</module>
         <module>client</module>
         <module>graphdb</module>
+        <module>shaded/hbase-client-shaded</module>
+        <module>shaded/hbase-server-shaded</module>
         <module>repository</module>
         <module>authorization</module>
         <module>catalog</module>
@@ -712,6 +718,10 @@
                         <groupId>commons-httpclient</groupId>
                         <artifactId>*</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>com.google.guava</groupId>
+                        <artifactId>guava</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
 
@@ -731,6 +741,10 @@
                     <exclusion>
                         <groupId>org.mortbay.jetty</groupId>
                         <artifactId>*</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.google.guava</groupId>
+                        <artifactId>guava</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -766,6 +780,24 @@
                 <scope>test</scope>
             </dependency>
 
+            <!-- Zookeeper, curator -->
+            <dependency>
+                <groupId>org.apache.curator</groupId>
+                <artifactId>curator-framework</artifactId>
+                <version>${curator.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.curator</groupId>
+                <artifactId>curator-recipes</artifactId>
+                <version>${curator.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.zookeeper</groupId>
+                <artifactId>zookeeper</artifactId>
+                <version>${zookeeper.version}</version>
+            </dependency>
             <!-- commons -->
             <dependency>
                 <groupId>commons-configuration</groupId>
@@ -802,6 +834,12 @@
                 <groupId>com.google.inject</groupId>
                 <artifactId>guice</artifactId>
                 <version>${guice.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.google.guava</groupId>
+                        <artifactId>guava</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>
@@ -982,7 +1020,7 @@
                 <artifactId>titan-hbase</artifactId>
                 <version>${titan.version}</version>
             </dependency>
-            
+
             <dependency>
                 <groupId>org.apache.hbase</groupId>
                 <artifactId>hbase-client</artifactId>
@@ -1016,14 +1054,12 @@
                 <artifactId>hbase-server</artifactId>
                 <version>${hbase.version}</version>
                 <classifier>tests</classifier>
-                <scope>test</scope>
             </dependency>
 
             <dependency>
                 <groupId>org.apache.hbase</groupId>
                 <artifactId>hbase-server</artifactId>
                 <version>${hbase.version}</version>
-                <scope>test</scope>
                 <exclusions>
                     <exclusion>
                         <groupId>org.mortbay.jetty</groupId>
@@ -1035,7 +1071,6 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-
 
             <dependency>
                 <groupId>com.vividsolutions</groupId>
@@ -1168,14 +1203,25 @@
                 <type>war</type>
             </dependency>
 
-	    <!-- use titan 0.5.4 by default -->
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-hbase-client-shaded</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-hbase-server-shaded</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+    	    <!-- use titan 0.5.4 by default -->
             <dependency>
                 <groupId>org.apache.atlas</groupId>
                 <artifactId>atlas-graphdb-impls</artifactId>
                 <version>${project.version}</version>
                 <type>pom</type>
-		  <!-- exclusions should be added here for all of the non-titan0 
-                 implementations -->
+		        <!-- exclusions should be added here for all of the non-titan0 implementations -->
                 <scope>test</scope>
 	    </dependency>
 
@@ -1254,12 +1300,6 @@
 
             <dependency>
                 <groupId>org.scala-lang</groupId>
-                <artifactId>jline</artifactId>
-                <version>${scala.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.scala-lang</groupId>
                 <artifactId>scala-library</artifactId>
                 <version>${scala.version}</version>
             </dependency>
@@ -1277,20 +1317,14 @@
             </dependency>
 
             <dependency>
-                <groupId>org.scalamacros</groupId>
-                <artifactId>quasiquotes_${scala.binary.version}</artifactId>
-                <version>${scala.macros.version}</version>
-            </dependency>
-
-            <dependency>
                 <groupId>org.json4s</groupId>
-                <artifactId>json4s-native_2.10</artifactId>
+                <artifactId>json4s-native_${scala.binary.version}</artifactId>
                 <version>${json.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>com.github.nscala-time</groupId>
-                <artifactId>nscala-time_2.10</artifactId>
+                <artifactId>nscala-time_${scala.binary.version}</artifactId>
                 <version>1.6.0</version>
             </dependency>
 
@@ -1302,19 +1336,19 @@
 
             <dependency>
                 <groupId>com.typesafe.akka</groupId>
-                <artifactId>akka-actor_2.10</artifactId>
+                <artifactId>akka-actor_${scala.binary.version}</artifactId>
                 <version>${akka.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>com.typesafe.akka</groupId>
-                <artifactId>akka-testkit_2.10</artifactId>
+                <artifactId>akka-testkit_${scala.binary.version}</artifactId>
                 <version>${akka.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>com.typesafe.akka</groupId>
-                <artifactId>akka-slf4j_2.10</artifactId>
+                <artifactId>akka-slf4j_${scala.binary.version}</artifactId>
                 <version>${akka.version}</version>
             </dependency>
 
@@ -1340,12 +1374,6 @@
                 <groupId>io.spray</groupId>
                 <artifactId>spray-testkit</artifactId>
                 <version>${spray.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.google.guava</groupId>
-                <artifactId>guava</artifactId>
-                <version>${guava.version}</version>
             </dependency>
 
             <dependency>
@@ -1436,6 +1464,12 @@
                 <groupId>org.apache.atlas</groupId>
                 <artifactId>atlas-plugin-classloader</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.101tec</groupId>
+                <artifactId>zkclient</artifactId>
+                <version>${zkclient.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

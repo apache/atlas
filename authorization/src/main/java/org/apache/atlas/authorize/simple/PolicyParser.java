@@ -17,18 +17,17 @@
  */
 package org.apache.atlas.authorize.simple;
 
+import org.apache.atlas.authorize.AtlasActionTypes;
+import org.apache.atlas.authorize.AtlasResourceTypes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import scala.tools.jline_embedded.internal.Log;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-
-import org.apache.atlas.authorize.AtlasActionTypes;
-import org.apache.atlas.authorize.AtlasResourceTypes;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import scala.tools.jline.internal.Log;
 
 public class PolicyParser {
 

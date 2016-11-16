@@ -83,8 +83,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-client</artifactId>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-hbase-client-shaded</artifactId>
         </dependency>
 
         <dependency>
@@ -171,8 +171,15 @@
                                         <exclude>com/thinkaurelius/titan/graphdb/query/graph/GraphCentricQueryBuilder.class</exclude>
                                     </excludes>
                                 </filter>
-
                             </filters>
+                            <relocations>
+                                <!-- guava has incompatibilities across its versions. Titan requires different version of guava than the version that atlas needs.
+                                 So, shading the guava reference in titan -->
+                                <relocation>
+                                    <pattern>com.google</pattern>
+                                    <shadedPattern>atlas.shaded.titan.guava</shadedPattern>
+                                </relocation>
+                            </relocations>
                             <createSourcesJar>true</createSourcesJar>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>

@@ -92,7 +92,6 @@
         <dependency>
             <groupId>com.101tec</groupId>
             <artifactId>zkclient</artifactId>
-            <version>${zkclient.version}</version>
         </dependency>
 
         <dependency>
@@ -151,11 +150,6 @@
                                     <groupId>commons-lang</groupId>
                                     <artifactId>commons-lang</artifactId>
                                     <version>${commons-lang.version}</version>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>com.google.guava</groupId>
-                                    <artifactId>guava</artifactId>
-                                    <version>${guava.version}</version>
                                 </artifactItem>
                                 <artifactItem>
                                     <groupId>org.apache.hadoop</groupId>

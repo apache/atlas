@@ -24,53 +24,19 @@
         <groupId>org.apache.atlas</groupId>
         <version>0.8-incubating-SNAPSHOT</version>
     </parent>
-    <artifactId>atlas-intg</artifactId>
-    <description>Apache Atlas Integration</description>
-    <name>Apache Atlas Integration</name>
+    <artifactId>atlas-hbase-client-shaded</artifactId>
+    <description>Shading of guava in apache hbase-client</description>
+    <name>Shaded version of Apache hbase client</name>
     <packaging>jar</packaging>
 
     <properties>
-        <checkstyle.failOnViolation>false</checkstyle.failOnViolation>
+        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
     </properties>
 
     <dependencies>
         <dependency>
-            <groupId>commons-collections</groupId>
-            <artifactId>commons-collections</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-common</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.codehaus.jackson</groupId>
-            <artifactId>jackson-jaxrs</artifactId>
-            <version>${codehaus.jackson.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>javax.inject</groupId>
-            <artifactId>javax.inject</artifactId>
-            <version>${javax-inject.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <scope>test</scope>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-client</artifactId>
         </dependency>
     </dependencies>
 
@@ -78,13 +44,33 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>2.4</version>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>2.4.1</version>
                 <executions>
                     <execution>
+                        <phase>package</phase>
                         <goals>
-                            <goal>test-jar</goal>
+                            <goal>shade</goal>
                         </goals>
+                        <configuration>
+                            <artifactSet>
+                                <excludes>
+                                    <!-- these are bundled with Atlas -->
+                                    <exclude>org.slf4j:*</exclude>
+                                </excludes>
+                            </artifactSet>
+                            <relocations>
+                                <!-- guava has incompatibilities across its versions. HBase requires different version of guava than the version that atlas needs.
+                                So, shading the guava reference in HBase -->
+                                <relocation>
+                                    <pattern>com.google</pattern>
+                                    <shadedPattern>atlas.shaded.hbase.guava</shadedPattern>
+                                </relocation>
+                            </relocations>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer" />
+                            </transformers>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
