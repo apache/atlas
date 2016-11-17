@@ -78,7 +78,7 @@ public class TypesJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testSubmit() throws Exception {
         for (HierarchicalTypeDefinition typeDefinition : typeDefinitions) {
-            String typesAsJSON = TypesSerialization.toJson(typeDefinition);
+            String typesAsJSON = TypesSerialization.toJson(typeDefinition, false);
             System.out.println("typesAsJSON = " + typesAsJSON);
 
             WebResource resource = service.path("api/atlas/types");

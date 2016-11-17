@@ -41,7 +41,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 public class SearchFilter {
     public static final String PARAM_TYPE = "type";
     public static final String PARAM_SUPERTYPE = "supertype";
-    public static final String PARAM_NOT_SUPERTYPE = "notSupertype";
+    public static final String PARAM_NOT_SUPERTYPE = "notsupertype";
 
     /**
      * to specify whether the result should be sorted? If yes, whether asc or desc.

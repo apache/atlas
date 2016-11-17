@@ -82,7 +82,7 @@ public class TypesUtil {
 
     public static HierarchicalTypeDefinition<TraitType> createTraitTypeDef(String name, String description, String version,
         ImmutableSet<String> superTypes, AttributeDefinition... attrDefs) {
-        return new HierarchicalTypeDefinition<>(TraitType.class, name, description, superTypes, attrDefs);
+        return new HierarchicalTypeDefinition<>(TraitType.class, name, description, version, superTypes, attrDefs);
     }
 
     public static StructTypeDefinition createStructTypeDef(String name, AttributeDefinition... attrDefs) {
