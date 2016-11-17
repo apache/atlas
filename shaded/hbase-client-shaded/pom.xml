@@ -23,6 +23,7 @@
         <artifactId>apache-atlas</artifactId>
         <groupId>org.apache.atlas</groupId>
         <version>0.8-incubating-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
     <artifactId>atlas-hbase-client-shaded</artifactId>
     <description>Shading of guava in apache hbase-client</description>

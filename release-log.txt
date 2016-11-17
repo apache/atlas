@@ -10,6 +10,7 @@ ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(s
 
 ALL CHANGES:
 
+ATLAS-1299 The project org.apache.atlas:atlas-hbase-client-shaded - build error (shwethags)
 ATLAS-1246 Upgrade versions of dependencies (shwethags)
 ATLAS-1244 added support for KnoxSSO Authentication (nixonrodrigues via mneethiraj)
 ATLAS-1295 Build failure due to patch for ATLAS-1081 (apoorvnaik via sumasai)
