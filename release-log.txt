@@ -9,7 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
-
+ATLAS-1306 bootstrap type-load ignores model file contents if a type in the file already exists
 ATLAS-1299 The project org.apache.atlas:atlas-hbase-client-shaded - build error (shwethags)
 ATLAS-1246 Upgrade versions of dependencies (shwethags)
 ATLAS-1244 added support for KnoxSSO Authentication (nixonrodrigues via mneethiraj)

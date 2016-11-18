@@ -127,7 +127,7 @@ public class AtlasTypeDefStoreInitializer {
 
                 LOG.info("Loading types defined in file {}", typeDefFile.getAbsolutePath());
 
-                typeDefStore.createTypesDef(typesDef);
+                typeDefStore.createTypesDef(typesToCreate);
             } catch (Throwable t) {
                 LOG.error("error while registering types in file " + typeDefFile.getAbsolutePath(), t);
             }
