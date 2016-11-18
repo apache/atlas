@@ -19,6 +19,56 @@
                     "isUnique": false
                 }
             ]
+        },
+        {
+            "name": "hbase_column_family",
+            "superTypes": [
+                "DataSet"
+            ],
+            "attributeDefs": [
+                {
+                    "name": "table",
+                    "typeName": "hbase_table",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false,
+                    "constraintDefs": [
+                        {
+                            "type": "foreignKey",
+                            "params": {
+                                "onDelete": "cascade"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "typeVersion": "1.0"
+        },
+        {
+            "name": "hbase_column",
+            "superTypes": [
+                "DataSet"
+            ],
+            "attributeDefs": [
+                {
+                    "name": "column_family",
+                    "typeName": "hbase_column_family",
+                    "cardinality": "SINGLE",
+                    "isIndexable": false,
+                    "isOptional": false,
+                    "isUnique": false,
+                    "constraintDefs": [
+                        {
+                            "type": "foreignKey",
+                            "params": {
+                                "onDelete": "cascade"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "typeVersion": "1.0"
         }
     ]
 }
