@@ -19,6 +19,7 @@
 package org.apache.atlas.typesystem;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.atlas.typesystem.persistence.AtlasSystemAttributes;
 import org.apache.atlas.typesystem.persistence.Id;
 
 /**
@@ -32,4 +33,6 @@ public interface IReferenceableInstance extends IStruct {
     Id getId();
 
     IStruct getTrait(String typeName);
+
+    AtlasSystemAttributes getSystemAttributes();
 }

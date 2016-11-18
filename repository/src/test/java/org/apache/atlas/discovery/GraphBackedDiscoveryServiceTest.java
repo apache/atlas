@@ -59,6 +59,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Date;
+import java.text.SimpleDateFormat;
 
 import javax.inject.Inject;
 
@@ -67,6 +69,7 @@ import static org.apache.atlas.typesystem.types.utils.TypesUtil.createOptionalAt
 import static org.apache.atlas.typesystem.types.utils.TypesUtil.createRequiredAttrDef;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 @Guice(modules = RepositoryMetadataModule.class)
 public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
@@ -167,6 +170,24 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
         assertNotNull(rows);
         assertEquals(rows.length(), 1);
 
+        //Assert system attributes are not null
+        JSONObject sys_attributes = (JSONObject)rows.getJSONObject(0).get("$systemAttributes$");
+        assertNotNull(sys_attributes.get("createdBy"));
+        assertNotNull(sys_attributes.get("modifiedBy"));
+        assertNotNull(sys_attributes.get("createdTime"));
+        assertNotNull(sys_attributes.get("modifiedTime"));
+
+
+        //Assert that createdTime and modifiedTime are valid dates
+        String createdTime = (String) sys_attributes.get("createdTime");
+        String modifiedTime = (String) sys_attributes.get("modifiedTime");
+        final String outputFormat = "EEE MMM dd HH:mm:ss z yyyy";
+        SimpleDateFormat df = new SimpleDateFormat(outputFormat);
+        Date createdDate = df.parse(createdTime);
+        Date modifiedDate = df.parse(modifiedTime);
+        assertNotNull(createdDate);
+        assertNotNull(modifiedDate);
+
         final String testTs = "\"2011-11-01T02:35:58.440Z\"";
         dslQuery = "Department where " + Constants.TIMESTAMP_PROPERTY_KEY + " > " + testTs;
         jsonResults = searchByDSL(dslQuery);
@@ -191,6 +212,27 @@ public class GraphBackedDiscoveryServiceTest extends BaseRepositoryTest {
         assertNotNull(rows);
         assertEquals(rows.length(), 1);
 
+        dslQuery = "from Department select " + Constants.CREATED_BY_KEY;
+        jsonResults = searchByDSL(dslQuery);
+        assertNotNull(jsonResults);
+
+        results = new JSONObject(jsonResults);
+        assertEquals(results.length(), 3);
+
+        rows = results.getJSONArray("rows");
+        assertNotNull(rows);
+        assertEquals(rows.length(), 1);
+
+        dslQuery = "from Department select " + Constants.MODIFIED_BY_KEY;
+        jsonResults = searchByDSL(dslQuery);
+        assertNotNull(jsonResults);
+
+        results = new JSONObject(jsonResults);
+        assertEquals(results.length(), 3);
+
+        rows = results.getJSONArray("rows");
+        assertNotNull(rows);
+        assertEquals(rows.length(), 1);
     }
 
     @Test

@@ -138,5 +138,11 @@ public class DefaultPropertyMapper implements PropertyMapper {
 
         m_qualifiedToCleanMap.put(Constants.STATE_PROPERTY_KEY, "state");
         m_cleanToQualifiedMap.put("state", Constants.STATE_PROPERTY_KEY);
+
+        m_qualifiedToCleanMap.put(Constants.CREATED_BY_KEY, "created_by");
+        m_cleanToQualifiedMap.put("created_by", Constants.CREATED_BY_KEY);
+
+        m_qualifiedToCleanMap.put(Constants.MODIFIED_BY_KEY, "modified_by");
+        m_cleanToQualifiedMap.put("modified_by", Constants.MODIFIED_BY_KEY);
     }
 }

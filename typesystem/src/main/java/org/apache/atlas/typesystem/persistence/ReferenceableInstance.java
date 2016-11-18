@@ -45,9 +45,10 @@ public class ReferenceableInstance extends StructInstance implements ITypedRefer
     private final ImmutableMap<String, ITypedStruct> traits;
     private final ImmutableList<String> traitNames;
     private Id id;
+    private AtlasSystemAttributes systemAttributes;
 
 
-    public ReferenceableInstance(Id id, String dataTypeName, FieldMapping fieldMapping, boolean[] nullFlags,
+    public ReferenceableInstance(Id id, String dataTypeName, AtlasSystemAttributes systemAttributes, FieldMapping fieldMapping, boolean[] nullFlags,
             boolean[] bools, byte[] bytes, short[] shorts, int[] ints, long[] longs, float[] floats, double[] doubles,
             BigDecimal[] bigDecimals, BigInteger[] bigIntegers, Date[] dates, String[] strings,
             ImmutableList<Object>[] arrays, ImmutableMap<Object, Object>[] maps, StructInstance[] structs,
@@ -61,6 +62,12 @@ public class ReferenceableInstance extends StructInstance implements ITypedRefer
             b.add(t);
         }
         this.traitNames = b.build();
+        if(systemAttributes == null){
+            this.systemAttributes = new AtlasSystemAttributes();
+        }
+        else{
+            this.systemAttributes = systemAttributes;
+        }
     }
 
     @Override
@@ -76,6 +83,11 @@ public class ReferenceableInstance extends StructInstance implements ITypedRefer
     @Override
     public IStruct getTrait(String typeName) {
         return traits.get(typeName);
+    }
+
+    @Override
+    public AtlasSystemAttributes getSystemAttributes(){
+        return systemAttributes;
     }
 
     /**

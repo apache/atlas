@@ -45,6 +45,7 @@ public class Id implements ITypedReferenceableInstance {
     public final int version;
     public EntityState state;
     private static AtomicLong s_nextId = new AtomicLong(System.nanoTime());
+    public final AtlasSystemAttributes systemAttributes;
 
     public Id(String id, int version, String typeName, String state) {
         id       = ParamChecker.notEmpty(id, "id");
@@ -58,6 +59,7 @@ public class Id implements ITypedReferenceableInstance {
         } else {
             this.state = EntityState.valueOf(state.toUpperCase());
         }
+        this.systemAttributes = new AtlasSystemAttributes();
     }
 
     public Id(String id, int version, String typeName) {
@@ -103,6 +105,11 @@ public class Id implements ITypedReferenceableInstance {
     @Override
     public String toShortString() {
         return String.format("id[type=%s guid=%s state=%s]", typeName, id, state);
+    }
+
+    @Override
+    public AtlasSystemAttributes getSystemAttributes(){
+        return systemAttributes;
     }
 
     public String getClassName() {

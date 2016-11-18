@@ -31,6 +31,7 @@ import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
+import org.apache.atlas.typesystem.persistence.AtlasSystemAttributes;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.persistence.ReferenceableInstance;
 import org.apache.atlas.typesystem.persistence.StructInstance;
@@ -132,7 +133,7 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
                 }
 
                 ITypedReferenceableInstance tr =
-                        r != null ? createInstanceWithTraits(id, r, r.getTraits().toArray(new String[0])) :
+                        r != null ? createInstanceWithTraits(id, null, r, r.getTraits().toArray(new String[0])) :
                                 createInstance(id);
 
                 if (id != null && id.isAssigned()) {
@@ -180,10 +181,14 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
     }
 
     public ITypedReferenceableInstance createInstance(Id id, String... traitNames) throws AtlasException {
-        return createInstanceWithTraits(id, null, traitNames);
+        return createInstanceWithTraits(id, null, null, traitNames);
     }
 
-    public ITypedReferenceableInstance createInstanceWithTraits(Id id, Referenceable r, String... traitNames)
+    public ITypedReferenceableInstance createInstance(Id id, AtlasSystemAttributes systemAttributes, String... traitNames) throws AtlasException{
+        return createInstanceWithTraits(id, systemAttributes, null, traitNames);
+    }
+
+    public ITypedReferenceableInstance createInstanceWithTraits(Id id, AtlasSystemAttributes systemAttributes, Referenceable r, String... traitNames)
     throws AtlasException {
 
         ImmutableMap.Builder<String, ITypedStruct> b = new ImmutableBiMap.Builder<String, ITypedStruct>();
@@ -197,7 +202,7 @@ public class ClassType extends HierarchicalType<ClassType, IReferenceableInstanc
             }
         }
 
-        return new ReferenceableInstance(id == null ? new Id(getName()) : id, getName(), fieldMapping,
+        return new ReferenceableInstance(id == null ? new Id(getName()) : id, getName(), systemAttributes, fieldMapping,
                 new boolean[fieldMapping.fields.size()],
                 fieldMapping.numBools == 0 ? null : new boolean[fieldMapping.numBools],
                 fieldMapping.numBytes == 0 ? null : new byte[fieldMapping.numBytes],

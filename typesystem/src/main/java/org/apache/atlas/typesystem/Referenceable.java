@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.classification.InterfaceAudience;
+import org.apache.atlas.typesystem.persistence.AtlasSystemAttributes;
 import org.apache.atlas.typesystem.persistence.Id;
 
 import java.util.HashMap;
@@ -36,6 +37,7 @@ public class Referenceable extends Struct implements IReferenceableInstance {
     private Id id;
     private final ImmutableMap<String, IStruct> traits;
     private final ImmutableList<String> traitNames;
+    private AtlasSystemAttributes systemAttributes;
 
     public Referenceable(String typeName, String... traitNames) {
         super(typeName);
@@ -46,6 +48,7 @@ public class Referenceable extends Struct implements IReferenceableInstance {
             b.put(t, new Struct(t));
         }
         traits = b.build();
+        this.systemAttributes = new AtlasSystemAttributes();
     }
 
     public Referenceable(String typeName, Map<String, Object> values) {
@@ -53,6 +56,7 @@ public class Referenceable extends Struct implements IReferenceableInstance {
         id = new Id(typeName);
         traitNames = ImmutableList.of();
         traits = ImmutableMap.of();
+        this.systemAttributes = new AtlasSystemAttributes();
     }
 
     public Referenceable(String guid, String typeName, Map<String, Object> values) {
@@ -60,6 +64,7 @@ public class Referenceable extends Struct implements IReferenceableInstance {
         id = new Id(guid, 0, typeName);
         traitNames = ImmutableList.of();
         traits = ImmutableMap.of();
+        this.systemAttributes = new AtlasSystemAttributes();
     }
 
     /**
@@ -75,6 +80,7 @@ public class Referenceable extends Struct implements IReferenceableInstance {
         id = new Id(guid, 0, typeName);
         traitNames = ImmutableList.copyOf(_traitNames);
         traits = ImmutableMap.copyOf(_traits);
+        this.systemAttributes = new AtlasSystemAttributes();
     }
 
     /**
@@ -90,6 +96,23 @@ public class Referenceable extends Struct implements IReferenceableInstance {
         this.id = id;
         traitNames = ImmutableList.copyOf(_traitNames);
         traits = ImmutableMap.copyOf(_traits);
+        this.systemAttributes = new AtlasSystemAttributes();
+    }
+
+    /**
+     * Not public - only use during deserialization
+     * @param id      entity id
+     * @param typeName  the type name
+     * @param values    the entity attribute values
+     */
+    @InterfaceAudience.Private
+    public Referenceable(Id id, String typeName, Map<String, Object> values, List<String> _traitNames,
+                         Map<String, IStruct> _traits, AtlasSystemAttributes systemAttributes) {
+        super(typeName, values);
+        this.id = id;
+        traitNames = ImmutableList.copyOf(_traitNames);
+        traits = ImmutableMap.copyOf(_traits);
+        this.systemAttributes = systemAttributes;
     }
 
     /**
@@ -128,6 +151,11 @@ public class Referenceable extends Struct implements IReferenceableInstance {
     @Override
     public IStruct getTrait(String typeName) {
         return traits.get(typeName);
+    }
+
+    @Override
+    public AtlasSystemAttributes getSystemAttributes(){
+        return systemAttributes;
     }
 
     /**

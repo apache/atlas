@@ -36,7 +36,10 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.typesystem.ITypedInstance;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.ITypedStruct;
+import org.apache.atlas.typesystem.Referenceable;
+import org.apache.atlas.typesystem.persistence.AtlasSystemAttributes;
 import org.apache.atlas.typesystem.persistence.Id;
+import org.apache.atlas.typesystem.persistence.ReferenceableInstance;
 import org.apache.atlas.typesystem.types.AttributeInfo;
 import org.apache.atlas.typesystem.types.ClassType;
 import org.apache.atlas.typesystem.types.DataTypes;
@@ -70,6 +73,13 @@ public final class GraphToTypedInstanceMapper {
         String typeName = GraphHelper.getSingleValuedProperty(instanceVertex, Constants.ENTITY_TYPE_PROPERTY_KEY, String.class);
         List<String> traits = GraphHelper.getTraitNames(instanceVertex);
         String state = GraphHelper.getStateAsString(instanceVertex);
+        String createdBy = GraphHelper.getCreatedByAsString(instanceVertex);
+        String modifiedBy = GraphHelper.getModifiedByAsString(instanceVertex);
+        Date createdTime = new Date(GraphHelper.getCreatedTime(instanceVertex));
+        Date modifiedTime = new Date(GraphHelper.getModifiedTime(instanceVertex));
+        AtlasSystemAttributes systemAttributes = new AtlasSystemAttributes(createdBy, modifiedBy, createdTime, modifiedTime);
+
+        LOG.debug("Found createdBy : {} modifiedBy : {} createdTime: {} modifedTime: {}", createdBy, modifiedBy, createdTime, modifiedTime);
 
         Id id = new Id(guid, (Integer) GraphHelper.getProperty(instanceVertex, Constants.VERSION_PROPERTY_KEY),
                 typeName, state);
@@ -77,7 +87,7 @@ public final class GraphToTypedInstanceMapper {
 
         ClassType classType = typeSystem.getDataType(ClassType.class, typeName);
         ITypedReferenceableInstance typedInstance =
-            classType.createInstance(id, traits.toArray(new String[traits.size()]));
+            classType.createInstance(id, systemAttributes, traits.toArray(new String[traits.size()]));
 
         mapVertexToInstance(instanceVertex, typedInstance, classType.fieldMapping().fields);
         mapVertexToInstanceTraits(instanceVertex, typedInstance, traits);

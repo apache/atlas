@@ -43,6 +43,7 @@ import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
 import org.apache.atlas.typesystem.exception.TraitNotFoundException;
+import org.apache.atlas.typesystem.persistence.AtlasSystemAttributes;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.AttributeDefinition;
 import org.apache.atlas.typesystem.types.ClassType;
@@ -207,6 +208,11 @@ public class GraphBackedMetadataRepositoryTest {
 
         //entity state should be active by default
         Assert.assertEquals(entity.getId().getState(), Id.EntityState.ACTIVE);
+
+        //System attributes created time and modified time should not be null
+        AtlasSystemAttributes systemAttributes = entity.getSystemAttributes();
+        Assert.assertNotNull(systemAttributes.createdTime);
+        Assert.assertNotNull(systemAttributes.modifiedTime);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)

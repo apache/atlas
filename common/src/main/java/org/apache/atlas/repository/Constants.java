@@ -63,6 +63,8 @@ public final class Constants {
 
     public static final String VERSION_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "version";
     public static final String STATE_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "state";
+    public static final String CREATED_BY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "createdBy";
+    public static final String MODIFIED_BY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "modifiedBy";
 
     public static final String TIMESTAMP_PROPERTY_KEY = INTERNAL_PROPERTY_KEY_PREFIX + "timestamp";
 

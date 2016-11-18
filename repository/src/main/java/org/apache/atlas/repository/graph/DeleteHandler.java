@@ -397,6 +397,7 @@ public abstract class DeleteHandler {
             RequestContext requestContext = RequestContext.get();
             GraphHelper.setProperty(outVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY,
                     requestContext.getRequestTime());
+            GraphHelper.setProperty(outVertex, Constants.MODIFIED_BY_KEY, requestContext.getUser());
             requestContext.recordEntityUpdate(outId);
         }
     }

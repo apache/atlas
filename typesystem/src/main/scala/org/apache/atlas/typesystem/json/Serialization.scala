@@ -19,15 +19,16 @@
 package org.apache.atlas.typesystem.json
 
 import org.apache.atlas.typesystem._
-import org.apache.atlas.typesystem.persistence.{Id, ReferenceableInstance, StructInstance}
+import org.apache.atlas.typesystem.persistence.{AtlasSystemAttributes, Id, ReferenceableInstance, StructInstance}
 import org.apache.atlas.typesystem.types.DataTypes.{ArrayType, MapType, TypeCategory}
 import org.apache.atlas.typesystem.types._
 import org.json4s.JsonAST.JInt
-import org.json4s._
+import org.json4s.{JsonAST, _}
 import org.json4s.native.Serialization._
 
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
+import java.util.Date
 
 class BigDecimalSerializer extends CustomSerializer[java.math.BigDecimal](format => (
     {
@@ -60,6 +61,7 @@ class IdSerializer extends CustomSerializer[Id](format => ( {
     case JObject(JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(typeName)) ::
         JField("id", JString(id)) ::
         JField("version", JString(version)) :: Nil) => new Id(id, version.toInt, typeName)
+
 }, {
     case id: Id => JObject(JField("id", JString(id.id)),
         JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(id.typeName)),
@@ -117,12 +119,14 @@ class TypedReferenceableInstanceSerializer()
                 var typField: Option[JField] = None
                 var idField: Option[JField] = None
                 var traitsField: Option[JField] = None
+                var sysAttrField: Option[JField] = None
                 var fields: List[JField] = Nil
 
                 fs.foreach { f: JField => f._1 match {
                     case Serialization.STRUCT_TYPE_FIELD_NAME => typField = Some(f)
                     case Serialization.ID_TYPE_FIELD_NAME => idField = Some(f)
                     case Serialization.TRAIT_TYPE_FIELD_NAME => traitsField = Some(f)
+                    case Serialization.SYSTEM_ATTR_FIELD_NAME => sysAttrField = Some(f)
                     case _ => fields = fields :+ f
                 }
                 }
@@ -141,7 +145,8 @@ class TypedReferenceableInstanceSerializer()
                 val sT = typSystem.getDataType(
                     classOf[ClassType], typName).asInstanceOf[ClassType]
                 val id = Serialization.deserializeId(idField.get._2)
-                val s = sT.createInstance(id, traitNames: _*)
+                val s_attr = Serialization.deserializeSystemAttributes(sysAttrField.get._2)
+                val s = sT.createInstance(id, s_attr, traitNames: _*)
                 Serialization.deserializeFields(typSystem, sT, s, fields)
 
                 traitsField.map { t =>
@@ -169,10 +174,11 @@ class TypedReferenceableInstanceSerializer()
         case id: Id => Serialization.serializeId(id)
         case e: ITypedReferenceableInstance =>
             val idJ = JField(Serialization.ID_TYPE_FIELD_NAME, Serialization.serializeId(e.getId))
+            val s_attrJ = JField(Serialization.SYSTEM_ATTR_FIELD_NAME, Serialization.serializeSystemAttributes(e.getSystemAttributes))
             var fields = Serialization.serializeFields(e)
             val traitsJ: List[JField] = e.getTraits.map(tName => JField(tName, Extraction.decompose(e.getTrait(tName)))).toList
 
-            fields = idJ :: fields
+            fields = idJ :: s_attrJ :: fields
             if (traitsJ.size > 0) {
                 fields = fields :+ JField(Serialization.TRAIT_TYPE_FIELD_NAME, JObject(traitsJ: _*))
             }
@@ -186,6 +192,7 @@ object Serialization {
     val STRUCT_TYPE_FIELD_NAME = "$typeName$"
     val ID_TYPE_FIELD_NAME = "$id$"
     val TRAIT_TYPE_FIELD_NAME = "$traits$"
+    val SYSTEM_ATTR_FIELD_NAME = "$systemAttributes$"
 
     def extractList(lT: ArrayType, value: JArray)(implicit format: Formats): Any = {
         val dT = lT.getElemType
@@ -217,6 +224,22 @@ object Serialization {
     def serializeId(id: Id) = JObject(JField("id", JString(id.id)),
         JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(id.typeName)),
         JField("version", JInt(id.version)), JField("state", JString(id.state.name())))
+
+
+    //Handling serialization issues with null values
+    //See https://github.com/json4s/json4s/issues/358
+    def parseString(s: Any) = s match {
+        case s:String => JString(s)
+        case s:Date => JString(s.toString)
+        case _ => JString("")
+    }
+
+    def serializeSystemAttributes(s_attr: AtlasSystemAttributes) = JObject(
+        JField("createdBy", parseString(s_attr.modifiedBy)),
+        JField("modifiedBy", parseString(s_attr.modifiedBy)),
+        JField("createdTime", parseString(s_attr.createdTime)),
+        JField("modifiedTime", parseString(s_attr.modifiedTime))
+    )
 
     def serializeFields(e: ITypedInstance)(implicit format: Formats) = e.fieldMapping.fields.map {
         case (fName, info) => {
@@ -270,6 +293,13 @@ object Serialization {
             JField(Serialization.STRUCT_TYPE_FIELD_NAME, JString(typeName)) ::
             JField("version", JInt(version)) ::
             JField("state", JString(state)) :: Nil) => new Id(id, version.toInt, typeName, state)
+    }
+
+    def deserializeSystemAttributes(value: JValue)(implicit format : Formats) = value match {
+        case JObject(JField("createdBy", JString(createdBy))::
+            JField("modifiedBy", JString(modifiedBy))::
+            JField("createdTime", JString(createdTime))::
+            JField("modifiedTime", JString(modifiedTime))::Nil) => new AtlasSystemAttributes(createdBy, modifiedBy, createdTime, modifiedTime)
     }
 
     def toJson(value: ITypedReferenceableInstance): String = {

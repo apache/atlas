@@ -21,23 +21,26 @@ package org.apache.atlas.typesystem.json
 import java.text.SimpleDateFormat
 
 import org.apache.atlas.typesystem._
-import org.apache.atlas.typesystem.persistence.Id
+import org.apache.atlas.typesystem.persistence.{AtlasSystemAttributes, Id}
 import org.apache.atlas.typesystem.types._
 import org.json4s._
 import org.json4s.native.Serialization._
 
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
+import java.util.Date
 
 object InstanceSerialization {
 
   case class _Id(id : String, version : Int, typeName : String, state : Option[String])
+  case class _AtlasSystemAttributes(createdBy: Option[String], modifiedBy: Option[String], createdTime: Option[Date], modifiedTime: Option[Date])
   case class _Struct(typeName : String, values : Map[String, AnyRef])
   case class _Reference(id : Option[_Id],
                         typeName : String,
                         values : Map[String, AnyRef],
                         traitNames : List[String],
-                        traits : Map[String, _Struct])
+                        traits : Map[String, _Struct],
+                        systemAttributes : Option[_AtlasSystemAttributes])
 
   def Try[B](x : => B) : Option[B] = {
     try { Some(x) } catch { case _ : Throwable => None }
@@ -71,6 +74,14 @@ object InstanceSerialization {
       jsonMap.get("id").filter(_.isInstanceOf[String]).flatMap(v => Some(v.asInstanceOf[String]))
     }
 
+    def createdBy: Option[String] = {
+      jsonMap.get("createdBy").filter(_.isInstanceOf[String]).flatMap(v => Some(v.asInstanceOf[String]))
+    }
+
+    def modifiedBy: Option[String] = {
+      jsonMap.get("modifiedBy").filter(_.isInstanceOf[String]).flatMap(v => Some(v.asInstanceOf[String]))
+    }
+
     /**
      * validate and extract 'state' attribute from Map
      * @return
@@ -91,6 +102,14 @@ object InstanceSerialization {
       }
     }
 
+    def createdTime: Option[Date] = {
+      jsonMap.get("createdTime").filter(_.isInstanceOf[String]).flatMap(v => Some(v.asInstanceOf[Date]))
+    }
+
+    def modifiedTime: Option[Date] = {
+      jsonMap.get("modifiedTime").filter(_.isInstanceOf[String]).flatMap(v => Some(v.asInstanceOf[Date]))
+    }
+
     /**
      * A Map is an Id if:
      * - it has the correct [[format.typeHintFieldName]]
@@ -107,6 +126,15 @@ object InstanceSerialization {
         s <- Some(state)
         v <- version
       } yield _Id(i, v, typNm, s)
+    }
+
+    def convertSystemAttributes: Option[_AtlasSystemAttributes] = {
+      for {
+        c <- Some(createdBy)
+        m <- Some(modifiedBy)
+        c_t <- Some(createdTime)
+        m_t <- Some(modifiedTime)
+      } yield _AtlasSystemAttributes(c, m, c_t, m_t)
     }
 
     /**
@@ -232,7 +260,8 @@ object InstanceSerialization {
         values <- valuesMap
         traitNms <- traitNames
         ts <- traits
-      } yield _Reference(i, typNm, values, traitNms.toList, ts)
+        s_attr <- Some(convertSystemAttributes)
+      } yield _Reference(i, typNm, values, traitNms.toList, ts, s_attr)
     }
 
     /**
@@ -259,16 +288,22 @@ object InstanceSerialization {
   def asJava(v : Any)(implicit format: Formats) : Any = v match {
     case i : _Id => new Id(i.id, i.version, i.typeName, i.state.orNull)
     case s : _Struct => new Struct(s.typeName, asJava(s.values).asInstanceOf[java.util.Map[String, Object]])
+    case s_attr : _AtlasSystemAttributes => new AtlasSystemAttributes(s_attr.createdBy.orNull, s_attr.modifiedBy.orNull, s_attr.createdTime.orNull, s_attr.modifiedTime.orNull)
     case r : _Reference => {
       val id = r.id match {
         case Some(i) => new Id(i.id, i.version, i.typeName, i.state.orNull)
         case None => new Id(r.typeName)
       }
+
+      val s_attr = r.systemAttributes match {
+        case Some(s) => new AtlasSystemAttributes(s.createdBy.orNull, s.modifiedBy.orNull, s.createdTime.orNull, s.modifiedTime.orNull)
+        case None => new AtlasSystemAttributes()
+      }
       new Referenceable(id,
         r.typeName,
         asJava(r.values).asInstanceOf[java.util.Map[String, Object]],
         asJava(r.traitNames).asInstanceOf[java.util.List[String]],
-        asJava(r.traits).asInstanceOf[java.util.Map[String, IStruct]])
+        asJava(r.traits).asInstanceOf[java.util.Map[String, IStruct]], s_attr)
     }
     case l : List[_] => l.map(e => asJava(e)).toList.asJava
     case m : Map[_, _] if Try{m.asInstanceOf[Map[String,_]]}.isDefined => {
@@ -284,6 +319,7 @@ object InstanceSerialization {
 
   def asScala(v : Any) : Any = v match {
     case i : Id => _Id(i._getId(), i.getVersion, i.getClassName, Some(i.getStateAsString))
+    case s_attr: AtlasSystemAttributes => _AtlasSystemAttributes(Some(s_attr.createdBy), Some(s_attr.modifiedBy), Some(s_attr.createdTime), Some(s_attr.modifiedTime))
     case r : IReferenceableInstance => {
       val traits = r.getTraits.map { tName =>
         val t = r.getTrait(tName).asInstanceOf[IStruct]
@@ -292,7 +328,7 @@ object InstanceSerialization {
       _Reference(Some(asScala(r.getId).asInstanceOf[_Id]),
         r.getTypeName, asScala(r.getValuesMap).asInstanceOf[Map[String, AnyRef]],
         asScala(r.getTraits).asInstanceOf[List[String]],
-        traits.asInstanceOf[Map[String, _Struct]])
+        traits.asInstanceOf[Map[String, _Struct]], Some(asScala(r.getSystemAttributes).asInstanceOf[_AtlasSystemAttributes]))
     }
     case s : IStruct => _Struct(s.getTypeName, asScala(s.getValuesMap).asInstanceOf[Map[String, AnyRef]])
     case l : java.util.List[_] => l.asScala.map(e => asScala(e)).toList

@@ -187,6 +187,8 @@ public final class TypedInstanceToGraphMapper {
         }
         GraphHelper.setProperty(instanceVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY,
                 RequestContext.get().getRequestTime());
+        GraphHelper.setProperty(instanceVertex, Constants.MODIFIED_BY_KEY, RequestContext.get().getUser());
+        LOG.debug("Setting modifiedBy: {} and modifiedTime: {}", RequestContext.get().getUser(), RequestContext.get().getRequestTime());
     }
 
     void mapAttributeToVertex(ITypedInstance typedInstance, AtlasVertex instanceVertex,

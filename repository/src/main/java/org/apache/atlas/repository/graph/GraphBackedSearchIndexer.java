@@ -88,7 +88,7 @@ import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_STRING;
 /**
  * Adds index for properties of a given type when its added before any instances are added.
  */
-public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChangeHandler,
+public class    GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChangeHandler,
         TypeDefChangeListener {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphBackedSearchIndexer.class);
@@ -154,17 +154,26 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createIndexes(management, Constants.GUID_PROPERTY_KEY, String.class, true,
                     AtlasCardinality.SINGLE, true, true);
 
-            // create a composite index for entity creation timestamp
-            createIndexes(management, Constants.TIMESTAMP_PROPERTY_KEY, Long.class, false, AtlasCardinality.SINGLE, true, true);
+            // Add creation_timestamp property to Vertex Index (mixed index)
+            createIndexes(management, Constants.TIMESTAMP_PROPERTY_KEY, Long.class, false, AtlasCardinality.SINGLE, false, false);
+
+            // Add modification_timestamp property to Vertex Index (mixed index)
+            createIndexes(management, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class, false,
+                    AtlasCardinality.SINGLE, false, false);
+
 
             // create a mixed index for entity state. Set systemProperty flag deliberately to false
             // so that it doesnt create a composite index which has issues with
             // titan 0.5.4 - Refer https://groups.google.com/forum/#!searchin/aureliusgraphs/hemanth/aureliusgraphs/bx7T843mzXU/fjAsclx7GAAJ
             createIndexes(management, Constants.STATE_PROPERTY_KEY, String.class, false, AtlasCardinality.SINGLE, false, false);
 
-            // create a composite index for entity modification timestamp
-            createIndexes(management, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class, false,
-                    AtlasCardinality.SINGLE, false, false);
+            // Create a composite and mixed index for created by property
+            createIndexes(management, Constants.CREATED_BY_KEY, String.class, false,
+                    AtlasCardinality.SINGLE, true, true);
+
+            // Create a composite and mixed index for modified by property
+            createIndexes(management, Constants.MODIFIED_BY_KEY, String.class, false,
+                    AtlasCardinality.SINGLE, true, true);
 
             // create a composite and mixed index for type since it can be combined with other keys
             createIndexes(management, Constants.ENTITY_TYPE_PROPERTY_KEY, String.class, false, AtlasCardinality.SINGLE,

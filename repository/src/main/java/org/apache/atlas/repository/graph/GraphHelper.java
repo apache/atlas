@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 import java.util.UUID;
+import java.util.Date;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
@@ -159,6 +160,8 @@ public final class GraphHelper {
         setProperty(vertexWithoutIdentity, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY,
                 RequestContext.get().getRequestTime());
 
+        setProperty(vertexWithoutIdentity, Constants.CREATED_BY_KEY, RequestContext.get().getUser());
+        setProperty(vertexWithoutIdentity, Constants.MODIFIED_BY_KEY, RequestContext.get().getUser());
         return vertexWithoutIdentity;
     }
 
@@ -169,6 +172,8 @@ public final class GraphHelper {
         setProperty(edge, Constants.STATE_PROPERTY_KEY, Id.EntityState.ACTIVE.name());
         setProperty(edge, Constants.TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
         setProperty(edge, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
+        setProperty(edge, Constants.CREATED_BY_KEY, RequestContext.get().getUser());
+        setProperty(edge, Constants.MODIFIED_BY_KEY, RequestContext.get().getUser());
 
         LOG.debug("Added {}", string(edge));
         return edge;
@@ -517,6 +522,24 @@ public final class GraphHelper {
         return element.getProperty(Constants.STATE_PROPERTY_KEY, String.class);
     }
 
+
+    //Added conditions in fetching system attributes to handle test failures in GremlinTest where these properties are not set
+    public static String getCreatedByAsString(AtlasElement element){
+        return element.getProperty(Constants.CREATED_BY_KEY, String.class);
+    }
+
+    public static String getModifiedByAsString(AtlasElement element){
+        return element.getProperty(Constants.MODIFIED_BY_KEY, String.class);
+    }
+
+    public static long getCreatedTime(AtlasElement element){
+        return element.getProperty(Constants.TIMESTAMP_PROPERTY_KEY, Long.class);
+    }
+
+    public static long getModifiedTime(AtlasElement element){
+        return element.getProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
+    }
+
     /**
      * For the given type, finds an unique attribute and checks if there is an existing instance with the same
      * unique value
@@ -857,7 +880,9 @@ public final class GraphHelper {
         switch (field) {
         case Constants.STATE_PROPERTY_KEY:
         case Constants.GUID_PROPERTY_KEY:
-            return TypesUtil.newAttributeInfo(field, DataTypes.STRING_TYPE);
+        case Constants.CREATED_BY_KEY:
+        case Constants.MODIFIED_BY_KEY:
+                return TypesUtil.newAttributeInfo(field, DataTypes.STRING_TYPE);
 
         case Constants.TIMESTAMP_PROPERTY_KEY:
         case Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY:
