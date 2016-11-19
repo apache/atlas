@@ -90,14 +90,11 @@ public abstract class BaseResourceIT {
     }
 
     protected void createType(TypesDef typesDef) throws Exception {
-        HierarchicalTypeDefinition<ClassType> sampleType = typesDef.classTypesAsJavaList().get(0);
         try {
-            serviceClient.getType(sampleType.typeName);
-            LOG.info("Types already exist. Skipping type creation");
-        } catch(AtlasServiceException ase) {
-            //Expected if type doesnt exist
             String typesAsJSON = TypesSerialization.toJson(typesDef);
             createType(typesAsJSON);
+        } catch(AtlasServiceException ase) {
+            LOG.info("Types failed. Tests might malfunction");
         }
     }
 
@@ -186,6 +183,7 @@ public abstract class BaseResourceIT {
         TypesDef typesDef = TypesUtil.getTypesDef(ImmutableList.of(enumTypeDefinition),
                 ImmutableList.of(structTypeDefinition),
                 ImmutableList.of(classificationTrait, piiTrait, phiTrait, pciTrait, soxTrait, secTrait, financeTrait),
+//                ImmutableList.<HierarchicalTypeDefinition<ClassType>>of());
                 ImmutableList.of(dbClsDef, columnClsDef, tblClsDef, loadProcessClsDef));
 
         createType(typesDef);
@@ -210,11 +208,7 @@ public abstract class BaseResourceIT {
         return RandomStringUtils.randomAlphanumeric(10);
     }
 
-    protected Referenceable createHiveTableInstance(String dbName, String tableName) throws Exception {
-        Referenceable databaseInstance = new Referenceable(DATABASE_TYPE);
-        databaseInstance.set("name", dbName);
-        databaseInstance.set("description", "foo database");
-
+    protected Referenceable createHiveTableInstance(Referenceable databaseInstance, String tableName) throws Exception {
         Referenceable tableInstance =
                 new Referenceable(HIVE_TABLE_TYPE, "classification", "pii", "phi", "pci", "sox", "sec", "finance");
         tableInstance.set("name", tableName);
@@ -244,6 +238,15 @@ public abstract class BaseResourceIT {
         Assert.assertEquals(traits.size(), 7);
 
         return tableInstance;
+    }
+
+    protected Referenceable createHiveDBInstance(String dbName) {
+        Referenceable databaseInstance = new Referenceable(DATABASE_TYPE);
+        databaseInstance.set("name", dbName);
+        databaseInstance.set("qualifiedName", dbName);
+        databaseInstance.set("clusterName", randomString());
+        databaseInstance.set("description", "foo database");
+        return databaseInstance;
     }
 
     public interface Predicate {

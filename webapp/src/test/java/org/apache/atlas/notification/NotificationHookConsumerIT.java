@@ -65,8 +65,11 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
 
         //send valid message
         final Referenceable entity = new Referenceable(DATABASE_TYPE);
-        entity.set("name", "db" + randomString());
+        String dbName = "db" + randomString();
+        entity.set("name", dbName);
         entity.set("description", randomString());
+        entity.set("qualifiedName", dbName);
+        entity.set("clusterName", randomString());
         sendHookMessage(new HookNotification.EntityCreateRequest(TEST_USER, entity));
 
         waitFor(MAX_WAIT_TIME, new Predicate() {
@@ -81,21 +84,24 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
     @Test
     public void testCreateEntity() throws Exception {
         final Referenceable entity = new Referenceable(DATABASE_TYPE);
-        entity.set("name", "db" + randomString());
+        String dbName = "db" + randomString();
+        entity.set("name", dbName);
         entity.set("description", randomString());
+        entity.set("qualifiedName", dbName);
+        entity.set("clusterName", randomString());
 
         sendHookMessage(new HookNotification.EntityCreateRequest(TEST_USER, entity));
 
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
-                JSONArray results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, entity.get("name")));
+                JSONArray results = searchByDSL(String.format("%s where qualifiedName='%s'", DATABASE_TYPE, entity.get("qualifiedName")));
                 return results.length() == 1;
             }
         });
 
         //Assert that user passed in hook message is used in audit
-        Referenceable instance = serviceClient.getEntity(DATABASE_TYPE, "name", (String) entity.get("name"));
+        Referenceable instance = serviceClient.getEntity(DATABASE_TYPE, "qualifiedName", (String) entity.get("qualifiedName"));
         List<EntityAuditEvent> events =
                 serviceClient.getEntityAuditEvents(instance.getId()._getId(), (short) 1);
         assertEquals(events.size(), 1);
@@ -108,22 +114,25 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         final String dbName = "db" + randomString();
         entity.set("name", dbName);
         entity.set("description", randomString());
+        entity.set("qualifiedName", dbName);
+        entity.set("clusterName", randomString());
+
         serviceClient.createEntity(entity);
 
         final Referenceable newEntity = new Referenceable(DATABASE_TYPE);
         newEntity.set("owner", randomString());
         sendHookMessage(
-                new HookNotification.EntityPartialUpdateRequest(TEST_USER, DATABASE_TYPE, "name", dbName, newEntity));
+                new HookNotification.EntityPartialUpdateRequest(TEST_USER, DATABASE_TYPE, "qualifiedName", dbName, newEntity));
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
-                Referenceable localEntity = serviceClient.getEntity(DATABASE_TYPE, "name", dbName);
+                Referenceable localEntity = serviceClient.getEntity(DATABASE_TYPE, "qualifiedName", dbName);
                 return (localEntity.get("owner") != null && localEntity.get("owner").equals(newEntity.get("owner")));
             }
         });
 
         //Its partial update and un-set fields are not updated
-        Referenceable actualEntity = serviceClient.getEntity(DATABASE_TYPE, "name", dbName);
+        Referenceable actualEntity = serviceClient.getEntity(DATABASE_TYPE, "qualifiedName", dbName);
         assertEquals(actualEntity.get("description"), entity.get("description"));
     }
 
@@ -133,24 +142,27 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         final String dbName = "db" + randomString();
         entity.set("name", dbName);
         entity.set("description", randomString());
+        entity.set("qualifiedName", dbName);
+        entity.set("clusterName", randomString());
+
         serviceClient.createEntity(entity);
 
         final Referenceable newEntity = new Referenceable(DATABASE_TYPE);
         final String newName = "db" + randomString();
-        newEntity.set("name", newName);
+        newEntity.set("qualifiedName", newName);
 
         sendHookMessage(
-                new HookNotification.EntityPartialUpdateRequest(TEST_USER, DATABASE_TYPE, "name", dbName, newEntity));
+                new HookNotification.EntityPartialUpdateRequest(TEST_USER, DATABASE_TYPE, "qualifiedName", dbName, newEntity));
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
-                JSONArray results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, newName));
+                JSONArray results = searchByDSL(String.format("%s where qualifiedName='%s'", DATABASE_TYPE, newName));
                 return results.length() == 1;
             }
         });
 
         //no entity with the old qualified name
-        JSONArray results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, dbName));
+        JSONArray results = searchByDSL(String.format("%s where qualifiedName='%s'", DATABASE_TYPE, dbName));
         assertEquals(results.length(), 0);
 
     }
@@ -161,10 +173,13 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         final String dbName = "db" + randomString();
         entity.set("name", dbName);
         entity.set("description", randomString());
+        entity.set("qualifiedName", dbName);
+        entity.set("clusterName", randomString());
+
         final String dbId = serviceClient.createEntity(entity).get(0);
 
         sendHookMessage(
-            new HookNotification.EntityDeleteRequest(TEST_USER, DATABASE_TYPE, "name", dbName));
+            new HookNotification.EntityDeleteRequest(TEST_USER, DATABASE_TYPE, "qualifiedName", dbName));
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
@@ -180,24 +195,29 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
         final String dbName = "db" + randomString();
         entity.set("name", dbName);
         entity.set("description", randomString());
+        entity.set("qualifiedName", dbName);
+        entity.set("clusterName", randomString());
+
         serviceClient.createEntity(entity);
 
         final Referenceable newEntity = new Referenceable(DATABASE_TYPE);
-        newEntity.set("name", dbName);
+        newEntity.set("name", randomString());
         newEntity.set("description", randomString());
         newEntity.set("owner", randomString());
+        newEntity.set("qualifiedName", dbName);
+        newEntity.set("clusterName", randomString());
 
         //updating unique attribute
         sendHookMessage(new HookNotification.EntityUpdateRequest(TEST_USER, newEntity));
         waitFor(MAX_WAIT_TIME, new Predicate() {
             @Override
             public boolean evaluate() throws Exception {
-                JSONArray results = searchByDSL(String.format("%s where name='%s'", DATABASE_TYPE, dbName));
+                JSONArray results = searchByDSL(String.format("%s where qualifiedName='%s'", DATABASE_TYPE, newEntity.get("qualifiedName")));
                 return results.length() == 1;
             }
         });
 
-        Referenceable actualEntity = serviceClient.getEntity(DATABASE_TYPE, "name", dbName);
+        Referenceable actualEntity = serviceClient.getEntity(DATABASE_TYPE, "qualifiedName", dbName);
         assertEquals(actualEntity.get("description"), newEntity.get("description"));
         assertEquals(actualEntity.get("owner"), newEntity.get("owner"));
     }

@@ -167,9 +167,10 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
         for (int index = 0; index < rows.length(); index++) {
             final JSONObject row = rows.getJSONObject(index);
+            LOG.info("JsonRow - {}", row);
             Assert.assertNotNull(row.getString("name"));
             Assert.assertNotNull(row.getString("comment"));
-            Assert.assertNotNull(row.getString("dataType"));
+            Assert.assertNotNull(row.getString("type"));
             Assert.assertEquals(row.getString("$typeName$"), "hive_column");
         }
     }
@@ -185,20 +186,12 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
         for (int index = 0; index < rows.length(); index++) {
             final JSONObject row = rows.getJSONObject(index);
+            LOG.info("JsonRow - {}", row);
             Assert.assertNotNull(row.getString("name"));
             Assert.assertNotNull(row.getString("comment"));
-            Assert.assertNotNull(row.getString("dataType"));
+            Assert.assertNotNull(row.getString("type"));
             Assert.assertEquals(row.getString("$typeName$"), "hive_column");
         }
-    }
-
-    @Test
-    public void testSchemaForEmptyTable() throws Exception {
-        WebResource resource = service.path(BASE_URI).path("").path("schema");
-
-        ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
-                .method(HttpMethod.GET, ClientResponse.class);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
     }
 
     @Test
@@ -264,6 +257,8 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
     throws Exception {
         Referenceable referenceable = new Referenceable(DATABASE_TYPE, traitNames);
         referenceable.set("name", name);
+        referenceable.set("qualifiedName", name);
+        referenceable.set("clusterName", locationUri + name);
         referenceable.set("description", description);
         referenceable.set("owner", owner);
         referenceable.set("locationUri", locationUri);
@@ -272,10 +267,11 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
         return createInstance(referenceable);
     }
 
-    Referenceable column(String name, String dataType, String comment, String... traitNames) throws Exception {
+    Referenceable column(String name, String type, String comment, String... traitNames) throws Exception {
         Referenceable referenceable = new Referenceable(COLUMN_TYPE, traitNames);
         referenceable.set("name", name);
-        referenceable.set("dataType", dataType);
+        referenceable.set("qualifiedName", name);
+        referenceable.set("type", type);
         referenceable.set("comment", comment);
 
         return referenceable;
@@ -304,13 +300,14 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
         Referenceable referenceable = new Referenceable(HIVE_PROCESS_TYPE, traitNames);
         referenceable.set("name", name);
         referenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
-        referenceable.set("user", user);
+        referenceable.set("userName", user);
         referenceable.set("startTime", System.currentTimeMillis());
         referenceable.set("endTime", System.currentTimeMillis() + 10000);
 
         referenceable.set("inputs", inputTables);
         referenceable.set("outputs", outputTables);
 
+        referenceable.set("operationType", "testOperation");
         referenceable.set("queryText", queryText);
         referenceable.set("queryPlan", queryPlan);
         referenceable.set("queryId", queryId);

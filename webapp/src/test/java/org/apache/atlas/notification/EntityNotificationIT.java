@@ -80,8 +80,11 @@ public class EntityNotificationIT extends BaseResourceIT {
 
     @Test
     public void testCreateEntity() throws Exception {
-        Referenceable tableInstance = createHiveTableInstance(DATABASE_NAME, TABLE_NAME);
+        Referenceable hiveDBInstance = createHiveDBInstance(DATABASE_NAME);
+        Id dbID = createInstance(hiveDBInstance);
+        hiveDBInstance.replaceWithNewId(dbID);
 
+        Referenceable tableInstance = createHiveTableInstance(hiveDBInstance, TABLE_NAME);
         tableId = createInstance(tableInstance);
 
         final String guid = tableId._getId();
@@ -107,7 +110,11 @@ public class EntityNotificationIT extends BaseResourceIT {
     public void testDeleteEntity() throws Exception {
         final String tableName = "table-" + randomString();
         final String dbName = "db-" + randomString();
-        Referenceable tableInstance = createHiveTableInstance(dbName, tableName);
+        Referenceable hiveDBInstance = createHiveDBInstance(dbName);
+        Id dbID = createInstance(hiveDBInstance);
+        hiveDBInstance.replaceWithNewId(dbID);
+
+        Referenceable tableInstance = createHiveTableInstance(hiveDBInstance, tableName);
         final Id tableId = createInstance(tableInstance);
         final String guid = tableId._getId();
 

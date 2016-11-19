@@ -41,13 +41,13 @@ import java.util.Set;
 /**
  * Entity Lineage v2 Integration Tests.
  */
-public class EntityLineageJerseyResourceIT extends BaseResourceIT {
+public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceIT {
     private static final String BASE_URI = "api/atlas/v2/lineage/";
-    private static final String INPUT_DIRECTION  = "INPUT";
+    private static final String INPUT_DIRECTION = "INPUT";
     private static final String OUTPUT_DIRECTION = "OUTPUT";
-    private static final String BOTH_DIRECTION   = "BOTH";
-    private static final String DIRECTION_PARAM  = "direction";
-    private static final String DEPTH_PARAM      = "depth";
+    private static final String BOTH_DIRECTION = "BOTH";
+    private static final String DIRECTION_PARAM = "direction";
+    private static final String DEPTH_PARAM = "depth";
 
     private String salesFactTable;
     private String salesMonthlyTable;
@@ -190,64 +190,5 @@ public class EntityLineageJerseyResourceIT extends BaseResourceIT {
 
         loadProcess("loadSalesMonthly" + randomString(), "John ETL", ImmutableList.of(salesFactDaily),
                 ImmutableList.of(salesFactMonthly), "create table as select ", "plan", "id", "graph");
-    }
-
-    Id database(String name, String description, String owner, String locationUri, String... traitNames)
-            throws Exception {
-        Referenceable referenceable = new Referenceable(DATABASE_TYPE, traitNames);
-        referenceable.set("name", name);
-        referenceable.set("description", description);
-        referenceable.set("owner", owner);
-        referenceable.set("locationUri", locationUri);
-        referenceable.set("createTime", System.currentTimeMillis());
-
-        return createInstance(referenceable);
-    }
-
-    Referenceable column(String name, String dataType, String comment, String... traitNames) throws Exception {
-        Referenceable referenceable = new Referenceable(COLUMN_TYPE, traitNames);
-        referenceable.set("name", name);
-        referenceable.set("dataType", dataType);
-        referenceable.set("comment", comment);
-
-        return referenceable;
-    }
-
-    Id table(String name, String description, Id dbId, String owner, String tableType, List<Referenceable> columns,
-             String... traitNames) throws Exception {
-        Referenceable referenceable = new Referenceable(HIVE_TABLE_TYPE, traitNames);
-        referenceable.set("name", name);
-        referenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
-        referenceable.set("description", description);
-        referenceable.set("owner", owner);
-        referenceable.set("tableType", tableType);
-        referenceable.set("createTime", System.currentTimeMillis());
-        referenceable.set("lastAccessTime", System.currentTimeMillis());
-        referenceable.set("retention", System.currentTimeMillis());
-
-        referenceable.set("db", dbId);
-        referenceable.set("columns", columns);
-
-        return createInstance(referenceable);
-    }
-
-    Id loadProcess(String name, String user, List<Id> inputTables, List<Id> outputTables, String queryText,
-                   String queryPlan, String queryId, String queryGraph, String... traitNames) throws Exception {
-        Referenceable referenceable = new Referenceable(HIVE_PROCESS_TYPE, traitNames);
-        referenceable.set("name", name);
-        referenceable.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
-        referenceable.set("user", user);
-        referenceable.set("startTime", System.currentTimeMillis());
-        referenceable.set("endTime", System.currentTimeMillis() + 10000);
-
-        referenceable.set("inputs", inputTables);
-        referenceable.set("outputs", outputTables);
-
-        referenceable.set("queryText", queryText);
-        referenceable.set("queryPlan", queryPlan);
-        referenceable.set("queryId", queryId);
-        referenceable.set("queryGraph", queryGraph);
-
-        return createInstance(referenceable);
     }
 }
