@@ -60,27 +60,31 @@ public class AtlasStructDef extends AtlasBaseTypeDef implements Serializable {
     private List<AtlasAttributeDef> attributeDefs;
 
     public AtlasStructDef() {
-        this(null, null, null, null);
+        this(null, null, null, null, null);
     }
 
     public AtlasStructDef(String name) {
-        this(name, null, null, null);
+        this(name, null, null, null, null);
     }
 
     public AtlasStructDef(String name, String description) {
-        this(name, description, null, null);
+        this(name, description, null, null, null);
     }
 
     public AtlasStructDef(String name, String description, String typeVersion) {
-        this(name, description, typeVersion, null);
+        this(name, description, typeVersion, null, null);
     }
 
     public AtlasStructDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs) {
-        this(TypeCategory.STRUCT, name, description, typeVersion, attributeDefs);
+        this(name, description, typeVersion, attributeDefs, null);
     }
 
-    protected AtlasStructDef(TypeCategory category, String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs) {
-        super(category, name, description, typeVersion);
+    public AtlasStructDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs, Map<String, String> options) {
+        this(TypeCategory.STRUCT, name, description, typeVersion, attributeDefs, options);
+    }
+
+    protected AtlasStructDef(TypeCategory category, String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs, Map<String, String> options) {
+        super(category, name, description, typeVersion, options);
 
         setAttributeDefs(attributeDefs);
     }

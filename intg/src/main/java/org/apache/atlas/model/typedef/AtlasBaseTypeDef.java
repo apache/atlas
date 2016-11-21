@@ -21,6 +21,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -72,6 +73,9 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
     public static final String ATLAS_TYPE_ASSET          = "Asset";
     public static final String ATLAS_TYPE_INFRASTRUCTURE = "Infrastructure";
 
+    public static final String TYPEDEF_OPTION_SUPPORTS_SCHEMA  = "supportsSchema";
+    public static final String TYPEDEF_OPTION_SUPPORTS_PROFILE = "supportsProfile";
+
     public static final String[] ATLAS_PRIMITIVE_TYPES = {
         ATLAS_TYPE_BOOLEAN,
         ATLAS_TYPE_BYTE,
@@ -114,8 +118,10 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
     private String  name;
     private String  description;
     private String  typeVersion;
+    private Map<String, String> options;
 
-    protected AtlasBaseTypeDef(TypeCategory category, String name, String description, String typeVersion) {
+    protected AtlasBaseTypeDef(TypeCategory category, String name, String description, String typeVersion,
+                               Map<String, String> options) {
         super();
 
         this.category = category;
@@ -129,6 +135,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         setName(name);
         setDescription(description);
         setTypeVersion(typeVersion);
+        setOptions(options);
     }
 
     protected AtlasBaseTypeDef(AtlasBaseTypeDef other) {
@@ -144,6 +151,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
             setName(other.getName());
             setDescription(other.getDescription());
             setTypeVersion(other.getTypeVersion());
+            setOptions(other.getOptions());
         } else {
             this.category = TypeCategory.PRIMITIVE;
 
@@ -156,6 +164,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
             setName(null);
             setDescription(null);
             setTypeVersion(null);
+            setOptions(null);
         }
     }
 
@@ -234,6 +243,18 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         this.typeVersion = typeVersion;
     }
 
+    public Map<String, String> getOptions() {
+        return options;
+    }
+
+    public void setOptions(Map<String, String> options) {
+        if (options != null) {
+            this.options = new HashMap<>(options);
+        } else {
+            this.options = null;
+        }
+    }
+
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
             sb = new StringBuilder();
@@ -250,6 +271,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", typeVersion='").append(typeVersion).append('\'');
+        sb.append(", options='").append(options).append('\'');
         sb.append('}');
 
         return sb;
@@ -272,6 +294,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         if (name != null ? !name.equals(that.name) : that.name != null) { return false; }
         if (description != null ? !description.equals(that.description) : that.description != null) { return false; }
         if (typeVersion != null ? !typeVersion.equals(that.typeVersion) : that.typeVersion != null) { return false; }
+        if (options != null ? !options.equals(that.options) : that.options != null) { return false; }
 
         return true;
 
@@ -289,6 +312,7 @@ public abstract class AtlasBaseTypeDef implements java.io.Serializable {
         result = 31 * result + (name != null ? name.hashCode() : 0);
         result = 31 * result + (description != null ? description.hashCode() : 0);
         result = 31 * result + (typeVersion != null ? typeVersion.hashCode() : 0);
+        result = 31 * result + (options != null ? options.hashCode() : 0);
         return result;
     }
 

@@ -19,6 +19,7 @@ package org.apache.atlas.model.typedef;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -52,28 +53,33 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
 
 
     public AtlasEntityDef() {
-        this(null, null, null, null, null);
+        this(null, null, null, null, null, null);
     }
 
     public AtlasEntityDef(String name) {
-        this(name, null, null, null, null);
+        this(name, null, null, null, null, null);
     }
 
     public AtlasEntityDef(String name, String description) {
-        this(name, description, null, null, null);
+        this(name, description, null, null, null, null);
     }
 
     public AtlasEntityDef(String name, String description, String typeVersion) {
-        this(name, description, typeVersion, null, null);
+        this(name, description, typeVersion, null, null, null);
     }
 
     public AtlasEntityDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs) {
-        this(name, description, typeVersion, attributeDefs, null);
+        this(name, description, typeVersion, attributeDefs, null, null);
     }
 
     public AtlasEntityDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs,
                           Set<String> superTypes) {
-        super(TypeCategory.ENTITY, name, description, typeVersion, attributeDefs);
+        this(name, description, typeVersion, attributeDefs, superTypes, null);
+    }
+
+    public AtlasEntityDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs,
+                          Set<String> superTypes, Map<String, String> options) {
+        super(TypeCategory.ENTITY, name, description, typeVersion, attributeDefs, options);
 
         setSuperTypes(superTypes);
     }

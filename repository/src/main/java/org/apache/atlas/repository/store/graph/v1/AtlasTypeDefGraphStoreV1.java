@@ -39,6 +39,7 @@ import org.apache.atlas.repository.store.graph.AtlasEntityDefStore;
 import org.apache.atlas.repository.store.graph.AtlasEnumDefStore;
 import org.apache.atlas.repository.store.graph.AtlasStructDefStore;
 import org.apache.atlas.repository.store.graph.AtlasTypeDefGraphStore;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
@@ -49,6 +50,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -199,6 +201,7 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
         ret.setProperty(Constants.TIMESTAMP_PROPERTY_KEY, typeDef.getCreateTime().getTime());
         ret.setProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, typeDef.getUpdateTime().getTime());
         ret.setProperty(Constants.VERSION_PROPERTY_KEY, typeDef.getVersion());
+        ret.setProperty(Constants.TYPEOPTIONS_PROPERTY_KEY, AtlasType.toJson(typeDef.getOptions()));
 
         return ret;
     }
@@ -219,6 +222,7 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
          */
         updateVertexProperty(vertex, Constants.TYPEDESCRIPTION_PROPERTY_KEY, typeDef.getDescription());
         updateVertexProperty(vertex, Constants.TYPEVERSION_PROPERTY_KEY, typeDef.getTypeVersion());
+        updateVertexProperty(vertex, Constants.TYPEOPTIONS_PROPERTY_KEY, AtlasType.toJson(typeDef.getOptions()));
 
         markVertexUpdated(vertex);
     }
@@ -255,6 +259,7 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
         Long   createTime  = vertex.getProperty(Constants.TIMESTAMP_PROPERTY_KEY, Long.class);
         Long   updateTime  = vertex.getProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
         Long   version     = vertex.getProperty(Constants.VERSION_PROPERTY_KEY, Long.class);
+        String options     = vertex.getProperty(Constants.TYPEOPTIONS_PROPERTY_KEY, String.class);
 
         typeDef.setName(name);
         typeDef.setDescription(description);
@@ -271,6 +276,10 @@ public class AtlasTypeDefGraphStoreV1 extends AtlasTypeDefGraphStore {
 
         if (version != null) {
             typeDef.setVersion(version);
+        }
+
+        if (options != null) {
+            typeDef.setOptions(AtlasType.fromJson(options, Map.class));
         }
     }
 

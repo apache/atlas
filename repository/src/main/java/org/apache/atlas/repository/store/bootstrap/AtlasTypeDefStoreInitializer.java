@@ -30,6 +30,7 @@ import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
@@ -150,7 +151,10 @@ public class AtlasTypeDefStoreInitializer {
         // sort the files by filename
         Arrays.sort(typePatchFiles);
 
-        PatchHandler[] patchHandlers = new PatchHandler[] { new AddAttributePatchHandler(typeDefStore, typeRegistry) };
+        PatchHandler[] patchHandlers = new PatchHandler[] {
+                new AddAttributePatchHandler(typeDefStore, typeRegistry),
+                new UpdateTypeDefOptionsPatchHandler(typeDefStore, typeRegistry),
+        };
 
         Map<String, PatchHandler> patchHandlerRegistry = new HashMap<>();
 
@@ -164,6 +168,8 @@ public class AtlasTypeDefStoreInitializer {
             if (!typePatchFile.isFile()) {
                 continue;
             }
+
+            LOG.info("Applying patches in file {}", typePatchFile.getAbsolutePath());
 
             try {
                 String         jsonStr = new String(Files.readAllBytes(typePatchFile.toPath()), StandardCharsets.UTF_8);
@@ -213,6 +219,7 @@ public class AtlasTypeDefStoreInitializer {
         private String                  updateToVersion;
         private Map<String, Object>     params;
         private List<AtlasAttributeDef> attributeDefs;
+        private Map<String, String>     typeDefOptions;
 
         public String getAction() {
             return action;
@@ -260,6 +267,14 @@ public class AtlasTypeDefStoreInitializer {
 
         public void setAttributeDefs(List<AtlasAttributeDef> attributeDefs) {
             this.attributeDefs = attributeDefs;
+        }
+
+        public Map<String, String> getTypeDefOptions() {
+            return typeDefOptions;
+        }
+
+        public void setTypeDefOptions(Map<String, String> typeDefOptions) {
+            this.typeDefOptions = typeDefOptions;
         }
     }
 
@@ -350,6 +365,80 @@ public class AtlasTypeDefStoreInitializer {
                     updatedDef.setTypeVersion(patch.getUpdateToVersion());
 
                     typeDefStore.updateStructDefByName(typeName, updatedDef);
+                } else {
+                    throw new AtlasBaseException(AtlasErrorCode.PATCH_NOT_APPLICABLE_FOR_TYPE,
+                            patch.getAction(), typeDef.getClass().getSimpleName());
+                }
+            } else {
+                LOG.info("patch skipped: typeName={}; applyToVersion={}; updateToVersion={}",
+                        patch.getTypeName(), patch.getApplyToVersion(), patch.getUpdateToVersion());
+            }
+        }
+    }
+
+    class UpdateTypeDefOptionsPatchHandler extends PatchHandler {
+        public UpdateTypeDefOptionsPatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
+            super(typeDefStore, typeRegistry, new String[] { "UPDATE_TYPEDEF_OPTIONS" });
+        }
+
+        @Override
+        public void applyPatch(TypeDefPatch patch) throws AtlasBaseException {
+            String           typeName = patch.getTypeName();
+            AtlasBaseTypeDef typeDef  = typeRegistry.getTypeDefByName(typeName);
+
+            if (typeDef == null) {
+                throw new AtlasBaseException(AtlasErrorCode.PATCH_FOR_UNKNOWN_TYPE, patch.getAction(), typeName);
+            }
+
+            if (MapUtils.isEmpty(patch.getTypeDefOptions())) {
+                throw new AtlasBaseException(AtlasErrorCode.PATCH_INVALID_DATA, patch.getAction(), typeName);
+            }
+
+            if (isPatchApplicable(patch, typeDef)) {
+                if (typeDef.getClass().equals(AtlasEntityDef.class)) {
+                    AtlasEntityDef updatedDef = new AtlasEntityDef((AtlasEntityDef)typeDef);
+
+                    if (updatedDef.getOptions() == null) {
+                        updatedDef.setOptions(patch.getTypeDefOptions());
+                    } else {
+                        updatedDef.getOptions().putAll(patch.getTypeDefOptions());
+                    }
+                    updatedDef.setTypeVersion(patch.getUpdateToVersion());
+
+                    typeDefStore.updateEntityDefByName(typeName, updatedDef);
+                } else if (typeDef.getClass().equals(AtlasClassificationDef.class)) {
+                    AtlasClassificationDef updatedDef = new AtlasClassificationDef((AtlasClassificationDef)typeDef);
+
+                    if (updatedDef.getOptions() == null) {
+                        updatedDef.setOptions(patch.getTypeDefOptions());
+                    } else {
+                        updatedDef.getOptions().putAll(patch.getTypeDefOptions());
+                    }
+                    updatedDef.setTypeVersion(patch.getUpdateToVersion());
+
+                    typeDefStore.updateClassificationDefByName(typeName, updatedDef);
+                } else if (typeDef.getClass().equals(AtlasStructDef.class)) {
+                    AtlasStructDef updatedDef = new AtlasStructDef((AtlasStructDef)typeDef);
+
+                    if (updatedDef.getOptions() == null) {
+                        updatedDef.setOptions(patch.getTypeDefOptions());
+                    } else {
+                        updatedDef.getOptions().putAll(patch.getTypeDefOptions());
+                    }
+                    updatedDef.setTypeVersion(patch.getUpdateToVersion());
+
+                    typeDefStore.updateStructDefByName(typeName, updatedDef);
+                } else if (typeDef.getClass().equals(AtlasEnumDef.class)) {
+                    AtlasEnumDef updatedDef = new AtlasEnumDef((AtlasEnumDef)typeDef);
+
+                    if (updatedDef.getOptions() == null) {
+                        updatedDef.setOptions(patch.getTypeDefOptions());
+                    } else {
+                        updatedDef.getOptions().putAll(patch.getTypeDefOptions());
+                    }
+                    updatedDef.setTypeVersion(patch.getUpdateToVersion());
+
+                    typeDefStore.updateEnumDefByName(typeName, updatedDef);
                 } else {
                     throw new AtlasBaseException(AtlasErrorCode.PATCH_NOT_APPLICABLE_FOR_TYPE,
                                                  patch.getAction(), typeDef.getClass().getSimpleName());

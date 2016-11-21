@@ -1,0 +1,23 @@
+{
+  "patches": [
+    {
+      "action": "UPDATE_TYPEDEF_OPTIONS",
+      "typeName": "hive_column",
+      "applyToVersion": "1.1",
+      "updateToVersion": "1.2",
+      "typeDefOptions": {
+        "supportsProfile": "true"
+      }
+    },
+    {
+      "action": "UPDATE_TYPEDEF_OPTIONS",
+      "typeName": "hive_table",
+      "applyToVersion": "1.0",
+      "updateToVersion": "1.1",
+      "typeDefOptions": {
+        "supportsProfile": "true",
+        "supportsSchema": "true"
+      }
+    }
+  ]
+}

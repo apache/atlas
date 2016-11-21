@@ -62,6 +62,7 @@ public enum AtlasErrorCode {
 
     PATCH_NOT_APPLICABLE_FOR_TYPE(500, "ATLAS5004E", "{0} - invalid patch for type {1}"),
     PATCH_FOR_UNKNOWN_TYPE(500, "ATLAS5005E", "{0} - patch references unknown type {1}"),
+    PATCH_INVALID_DATA(500, "ATLAS5006E", "{0} - patch data is invalid for type {1}"),
     ATTRIBUTE_UNIQUE_INVALID(400, "ATLAS40015E", "Type {0} with unique attribute {1} does not exist"),
     TYPE_NAME_INVALID(400, "ATLAS40016E", "Type {0} with name {1} does not exist"),
     TYPE_CATEGORY_INVALID(400, "ATLAS40017E", "Type Category {0} does not match {1} or is invalid");
