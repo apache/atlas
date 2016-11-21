@@ -51,4 +51,9 @@ public class TestUtils {
         return System.getProperty("projectBaseDir") + String.format("/webapp/target/atlas-webapp-%s",
                 System.getProperty("project.version"));
     }
+
+    public static String getTargetDirectory() {
+        return System.getProperty("projectBaseDir") + "/webapp/target" ;
+    }
+
 }

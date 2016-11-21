@@ -57,6 +57,7 @@ public class SSLAndKerberosTest extends BaseSSLAndKerberosTest {
     private TestSecureEmbeddedServer secureEmbeddedServer;
     private Subject subject;
     private String originalConf;
+    private String originalHomeDir;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -118,6 +119,9 @@ public class SSLAndKerberosTest extends BaseSSLAndKerberosTest {
         originalConf = System.getProperty("atlas.conf");
         System.setProperty("atlas.conf", persistDir);
 
+        originalHomeDir = System.getProperty("atlas.home");
+        System.setProperty("atlas.home", TestUtils.getTargetDirectory());
+
         dgiCLient = proxyUser.doAs(new PrivilegedExceptionAction<AtlasClient>() {
             @Override
             public AtlasClient run() throws Exception {
@@ -147,6 +151,10 @@ public class SSLAndKerberosTest extends BaseSSLAndKerberosTest {
 
         if (originalConf != null) {
             System.setProperty("atlas.conf", originalConf);
+        }
+
+        if(originalHomeDir !=null){
+            System.setProperty("atlas.home", originalHomeDir);
         }
     }
 
