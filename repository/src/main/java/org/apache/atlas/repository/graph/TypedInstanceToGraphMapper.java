@@ -17,21 +17,10 @@
  */
 package org.apache.atlas.repository.graph;
 
-import static org.apache.atlas.repository.graph.GraphHelper.string;
-
-import java.security.MessageDigest;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
+import com.google.inject.Inject;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.aspect.Monitored;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -59,7 +48,18 @@ import org.apache.atlas.utils.MD5Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.inject.Inject;
+import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static org.apache.atlas.repository.graph.GraphHelper.string;
 
 public final class TypedInstanceToGraphMapper {
 
@@ -85,9 +85,9 @@ public final class TypedInstanceToGraphMapper {
         UPDATE_FULL
     }
 
+    @Monitored
     void mapTypedInstanceToGraph(Operation operation, ITypedReferenceableInstance... typedInstances)
             throws AtlasException {
-
         RequestContext requestContext = RequestContext.get();
         for (ITypedReferenceableInstance typedInstance : typedInstances) {
             LOG.debug("Adding/updating entity {}", typedInstance);
@@ -150,6 +150,7 @@ public final class TypedInstanceToGraphMapper {
         return guids;
     }
 
+    @Monitored
     private String addOrUpdateAttributesAndTraits(Operation operation, ITypedReferenceableInstance typedInstance)
             throws AtlasException {
         LOG.debug("Adding/Updating typed instance {}", typedInstance.toShortString());
@@ -235,6 +236,7 @@ public final class TypedInstanceToGraphMapper {
         }
     }
 
+    @Monitored
     private TypeUtils.Pair<List<ITypedReferenceableInstance>, List<ITypedReferenceableInstance>> createVerticesAndDiscoverInstances(
             Collection<IReferenceableInstance> instances) throws AtlasException {
 

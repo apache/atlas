@@ -17,17 +17,9 @@
  */
 package org.apache.atlas.repository.graph;
 
-import static org.apache.atlas.repository.graph.GraphHelper.string;
-
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import com.google.inject.Singleton;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.aspect.Monitored;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
@@ -51,7 +43,15 @@ import org.apache.atlas.typesystem.types.TypeSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.inject.Singleton;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.apache.atlas.repository.graph.GraphHelper.string;
 
 @Singleton
 public final class GraphToTypedInstanceMapper {
@@ -66,6 +66,7 @@ public final class GraphToTypedInstanceMapper {
         this.graph = graph;
     }
 
+    @Monitored
     public ITypedReferenceableInstance mapGraphToTypedInstance(String guid, AtlasVertex instanceVertex)
         throws AtlasException {
 
@@ -95,6 +96,7 @@ public final class GraphToTypedInstanceMapper {
         return typedInstance;
     }
 
+    @Monitored
     private void mapVertexToInstanceTraits(AtlasVertex instanceVertex, ITypedReferenceableInstance typedInstance,
         List<String> traits) throws AtlasException {
         for (String traitName : traits) {
@@ -104,6 +106,7 @@ public final class GraphToTypedInstanceMapper {
         }
     }
 
+    @Monitored
     public void mapVertexToInstance(AtlasVertex instanceVertex, ITypedInstance typedInstance,
         Map<String, AttributeInfo> fields) throws AtlasException {
 

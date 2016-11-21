@@ -18,19 +18,9 @@
 
 package org.apache.atlas.web.resources;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.inject.Singleton;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-
+import com.google.inject.Inject;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.aspect.Monitored;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.service.ServiceState;
@@ -45,7 +35,16 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import com.google.inject.Inject;
+import javax.inject.Singleton;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Jersey Resource for admin operations.
@@ -74,36 +73,27 @@ public class AdminResource {
      *
      * @return json representing the thread stack dump.
      */
+    @Monitored
     @GET
     @Path("stack")
     @Produces(MediaType.TEXT_PLAIN)
     public String getThreadDump() {
-        AtlasPerfTracer perf = null;
+        ThreadGroup topThreadGroup = Thread.currentThread().getThreadGroup();
 
-        try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getThreadDump()");
-            }
-
-            ThreadGroup topThreadGroup = Thread.currentThread().getThreadGroup();
-
-            while (topThreadGroup.getParent() != null) {
-                topThreadGroup = topThreadGroup.getParent();
-            }
-            Thread[] threads = new Thread[topThreadGroup.activeCount()];
-
-            int nr = topThreadGroup.enumerate(threads);
-            StringBuilder builder = new StringBuilder();
-            for (int i = 0; i < nr; i++) {
-                builder.append(threads[i].getName()).append("\nState: ").
-                        append(threads[i].getState()).append("\n");
-                String stackTrace = StringUtils.join(threads[i].getStackTrace(), "\n");
-                builder.append(stackTrace);
-            }
-            return builder.toString();
-        } finally {
-            AtlasPerfTracer.log(perf);
+        while (topThreadGroup.getParent() != null) {
+            topThreadGroup = topThreadGroup.getParent();
         }
+        Thread[] threads = new Thread[topThreadGroup.activeCount()];
+
+        int nr = topThreadGroup.enumerate(threads);
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < nr; i++) {
+            builder.append(threads[i].getName()).append("\nState: ").
+                    append(threads[i].getState()).append("\n");
+            String stackTrace = StringUtils.join(threads[i].getStackTrace(), "\n");
+            builder.append(stackTrace);
+        }
+        return builder.toString();
     }
 
     /**
@@ -111,77 +101,55 @@ public class AdminResource {
      *
      * @return json representing the version.
      */
+    @Monitored
     @GET
     @Path("version")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getVersion() {
-        AtlasPerfTracer perf = null;
+        if (version == null) {
+            try {
+                PropertiesConfiguration configProperties = new PropertiesConfiguration("atlas-buildinfo.properties");
 
-        try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getVersion()");
+                JSONObject response = new JSONObject();
+                response.put("Version", configProperties.getString("build.version", "UNKNOWN"));
+                response.put("Name", configProperties.getString("project.name", "apache-atlas"));
+                response.put("Description", configProperties.getString("project.description",
+                        "Metadata Management and Data Governance Platform over Hadoop"));
+
+                // todo: add hadoop version?
+                // response.put("Hadoop", VersionInfo.getVersion() + "-r" + VersionInfo.getRevision());
+                version = Response.ok(response).build();
+            } catch (JSONException | ConfigurationException e) {
+                throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
             }
-
-            if (version == null) {
-                try {
-                    PropertiesConfiguration configProperties = new PropertiesConfiguration("atlas-buildinfo.properties");
-
-                    JSONObject response = new JSONObject();
-                    response.put("Version", configProperties.getString("build.version", "UNKNOWN"));
-                    response.put("Name", configProperties.getString("project.name", "apache-atlas"));
-                    response.put("Description", configProperties.getString("project.description",
-                            "Metadata Management and Data Governance Platform over Hadoop"));
-
-                    // todo: add hadoop version?
-                    // response.put("Hadoop", VersionInfo.getVersion() + "-r" + VersionInfo.getRevision());
-                    version = Response.ok(response).build();
-                } catch (JSONException | ConfigurationException e) {
-                    throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
-                }
-            }
-
-            return version;
-        } finally {
-            AtlasPerfTracer.log(perf);
         }
+
+        return version;
     }
 
+    @Monitored
     @GET
     @Path("status")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getStatus() {
-        AtlasPerfTracer perf = null;
-
+        JSONObject responseData = new JSONObject();
         try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getStatus()");
-            }
-
-            JSONObject responseData = new JSONObject();
-            try {
-                responseData.put(AtlasClient.STATUS, serviceState.getState().toString());
-                Response response = Response.ok(responseData).build();
-                return response;
-            } catch (JSONException e) {
-                throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
-            }
-        } finally {
-            AtlasPerfTracer.log(perf);
+            responseData.put(AtlasClient.STATUS, serviceState.getState().toString());
+            Response response = Response.ok(responseData).build();
+            return response;
+        } catch (JSONException e) {
+            throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
-    
+
+    @Monitored
     @GET
     @Path("session")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public Response getUserProfile() {
         JSONObject responseData = new JSONObject();
         Boolean enableTaxonomy = null;
-        AtlasPerfTracer perf = null;
         try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getUserProfile()");
-            }
-
             PropertiesConfiguration configProperties = new PropertiesConfiguration("atlas-application.properties");
             enableTaxonomy = new Boolean(configProperties.getString(isTaxonomyEnabled, "false"));
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -208,8 +176,6 @@ public class AdminResource {
             return response;
         } catch (JSONException | ConfigurationException e) {
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
-        } finally {
-            AtlasPerfTracer.log(perf);
         }
     }
 }

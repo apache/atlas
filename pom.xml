@@ -491,9 +491,23 @@
         <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
 	    <graphdb.backend.impl>org.apache.atlas.repository.graphdb.titan0.Titan0GraphDatabase</graphdb.backend.impl>
         <atlas.surefire.options></atlas.surefire.options>
+
+        <aspectj.runtime.version>1.8.7</aspectj.runtime.version>
+        <aspectj.skip>true</aspectj.skip>
     </properties>
 
     <profiles>
+        <!-- Turn on this profile to instrument atlas server to collect performance metrics -->
+        <profile>
+            <id>perf</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <aspectj.skip>false</aspectj.skip>
+            </properties>
+        </profile>
+
         <!-- Turning on this profile affects only tests and does not affect packaging -->
         <profile>
             <id>distributed</id>
@@ -618,6 +632,18 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- AOP dependencies. -->
+            <dependency>
+                <groupId>org.aspectj</groupId>
+                <artifactId>aspectjrt</artifactId>
+                <version>${aspectj.runtime.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.aspectj</groupId>
+                <artifactId>aspectjtools</artifactId>
+                <version>${aspectj.runtime.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-jsp</artifactId>
@@ -1631,6 +1657,12 @@
                         <excludeGroupIds>org.restlet.jee</excludeGroupIds>                       
                     </configuration>
                 </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>aspectj-maven-plugin</artifactId>
+                    <version>1.8</version>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -1783,7 +1815,7 @@
                     <excludeSubProjects>true</excludeSubProjects>
                     <excludes>
                         <exclude>**/dependency-reduced-pom.xml</exclude>
-			<exclude>**/javax.script.ScriptEngineFactory</exclude>
+			            <exclude>**/javax.script.ScriptEngineFactory</exclude>
                         <exclude>.reviewboardrc</exclude>
                         <exclude>3party-licenses/**</exclude>
                         <exclude>**/.cache</exclude>

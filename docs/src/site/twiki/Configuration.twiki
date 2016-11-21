@@ -284,3 +284,16 @@ atlas.webserver.keepalivetimesecs=60
 # Queue size for the requests(when max threads are busy) for the atlas web server
 atlas.webserver.queuesize=100
 </verbatim>
+
+---+++ Recording performance metrics
+
+Atlas package should be built with '-P perf' to instrument atlas code to collect metrics. The metrics will be recorded in
+<atlas.log.dir>/metric.log, with one log line per API call. The metrics contain the number of times the instrumented methods
+are called and the total time spent in the instrumented method. Logging to metric.log is controlled through log4j configuration
+in atlas-log4j.xml. When the atlas code is instrumented, to disable logging to metric.log at runtime, set log level of METRICS logger to info level:
+<verbatim>
+<logger name="METRICS" additivity="false">
+    <level value="info"/>
+    <appender-ref ref="METRICS"/>
+</logger>
+</verbatim>

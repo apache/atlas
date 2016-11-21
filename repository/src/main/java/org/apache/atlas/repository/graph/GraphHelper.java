@@ -18,20 +18,13 @@
 
 package org.apache.atlas.repository.graph;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.Stack;
-import java.util.UUID;
-import java.util.Date;
-
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.aspect.Monitored;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
@@ -65,9 +58,15 @@ import org.codehaus.jettison.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import java.util.Stack;
+import java.util.UUID;
 
 /**
  * Utility class for graph operations.
@@ -138,6 +137,7 @@ public final class GraphHelper {
         return vertexWithIdentity;
     }
 
+    @Monitored
     public AtlasVertex createVertexWithoutIdentity(String typeName, Id typedInstanceId, Set<String> superTypeNames) {
         LOG.debug("Creating AtlasVertex for type {} id {}", typeName,
                 typedInstanceId != null ? typedInstanceId._getId() : null);
@@ -165,6 +165,7 @@ public final class GraphHelper {
         return vertexWithoutIdentity;
     }
 
+    @Monitored
     private AtlasEdge addEdge(AtlasVertex fromVertex, AtlasVertex toVertex, String edgeLabel) {
         LOG.debug("Adding edge for {} -> label {} -> {}", string(fromVertex), edgeLabel, string(toVertex));
         AtlasEdge edge = graph.addEdge(fromVertex, toVertex, edgeLabel);
@@ -216,7 +217,7 @@ public final class GraphHelper {
         return null;
     }
 
-
+    @Monitored
     public AtlasEdge getEdgeByEdgeId(AtlasVertex outVertex, String edgeLabel, String edgeId) {
         if (edgeId == null) {
             return null;
@@ -242,6 +243,7 @@ public final class GraphHelper {
      * @return AtlasVertex with the given property keys
      * @throws EntityNotFoundException
      */
+    @Monitored
     public AtlasVertex findVertex(Object... args) throws EntityNotFoundException {
         StringBuilder condition = new StringBuilder();
         AtlasGraphQuery query = graph.query();
@@ -268,6 +270,7 @@ public final class GraphHelper {
 
     //In some cases of parallel APIs, the edge is added, but get edge by label doesn't return the edge. ATLAS-1104
     //So traversing all the edges
+    @Monitored
     public Iterator<AtlasEdge> getAdjacentEdgesByLabel(AtlasVertex instanceVertex, AtlasEdgeDirection direction, final String edgeLabel) {
         LOG.debug("Finding edges for {} with label {}", string(instanceVertex), edgeLabel);
         if(instanceVertex != null && edgeLabel != null) {
@@ -316,6 +319,7 @@ public final class GraphHelper {
      * @param edgeLabel
      * @return
      */
+    @Monitored
     public AtlasEdge getEdgeForLabel(AtlasVertex vertex, String edgeLabel) {
         Iterator<AtlasEdge> iterator = getAdjacentEdgesByLabel(vertex, AtlasEdgeDirection.OUT, edgeLabel);
         AtlasEdge latestDeletedEdge = null;
@@ -340,6 +344,7 @@ public final class GraphHelper {
         return latestDeletedEdge;
     }
 
+    @Monitored
     public static String vertexString(final AtlasVertex vertex) {
         StringBuilder properties = new StringBuilder();
         for (String propertyKey : vertex.getPropertyKeys()) {
@@ -350,11 +355,13 @@ public final class GraphHelper {
         return "v[" + vertex.getIdForDisplay() + "], Properties[" + properties + "]";
     }
 
+    @Monitored
     public static String edgeString(final AtlasEdge edge) {
         return "e[" + edge.getLabel() + "], [" + edge.getOutVertex() + " -> " + edge.getLabel() + " -> "
                 + edge.getInVertex() + "]";
     }
 
+    @Monitored
     public static <T extends AtlasElement> void setProperty(T element, String propertyName, Object value) {
         String elementStr = string(element);
         String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
@@ -383,6 +390,7 @@ public final class GraphHelper {
      * @param clazz
      * @return
      */
+    @Monitored
     public static <T> T getSingleValuedProperty(AtlasElement element, String propertyName, Class<T> clazz) {
         String elementStr = string(element);
         String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
@@ -390,8 +398,9 @@ public final class GraphHelper {
        
         return (T)element.getProperty(actualPropertyName, clazz);              
     }
-    
-    
+
+
+    @Monitored
     public static Object getProperty(AtlasVertex<?,?> vertex, String propertyName) {
         String elementStr = string(vertex);
         String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
@@ -403,9 +412,9 @@ public final class GraphHelper {
         else {
             return vertex.getProperty(actualPropertyName, Object.class);
         }
-        
     }
-    
+
+    @Monitored
     public static Object getProperty(AtlasEdge<?,?> edge, String propertyName) {
         String elementStr = string(edge);
         String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
@@ -429,6 +438,7 @@ public final class GraphHelper {
      * @param propertyName
      * @param value
      */
+    @Monitored
     public static void addProperty(AtlasVertex vertex, String propertyName, Object value) {
         String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
         LOG.debug("Adding property {} = \"{}\" to vertex {}", actualPropertyName, value, string(vertex));
@@ -440,6 +450,7 @@ public final class GraphHelper {
      *
      * @param edge
      */
+    @Monitored
     public void removeEdge(AtlasEdge edge) {
         String edgeString = string(edge);
         LOG.debug("Removing {}", edgeString);
@@ -450,8 +461,9 @@ public final class GraphHelper {
     /**
      * Remove the specified AtlasVertex from the graph.
      *
-     * @param AtlasVertex
+     * @param vertex
      */
+    @Monitored
     public void removeVertex(AtlasVertex vertex) {
         String vertexString = string(vertex);
         LOG.debug("Removing {}", vertexString);
@@ -746,6 +758,7 @@ public final class GraphHelper {
 
     }
 
+    @Monitored
     public static void setArrayElementsProperty(IDataType elementType, AtlasVertex instanceVertex, String propertyName, List<Object> values) {
         String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
         if(GraphHelper.isReference(elementType)) {
@@ -756,6 +769,7 @@ public final class GraphHelper {
         }
     }
 
+    @Monitored
     public static void setMapValueProperty(IDataType elementType, AtlasVertex instanceVertex, String propertyName, Object value) {
         String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
         if(GraphHelper.isReference(elementType)) {
@@ -766,6 +780,7 @@ public final class GraphHelper {
         }
     }
 
+    @Monitored
     public static Object getMapValueProperty(IDataType elementType, AtlasVertex instanceVertex, String propertyName) {
         String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
         if(GraphHelper.isReference(elementType)) {
@@ -776,6 +791,7 @@ public final class GraphHelper {
         }
     }
 
+    @Monitored
     public static List<Object> getArrayElementsProperty(IDataType elementType, AtlasVertex instanceVertex, String propertyName) {
         String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
         if(GraphHelper.isReference(elementType)) {
@@ -918,7 +934,4 @@ public final class GraphHelper {
         String actualPropertyName = GraphHelper.encodePropertyKey(propertyName);
         return instanceVertex.getListProperty(actualPropertyName);    
     }
-    
-
-
 }

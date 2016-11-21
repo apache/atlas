@@ -19,6 +19,7 @@
 package org.apache.atlas.web.resources;
 
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.aspect.Monitored;
 import org.apache.atlas.discovery.DiscoveryException;
 import org.apache.atlas.discovery.LineageService;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
@@ -68,6 +69,7 @@ public class DataSetLineageResource {
      *
      * @param tableName table name
      */
+    @Monitored
     @GET
     @Path("table/{tableName}/inputs/graph")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
@@ -75,12 +77,7 @@ public class DataSetLineageResource {
     public Response inputsGraph(@Context HttpServletRequest request, @PathParam("tableName") String tableName) {
         LOG.info("Fetching lineage inputs graph for tableName={}", tableName);
 
-        AtlasPerfTracer perf = null;
         try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DataSetLineageResource.inputsGraph(" + tableName + ")");
-            }
-
             final String jsonResult = lineageService.getInputsGraph(tableName);
 
             JSONObject response = new JSONObject();
@@ -98,8 +95,6 @@ public class DataSetLineageResource {
         } catch (Throwable e) {
             LOG.error("Unable to get lineage inputs graph for table {}", tableName, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
-        } finally {
-            AtlasPerfTracer.log(perf);
         }
     }
 
@@ -108,6 +103,7 @@ public class DataSetLineageResource {
      *
      * @param tableName table name
      */
+    @Monitored
     @GET
     @Path("table/{tableName}/outputs/graph")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
@@ -115,12 +111,7 @@ public class DataSetLineageResource {
     public Response outputsGraph(@Context HttpServletRequest request, @PathParam("tableName") String tableName) {
         LOG.info("Fetching lineage outputs graph for tableName={}", tableName);
 
-        AtlasPerfTracer perf = null;
         try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DataSetLineageResource.outputsGraph(" + tableName + ")");
-            }
-
             final String jsonResult = lineageService.getOutputsGraph(tableName);
 
             JSONObject response = new JSONObject();
@@ -138,8 +129,6 @@ public class DataSetLineageResource {
         } catch (Throwable e) {
             LOG.error("Unable to get lineage outputs graph for table {}", tableName, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
-        } finally {
-            AtlasPerfTracer.log(perf);
         }
     }
 
@@ -148,6 +137,7 @@ public class DataSetLineageResource {
      *
      * @param tableName table name
      */
+    @Monitored
     @GET
     @Path("table/{tableName}/schema")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
@@ -155,12 +145,7 @@ public class DataSetLineageResource {
     public Response schema(@Context HttpServletRequest request, @PathParam("tableName") String tableName) {
         LOG.info("Fetching schema for tableName={}", tableName);
 
-        AtlasPerfTracer perf = null;
         try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DataSetLineageResource.schema(" + tableName + ")");
-            }
-
             final String jsonResult = lineageService.getSchema(tableName);
 
             JSONObject response = new JSONObject();
@@ -178,8 +163,6 @@ public class DataSetLineageResource {
         } catch (Throwable e) {
             LOG.error("Unable to get schema for table {}", tableName, e);
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
-        } finally {
-            AtlasPerfTracer.log(perf);
         }
     }
 }

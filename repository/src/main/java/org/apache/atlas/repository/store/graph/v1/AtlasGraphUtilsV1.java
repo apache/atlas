@@ -142,7 +142,7 @@ public class AtlasGraphUtilsV1 {
         return returnType.cast(property);
     }
 
-    private static <T extends AtlasElement> String toString(T element) {
+    private static String toString(AtlasElement element) {
         if (element instanceof AtlasVertex) {
             return toString((AtlasVertex) element);
         } else if (element instanceof AtlasEdge) {

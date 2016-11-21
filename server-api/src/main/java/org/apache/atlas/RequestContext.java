@@ -18,6 +18,7 @@
 
 package org.apache.atlas;
 
+import org.apache.atlas.metrics.Metrics;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
 import org.apache.atlas.typesystem.persistence.Id;
 import org.apache.atlas.typesystem.types.ClassType;
@@ -45,6 +46,7 @@ public class RequestContext {
     private long requestTime;
 
     TypeSystem typeSystem = TypeSystem.getInstance();
+    private Metrics metrics = new Metrics();
 
     private RequestContext() {
     }
@@ -123,5 +125,9 @@ public class RequestContext {
     
     public boolean isDeletedEntity(String entityGuid) {
         return deletedEntityIds.contains(entityGuid);
+    }
+
+    public static Metrics getMetrics() {
+        return get().metrics;
     }
 }

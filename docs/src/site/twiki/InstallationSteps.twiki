@@ -18,6 +18,10 @@ mvn clean package -Pdist
 
 </verbatim>
 
+NOTE:
+1. Use option '-DskipTests' to skip running unit and integration tests
+2. Use option '-P perf' to instrument atlas to collect performance metrics
+
 To build a distribution that configures Atlas for external HBase and Solr, build with the external-hbase-solr profile.
 
 <verbatim>
