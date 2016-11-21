@@ -108,7 +108,8 @@ public class AtlasClient extends AtlasBaseClient {
     public static final String PROCESS_ATTRIBUTE_OUTPUTS = "outputs";
 
     public static final String REFERENCEABLE_SUPER_TYPE = "Referenceable";
-    public static final String REFERENCEABLE_ATTRIBUTE_NAME = "qualifiedName";
+    public static final String QUALIFIED_NAME = "qualifiedName";
+    public static final String REFERENCEABLE_ATTRIBUTE_NAME = QUALIFIED_NAME;
 
     public static final String UNKNOWN_STATUS = "Unknown status";
 
@@ -593,7 +594,7 @@ public class AtlasClient extends AtlasBaseClient {
         JSONObject response = callAPIWithRetries(api, entityJson, new ResourceCreator() {
             @Override
             public WebResource createResource() {
-                WebResource resource = getResource(api, "qualifiedName");
+                WebResource resource = getResource(api, QUALIFIED_NAME);
                 resource = resource.queryParam(TYPE, entityType);
                 resource = resource.queryParam(ATTRIBUTE_NAME, uniqueAttributeName);
                 resource = resource.queryParam(ATTRIBUTE_VALUE, uniqueAttributeValue);

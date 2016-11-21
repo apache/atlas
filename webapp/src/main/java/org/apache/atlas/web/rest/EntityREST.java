@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.web.rest;
 
-import com.google.inject.Inject;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
@@ -42,17 +41,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
 import java.util.List;
@@ -69,14 +60,19 @@ public class EntityREST {
 
     private static final Logger LOG = LoggerFactory.getLogger(EntityREST.class);
 
-    @Inject
-    AtlasTypeRegistry typeRegistry;
+    private final AtlasTypeRegistry typeRegistry;
+
+    private final AtlasInstanceRestAdapters restAdapters;
+
+    private final MetadataService metadataService;
 
     @Inject
-    AtlasInstanceRestAdapters restAdapters;
+    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasInstanceRestAdapters restAdapters, MetadataService metadataService) {
+        this.typeRegistry = typeRegistry;
+        this.restAdapters = restAdapters;
+        this.metadataService = metadataService;
+    }
 
-    @Inject
-    private MetadataService metadataService;
     /**
      * Create or Update an entity if it  already exists
      *
@@ -323,6 +319,8 @@ public class EntityREST {
             final ITypedStruct trait = restAdapters.getTrait(classification);
             try {
                 metadataService.addTrait(guid, trait);
+            } catch (IllegalArgumentException e) {
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, e);
             } catch (AtlasException e) {
                 throw toAtlasBaseException(e);
             }

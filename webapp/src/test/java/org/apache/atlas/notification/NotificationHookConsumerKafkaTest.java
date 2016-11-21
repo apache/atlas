@@ -39,6 +39,9 @@ import static org.mockito.Mockito.verify;
 @Guice(modules = NotificationModule.class)
 public class NotificationHookConsumerKafkaTest {
 
+    public static final String NAME = "name";
+    public static final String DESCRIPTION = "description";
+    public static final String QUALIFIED_NAME = "qualifiedName";
     @Inject
     private NotificationInterface notificationInterface;
 
@@ -128,9 +131,9 @@ public class NotificationHookConsumerKafkaTest {
 
     Referenceable createEntity() {
         final Referenceable entity = new Referenceable(AtlasClient.DATA_SET_SUPER_TYPE);
-        entity.set("name", "db" + randomString());
-        entity.set("description", randomString());
-        entity.set("qualifiedName", randomString());
+        entity.set(NAME, "db" + randomString());
+        entity.set(DESCRIPTION, randomString());
+        entity.set(QUALIFIED_NAME, randomString());
         return entity;
     }
 

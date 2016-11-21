@@ -65,8 +65,8 @@ public class EntityNotificationIT extends BaseResourceIT {
     @BeforeClass
     public void setUp() throws Exception {
         super.setUp();
-        createTypeDefinitions();
-        Referenceable HiveDBInstance = createHiveDBInstance(DATABASE_NAME);
+        createTypeDefinitionsV1();
+        Referenceable HiveDBInstance = createHiveDBInstanceV1(DATABASE_NAME);
         dbId = createInstance(HiveDBInstance);
 
         List<NotificationConsumer<EntityNotification>> consumers =
@@ -77,7 +77,7 @@ public class EntityNotificationIT extends BaseResourceIT {
 
     @Test
     public void testCreateEntity() throws Exception {
-        Referenceable tableInstance = createHiveTableInstance(DATABASE_NAME, TABLE_NAME, dbId);
+        Referenceable tableInstance = createHiveTableInstanceV1(DATABASE_NAME, TABLE_NAME, dbId);
         tableId = createInstance(tableInstance);
 
         final String guid = tableId._getId();
@@ -93,7 +93,7 @@ public class EntityNotificationIT extends BaseResourceIT {
 
         final String guid = tableId._getId();
 
-        serviceClient.updateEntityAttribute(guid, property, newValue);
+        atlasClientV1.updateEntityAttribute(guid, property, newValue);
 
         waitForNotification(notificationConsumer, MAX_WAIT_TIME,
                 newNotificationPredicate(EntityNotification.OperationType.ENTITY_UPDATE, HIVE_TABLE_TYPE, guid));
@@ -103,10 +103,10 @@ public class EntityNotificationIT extends BaseResourceIT {
     public void testDeleteEntity() throws Exception {
         final String tableName = "table-" + randomString();
         final String dbName = "db-" + randomString();
-        Referenceable HiveDBInstance = createHiveDBInstance(dbName);
+        Referenceable HiveDBInstance = createHiveDBInstanceV1(dbName);
         Id dbId = createInstance(HiveDBInstance);
 
-        Referenceable tableInstance = createHiveTableInstance(dbName, tableName, dbId);
+        Referenceable tableInstance = createHiveTableInstanceV1(dbName, tableName, dbId);
         final Id tableId = createInstance(tableInstance);
         final String guid = tableId._getId();
 
@@ -115,7 +115,7 @@ public class EntityNotificationIT extends BaseResourceIT {
 
         final String name = (String) tableInstance.get(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME);
 
-        serviceClient.deleteEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
+        atlasClientV1.deleteEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
 
         waitForNotification(notificationConsumer, MAX_WAIT_TIME,
             newNotificationPredicate(EntityNotification.OperationType.ENTITY_DELETE, HIVE_TABLE_TYPE, guid));
@@ -138,7 +138,7 @@ public class EntityNotificationIT extends BaseResourceIT {
 
         final String guid = tableId._getId();
 
-        serviceClient.addTrait(guid, traitInstance);
+        atlasClientV1.addTrait(guid, traitInstance);
 
         EntityNotification entityNotification = waitForNotification(notificationConsumer, MAX_WAIT_TIME,
                 newNotificationPredicate(EntityNotification.OperationType.TRAIT_ADD, HIVE_TABLE_TYPE, guid));
@@ -163,7 +163,7 @@ public class EntityNotificationIT extends BaseResourceIT {
         traitInstanceJSON = InstanceSerialization.toJson(traitInstance, true);
         LOG.debug("Trait instance = " + traitInstanceJSON);
 
-        serviceClient.addTrait(guid, traitInstance);
+        atlasClientV1.addTrait(guid, traitInstance);
 
         entityNotification = waitForNotification(notificationConsumer, MAX_WAIT_TIME,
                 newNotificationPredicate(EntityNotification.OperationType.TRAIT_ADD, HIVE_TABLE_TYPE, guid));
@@ -184,7 +184,7 @@ public class EntityNotificationIT extends BaseResourceIT {
     public void testDeleteTrait() throws Exception {
         final String guid = tableId._getId();
 
-        serviceClient.deleteTrait(guid, traitName);
+        atlasClientV1.deleteTrait(guid, traitName);
 
         EntityNotification entityNotification = waitForNotification(notificationConsumer, MAX_WAIT_TIME,
                 newNotificationPredicate(EntityNotification.OperationType.TRAIT_DELETE, HIVE_TABLE_TYPE, guid));

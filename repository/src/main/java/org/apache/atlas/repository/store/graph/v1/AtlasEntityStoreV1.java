@@ -117,6 +117,7 @@ public class AtlasEntityStoreV1 implements AtlasEntityStore {
 
     @Override
     public AtlasEntity.AtlasEntities searchEntities(final SearchFilter searchFilter) throws AtlasBaseException {
+        // TODO: Add checks here to ensure that typename and supertype are mandatory in the requests
         return null;
     }
 }

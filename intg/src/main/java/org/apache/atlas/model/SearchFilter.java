@@ -103,6 +103,15 @@ public class SearchFilter {
         }
     }
 
+    public void setParam(String name, List<String> values) {
+        if (name != null) {
+            if (params == null) {
+                params = new MultivaluedMapImpl();
+            }
+            params.put(name, values);
+        }
+    }
+
     public long getStartIndex() {
         return startIndex;
     }

@@ -60,19 +60,19 @@ public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceI
     public void setUp() throws Exception {
         super.setUp();
 
-        createTypeDefinitions();
+        createTypeDefinitionsV1();
         setupInstances();
     }
 
     @Test
     public void testInputLineageInfo() throws Exception {
-        String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE,
+        String tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE,
                 AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesMonthlyTable).getId()._getId();
 
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add(DIRECTION_PARAM, INPUT_DIRECTION);
         queryParams.add(DEPTH_PARAM, "5");
-        JSONObject response = serviceClient.callAPI(LINEAGE_V2_API, JSONObject.class, queryParams, tableId);
+        JSONObject response = atlasClientV1.callAPI(LINEAGE_V2_API, JSONObject.class, queryParams, tableId);
         Assert.assertNotNull(response);
         System.out.println("input lineage info = " + response
         );
@@ -94,13 +94,13 @@ public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceI
 
     @Test
     public void testOutputLineageInfo() throws Exception {
-        String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE,
+        String tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE,
                 AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
 
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add(DIRECTION_PARAM, OUTPUT_DIRECTION);
         queryParams.add(DEPTH_PARAM, "5");
-        JSONObject response = serviceClient.callAPI(LINEAGE_V2_API, JSONObject.class, queryParams, tableId);
+        JSONObject response = atlasClientV1.callAPI(LINEAGE_V2_API, JSONObject.class, queryParams, tableId);
 
         Assert.assertNotNull(response);
         System.out.println("output lineage info = " + response);
@@ -122,13 +122,13 @@ public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceI
 
     @Test
     public void testLineageInfo() throws Exception {
-        String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE,
+        String tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE,
                 AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesMonthlyTable).getId()._getId();
 
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add(DIRECTION_PARAM, BOTH_DIRECTION);
         queryParams.add(DEPTH_PARAM, "5");
-        JSONObject response = serviceClient.callAPI(LINEAGE_V2_API, JSONObject.class, queryParams, tableId);
+        JSONObject response = atlasClientV1.callAPI(LINEAGE_V2_API, JSONObject.class, queryParams, tableId);
 
         Assert.assertNotNull(response);
         System.out.println("both lineage info = " + response);

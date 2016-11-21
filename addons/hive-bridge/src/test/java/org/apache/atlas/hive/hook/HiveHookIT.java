@@ -1337,7 +1337,7 @@ public class HiveHookIT extends HiveITBase {
          * query = "alter table " + tableName + " STORED AS " + testFormat.toUpperCase();
          * runCommand(query);
 
-         * tableRef = atlasClient.getEntity(tableId);
+         * tableRef = atlasClientV1.getEntity(tableId);
          * sdRef = (Referenceable)tableRef.get(HiveMetaStoreBridge.STORAGE_DESC);
          * Assert.assertEquals(sdRef.get(HiveMetaStoreBridge.STORAGE_DESC_INPUT_FMT), "org.apache.hadoop.hive.ql.io.orc.OrcInputFormat");
          * Assert.assertEquals(sdRef.get(HiveMetaStoreBridge.STORAGE_DESC_OUTPUT_FMT), "org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat");

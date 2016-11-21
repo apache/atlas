@@ -37,9 +37,18 @@ import javax.ws.rs.core.Response;
 public class AtlasTypedefClientV2 extends AtlasBaseClient {
 
     private static final String BASE_URI = "api/atlas/v2/types/";
+    private static final String ENUMDEF_URI = BASE_URI + "enumdef/";
+    private static final String STRUCTDEF_URI = BASE_URI + "structdef/";
+    private static final String ENTITYDEF_URI = BASE_URI + "entitydef/";
+    private static final String CLASSIFICATIONDEF_URI = BASE_URI + "classificationdef/";
     private static final String TYPEDEFS_PATH = BASE_URI + "typedefs/";
     private static final String GET_BY_NAME_TEMPLATE = BASE_URI + "%s/name/%s";
     private static final String GET_BY_GUID_TEMPLATE = BASE_URI + "%s/guid/%s";
+
+    private static final APIInfo CREATE_ENUM_DEF = new APIInfo(ENUMDEF_URI, HttpMethod.POST, Response.Status.OK);
+    private static final APIInfo CREATE_STRUCT_DEF = new APIInfo(STRUCTDEF_URI, HttpMethod.POST, Response.Status.OK);
+    private static final APIInfo CREATE_ENTITY_DEF = new APIInfo(ENTITYDEF_URI, HttpMethod.POST, Response.Status.OK);
+    private static final APIInfo CREATE_CLASSIFICATION_DEF = new APIInfo(CLASSIFICATIONDEF_URI, HttpMethod.POST, Response.Status.OK);
 
     private static final APIInfo GET_ALL_TYPE_DEFS = new APIInfo(TYPEDEFS_PATH, HttpMethod.GET, Response.Status.OK);
     private static final APIInfo CREATE_ALL_TYPE_DEFS = new APIInfo(TYPEDEFS_PATH, HttpMethod.POST, Response.Status.OK);
@@ -107,6 +116,24 @@ public class AtlasTypedefClientV2 extends AtlasBaseClient {
     public AtlasEntityDef getEntityByGuid(final String guid) throws AtlasServiceException {
         return getTypeDefByGuid(guid, AtlasEntityDef.class);
     }
+
+    public AtlasEnumDef createEnumDef(AtlasEnumDef enumDef) throws AtlasServiceException {
+        return callAPI(CREATE_ENUM_DEF, AtlasType.toJson(enumDef), AtlasEnumDef.class);
+    }
+
+    public AtlasStructDef createStructDef(AtlasStructDef structDef) throws AtlasServiceException {
+        return callAPI(CREATE_STRUCT_DEF, AtlasType.toJson(structDef), AtlasStructDef.class);
+    }
+
+    public AtlasEntityDef createEntityDef(AtlasEntityDef entityDef) throws AtlasServiceException {
+        return callAPI(CREATE_ENTITY_DEF, AtlasType.toJson(entityDef), AtlasEntityDef.class);
+    }
+
+    public AtlasClassificationDef createClassificationDef(AtlasClassificationDef classificationDef)
+            throws AtlasServiceException {
+        return callAPI(CREATE_CLASSIFICATION_DEF, AtlasType.toJson(classificationDef), AtlasClassificationDef.class);
+    }
+
 
     /**
      * Bulk create APIs for all atlas type definitions, only new definitions will be created.

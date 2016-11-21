@@ -53,13 +53,13 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
     public void setUp() throws Exception {
         super.setUp();
 
-        createTypeDefinitions();
+        createTypeDefinitionsV1();
         setupInstances();
     }
 
     @Test
     public void testInputsGraph() throws Exception {
-        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.NAME_LINEAGE_INPUTS_GRAPH, null, salesMonthlyTable, "inputs", "graph");
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.NAME_LINEAGE_INPUTS_GRAPH, null, salesMonthlyTable, "inputs", "graph");
         Assert.assertNotNull(response);
         System.out.println("inputs graph = " + response);
 
@@ -78,9 +78,9 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testInputsGraphForEntity() throws Exception {
-        String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+        String tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 salesMonthlyTable).getId()._getId();
-        JSONObject results = serviceClient.getInputGraphForEntity(tableId);
+        JSONObject results = atlasClientV1.getInputGraphForEntity(tableId);
         Assert.assertNotNull(results);
 
         Struct resultsInstance = InstanceSerialization.fromJsonStruct(results.toString(), true);
@@ -95,7 +95,7 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testOutputsGraph() throws Exception {
-        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.NAME_LINEAGE_OUTPUTS_GRAPH, null, salesFactTable, "outputs", "graph");
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.NAME_LINEAGE_OUTPUTS_GRAPH, null, salesFactTable, "outputs", "graph");
         Assert.assertNotNull(response);
         System.out.println("outputs graph= " + response);
 
@@ -114,9 +114,9 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testOutputsGraphForEntity() throws Exception {
-        String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+        String tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 salesFactTable).getId()._getId();
-        JSONObject results = serviceClient.getOutputGraphForEntity(tableId);
+        JSONObject results = atlasClientV1.getOutputGraphForEntity(tableId);
         Assert.assertNotNull(results);
 
         Struct resultsInstance = InstanceSerialization.fromJsonStruct(results.toString(), true);
@@ -131,7 +131,7 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testSchema() throws Exception {
-        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.NAME_LINEAGE_SCHEMA, null, salesFactTable, "schema");
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.NAME_LINEAGE_SCHEMA, null, salesFactTable, "schema");
 
         Assert.assertNotNull(response);
         System.out.println("schema = " + response);
@@ -156,8 +156,8 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testSchemaForEntity() throws Exception {
-        String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
-        JSONObject results = serviceClient.getSchemaForEntity(tableId);
+        String tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
+        JSONObject results = atlasClientV1.getSchemaForEntity(tableId);
         Assert.assertNotNull(results);
 
         JSONArray rows = results.getJSONArray("rows");
@@ -175,12 +175,12 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testSchemaForInvalidTable() throws Exception {
-        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.NAME_LINEAGE_SCHEMA, null, "blah", "schema");
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.NAME_LINEAGE_SCHEMA, null, "blah", "schema");
     }
 
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testSchemaForDB() throws Exception {
-        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.NAME_LINEAGE_SCHEMA, null, salesDBName, "schema");
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.NAME_LINEAGE_SCHEMA, null, salesDBName, "schema");
     }
 
     private void setupInstances() throws Exception {
@@ -238,9 +238,9 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
     Id database(String name, String description, String owner, String locationUri, String... traitNames)
     throws Exception {
         Referenceable referenceable = new Referenceable(DATABASE_TYPE, traitNames);
-        referenceable.set("name", name);
-        referenceable.set("qualifiedName", name);
-        referenceable.set("clusterName", locationUri + name);
+        referenceable.set(NAME, name);
+        referenceable.set(QUALIFIED_NAME, name);
+        referenceable.set(CLUSTER_NAME, locationUri + name);
         referenceable.set("description", description);
         referenceable.set("owner", owner);
         referenceable.set("locationUri", locationUri);
@@ -251,8 +251,8 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     Referenceable column(String name, String type, String comment, String... traitNames) throws Exception {
         Referenceable referenceable = new Referenceable(COLUMN_TYPE, traitNames);
-        referenceable.set("name", name);
-        referenceable.set("qualifiedName", name);
+        referenceable.set(NAME, name);
+        referenceable.set(QUALIFIED_NAME, name);
         referenceable.set("type", type);
         referenceable.set("comment", comment);
 

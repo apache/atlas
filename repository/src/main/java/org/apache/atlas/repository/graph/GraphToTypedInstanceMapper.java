@@ -82,7 +82,7 @@ public final class GraphToTypedInstanceMapper {
 
         LOG.debug("Found createdBy : {} modifiedBy : {} createdTime: {} modifedTime: {}", createdBy, modifiedBy, createdTime, modifiedTime);
 
-        Id id = new Id(guid, (Integer) GraphHelper.getProperty(instanceVertex, Constants.VERSION_PROPERTY_KEY),
+        Id id = new Id(guid, Integer.parseInt(String.valueOf(GraphHelper.getProperty(instanceVertex, Constants.VERSION_PROPERTY_KEY))),
                 typeName, state);
         LOG.debug("Created id {} for instance type {}", id, typeName);
 

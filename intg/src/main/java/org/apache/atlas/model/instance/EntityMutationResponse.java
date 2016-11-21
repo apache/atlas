@@ -18,7 +18,6 @@
 package org.apache.atlas.model.instance;
 
 
-import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;

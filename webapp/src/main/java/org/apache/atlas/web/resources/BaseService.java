@@ -18,15 +18,8 @@
 
 package org.apache.atlas.web.resources;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.util.Collection;
-import java.util.Map;
-
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.UriInfo;
-import javax.xml.bind.annotation.XmlRootElement;
-
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import org.apache.atlas.catalog.JsonSerializer;
 import org.apache.atlas.catalog.Request;
 import org.apache.atlas.catalog.ResourceProvider;
@@ -40,8 +33,13 @@ import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.UriInfo;
+import javax.xml.bind.annotation.XmlRootElement;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.util.Collection;
+import java.util.Map;
 
 /**
  * Base class for all v1 API services.

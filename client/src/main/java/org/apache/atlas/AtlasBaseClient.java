@@ -27,6 +27,7 @@ import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
 import com.sun.jersey.api.json.JSONConfiguration;
 import com.sun.jersey.client.urlconnection.URLConnectionClientHandler;
 import org.apache.atlas.security.SecureClientUtils;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
@@ -276,12 +277,18 @@ public abstract class AtlasBaseClient {
         ClientResponse clientResponse = null;
         int i = 0;
         do {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Calling API [ {} : {} ] {}", api.getMethod(), api.getPath(), requestObject != null ? "<== " + requestObject : "");
+            }
             clientResponse = resource
                     .accept(JSON_MEDIA_TYPE)
                     .type(JSON_MEDIA_TYPE)
                     .method(api.getMethod(), ClientResponse.class, requestObject);
 
-            LOG.debug("API {} returned status {}", resource.getURI(), clientResponse.getStatus());
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("API {} returned status {}", resource.getURI(), clientResponse.getStatus());
+            }
+
             if (clientResponse.getStatus() == api.getExpectedStatus().getStatusCode()) {
                 if (null == responseType) {
                     LOG.warn("No response type specified, returning null");
@@ -291,12 +298,16 @@ public abstract class AtlasBaseClient {
                     if (responseType == JSONObject.class) {
                         String stringEntity = clientResponse.getEntity(String.class);
                         try {
-                            return (T) new JSONObject(stringEntity);
+                            JSONObject jsonObject = new JSONObject(stringEntity);
+                            LOG.info("Response = {}", jsonObject);
+                            return (T) jsonObject;
                         } catch (JSONException e) {
                             throw new AtlasServiceException(api, e);
                         }
                     } else {
-                        return clientResponse.getEntity(responseType);
+                        T entity = clientResponse.getEntity(responseType);
+                        LOG.info("Response = {}", AtlasType.toJson(entity));
+                        return entity;
                     }
                 } catch (ClientHandlerException e) {
                     throw new AtlasServiceException(api, e);
@@ -380,8 +391,7 @@ public abstract class AtlasBaseClient {
             WebResource resource = resourceCreator.createResource();
             try {
                 LOG.debug("Using resource {} for {} times", resource.getURI(), i);
-                JSONObject result = callAPIWithResource(api, resource, requestObject, JSONObject.class);
-                return result;
+                return callAPIWithResource(api, resource, requestObject, JSONObject.class);
             } catch (ClientHandlerException che) {
                 if (i == (getNumberOfRetries() - 1)) {
                     throw che;
@@ -397,6 +407,12 @@ public abstract class AtlasBaseClient {
     public <T> T callAPI(APIInfo api, Object requestObject, Class<T> responseType, String... params)
             throws AtlasServiceException {
         return callAPIWithResource(api, getResource(api, params), requestObject, responseType);
+    }
+
+    public <T> T callAPI(APIInfo api, Object requestBody, Class<T> responseType,
+                         MultivaluedMap<String, String> queryParams, String... params) throws AtlasServiceException {
+        WebResource resource = getResource(api, queryParams, params);
+        return callAPIWithResource(api, resource, requestBody, responseType);
     }
 
     public <T> T callAPI(APIInfo api, Class<T> responseType, MultivaluedMap<String, String> queryParams, String... params)
@@ -476,7 +492,7 @@ public abstract class AtlasBaseClient {
         return resource;
     }
 
-    protected APIInfo formatPath(APIInfo apiInfo, String ... params) {
+    protected APIInfo formatPathForPathParams(APIInfo apiInfo, String ... params) {
         return new APIInfo(String.format(apiInfo.getPath(), params), apiInfo.getMethod(), apiInfo.getExpectedStatus());
     }
 

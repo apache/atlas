@@ -17,30 +17,24 @@
  */
 package org.apache.atlas.web.rest;
 
-import com.google.inject.Inject;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasEntityWithAssociations;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.services.MetadataService;
-import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.ITypedReferenceableInstance;
-import org.apache.atlas.web.adapters.AtlasFormatConverters;
 import org.apache.atlas.web.adapters.AtlasInstanceRestAdapters;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.atlas.web.adapters.AtlasInstanceRestAdapters.toAtlasBaseException;
-import static org.apache.atlas.web.adapters.AtlasInstanceRestAdapters.toEntityMutationResponse;
-
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -53,8 +47,13 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+
+import static org.apache.atlas.web.adapters.AtlasInstanceRestAdapters.toAtlasBaseException;
+import static org.apache.atlas.web.adapters.AtlasInstanceRestAdapters.toEntityMutationResponse;
 
 
 @Path("v2/entities")
@@ -67,19 +66,16 @@ public class EntitiesREST {
     @Context
     private HttpServletRequest httpServletRequest;
 
-    @Inject
-    private MetadataService metadataService;
+    private final MetadataService metadataService;
 
-    private AtlasTypeRegistry typeRegistry;
-
-    @Inject
-    AtlasInstanceRestAdapters restAdapters;
+    private final AtlasInstanceRestAdapters restAdapters;
 
     @Inject
-    public EntitiesREST(AtlasEntityStore entitiesStore, AtlasTypeRegistry atlasTypeRegistry) {
+    public EntitiesREST(AtlasEntityStore entitiesStore, MetadataService metadataService, AtlasInstanceRestAdapters restAdapters) {
         LOG.info("EntitiesRest Init");
         this.entitiesStore = entitiesStore;
-        this.typeRegistry = atlasTypeRegistry;
+        this.metadataService = metadataService;
+        this.restAdapters = restAdapters;
     }
 
     /*******
@@ -174,9 +170,24 @@ public class EntitiesREST {
     @GET
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasEntityHeader.AtlasEntityHeaders searchEntities() throws AtlasBaseException {
-        //SearchFilter searchFilter
-        //TODO: Need to handle getEntitiesByType for older API
-        return null;
+        SearchFilter searchFilter = getSearchFilter();
+        AtlasEntity.AtlasEntities atlasEntities = entitiesStore.searchEntities(searchFilter);
+        AtlasEntityHeader.AtlasEntityHeaders entityHeaders = new AtlasEntityHeader.AtlasEntityHeaders();
+        entityHeaders.setList(new LinkedList<AtlasEntityHeader>());
+        for (AtlasEntity atlasEntity : atlasEntities.getList()) {
+            entityHeaders.getList().add(new AtlasEntityHeader(atlasEntity.getTypeName(), atlasEntity.getAttributes()));
+        }
+        return entityHeaders;
+    }
+
+    private SearchFilter getSearchFilter() {
+        SearchFilter searchFilter = new SearchFilter();
+        if (null != httpServletRequest && null != httpServletRequest.getParameterMap()) {
+            for (Map.Entry<String, String[]> entry : httpServletRequest.getParameterMap().entrySet()) {
+                searchFilter.setParam(entry.getKey(), Arrays.asList(entry.getValue()));
+            }
+        }
+        return searchFilter;
     }
 
 }

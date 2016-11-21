@@ -64,12 +64,11 @@ import org.testng.annotations.Test;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-import java.util.Collections;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -103,8 +102,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     public void setUp() throws Exception {
         super.setUp();
 
-        createTypeDefinitions();
-        Referenceable HiveDBInstance = createHiveDBInstance(DATABASE_NAME);
+        createTypeDefinitionsV1();
+        Referenceable HiveDBInstance = createHiveDBInstanceV1(DATABASE_NAME);
         dbId = createInstance(HiveDBInstance);
 
         List<NotificationConsumer<EntityNotification>> consumers =
@@ -115,7 +114,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testSubmitEntity() throws Exception {
-        tableInstance = createHiveTableInstance(DATABASE_NAME, TABLE_NAME, dbId);
+        tableInstance = createHiveTableInstanceV1(DATABASE_NAME, TABLE_NAME, dbId);
         tableId = createInstance(tableInstance);
 
         final String guid = tableId._getId();
@@ -131,7 +130,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Referenceable entity = new Referenceable(DATABASE_TYPE);
         String dbName = randomString();
         entity.set("name", dbName);
-        entity.set("qualifiedName", dbName);
+        entity.set(QUALIFIED_NAME, dbName);
         entity.set("clusterName", randomString());
         entity.set("description", randomString());
         entity.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName);
@@ -150,7 +149,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }
         String entityId = localClient.createEntity(entity).get(0);
 
-        List<EntityAuditEvent> events = serviceClient.getEntityAuditEvents(entityId, (short) 10);
+        List<EntityAuditEvent> events = atlasClientV1.getEntityAuditEvents(entityId, (short) 10);
         assertEquals(events.size(), 1);
         assertEquals(events.get(0).getUser(), user);
     }
@@ -161,7 +160,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Referenceable databaseInstance = new Referenceable(DATABASE_TYPE);
         String dbName = randomString();
         databaseInstance.set("name", dbName);
-        databaseInstance.set("qualifiedName", dbName);
+        databaseInstance.set(QUALIFIED_NAME, dbName);
         databaseInstance.set("clusterName", randomString());
         databaseInstance.set("description", randomString());
         databaseInstance.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName);
@@ -170,7 +169,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         databaseInstance.set("parameters", Collections.EMPTY_MAP);
         databaseInstance.set("location", "/tmp");
 
-        JSONObject response = serviceClient
+        JSONObject response = atlasClientV1
                 .callAPIWithBody(AtlasClient.API.CREATE_ENTITY, InstanceSerialization.toJson(databaseInstance, true));
         assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
@@ -184,7 +183,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     public void testEntityDeduping() throws Exception {
         final Referenceable db = new Referenceable(DATABASE_TYPE);
         final String dbName = "db" + randomString();
-        Referenceable HiveDBInstance = createHiveDBInstance(dbName);
+        Referenceable HiveDBInstance = createHiveDBInstanceV1(dbName);
         Id dbIdReference = createInstance(HiveDBInstance);
         final String dbId = dbIdReference._getId();
 
@@ -201,7 +200,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         assertEquals(results.length(), 1);
 
         //create entity again shouldn't create another instance with same unique attribute value
-        List<String> entityResults = serviceClient.createEntity(HiveDBInstance);
+        List<String> entityResults = atlasClientV1.createEntity(HiveDBInstance);
         assertEquals(entityResults.size(), 0);
         try {
             waitForNotification(notificationConsumer, MAX_WAIT_TIME, new NotificationPredicate() {
@@ -221,15 +220,15 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         //Test the same across references
         Referenceable table = new Referenceable(HIVE_TABLE_TYPE);
         final String tableName = randomString();
-        Referenceable tableInstance = createHiveTableInstance(DATABASE_NAME, tableName, dbIdReference);
-        serviceClient.createEntity(tableInstance);
+        Referenceable tableInstance = createHiveTableInstanceV1(DATABASE_NAME, tableName, dbIdReference);
+        atlasClientV1.createEntity(tableInstance);
         results = searchByDSL(String.format("%s where qualifiedName='%s'", DATABASE_TYPE, dbName));
         assertEquals(results.length(), 1);
     }
 
     private void assertEntityAudit(String dbid, EntityAuditEvent.EntityAuditAction auditAction)
             throws Exception {
-        List<EntityAuditEvent> events = serviceClient.getEntityAuditEvents(dbid, (short) 100);
+        List<EntityAuditEvent> events = atlasClientV1.getEntityAuditEvents(dbid, (short) 100);
         for (EntityAuditEvent event : events) {
             if (event.getAction() == auditAction) {
                 return;
@@ -244,12 +243,12 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         HierarchicalTypeDefinition<ClassType> typeDefinition = TypesUtil
                 .createClassTypeDef(randomString(), ImmutableSet.<String>of(),
                         TypesUtil.createUniqueRequiredAttrDef("name", DataTypes.STRING_TYPE));
-        serviceClient.createType(TypesSerialization.toJson(typeDefinition, false));
+        atlasClientV1.createType(TypesSerialization.toJson(typeDefinition, false));
 
         //create entity for the type
         Referenceable instance = new Referenceable(typeDefinition.typeName);
         instance.set("name", randomString());
-        String guid = serviceClient.createEntity(instance).get(0);
+        String guid = atlasClientV1.createEntity(instance).get(0);
 
         //update type - add attribute
         typeDefinition = TypesUtil.createClassTypeDef(typeDefinition.typeName, ImmutableSet.<String>of(),
@@ -258,10 +257,10 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         TypesDef typeDef = TypesUtil.getTypesDef(ImmutableList.<EnumTypeDefinition>of(),
                 ImmutableList.<StructTypeDefinition>of(), ImmutableList.<HierarchicalTypeDefinition<TraitType>>of(),
                 ImmutableList.of(typeDefinition));
-        serviceClient.updateType(typeDef);
+        atlasClientV1.updateType(typeDef);
 
         //Get definition after type update - new attributes should be null
-        Referenceable entity = serviceClient.getEntity(guid);
+        Referenceable entity = atlasClientV1.getEntity(guid);
         Assert.assertNull(entity.get("description"));
         Assert.assertEquals(entity.get("name"), instance.get("name"));
     }
@@ -289,25 +288,25 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     public void testGetEntityByAttribute() throws Exception {
         Referenceable db1 = new Referenceable(DATABASE_TYPE);
         String dbName = randomString();
-        db1.set("name", dbName);
-        db1.set("description", randomString());
+        db1.set(NAME, dbName);
+        db1.set(DESCRIPTION, randomString());
         db1.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName);
         db1.set("owner", "user1");
-        db1.set("clusterName", "cl1");
+        db1.set(CLUSTER_NAME, "cl1");
         db1.set("parameters", Collections.EMPTY_MAP);
         db1.set("location", "/tmp");
         createInstance(db1);
 
         //get entity by attribute
-        Referenceable referenceable = serviceClient.getEntity(DATABASE_TYPE, "qualifiedName", dbName);
+        Referenceable referenceable = atlasClientV1.getEntity(DATABASE_TYPE, QUALIFIED_NAME, dbName);
         Assert.assertEquals(referenceable.getTypeName(), DATABASE_TYPE);
-        Assert.assertEquals(referenceable.get("qualifiedName"), dbName);
+        Assert.assertEquals(referenceable.get(QUALIFIED_NAME), dbName);
     }
 
     @Test
     public void testSubmitEntityWithBadDateFormat() throws Exception {
         try {
-            Referenceable tableInstance = createHiveTableInstance("db" + randomString(), "table" + randomString(), dbId);
+            Referenceable tableInstance = createHiveTableInstanceV1("db" + randomString(), "table" + randomString(), dbId);
             tableInstance.set("lastAccessTime", "2014-07-11");
             tableId = createInstance(tableInstance);
             Assert.fail("Was expecting an  exception here ");
@@ -324,7 +323,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         String description = "bar table - new desc";
         addProperty(guid, "description", description);
 
-        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, guid);
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, guid);
         Assert.assertNotNull(response);
 
         tableInstance.set("description", description);
@@ -340,7 +339,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         String currentTime = String.valueOf(new DateTime() );
         addProperty(guid, "createTime", currentTime);
 
-        response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, guid);
+        response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, guid);
         Assert.assertNotNull(response);
 
         tableInstance.set("createTime", currentTime);
@@ -371,13 +370,13 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         //Create new db instance
         Referenceable databaseInstance = new Referenceable(DATABASE_TYPE);
         String dbName = randomString();
-        databaseInstance.set("name", dbName);
-        databaseInstance.set("qualifiedName", dbName);
-        databaseInstance.set("clusterName", randomString());
+        databaseInstance.set(NAME, dbName);
+        databaseInstance.set(QUALIFIED_NAME, dbName);
+        databaseInstance.set(CLUSTER_NAME, randomString());
         databaseInstance.set("description", "new database");
         databaseInstance.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName);
         databaseInstance.set("owner", "user1");
-        databaseInstance.set("clusterName", "cl1");
+        databaseInstance.set(CLUSTER_NAME, "cl1");
         databaseInstance.set("parameters", Collections.EMPTY_MAP);
         databaseInstance.set("location", "/tmp");
 
@@ -392,7 +391,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test(dependsOnMethods = "testSubmitEntity")
     public void testGetEntityDefinition() throws Exception {
         final String guid = tableId._getId();
-        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, guid);
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, guid);
 
         Assert.assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
@@ -404,7 +403,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     }
 
     private void addProperty(String guid, String property, String value) throws AtlasServiceException {
-        AtlasClient.EntityResult entityResult = serviceClient.updateEntityAttribute(guid, property, value);
+        AtlasClient.EntityResult entityResult = atlasClientV1.updateEntityAttribute(guid, property, value);
         assertEquals(entityResult.getUpdateEntities().size(), 1);
         assertEquals(entityResult.getUpdateEntities().get(0), guid);
     }
@@ -412,7 +411,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testGetInvalidEntityDefinition() throws Exception {
 
-        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, "blah");
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, "blah");
 
         Assert.assertNotNull(response);
 
@@ -422,7 +421,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test(dependsOnMethods = "testSubmitEntity")
     public void testGetEntityList() throws Exception {
-        List<String> entities = serviceClient.listEntities(HIVE_TABLE_TYPE);
+        List<String> entities = atlasClientV1.listEntities(HIVE_TABLE_TYPE);
         Assert.assertNotNull(entities);
         Assert.assertTrue(entities.contains(tableId._getId()));
     }
@@ -432,7 +431,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add("type", "blah");
 
-        JSONObject response = serviceClient.callAPIWithQueryParams(AtlasClient.API.GET_ENTITY, queryParams);
+        JSONObject response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API.GET_ENTITY, queryParams);
         assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.ERROR));
         Assert.assertNotNull(response.get(AtlasClient.STACKTRACE));
@@ -446,7 +445,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
         queryParams.add("type", typeName);
 
-        JSONObject response = serviceClient.callAPIWithQueryParams(AtlasClient.API.GET_ENTITY, queryParams);
+        JSONObject response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API.GET_ENTITY, queryParams);
         assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
@@ -470,7 +469,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     public void testGetTraitNames() throws Exception {
         final String guid = tableId._getId();
 
-        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.LIST_TRAITS, null, guid, TRAITS);
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.LIST_TRAITS, null, guid, TRAITS);
         assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
@@ -492,7 +491,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
 
         final String guid = tableId._getId();
-        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
         assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
@@ -513,15 +512,15 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
 
         final String guid = tableId._getId();
-        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
         assertNotNull(response);
-        Struct traitDef = serviceClient.getTraitDefinition(guid, traitName);
+        Struct traitDef = atlasClientV1.getTraitDefinition(guid, traitName);
         System.out.println(traitDef.toString());
         JSONObject responseAsJSON = new JSONObject(InstanceSerialization.toJson(traitDef, true));
         Assert.assertEquals(responseAsJSON.get("typeName"), traitName);
 
 
-        List<Struct> allTraitDefs = serviceClient.listTraitDefinitions(guid);
+        List<Struct> allTraitDefs = atlasClientV1.listTraitDefinitions(guid);
         System.out.println(allTraitDefs.toString());
         Assert.assertEquals(allTraitDefs.size(), 9);
     }
@@ -535,7 +534,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
 
         final String guid = tableId._getId();
-        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
         assertNotNull(response);
     }
 
@@ -555,12 +554,12 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
 
         final String guid = tableId._getId();
-        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.ADD_TRAITS, traitInstanceAsJSON, guid, TRAITS);
         assertNotNull(response);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
         // verify the response
-        response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, guid);
+        response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, guid);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
         final String definition = response.getString(AtlasClient.DEFINITION);
@@ -583,14 +582,14 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         String traitInstanceAsJSON = InstanceSerialization$.MODULE$.toJson(traitInstance, true);
         LOG.debug("traitInstanceAsJSON = " + traitInstanceAsJSON);
 
-        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.CREATE_ENTITY, traitInstanceAsJSON, "random", TRAITS);
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.CREATE_ENTITY, traitInstanceAsJSON, "random", TRAITS);
     }
 
     @Test(dependsOnMethods = "testAddTrait")
     public void testDeleteTrait() throws Exception {
         final String guid = tableId._getId();
 
-        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.DELETE_TRAITS, null, guid, TRAITS, traitName);
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.DELETE_TRAITS, null, guid, TRAITS, traitName);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
         Assert.assertNotNull(response.get("traitName"));
         assertEntityAudit(guid, EntityAuditEvent.EntityAuditAction.TAG_DELETE);
@@ -599,7 +598,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testDeleteTraitNonExistent() throws Exception {
         final String traitName = "blah_trait";
-        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.DELETE_TRAITS, null, "random", TRAITS);
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.DELETE_TRAITS, null, "random", TRAITS);
 
         Assert.assertNotNull(response.get(AtlasClient.ERROR));
         Assert.assertEquals(response.getString(AtlasClient.ERROR),
@@ -619,7 +618,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         createType(traitDefinitionAsJSON);
 
         try {
-            JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.DELETE_TRAITS, null, guid, TRAITS, traitName);
+            JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.DELETE_TRAITS, null, guid, TRAITS, traitName);
             fail("Call should've failed for deletion of invalid trait");
         } catch (AtlasServiceException e) {
             assertNotNull(e);
@@ -650,7 +649,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         instance.set(attrName, attrValue);
         Id guid = createInstance(instance);
 
-        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, guid._getId());
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, guid._getId());
         Referenceable getReferenceable = InstanceSerialization.fromJsonReferenceable(response.getString(AtlasClient.DEFINITION), true);
         Assert.assertEquals(getReferenceable.get(attrName), attrValue);
     }
@@ -660,9 +659,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         String colName = "col1"+randomString();
         final List<Referenceable> columns = new ArrayList<>();
         Map<String, Object> values = new HashMap<>();
-        values.put("name", colName);
+        values.put(NAME, colName);
         values.put("comment", "col1 comment");
-        values.put("qualifiedName", "default.table.col1@"+colName);
+        values.put(QUALIFIED_NAME, "default.table.col1@"+colName);
         values.put("comment", "col1 comment");
         values.put("type", "string");
         values.put("owner", "user1");
@@ -677,11 +676,11 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }});
 
         LOG.debug("Updating entity= " + tableUpdated);
-        AtlasClient.EntityResult entityResult = serviceClient.updateEntity(tableId._getId(), tableUpdated);
+        AtlasClient.EntityResult entityResult = atlasClientV1.updateEntity(tableId._getId(), tableUpdated);
         assertEquals(entityResult.getUpdateEntities().size(), 1);
         assertEquals(entityResult.getUpdateEntities().get(0), tableId._getId());
 
-        JSONObject response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, tableId._getId());
+        JSONObject response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, tableId._getId());
         Referenceable getReferenceable = InstanceSerialization.fromJsonReferenceable(response.getString(AtlasClient.DEFINITION), true);
         List<Referenceable> refs = (List<Referenceable>) getReferenceable.get("columns");
 
@@ -696,12 +695,12 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }});
 
         LOG.debug("Updating entity= " + tableUpdated);
-        entityResult = serviceClient.updateEntity(BaseResourceIT.HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
-                (String) tableInstance.get("qualifiedName"), tableUpdated);
+        entityResult = atlasClientV1.updateEntity(BaseResourceIT.HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+                (String) tableInstance.get(QUALIFIED_NAME), tableUpdated);
         assertEquals(entityResult.getUpdateEntities().size(), 2);
         assertEquals(entityResult.getUpdateEntities().get(0), tableId._getId());
 
-        response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, tableId._getId());
+        response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, tableId._getId());
         getReferenceable = InstanceSerialization.fromJsonReferenceable(response.getString(AtlasClient.DEFINITION), true);
         refs = (List<Referenceable>) getReferenceable.get("columns");
 
@@ -713,8 +712,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     public void testCompleteUpdate() throws Exception {
         final List<Referenceable> columns = new ArrayList<>();
         Map<String, Object> values1 = new HashMap<>();
-        values1.put("name", "col3");
-        values1.put("qualifiedName", "default.table.col3@cl1");
+        values1.put(NAME, "col3");
+        values1.put(QUALIFIED_NAME, "default.table.col3@cl1");
         values1.put("comment", "col3 comment");
         values1.put("type", "string");
         values1.put("owner", "user1");
@@ -724,8 +723,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
 
         Map<String, Object> values2 = new HashMap<>();
-        values2.put("name", "col4");
-        values2.put("qualifiedName", "default.table.col4@cl1");
+        values2.put(NAME, "col4");
+        values2.put(QUALIFIED_NAME, "default.table.col4@cl1");
         values2.put("comment", "col4 comment");
         values2.put("type", "string");
         values2.put("owner", "user2");
@@ -743,7 +742,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         entityArray.put(entityJson);
         LOG.debug("Replacing entity= " + tableInstance);
 
-        JSONObject response = serviceClient.callAPIWithBody(AtlasClient.API.UPDATE_ENTITY, entityArray);
+        JSONObject response = atlasClientV1.callAPIWithBody(AtlasClient.API.UPDATE_ENTITY, entityArray);
 
         // ATLAS-586: verify response entity can be parsed by GSON.
         Gson gson = new Gson();
@@ -754,7 +753,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
             Assert.fail("Response entity from not parse-able by GSON", e);
         }
 
-        response = serviceClient.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, tableId._getId());
+        response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API.GET_ENTITY, null, tableId._getId());
         LOG.info("Response = {}", response.toString());
         Referenceable getReferenceable = InstanceSerialization.fromJsonReferenceable(response.getString(AtlasClient.DEFINITION), true);
         List<Referenceable> refs = (List<Referenceable>) getReferenceable.get("columns");
@@ -780,24 +779,24 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         // Create 2 database entities
         Referenceable db1 = new Referenceable(DATABASE_TYPE);
         String dbName = randomString();
-        db1.set("name", dbName);
-        db1.set("description", randomString());
+        db1.set(NAME, dbName);
+        db1.set(DESCRIPTION, randomString());
         db1.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName);
         db1.set("owner", "user1");
-        db1.set("clusterName", "cl1");
+        db1.set(CLUSTER_NAME, "cl1");
         db1.set("parameters", Collections.EMPTY_MAP);
         db1.set("location", "/tmp");
         Id db1Id = createInstance(db1);
 
         Referenceable db2 = new Referenceable(DATABASE_TYPE);
         String dbName2 = randomString();
-        db2.set("name", dbName2);
-        db2.set("qualifiedName", dbName2);
-        db2.set("clusterName", randomString());
-        db2.set("description", randomString());
+        db2.set(NAME, dbName2);
+        db2.set(QUALIFIED_NAME, dbName2);
+        db2.set(CLUSTER_NAME, randomString());
+        db2.set(DESCRIPTION, randomString());
         db2.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName2);
         db2.set("owner", "user2");
-        db2.set("clusterName", "cl1");
+        db2.set(CLUSTER_NAME, "cl1");
         db2.set("parameters", Collections.EMPTY_MAP);
         db2.set("location", "/tmp");
         Id db2Id = createInstance(db2);
@@ -807,14 +806,14 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         queryParams.add(AtlasClient.GUID.toLowerCase(), db1Id._getId());
         queryParams.add(AtlasClient.GUID.toLowerCase(), db2Id._getId());
 
-        JSONObject response = serviceClient.callAPIWithQueryParams(AtlasClient.API.DELETE_ENTITIES, queryParams);
+        JSONObject response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API.DELETE_ENTITIES, queryParams);
         List<String> deletedGuidsList = AtlasClient.EntityResult.fromString(response.toString()).getDeletedEntities();
         Assert.assertTrue(deletedGuidsList.contains(db1Id._getId()));
         Assert.assertTrue(deletedGuidsList.contains(db2Id._getId()));
 
         // Verify entities were deleted from the repository.
         for (String guid : deletedGuidsList) {
-            Referenceable entity = serviceClient.getEntity(guid);
+            Referenceable entity = atlasClientV1.getEntity(guid);
             assertEquals(entity.getId().getState(), Id.EntityState.DELETED);
         }
     }
@@ -828,15 +827,15 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         db1.set("description", randomString());
         db1.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName);
         db1.set("owner", "user1");
-        db1.set("clusterName", "cl1");
+        db1.set(CLUSTER_NAME, "cl1");
         db1.set("parameters", Collections.EMPTY_MAP);
         db1.set("location", "/tmp");
         Id db1Id = createInstance(db1);
         Referenceable db2 = new Referenceable(DATABASE_TYPE);
         String dbName2 = randomString();
         db2.set("name", dbName2);
-        db2.set("qualifiedName", dbName2);
-        db2.set("clusterName", randomString());
+        db2.set(QUALIFIED_NAME, dbName2);
+        db2.set(CLUSTER_NAME, randomString());
         db2.set("description", randomString());
         db2.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName2);
         db2.set("owner", "user2");
@@ -847,8 +846,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         // Delete the database entities
         List<String> deletedGuidsList =
-                serviceClient.deleteEntities(db1Id._getId(), db2Id._getId()).getDeletedEntities();
-
+                atlasClientV1.deleteEntities(db1Id._getId(), db2Id._getId()).getDeletedEntities();
         // Verify that deleteEntities() response has database entity guids 
         Assert.assertEquals(deletedGuidsList.size(), 2);
         Assert.assertTrue(deletedGuidsList.contains(db1Id._getId()));
@@ -856,7 +854,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         // Verify entities were deleted from the repository.
         for (String guid : deletedGuidsList) {
-            Referenceable entity = serviceClient.getEntity(guid);
+            Referenceable entity = atlasClientV1.getEntity(guid);
             assertEquals(entity.getId().getState(), Id.EntityState.DELETED);
         }
     }
@@ -866,19 +864,19 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         // Create database entity
         Referenceable db1 = new Referenceable(DATABASE_TYPE);
         String dbName = randomString();
-        db1.set("name", dbName);
-        db1.set("qualifiedName", dbName);
-        db1.set("clusterName", randomString());
-        db1.set("description", randomString());
+        db1.set(NAME, dbName);
+        db1.set(QUALIFIED_NAME, dbName);
+        db1.set(CLUSTER_NAME, randomString());
+        db1.set(DESCRIPTION, randomString());
         db1.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName);
         db1.set("owner", "user1");
-        db1.set("clusterName", "cl1");
+        db1.set(CLUSTER_NAME, "cl1");
         db1.set("parameters", Collections.EMPTY_MAP);
         db1.set("location", "/tmp");
         Id db1Id = createInstance(db1);
 
         // Delete the database entity
-        List<String> deletedGuidsList = serviceClient.deleteEntity(DATABASE_TYPE, "qualifiedName", dbName).getDeletedEntities();
+        List<String> deletedGuidsList = atlasClientV1.deleteEntity(DATABASE_TYPE, QUALIFIED_NAME, dbName).getDeletedEntities();
 
         // Verify that deleteEntities() response has database entity guids
         Assert.assertEquals(deletedGuidsList.size(), 1);
@@ -886,7 +884,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         // Verify entities were deleted from the repository.
         for (String guid : deletedGuidsList) {
-            Referenceable entity = serviceClient.getEntity(guid);
+            Referenceable entity = atlasClientV1.getEntity(guid);
             assertEquals(entity.getId().getState(), Id.EntityState.DELETED);
         }
     }

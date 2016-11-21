@@ -40,6 +40,7 @@ import org.apache.atlas.typesystem.ITypedStruct;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.exception.EntityNotFoundException;
+import org.apache.atlas.typesystem.exception.TraitNotFoundException;
 import org.apache.atlas.typesystem.exception.TypeNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -143,7 +144,7 @@ public class AtlasInstanceRestAdapters {
     }
 
     public static AtlasBaseException toAtlasBaseException(AtlasException e) {
-        if ( e instanceof EntityNotFoundException) {
+        if ( e instanceof EntityNotFoundException || e instanceof TraitNotFoundException) {
             return new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, e);
         }
 

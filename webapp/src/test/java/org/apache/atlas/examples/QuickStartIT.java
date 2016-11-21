@@ -52,7 +52,7 @@ public class QuickStartIT extends BaseResourceIT {
     }
 
     private Referenceable getDB(String dbName) throws AtlasServiceException, JSONException {
-        return serviceClient.getEntity(QuickStart.DATABASE_TYPE, "name", dbName);
+        return atlasClientV1.getEntity(QuickStart.DATABASE_TYPE, "name", dbName);
     }
 
     @Test
@@ -68,7 +68,7 @@ public class QuickStartIT extends BaseResourceIT {
     }
 
     private Referenceable getTable(String tableName) throws AtlasServiceException {
-        return serviceClient.getEntity(QuickStart.TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableName);
+        return atlasClientV1.getEntity(QuickStart.TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableName);
     }
 
     private void verifyTrait(Referenceable table) throws JSONException {
@@ -95,7 +95,7 @@ public class QuickStartIT extends BaseResourceIT {
 
     @Test
     public void testProcessIsAdded() throws AtlasServiceException, JSONException {
-        Referenceable loadProcess = serviceClient.getEntity(QuickStart.LOAD_PROCESS_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
+        Referenceable loadProcess = atlasClientV1.getEntity(QuickStart.LOAD_PROCESS_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                 QuickStart.LOAD_SALES_DAILY_PROCESS);
 
         assertEquals(QuickStart.LOAD_SALES_DAILY_PROCESS, loadProcess.get(AtlasClient.NAME));
@@ -123,7 +123,7 @@ public class QuickStartIT extends BaseResourceIT {
         String timeDimTableId = getTableId(QuickStart.TIME_DIM_TABLE);
         String salesFactDailyMVId = getTableId(QuickStart.SALES_FACT_DAILY_MV_TABLE);
 
-        JSONObject inputGraph = serviceClient.getInputGraph(QuickStart.SALES_FACT_DAILY_MV_TABLE);
+        JSONObject inputGraph = atlasClientV1.getInputGraph(QuickStart.SALES_FACT_DAILY_MV_TABLE);
         JSONObject vertices = (JSONObject) ((JSONObject) inputGraph.get("values")).get("vertices");
         JSONObject edges = (JSONObject) ((JSONObject) inputGraph.get("values")).get("edges");
 
@@ -142,7 +142,7 @@ public class QuickStartIT extends BaseResourceIT {
     @Test
     public void testViewIsAdded() throws AtlasServiceException, JSONException {
 
-        Referenceable view = serviceClient.getEntity(QuickStart.VIEW_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, QuickStart.PRODUCT_DIM_VIEW);
+        Referenceable view = atlasClientV1.getEntity(QuickStart.VIEW_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, QuickStart.PRODUCT_DIM_VIEW);
 
         assertEquals(QuickStart.PRODUCT_DIM_VIEW, view.get(AtlasClient.NAME));
 
