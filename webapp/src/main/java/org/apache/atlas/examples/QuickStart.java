@@ -108,7 +108,7 @@ public class QuickStart {
         Configuration configuration = ApplicationProperties.get();
         String[] urls = configuration.getStringArray(ATLAS_REST_ADDRESS);
         if (urls == null || urls.length == 0) {
-            System.out.println("Usage: quick_start.py <atlas endpoint of format <http/https>://<atlas-fqdn>:<atlas port> like http://localhost:21000>");
+            System.out.println("Usage: quick_start_v1.py <atlas endpoint of format <http/https>://<atlas-fqdn>:<atlas port> like http://localhost:21000>");
             System.exit(-1);
         }
 

@@ -26,6 +26,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasDiscoveryClientV2;
 import org.apache.atlas.AtlasEntitiesClientV2;
+import org.apache.atlas.AtlasLineageClientV2;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.AtlasTypedefClientV2;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -87,6 +88,7 @@ public abstract class BaseResourceIT {
     protected AtlasTypedefClientV2 typedefClientV2;
     protected AtlasEntitiesClientV2 entitiesClientV2;
     protected AtlasDiscoveryClientV2 discoveryClientV2;
+    protected AtlasLineageClientV2 lineageClientV2;
 
     public static final Logger LOG = LoggerFactory.getLogger(BaseResourceIT.class);
     protected static final int MAX_WAIT_TIME = 60000;
@@ -113,11 +115,13 @@ public abstract class BaseResourceIT {
             typedefClientV2 = new AtlasTypedefClientV2(atlasUrls, new String[]{"admin", "admin"});
             entitiesClientV2 = new AtlasEntitiesClientV2(atlasUrls, new String[]{"admin", "admin"});
             discoveryClientV2 = new AtlasDiscoveryClientV2(atlasUrls, new String[]{"admin", "admin"});
+            lineageClientV2 = new AtlasLineageClientV2(atlasUrls, new String[]{"admin", "admin"});
         } else {
             atlasClientV1 = new AtlasClient(atlasUrls);
             typedefClientV2 = new AtlasTypedefClientV2(atlasUrls);
             entitiesClientV2 = new AtlasEntitiesClientV2(atlasUrls);
             discoveryClientV2 = new AtlasDiscoveryClientV2(atlasUrls);
+            lineageClientV2 = new AtlasLineageClientV2(atlasUrls);
         }
     }
 

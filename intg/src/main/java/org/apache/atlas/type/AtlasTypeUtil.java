@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.type;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import org.apache.atlas.AtlasErrorCode;
@@ -35,6 +36,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -50,6 +52,8 @@ import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_ARRAY_S
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_MAP_KEY_VAL_SEP;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_MAP_PREFIX;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_MAP_SUFFIX;
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_REF_ATTRIBUTE;
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_MAPPED_FROM_REF;
 
 /**
  * Utility methods for AtlasType/AtlasTypeDef.
@@ -170,6 +174,41 @@ public class AtlasTypeUtil {
             Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
     }
 
+    public static AtlasAttributeDef createListRequiredAttrDef(String name, String dataType) {
+        return new AtlasAttributeDef(name, dataType, false,
+                Cardinality.LIST, 1, Integer.MAX_VALUE,
+                false, true,
+                Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
+    }
+
+    public static AtlasAttributeDef createOptionalListAttrDef(String name, String dataType) {
+        return new AtlasAttributeDef(name, dataType, true,
+                Cardinality.LIST, 1, Integer.MAX_VALUE,
+                false, true,
+                Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
+    }
+
+    public static AtlasAttributeDef createRequiredListAttrDefWithConstraint(String name, String dataType, String type, Map param) {
+        AtlasAttributeDef ret = AtlasTypeUtil.createListRequiredAttrDef(name, dataType);
+        ret.addConstraint(new AtlasStructDef.AtlasConstraintDef(type, param));
+
+        return ret;
+    }
+
+    public static AtlasAttributeDef createRequiredAttrDefWithConstraint(String name, String typeName, String type, Map param) {
+        AtlasAttributeDef ret = AtlasTypeUtil.createRequiredAttrDef(name, typeName);
+        ret.addConstraint(new AtlasStructDef.AtlasConstraintDef(type, param));
+
+        return ret;
+    }
+
+    public static AtlasAttributeDef createOptionalAttrDefWithConstraint(String name, String typeName, String type, Map param) {
+        AtlasAttributeDef ret = AtlasTypeUtil.createOptionalAttrDef(name, typeName);
+        ret.addConstraint(new AtlasStructDef.AtlasConstraintDef(type, param));
+
+        return ret;
+    }
+
     public static AtlasAttributeDef createUniqueRequiredAttrDef(String name, AtlasType dataType) {
         return new AtlasAttributeDef(name, dataType.getTypeName(), false,
             Cardinality.SINGLE, 1, 1,
@@ -204,7 +243,7 @@ public class AtlasTypeUtil {
     }
 
     public static AtlasClassificationDef createTraitTypeDef(String name, String description, String version, ImmutableSet<String> superTypes, AtlasAttributeDef... attrDefs) {
-        return new AtlasClassificationDef(name, description, "1.0", Arrays.asList(attrDefs), superTypes);
+        return new AtlasClassificationDef(name, description, version, Arrays.asList(attrDefs), superTypes);
     }
 
     public static AtlasStructDef createStructTypeDef(String name, AtlasAttributeDef... attrDefs) {
@@ -227,7 +266,7 @@ public class AtlasTypeUtil {
 
     public static AtlasEntityDef createClassTypeDef(String name, String description, String version,
         ImmutableSet<String> superTypes, AtlasAttributeDef... attrDefs) {
-        return new AtlasEntityDef(name, description, "1.0", Arrays.asList(attrDefs), superTypes);
+        return new AtlasEntityDef(name, description, version, Arrays.asList(attrDefs), superTypes);
     }
 
     public static AtlasTypesDef getTypesDef(List<AtlasEnumDef> enums,

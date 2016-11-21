@@ -294,7 +294,6 @@ public abstract class AtlasBaseClient {
 
             if (clientResponse.getStatus() == api.getExpectedStatus().getStatusCode()) {
                 if (null == responseType) {
-                    LOG.warn("No response type specified, returning null");
                     return null;
                 }
                 try {
