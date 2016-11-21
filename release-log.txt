@@ -9,8 +9,10 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1310 attempt LDAP authentication only when enabled (mneethiraj)
+ATLAS-1309 updated HBase model with addition of column-family and column entity-defs (mneethiraj)
 ATLAS-916 Return System Attributes in get entity definition (svimal2106)
-ATLAS-1242 update TypesResource API implementation to use new v2 TypesREST API
+ATLAS-1242 update TypesResource API implementation to use new v2 TypesREST API (sarath.kum4r@gmail.com via mneethiraj)
 ATLAS-1306 bootstrap type-load ignores model file contents if a type in the file already exists
 ATLAS-1299 The project org.apache.atlas:atlas-hbase-client-shaded - build error (shwethags)
 ATLAS-1246 Upgrade versions of dependencies (shwethags)
