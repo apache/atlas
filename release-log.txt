@@ -9,6 +9,7 @@ ATLAS-1060 Add composite indexes for exact match performance improvements for al
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
 ALL CHANGES:
+ATLAS-1307: Integration test calls routing via the Client. ((apoorvnaik via sumasai)
 ATLAS-1355: Fix for bad error translation from V2 API (apoorvnaik via sumasai)
 ATLAS-1351 HiveHook fails with NPE for hive process registration (vimalsharma via sumasai)
 ATLAS-1342 Titan Solrclient - Add timeouts for zookeeper connect and session (sumasai)

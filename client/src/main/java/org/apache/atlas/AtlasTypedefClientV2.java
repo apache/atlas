@@ -73,7 +73,7 @@ public class AtlasTypedefClientV2 extends AtlasBaseClient {
      * @return A composite wrapper object with lists of all type definitions
      */
     public AtlasTypesDef getAllTypeDefs(SearchFilter searchFilter) throws AtlasServiceException {
-        return callAPI(GET_ALL_TYPE_DEFS, null, AtlasTypesDef.class, searchFilter.getParams());
+        return callAPI(GET_ALL_TYPE_DEFS, AtlasTypesDef.class, searchFilter.getParams());
     }
 
     public AtlasEnumDef getEnumByName(final String name) throws AtlasServiceException {

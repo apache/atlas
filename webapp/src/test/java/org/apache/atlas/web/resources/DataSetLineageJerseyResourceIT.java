@@ -19,14 +19,12 @@
 package org.apache.atlas.web.resources;
 
 import com.google.common.collect.ImmutableList;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
 import org.apache.atlas.typesystem.json.InstanceSerialization;
 import org.apache.atlas.typesystem.persistence.Id;
-import org.apache.atlas.web.util.Servlets;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
@@ -37,8 +35,6 @@ import org.apache.atlas.typesystem.types.TraitType;
 import org.apache.atlas.typesystem.types.utils.TypesUtil;
 import com.google.common.collect.ImmutableSet;
 
-import javax.ws.rs.HttpMethod;
-import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
 
@@ -49,7 +45,6 @@ import static org.testng.Assert.assertEquals;
  */
 public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
-    private static final String BASE_URI = "api/atlas/lineage/hive/table/";
     private String salesFactTable;
     private String salesMonthlyTable;
     private String salesDBName;
@@ -64,17 +59,10 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testInputsGraph() throws Exception {
-        WebResource resource = service.path(BASE_URI).path(salesMonthlyTable).path("inputs").path("graph");
+        JSONObject response = serviceClient.callAPI(AtlasClient.API.NAME_LINEAGE_INPUTS_GRAPH, null, salesMonthlyTable, "inputs", "graph");
+        Assert.assertNotNull(response);
+        System.out.println("inputs graph = " + response);
 
-        ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
-                .method(HttpMethod.GET, ClientResponse.class);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
-
-        String responseAsString = clientResponse.getEntity(String.class);
-        Assert.assertNotNull(responseAsString);
-        System.out.println("inputs graph = " + responseAsString);
-
-        JSONObject response = new JSONObject(responseAsString);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
         JSONObject results = response.getJSONObject(AtlasClient.RESULTS);
@@ -107,17 +95,10 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testOutputsGraph() throws Exception {
-        WebResource resource = service.path(BASE_URI).path(salesFactTable).path("outputs").path("graph");
+        JSONObject response = serviceClient.callAPI(AtlasClient.API.NAME_LINEAGE_OUTPUTS_GRAPH, null, salesFactTable, "outputs", "graph");
+        Assert.assertNotNull(response);
+        System.out.println("outputs graph= " + response);
 
-        ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
-                .method(HttpMethod.GET, ClientResponse.class);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
-
-        String responseAsString = clientResponse.getEntity(String.class);
-        Assert.assertNotNull(responseAsString);
-        System.out.println("outputs graph= " + responseAsString);
-
-        JSONObject response = new JSONObject(responseAsString);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
         JSONObject results = response.getJSONObject(AtlasClient.RESULTS);
@@ -150,17 +131,11 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testSchema() throws Exception {
-        WebResource resource = service.path(BASE_URI).path(salesFactTable).path("schema");
+        JSONObject response = serviceClient.callAPI(AtlasClient.API.NAME_LINEAGE_SCHEMA, null, salesFactTable, "schema");
 
-        ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
-                .method(HttpMethod.GET, ClientResponse.class);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+        Assert.assertNotNull(response);
+        System.out.println("schema = " + response);
 
-        String responseAsString = clientResponse.getEntity(String.class);
-        Assert.assertNotNull(responseAsString);
-        System.out.println("schema = " + responseAsString);
-
-        JSONObject response = new JSONObject(responseAsString);
         Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
         JSONObject results = response.getJSONObject(AtlasClient.RESULTS);
@@ -198,22 +173,14 @@ public class DataSetLineageJerseyResourceIT extends BaseResourceIT {
         }
     }
 
-    @Test
+    @Test(expectedExceptions = AtlasServiceException.class)
     public void testSchemaForInvalidTable() throws Exception {
-        WebResource resource = service.path(BASE_URI).path("blah").path("schema");
-
-        ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
-                .method(HttpMethod.GET, ClientResponse.class);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
+        JSONObject response = serviceClient.callAPI(AtlasClient.API.NAME_LINEAGE_SCHEMA, null, "blah", "schema");
     }
 
-    @Test
+    @Test(expectedExceptions = AtlasServiceException.class)
     public void testSchemaForDB() throws Exception {
-        WebResource resource = service.path(BASE_URI).path(salesDBName).path("schema");
-
-        ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
-            .method(HttpMethod.GET, ClientResponse.class);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
+        JSONObject response = serviceClient.callAPI(AtlasClient.API.NAME_LINEAGE_SCHEMA, null, salesDBName, "schema");
     }
 
     private void setupInstances() throws Exception {

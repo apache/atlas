@@ -20,9 +20,7 @@ package org.apache.atlas;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
-
 import com.sun.jersey.api.client.WebResource;
-
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.Struct;
@@ -43,15 +41,14 @@ import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.ws.rs.HttpMethod;
-import javax.ws.rs.core.Response;
 
 /**
  * Client for metadata.
@@ -207,6 +204,8 @@ public class AtlasClient extends AtlasBaseClient {
         SEARCH(BASE_URI + URI_SEARCH, HttpMethod.GET, Response.Status.OK),
         SEARCH_DSL(BASE_URI + URI_SEARCH + "/dsl", HttpMethod.GET, Response.Status.OK),
         SEARCH_FULL_TEXT(BASE_URI + URI_SEARCH + "/fulltext", HttpMethod.GET, Response.Status.OK),
+
+        GREMLIN_SEARCH(BASE_URI + URI_SEARCH + "/gremlin", HttpMethod.GET, Response.Status.OK),
 
         //Lineage operations based on dataset name
         NAME_LINEAGE_INPUTS_GRAPH(BASE_URI + URI_NAME_LINEAGE, HttpMethod.GET, Response.Status.OK),
@@ -566,6 +565,16 @@ public class AtlasClient extends AtlasBaseClient {
     }
 
     /**
+     * Delete a trait from the given entity
+     * @param guid guid of the entity
+     * @param traitName trait to be deleted
+     * @throws AtlasServiceException
+     */
+    public void deleteTrait(String guid, String traitName) throws AtlasServiceException {
+        callAPI(API.DELETE_TRAITS, null, guid, TRAITS, traitName);
+    }
+
+    /**
      * Supports Partial updates
      * Updates properties set in the definition for the entity corresponding to guid
      * @param entityType Type of the entity being updated
@@ -644,7 +653,7 @@ public class AtlasClient extends AtlasBaseClient {
         resource = resource.queryParam(TYPE, entityType);
         resource = resource.queryParam(ATTRIBUTE_NAME, uniqueAttributeName);
         resource = resource.queryParam(ATTRIBUTE_VALUE, uniqueAttributeValue);
-        JSONObject jsonResponse = callAPIWithResource(API.DELETE_ENTITIES, resource, null);
+        JSONObject jsonResponse = callAPIWithResource(API.DELETE_ENTITIES, resource);
         EntityResult results = extractEntityResult(jsonResponse);
         LOG.debug("Delete entities returned results: {}", results);
         return results;
@@ -814,7 +823,7 @@ public class AtlasClient extends AtlasBaseClient {
         }
         resource = resource.queryParam(NUM_RESULTS, String.valueOf(numResults));
 
-        JSONObject jsonResponse = callAPIWithResource(API.LIST_ENTITY_AUDIT, resource, null);
+        JSONObject jsonResponse = callAPIWithResource(API.LIST_ENTITY_AUDIT, resource);
         return extractResults(jsonResponse, AtlasClient.EVENTS, new ExtractOperation<EntityAuditEvent, JSONObject>() {
             @Override
             EntityAuditEvent extractElement(JSONObject element) throws JSONException {
@@ -945,19 +954,32 @@ public class AtlasClient extends AtlasBaseClient {
     }
 
     // Wrapper methods for compatibility
-
-    JSONObject callAPIWithResource(API api, WebResource resource, Object requestObject) throws AtlasServiceException {
-        return callAPIWithResource(toAPIInfo(api), resource, requestObject);
+    @VisibleForTesting
+    public JSONObject callAPIWithResource(API api, WebResource resource) throws AtlasServiceException {
+        return callAPIWithResource(toAPIInfo(api), resource, null, JSONObject.class);
     }
 
-    WebResource getResource(API api, String ... params) {
+    @VisibleForTesting
+    public WebResource getResource(API api, String ... params) {
         return getResource(toAPIInfo(api), params);
     }
 
-    JSONObject callAPI(API api, Object requestObject, String ... params) throws AtlasServiceException {
-        return callAPI(toAPIInfo(api), requestObject, params);
+    @VisibleForTesting
+    public JSONObject callAPI(API api, Object requestObject) throws AtlasServiceException {
+        return callAPI(toAPIInfo(api), requestObject, JSONObject.class, (String[]) null);
     }
 
+    @VisibleForTesting
+    public JSONObject callAPI(API api, Object requestObject, String ... params) throws AtlasServiceException {
+        return callAPI(toAPIInfo(api), requestObject, JSONObject.class, params);
+    }
+
+    @VisibleForTesting
+    public JSONObject callAPI(API api, Map<String, String> queryParams) throws AtlasServiceException {
+        return callAPI(toAPIInfo(api), JSONObject.class, queryParams);
+    }
+
+    @VisibleForTesting
     JSONObject callAPIWithRetries(API api, Object requestObject, ResourceCreator resourceCreator) throws AtlasServiceException {
         return super.callAPIWithRetries(toAPIInfo(api), requestObject, resourceCreator);
     }

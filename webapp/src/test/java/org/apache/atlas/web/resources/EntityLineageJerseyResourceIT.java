@@ -20,29 +20,30 @@ package org.apache.atlas.web.resources;
 
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.typesystem.Referenceable;
 import org.apache.atlas.typesystem.persistence.Id;
-import org.apache.atlas.web.util.Servlets;
+import org.codehaus.jettison.json.JSONObject;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.Response;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static org.apache.atlas.AtlasBaseClient.APIInfo;
 
 /**
  * Entity Lineage v2 Integration Tests.
  */
 public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceIT {
     private static final String BASE_URI = "api/atlas/v2/lineage/";
+    private static final APIInfo LINEAGE_V2_API = new APIInfo(BASE_URI, "GET", Response.Status.OK);
     private static final String INPUT_DIRECTION = "INPUT";
     private static final String OUTPUT_DIRECTION = "OUTPUT";
     private static final String BOTH_DIRECTION = "BOTH";
@@ -66,18 +67,16 @@ public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceI
     public void testInputLineageInfo() throws Exception {
         String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE,
                 AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesMonthlyTable).getId()._getId();
-        WebResource resource = service.path(BASE_URI).path(tableId).queryParam(DIRECTION_PARAM, INPUT_DIRECTION).
-                queryParam(DEPTH_PARAM, "5");
 
-        ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
-                .method(HttpMethod.GET, ClientResponse.class);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put(DIRECTION_PARAM, INPUT_DIRECTION);
+        queryParams.put(DEPTH_PARAM, "5");
+        JSONObject response = serviceClient.callAPI(LINEAGE_V2_API, JSONObject.class, queryParams);
+        Assert.assertNotNull(response);
+        System.out.println("input lineage info = " + response
+        );
 
-        String responseAsString = clientResponse.getEntity(String.class);
-        Assert.assertNotNull(responseAsString);
-        System.out.println("input lineage info = " + responseAsString);
-
-        AtlasLineageInfo inputLineageInfo = gson.fromJson(responseAsString, AtlasLineageInfo.class);
+        AtlasLineageInfo inputLineageInfo = gson.fromJson(response.toString(), AtlasLineageInfo.class);
 
         Map<String, AtlasEntityHeader> entities = inputLineageInfo.getGuidEntityMap();
         Assert.assertNotNull(entities);
@@ -96,18 +95,16 @@ public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceI
     public void testOutputLineageInfo() throws Exception {
         String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE,
                 AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
-        WebResource resource = service.path(BASE_URI).path(tableId).queryParam(DIRECTION_PARAM, OUTPUT_DIRECTION).
-                queryParam(DEPTH_PARAM, "5");
 
-        ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
-                .method(HttpMethod.GET, ClientResponse.class);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put(DIRECTION_PARAM, OUTPUT_DIRECTION);
+        queryParams.put(DEPTH_PARAM, "5");
+        JSONObject response = serviceClient.callAPI(LINEAGE_V2_API, JSONObject.class, queryParams);
 
-        String responseAsString = clientResponse.getEntity(String.class);
-        Assert.assertNotNull(responseAsString);
-        System.out.println("output lineage info = " + responseAsString);
+        Assert.assertNotNull(response);
+        System.out.println("output lineage info = " + response);
 
-        AtlasLineageInfo outputLineageInfo = gson.fromJson(responseAsString, AtlasLineageInfo.class);
+        AtlasLineageInfo outputLineageInfo = gson.fromJson(response.toString(), AtlasLineageInfo.class);
 
         Map<String, AtlasEntityHeader> entities = outputLineageInfo.getGuidEntityMap();
         Assert.assertNotNull(entities);
@@ -126,18 +123,16 @@ public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceI
     public void testLineageInfo() throws Exception {
         String tableId = serviceClient.getEntity(HIVE_TABLE_TYPE,
                 AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesMonthlyTable).getId()._getId();
-        WebResource resource = service.path(BASE_URI).path(tableId).queryParam(DIRECTION_PARAM, BOTH_DIRECTION).
-                queryParam(DEPTH_PARAM, "5");
 
-        ClientResponse clientResponse = resource.accept(Servlets.JSON_MEDIA_TYPE).type(Servlets.JSON_MEDIA_TYPE)
-                .method(HttpMethod.GET, ClientResponse.class);
-        Assert.assertEquals(clientResponse.getStatus(), Response.Status.OK.getStatusCode());
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put(DIRECTION_PARAM, BOTH_DIRECTION);
+        queryParams.put(DEPTH_PARAM, "5");
+        JSONObject response = serviceClient.callAPI(LINEAGE_V2_API, JSONObject.class, queryParams);
 
-        String responseAsString = clientResponse.getEntity(String.class);
-        Assert.assertNotNull(responseAsString);
-        System.out.println("both lineage info = " + responseAsString);
+        Assert.assertNotNull(response);
+        System.out.println("both lineage info = " + response);
 
-        AtlasLineageInfo bothLineageInfo = gson.fromJson(responseAsString, AtlasLineageInfo.class);
+        AtlasLineageInfo bothLineageInfo = gson.fromJson(response.toString(), AtlasLineageInfo.class);
 
         Map<String, AtlasEntityHeader> entities = bothLineageInfo.getGuidEntityMap();
         Assert.assertNotNull(entities);

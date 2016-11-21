@@ -131,6 +131,6 @@ public class AtlasEntitiesClientV2 extends AtlasBaseClient {
     }
 
     public AtlasEntity.AtlasEntities searchEntities(SearchFilter searchFilter) throws AtlasServiceException {
-        return callAPI(GET_ENTITIES, null, AtlasEntity.AtlasEntities.class, searchFilter.getParams());
+        return callAPI(GET_ENTITIES, AtlasEntity.AtlasEntities.class, searchFilter.getParams());
     }
 }
