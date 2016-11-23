@@ -72,10 +72,8 @@ public class AtlasInstanceRestAdapters {
     }
 
     public ITypedReferenceableInstance getITypedReferenceable(AtlasEntity entity) throws AtlasBaseException {
-        AtlasFormatAdapter entityFormatter = instanceFormatters.getConverter(AtlasFormatConverters.VERSION_V2, AtlasFormatConverters.VERSION_V1, TypeCategory.ENTITY);
-        AtlasType entityType = typeRegistry.getType(entity.getTypeName());
+        Referenceable ref = getReferenceable(entity);
 
-        Referenceable ref = (Referenceable) entityFormatter.convert(AtlasFormatConverters.VERSION_V2, AtlasFormatConverters.VERSION_V1, entityType, entity);
         try {
             return metadataService.getTypedReferenceableInstance(ref);
         } catch (AtlasException e) {
@@ -85,19 +83,20 @@ public class AtlasInstanceRestAdapters {
     }
 
     public Referenceable getReferenceable(AtlasEntity entity) throws AtlasBaseException {
-        AtlasFormatAdapter entityFormatter = instanceFormatters.getConverter(AtlasFormatConverters.VERSION_V2, AtlasFormatConverters.VERSION_V1, TypeCategory.ENTITY);
-        AtlasType entityType = typeRegistry.getType(entity.getTypeName());
+        AtlasFormatConverter converter  = instanceFormatters.getConverter(TypeCategory.ENTITY);
+        AtlasType            entityType = typeRegistry.getType(entity.getTypeName());
+        Referenceable        ref        = (Referenceable)converter.fromV2ToV1(entity, entityType);
 
-        return (Referenceable) entityFormatter.convert(AtlasFormatConverters.VERSION_V2, AtlasFormatConverters.VERSION_V1, entityType, entity);
+        return ref;
     }
 
     public ITypedStruct getTrait(AtlasClassification classification) throws AtlasBaseException {
-        AtlasFormatAdapter formatter = instanceFormatters.getConverter(AtlasFormatConverters.VERSION_V2, AtlasFormatConverters.VERSION_V1, TypeCategory.CLASSIFICATION);
-        AtlasType clsType = typeRegistry.getType(classification.getTypeName());
+        AtlasFormatConverter converter          = instanceFormatters.getConverter(TypeCategory.CLASSIFICATION);
+        AtlasType            classificationType = typeRegistry.getType(classification.getTypeName());
+        Struct               trait               = (Struct)converter.fromV2ToV1(classification, classificationType);
 
-        Struct ref = (Struct) formatter.convert(AtlasFormatConverters.VERSION_V2, AtlasFormatConverters.VERSION_V1, clsType, classification);
         try {
-            return metadataService.createTraitInstance(ref);
+            return metadataService.createTraitInstance(trait);
         } catch (AtlasException e) {
             LOG.error("Exception while getting a typed reference for the entity ", e);
             throw toAtlasBaseException(e);
@@ -105,17 +104,19 @@ public class AtlasInstanceRestAdapters {
     }
 
     public AtlasClassification getClassification(IStruct classification) throws AtlasBaseException {
-        AtlasFormatAdapter formatter = instanceFormatters.getConverter(AtlasFormatConverters.VERSION_V1, AtlasFormatConverters.VERSION_V2, TypeCategory.CLASSIFICATION);
-        AtlasType clsType = typeRegistry.getType(classification.getTypeName());
+        AtlasFormatConverter converter          = instanceFormatters.getConverter(TypeCategory.CLASSIFICATION);
+        AtlasType            classificationType = typeRegistry.getType(classification.getTypeName());
+        AtlasClassification  ret                = (AtlasClassification)converter.fromV1ToV2(classification, classificationType);
 
-        return (AtlasClassification) formatter.convert(AtlasFormatConverters.VERSION_V1, AtlasFormatConverters.VERSION_V2, clsType, classification);
+        return ret;
     }
 
     public AtlasEntityWithAssociations getAtlasEntity(IReferenceableInstance referenceable) throws AtlasBaseException {
-        AtlasFormatAdapter entityFormatter = instanceFormatters.getConverter(AtlasFormatConverters.VERSION_V1, AtlasFormatConverters.VERSION_V2, TypeCategory.ENTITY);
-        AtlasType entityType = typeRegistry.getType(referenceable.getTypeName());
+        AtlasFormatConverter converter  = instanceFormatters.getConverter(TypeCategory.ENTITY);
+        AtlasType            entityType = typeRegistry.getType(referenceable.getTypeName());
+        AtlasEntityWithAssociations ret = (AtlasEntityWithAssociations)converter.fromV1ToV2(referenceable, entityType);
 
-        return (AtlasEntityWithAssociations) entityFormatter.convert(AtlasFormatConverters.VERSION_V1, AtlasFormatConverters.VERSION_V2, entityType, referenceable);
+        return ret;
     }
 
 

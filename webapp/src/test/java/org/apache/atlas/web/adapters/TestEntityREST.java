@@ -36,14 +36,13 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
-import org.testng.internal.Invoker;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-@Guice(modules = {AtlasFormatConvertersModule.class, RepositoryMetadataModule.class})
+@Guice(modules = {RepositoryMetadataModule.class})
 public class TestEntityREST {
 
     @Inject

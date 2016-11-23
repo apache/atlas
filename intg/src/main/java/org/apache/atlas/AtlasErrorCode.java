@@ -42,6 +42,7 @@ public enum AtlasErrorCode {
     CANNOT_ADD_MANDATORY_ATTRIBUTE(400, "ATLAS40012E", "{0}.{1} : can not add mandatory attribute"),
     ATTRIBUTE_DELETION_NOT_SUPPORTED(400, "ATLAS40013E", "{0}.{1} : attribute delete not supported"),
     SUPERTYPE_REMOVAL_NOT_SUPPORTED(400, "ATLAS40014E", "superType remove not supported"),
+    UNEXPECTED_TYPE(400, "ATLAS40015E", "expected type {0}; found {1}"),
 
     TYPE_NAME_NOT_FOUND(404, "ATLAS4041E", "Given typename {0} was invalid"),
     TYPE_GUID_NOT_FOUND(404, "ATLAS4042E", "Given type guid {0} was invalid"),

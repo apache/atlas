@@ -787,7 +787,7 @@ public final class GraphHelper {
             return instanceVertex.getProperty(actualPropertyName, AtlasEdge.class);
         }
         else {
-            return instanceVertex.getProperty(actualPropertyName, String.class).toString();
+            return instanceVertex.getProperty(actualPropertyName, Object.class).toString();
         }
     }
 

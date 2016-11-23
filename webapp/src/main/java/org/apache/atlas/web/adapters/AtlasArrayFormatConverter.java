@@ -18,61 +18,81 @@
 package org.apache.atlas.web.adapters;
 
 
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import static org.apache.atlas.web.adapters.AtlasFormatConverters.VERSION_V1;
-import static org.apache.atlas.web.adapters.AtlasFormatConverters.VERSION_V2;
 
-public class AtlasArrayFormatConverter implements AtlasFormatAdapter {
+public class AtlasArrayFormatConverter extends AtlasAbstractFormatConverter {
 
-    protected AtlasFormatConverters registry;
-
-    @Inject
-    public void init(AtlasFormatConverters registry) throws AtlasBaseException {
-        this.registry = registry;
-        registry.registerConverter(this, AtlasFormatConverters.VERSION_V1, AtlasFormatConverters.VERSION_V2);
-        registry.registerConverter(this, AtlasFormatConverters.VERSION_V2, AtlasFormatConverters.VERSION_V1);
+    public AtlasArrayFormatConverter(AtlasFormatConverters registry, AtlasTypeRegistry typeRegistry) {
+        super(registry, typeRegistry, TypeCategory.ARRAY);
     }
 
     @Override
-    public TypeCategory getTypeCategory() {
-        return TypeCategory.ARRAY;
-    }
+    public Collection fromV1ToV2(Object v1Obj, AtlasType type) throws AtlasBaseException {
+        Collection ret = null;
 
-    @Override
-    public Object convert(String sourceVersion, String targetVersion, AtlasType type, final Object source) throws AtlasBaseException {
-        Collection newCollection = null;
-        if ( source != null ) {
-            if (AtlasFormatConverters.isArrayListType(source.getClass())) {
-                newCollection = new ArrayList();
-            } else if (AtlasFormatConverters.isSetType(source.getClass())) {
-                newCollection = new LinkedHashSet();
+        if (v1Obj != null) {
+            if (v1Obj instanceof List) {
+                ret = new ArrayList();
+            } else if (v1Obj instanceof Set) {
+                ret = new LinkedHashSet();
+            } else {
+                throw new AtlasBaseException(AtlasErrorCode.UNEXPECTED_TYPE, "List or Set",
+                                             v1Obj.getClass().getCanonicalName());
             }
 
-            AtlasArrayType arrType = (AtlasArrayType) type;
-            AtlasType elemType = arrType.getElementType();
+            AtlasArrayType       arrType       = (AtlasArrayType) type;
+            AtlasType            elemType      = arrType.getElementType();
+            AtlasFormatConverter elemConverter = converterRegistry.getConverter(elemType.getTypeCategory());
+            Collection           v1List        = (Collection) v1Obj;
 
-            Collection originalList = (Collection) source;
-            for (Object elem : originalList) {
-                AtlasFormatAdapter elemConverter = registry.getConverter(sourceVersion, targetVersion, elemType.getTypeCategory());
-                Object convertedVal = elemConverter.convert(sourceVersion, targetVersion, elemType, elem);
+            for (Object v1Elem : v1List) {
+                Object convertedVal = elemConverter.fromV1ToV2(v1Elem, elemType);
 
-                newCollection.add(convertedVal);
+                ret.add(convertedVal);
             }
         }
-        return newCollection;
+
+        return ret;
     }
 
+    @Override
+    public Collection fromV2ToV1(Object v2Obj, AtlasType type) throws AtlasBaseException {
+        Collection ret = null;
+
+        if (v2Obj != null) {
+            if (v2Obj instanceof List) {
+                ret = new ArrayList();
+            } else if (v2Obj instanceof Set) {
+                ret = new LinkedHashSet();
+            } else {
+                throw new AtlasBaseException(AtlasErrorCode.UNEXPECTED_TYPE, "List or Set",
+                                             v2Obj.getClass().getCanonicalName());
+            }
+
+            AtlasArrayType       arrType       = (AtlasArrayType) type;
+            AtlasType            elemType      = arrType.getElementType();
+            AtlasFormatConverter elemConverter = converterRegistry.getConverter(elemType.getTypeCategory());
+            Collection           v2List        = (Collection) v2Obj;
+
+            for (Object v2Elem : v2List) {
+                Object convertedVal = elemConverter.fromV2ToV1(v2Elem, elemType);
+
+                ret.add(convertedVal);
+            }
+        }
+
+        return ret;
+    }
 }
 

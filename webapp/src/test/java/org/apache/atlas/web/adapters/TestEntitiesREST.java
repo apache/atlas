@@ -48,7 +48,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-@Guice(modules = {AtlasFormatConvertersModule.class, RepositoryMetadataModule.class})
+@Guice(modules = {RepositoryMetadataModule.class})
 public class TestEntitiesREST {
 
     private static final Logger LOG = LoggerFactory.getLogger(TestEntitiesREST.class);

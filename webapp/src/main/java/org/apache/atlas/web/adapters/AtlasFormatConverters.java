@@ -22,67 +22,39 @@ import com.google.inject.Singleton;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.type.AtlasTypeRegistry;
 
-import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Singleton
 public class AtlasFormatConverters {
 
-    public static String VERSION_V1 = "v1";
-    public static String VERSION_V2 = "v2";
+    private final Map<TypeCategory, AtlasFormatConverter> registry = new HashMap<>();
 
-    private Map<String, AtlasFormatAdapter> registry = new HashMap<>();
-
-    public void registerConverter(AtlasFormatAdapter adapter, String sourceVersion, String targetVersion) {
-        registry.put(getKey(sourceVersion, targetVersion, adapter.getTypeCategory()), adapter);
+    @Inject
+    public AtlasFormatConverters(AtlasTypeRegistry typeRegistry) {
+        registerConverter(new AtlasPrimitiveFormatConverter(this, typeRegistry));
+        registerConverter(new AtlasEnumFormatConverter(this, typeRegistry));
+        registerConverter(new AtlasStructFormatConverter(this, typeRegistry));
+        registerConverter(new AtlasClassificationFormatConverter(this, typeRegistry));
+        registerConverter(new AtlasEntityFormatConverter(this, typeRegistry));
+        registerConverter(new AtlasArrayFormatConverter(this, typeRegistry));
+        registerConverter(new AtlasMapFormatConverter(this, typeRegistry));
     }
 
-    public AtlasFormatAdapter getConverter(String sourceVersion, String targetVersion, TypeCategory typeCategory) throws AtlasBaseException {
-        if (registry.containsKey(getKey(sourceVersion, targetVersion, typeCategory))) {
-            return registry.get(getKey(sourceVersion, targetVersion, typeCategory));
+    private void registerConverter(AtlasFormatConverter converter) {
+        registry.put(converter.getTypeCategory(), converter);
+    }
+
+    public AtlasFormatConverter getConverter(TypeCategory typeCategory) throws AtlasBaseException {
+        AtlasFormatConverter ret = registry.get(typeCategory);
+
+        if (ret == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR,
+                                         "Could not find the converter for this type " + typeCategory);
         }
-        throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Could not find the converter for this type " + typeCategory);
-    }
 
-    public static boolean isArrayListType(Class c) {
-        return List.class.isAssignableFrom(c);
-    }
-
-    public static boolean isSetType(Class c) {
-        return Set.class.isAssignableFrom(c);
-    }
-
-    public static boolean isPrimitiveType(final Class c) {
-        if (c != null) {
-            if (Number.class.isAssignableFrom(c)) {
-                return true;
-            }
-
-            if (String.class.isAssignableFrom(c)) {
-                return true;
-            }
-
-            if (Date.class.isAssignableFrom(c)) {
-                return true;
-            }
-
-            return c.isPrimitive();
-        }
-        return false;
-    }
-
-    public static boolean isMapType(Object o) {
-        if ( o != null ) {
-            return Map.class.isAssignableFrom(o.getClass());
-        }
-        return false;
-    }
-
-    String getKey(String sourceVersion, String targetVersion, TypeCategory typeCategory) {
-        return sourceVersion + "-to-" + targetVersion + "-" + typeCategory.name();
+        return ret;
     }
 }

@@ -22,10 +22,10 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.type.AtlasType;
 
-public interface AtlasFormatAdapter {
+public interface AtlasFormatConverter {
+    Object fromV1ToV2(Object v1Obj, AtlasType type) throws AtlasBaseException;
 
-    Object convert(String sourceVersion, String targetVersion, AtlasType type, Object source) throws AtlasBaseException;
+    Object fromV2ToV1(Object v2Obj, AtlasType type) throws AtlasBaseException;
 
     TypeCategory getTypeCategory();
-
 }

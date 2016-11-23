@@ -23,18 +23,20 @@ import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 
-import javax.inject.Inject;
 
-public class AtlasEnumFormatConverter extends AtlasPrimitiveFormatConverter {
-
-    @Inject
-    public void init(AtlasFormatConverters registry) throws AtlasBaseException {
-        super.init(registry);
+public class AtlasEnumFormatConverter extends AtlasAbstractFormatConverter {
+    public AtlasEnumFormatConverter(AtlasFormatConverters registry, AtlasTypeRegistry typeRegistry) {
+        super(registry, typeRegistry, TypeCategory.ENUM);
     }
 
     @Override
-    public TypeCategory getTypeCategory() {
-        return TypeCategory.ENUM;
+    public Object fromV1ToV2(Object v1Obj, AtlasType type) throws AtlasBaseException {
+        return type.getNormalizedValue(v1Obj);
+    }
+
+    @Override
+    public Object fromV2ToV1(Object v2Obj, AtlasType type) throws AtlasBaseException {
+        return type.getNormalizedValue(v2Obj);
     }
 }
 
